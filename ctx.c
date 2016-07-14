@@ -262,8 +262,6 @@ PetscErrorCode set_mesh( Ctx *E)
 
 }
 
-
-
 PetscErrorCode set_lookups( Ctx *E )
 {
   PetscFunctionBeginUser;

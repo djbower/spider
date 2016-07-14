@@ -6,8 +6,20 @@ static char help[] ="Parallel magma ocean timestepper";
 
 // TODO: Make sure to ensure this is valgrind clean
 
-/* Functions for the RHS and Initial Condition */
-// ...
+#undef __FUNCT__
+#define __FUNCT__ "RHSFunction"
+PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec X,Vec F,void *ptr)
+{
+  PetscErrorCode ierr;
+  Ctx *ctx = (Ctx*) ptr;
+
+  PetscFunctionBeginUser;
+
+  // TODO
+  // ....
+
+  PetscFunctionReturn(0);
+}
 
 int main(int argc, char ** argv)
 {
@@ -109,9 +121,6 @@ int main(int argc, char ** argv)
   // ierr = FormInitialGuess(x,&ctx);CHKERRQ(ierr);
   // ...
 
-  /* Set up the RHS Function */
-  //ierr = TSSetRHSFunction(ts,NULL,FormFunction,&user);CHKERRQ(ierr);
-  // ...
 
   /* Set up the Jacobian function (omitted for now) */
 
@@ -123,13 +132,19 @@ int main(int argc, char ** argv)
   // More CVODE setup ...
   // ..
 
+  /* Set up the RHS Function */
+  ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
+
+  /* Set up the integration period */
+  // ....
+
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
 
   /* Set up some kind of monitor or viewer (omitted for now) */
 
   /* Solve */
-  // ierr = TSSolve(ts,x);CHKERRQ(ierr);
+  ierr = TSSolve(ts,x);CHKERRQ(ierr);
   // ....
 
   /* Destroy data allocated in Ctx */
