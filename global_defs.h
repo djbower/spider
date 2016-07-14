@@ -16,7 +16,7 @@
 #include "petsc.h"
 
 /* Define to have verbose and/or debugging output */
-//#define VERBOSE 1
+#define VERBOSE 1
 #define DEBUGOUTPUT 1
 
 #define HEAD 4 /* number of header lines in datafile */

@@ -119,7 +119,7 @@ int main(int argc, char ** argv)
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
   ierr = TSSetSolution(ts,x);CHKERRQ(ierr);
-  ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
+ // ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
   // More CVODE setup ...
   // ..
 
@@ -129,12 +129,14 @@ int main(int argc, char ** argv)
   /* Set up some kind of monitor or viewer (omitted for now) */
 
   /* Solve */
-  ierr = TSSolve(ts,x);CHKERRQ(ierr);
+  // ierr = TSSolve(ts,x);CHKERRQ(ierr);
+  // ....
 
   /* Destroy data allocated in Ctx */
   ierr = DMDestroy(&ctx.da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx.da_b);CHKERRQ(ierr);
   // TODO: Destroy everything (just do it here, move into a dedicated function later)
+  // Destroy all the allocated vectors...
   // ..
 
   /* Cleanup and finalize */

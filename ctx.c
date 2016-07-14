@@ -206,7 +206,7 @@ PetscErrorCode set_mesh( Ctx *E)
     M->mix_b      = M->meshVecs[4];
 
     for (i=0;i<NUMMESHVECSS;++i) {
-      ierr = DMCreateGlobalVector(E->da_s,&M->meshVecs[i]);CHKERRQ(ierr);
+      ierr = DMCreateGlobalVector(E->da_s,&M->meshVecsS[i]);CHKERRQ(ierr);
     }
     M->pressure_s = M->meshVecsS[0];
     M->radius_s   = M->meshVecsS[1];
@@ -1051,7 +1051,9 @@ PetscScalar combine_matprop( PetscScalar weight, PetscScalar mat1, PetscScalar m
 
 void set_interp2d( const char * filename, Interp2d *interp )
 {
+#if (defined VERBOSE)
     printf("set_interp2d:\n");
+#endif
 
     FILE *fp;
     size_t i=0, j=0, k=0;
@@ -1131,7 +1133,9 @@ void set_interp2d( const char * filename, Interp2d *interp )
 
 void set_interp1d( const char * filename, Interp1d *interp, int n )
 {
+#if (defined VERBOSE)
     printf("set_interp1d:\n");
+#endif
 
     FILE *fp;
     size_t i=0;
