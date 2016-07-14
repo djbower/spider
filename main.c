@@ -6,17 +6,102 @@ static char help[] ="Parallel magma ocean timestepper";
 
 // TODO: Make sure to ensure this is valgrind clean
 
+// !! This RHS function needs to be checked - it probably has errors
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"
-PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec X,Vec F,void *ptr)
+PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
 {
   PetscErrorCode ierr;
-  Ctx *ctx = (Ctx*) ptr;
+  Ctx               *E = (Ctx*) ptr;
+  Solution          *S = &E->solution;
+  PetscScalar       *arr_rhs_s;
+  const PetscScalar *arr_Etot,*arr_lhs_s;
+  PetscMPIInt       rank,size;
+  PetscInt          i,ihi_s,ilo_s,ihi,ilo;
 
   PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    printf("rhs:\n"); // TODO: replace all printf with PetscPrintf
+#endif
 
-  // TODO
-  // ....
+    MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
+    MPI_Comm_size(PETSC_COMM_WORLD,&size);
+
+    /* S_in is the solution array.  It's easiest to store this in
+       the E struct for future access, and this step is done at the
+       top of set_capacitance */
+
+    /* loop over staggered nodes and populate E struct */
+    set_capacitance( E, S_in );
+
+    /* loop over basic (internal) nodes and populate E struct */
+    set_matprop_and_flux( E );
+
+    /* surface radiative boundary condition
+       parameterised ultra-thin thermal boundary layer
+       constants given by fit (python script) */
+
+    // NOTE: here we assume that the first rank has the first point
+    if (!rank) {
+       PetscScalar temp_s_0,temp0,dT,val;
+       PetscInt ind = 0;
+       ierr = VecGetValues(S->temp_s,1,&ind,&temp_s_0);CHKERRQ(ierr);
+       dT = CONSTBC * PetscPowScalar( temp_s_0, EXPBC ); 
+       temp0 = temp_s_0 - dT;
+       val = SIGMA*(PetscPowScalar(temp0,4.0)-PetscPowScalar(TEQM,4.0));
+
+    /* Note - below is true because non-dim geom is exactly equal
+       to one, so do not need to multiply by area of surface */
+      ierr = VecSetValue(S->Etot,0,val,INSERT_VALUES);CHKERRQ(ierr);
+      ierr = VecSetValue(S->Jtot,0,val,INSERT_VALUES);CHKERRQ(ierr);
+    }
+    ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+
+    /* loop over staggered nodes except last node */
+    ierr = VecGetOwnershipRange(rhs_s,&ilo_s,&ihi_s);CHKERRQ(ierr);
+    ilo = ilo_s;
+    ihi = ihi_s == NUMPTSS ? NUMPTSS -1 : ihi_s;
+    ierr = VecGetArray(rhs_s,&arr_rhs_s);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(S->Etot,&arr_Etot);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
+    for(i=ilo; i<ihi; ++i){
+        arr_rhs_s[i] = arr_Etot[i+1] - arr_Etot[i];
+        arr_rhs_s[i] /= arr_lhs_s[i];
+    }
+    ierr = VecRestoreArray(rhs_s,&arr_rhs_s);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(S->Etot,&arr_Etot);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
+
+
+    /* for last point, just cool by a constant factor
+       if CMBBC = 0.0 --> zero heat flux CMB
+       if CMBBC = 1.0 --> isothermal CMB
+       if 0.0 < CMBBC < 1.0 CMB is cooling proportional to
+           time-dependent energy requirements at base of
+           magma ocean */
+
+    // NOTE: here, we somewhat dangerously assume that the last proc has the last point 
+    if (rank == size-1) {
+      PetscScalar val,val2;
+      PetscInt ind;
+
+      ind = NUMPTS-2;
+      ierr = VecGetValues(S->Etot,1,&ind,&val);CHKERRQ(ierr);
+      val *= CMBBC;
+      ierr = VecSetValue(S->Etot,NUMPTS-1,val,INSERT_VALUES);CHKERRQ(ierr);
+
+      ind = NUMPTSS-1;
+      ierr = VecGetValues(S->lhs_s,1,&ind,&val2);CHKERRQ(ierr);
+      val2 = ((1.0 - CMBBC)*val)/val2;
+      ierr = VecSetValue(rhs_s,NUMPTSS-1,val2,INSERT_VALUES);
+    }
+
+    /* Copy the rhs into the context, but we don't need this for anything
+       other than viewing/debugging */
+    ierr = VecCopy(rhs_s,S->rhs_s);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
@@ -25,7 +110,7 @@ int main(int argc, char ** argv)
 {
   PetscErrorCode ierr;
   TS             ts;      /* ODE solver object */
-  Vec            x;       /* Solution Vector */
+  Vec            S_s;     /* Solution Vector */
   Ctx            ctx;     /* Solver context */
   PetscInt       i;
 
@@ -45,6 +130,8 @@ int main(int argc, char ** argv)
   const PetscInt dof = 1;
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,NUMPTS,dof,stencilWidth,NULL,&ctx.da_b);CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,NUMPTSS,dof,stencilWidth,NULL,&ctx.da_s);CHKERRQ(ierr);
+
+  // TODO (maybe): PETSc-fy this more by getting rid of the NUMPTS and NUMPTSS parameters and instead letting the DMDAs themselves define this information (hence allowing more command-line control)
 
   /* Continue to initialize context with distributed data */
 
@@ -117,26 +204,25 @@ int main(int argc, char ** argv)
   set_initial_condition(&ctx);
 
   /* Create a solution vector (S at the staggered nodes) and fill with an initial condition */
-  ierr = DMCreateGlobalVector(ctx.da_s,&x);CHKERRQ(ierr); 
-  // ierr = FormInitialGuess(x,&ctx);CHKERRQ(ierr);
-  // ...
-
+  ierr = DMCreateGlobalVector(ctx.da_s,&S_s);CHKERRQ(ierr); 
+  set_initial_condition(&ctx);CHKERRQ(ierr); // NOTE: as usual, it's redundant to store the solution in the context as well but for now we do so for consistency
+  ierr = VecCopy(ctx.solution.S_s,S_s);CHKERRQ(ierr);
 
   /* Set up the Jacobian function (omitted for now) */
 
   /* Set up timestepper */
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
-  ierr = TSSetSolution(ts,x);CHKERRQ(ierr);
+  ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
  // ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
-  // More CVODE setup ...
-  // ..
+  // TODO: More CVODE setup ...
 
   /* Set up the RHS Function */
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
 
   /* Set up the integration period */
-  // ....
+  ierr = TSSetDuration(ts,1,1.e12);CHKERRQ(ierr); /* One time step, huge final time */
+  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
 
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
@@ -144,18 +230,36 @@ int main(int argc, char ** argv)
   /* Set up some kind of monitor or viewer (omitted for now) */
 
   /* Solve */
-  ierr = TSSolve(ts,x);CHKERRQ(ierr);
-  // ....
+  ierr = TSSolve(ts,S_s);CHKERRQ(ierr);
+
+  /* For debugging, view some things stored in the context.
+      Note that there are other viewer implementations, including 
+      those that will write to a file which we should be able
+      to open with python.
+  */
+  ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing solution S_s ***\n");CHKERRQ(ierr);
+  ierr = VecView(ctx.solution.S_s,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
 
   /* Destroy data allocated in Ctx */
   ierr = DMDestroy(&ctx.da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx.da_b);CHKERRQ(ierr);
-  // TODO: Destroy everything (just do it here, move into a dedicated function later)
-  // Destroy all the allocated vectors...
-  // ..
+  for (i=0;i<NUMMESHVECS;++i){
+    ierr = VecDestroy(&ctx.mesh.meshVecs[i]);CHKERRQ(ierr);
+  }
+  for (i=0;i<NUMMESHVECSS;++i){
+    ierr = VecDestroy(&ctx.mesh.meshVecsS[i]);CHKERRQ(ierr);
+  }
+  for (i=0;i<NUMSOLUTIONVECS;++i){
+    ierr = VecDestroy(&ctx.solution.solutionVecs[i]);CHKERRQ(ierr);
+  }
+  for (i=0;i<NUMSOLUTIONVECSS;++i){
+    ierr = VecDestroy(&ctx.solution.solutionVecsS[i]);CHKERRQ(ierr);
+  }
+  // TODO: Destroy anything else
+  // TODO: move into a dedicated function in ctx.c
 
   /* Cleanup and finalize */
-  ierr = VecDestroy(&x);CHKERRQ(ierr);
+  ierr = VecDestroy(&S_s);CHKERRQ(ierr);
   ierr = TSDestroy(&ts);CHKERRQ(ierr);
   ierr = PetscFinalize();CHKERRQ(ierr);
 

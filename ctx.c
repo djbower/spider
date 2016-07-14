@@ -612,7 +612,7 @@ PetscErrorCode set_time_independent( Ctx *E )
 
 /* end of time-independent quantities */
 
-//NOTE: The functions below need to be called in  a specific order in our future function to compute the RHS
+//NOTE: This function MUST be called first when computing the RHS
 PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
 {
     PetscErrorCode ierr;
