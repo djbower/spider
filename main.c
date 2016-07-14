@@ -4,8 +4,7 @@ static char help[] ="Parallel magma ocean timestepper";
 
 #include "ctx.h"
 
-    // !! don't forget to make sure this is all valgrind-clean
-
+// TODO: Make sure to ensure this is valgrind clean
 
 /* Functions for the RHS and Initial Condition */
 // ...
@@ -20,7 +19,7 @@ int main(int argc, char ** argv)
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
-  // !! Once this runs, but all this setup into a single function..
+  // TODO: Once this runs, but all this setup into a single function
 
   /* Initialize context with parameters (most parameters are constants in global_defs.h, though) */
   set_lookups(&ctx);
@@ -30,7 +29,7 @@ int main(int argc, char ** argv)
      DMDAs are used to create vectors which hold various properties
      living on the same primal and staggered nodes.
   */
-  const PetscInt stencilWidth = 1; // !! check that this is appropriate
+  const PetscInt stencilWidth = 1; //TODO: check that this is appropriate
   const PetscInt dof = 1;
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,NUMPTS,dof,stencilWidth,NULL,&ctx.da_b);CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,NUMPTSS,dof,stencilWidth,NULL,&ctx.da_s);CHKERRQ(ierr);
@@ -105,7 +104,7 @@ int main(int argc, char ** argv)
   set_time_independent(&ctx);
   set_initial_condition(&ctx);
 
-  /* Create a solution vector (S at the staggered nodes) and fill with an initial guess */
+  /* Create a solution vector (S at the staggered nodes) and fill with an initial condition */
   ierr = DMCreateGlobalVector(ctx.da_s,&x);CHKERRQ(ierr); 
   // ierr = FormInitialGuess(x,&ctx);CHKERRQ(ierr);
   // ...
@@ -135,7 +134,7 @@ int main(int argc, char ** argv)
   /* Destroy data allocated in Ctx */
   ierr = DMDestroy(&ctx.da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx.da_b);CHKERRQ(ierr);
-  // !! Destroy everything (just do it here, move into a dedicated function later)
+  // TODO: Destroy everything (just do it here, move into a dedicated function later)
   // ..
 
   /* Cleanup and finalize */

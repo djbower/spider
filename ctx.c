@@ -1,130 +1,74 @@
 #include "ctx.h"
 
-PetscErrorCode set_mesh( Ctx *E)
+static PetscErrorCode make_super_adiabatic( Ctx *E )
 {
-#if (defined VERBOSE)
-    printf( "set_mesh:\n" );
-#endif
 
     PetscErrorCode ierr;
-    PetscScalar    *arr;
-    PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s;
-    Mesh           *M;
+#if (defined VERBOSE)
+    printf("make_super_adiabatic:\n");
+#endif
+
+    PetscInt i,ilo_s,ihi_s;
+    PetscScalar fac=1.0,*arr_S_s,val,pres_b_last; // percent
+    const PetscScalar *arr_pres_b,*arr_pres_s;
+    Vec pres_b,pres_s;
+    Mesh *M;
+    Solution *S;
+    PetscMPIInt rank,size;
+    const PetscInt ix = NUMPTS-1; // Dangerous if PetscInt is not int!
 
     PetscFunctionBeginUser;
-
     M = &E->mesh;
+    S = &E->solution;
+    pres_b = M->pressure_b;
+    pres_s = M->pressure_s;
+    ierr = VecGetOwnershipRange(S->S_s,&ilo_s,&ihi_s);CHKERRQ(ierr);
 
-    /* Create vectors required for the mesh */
-    for (i=0;i<NUMMESHVECS;++i) {
-      ierr = DMCreateGlobalVector(E->da_b,&M->meshVecs[i]);CHKERRQ(ierr);
+    /* Scatter the last value to all procs */
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+    if (rank == size-1) { // kind of a kludge
+      ierr = VecGetValues(pres_b,1,&ix,&val);
     }
-    // !! We should be creating ALL the vecs at the same time - do that as we roll all this into one function (create these vecs outside this function)
+    pres_b_last = 0.0;
+    MPI_Scatter(&val,1,MPIU_SCALAR,&pres_b_last,1,MPIU_SCALAR,size-1,PETSC_COMM_WORLD);
 
-    M->area_b     = M->meshVecs[0]; 
-    M->dPdr_b     = M->meshVecs[1];
-    M->pressure_b = M->meshVecs[2];
-    M->radius_b   = M->meshVecs[3];
-    M->mix_b      = M->meshVecs[4];
+    
+#if (defined DEBUGOUTPUT)
+  ierr = PetscPrintf(PETSC_COMM_SELF,"rank %d, value of last point is %f\n",rank,pres_b_last);CHKERRQ(ierr);
+#endif
 
-    for (i=0;i<NUMMESHVECSS;++i) {
-      ierr = DMCreateGlobalVector(E->da_s,&M->meshVecs[i]);CHKERRQ(ierr);
+    ierr = VecGetArray(S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(pres_b,&arr_pres_b);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(pres_s,&arr_pres_s);CHKERRQ(ierr);
+    for(i=ilo_s; i<ihi_s; ++i){
+        arr_S_s[i] *= 1.0 + 0.01 * fac * arr_pres_s[i]/pres_b_last;
     }
-    M->pressure_s = M->meshVecsS[0];
-    M->radius_s   = M->meshVecsS[1];
-    M->volume_s   = M->meshVecsS[2];
-
-    /* basic node spacing (negative) */
-    M->dx_b = -(RADOUT-RADIN) / (NUMPTS-1);
-
-    /* staggered node spacing (negative) */
-    M->dx_s = M->dx_b;
-
-    /* radius at basic nodes */
-    ierr = VecGetOwnershipRange(M->radius_b,&ilo_b,&ihi_b);CHKERRQ(ierr);
-    ierr = VecGetArray(M->radius_b,&arr);CHKERRQ(ierr);
-    for (i=ilo_b; i<ihi_b; ++i){
-        //M->radius_b[NUMPTS-1-i] = RADIN - i*M->dx_b;
-        arr[i] = RADIN - (NUMPTS-1-i)*M->dx_b; //!! check
-    }
-    ierr = VecRestoreArray(M->radius_b,&arr);CHKERRQ(ierr);
-
-    /* radius at staggered nodes */
-    ierr = VecGetOwnershipRange(M->radius_s,&ilo_s,&ihi_s);CHKERRQ(ierr);
-    ierr = VecGetArray(M->radius_s,&arr);CHKERRQ(ierr);
-    for (i=ilo_s;i<ihi_s;++i){
-        //M->radius_s[NUMPTS-2-i] = RADIN - 0.5*M->dx_b - i*M->dx_b;
-        arr[i] = RADIN - 0.5*M->dx_b - (NUMPTSS-1-i)*M->dx_b; // !! check
-    }
-    ierr = VecRestoreArray(M->radius_s,&arr);CHKERRQ(ierr);
-
-    /* Adams-Williamson EOS */
-
-    /* pressure at basic nodes */
-    aw_pressure( M->radius_b, M->pressure_b);
-
-    /* dP/dr at basic nodes */
-    aw_pressure_gradient( M->radius_b, M->dPdr_b);
-
-    /* pressure at staggered nodes */
-    aw_pressure( M->radius_s, M->pressure_s);
-
-    /* surface area at basic nodes, without 4*pi term */
-    /* and now non-dimensional */
-    spherical_area( M->radius_b, M->area_b);
-
-    /* volume of spherical cells, without 4*pi term */
-    /* and now non-dimenisonal */
-    spherical_volume( M->radius_b, M->volume_s);
-
-    /* mixing length is minimum distance from boundary */
-    mixing_length( M->radius_b, M->mix_b);
+    ierr = VecRestoreArray(S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(pres_b,&arr_pres_b);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(pres_s,&arr_pres_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
-static PetscErrorCode aw_pressure( Vec radius, Vec pressure )
+PetscErrorCode set_initial_condition( Ctx *E )
 {
-    PetscErrorCode    ierr;
-    PetscScalar       dep,*arr_p;
-    const PetscScalar *arr_r;
-    PetscInt          i,ilo,ihi;
+    PetscErrorCode ierr;
+    Solution *S;
 
     PetscFunctionBeginUser;
-    ierr = VecGetOwnershipRange(radius,&ilo,&ihi);CHKERRQ(ierr);
-    ierr = VecGetArrayRead(radius,&arr_r);CHKERRQ(ierr);
-    ierr = VecGetArray(pressure,&arr_p);CHKERRQ(ierr);
-    for(i=ilo; i<ihi; ++i){
-        dep = RADOUT - arr_r[i];
-        arr_p[i] = -RHOS * GRAVITY / BETA;
-        arr_p[i] *= PetscExpScalar( BETA * dep ) - 1.0;
-    }
-    ierr = VecRestoreArray(pressure,&arr_p);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(radius,&arr_r);CHKERRQ(ierr);
+#if (defined VERBOSE)
+    printf("set_initial_condition:\n");
+#endif
+    S = &E->solution;
+
+    ierr = VecSet(S->S_s,SINIT);CHKERRQ(ierr);
+
+    make_super_adiabatic( E );
+
     PetscFunctionReturn(0);
+
 }
-
-static PetscErrorCode aw_pressure_gradient( Vec radius, Vec grad )
-{
-    PetscErrorCode    ierr;
-    PetscScalar       dep,*arr_g;
-    const PetscScalar *arr_r;
-    PetscInt          i,ilo,ihi;
-
-    PetscFunctionBeginUser;
-    ierr = VecGetOwnershipRange(radius,&ilo,&ihi);CHKERRQ(ierr);
-    ierr = VecGetArray(grad,&arr_g);CHKERRQ(ierr);
-    ierr = VecGetArrayRead(radius,&arr_r);CHKERRQ(ierr);
-    for(i=ilo; i<ihi; ++i){
-        dep = RADOUT - arr_r[i];
-        arr_g[i] = RHOS * GRAVITY * PetscExpScalar( BETA * dep );
-    }
-    ierr = VecRestoreArray(grad,&arr_g);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(radius,&arr_r);CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
-
 static PetscErrorCode spherical_area( Vec radius, Vec area )
 {
     /* non-dimensional area.  Not sure this really matters, would it
@@ -193,6 +137,132 @@ static PetscErrorCode mixing_length( Vec radius, Vec mix )
     ierr = VecRestoreArrayRead(radius,&arr_r);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
+static PetscErrorCode aw_pressure( Vec radius, Vec pressure )
+{
+    PetscErrorCode    ierr;
+    PetscScalar       dep,*arr_p;
+    const PetscScalar *arr_r;
+    PetscInt          i,ilo,ihi;
+
+    PetscFunctionBeginUser;
+    ierr = VecGetOwnershipRange(radius,&ilo,&ihi);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(radius,&arr_r);CHKERRQ(ierr);
+    ierr = VecGetArray(pressure,&arr_p);CHKERRQ(ierr);
+    for(i=ilo; i<ihi; ++i){
+        dep = RADOUT - arr_r[i];
+        arr_p[i] = -RHOS * GRAVITY / BETA;
+        arr_p[i] *= PetscExpScalar( BETA * dep ) - 1.0;
+    }
+    ierr = VecRestoreArray(pressure,&arr_p);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(radius,&arr_r);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode aw_pressure_gradient( Vec radius, Vec grad )
+{
+    PetscErrorCode    ierr;
+    PetscScalar       dep,*arr_g;
+    const PetscScalar *arr_r;
+    PetscInt          i,ilo,ihi;
+
+    PetscFunctionBeginUser;
+    ierr = VecGetOwnershipRange(radius,&ilo,&ihi);CHKERRQ(ierr);
+    ierr = VecGetArray(grad,&arr_g);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(radius,&arr_r);CHKERRQ(ierr);
+    for(i=ilo; i<ihi; ++i){
+        dep = RADOUT - arr_r[i];
+        arr_g[i] = RHOS * GRAVITY * PetscExpScalar( BETA * dep );
+    }
+    ierr = VecRestoreArray(grad,&arr_g);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(radius,&arr_r);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode set_mesh( Ctx *E)
+{
+#if (defined VERBOSE)
+    printf( "set_mesh:\n" );
+#endif
+
+    PetscErrorCode ierr;
+    PetscScalar    *arr;
+    PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s;
+    Mesh           *M;
+
+    PetscFunctionBeginUser;
+
+    M = &E->mesh;
+
+    /* Create vectors required for the mesh */
+    for (i=0;i<NUMMESHVECS;++i) {
+      ierr = DMCreateGlobalVector(E->da_b,&M->meshVecs[i]);CHKERRQ(ierr);
+    }
+    // TODO: We should be creating ALL the vecs at the same time - do that as we roll all this into one function (create these vecs outside this function)
+
+    M->area_b     = M->meshVecs[0]; 
+    M->dPdr_b     = M->meshVecs[1];
+    M->pressure_b = M->meshVecs[2];
+    M->radius_b   = M->meshVecs[3];
+    M->mix_b      = M->meshVecs[4];
+
+    for (i=0;i<NUMMESHVECSS;++i) {
+      ierr = DMCreateGlobalVector(E->da_s,&M->meshVecs[i]);CHKERRQ(ierr);
+    }
+    M->pressure_s = M->meshVecsS[0];
+    M->radius_s   = M->meshVecsS[1];
+    M->volume_s   = M->meshVecsS[2];
+
+    /* basic node spacing (negative) */
+    M->dx_b = -(RADOUT-RADIN) / (NUMPTS-1);
+
+    /* staggered node spacing (negative) */
+    M->dx_s = M->dx_b;
+
+    /* radius at basic nodes */
+    ierr = VecGetOwnershipRange(M->radius_b,&ilo_b,&ihi_b);CHKERRQ(ierr);
+    ierr = VecGetArray(M->radius_b,&arr);CHKERRQ(ierr);
+    for (i=ilo_b; i<ihi_b; ++i){
+        //M->radius_b[NUMPTS-1-i] = RADIN - i*M->dx_b;
+        arr[i] = RADIN - (NUMPTS-1-i)*M->dx_b; //TODO: check
+    }
+    ierr = VecRestoreArray(M->radius_b,&arr);CHKERRQ(ierr);
+
+    /* radius at staggered nodes */
+    ierr = VecGetOwnershipRange(M->radius_s,&ilo_s,&ihi_s);CHKERRQ(ierr);
+    ierr = VecGetArray(M->radius_s,&arr);CHKERRQ(ierr);
+    for (i=ilo_s;i<ihi_s;++i){
+        //M->radius_s[NUMPTS-2-i] = RADIN - 0.5*M->dx_b - i*M->dx_b;
+        arr[i] = RADIN - 0.5*M->dx_b - (NUMPTSS-1-i)*M->dx_b; // TODO: check
+    }
+    ierr = VecRestoreArray(M->radius_s,&arr);CHKERRQ(ierr);
+
+    /* Adams-Williamson EOS */
+
+    /* pressure at basic nodes */
+    aw_pressure( M->radius_b, M->pressure_b);
+
+    /* dP/dr at basic nodes */
+    aw_pressure_gradient( M->radius_b, M->dPdr_b);
+
+    /* pressure at staggered nodes */
+    aw_pressure( M->radius_s, M->pressure_s);
+
+    /* surface area at basic nodes, without 4*pi term */
+    /* and now non-dimensional */
+    spherical_area( M->radius_b, M->area_b);
+
+    /* volume of spherical cells, without 4*pi term */
+    /* and now non-dimenisonal */
+    spherical_volume( M->radius_b, M->volume_s);
+
+    /* mixing length is minimum distance from boundary */
+    mixing_length( M->radius_b, M->mix_b);
+
+    PetscFunctionReturn(0);
+
+}
+
+
 
 PetscErrorCode set_lookups( Ctx *E )
 {
@@ -313,25 +383,6 @@ PetscErrorCode free_memory_interp( Ctx *E )
 
     PetscFunctionReturn(0);
 
-}
-
-PetscErrorCode set_time_independent( Ctx *E )
-{
-  
-    PetscFunctionBeginUser;
-
-    /* linear interpolation using datafiles.  In the python code we
-       fit a high order polynomial instead for smoothness, but
-       perhaps this does not matter so much */
-    set_liquidus( E );
-    set_solidus( E );
-
-    /* these terms all need the liquidus and solidus to be set */
-    set_fusion( E );
-    set_fusion_curve( E );
-    set_mixed_phase( E );
-    
-    PetscFunctionReturn(0);
 }
 
 /* time-independent quantities */
@@ -483,7 +534,7 @@ static PetscErrorCode set_fusion( Ctx *E )
     ierr = VecWAXPY(S->fusion_temp,-1.0,S->solidus_temp,S->liquidus_temp);CHKERRQ(ierr);
 
     /* staggered nodes */
-    // !! Intentionally no Rho here? 
+    // TODO: Check - Intentionally no Rho here? 
     ierr = VecWAXPY(S->fusion_s,-1.0,S->solidus_s,S->liquidus_s);CHKERRQ(ierr);
     //ierr = VecWAXPY(S->fusion_rho_s,-1.0,S->solidus_rho_s,S->liquidus_rho_s);CHKERRQ(ierr);
     ierr = VecWAXPY(S->fusion_temp_s,-1.0,S->solidus_temp_s,S->liquidus_temp_s);CHKERRQ(ierr);
@@ -541,10 +592,29 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+PetscErrorCode set_time_independent( Ctx *E )
+{
+  
+    PetscFunctionBeginUser;
+
+    /* linear interpolation using datafiles.  In the python code we
+       fit a high order polynomial instead for smoothness, but
+       perhaps this does not matter so much */
+    set_liquidus( E );
+    set_solidus( E );
+
+    /* these terms all need the liquidus and solidus to be set */
+    set_fusion( E );
+    set_fusion_curve( E );
+    set_mixed_phase( E );
+    
+    PetscFunctionReturn(0);
+}
+
 
 /* end of time-independent quantities */
 
-//!! The functions below need to be called in  a specific order in our future function to compute the RHS
+//NOTE: The functions below need to be called in  a specific order in our future function to compute the RHS
 PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
 {
     PetscErrorCode ierr;
@@ -627,6 +697,22 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     PetscFunctionReturn(0);
 }
 
+static PetscScalar viscosity_mix( PetscScalar meltf )
+{
+    PetscScalar arg, fwt, log10visc, visc;
+
+    /* simple hyperbolic tan to get up and running */
+    /* need to code up function with skew */
+    arg = (1.0-meltf-F_THRESHOLD) / DF_TRANSITION;
+    fwt = 0.5 * ( 1.0 + tanh(arg) );
+
+    log10visc = fwt * LOG10VISC_SOL + (1.0 - fwt) * LOG10VISC_MEL;
+    visc = PetscPowScalar( 10.0, log10visc );
+
+    return visc;
+
+}
+
 PetscErrorCode set_matprop_and_flux( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -646,7 +732,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     pres = M->pressure_b;
 
     /* loop over all basic internal nodes */
-    ierr = VecGetOwnershipRange(M->pressure_b,&ilo_b,&ihi_b);CHKERRQ(ierr); //!! would be better to get these from the DM, but whatever for now
+    ierr = VecGetOwnershipRange(M->pressure_b,&ilo_b,&ihi_b);CHKERRQ(ierr); //TODO: would be better to get these from the DM, but whatever for now
     ilo = ilo_b == 0      ? 1          : ilo_b;
     ihi = ihi_b == NUMPTS ? NUMPTS - 1 : ihi_b;
 
@@ -767,7 +853,6 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       else{
         /* density */
 
-        // !!! Here and elsewhere, need to check that we have gotten all the arrays we use, since we pasted some in later!!!
         arr_rho[i] = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
         arr_rho[i] = 1.0 / arr_rho[i];
 
@@ -828,7 +913,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         arr_Jheat[i] = arr_Jcond[i] + arr_Jconv[i];
         arr_Jtot[i] = arr_Jheat[i];
 
-        // !! Need to clean up these declarations..
+        //TODO: Need to clean up these declarations..
         PetscScalar dfus = arr_fusion[i];
         PetscScalar kappah = arr_kappah[i];
         PetscScalar rho = arr_rho[i];
@@ -842,7 +927,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         arr_Jmix[i] = -pref * kappah * rho * arr_dphidr[i];
 
         /* gravitational separation */
-        // !! This all needs serious cleanup
+        // TODO: This all needs serious cleanup
         PetscScalar phi = arr_phi[i];
 
         PetscScalar cond1 = rhol / (11.993*rhos + rhol);
@@ -913,21 +998,6 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar viscosity_mix( PetscScalar meltf )
-{
-    PetscScalar arg, fwt, log10visc, visc;
-
-    /* simple hyperbolic tan to get up and running */
-    /* need to code up function with skew */
-    arg = (1.0-meltf-F_THRESHOLD) / DF_TRANSITION;
-    fwt = 0.5 * ( 1.0 + tanh(arg) );
-
-    log10visc = fwt * LOG10VISC_SOL + (1.0 - fwt) * LOG10VISC_MEL;
-    visc = PetscPowScalar( 10.0, log10visc );
-
-    return visc;
-
-}
 
 /* this is still needed for fusion curve derivative */
 PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
@@ -946,8 +1016,8 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
     dr = E->mesh.dx_s;
 
     ierr = VecGetOwnershipRange(in_s,&ilo_s,&ihi_s);CHKERRQ(ierr);
-    ilo = ilo_s ? 1 : ilo_s; // !!!! check 
-    ihi = ihi_s; // !!!! check
+    ilo = ilo_s ? 1 : ilo_s; // TODO: check 
+    ihi = ihi_s; // TODO: check
     ierr = VecGetArrayRead(in_s,&arr_in_s);CHKERRQ(ierr);
     ierr = VecGetArray(out_b,&arr_out_b);CHKERRQ(ierr);
     for(i=ilo; i<ihi; i++){
@@ -1089,7 +1159,7 @@ void set_interp1d( const char * filename, Interp1d *interp, int n )
     // fgets reads in string, sscanf processes it
     while(fgets(string, sizeof(string), fp) != NULL) {
         /* get column scalings from last line of header */
-        if( (i==HEAD-1) ){
+        if( i==HEAD-1 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
             sscanf( string, "%lf %lf", &xscale, &yscale );

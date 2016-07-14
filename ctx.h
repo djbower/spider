@@ -7,7 +7,6 @@
 #undef I
 
 #include "global_defs.h"
-#include "dataio.h"
 
 // !! Temp until we move the Ctx constructor and destructor to another file
 #include "ctx.h"
@@ -91,15 +90,6 @@ typedef struct _Ctx {
   DM       da_b,da_s;
 } Ctx;
 
-
-static PetscErrorCode aw_pressure( Vec, Vec);
-static PetscErrorCode aw_pressure_gradient( Vec, Vec);
-static PetscErrorCode mixing_length( Vec, Vec);
-static PetscErrorCode spherical_area( Vec, Vec);
-static PetscErrorCode spherical_volume( Vec, Vec);
-
-// !! These copied blindly - not sure if all needed
-static PetscErrorCode rhs( Vec, Ctx * );
 PetscErrorCode d_dr( Ctx *, Vec, Vec );
 PetscErrorCode free_memory_interp( Ctx * );
 PetscErrorCode set_capacitance( Ctx *, Vec );
@@ -111,13 +101,6 @@ PetscErrorCode set_time_independent( Ctx * );
 
 void set_interp2d( const char * filename, Interp2d *interp );
 void set_interp1d( const char * filename, Interp1d *interp, int n );
-
-static PetscErrorCode set_fusion( Ctx *E );
-static PetscErrorCode set_liquidus( Ctx *E );
-static PetscErrorCode set_solidus( Ctx *E );
-static PetscErrorCode set_mixed_phase( Ctx *E );
-static PetscErrorCode set_fusion_curve( Ctx *E );
-static PetscScalar viscosity_mix( PetscScalar meltf );
 
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar);
 
