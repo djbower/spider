@@ -63,6 +63,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
     ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
 
+    // !! Here and elsewhere, are we just getting lucky, getting away with global vectors?
+
     /* loop over staggered nodes except last node */
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
