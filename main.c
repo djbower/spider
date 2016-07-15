@@ -4,10 +4,6 @@ static char help[] ="Parallel magma ocean timestepper";
 
 #include "ctx.h"
 
-// !!!!!!!!! Global fix required to use DMDAVecGetArray, not VecGetArray..
-
-// TODO: Make sure to ensure this is valgrind clean
-
 // !! This RHS function needs to be checked - it probably has errors
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"
@@ -220,6 +216,16 @@ int main(int argc, char ** argv)
   set_initial_condition(&ctx);CHKERRQ(ierr); // NOTE: as usual, it's redundant to store the solution in the context as well but for now we do so for consistency
   ierr = VecCopy(ctx.solution.S_s,S_s);CHKERRQ(ierr);
 
+  {
+    PetscViewer viewer;
+    ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
+    ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
+    ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing S_s initial condition ***\n");CHKERRQ(ierr);
+    ierr = VecView(ctx.solution.S_s,viewer);CHKERRQ(ierr);
+    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+  }
+  
   /* Set up the Jacobian function (omitted for now) */
 
   /* Set up timestepper */
@@ -249,10 +255,17 @@ int main(int argc, char ** argv)
       those that will write to a file which we should be able
       to open with python.
   */
-#if 0
-  ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing solution S_s ***\n");CHKERRQ(ierr);
-  ierr = VecView(ctx.solution.S_s,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
-#endif
+  {
+    PetscViewer viewer;
+    ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
+    ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
+    ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing S_s ***\n");CHKERRQ(ierr);
+    ierr = VecView(ctx.solution.S_s,viewer);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing rhs_s ***\n");CHKERRQ(ierr);
+    ierr = VecView(ctx.solution.rhs_s,viewer);CHKERRQ(ierr);
+    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+  }
 
   /* Destroy data allocated in Ctx */
   free_memory_interp(&ctx);
