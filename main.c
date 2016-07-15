@@ -241,6 +241,7 @@ int main(int argc, char ** argv)
   ierr = VecView(ctx.solution.S_s,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
 
   /* Destroy data allocated in Ctx */
+  free_memory_interp(&ctx);
   ierr = DMDestroy(&ctx.da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx.da_b);CHKERRQ(ierr);
   for (i=0;i<NUMMESHVECS;++i){

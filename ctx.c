@@ -107,7 +107,7 @@ static PetscErrorCode spherical_volume( Vec radius, Vec volume )
     ierr = VecGetOwnershipRange(radius,&ilo,&ihi);CHKERRQ(ierr);
     ierr = VecGetArrayRead(radius,&arr_r);CHKERRQ(ierr);
     ierr = VecGetArray(volume,&arr_v);CHKERRQ(ierr);
-    for(i=ilo; i<ihi; ++i){
+    for(i=ilo; i<ihi-1; ++i){ // Note upper loop bound is adjusted
         arr_v[i] = PetscPowScalar(arr_r[i]/RADOUT,3.0) - PetscPowScalar(arr_r[i+1]/RADOUT,3.0);
         arr_v[i] *= 1.0 / 3.0;
     }
