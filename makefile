@@ -10,6 +10,8 @@ clean ::
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
+PETSC_CC_INCLUDES+=-I/opt/local/include
+
 #CFLAGS+= -ferror-limit=3
 
 GSL_LIB=-L/opt/local/lib -lgsl -lgslcblas
