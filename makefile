@@ -2,6 +2,8 @@ ALL: main
 
 .PHONY: ALL
 
+# TODO: add simple test against a ref output
+
 clean ::
 	rm -f *.o main
 

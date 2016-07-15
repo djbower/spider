@@ -75,6 +75,7 @@ typedef struct _Solution {
 
     Vec solutionVecsS[NUMSOLUTIONVECSS];
     Vec fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rhs_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s; 
+
 } Solution;
 
 /* A Context for the Solver */
@@ -88,6 +89,11 @@ typedef struct _Ctx {
   Mesh     mesh;
   Solution solution;
   DM       da_b,da_s;
+
+  /* "local" work vectors */
+  Vec work_local_s,work_local_b;
+
+  // TODO: flatten this all out
 } Ctx;
 
 PetscErrorCode d_dr( Ctx *, Vec, Vec );

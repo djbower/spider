@@ -4,6 +4,8 @@ static char help[] ="Parallel magma ocean timestepper";
 
 #include "ctx.h"
 
+// !!!!!!!!! Global fix required to use DMDAVecGetArray, not VecGetArray..
+
 // TODO: Make sure to ensure this is valgrind clean
 
 // !! This RHS function needs to be checked - it probably has errors
@@ -17,7 +19,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
   PetscScalar       *arr_rhs_s;
   const PetscScalar *arr_Etot,*arr_lhs_s;
   PetscMPIInt       rank,size;
-  PetscInt          i,ihi_s,ilo_s,ihi,ilo;
+  PetscInt          i,ihi_s,ilo_s,ihi,ilo,w_s;
+  DM                da_s = E->da_s, da_b=E->da_b;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -61,19 +64,20 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
     ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
 
     /* loop over staggered nodes except last node */
-    ierr = VecGetOwnershipRange(rhs_s,&ilo_s,&ihi_s);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
     ilo = ilo_s;
     ihi = ihi_s == NUMPTSS ? NUMPTSS -1 : ihi_s;
-    ierr = VecGetArray(rhs_s,&arr_rhs_s);CHKERRQ(ierr);
-    ierr = VecGetArrayRead(S->Etot,&arr_Etot);CHKERRQ(ierr);
-    ierr = VecGetArrayRead(S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,rhs_s,&arr_rhs_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->Etot,&arr_Etot);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
         arr_rhs_s[i] = arr_Etot[i+1] - arr_Etot[i];
         arr_rhs_s[i] /= arr_lhs_s[i];
     }
-    ierr = VecRestoreArray(rhs_s,&arr_rhs_s);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(S->Etot,&arr_Etot);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,rhs_s,&arr_rhs_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->Etot,&arr_Etot);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
 
 
     /* for last point, just cool by a constant factor
@@ -100,7 +104,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
     }
 
     /* Copy the rhs into the context, but we don't need this for anything
-       other than viewing/debugging */
+       other than viewing/debugging, and this could/should just be
+       a pointer copy */
     ierr = VecCopy(rhs_s,S->rhs_s);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
@@ -179,6 +184,8 @@ int main(int argc, char ** argv)
   ctx.solution.temp                = ctx.solution.solutionVecs[38];
   ctx.solution.visc                = ctx.solution.solutionVecs[39];
 
+  ierr = DMCreateLocalVector(ctx.da_b,&ctx.work_local_b);CHKERRQ(ierr);
+
   for (i=0;i<NUMSOLUTIONVECSS;++i){
     ierr = DMCreateGlobalVector(ctx.da_s,&(ctx.solution.solutionVecsS[i]));CHKERRQ(ierr);
   }
@@ -199,9 +206,11 @@ int main(int argc, char ** argv)
   ctx.solution.solidus_temp_s      = ctx.solution.solutionVecsS[14]; // TI
   ctx.solution.temp_s              = ctx.solution.solutionVecsS[15];
 
+  ierr = DMCreateLocalVector(ctx.da_s,&ctx.work_local_s);CHKERRQ(ierr);
+
   set_mesh(&ctx);
+
   set_time_independent(&ctx);
-  set_initial_condition(&ctx);
 
   /* Create a solution vector (S at the staggered nodes) and fill with an initial condition */
   ierr = DMCreateGlobalVector(ctx.da_s,&S_s);CHKERRQ(ierr); 
@@ -237,8 +246,10 @@ int main(int argc, char ** argv)
       those that will write to a file which we should be able
       to open with python.
   */
+#if 0
   ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing solution S_s ***\n");CHKERRQ(ierr);
   ierr = VecView(ctx.solution.S_s,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+#endif
 
   /* Destroy data allocated in Ctx */
   free_memory_interp(&ctx);
@@ -253,10 +264,11 @@ int main(int argc, char ** argv)
   for (i=0;i<NUMSOLUTIONVECS;++i){
     ierr = VecDestroy(&ctx.solution.solutionVecs[i]);CHKERRQ(ierr);
   }
+  ierr = VecDestroy(&ctx.work_local_b);CHKERRQ(ierr);
   for (i=0;i<NUMSOLUTIONVECSS;++i){
     ierr = VecDestroy(&ctx.solution.solutionVecsS[i]);CHKERRQ(ierr);
   }
-  // TODO: Destroy anything else
+  ierr = VecDestroy(&ctx.work_local_s);CHKERRQ(ierr);
   // TODO: move into a dedicated function in ctx.c
 
   /* Cleanup and finalize */
