@@ -103,10 +103,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
       ierr = VecSetValue(rhs_s,NUMPTSS-1,val2,INSERT_VALUES);
     }
 
-    /* Copy the rhs into the context, but we don't need this for anything
-       other than viewing/debugging, and this could/should just be
-       a pointer copy */
-    ierr = VecCopy(rhs_s,S->rhs_s);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(rhs_s);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(rhs_s);CHKERRQ(ierr);
+
+    /* copy to the Ctx for monitoring (only). This can be removed leater TODO */
+    ierr = VecCopy(rhs_s,E->solution.rhs_s);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
@@ -198,7 +199,7 @@ int main(int argc, char ** argv)
   ctx.solution.liquidus_s          = ctx.solution.solutionVecsS[6]; // TI
   ctx.solution.liquidus_temp_s     = ctx.solution.solutionVecsS[7]; // TI
   ctx.solution.phi_s               = ctx.solution.solutionVecsS[8];
-  ctx.solution.rhs_s               = ctx.solution.solutionVecsS[9];
+  ctx.solution.rhs_s               = ctx.solution.solutionVecsS[9]; 
   ctx.solution.rho_s               = ctx.solution.solutionVecsS[10];
   ctx.solution.S_s                 = ctx.solution.solutionVecsS[11];
   ctx.solution.solidus_s           = ctx.solution.solutionVecsS[12]; // TI
