@@ -707,7 +707,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
 
     // S->lhs_si = M->volume_si * S->rho_si * S->temp_si;
     ierr = VecPointwiseMult(S->lhs_s,M->volume_s,S->rho_s);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,S->rho_s);CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,S->temp_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
