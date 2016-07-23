@@ -33,6 +33,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
     /* loop over staggered nodes and populate E struct */
     set_capacitance( E, S_in );
 
+    /* DJB DEBUGGING.  SET_CAPACITANCE WORKS OK, AT LEAST FOR MELT
+       ONLY CASE (SINIT = 3000) */
+
     /* loop over basic (internal) nodes and populate E struct */
     set_matprop_and_flux( E );
 

@@ -4,7 +4,7 @@ static PetscErrorCode make_super_adiabatic( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
-    PetscScalar       fac=1.0,*arr_S_s,pres_b_last; // percent
+    PetscScalar       fac=0.01,*arr_S_s,pres_b_last; // percent
     const PetscScalar *arr_pres_b,*arr_pres_s;
     Vec               pres_b,pres_s;
     Mesh              *M;
@@ -891,85 +891,85 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
 
         /* viscosity */
         arr_visc[i] = viscosity_mix( arr_phi[i] );
-
-        /* other useful material properties */
-        /* kinematic viscosity */
-        arr_nu[i] = arr_visc[i] / arr_rho[i];
-
-        /* gravity * super-adiabatic temperature gradient */
-        arr_gsuper[i] = GRAVITY * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
-
-        /* eddy diffusivity */
-        PetscScalar kh,crit;
-        crit = 81.0 * PetscPowScalar(arr_nu[i],2);
-        crit /= 4.0 * arr_alpha[i] * PetscPowScalar(arr_mix_b[i],4);
-
-        if( arr_gsuper[i] < 0.0 ){
-          /* no convection, subadiabatic */
-          kh = 0.0;
-        } else if( arr_gsuper[i] > crit ){
-          /* inviscid scaling from Vitense (1953) */
-          kh = 0.25 * PetscPowScalar(arr_mix_b[i],2) * PetscSqrtScalar(arr_alpha[i]*arr_gsuper[i]);
-        } else{
-          /* viscous scaling */
-          kh = arr_alpha[i] * arr_gsuper[i] * PetscPowScalar(arr_mix_b[i],4) / (18.0*arr_nu[i]);
-        }
-        arr_kappah[i] = kh;
-
-        /* can now compute energy fluxes */
-
-        /* conductive heat flux */
-        arr_Jcond[i] = arr_temp[i] / arr_cp[i] * arr_dSdr[i] + arr_dTdrs[i];
-        arr_Jcond[i] *= -arr_cond[i];
-
-        /* convective heat flux */
-        arr_Jconv[i] = -arr_rho[i] * arr_temp[i] * arr_kappah[i] * arr_dSdr[i];
-
-        /* also resets arrays since these change every time rhs
-           is called */
-        arr_Jheat[i] = arr_Jcond[i] + arr_Jconv[i];
-        arr_Jtot[i] = arr_Jheat[i];
-
-        //TODO: Need to clean up these declarations..
-        PetscScalar dfus = arr_fusion[i];
-        PetscScalar kappah = arr_kappah[i];
-        PetscScalar rho = arr_rho[i];
-        PetscScalar rhol = arr_liquidus_rho[i];
-        PetscScalar rhos = arr_solidus_rho[i];
-        PetscScalar temp = arr_temp[i];
-
-        PetscScalar pref = temp * dfus;
-
-        /* convective mixing */
-        arr_Jmix[i] = -pref * kappah * rho * arr_dphidr[i];
-
-        /* gravitational separation */
-        // TODO: This all needs serious cleanup
-        PetscScalar phi = arr_phi[i];
-
-        PetscScalar cond1 = rhol / (11.993*rhos + rhol);
-        PetscScalar cond2 = rhol / (0.29624*rhos + rhol);
-        PetscScalar F;
-
-        if(phi<cond1){
-          F = 0.001*PetscPowScalar(rhos,2)*PetscPowScalar(phi,3)/(PetscPowScalar(rhol,2)*(1.0-phi));
-        } else if(phi>cond2){
-          F = 2.0/9.0 * phi * (1.0-phi);
-        } else{
-          F = 5.0/7.0*PetscPowScalar(rhos,4.5)*PetscPowScalar(phi,5.5)*(1.0-phi);
-          F /= PetscPowScalar( rhol+(rhos-rhol)*phi, 4.5 );
-        }
-
-        arr_Jgrav[i] = (rhol-rhos) * rhol * rhos / rho;
-        arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
-        arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
-
-        arr_Jmass[i] = arr_Jmix[i] + arr_Jgrav[i];
-        arr_Jtot[i] += arr_Jmass[i];
-
-        arr_Etot[i] = arr_Jtot[i] * arr_area_b[i];
-
       }
+
+      /* other useful material properties */
+      /* kinematic viscosity */
+      arr_nu[i] = arr_visc[i] / arr_rho[i];
+
+      /* gravity * super-adiabatic temperature gradient */
+      arr_gsuper[i] = GRAVITY * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
+
+      /* eddy diffusivity */
+      PetscScalar kh,crit;
+      crit = 81.0 * PetscPowScalar(arr_nu[i],2);
+      crit /= 4.0 * arr_alpha[i] * PetscPowScalar(arr_mix_b[i],4);
+
+      if( arr_gsuper[i] < 0.0 ){
+        /* no convection, subadiabatic */
+        kh = 0.0;
+      } else if( arr_gsuper[i] > crit ){
+        /* inviscid scaling from Vitense (1953) */
+        kh = 0.25 * PetscPowScalar(arr_mix_b[i],2) * PetscSqrtScalar(arr_alpha[i]*arr_gsuper[i]);
+      } else{
+        /* viscous scaling */
+        kh = arr_alpha[i] * arr_gsuper[i] * PetscPowScalar(arr_mix_b[i],4) / (18.0*arr_nu[i]);
+      }
+      arr_kappah[i] = kh;
+
+      /* can now compute energy fluxes */
+
+      /* conductive heat flux */
+      arr_Jcond[i] = arr_temp[i] / arr_cp[i] * arr_dSdr[i] + arr_dTdrs[i];
+      arr_Jcond[i] *= -arr_cond[i];
+
+      /* convective heat flux */
+      arr_Jconv[i] = -arr_rho[i] * arr_temp[i] * arr_kappah[i] * arr_dSdr[i];
+
+      /* also resets arrays since these change every time rhs
+         is called */
+      arr_Jheat[i] = arr_Jcond[i] + arr_Jconv[i];
+      arr_Jtot[i] = arr_Jheat[i];
+
+      //TODO: Need to clean up these declarations..
+      PetscScalar dfus = arr_fusion[i];
+      PetscScalar kappah = arr_kappah[i];
+      PetscScalar rho = arr_rho[i];
+      PetscScalar rhol = arr_liquidus_rho[i];
+      PetscScalar rhos = arr_solidus_rho[i];
+      PetscScalar temp = arr_temp[i];
+
+      PetscScalar pref = temp * dfus;
+
+      /* convective mixing */
+      arr_Jmix[i] = -pref * kappah * rho * arr_dphidr[i];
+
+      /* gravitational separation */
+      // TODO: This all needs serious cleanup
+      PetscScalar phi = arr_phi[i];
+
+      PetscScalar cond1 = rhol / (11.993*rhos + rhol);
+      PetscScalar cond2 = rhol / (0.29624*rhos + rhol);
+      PetscScalar F;
+
+      if(phi<cond1){
+        F = 0.001*PetscPowScalar(rhos,2)*PetscPowScalar(phi,3)/(PetscPowScalar(rhol,2)*(1.0-phi));
+      } else if(phi>cond2){
+        F = 2.0/9.0 * phi * (1.0-phi);
+      } else{
+        F = 5.0/7.0*PetscPowScalar(rhos,4.5)*PetscPowScalar(phi,5.5)*(1.0-phi);
+        F /= PetscPowScalar( rhol+(rhos-rhol)*phi, 4.5 );
+      }
+
+      arr_Jgrav[i] = (rhol-rhos) * rhol * rhos / rho;
+      arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
+      arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
+
+      arr_Jmass[i] = arr_Jmix[i] + arr_Jgrav[i];
+      arr_Jtot[i] += arr_Jmass[i];
+
+      arr_Etot[i] = arr_Jtot[i] * arr_area_b[i];
+
     }
     ierr = DMDAVecRestoreArray(    da_b,S->dphidr,&arr_dphidr);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
