@@ -89,6 +89,7 @@ typedef struct _Ctx {
   Mesh     mesh;
   Solution solution;
   DM       da_b,da_s;
+  PetscScalar BC_BOT_FAC; // core-cooling boundary condition
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

@@ -68,7 +68,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
 
       /* energy flux */
       ierr = VecGetValues(S->Jtot,1,&ind,&val);CHKERRQ(ierr);
-      val *= BC_BOT_FAC;
+      val *= E->BC_BOT_FAC;
       ierr = VecSetValue(S->Jtot,ind2,val,INSERT_VALUES);CHKERRQ(ierr);
 
       /* energy flow */

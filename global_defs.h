@@ -56,11 +56,6 @@ static const PetscScalar EXPBC = 1.6357699211550170;
 static const PetscScalar SIGMA = 5.670373E-8; // Stefan-Boltzmann constant
 static const PetscScalar TEQM = 273.0; // equilibrium temp of planet
 
-/* for core-cooling */
-/* DJB dangerous because it depends on the mesh!
-   this is for 100 (basic) nodes */
-static const PetscScalar BC_BOT_FAC = 1.00135428116;
-
 /* end of constants */
 
 /* datafile locations and material-specific constants */

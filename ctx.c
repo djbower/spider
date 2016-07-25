@@ -610,18 +610,20 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-/* DAN WORKING HERE */
 static PetscErrorCode set_core_cooling( Ctx *E )
 {
     PetscErrorCode    ierr;
-    PetscInt          i,ilo,ihi,w;
     const PetscScalar mcore=1.9352467333195415e+24; // kg
     const PetscScalar Tfac_core_avg=1.147;
     const PetscScalar cp_core=880.0; // # J/K/kg
     const PetscScalar rho_cmb=5500.0; // kg/m^3
     const PetscScalar cp_cmb=1200.0; // J/K/kg
+    const PetscInt ix0 = 0; // index of first node
+    const PetscInt ix = NUMPTS-1; // index of last basic node
+    const PetscInt ix2 = NUMPTS-2; // index of penultimate basic node
     PetscScalar       fac,radi,rado,vol,area1,area2;
     PetscMPIInt       rank, size;
+
     Mesh              *M;
 
     PetscFunctionBeginUser;
@@ -634,24 +636,20 @@ static PetscErrorCode set_core_cooling( Ctx *E )
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
 
     if (rank == size-1 ){
-        const PetscInt ix = NUMPTS-1; // index of last basic node
-        ierr = VecGetValues( M->area_b
+        ierr = VecGetValues( M->area_b,1,&ix,&area1);CHKERRQ(ierr);
+        ierr = VecGetValues( M->area_b,1,&ix2,&area2);CHKERRQ(ierr);
+        ierr = VecGetValues( M->radius_b,1,&ix,&radi);CHKERRQ(ierr);
+        ierr = VecGetValues( M->radius_b,1,&ix0,&rado);CHKERRQ(ierr);
+        ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr);
+        fac = 4.0*M_PI*pow(rado, 3.0) * vol;
+        fac *= rho_cmb * cp_cmb;
+        fac /= cp_core * mcore * Tfac_core_avg;
+        fac += 1.0;
+        fac = area2 / ( area1 * fac );
+        E->BC_BOT_FAC = fac;
+    }
 
-
-
-    ind = NUMPTS-1; // index of last basic node
-    ind2 = NUMPTSS-1; // index of last staggered node
-    radi = M->radius_b[ind];
-    rado = M->radius_b[0];
-    vol = M->volume_s[ind2];
-    area1 = M->area_b[ind]; // cmb area
-    area2 = M->area_b[ind-1]; // above cmb area
-
-    fac = 4.0*PI*pow(rado, 3.0)* vol;
-    fac *= rho_cmb * cp_cmb;
-    fac /= cp_core * mcore * Tfac_core_avg;
-    fac += 1.0;
-    fac = area2 / ( area1 * fac );
+    PetscFunctionReturn(0);
 }
 
 PetscErrorCode set_time_independent( Ctx *E )
