@@ -38,7 +38,7 @@
 //static const int SINIT = 2500.0;
 /* this initial condition spans all melt fractions and is useful
    for testing */
-static const int SINIT = 2100.0;
+static const int SINIT = 2500.0;
 
 /* constants */
 static const PetscScalar RADOUT = 6371000.0; // m
