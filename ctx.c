@@ -566,12 +566,12 @@ static PetscErrorCode set_fusion_curve( Ctx *E )
     S = &E->solution;
 
     /* basic nodes fusion_curve = solidus + 0.5*fusion*/
-    ierr = VecWAXPY(S->fusion_curve,0.5,S->fusion,S->solidus);
-    ierr = VecWAXPY(S->fusion_curve_temp,0.5,S->fusion_temp,S->solidus_temp);
+    ierr = VecWAXPY(S->fusion_curve,0.5,S->fusion,S->solidus);CHKERRQ(ierr);
+    ierr = VecWAXPY(S->fusion_curve_temp,0.5,S->fusion_temp,S->solidus_temp);CHKERRQ(ierr);
 
     /* staggered nodes */
-    ierr = VecWAXPY(S->fusion_curve_s,0.5,S->fusion_s,S->solidus_s);
-    ierr = VecWAXPY(S->fusion_curve_temp_s,0.5,S->fusion_temp_s,S->solidus_temp_s);
+    ierr = VecWAXPY(S->fusion_curve_s,0.5,S->fusion_s,S->solidus_s);CHKERRQ(ierr);
+    ierr = VecWAXPY(S->fusion_curve_temp_s,0.5,S->fusion_temp_s,S->solidus_temp_s);CHKERRQ(ierr);
 
     d_dr( E, S->fusion_curve_s,      S->dfusdr      );
     d_dr( E, S->fusion_curve_temp_s, S->dfusdr_temp );
@@ -609,6 +609,51 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+
+/* DAN WORKING HERE */
+static PetscErrorCode set_core_cooling( Ctx *E )
+{
+    PetscErrorCode    ierr;
+    PetscInt          i,ilo,ihi,w;
+    const PetscScalar mcore=1.9352467333195415e+24; // kg
+    const PetscScalar Tfac_core_avg=1.147;
+    const PetscScalar cp_core=880.0; // # J/K/kg
+    const PetscScalar rho_cmb=5500.0; // kg/m^3
+    const PetscScalar cp_cmb=1200.0; // J/K/kg
+    PetscScalar       fac,radi,rado,vol,area1,area2;
+    PetscMPIInt       rank, size;
+    Mesh              *M;
+
+    PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    printf("set_core_cooling:\n");
+#endif
+    M = &E->mesh;
+
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+
+    if (rank == size-1 ){
+        const PetscInt ix = NUMPTS-1; // index of last basic node
+        ierr = VecGetValues( M->area_b
+
+
+
+    ind = NUMPTS-1; // index of last basic node
+    ind2 = NUMPTSS-1; // index of last staggered node
+    radi = M->radius_b[ind];
+    rado = M->radius_b[0];
+    vol = M->volume_s[ind2];
+    area1 = M->area_b[ind]; // cmb area
+    area2 = M->area_b[ind-1]; // above cmb area
+
+    fac = 4.0*PI*pow(rado, 3.0)* vol;
+    fac *= rho_cmb * cp_cmb;
+    fac /= cp_core * mcore * Tfac_core_avg;
+    fac += 1.0;
+    fac = area2 / ( area1 * fac );
+}
+
 PetscErrorCode set_time_independent( Ctx *E )
 {
   
@@ -624,7 +669,9 @@ PetscErrorCode set_time_independent( Ctx *E )
     set_fusion( E );
     set_fusion_curve( E );
     set_mixed_phase( E );
-    
+
+    set_core_cooling( E );
+
     PetscFunctionReturn(0);
 }
 
