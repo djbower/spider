@@ -11,11 +11,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
 {
   PetscErrorCode ierr;
   Ctx               *E = (Ctx*) ptr;
+  Mesh              *M = &E->mesh;
   Solution          *S = &E->solution;
   PetscScalar       *arr_rhs_s;
   const PetscScalar *arr_Etot,*arr_lhs_s;
   PetscMPIInt       rank,size;
-  PetscInt          i,ihi_s,ilo_s,ihi,ilo,w_s;
+  PetscInt          i,ihi,ilo,w_s;
   DM                da_s = E->da_s, da_b=E->da_b;
 
   PetscFunctionBeginUser;
@@ -32,9 +33,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
 
     /* loop over staggered nodes and populate E struct */
     set_capacitance( E, S_in );
-
-    /* DJB DEBUGGING.  SET_CAPACITANCE WORKS OK, AT LEAST FOR MELT
-       ONLY CASE (SINIT = 3000) */
 
     /* loop over basic (internal) nodes and populate E struct */
     set_matprop_and_flux( E );
@@ -57,6 +55,29 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
       ierr = VecSetValue(S->Etot,0,val,INSERT_VALUES);CHKERRQ(ierr);
       ierr = VecSetValue(S->Jtot,0,val,INSERT_VALUES);CHKERRQ(ierr);
     }
+
+    /* for last point, just cool by a constant factor */
+    /* DJB note that BC_BOT_FAC is mesh dependent - to fix */
+    // NOTE: here, we somewhat dangerously assume that the last proc has the last point 
+    if (rank == size-1) {
+      PetscScalar val, val2;
+      PetscInt ind, ind2;
+
+      ind = NUMPTS-2; // penultimate node index
+      ind2 = NUMPTS-1; // last node index
+
+      /* energy flux */
+      ierr = VecGetValues(S->Jtot,1,&ind,&val);CHKERRQ(ierr);
+      val *= BC_BOT_FAC;
+      ierr = VecSetValue(S->Jtot,ind2,val,INSERT_VALUES);CHKERRQ(ierr);
+
+      /* energy flow */
+      ierr = VecGetValues(M->area_b,1,&ind2,&val2);CHKERRQ(ierr);
+      val2 *= val;
+      ierr = VecSetValue(S->Etot,ind2,val2,INSERT_VALUES);CHKERRQ(ierr);
+
+    }
+
     ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
     ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
@@ -65,10 +86,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
     // !! Here and elsewhere, are we just getting lucky, getting away with global vectors?
 
     /* loop over staggered nodes except last node */
-    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
-    ihi_s = ilo_s + w_s;
-    ilo = ilo_s;
-    ihi = ihi_s == NUMPTSS ? NUMPTSS -1 : ihi_s;
+    ierr = DMDAGetCorners(da_s,&ilo,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi = ilo + w_s;
     ierr = DMDAVecGetArray(da_s,rhs_s,&arr_rhs_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->Etot,&arr_Etot);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
@@ -80,30 +99,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
     ierr = DMDAVecRestoreArrayRead(da_b,S->Etot,&arr_Etot);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
 
-
-    /* for last point, just cool by a constant factor
-       if CMBBC = 0.0 --> zero heat flux CMB
-       if CMBBC = 1.0 --> isothermal CMB
-       if 0.0 < CMBBC < 1.0 CMB is cooling proportional to
-           time-dependent energy requirements at base of
-           magma ocean */
-
-    // NOTE: here, we somewhat dangerously assume that the last proc has the last point 
-    if (rank == size-1) {
-      PetscScalar val,val2;
-      PetscInt ind;
-
-      ind = NUMPTS-2;
-      ierr = VecGetValues(S->Etot,1,&ind,&val);CHKERRQ(ierr);
-      val *= CMBBC;
-      ierr = VecSetValue(S->Etot,NUMPTS-1,val,INSERT_VALUES);CHKERRQ(ierr);
-
-      ind = NUMPTSS-1;
-      ierr = VecGetValues(S->lhs_s,1,&ind,&val2);CHKERRQ(ierr);
-      val2 = ((1.0 - CMBBC)*val)/val2;
-      ierr = VecSetValue(rhs_s,NUMPTSS-1,val2,INSERT_VALUES);
-    }
-
+    /* rhs here */
     ierr = VecAssemblyBegin(rhs_s);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(rhs_s);CHKERRQ(ierr);
 
