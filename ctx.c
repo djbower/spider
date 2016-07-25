@@ -481,9 +481,9 @@ static PetscErrorCode set_solidus( Ctx *E )
     printf("set_solidus:\n");
 #endif
     S = &E->solution;
-    I = &E->melt_prop.solidus;
-    IR = &E->melt_prop.rho;
-    IT = &E->melt_prop.temp;
+    I = &E->solid_prop.solidus;
+    IR = &E->solid_prop.rho;
+    IT = &E->solid_prop.temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
@@ -596,9 +596,10 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
     M = &E->mesh;
     S = &E->solution;
 
-    /* dTdrs_mix = dfusdr * (fusion_temp/fusion) + dfusdr_temp */
+    /* dTdrs_mix = -dfusdr * (fusion_temp/fusion) + dfusdr_temp */
     ierr = VecPointwiseDivide(S->dTdrs_mix,S->fusion_temp,S->fusion);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->dTdrs_mix,S->dTdrs_mix,S->dfusdr);CHKERRQ(ierr);
+    ierr = VecScale( S->dTdrs_mix, -1.0 );
     ierr = VecAXPY(S->dTdrs_mix,1.0,S->dfusdr_temp);CHKERRQ(ierr);
 
     ierr = VecPointwiseMult(S->dTdPs_mix,S->dTdrs_mix,M->dPdr_b);CHKERRQ(ierr);
