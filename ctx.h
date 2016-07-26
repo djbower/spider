@@ -9,9 +9,6 @@
 
 #include "global_defs.h"
 
-// !! Temp until we move the Ctx constructor and destructor to another file
-#include "ctx.h"
-
 /* common structures */
 
 /* this structure has an x and y array size equal to NLS */
@@ -81,10 +78,6 @@ typedef struct _Solution {
 
 /* A Context for the Solver */
 typedef struct _Ctx {
-  // Here we essentially copy what is in the All_variables field
-  // The items in the mesh and solution sub-structs there need to be replaced with versions
-  //   based on vectors (we don't worry about AoS vs SoA at this point)
-  //..
   Lookup   melt_prop;
   Lookup   solid_prop;
   Mesh     mesh;
@@ -97,6 +90,9 @@ typedef struct _Ctx {
 
   // TODO: flatten this all out
 } Ctx;
+
+PetscErrorCode setup_ctx(Ctx *);
+PetscErrorCode destroy_ctx(Ctx *);
 
 PetscErrorCode d_dr( Ctx *, Vec, Vec );
 PetscErrorCode free_memory_interp( Ctx * );
