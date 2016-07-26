@@ -21,7 +21,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    printf("rhs:\n"); // TODO: replace all printf with PetscPrintf
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"rhs:\n");CHKERRQ(ierr);
 #endif
 
     MPI_Comm_rank(PETSC_COMM_WORLD,&rank);

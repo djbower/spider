@@ -338,23 +338,12 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 
 void free_interp1d( Interp1d *I )
 {
-
-#if (defined VERBOSE)
-    printf( "free_interp1d:\n" );
-#endif
-
     gsl_interp_free( I->interp );
     gsl_interp_accel_free( I->acc );
-
 }
 
 void free_interp2d( Interp2d *I )
 {
-
-#if (defined VERBOSE)
-    printf( "free_interp2d:\n" );
-#endif
-
     gsl_spline2d_free( I->interp );
     gsl_interp_accel_free( I->xacc );
     gsl_interp_accel_free( I->yacc );
@@ -364,10 +353,6 @@ PetscErrorCode free_memory_interp( Ctx *E )
 {
     PetscFunctionBeginUser;
     /* free memory allocated by interpolation functions */
-
-#if (defined VERBOSE)
-    printf( "free_memory_interp:\n" );
-#endif
 
     /* liquidus and solidus lookups */
     free_interp1d( &E->solid_prop.liquidus );
@@ -390,17 +375,12 @@ PetscErrorCode free_memory_interp( Ctx *E )
     free_interp2d( &E->melt_prop.temp );
 
     PetscFunctionReturn(0);
-
 }
 
 /* time-independent quantities */
 
 static PetscErrorCode set_liquidus( Ctx *E )
 {
-#if (defined VERBOSE)
-    printf("set_liquidus:\n");
-#endif
-
     PetscErrorCode ierr;
     PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_s,w_b;
     DM             da_s=E->da_s, da_b=E->da_b;
@@ -411,8 +391,11 @@ static PetscErrorCode set_liquidus( Ctx *E )
     Solution       *S;
     Interp2d       *IR, *IT;
 
-
     PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_liquidus:\n");CHKERRQ(ierr);
+#endif
+
     S = &E->solution;
     I = &E->melt_prop.liquidus;
     IR = &E->melt_prop.rho;
@@ -623,7 +606,7 @@ static PetscErrorCode set_core_cooling( Ctx *E )
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    printf("set_core_cooling:\n");
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_core_cooling:\n");CHKERRQ(ierr);
 #endif
     M = &E->mesh;
 
@@ -1137,12 +1120,10 @@ PetscScalar combine_matprop( PetscScalar weight, PetscScalar mat1, PetscScalar m
 
 }
 
-void set_interp2d( const char * filename, Interp2d *interp )
+PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 {
-#if (defined VERBOSE)
-    printf("set_interp2d:\n");
-#endif
 
+    PetscErrorCode ierr;
     FILE *fp;
     size_t i=0, j=0, k=0;
     char string[100];
@@ -1150,6 +1131,10 @@ void set_interp2d( const char * filename, Interp2d *interp )
     PetscScalar xa[NX], ya[NY], za[NX*NY];
     PetscScalar xscale, yscale, zscale;
 
+    PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp2d:\n");CHKERRQ(ierr);
+#endif
     if (sizeof(PetscScalar) != sizeof(double)){
       perror("PetscScalar must be double to use the dataio functions here");
       exit(-1);
@@ -1217,23 +1202,26 @@ void set_interp2d( const char * filename, Interp2d *interp )
     interp->xacc = xacc;
     interp->yacc = yacc;
 
+    PetscFunctionReturn(0);
 }
 
-void set_interp1d( const char * filename, Interp1d *interp, int n )
+PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, int n )
 {
-#if (defined VERBOSE)
-    printf("set_interp1d:\n");
-#endif
 
+    PetscErrorCode ierr;
     FILE *fp;
     size_t i=0;
     char string[100];
     PetscScalar x, y, xscale, yscale;
     PetscScalar xa[n], ya[n];
 
+    PetscFunctionBeginUser;
+
+#if (defined VERBOSE)
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp1d:\n");CHKERRQ(ierr);
+#endif
     if (sizeof(PetscScalar) != sizeof(double)){
-      perror("PetscScalar must be double to use the dataio functions here");
-      exit(-1);
+      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"PetscScalar must be double to use the dataio functions here");
     }
 
     /* linear interpolation */
@@ -1243,9 +1231,8 @@ void set_interp1d( const char * filename, Interp1d *interp, int n )
 
     fp = fopen( filename, "r" );
 
-    if(fp==NULL) {
-        perror("Error opening file.\n");
-        exit(-1);
+    if (!fp) {
+      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file");
     }   
 
     // fgets reads in string, sscanf processes it
@@ -1266,11 +1253,6 @@ void set_interp1d( const char * filename, Interp1d *interp, int n )
 
     fclose( fp );
 
-    /* for debugging */
-    /*for (i=0; i<NLS; i++ ){
-        printf("%lu %f %f\n", i, xa[i], ya[i]);
-    }*/
-
     gsl_interp_init( interpolation, xa, ya, n );
 
     // I think this is the correct way of copying an array
@@ -1284,4 +1266,5 @@ void set_interp1d( const char * filename, Interp1d *interp, int n )
     interp->interp = interpolation;
     interp->acc = acc;
 
+    PetscFunctionReturn(0);
 }
