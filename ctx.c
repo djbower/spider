@@ -613,11 +613,6 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
 static PetscErrorCode set_core_cooling( Ctx *E )
 {
     PetscErrorCode    ierr;
-    const PetscScalar mcore=1.9352467333195415e+24; // kg
-    const PetscScalar Tfac_core_avg=1.147;
-    const PetscScalar cp_core=880.0; // # J/K/kg
-    const PetscScalar rho_cmb=5500.0; // kg/m^3
-    const PetscScalar cp_cmb=1200.0; // J/K/kg
     const PetscInt ix0 = 0; // index of first node
     const PetscInt ix = NUMPTS-1; // index of last basic node
     const PetscInt ix2 = NUMPTS-2; // index of penultimate basic node
@@ -642,8 +637,8 @@ static PetscErrorCode set_core_cooling( Ctx *E )
         ierr = VecGetValues( M->radius_b,1,&ix0,&rado);CHKERRQ(ierr);
         ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr);
         fac = 4.0*M_PI*pow(rado, 3.0) * vol;
-        fac *= rho_cmb * cp_cmb;
-        fac /= cp_core * mcore * Tfac_core_avg;
+        fac *= RHO_CMB * CP_CMB;
+        fac /= CP_CORE * MCORE * TFAC_CORE_AVG;
         fac += 1.0;
         fac = area2 / ( area1 * fac );
         E->BC_BOT_FAC = fac;

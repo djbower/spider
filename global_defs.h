@@ -56,6 +56,13 @@ static const PetscScalar EXPBC = 1.6357699211550170;
 static const PetscScalar SIGMA = 5.670373E-8; // Stefan-Boltzmann constant
 static const PetscScalar TEQM = 273.0; // equilibrium temp of planet
 
+/* for core-cooling boundary condition at the bottom surface */
+static const PetscScalar MCORE = 1.9352467333195415E24; // kg
+static const PetscScalar TFAC_CORE_AVG = 1.147;
+static const PetscScalar CP_CORE = 880.0; // # J/K/kg
+static const PetscScalar RHO_CMB = 5500.0; // kg/m^3
+static const PetscScalar CP_CMB = 1200.0; // J/K/kg
+
 /* end of constants */
 
 /* datafile locations and material-specific constants */
