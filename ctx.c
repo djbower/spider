@@ -22,6 +22,21 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,NUMPTS,dof,stencilWidth,NULL,&ctx->da_b);CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,NUMPTSS,dof,stencilWidth,NULL,&ctx->da_s);CHKERRQ(ierr);
 
+#if (defined DEBUGOUTPUT)
+  {
+    PetscInt ilo_b,w_b,ihi_b,ilo_s,w_s,ihi_s;
+    PetscMPIInt rank;
+
+    ierr = DMDAGetCorners(ctx->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+    ierr = DMDAGetCorners(ctx->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_SELF,"[%d] index ranges b:%d<=i<%d, s:%d<=i<%d\n",rank,ilo_b,ihi_b,ilo_s,ihi_s);CHKERRQ(ierr);
+  }
+#endif
+
+
   // TODO (maybe): PETSc-fy this more by getting rid of the NUMPTS and NUMPTSS parameters and instead letting the DMDAs themselves define this information (hence allowing more command-line control)
 
   /* Continue to initialize context with distributed data */
@@ -114,6 +129,7 @@ PetscErrorCode destroy_ctx(Ctx* ctx)
   PetscInt       i;
 
   PetscFunctionBeginUser;
+
   /* Destroy data allocated in Ctx */
   free_memory_interp(ctx);
   ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
@@ -230,30 +246,34 @@ static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode spherical_volume(DM da_b, DM da_s, Vec radius, Vec volume )
+static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
 {
     /* non-dimensional volume.  Not sure this really matters, but it
        would seem that keeping these scalings close to 1.0 is 
        preferred for numerical accuracy? */
 
     PetscErrorCode    ierr;
-    PetscScalar       *arr_v;
-    const PetscScalar *arr_r;
-    PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi;
+    PetscScalar       *arr_volume;
+    const PetscScalar *arr_radius;
+    PetscInt          i,ilo_s,ihi_s,w_s,ilo,ihi;
+    DM                da_b=E->da_b,da_s=E->da_s;
+    Vec               radius_local=E->work_local_b;
 
     PetscFunctionBeginUser;
-    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b;
-    ilo = ilo_b; 
-    ihi = ihi_b - 1;
-    ierr = DMDAVecGetArrayRead(da_b,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s,volume,&arr_v);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
+    ilo = ilo_s; 
+    ihi = ihi_s;
+    ierr = DMGlobalToLocalBegin(da_b,radius,INSERT_VALUES,radius_local);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(da_b,radius,INSERT_VALUES,radius_local);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,radius_local,&arr_radius);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,volume,&arr_volume);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        arr_v[i] = PetscPowScalar(arr_r[i]/RADOUT,3.0) - PetscPowScalar(arr_r[i+1]/RADOUT,3.0);
-        arr_v[i] *= 1.0 / 3.0;
+        arr_volume[i] = PetscPowScalar(arr_radius[i]/RADOUT,3.0) - PetscPowScalar(arr_radius[i+1]/RADOUT,3.0);
+        arr_volume[i] *= 1.0 / 3.0;
     }
-    ierr = DMDAVecRestoreArrayRead(da_b,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_s,volume,&arr_v);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,radius_local,&arr_radius);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,volume,&arr_volume);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -325,9 +345,6 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad )
 
 PetscErrorCode set_mesh( Ctx *E)
 {
-#if (defined VERBOSE)
-    printf( "set_mesh:\n" );
-#endif
 
     PetscErrorCode ierr;
     PetscScalar    *arr;
@@ -336,6 +353,9 @@ PetscErrorCode set_mesh( Ctx *E)
     DM             da_b=E->da_b, da_s=E->da_s;
 
     PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_mesh:\n");CHKERRQ(ierr);
+#endif
 
     M = &E->mesh;
 
@@ -398,8 +418,8 @@ PetscErrorCode set_mesh( Ctx *E)
     spherical_area( da_b, M->radius_b, M->area_b);
 
     /* volume of spherical cells, without 4*pi term */
-    /* and now non-dimenisonal */
-    spherical_volume( da_b, da_s, M->radius_b, M->volume_s);
+    /* and now non-dimensional */
+    spherical_volume( E, M->radius_b, M->volume_s);
 
     /* mixing length is minimum distance from boundary */
     mixing_length( da_b, M->radius_b, M->mix_b);
@@ -758,14 +778,11 @@ static PetscErrorCode set_core_cooling( Ctx *E )
     }
     ierr = MPI_Bcast(&rado,1,MPIU_SCALAR,0,PETSC_COMM_WORLD);CHKERRQ(ierr);
 
+    /* Assume that the last rank contains the last two points */
     if (rank == size-1 ){
         ierr = VecGetValues( M->area_b,1,&ix,&area1);CHKERRQ(ierr);
         ierr = VecGetValues( M->area_b,1,&ix2,&area2);CHKERRQ(ierr);
         ierr = VecGetValues( M->radius_b,1,&ix,&radi);CHKERRQ(ierr);
-       
-        // debug
-        ierr = PetscPrintf(PETSC_COMM_SELF,"^^^^^ rad0 = %g\n",rado);CHKERRQ(ierr);
-
         ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr);
         fac = 4.0*M_PI*PetscPowScalar(rado, 3.0) * vol;
         fac *= RHO_CMB * CP_CMB;
@@ -911,6 +928,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     const PetscScalar *arr_S_s,*arr_phi_s,*arr_solidus,*arr_fusion,*arr_pres,*arr_area_b,*arr_dPdr_b,*arr_liquidus_rho,*arr_solidus_rho,*arr_cp_mix,*arr_dTdrs_mix,*arr_liquidus_temp,*arr_solidus_temp,*arr_fusion_rho,*arr_fusion_temp,*arr_mix_b;
     Mesh              *M;
     Solution          *S;
+    Vec               S_s_local,phi_s_local;
 
     PetscFunctionBeginUser;
     M = &E->mesh;
@@ -919,6 +937,10 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     dr = M->dx_s;
     pres = M->pressure_b;
 
+    /* Create some local vectors for the staggered grid*/
+    ierr = DMCreateLocalVector(da_s,&S_s_local);CHKERRQ(ierr);
+    ierr = DMCreateLocalVector(da_s,&phi_s_local);CHKERRQ(ierr);
+
     /* loop over all basic internal nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
@@ -926,7 +948,9 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ihi = ihi_b == NUMPTS ? NUMPTS - 1 : ihi_b;
 
     ierr = DMDAVecGetArray(    da_b,S->dphidr,&arr_dphidr);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalBegin(da_s,S->S_s,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(da_s,S->S_s,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S_s_local,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->phi,&arr_phi);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->fusion,&arr_fusion);CHKERRQ(ierr);
@@ -964,7 +988,9 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = DMDAVecGetArray(    da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->Jmass,&arr_Jmass);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalBegin(da_s,S->phi_s,INSERT_VALUES,phi_s_local);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(da_s,S->phi_s,INSERT_VALUES,phi_s_local);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,phi_s_local,&arr_phi_s);CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){ // Note that these correspond to basic nodes being updated, but we also assume an ordering on the staggered nodes!
 
@@ -1184,6 +1210,9 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
 
+    ierr = VecDestroy(&S_s_local);CHKERRQ(ierr);
+    ierr = VecDestroy(&phi_s_local);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
@@ -1212,6 +1241,8 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
 #endif
     dr = E->mesh.dx_s;
 
+    // !! This seems suspicious. If we are computing on the basic nodes, 
+    //     we should be looping over those indices, right?
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
     ilo = ilo_s==0 ? 1 : ilo_s; 
@@ -1224,26 +1255,23 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
     //       and scatter to them in any cases like this one where
     //      we might want an off-processor value (not actually that many places)
     //       We need to do something similar to this in any other places that might be problematic:
-    // !!!!!!!!!!!!!!!!!!!
+    //
+    // We also need to be extremely careful when we are doing operations that 
+    // involve both DMDAs, even if no "i+1" or "i-1" appears in the loop. 
+    // We have tried to mark these cases as those where the
+    // indices are not ilo_s, ihi_s, but instead ilo and ihi
+    // !!
 
     /* Scatter to local vectors, since we may require potentially off-processor ghost values */
-    ierr = DMGlobalToLocalBegin(da_b,out_b,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
-    ierr = DMGlobalToLocalEnd(da_b,out_b,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
     ierr = DMGlobalToLocalBegin(da_s,in_s,INSERT_VALUES,E->work_local_s);CHKERRQ(ierr);
     ierr = DMGlobalToLocalEnd(da_s,in_s,INSERT_VALUES,E->work_local_s);CHKERRQ(ierr);
-
     ierr = DMDAVecGetArrayRead(da_s,E->work_local_s,&arr_in_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_b,E->work_local_b,&arr_out_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,out_b,&arr_out_b);CHKERRQ(ierr);
     for(i=ilo; i<ihi; i++){
         arr_out_b[i] = 1.0/dr * ( arr_in_s[i]-arr_in_s[i-1] );
     }
     ierr = DMDAVecRestoreArrayRead(da_s,E->work_local_s,&arr_in_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_b,E->work_local_b,&arr_out_b);CHKERRQ(ierr);
-
-    ierr = DMLocalToGlobalBegin(da_b,E->work_local_b,INSERT_VALUES,out_b);CHKERRQ(ierr);
-    ierr = DMLocalToGlobalEnd(da_b,E->work_local_b,INSERT_VALUES,out_b);CHKERRQ(ierr);
-    ierr = DMLocalToGlobalBegin(da_s,E->work_local_s,INSERT_VALUES,in_s);CHKERRQ(ierr);
-    ierr = DMLocalToGlobalEnd(da_s,E->work_local_s,INSERT_VALUES,in_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,out_b,&arr_out_b);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

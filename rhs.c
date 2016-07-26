@@ -73,31 +73,26 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
       ierr = VecSetValue(S->Etot,ind2,val2,INSERT_VALUES);CHKERRQ(ierr);
 
     }
-
     ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
     ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
 
-    // !! Here and elsewhere, are we just getting lucky, getting away with global vectors?
-
     /* loop over staggered nodes except last node */
     ierr = DMDAGetCorners(da_s,&ilo,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi = ilo + w_s;
     ierr = DMDAVecGetArray(da_s,rhs_s,&arr_rhs_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->Etot,&arr_Etot);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalBegin(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
         arr_rhs_s[i] = arr_Etot[i+1] - arr_Etot[i];
         arr_rhs_s[i] /= arr_lhs_s[i];
     }
     ierr = DMDAVecRestoreArray(da_s,rhs_s,&arr_rhs_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->Etot,&arr_Etot);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
-
-    /* rhs here */
-    ierr = VecAssemblyBegin(rhs_s);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(rhs_s);CHKERRQ(ierr);
 
     /* copy to the Ctx for monitoring (only). This can be removed leater TODO */
     ierr = VecCopy(rhs_s,E->solution.rhs_s);CHKERRQ(ierr);
