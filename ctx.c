@@ -753,14 +753,55 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     PetscFunctionReturn(0);
 }
 
+static PetscScalar zmap( PetscScalar z )
+{
+    /* for skewed viscosity profile */
+
+    PetscScalar fac, fwt, zmap, shp;
+
+    shp = SHAPE_TRANSITION;
+
+    fac = PetscSqrtScalar(PetscSqr(shp*z)+1.0);
+
+    zmap = shp*PetscSqr(z)+z*fac+1.0/shp \
+        *PetscLogScalar(shp*z+fac);
+       zmap *= 0.5;
+    fwt = 0.5*(1.0+PetscTanhScalar( zmap ));
+
+    return fwt;
+}
+
+static PetscScalar viscosity_mix_skew( PetscScalar meltf )
+{
+    /* skewed viscosity in mixed phase region */
+
+    PetscScalar fsol, fwt, fwt2, fwt3, z;
+
+    fsol = 1.0 - meltf;
+    z = (fsol-F_THRESHOLD) / DF_TRANSITION;
+    fwt = zmap( z );
+
+    z = (1.0-F_THRESHOLD) / DF_TRANSITION;
+    fwt2 = zmap( z );
+
+    z = -F_THRESHOLD / DF_TRANSITION;
+    fwt3 = zmap( z );
+
+    fwt = -(fwt-fwt3)/(fwt3-fwt2);
+
+    return fwt;
+}
+
 static PetscScalar viscosity_mix( PetscScalar meltf )
 {
-    PetscScalar arg, fwt, log10visc, visc;
+    PetscScalar fwt, log10visc, visc;
 
     /* simple hyperbolic tan to get up and running */
     /* need to code up function with skew */
-    arg = (1.0-meltf-F_THRESHOLD) / DF_TRANSITION;
-    fwt = 0.5 * ( 1.0 + tanh(arg) );
+    /*arg = (1.0-meltf-F_THRESHOLD) / DF_TRANSITION;
+    fwt = 0.5 * ( 1.0 + tanh(arg) ); */
+
+    fwt = viscosity_mix_skew( meltf );
 
     log10visc = fwt * LOG10VISC_SOL + (1.0 - fwt) * LOG10VISC_MEL;
     visc = PetscPowScalar( 10.0, log10visc );
@@ -904,7 +945,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         arr_cond[i] = COND_SOL;
 
         /* viscosity */
-        arr_visc[i] = pow( 10, LOG10VISC_SOL );
+        arr_visc[i] = PetscPowScalar( 10.0, LOG10VISC_SOL );
       }
 
       /* mixed phase */

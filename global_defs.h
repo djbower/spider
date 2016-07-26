@@ -64,6 +64,8 @@ static const PetscScalar GRAVITY = -10.0; // m/s^2
 static const PetscScalar F_THRESHOLD = 0.6; // non-dim
 /* melt fraction transition width for rheology */
 static const PetscScalar DF_TRANSITION = 0.15; // non-dim
+/* melt fraction shape transition for skew */
+static const PetscScalar SHAPE_TRANSITION = 0.5;
 
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Potential temperature]**EXPBC */
