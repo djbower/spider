@@ -1,5 +1,157 @@
 #include "ctx.h"
 
+/* Set up the Context */
+PetscErrorCode setup_ctx(Ctx* ctx)
+{
+  PetscErrorCode ierr;
+  PetscInt       i;
+  Vec            S_s;
+
+  PetscFunctionBeginUser;
+
+  /* Initialize context with parameters (most parameters are constants in global_defs.h, though) */
+  set_lookups(ctx);
+
+  /* Set up a parallel structured grid as DMComposite with two included DMDAs
+     This is used to define vectors which hold the solution. The included 
+     DMDAs are used to create vectors which hold various properties
+     living on the same primal and staggered nodes.
+  */
+  const PetscInt stencilWidth = 1; //TODO: check that this is appropriate
+  const PetscInt dof = 1;
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,NUMPTS,dof,stencilWidth,NULL,&ctx->da_b);CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,NUMPTSS,dof,stencilWidth,NULL,&ctx->da_s);CHKERRQ(ierr);
+
+#if (defined DEBUGOUTPUT)
+  {
+    PetscInt ilo_b,w_b,ihi_b,ilo_s,w_s,ihi_s;
+    PetscMPIInt rank;
+
+    ierr = DMDAGetCorners(ctx->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+    ierr = DMDAGetCorners(ctx->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_SELF,"[%d] index ranges b:%d<=i<%d, s:%d<=i<%d\n",rank,ilo_b,ihi_b,ilo_s,ihi_s);CHKERRQ(ierr);
+  }
+#endif
+
+
+  // TODO (maybe): PETSc-fy this more by getting rid of the NUMPTS and NUMPTSS parameters and instead letting the DMDAs themselves define this information (hence allowing more command-line control)
+
+  /* Continue to initialize context with distributed data */
+
+  for (i=0;i<NUMSOLUTIONVECS;++i){
+    ierr = DMCreateGlobalVector(ctx->da_b,&(ctx->solution.solutionVecs[i]));CHKERRQ(ierr);
+  }
+  ctx->solution.alpha               = ctx->solution.solutionVecs[0];
+  ctx->solution.alpha_mix           = ctx->solution.solutionVecs[1];
+  ctx->solution.cond                = ctx->solution.solutionVecs[2];
+  ctx->solution.cp                  = ctx->solution.solutionVecs[3];
+  ctx->solution.cp_mix              = ctx->solution.solutionVecs[4];  // TI
+  ctx->solution.dfusdr              = ctx->solution.solutionVecs[5];  // TI
+  ctx->solution.dfusdr_temp         = ctx->solution.solutionVecs[6];  // TI
+  ctx->solution.dphidr              = ctx->solution.solutionVecs[7];
+  ctx->solution.dSdr                = ctx->solution.solutionVecs[8];  // TI
+  ctx->solution.dTdPs               = ctx->solution.solutionVecs[9];
+  ctx->solution.dTdPs_mix           = ctx->solution.solutionVecs[10]; // TI
+  ctx->solution.dTdrs               = ctx->solution.solutionVecs[11];
+  ctx->solution.dTdrs_mix           = ctx->solution.solutionVecs[12]; // TI
+  ctx->solution.Etot                = ctx->solution.solutionVecs[13];
+  ctx->solution.fusion              = ctx->solution.solutionVecs[14]; // TI
+  ctx->solution.fusion_curve        = ctx->solution.solutionVecs[15]; // TI
+  ctx->solution.fusion_curve_temp   = ctx->solution.solutionVecs[16]; // TI
+  ctx->solution.fusion_rho          = ctx->solution.solutionVecs[17]; // TI
+  ctx->solution.fusion_temp         = ctx->solution.solutionVecs[18]; // TI
+  ctx->solution.gsuper              = ctx->solution.solutionVecs[19];
+  ctx->solution.Jcond               = ctx->solution.solutionVecs[20];
+  ctx->solution.Jconv               = ctx->solution.solutionVecs[21];
+  ctx->solution.Jgrav               = ctx->solution.solutionVecs[22];
+  ctx->solution.Jheat               = ctx->solution.solutionVecs[23];
+  ctx->solution.Jmass               = ctx->solution.solutionVecs[24];
+  ctx->solution.Jmix                = ctx->solution.solutionVecs[25];
+  ctx->solution.Jtot                = ctx->solution.solutionVecs[26];
+  ctx->solution.kappah              = ctx->solution.solutionVecs[27];
+  ctx->solution.liquidus            = ctx->solution.solutionVecs[28]; // TI
+  ctx->solution.liquidus_rho        = ctx->solution.solutionVecs[29]; // TI
+  ctx->solution.liquidus_temp       = ctx->solution.solutionVecs[30]; // TI
+  ctx->solution.nu                  = ctx->solution.solutionVecs[31];
+  ctx->solution.phi                 = ctx->solution.solutionVecs[32];
+  ctx->solution.rho                 = ctx->solution.solutionVecs[33];
+  ctx->solution.S                   = ctx->solution.solutionVecs[34];
+  ctx->solution.solidus             = ctx->solution.solutionVecs[35]; // TI
+  ctx->solution.solidus_rho         = ctx->solution.solutionVecs[36]; // TI
+  ctx->solution.solidus_temp        = ctx->solution.solutionVecs[37]; // TI
+  ctx->solution.temp                = ctx->solution.solutionVecs[38];
+  ctx->solution.visc                = ctx->solution.solutionVecs[39];
+
+  ierr = DMCreateLocalVector(ctx->da_b,&ctx->work_local_b);CHKERRQ(ierr);
+
+  for (i=0;i<NUMSOLUTIONVECSS;++i){
+    ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.solutionVecsS[i]));CHKERRQ(ierr);
+  }
+  ctx->solution.fusion_s            = ctx->solution.solutionVecsS[0]; // TI
+  ctx->solution.fusion_curve_s      = ctx->solution.solutionVecsS[1]; // TI
+  ctx->solution.fusion_curve_temp_s = ctx->solution.solutionVecsS[2]; // TI
+  ctx->solution.fusion_temp_s       = ctx->solution.solutionVecsS[3]; // TI
+  ctx->solution.lhs_s               = ctx->solution.solutionVecsS[4];
+  ctx->solution.liquidus_rho_s      = ctx->solution.solutionVecsS[5]; // TI
+  ctx->solution.liquidus_s          = ctx->solution.solutionVecsS[6]; // TI
+  ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecsS[7]; // TI
+  ctx->solution.phi_s               = ctx->solution.solutionVecsS[8];
+  ctx->solution.rhs_s               = ctx->solution.solutionVecsS[9]; 
+  ctx->solution.rho_s               = ctx->solution.solutionVecsS[10];
+  ctx->solution.S_s                 = ctx->solution.solutionVecsS[11];
+  ctx->solution.solidus_s           = ctx->solution.solutionVecsS[12]; // TI
+  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecsS[13]; // TI
+  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecsS[14]; // TI
+  ctx->solution.temp_s              = ctx->solution.solutionVecsS[15];
+
+  ierr = DMCreateLocalVector(ctx->da_s,&ctx->work_local_s);CHKERRQ(ierr);
+
+  set_mesh(ctx);
+
+  set_time_independent(ctx);
+
+  /* Create a solution vector (S at the staggered nodes) and fill with an initial condition 
+      Note that this is inside the Ctx 
+  */
+  ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.S_s));CHKERRQ(ierr); 
+  S_s = ctx->solution.S_s;
+  set_initial_condition(ctx);CHKERRQ(ierr); 
+
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode destroy_ctx(Ctx* ctx)
+{
+  PetscErrorCode ierr;
+  PetscInt       i;
+
+  PetscFunctionBeginUser;
+
+  /* Destroy data allocated in Ctx */
+  free_memory_interp(ctx);
+  ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
+  for (i=0;i<NUMMESHVECS;++i){
+    ierr = VecDestroy(&ctx->mesh.meshVecs[i]);CHKERRQ(ierr);
+  }
+  for (i=0;i<NUMMESHVECSS;++i){
+    ierr = VecDestroy(&ctx->mesh.meshVecsS[i]);CHKERRQ(ierr);
+  }
+  for (i=0;i<NUMSOLUTIONVECS;++i){
+    ierr = VecDestroy(&ctx->solution.solutionVecs[i]);CHKERRQ(ierr);
+  }
+  ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
+  for (i=0;i<NUMSOLUTIONVECSS;++i){
+    ierr = VecDestroy(&ctx->solution.solutionVecsS[i]);CHKERRQ(ierr);
+  }
+  ierr = VecDestroy(&ctx->work_local_s);CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+}
+
 static PetscErrorCode make_super_adiabatic( Ctx *E )
 {
     PetscErrorCode    ierr;
@@ -94,30 +246,34 @@ static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode spherical_volume(DM da_b, DM da_s, Vec radius, Vec volume )
+static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
 {
     /* non-dimensional volume.  Not sure this really matters, but it
        would seem that keeping these scalings close to 1.0 is 
        preferred for numerical accuracy? */
 
     PetscErrorCode    ierr;
-    PetscScalar       *arr_v;
-    const PetscScalar *arr_r;
-    PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi;
+    PetscScalar       *arr_volume;
+    const PetscScalar *arr_radius;
+    PetscInt          i,ilo_s,ihi_s,w_s,ilo,ihi;
+    DM                da_b=E->da_b,da_s=E->da_s;
+    Vec               radius_local=E->work_local_b;
 
     PetscFunctionBeginUser;
-    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b;
-    ilo = ilo_b; 
-    ihi = ihi_b - 1;
-    ierr = DMDAVecGetArrayRead(da_b,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s,volume,&arr_v);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
+    ilo = ilo_s; 
+    ihi = ihi_s;
+    ierr = DMGlobalToLocalBegin(da_b,radius,INSERT_VALUES,radius_local);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(da_b,radius,INSERT_VALUES,radius_local);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,radius_local,&arr_radius);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,volume,&arr_volume);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        arr_v[i] = PetscPowScalar(arr_r[i]/RADOUT,3.0) - PetscPowScalar(arr_r[i+1]/RADOUT,3.0);
-        arr_v[i] *= 1.0 / 3.0;
+        arr_volume[i] = PetscPowScalar(arr_radius[i]/RADOUT,3.0) - PetscPowScalar(arr_radius[i+1]/RADOUT,3.0);
+        arr_volume[i] *= 1.0 / 3.0;
     }
-    ierr = DMDAVecRestoreArrayRead(da_b,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_s,volume,&arr_v);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,radius_local,&arr_radius);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,volume,&arr_volume);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -189,9 +345,6 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad )
 
 PetscErrorCode set_mesh( Ctx *E)
 {
-#if (defined VERBOSE)
-    printf( "set_mesh:\n" );
-#endif
 
     PetscErrorCode ierr;
     PetscScalar    *arr;
@@ -200,6 +353,9 @@ PetscErrorCode set_mesh( Ctx *E)
     DM             da_b=E->da_b, da_s=E->da_s;
 
     PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_mesh:\n");CHKERRQ(ierr);
+#endif
 
     M = &E->mesh;
 
@@ -262,8 +418,8 @@ PetscErrorCode set_mesh( Ctx *E)
     spherical_area( da_b, M->radius_b, M->area_b);
 
     /* volume of spherical cells, without 4*pi term */
-    /* and now non-dimenisonal */
-    spherical_volume( da_b, da_s, M->radius_b, M->volume_s);
+    /* and now non-dimensional */
+    spherical_volume( E, M->radius_b, M->volume_s);
 
     /* mixing length is minimum distance from boundary */
     mixing_length( da_b, M->radius_b, M->mix_b);
@@ -338,23 +494,12 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 
 void free_interp1d( Interp1d *I )
 {
-
-#if (defined VERBOSE)
-    printf( "free_interp1d:\n" );
-#endif
-
     gsl_interp_free( I->interp );
     gsl_interp_accel_free( I->acc );
-
 }
 
 void free_interp2d( Interp2d *I )
 {
-
-#if (defined VERBOSE)
-    printf( "free_interp2d:\n" );
-#endif
-
     gsl_spline2d_free( I->interp );
     gsl_interp_accel_free( I->xacc );
     gsl_interp_accel_free( I->yacc );
@@ -364,10 +509,6 @@ PetscErrorCode free_memory_interp( Ctx *E )
 {
     PetscFunctionBeginUser;
     /* free memory allocated by interpolation functions */
-
-#if (defined VERBOSE)
-    printf( "free_memory_interp:\n" );
-#endif
 
     /* liquidus and solidus lookups */
     free_interp1d( &E->solid_prop.liquidus );
@@ -390,17 +531,12 @@ PetscErrorCode free_memory_interp( Ctx *E )
     free_interp2d( &E->melt_prop.temp );
 
     PetscFunctionReturn(0);
-
 }
 
 /* time-independent quantities */
 
 static PetscErrorCode set_liquidus( Ctx *E )
 {
-#if (defined VERBOSE)
-    printf("set_liquidus:\n");
-#endif
-
     PetscErrorCode ierr;
     PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_s,w_b;
     DM             da_s=E->da_s, da_b=E->da_b;
@@ -411,8 +547,11 @@ static PetscErrorCode set_liquidus( Ctx *E )
     Solution       *S;
     Interp2d       *IR, *IT;
 
-
     PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_liquidus:\n");CHKERRQ(ierr);
+#endif
+
     S = &E->solution;
     I = &E->melt_prop.liquidus;
     IR = &E->melt_prop.rho;
@@ -613,9 +752,9 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
 static PetscErrorCode set_core_cooling( Ctx *E )
 {
     PetscErrorCode    ierr;
-    const PetscInt ix0 = 0; // index of first node
-    const PetscInt ix = NUMPTS-1; // index of last basic node
-    const PetscInt ix2 = NUMPTS-2; // index of penultimate basic node
+    const PetscInt    ix0 = 0;        // index of first node
+    const PetscInt    ix  = NUMPTS-1; // index of last basic node
+    const PetscInt    ix2 = NUMPTS-2; // index of penultimate basic node
     PetscScalar       fac,radi,rado,vol,area1,area2;
     PetscMPIInt       rank, size;
 
@@ -623,20 +762,29 @@ static PetscErrorCode set_core_cooling( Ctx *E )
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    printf("set_core_cooling:\n");
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_core_cooling:\n");CHKERRQ(ierr);
 #endif
     M = &E->mesh;
 
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
 
+    /* Assume that rank 0 contains the first point, and grab the 
+       radius at the first point to broadcast */
+    if (!rank) {
+        ierr = VecGetValues( M->radius_b,1,&ix0,&rado);CHKERRQ(ierr);
+    } else {
+        rado = 0.0; // just for warning suppression
+    }
+    ierr = MPI_Bcast(&rado,1,MPIU_SCALAR,0,PETSC_COMM_WORLD);CHKERRQ(ierr);
+
+    /* Assume that the last rank contains the last two points */
     if (rank == size-1 ){
         ierr = VecGetValues( M->area_b,1,&ix,&area1);CHKERRQ(ierr);
         ierr = VecGetValues( M->area_b,1,&ix2,&area2);CHKERRQ(ierr);
         ierr = VecGetValues( M->radius_b,1,&ix,&radi);CHKERRQ(ierr);
-        ierr = VecGetValues( M->radius_b,1,&ix0,&rado);CHKERRQ(ierr);
         ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr);
-        fac = 4.0*M_PI*pow(rado, 3.0) * vol;
+        fac = 4.0*M_PI*PetscPowScalar(rado, 3.0) * vol;
         fac *= RHO_CMB * CP_CMB;
         fac /= CP_CORE * MCORE * TFAC_CORE_AVG;
         fac += 1.0;
@@ -821,6 +969,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     const PetscScalar *arr_S_s,*arr_phi_s,*arr_solidus,*arr_fusion,*arr_pres,*arr_area_b,*arr_dPdr_b,*arr_liquidus_rho,*arr_solidus_rho,*arr_cp_mix,*arr_dTdrs_mix,*arr_liquidus_temp,*arr_solidus_temp,*arr_fusion_rho,*arr_fusion_temp,*arr_mix_b;
     Mesh              *M;
     Solution          *S;
+    Vec               S_s_local,phi_s_local;
 
     PetscFunctionBeginUser;
     M = &E->mesh;
@@ -829,6 +978,10 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     dr = M->dx_s;
     pres = M->pressure_b;
 
+    /* Create some local vectors for the staggered grid*/
+    ierr = DMCreateLocalVector(da_s,&S_s_local);CHKERRQ(ierr);
+    ierr = DMCreateLocalVector(da_s,&phi_s_local);CHKERRQ(ierr);
+
     /* loop over all basic internal nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
@@ -836,7 +989,9 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ihi = ihi_b == NUMPTS ? NUMPTS - 1 : ihi_b;
 
     ierr = DMDAVecGetArray(    da_b,S->dphidr,&arr_dphidr);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalBegin(da_s,S->S_s,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(da_s,S->S_s,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S_s_local,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->phi,&arr_phi);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->fusion,&arr_fusion);CHKERRQ(ierr);
@@ -874,7 +1029,9 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = DMDAVecGetArray(    da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->Jmass,&arr_Jmass);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalBegin(da_s,S->phi_s,INSERT_VALUES,phi_s_local);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(da_s,S->phi_s,INSERT_VALUES,phi_s_local);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,phi_s_local,&arr_phi_s);CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){ // Note that these correspond to basic nodes being updated, but we also assume an ordering on the staggered nodes!
 
@@ -1094,6 +1251,9 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
 
+    ierr = VecDestroy(&S_s_local);CHKERRQ(ierr);
+    ierr = VecDestroy(&phi_s_local);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
@@ -1122,6 +1282,8 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
 #endif
     dr = E->mesh.dx_s;
 
+    // !! This seems suspicious. If we are computing on the basic nodes, 
+    //     we should be looping over those indices, right?
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
     ilo = ilo_s==0 ? 1 : ilo_s; 
@@ -1134,26 +1296,23 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
     //       and scatter to them in any cases like this one where
     //      we might want an off-processor value (not actually that many places)
     //       We need to do something similar to this in any other places that might be problematic:
-    // !!!!!!!!!!!!!!!!!!!
+    //
+    // We also need to be extremely careful when we are doing operations that 
+    // involve both DMDAs, even if no "i+1" or "i-1" appears in the loop. 
+    // We have tried to mark these cases as those where the
+    // indices are not ilo_s, ihi_s, but instead ilo and ihi
+    // !!
 
     /* Scatter to local vectors, since we may require potentially off-processor ghost values */
-    ierr = DMGlobalToLocalBegin(da_b,out_b,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
-    ierr = DMGlobalToLocalEnd(da_b,out_b,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
     ierr = DMGlobalToLocalBegin(da_s,in_s,INSERT_VALUES,E->work_local_s);CHKERRQ(ierr);
     ierr = DMGlobalToLocalEnd(da_s,in_s,INSERT_VALUES,E->work_local_s);CHKERRQ(ierr);
-
     ierr = DMDAVecGetArrayRead(da_s,E->work_local_s,&arr_in_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_b,E->work_local_b,&arr_out_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,out_b,&arr_out_b);CHKERRQ(ierr);
     for(i=ilo; i<ihi; i++){
         arr_out_b[i] = 1.0/dr * ( arr_in_s[i]-arr_in_s[i-1] );
     }
     ierr = DMDAVecRestoreArrayRead(da_s,E->work_local_s,&arr_in_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_b,E->work_local_b,&arr_out_b);CHKERRQ(ierr);
-
-    ierr = DMLocalToGlobalBegin(da_b,E->work_local_b,INSERT_VALUES,out_b);CHKERRQ(ierr);
-    ierr = DMLocalToGlobalEnd(da_b,E->work_local_b,INSERT_VALUES,out_b);CHKERRQ(ierr);
-    ierr = DMLocalToGlobalBegin(da_s,E->work_local_s,INSERT_VALUES,in_s);CHKERRQ(ierr);
-    ierr = DMLocalToGlobalEnd(da_s,E->work_local_s,INSERT_VALUES,in_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,out_b,&arr_out_b);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -1178,12 +1337,10 @@ PetscScalar combine_matprop( PetscScalar weight, PetscScalar mat1, PetscScalar m
 
 }
 
-void set_interp2d( const char * filename, Interp2d *interp )
+PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 {
-#if (defined VERBOSE)
-    printf("set_interp2d:\n");
-#endif
 
+    PetscErrorCode ierr;
     FILE *fp;
     size_t i=0, j=0, k=0;
     char string[100];
@@ -1191,6 +1348,10 @@ void set_interp2d( const char * filename, Interp2d *interp )
     PetscScalar xa[NX], ya[NY], za[NX*NY];
     PetscScalar xscale, yscale, zscale;
 
+    PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp2d:\n");CHKERRQ(ierr);
+#endif
     if (sizeof(PetscScalar) != sizeof(double)){
       perror("PetscScalar must be double to use the dataio functions here");
       exit(-1);
@@ -1258,23 +1419,26 @@ void set_interp2d( const char * filename, Interp2d *interp )
     interp->xacc = xacc;
     interp->yacc = yacc;
 
+    PetscFunctionReturn(0);
 }
 
-void set_interp1d( const char * filename, Interp1d *interp, int n )
+PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, int n )
 {
-#if (defined VERBOSE)
-    printf("set_interp1d:\n");
-#endif
 
+    PetscErrorCode ierr;
     FILE *fp;
     size_t i=0;
     char string[100];
     PetscScalar x, y, xscale, yscale;
     PetscScalar xa[n], ya[n];
 
+    PetscFunctionBeginUser;
+
+#if (defined VERBOSE)
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp1d:\n");CHKERRQ(ierr);
+#endif
     if (sizeof(PetscScalar) != sizeof(double)){
-      perror("PetscScalar must be double to use the dataio functions here");
-      exit(-1);
+      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"PetscScalar must be double to use the dataio functions here");
     }
 
     /* linear interpolation */
@@ -1284,9 +1448,8 @@ void set_interp1d( const char * filename, Interp1d *interp, int n )
 
     fp = fopen( filename, "r" );
 
-    if(fp==NULL) {
-        perror("Error opening file.\n");
-        exit(-1);
+    if (!fp) {
+      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file");
     }   
 
     // fgets reads in string, sscanf processes it
@@ -1307,11 +1470,6 @@ void set_interp1d( const char * filename, Interp1d *interp, int n )
 
     fclose( fp );
 
-    /* for debugging */
-    /*for (i=0; i<NLS; i++ ){
-        printf("%lu %f %f\n", i, xa[i], ya[i]);
-    }*/
-
     gsl_interp_init( interpolation, xa, ya, n );
 
     // I think this is the correct way of copying an array
@@ -1325,4 +1483,5 @@ void set_interp1d( const char * filename, Interp1d *interp, int n )
     interp->interp = interpolation;
     interp->acc = acc;
 
+    PetscFunctionReturn(0);
 }

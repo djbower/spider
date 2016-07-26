@@ -3,13 +3,11 @@
 
 #include "petsc.h"
 
-// !! Heinous. Petsc likes to define I as a compex number
+// Heinous. Petsc likes include headers which define I as a complex number,
+// even if you aren't aware that PETSc even supports that. 
 #undef I
 
 #include "global_defs.h"
-
-// !! Temp until we move the Ctx constructor and destructor to another file
-#include "ctx.h"
 
 /* common structures */
 
@@ -80,10 +78,6 @@ typedef struct _Solution {
 
 /* A Context for the Solver */
 typedef struct _Ctx {
-  // Here we essentially copy what is in the All_variables field
-  // The items in the mesh and solution sub-structs there need to be replaced with versions
-  //   based on vectors (we don't worry about AoS vs SoA at this point)
-  //..
   Lookup   melt_prop;
   Lookup   solid_prop;
   Mesh     mesh;
@@ -97,6 +91,9 @@ typedef struct _Ctx {
   // TODO: flatten this all out
 } Ctx;
 
+PetscErrorCode setup_ctx(Ctx *);
+PetscErrorCode destroy_ctx(Ctx *);
+
 PetscErrorCode d_dr( Ctx *, Vec, Vec );
 PetscErrorCode free_memory_interp( Ctx * );
 PetscErrorCode set_capacitance( Ctx *, Vec );
@@ -106,8 +103,8 @@ PetscErrorCode set_matprop_and_flux( Ctx * );
 PetscErrorCode set_mesh( Ctx * );
 PetscErrorCode set_time_independent( Ctx * );
 
-void set_interp2d( const char * filename, Interp2d *interp );
-void set_interp1d( const char * filename, Interp1d *interp, int n );
+PetscErrorCode set_interp2d( const char * filename, Interp2d *interp );
+PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, int n );
 
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar);
 

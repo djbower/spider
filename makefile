@@ -16,8 +16,8 @@ PETSC_CC_INCLUDES+=-I/opt/local/include
 
 GSL_LIB=-L/opt/local/lib -lgsl -lgslcblas
 
-main: main.o ctx.o 
+main: main.o ctx.o rhs.o
 	-${CLINKER}  -o $@ $^  ${GSL_LIB} ${PETSC_TS_LIB} 
-	#${RM} main.o ctx.o
+	#${RM} $<
 
 include ${PETSC_DIR}/lib/petsc/conf/test
