@@ -4,7 +4,7 @@ static PetscErrorCode make_super_adiabatic( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
-    PetscScalar       fac=0.01,*arr_S_s,pres_b_last; // percent
+    PetscScalar       *arr_S_s,pres_b_last;
     const PetscScalar *arr_pres_b,*arr_pres_s;
     Vec               pres_b,pres_s;
     Mesh              *M;
@@ -43,7 +43,7 @@ static PetscErrorCode make_super_adiabatic( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
-        arr_S_s[i] *= 1.0 + 0.01 * fac * arr_pres_s[i]/pres_b_last;
+        arr_S_s[i] *= 1.0 + 0.01 * SUPERFAC * arr_pres_s[i]/pres_b_last;
     }
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);

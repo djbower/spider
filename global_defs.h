@@ -19,48 +19,69 @@
 #define VERBOSE 1
 #define DEBUGOUTPUT 1
 
+/* 2-D datafiles containing melt and solid properties
+   as a functon of pressure and entropy */
 #define HEAD 4 /* number of header lines in datafile */
 #define NROWS 10100 /* number of coordinates in datafiles */
 /* N.B., NROWS = NX * NY */
 #define NX 101 /* no. of x coordinates in datafiles */
 #define NY 100 /* no. of y coordinates in datafiles */
 
+/* 1-D datafiles containing liquidus and solidus
+   as a function of pressure */
+#define NLS 301 /* no. of coordinates in liq and sol datafiles */
+
+/* set mesh here */
 /* number of basic mesh points */
 #define NUMPTS 100
 /* number of staggered mesh points */
-#define NUMPTSS NUMPTS-1
+#define NUMPTSS NUMPTS-1 /* automagically determined */
 
-/* no. of coordinates in liq and sol datafiles */
-#define NLS 301
-
-/* inital entropy of adiabat */
-//static const int SINIT = 3000.0;
-//static const int SINIT = 2500.0;
+/* initial condition: set entropy of adiabat */
+//static const PetscInt SINIT = 3000.0; // all super-liquidus
+//static const PetscInt SINIT = 1600.0; // all sub-solidus
 /* this initial condition spans all melt fractions and is useful
-   for testing */
-static const int SINIT = 2500.0;
+   for testing to make sure the RHS is correct */
+static const PetscInt SINIT = 2500.0;
+/* percent linear increase in entropy with pressure to make the
+   initial condition just slightly super-adiabatic */
+static const PetscScalar SUPERFAC = 0.01;
 
 /* constants */
+/* outer radius */
 static const PetscScalar RADOUT = 6371000.0; // m
+/* inner radius */
 static const PetscScalar RADIN = 3504050.0; // m
+/* surface density for Adams-Williamson EOS for pressure */
 static const PetscScalar RHOS = 4078.95095544; // kg/m^3
+/* parameter for Adams-Williamson EOS for pressure */
 static const PetscScalar BETA = 1.1115348931E-7; // 1/m
+/* grain size */
 static const PetscScalar GRAIN = 1.0E-3; // m
+/* gravity.  Always constant and must be negative */
 static const PetscScalar GRAVITY = -10.0; // m/s^2
+/* melt fraction threshold for rheology */
 static const PetscScalar F_THRESHOLD = 0.6; // non-dim
+/* melt fraction transition width for rheology */
 static const PetscScalar DF_TRANSITION = 0.15; // non-dim
 
 /* for radiative thermal boundary condition at the top surface */
+/* dT = CONSTBC * [Potential temperature]**EXPBC */
 static const PetscScalar CONSTBC = 0.0027401185339112;
 static const PetscScalar EXPBC = 1.6357699211550170;
 static const PetscScalar SIGMA = 5.670373E-8; // Stefan-Boltzmann constant
 static const PetscScalar TEQM = 273.0; // equilibrium temp of planet
 
 /* for core-cooling boundary condition at the bottom surface */
+/* mass of core (perhaps excluding inner core?) */
 static const PetscScalar MCORE = 1.9352467333195415E24; // kg
+/* mass-weighted average core temperature as a fraction of CMB temp */
 static const PetscScalar TFAC_CORE_AVG = 1.147;
+/* heat capacity of core */
 static const PetscScalar CP_CORE = 880.0; // # J/K/kg
+/* density near CMB. TODO: this is f(S,P) and thus time-dep */
 static const PetscScalar RHO_CMB = 5500.0; // kg/m^3
+/* heat capacity near CMB.  TODO: this is f(S,P) and thus time-dep */
 static const PetscScalar CP_CMB = 1200.0; // J/K/kg
 
 /* end of constants */
