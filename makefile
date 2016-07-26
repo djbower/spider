@@ -18,6 +18,6 @@ GSL_LIB=-L/opt/local/lib -lgsl -lgslcblas
 
 main: main.o ctx.o rhs.o
 	-${CLINKER}  -o $@ $^  ${GSL_LIB} ${PETSC_TS_LIB} 
-	#${RM} $<
+	#${RM} $^
 
 include ${PETSC_DIR}/lib/petsc/conf/test

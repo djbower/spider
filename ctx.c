@@ -272,6 +272,7 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
         arr_volume[i] = PetscPowScalar(arr_radius[i]/RADOUT,3.0) - PetscPowScalar(arr_radius[i+1]/RADOUT,3.0);
         arr_volume[i] *= 1.0 / 3.0;
     }
+    // TODO: here and elsewhere, it's very dangerous to use the same indice to refere to two DAs without checking that the local ranges are valid. 
     ierr = DMDAVecRestoreArrayRead(da_b,radius_local,&arr_radius);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,volume,&arr_volume);CHKERRQ(ierr);
     PetscFunctionReturn(0);
@@ -1267,7 +1268,7 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
        constant spacing */
 
     PetscErrorCode     ierr;
-    PetscInt           i,ilo_s,ihi_s,w_s,ilo,ihi;
+    PetscInt           i,ilo_b,ihi_b,w_b,ilo,ihi;
     DM                 da_s=E->da_s,da_b=E->da_b;
     PetscScalar        dr,*arr_out_b;
     const PetscScalar *arr_in_s;
@@ -1282,26 +1283,12 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
 #endif
     dr = E->mesh.dx_s;
 
-    // !! This seems suspicious. If we are computing on the basic nodes, 
-    //     we should be looping over those indices, right?
-    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
-    ihi_s = ilo_s + w_s;
-    ilo = ilo_s==0 ? 1 : ilo_s; 
-    ihi = ihi_s;
+    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+    ilo = ilo_b==0      ? 1        : ilo_b; 
+    ihi = ihi_b==NUMPTS ? NUMPTS-1 : ihi_b;
 
-    // TODO: Here we had potential bugs in parallel. The cause is
-    //       that some of these need to be "local" DMDA vectors
-    //       which include the necessary ghost points. 
-    //       Thus we need to add local versions of some of these vectors
-    //       and scatter to them in any cases like this one where
-    //      we might want an off-processor value (not actually that many places)
-    //       We need to do something similar to this in any other places that might be problematic:
-    //
-    // We also need to be extremely careful when we are doing operations that 
-    // involve both DMDAs, even if no "i+1" or "i-1" appears in the loop. 
-    // We have tried to mark these cases as those where the
-    // indices are not ilo_s, ihi_s, but instead ilo and ihi
-    // !!
+    // TODO: here and elsewhere, we are a little glib about assuming things abou the way the DA's partition things. We should introduce checks for any function which involves both DAs at once, that the expected ranges apply.
 
     /* Scatter to local vectors, since we may require potentially off-processor ghost values */
     ierr = DMGlobalToLocalBegin(da_s,in_s,INSERT_VALUES,E->work_local_s);CHKERRQ(ierr);
