@@ -1344,8 +1344,8 @@ PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
       exit(-1);
     }
 
-    /* bicubic interpolation */
-    const gsl_interp2d_type *T = gsl_interp2d_bicubic;
+    /* bilinear interpolation */
+    const gsl_interp2d_type *T = gsl_interp2d_bilinear;
     gsl_spline2d *spline = gsl_spline2d_alloc( T, NX, NY );
     gsl_interp_accel *xacc = gsl_interp_accel_alloc();
     gsl_interp_accel *yacc = gsl_interp_accel_alloc();
