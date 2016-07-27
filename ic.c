@@ -1,5 +1,25 @@
 #include "ic.h"
 
+PetscErrorCode set_initial_condition( Ctx *E ) 
+{
+    /* set initial condition */
+
+    PetscErrorCode ierr;
+    Solution *S;
+
+    PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    printf("set_initial_condition:\n");
+#endif
+    S = &E->solution;
+
+    ierr = VecSet(S->S_s,SINIT);CHKERRQ(ierr);
+
+    make_super_adiabatic( E ); 
+
+    PetscFunctionReturn(0);
+}
+
 static PetscErrorCode make_super_adiabatic( Ctx *E ) 
 {
     /* linear increase of entropy with pressure to make the initial
@@ -50,26 +70,6 @@ static PetscErrorCode make_super_adiabatic( Ctx *E )
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode set_initial_condition( Ctx *E ) 
-{
-    /* set initial condition */
-
-    PetscErrorCode ierr;
-    Solution *S;
-
-    PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    printf("set_initial_condition:\n");
-#endif
-    S = &E->solution;
-
-    ierr = VecSet(S->S_s,SINIT);CHKERRQ(ierr);
-
-    make_super_adiabatic( E ); 
 
     PetscFunctionReturn(0);
 }

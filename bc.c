@@ -45,3 +45,33 @@ PetscErrorCode set_core_cooling( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+
+static PetscScalar utbl_temp_drop( PetscScalar temp )
+{
+    PetscScalar dT;
+
+    dT = CONSTBC * PetscPowScalar( temp, EXPBC );
+
+    return dT;
+}
+
+PetscScalar radiative_flux_with_dT( PetscScalar temp )
+{
+    PetscScalar dT, temp0, flux;
+
+    dT = utbl_temp_drop( temp );
+    temp0 = temp - dT;
+    flux = radiative_flux( temp0 );
+
+    return flux;
+}
+
+static PetscScalar radiative_flux( PetscScalar temp )
+{
+    PetscScalar flux;
+
+    flux = PetscPowScalar(temp,4.0)-PetscPowScalar(TEQM,4.0);
+    flux *= SIGMA * EMISSIVITY;
+
+    return flux;
+}

@@ -72,6 +72,7 @@ static const PetscScalar SHAPE_TRANSITION = 0.5;
 static const PetscScalar CONSTBC = 0.0027401185339112;
 static const PetscScalar EXPBC = 1.6357699211550170;
 static const PetscScalar SIGMA = 5.670373E-8; // Stefan-Boltzmann constant
+static const PetscScalar EMISSIVITY = 1.0; // emissivity
 static const PetscScalar TEQM = 273.0; // equilibrium temp of planet
 
 /* for core-cooling boundary condition at the bottom surface */

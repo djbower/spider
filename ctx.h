@@ -102,13 +102,13 @@ PetscErrorCode set_lookups( Ctx * );
 PetscErrorCode set_matprop_and_flux( Ctx * );
 PetscErrorCode set_mesh( Ctx * );
 PetscErrorCode set_core_cooling( Ctx * );
-PetscErrorCode set_time_independent( Ctx * );
+PetscErrorCode set_twophase( Ctx * );
 
 PetscScalar get_val1d( Interp1d *, PetscScalar );
 PetscScalar get_val2d( Interp2d *, PetscScalar, PetscScalar );
 
+PetscScalar average( PetscScalar a, PetscScalar b );
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar);
 
-PetscScalar average( PetscScalar a, PetscScalar b );
-
+PetscScalar radiative_flux_with_dT( PetscScalar );
 #endif

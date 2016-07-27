@@ -16,7 +16,7 @@ PETSC_CC_INCLUDES+=-I/opt/local/include
 
 GSL_LIB=-L/opt/local/lib -lgsl -lgslcblas
 
-main: main.o ctx.o rhs.o ic.o mesh.o lookup.o bc.o util.o
+main: main.o ctx.o rhs.o ic.o mesh.o lookup.o bc.o util.o twophase.o
 	-${CLINKER}  -o $@ $^  ${GSL_LIB} ${PETSC_TS_LIB} 
 	#${RM} $^
 

@@ -39,12 +39,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
 
     // NOTE: here we assume that the first rank has the first point
     if (!rank) {
-       PetscScalar temp_s_0,temp0,dT,val;
+       PetscScalar temp_s_0,val;
        PetscInt ind = 0;
        ierr = VecGetValues(S->temp_s,1,&ind,&temp_s_0);CHKERRQ(ierr);
-       dT = CONSTBC * PetscPowScalar( temp_s_0, EXPBC ); 
-       temp0 = temp_s_0 - dT;
-       val = SIGMA*(PetscPowScalar(temp0,4.0)-PetscPowScalar(TEQM,4.0));
+       val = radiative_flux_with_dT( temp_s_0 );
 
     /* Note - below is true because non-dim geom is exactly equal
        to one, so do not need to multiply by area of surface */
