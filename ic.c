@@ -2,6 +2,9 @@
 
 static PetscErrorCode make_super_adiabatic( Ctx *E ) 
 {
+    /* linear increase of entropy with pressure to make the initial
+       entropy profile slightly superadiabatic */
+
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
     PetscScalar       *arr_S_s,pres_b_last;
@@ -53,6 +56,8 @@ static PetscErrorCode make_super_adiabatic( Ctx *E )
 
 PetscErrorCode set_initial_condition( Ctx *E ) 
 {
+    /* set initial condition */
+
     PetscErrorCode ierr;
     Solution *S;
 
