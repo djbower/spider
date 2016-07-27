@@ -70,6 +70,18 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
 
 PetscErrorCode set_d_dr2( Ctx *E )
 {
+    /* create a matrix containing the 2nd order accurate stencil for
+       computing the 1st order derivative of a quantity at the 
+       staggered nodes
+
+       d/dr will be given by MatMult( A, x, y )
+
+       where:
+           x: (Vec) input: quantity at staggered nodes (size NUMPTSS)
+           y: (Vec) output: d/dr at staggered nodes (size NUMPTSS)
+
+       currently this matrix is global */
+
     PetscErrorCode ierr;
     PetscInt i, n=NUMPTSS, col[3], rstart, rend;
     PetscScalar dr, value[3];
