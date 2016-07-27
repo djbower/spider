@@ -67,3 +67,41 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
 
     PetscFunctionReturn(0);
 }
+
+PetscErrorCode set_d_dr2( Ctx *E )
+{
+    PetscInt i, n=NUMPTSS, col[3] //,rstart,rend;
+    PetscScalar value[3];
+    Mat A;
+
+    MatCreate( PETSC_COMM_WORLD, &A );
+    MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,NUMPTSS,NUMPTSS);
+    MatSetFromOptions(A);
+    MatSetUp(A);
+
+    //if (!rstart) {
+    rstart = 1; i = 0;
+    col[0]=0; col[1]=1; col[2]=2;
+    value[0]=-3.0/2.0; value[1]=2.0; value[2]=-0.5;
+    MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);
+    //}
+    //if (rend == n) {
+    rend = n-1; i =n-1;
+    col[0]=n-3; col[1]=n-2, col[2]=n-1;
+    value[0]=0.5; value[1]=-2.0; value[2]=3.0/2.0;
+    MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);
+    //}
+
+    /* set values corresponding to the mesh interior */
+    value[0]=-0.5; value[1]=0.0; value[2]=0.5;
+    for (i=rstart; i<rend; i++) {
+        col[0] = i-1; col[1] = i; col[2] = i+1;
+        MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);
+    }
+
+    /* Assemble the matrix */
+    MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
+
+    PetscFunctionReturn(0);
+}
