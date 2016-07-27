@@ -101,10 +101,11 @@ PetscErrorCode set_initial_condition( Ctx * );
 PetscErrorCode set_lookups( Ctx * );
 PetscErrorCode set_matprop_and_flux( Ctx * );
 PetscErrorCode set_mesh( Ctx * );
+PetscErrorCode set_core_cooling( Ctx * );
 PetscErrorCode set_time_independent( Ctx * );
 
-PetscErrorCode set_interp2d( const char * filename, Interp2d *interp );
-PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, int n );
+PetscScalar get_val1d( Interp1d *, PetscScalar );
+PetscScalar get_val2d( Interp2d *, PetscScalar, PetscScalar );
 
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar);
 
