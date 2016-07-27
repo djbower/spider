@@ -70,38 +70,46 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
 
 PetscErrorCode set_d_dr2( Ctx *E )
 {
-    PetscInt i, n=NUMPTSS, col[3] //,rstart,rend;
-    PetscScalar value[3];
+    PetscErrorCode ierr;
+    PetscInt i, n=NUMPTSS, col[3], rstart, rend;
+    PetscScalar dr, value[3];
     Mat A;
 
-    MatCreate( PETSC_COMM_WORLD, &A );
-    MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,NUMPTSS,NUMPTSS);
-    MatSetFromOptions(A);
-    MatSetUp(A);
+    PetscFunctionBeginUser;
+
+    dr = E->mesh.dx_s;
+
+    ierr = MatCreate( PETSC_COMM_WORLD, &A );CHKERRQ(ierr);
+    ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,NUMPTSS,NUMPTSS);CHKERRQ(ierr);
+    ierr = MatSetFromOptions(A);CHKERRQ(ierr);
+    ierr = MatSetUp(A);CHKERRQ(ierr);
 
     //if (!rstart) {
     rstart = 1; i = 0;
     col[0]=0; col[1]=1; col[2]=2;
     value[0]=-3.0/2.0; value[1]=2.0; value[2]=-0.5;
-    MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);
+    ierr = MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);CHKERRQ(ierr);
     //}
     //if (rend == n) {
     rend = n-1; i =n-1;
     col[0]=n-3; col[1]=n-2, col[2]=n-1;
     value[0]=0.5; value[1]=-2.0; value[2]=3.0/2.0;
-    MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);
+    ierr = MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);CHKERRQ(ierr);
     //}
 
     /* set values corresponding to the mesh interior */
     value[0]=-0.5; value[1]=0.0; value[2]=0.5;
     for (i=rstart; i<rend; i++) {
         col[0] = i-1; col[1] = i; col[2] = i+1;
-        MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);
+        ierr = MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);CHKERRQ(ierr);
     }
 
     /* Assemble the matrix */
-    MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
+    ierr = MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+    ierr = MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+
+    /* Must occur after assembly */
+    ierr = MatScale( A, 1.0/dr);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

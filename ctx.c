@@ -111,6 +111,13 @@ PetscErrorCode setup_ctx(Ctx* ctx)
 
   set_mesh(ctx);
 
+  /* TODO: make and store matrices to calculate derivatives
+     must come after set_mesh() since it needs to know about the mesh
+     spacing.  But where to store? Also need to be careful with padding */
+  set_d_dr2(ctx);
+
+  /* could also do a similar thing for d_dr? */
+
   set_twophase(ctx);
 
   set_core_cooling(ctx);

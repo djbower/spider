@@ -95,6 +95,7 @@ PetscErrorCode setup_ctx(Ctx *);
 PetscErrorCode destroy_ctx(Ctx *);
 
 PetscErrorCode d_dr( Ctx *, Vec, Vec );
+PetscErrorCode set_d_dr2( Ctx * );
 PetscErrorCode free_memory_interp( Ctx * );
 PetscErrorCode set_capacitance( Ctx *, Vec );
 PetscErrorCode set_initial_condition( Ctx * );
