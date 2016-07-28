@@ -12,14 +12,14 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
   PetscScalar       *arr_rhs_s;
   const PetscScalar *arr_Etot,*arr_lhs_s;
   PetscMPIInt       rank,size;
-  PetscInt          i,ihi,ilo,w_s,numpts;
+  PetscInt          i,ihi,ilo,w_s,numpts_b;
   DM                da_s = E->da_s, da_b=E->da_b;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"rhs:\n");CHKERRQ(ierr);
 #endif
-    ierr = DMDAGetInfo(E->da_b,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
     MPI_Comm_size(PETSC_COMM_WORLD,&size);
@@ -58,8 +58,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
       PetscScalar val, val2;
       PetscInt    ind, ind2;
 
-      ind  = numpts-2; // penultimate basic node index
-      ind2 = numpts-1; // last basic node index
+      ind  = numpts_b-2; // penultimate basic node index
+      ind2 = numpts_b-1; // last basic node index
 
       /* energy flux */
       ierr = VecGetValues(S->Jtot,1,&ind,&val);CHKERRQ(ierr);

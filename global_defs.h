@@ -33,9 +33,9 @@
 
 /* set mesh here (can be changed from the command line) */
 /* number of basic mesh points */
-#define NUMPTS_DEFAULT 100
+#define NUMPTS_B_DEFAULT 100
 /* number of staggered mesh points */
-#define NUMPTSS_DEFAULT NUMPTS_DEFAULT-1 /* automagically determined */
+#define NUMPTS_S_DEFAULT NUMPTS_B_DEFAULT-1 /* automagically determined */
 
 /* initial condition: set entropy of adiabat */
 static const PetscScalar SINIT = 3000.0; // all super-liquidus
