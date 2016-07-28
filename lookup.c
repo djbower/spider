@@ -2,11 +2,12 @@
 
 PetscErrorCode set_lookups( Ctx *E ) 
 {
+    PetscErrorCode ierr;
     /* set all 1-D and 2-D lookups */
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    printf( "set_lookup:\n" );
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_lookup:\n" );CHKERRQ(ierr);
 #endif
 
     /* solid lookups */
@@ -107,13 +108,20 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
     gsl_spline2d_init( spline, xa, ya, za, NX, NY );
 
     /* for debugging */
-    /*for (i=0; i<NX; i++ ){
-        printf("%d %f\n", i, xa[i]);
-    }*/
+#if 0
+    {
+      PetscMPIInt rank;
 
-    /*for (j=0; j<NY; j++ ){
-        printf("%d %f\n", j, ya[j]);
-    }*/
+      ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+      for (i=0; i<NX; i++ ){
+          ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, i, xa[i]);CHKERRQ(ierr);
+      }
+
+      for (j=0; j<NY; j++ ){
+          ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, j, ya[j]);
+      }
+    }
+#endif
 
     interp->xmin= xa[0];
     interp->xmax= xa[NX-1];

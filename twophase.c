@@ -101,7 +101,7 @@ static PetscErrorCode set_solidus( Ctx *E )
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    printf("set_solidus:\n");
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_solidus:\n");CHKERRQ(ierr);
 #endif
     S = &E->solution;
     I = &E->solid_prop.solidus;
@@ -156,15 +156,13 @@ static PetscErrorCode set_solidus( Ctx *E )
 static PetscErrorCode set_fusion( Ctx *E )
 {
     /* entropy of fusion */
-
-#if (defined VERBOSE)
-    printf("set_fusion:\n");
-#endif
-
     PetscErrorCode ierr;
     Solution *S;
 
     PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_fusion:\n");CHKERRQ(ierr);
+#endif
     S = &E->solution;
 
     /* basic nodes : fusion = liquidus - solidus*/
@@ -187,7 +185,7 @@ static PetscErrorCode set_fusion_curve( Ctx *E )
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    printf("set_fusion_curve:\n");
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_fusion_curve:\n");CHKERRQ(ierr);
 #endif
     S = &E->solution;
 
@@ -215,11 +213,7 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    {
-      PetscMPIInt rank;
-      MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
-      ierr = PetscPrintf(PETSC_COMM_SELF,"[%d] set_mixed_phase\n");CHKERRQ(ierr);
-    }
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_mixed_phase\n");CHKERRQ(ierr);
 #endif
 
     M = &E->mesh;

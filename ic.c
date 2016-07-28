@@ -9,7 +9,7 @@ PetscErrorCode set_initial_condition( Ctx *E )
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    printf("set_initial_condition:\n");
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition:\n");CHKERRQ(ierr);
 #endif
     S = &E->solution;
 
@@ -37,7 +37,7 @@ static PetscErrorCode make_super_adiabatic( Ctx *E )
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    printf("make_super_adiabatic:\n");
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"make_super_adiabatic:\n");CHKERRQ(ierr);
 #endif
     M = &E->mesh;
     S = &E->solution;

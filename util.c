@@ -39,11 +39,7 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    {
-      PetscMPIInt rank;
-      MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
-      ierr = PetscPrintf(PETSC_COMM_SELF,"[%d] d_dr\n");CHKERRQ(ierr);
-    }
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"d_dr\n");CHKERRQ(ierr);
 #endif
     dr = E->mesh.dx_s;
 
