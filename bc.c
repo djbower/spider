@@ -1,5 +1,8 @@
 #include "bc.h"
 
+static PetscScalar radiative_flux( PetscScalar );
+static PetscScalar utbl_temp_drop( PetscScalar );
+
 PetscErrorCode set_core_cooling( Ctx *E )
 {
     PetscErrorCode    ierr;

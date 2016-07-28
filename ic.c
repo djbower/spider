@@ -1,5 +1,7 @@
 #include "ic.h"
 
+static PetscErrorCode make_super_adiabatic( Ctx * );
+
 PetscErrorCode set_initial_condition( Ctx *E ) 
 {
     /* set initial condition */
