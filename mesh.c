@@ -5,7 +5,7 @@ PetscErrorCode set_mesh( Ctx *E)
 
     PetscErrorCode ierr;
     PetscScalar    *arr;
-    PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_b,w_s;
+    PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_b,w_s,numpts,numptss;
     Mesh           *M;
     DM             da_b=E->da_b, da_s=E->da_s;
 
@@ -15,6 +15,9 @@ PetscErrorCode set_mesh( Ctx *E)
 #endif
 
     M = &E->mesh;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = DMDAGetInfo(E->da_s,NULL,&numptss,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* Create vectors required for the mesh */
     for (i=0;i<NUMMESHVECS;++i) {
@@ -36,7 +39,7 @@ PetscErrorCode set_mesh( Ctx *E)
     M->volume_s   = M->meshVecsS[2];
 
     /* basic node spacing (negative) */
-    M->dx_b = -(RADOUT-RADIN) / (NUMPTS-1);
+    M->dx_b = -(RADOUT-RADIN) / (numpts-1);
 
     /* staggered node spacing (negative) */
     M->dx_s = M->dx_b;
@@ -46,7 +49,7 @@ PetscErrorCode set_mesh( Ctx *E)
     ihi_b = ilo_b + w_b;
     ierr = DMDAVecGetArray(da_b,M->radius_b,&arr);CHKERRQ(ierr);
     for (i=ilo_b; i<ihi_b; ++i){
-        arr[i] = RADIN - (NUMPTS-1-i)*M->dx_b;
+        arr[i] = RADIN - (numpts-1-i)*M->dx_b;
     }
     ierr = DMDAVecRestoreArray(da_b,M->radius_b,&arr);CHKERRQ(ierr);
 
@@ -55,7 +58,7 @@ PetscErrorCode set_mesh( Ctx *E)
     ihi_s = ilo_s + w_s;
     ierr = DMDAVecGetArray(da_s,M->radius_s,&arr);CHKERRQ(ierr);
     for (i=ilo_s;i<ihi_s;++i){
-        arr[i] = RADIN - 0.5*M->dx_b - (NUMPTSS-1-i)*M->dx_b;
+        arr[i] = RADIN - 0.5*M->dx_b - (numptss-1-i)*M->dx_b;
     }
     ierr = DMDAVecRestoreArray(da_s,M->radius_s,&arr);CHKERRQ(ierr);
 
@@ -82,7 +85,6 @@ PetscErrorCode set_mesh( Ctx *E)
     mixing_length( da_b, M->radius_b, M->mix_b);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )

@@ -4,8 +4,9 @@ PetscErrorCode set_core_cooling( Ctx *E )
 {
     PetscErrorCode    ierr;
     const PetscInt    ix0 = 0;        // index of first node
-    const PetscInt    ix  = NUMPTS-1; // index of last basic node
-    const PetscInt    ix2 = NUMPTS-2; // index of penultimate basic node
+    PetscInt          ix;             // index of last basic node
+    PetscInt          ix2;            // index of penultimate basic node
+    PetscInt          numpts;
     PetscScalar       fac,radi,rado,vol,area1,area2;
     PetscMPIInt       rank, size;
 
@@ -16,6 +17,9 @@ PetscErrorCode set_core_cooling( Ctx *E )
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_core_cooling:\n");CHKERRQ(ierr);
 #endif
     M = &E->mesh;
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ix  = numpts-1;
+    ix2 = numpts-2;
 
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);

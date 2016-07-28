@@ -1,4 +1,5 @@
-static char help[] ="Parallel magma ocean timestepper";
+static char help[] ="Parallel magma ocean timestepper\n\
+                     -n : specify the number of staggered points";
 
 #include "petsc.h"
 #include "ctx.h" 
@@ -14,7 +15,8 @@ int main(int argc, char ** argv)
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
-  /* Perform all initialization for our problem, allocating data */
+  /* Perform all initialization for our problem, allocating data 
+     Note that this checks for a command line option -n */
   ierr = setup_ctx(&ctx);CHKERRQ(ierr);
 
   /* We will use this solution vector as our data object for timestepping */

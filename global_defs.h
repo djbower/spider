@@ -31,11 +31,11 @@
    as a function of pressure */
 #define NLS 301 /* no. of coordinates in liq and sol datafiles */
 
-/* set mesh here */
+/* set mesh here (can be changed from the command line) */
 /* number of basic mesh points */
-#define NUMPTS 100
+#define NUMPTS_DEFAULT 100
 /* number of staggered mesh points */
-#define NUMPTSS NUMPTS-1 /* automagically determined */
+#define NUMPTSS_DEFAULT NUMPTS_DEFAULT-1 /* automagically determined */
 
 /* initial condition: set entropy of adiabat */
 static const PetscScalar SINIT = 3000.0; // all super-liquidus

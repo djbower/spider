@@ -4,13 +4,23 @@
 PetscErrorCode setup_ctx(Ctx* ctx)
 {
   PetscErrorCode ierr;
-  PetscInt       i;
+  PetscInt       i,numpts,numptss; // could rename numpts_b, numpts_s
   Vec            S_s;
+  PetscBool      set;
 
   PetscFunctionBeginUser;
 
   /* Initialize context with parameters (most parameters are constants in global_defs.h, though) */
   set_lookups(ctx);
+
+  /* Check for a command line option -n to set the number of *staggered* points */
+  ierr = PetscOptionsGetInt(NULL,NULL,"-n",&numptss,&set);CHKERRQ(ierr);
+  if (set){
+    numpts = numptss + 1;
+  } else {
+    numpts = NUMPTS_DEFAULT;
+    numptss = NUMPTSS_DEFAULT;
+  }
 
   /* Set up a parallel structured grid as DMComposite with two included DMDAs
      This is used to define vectors which hold the solution. The included 
@@ -19,8 +29,8 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   */
   const PetscInt stencilWidth = 1; //TODO: check that this is appropriate
   const PetscInt dof = 1;
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,NUMPTS,dof,stencilWidth,NULL,&ctx->da_b);CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,NUMPTSS,dof,stencilWidth,NULL,&ctx->da_s);CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,numpts,dof,stencilWidth,NULL,&ctx->da_b);CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,numptss,dof,stencilWidth,NULL,&ctx->da_s);CHKERRQ(ierr);
 
 #if (defined DEBUGOUTPUT)
   {
@@ -35,9 +45,6 @@ PetscErrorCode setup_ctx(Ctx* ctx)
     ierr = PetscPrintf(PETSC_COMM_SELF,"[%d] index ranges b:%d<=i<%d, s:%d<=i<%d\n",rank,ilo_b,ihi_b,ilo_s,ihi_s);CHKERRQ(ierr);
   }
 #endif
-
-
-  // TODO (maybe): PETSc-fy this more by getting rid of the NUMPTS and NUMPTSS parameters and instead letting the DMDAs themselves define this information (hence allowing more command-line control)
 
   /* Continue to initialize context with distributed data */
 
@@ -303,7 +310,7 @@ static PetscScalar viscosity_mix( PetscScalar meltf )
 PetscErrorCode set_matprop_and_flux( Ctx *E )
 {
     PetscErrorCode    ierr;
-    PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi;
+    PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts;
     DM                da_s=E->da_s, da_b=E->da_b;
     Vec               pres;
     PetscScalar       dr;
@@ -326,9 +333,10 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
 
     /* loop over all basic internal nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ierr = DMDAGetInfo(da_b,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
     ilo = ilo_b == 0      ? 1          : ilo_b;
-    ihi = ihi_b == NUMPTS ? NUMPTS - 1 : ihi_b;
+    ihi = ihi_b == numpts ? numpts - 1 : ihi_b;
 
     ierr = DMDAVecGetArray(    da_b,S->dphidr,&arr_dphidr);CHKERRQ(ierr);
     ierr = DMGlobalToLocalBegin(da_s,S->S_s,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
