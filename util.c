@@ -80,7 +80,7 @@ PetscErrorCode set_d_dr2( Ctx *E )
        currently this matrix is global */
 
     PetscErrorCode ierr;
-    PetscInt i, numptss, col[3], rstart, rend;
+    PetscInt i, numptss, col[3], rstart, rend, ilo_s, ihi_s, w_s;
     PetscScalar dr, value[3];
     Mat A;
 
@@ -88,10 +88,17 @@ PetscErrorCode set_d_dr2( Ctx *E )
 
     dr = E->mesh.dx_s;
 
+    ierr = DMDAGetCorners(E->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
     ierr = DMDAGetInfo(E->da_s,NULL,&numptss,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
 #if (defined DEBUGOUTPUT)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_d_dr2 : creating a matrix of size %D\n",numptss);CHKERRQ(ierr);
+    {
+       PetscMPIInt rank;
+       ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+       ierr = PetscPrintf(PETSC_COMM_WORLD,"[%D] set_d_dr2 : local rows %d<=i<%d\n",rank,ilo_s,ihi_s);CHKERRQ(ierr);
+    }
 #endif
 
     ierr = MatCreate( PETSC_COMM_WORLD, &A );CHKERRQ(ierr);
@@ -99,20 +106,23 @@ PetscErrorCode set_d_dr2( Ctx *E )
     ierr = MatSetFromOptions(A);CHKERRQ(ierr);
     ierr = MatSetUp(A);CHKERRQ(ierr);
 
-    //if (!rstart) {
-    rstart = 1; i = 0;
-    col[0]=0; col[1]=1; col[2]=2;
-    value[0]=-3.0/2.0; value[1]=2.0; value[2]=-0.5;
-    ierr = MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);CHKERRQ(ierr);
-    //}
-    //if (rend == n) {
-    rend = numptss-1; i =numptss-1;
-    col[0]=numptss-3; col[1]=numptss-2, col[2]=numptss-1;
-    value[0]=0.5; value[1]=-2.0; value[2]=3.0/2.0;
-    ierr = MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);CHKERRQ(ierr);
-    //}
+    /* Set first and last row values, if appropriate */
+    if (!ilo_s) {
+      i = 0;
+      col[0]=0; col[1]=1; col[2]=2;
+      value[0]=-3.0/2.0; value[1]=2.0; value[2]=-0.5;
+      ierr = MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);CHKERRQ(ierr);
+    }
+    if (ihi_s == numptss) {
+      i = numptss-1;
+      col[0]=numptss-3; col[1]=numptss-2, col[2]=numptss-1;
+      value[0]=0.5; value[1]=-2.0; value[2]=3.0/2.0;
+      ierr = MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);CHKERRQ(ierr);
+    }
 
     /* set values corresponding to the mesh interior */
+    rstart = (ilo_s == 0      ) ? 1         : ilo_s;
+    rend   = (ihi_s == numptss) ? numptss-1 : ihi_s;
     value[0]=-0.5; value[1]=0.0; value[2]=0.5;
     for (i=rstart; i<rend; i++) {
         col[0] = i-1; col[1] = i; col[2] = i+1;
