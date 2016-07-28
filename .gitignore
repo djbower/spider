@@ -1,1 +1,11 @@
+# executable
 main
+
+# object files
+*.o
+
+# Vim swap files
+.*.swp
+
+# OS X garbage
+*.DS_Store
