@@ -5,7 +5,6 @@ PetscErrorCode setup_ctx(Ctx* ctx)
 {
   PetscErrorCode ierr;
   PetscInt       i,numpts_b,numpts_s; 
-  Vec            S_s;
   PetscBool      set;
 
   PetscFunctionBeginUser;
@@ -113,17 +112,17 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.solidus_rho_s       = ctx->solution.solutionVecsS[13]; // TI
   ctx->solution.solidus_temp_s      = ctx->solution.solutionVecsS[14]; // TI
   ctx->solution.temp_s              = ctx->solution.solutionVecsS[15];
+  ctx->solution.cp_s                = ctx->solution.solutionVecsS[16];
+  ctx->solution.gamma_s             = ctx->solution.solutionVecsS[17];
+  ctx->solution.dTdrs_s             = ctx->solution.solutionVecsS[18];
+  ctx->solution.dTdrs_mix_s         = ctx->solution.solutionVecsS[19]; // TI
+  ctx->solution.dfusdr_s            = ctx->solution.solutionVecsS[20]; // TI
+  ctx->solution.dfusdr_temp_s       = ctx->solution.solutionVecsS[21]; // TI
+  ctx->solution.cp_mix_s            = ctx->solution.solutionVecsS[22]; // TI
 
   ierr = DMCreateLocalVector(ctx->da_s,&ctx->work_local_s);CHKERRQ(ierr);
 
   set_mesh(ctx);
-
-  /* TODO: make and store matrices to calculate derivatives
-     must come after set_mesh() since it needs to know about the mesh
-     spacing.  But where to store? Also need to be careful with padding */
-  set_d_dr2(ctx);
-
-  /* could also do a similar thing for d_dr? */
 
   set_twophase(ctx);
 
@@ -133,7 +132,6 @@ PetscErrorCode setup_ctx(Ctx* ctx)
       Note that this is inside the Ctx 
   */
   ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.S_s));CHKERRQ(ierr); 
-  S_s = ctx->solution.S_s;
   set_initial_condition(ctx);CHKERRQ(ierr); 
 
   PetscFunctionReturn(0);
@@ -165,6 +163,8 @@ PetscErrorCode destroy_ctx(Ctx* ctx)
   }
   ierr = VecDestroy(&ctx->work_local_s);CHKERRQ(ierr);
 
+  ierr = MatDestroy(&ctx->d_dr2);CHKERRQ(ierr);
+
   PetscFunctionReturn(0);
 }
 
@@ -176,18 +176,22 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     DM                da_s=E->da_s;
     Mesh              *M;
     Solution          *S;
-    Vec               pres_s;
-    Interp2d          *IRM, *ITM, *IRS, *ITS;
-    const PetscScalar *arr_S_s,*arr_pres_s,*arr_liquidus_rho_s,*arr_solidus_rho_s,*arr_liquidus_temp_s,*arr_solidus_temp_s;
-    PetscScalar       *arr_phi_s,*arr_rho_s,*arr_temp_s;
+    Vec               pres_s, dSdr, drhodr, dTdrs;
+    Interp2d          *ICM, *IEM, *IRM, *ITM, *ICS, *IES, *IRS, *ITS;
+    const PetscScalar *arr_S_s, *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_cp_mix_s, *arr_dTdrs_mix_s, *arr_dPdr_s;
+    PetscScalar       *arr_phi_s,*arr_rho_s,*arr_temp_s,*arr_cp_s,*arr_dTdrs_s;
 
     PetscFunctionBeginUser;
     M = &E->mesh;
     S = &E->solution;
     pres_s = M->pressure_s;
 
+    ICM = &E->melt_prop.cp;
+    IEM = &E->melt_prop.dTdPs;
     IRM = &E->melt_prop.rho;
     ITM = &E->melt_prop.temp;
+    ICS = &E->solid_prop.cp;
+    IES = &E->solid_prop.dTdPs;
     IRS = &E->solid_prop.rho;
     ITS = &E->solid_prop.temp;
 
@@ -201,30 +205,43 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
 
+    ierr = DMDAVecGetArrayRead(da_s,M->dPdr_s,&arr_dPdr_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->cp_mix_s,&arr_cp_mix_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->dTdrs_mix_s,&arr_dTdrs_mix_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->rho_s,&arr_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->dTdrs_s,&arr_dTdrs_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
         /* melt only */
         if( arr_phi_s[i] >= 1.0 ){
             arr_phi_s[i] = 1.0;
+            arr_cp_s[i] = get_val2d( ICM, arr_pres_s[i], arr_S_s[i] );
+            arr_dTdrs_s[i] = get_val2d( IEM, arr_pres_s[i], arr_S_s[i] ) * arr_dPdr_s[i];
             arr_rho_s[i] = get_val2d( IRM, arr_pres_s[i], arr_S_s[i] );
             arr_temp_s[i] = get_val2d( ITM, arr_pres_s[i], arr_S_s[i] );
         }
         /* solid only */
         else if( arr_phi_s[i] <= 0.0 ){
             arr_phi_s[i] = 0.0;
+            arr_cp_s[i] = get_val2d( ICS, arr_pres_s[i], arr_S_s[i] );
+            arr_dTdrs_s[i] = get_val2d( IES, arr_pres_s[i], arr_S_s[i] ) * arr_dPdr_s[i];
             arr_rho_s[i] = get_val2d( IRS, arr_pres_s[i], arr_S_s[i] );
             arr_temp_s[i] = get_val2d( ITS, arr_pres_s[i], arr_S_s[i] );
         }
         /* mixed phase */
         else{
+            /* heat capacity */
+            arr_cp_s[i] = arr_cp_mix_s[i];
+            /* dTdrs */
+            arr_dTdrs_s[i] = arr_dTdrs_mix_s[i];
             /* density */
             arr_rho_s[i] = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
             arr_rho_s[i] = 1.0 / arr_rho_s[i];
@@ -233,19 +250,58 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
         }
 
     }
+
+    ierr = DMDAVecRestoreArrayRead(da_s,M->dPdr_s,&arr_dPdr_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->cp_mix_s,&arr_cp_mix_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->dTdrs_mix_s,&arr_dTdrs_mix_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->rho_s,&arr_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,S->dTdrs_s,&arr_dTdrs_s);CHKERRQ(ierr);
 
-    // S->lhs_si = M->volume_si * S->rho_si * S->temp_si;
+    /* 1/rho * drho/dr */
+    ierr = VecDuplicate( S->rho_s, &drhodr );CHKERRQ(ierr);
+    ierr = MatMult( E->d_dr2, S->rho_s, drhodr );CHKERRQ(ierr);
+    ierr = VecPointwiseDivide( drhodr, drhodr, S->rho_s );CHKERRQ(ierr);
+    ierr = VecAXPY( S->gamma_s, 1.0, drhodr );CHKERRQ(ierr);
+
+    /* 1/T * dT/drs */
+    ierr = VecDuplicate( S->dTdrs_s, &dTdrs );CHKERRQ(ierr);
+    ierr = VecCopy( S->dTdrs_s, dTdrs );CHKERRQ(ierr);
+    ierr = VecPointwiseDivide( dTdrs, dTdrs, S->temp_s );CHKERRQ(ierr);
+    ierr = VecAXPY( S->gamma_s, 1.0, dTdrs );CHKERRQ(ierr);
+
+    /* 1/cp * dSdr */
+    ierr = VecDuplicate( S->S_s, &dSdr );CHKERRQ(ierr);
+    ierr = MatMult( E->d_dr2, S->S_s, dSdr );CHKERRQ(ierr);
+    ierr = VecPointwiseDivide( dSdr, dSdr, S->cp_s );CHKERRQ(ierr);
+    ierr = VecAXPY( S->gamma_s, 1.0, dSdr );CHKERRQ(ierr);
+
+    /* geometric terms */
+    ierr = VecPointwiseMult( S->gamma_s, S->gamma_s, M->volume_s );CHKERRQ(ierr);
+    ierr = VecPointwiseDivide( S->gamma_s, S->gamma_s, M->area_s );CHKERRQ(ierr);
+    ierr = VecScale( S->gamma_s, RADOUT );CHKERRQ(ierr);
+
+    /* final manipulations */
+    ierr = VecScale( S->gamma_s, -1.0 );CHKERRQ(ierr);
+    ierr = VecShift( S->gamma_s, 1.0 );CHKERRQ(ierr);
+
+    // S->lhs_si = S->gamma_s * M->volume_si * S->rho_si * S->temp_si;
     ierr = VecPointwiseMult(S->lhs_s,M->volume_s,S->rho_s);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,S->temp_s);CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,S->gamma_s);CHKERRQ(ierr);
+
+    /* clean up */
+    ierr = VecDestroy( &drhodr );CHKERRQ(ierr);
+    ierr = VecDestroy( &dSdr );CHKERRQ(ierr);
+    ierr = VecDestroy( &dTdrs );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

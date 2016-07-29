@@ -140,7 +140,6 @@ static PetscErrorCode set_solidus( Ctx *E )
 
 
     /* staggered nodes */
-    /* need in order to compute dfus/dr at basic internal nodes */
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->solidus_s,&arr_solidus_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
@@ -171,7 +170,8 @@ static PetscErrorCode set_fusion( Ctx *E )
 #endif
     S = &E->solution;
 
-    /* basic nodes : fusion = liquidus - solidus*/
+    /* fusion = liquidus - solidus */
+    /* basic nodes */
     ierr = VecWAXPY(S->fusion,-1.0,S->solidus,S->liquidus);CHKERRQ(ierr);
     ierr = VecWAXPY(S->fusion_rho,-1.0,S->solidus_rho,S->liquidus_rho);CHKERRQ(ierr);
     ierr = VecWAXPY(S->fusion_temp,-1.0,S->solidus_temp,S->liquidus_temp);CHKERRQ(ierr);
@@ -203,8 +203,14 @@ static PetscErrorCode set_fusion_curve( Ctx *E )
     ierr = VecWAXPY(S->fusion_curve_s,0.5,S->fusion_s,S->solidus_s);CHKERRQ(ierr);
     ierr = VecWAXPY(S->fusion_curve_temp_s,0.5,S->fusion_temp_s,S->solidus_temp_s);CHKERRQ(ierr);
 
+    /* basic nodes */
     d_dr( E, S->fusion_curve_s,      S->dfusdr      );
     d_dr( E, S->fusion_curve_temp_s, S->dfusdr_temp );
+
+    /* staggered nodes */
+    MatMult( E->d_dr2, S->fusion_curve_s, S->dfusdr_s );
+    MatMult( E->d_dr2, S->fusion_curve_temp_s, S->dfusdr_temp_s );
+
     PetscFunctionReturn(0);
 }
 
@@ -232,8 +238,18 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
     ierr = VecAXPY(S->dTdrs_mix,1.0,S->dfusdr_temp);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->dTdPs_mix,S->dTdrs_mix,M->dPdr_b);CHKERRQ(ierr);
 
+    ierr = VecPointwiseDivide(S->dTdrs_mix_s,S->fusion_temp_s,S->fusion_s);CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->dTdrs_mix_s,S->dTdrs_mix_s,S->dfusdr_s);CHKERRQ(ierr);
+    ierr = VecScale( S->dTdrs_mix_s, -1.0 );
+    ierr = VecAXPY(S->dTdrs_mix_s,1.0,S->dfusdr_temp_s);CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->dTdrs_mix_s,S->dTdrs_mix_s,M->dPdr_s);CHKERRQ(ierr);
+
+    /* cp_mix and cp_mix_s */
     ierr = VecPointwiseDivide(S->cp_mix,S->fusion,S->fusion_temp);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->cp_mix,S->cp_mix,S->fusion_curve_temp);CHKERRQ(ierr);
+
+    ierr = VecPointwiseDivide(S->cp_mix_s,S->fusion_s,S->fusion_temp_s);CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->cp_mix_s,S->cp_mix_s,S->fusion_curve_temp_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

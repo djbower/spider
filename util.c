@@ -101,7 +101,8 @@ PetscErrorCode set_d_dr2( Ctx *E )
     }
 #endif
 
-    ierr = MatCreate( PETSC_COMM_WORLD, &A );CHKERRQ(ierr);
+    ierr = MatCreate( PETSC_COMM_WORLD, &E->d_dr2 );CHKERRQ(ierr);
+    A = E->d_dr2;
     ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,numpts_s,numpts_s);CHKERRQ(ierr);
     ierr = MatSetFromOptions(A);CHKERRQ(ierr);
     ierr = MatSetUp(A);CHKERRQ(ierr);

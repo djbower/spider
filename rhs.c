@@ -51,8 +51,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
       ierr = VecSetValue(S->Jtot,0,val,INSERT_VALUES);CHKERRQ(ierr);
     }
 
-    /* for last point, just cool by a constant factor */
-    /* DJB note that BC_BOT_FAC is mesh dependent - to fix */
     // NOTE: here, we somewhat dangerously assume that the last proc has the last point 
     if (rank == size-1) {
       PetscScalar val, val2;

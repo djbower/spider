@@ -43,12 +43,16 @@ PetscErrorCode set_mesh( Ctx *E)
     M->pressure_s = M->meshVecsS[0];
     M->radius_s   = M->meshVecsS[1];
     M->volume_s   = M->meshVecsS[2];
+    M->dPdr_s     = M->meshVecsS[3];
+    M->area_s     = M->meshVecsS[4];
 
     /* basic node spacing (negative) */
     M->dx_b = -(RADOUT-RADIN) / (numpts_b-1);
 
     /* staggered node spacing (negative) */
     M->dx_s = M->dx_b;
+
+    /* TODO: could also do a similar thing for d_dr? */
 
     /* radius at basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
@@ -79,9 +83,16 @@ PetscErrorCode set_mesh( Ctx *E)
     /* pressure at staggered nodes */
     aw_pressure( da_s, M->radius_s, M->pressure_s);
 
+    /* dP/dr at staggered nodes */
+    aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s );
+
     /* surface area at basic nodes, without 4*pi term */
     /* and now non-dimensional */
     spherical_area( da_b, M->radius_b, M->area_b);
+
+    /* surface area at staggered nodes, without 4*pi term */
+    /* and now non-dimensional */
+    spherical_area( da_s, M->radius_s, M->area_s );
 
     /* volume of spherical cells, without 4*pi term */
     /* and now non-dimensional */
@@ -89,6 +100,9 @@ PetscErrorCode set_mesh( Ctx *E)
 
     /* mixing length is minimum distance from boundary */
     mixing_length( da_b, M->radius_b, M->mix_b);
+
+    /* set derivative operators */
+    set_d_dr2( E );
 
     PetscFunctionReturn(0);
 }
