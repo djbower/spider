@@ -49,29 +49,29 @@ typedef struct _Lookup {
     Interp1d solidus; /* solidus, J / (kg K) */
 } Lookup;
 
-#define NUMMESHVECS 5
-#define NUMMESHVECSS 5
+#define NUMMESHVECS_B 5
+#define NUMMESHVECS_S 5
 typedef struct _Mesh {
     PetscScalar dx_b;
     PetscScalar dx_s;
 
-    Vec meshVecs[NUMMESHVECS];
+    Vec meshVecs_b[NUMMESHVECS_B];
     Vec area_b,dPdr_b,pressure_b,radius_b, mix_b;  
 
-    Vec meshVecsS[NUMMESHVECSS];
+    Vec meshVecs_s[NUMMESHVECS_S];
     Vec pressure_s,radius_s,volume_s,dPdr_s,area_s;
 
 } Mesh;
 
-#define NUMSOLUTIONVECS 40
-#define NUMSOLUTIONVECSS 23
+#define NUMSOLUTIONVECS_B 40
+#define NUMSOLUTIONVECS_S 23
 typedef struct _Solution {
     /* TI means time-independent */
 
-    Vec solutionVecs[NUMSOLUTIONVECS];
+    Vec solutionVecs_b[NUMSOLUTIONVECS_B];
     Vec alpha,alpha_mix,cond,cp,cp_mix,dfusdr,dfusdr_temp,dphidr,dSdr,dTdPs,dTdPs_mix,dTdrs,dTdrs_mix,Etot,fusion,fusion_curve,fusion_curve_temp,fusion_rho,fusion_temp,gsuper,Jcond,Jconv,Jgrav,Jheat,Jmass,Jmix,Jtot,kappah,liquidus,liquidus_rho,liquidus_temp,nu,phi,rho,S,solidus,solidus_rho,solidus_temp,temp,visc;
 
-    Vec solutionVecsS[NUMSOLUTIONVECSS];
+    Vec solutionVecs_s[NUMSOLUTIONVECS_S];
     Vec fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rhs_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s, cp_s, gamma_s, dTdrs_s, dTdrs_mix_s, dfusdr_s, dfusdr_temp_s, cp_mix_s;
 
 } Solution;

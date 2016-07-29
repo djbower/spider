@@ -47,78 +47,78 @@ PetscErrorCode setup_ctx(Ctx* ctx)
 
   /* Continue to initialize context with distributed data */
 
-  for (i=0;i<NUMSOLUTIONVECS;++i){
-    ierr = DMCreateGlobalVector(ctx->da_b,&(ctx->solution.solutionVecs[i]));CHKERRQ(ierr);
+  for (i=0;i<NUMSOLUTIONVECS_B;++i){
+    ierr = DMCreateGlobalVector(ctx->da_b,&(ctx->solution.solutionVecs_b[i]));CHKERRQ(ierr);
   }
-  ctx->solution.alpha               = ctx->solution.solutionVecs[0];
-  ctx->solution.alpha_mix           = ctx->solution.solutionVecs[1];
-  ctx->solution.cond                = ctx->solution.solutionVecs[2];
-  ctx->solution.cp                  = ctx->solution.solutionVecs[3];
-  ctx->solution.cp_mix              = ctx->solution.solutionVecs[4];  // TI
-  ctx->solution.dfusdr              = ctx->solution.solutionVecs[5];  // TI
-  ctx->solution.dfusdr_temp         = ctx->solution.solutionVecs[6];  // TI
-  ctx->solution.dphidr              = ctx->solution.solutionVecs[7];
-  ctx->solution.dSdr                = ctx->solution.solutionVecs[8];  // TI
-  ctx->solution.dTdPs               = ctx->solution.solutionVecs[9];
-  ctx->solution.dTdPs_mix           = ctx->solution.solutionVecs[10]; // TI
-  ctx->solution.dTdrs               = ctx->solution.solutionVecs[11];
-  ctx->solution.dTdrs_mix           = ctx->solution.solutionVecs[12]; // TI
-  ctx->solution.Etot                = ctx->solution.solutionVecs[13];
-  ctx->solution.fusion              = ctx->solution.solutionVecs[14]; // TI
-  ctx->solution.fusion_curve        = ctx->solution.solutionVecs[15]; // TI
-  ctx->solution.fusion_curve_temp   = ctx->solution.solutionVecs[16]; // TI
-  ctx->solution.fusion_rho          = ctx->solution.solutionVecs[17]; // TI
-  ctx->solution.fusion_temp         = ctx->solution.solutionVecs[18]; // TI
-  ctx->solution.gsuper              = ctx->solution.solutionVecs[19];
-  ctx->solution.Jcond               = ctx->solution.solutionVecs[20];
-  ctx->solution.Jconv               = ctx->solution.solutionVecs[21];
-  ctx->solution.Jgrav               = ctx->solution.solutionVecs[22];
-  ctx->solution.Jheat               = ctx->solution.solutionVecs[23];
-  ctx->solution.Jmass               = ctx->solution.solutionVecs[24];
-  ctx->solution.Jmix                = ctx->solution.solutionVecs[25];
-  ctx->solution.Jtot                = ctx->solution.solutionVecs[26];
-  ctx->solution.kappah              = ctx->solution.solutionVecs[27];
-  ctx->solution.liquidus            = ctx->solution.solutionVecs[28]; // TI
-  ctx->solution.liquidus_rho        = ctx->solution.solutionVecs[29]; // TI
-  ctx->solution.liquidus_temp       = ctx->solution.solutionVecs[30]; // TI
-  ctx->solution.nu                  = ctx->solution.solutionVecs[31];
-  ctx->solution.phi                 = ctx->solution.solutionVecs[32];
-  ctx->solution.rho                 = ctx->solution.solutionVecs[33];
-  ctx->solution.S                   = ctx->solution.solutionVecs[34];
-  ctx->solution.solidus             = ctx->solution.solutionVecs[35]; // TI
-  ctx->solution.solidus_rho         = ctx->solution.solutionVecs[36]; // TI
-  ctx->solution.solidus_temp        = ctx->solution.solutionVecs[37]; // TI
-  ctx->solution.temp                = ctx->solution.solutionVecs[38];
-  ctx->solution.visc                = ctx->solution.solutionVecs[39];
+  ctx->solution.alpha               = ctx->solution.solutionVecs_b[0];
+  ctx->solution.alpha_mix           = ctx->solution.solutionVecs_b[1];
+  ctx->solution.cond                = ctx->solution.solutionVecs_b[2];
+  ctx->solution.cp                  = ctx->solution.solutionVecs_b[3];
+  ctx->solution.cp_mix              = ctx->solution.solutionVecs_b[4];  // TI
+  ctx->solution.dfusdr              = ctx->solution.solutionVecs_b[5];  // TI
+  ctx->solution.dfusdr_temp         = ctx->solution.solutionVecs_b[6];  // TI
+  ctx->solution.dphidr              = ctx->solution.solutionVecs_b[7];
+  ctx->solution.dSdr                = ctx->solution.solutionVecs_b[8];  // TI
+  ctx->solution.dTdPs               = ctx->solution.solutionVecs_b[9];
+  ctx->solution.dTdPs_mix           = ctx->solution.solutionVecs_b[10]; // TI
+  ctx->solution.dTdrs               = ctx->solution.solutionVecs_b[11];
+  ctx->solution.dTdrs_mix           = ctx->solution.solutionVecs_b[12]; // TI
+  ctx->solution.Etot                = ctx->solution.solutionVecs_b[13];
+  ctx->solution.fusion              = ctx->solution.solutionVecs_b[14]; // TI
+  ctx->solution.fusion_curve        = ctx->solution.solutionVecs_b[15]; // TI
+  ctx->solution.fusion_curve_temp   = ctx->solution.solutionVecs_b[16]; // TI
+  ctx->solution.fusion_rho          = ctx->solution.solutionVecs_b[17]; // TI
+  ctx->solution.fusion_temp         = ctx->solution.solutionVecs_b[18]; // TI
+  ctx->solution.gsuper              = ctx->solution.solutionVecs_b[19];
+  ctx->solution.Jcond               = ctx->solution.solutionVecs_b[20];
+  ctx->solution.Jconv               = ctx->solution.solutionVecs_b[21];
+  ctx->solution.Jgrav               = ctx->solution.solutionVecs_b[22];
+  ctx->solution.Jheat               = ctx->solution.solutionVecs_b[23];
+  ctx->solution.Jmass               = ctx->solution.solutionVecs_b[24];
+  ctx->solution.Jmix                = ctx->solution.solutionVecs_b[25];
+  ctx->solution.Jtot                = ctx->solution.solutionVecs_b[26];
+  ctx->solution.kappah              = ctx->solution.solutionVecs_b[27];
+  ctx->solution.liquidus            = ctx->solution.solutionVecs_b[28]; // TI
+  ctx->solution.liquidus_rho        = ctx->solution.solutionVecs_b[29]; // TI
+  ctx->solution.liquidus_temp       = ctx->solution.solutionVecs_b[30]; // TI
+  ctx->solution.nu                  = ctx->solution.solutionVecs_b[31];
+  ctx->solution.phi                 = ctx->solution.solutionVecs_b[32];
+  ctx->solution.rho                 = ctx->solution.solutionVecs_b[33];
+  ctx->solution.S                   = ctx->solution.solutionVecs_b[34];
+  ctx->solution.solidus             = ctx->solution.solutionVecs_b[35]; // TI
+  ctx->solution.solidus_rho         = ctx->solution.solutionVecs_b[36]; // TI
+  ctx->solution.solidus_temp        = ctx->solution.solutionVecs_b[37]; // TI
+  ctx->solution.temp                = ctx->solution.solutionVecs_b[38];
+  ctx->solution.visc                = ctx->solution.solutionVecs_b[39];
 
   ierr = DMCreateLocalVector(ctx->da_b,&ctx->work_local_b);CHKERRQ(ierr);
 
-  for (i=0;i<NUMSOLUTIONVECSS;++i){
-    ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.solutionVecsS[i]));CHKERRQ(ierr);
+  for (i=0;i<NUMSOLUTIONVECS_S;++i){
+    ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.solutionVecs_s[i]));CHKERRQ(ierr);
   }
-  ctx->solution.fusion_s            = ctx->solution.solutionVecsS[0]; // TI
-  ctx->solution.fusion_curve_s      = ctx->solution.solutionVecsS[1]; // TI
-  ctx->solution.fusion_curve_temp_s = ctx->solution.solutionVecsS[2]; // TI
-  ctx->solution.fusion_temp_s       = ctx->solution.solutionVecsS[3]; // TI
-  ctx->solution.lhs_s               = ctx->solution.solutionVecsS[4];
-  ctx->solution.liquidus_rho_s      = ctx->solution.solutionVecsS[5]; // TI
-  ctx->solution.liquidus_s          = ctx->solution.solutionVecsS[6]; // TI
-  ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecsS[7]; // TI
-  ctx->solution.phi_s               = ctx->solution.solutionVecsS[8];
-  ctx->solution.rhs_s               = ctx->solution.solutionVecsS[9]; 
-  ctx->solution.rho_s               = ctx->solution.solutionVecsS[10];
-  ctx->solution.S_s                 = ctx->solution.solutionVecsS[11];
-  ctx->solution.solidus_s           = ctx->solution.solutionVecsS[12]; // TI
-  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecsS[13]; // TI
-  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecsS[14]; // TI
-  ctx->solution.temp_s              = ctx->solution.solutionVecsS[15];
-  ctx->solution.cp_s                = ctx->solution.solutionVecsS[16];
-  ctx->solution.gamma_s             = ctx->solution.solutionVecsS[17];
-  ctx->solution.dTdrs_s             = ctx->solution.solutionVecsS[18];
-  ctx->solution.dTdrs_mix_s         = ctx->solution.solutionVecsS[19]; // TI
-  ctx->solution.dfusdr_s            = ctx->solution.solutionVecsS[20]; // TI
-  ctx->solution.dfusdr_temp_s       = ctx->solution.solutionVecsS[21]; // TI
-  ctx->solution.cp_mix_s            = ctx->solution.solutionVecsS[22]; // TI
+  ctx->solution.fusion_s            = ctx->solution.solutionVecs_s[0]; // TI
+  ctx->solution.fusion_curve_s      = ctx->solution.solutionVecs_s[1]; // TI
+  ctx->solution.fusion_curve_temp_s = ctx->solution.solutionVecs_s[2]; // TI
+  ctx->solution.fusion_temp_s       = ctx->solution.solutionVecs_s[3]; // TI
+  ctx->solution.lhs_s               = ctx->solution.solutionVecs_s[4];
+  ctx->solution.liquidus_rho_s      = ctx->solution.solutionVecs_s[5]; // TI
+  ctx->solution.liquidus_s          = ctx->solution.solutionVecs_s[6]; // TI
+  ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecs_s[7]; // TI
+  ctx->solution.phi_s               = ctx->solution.solutionVecs_s[8];
+  ctx->solution.rhs_s               = ctx->solution.solutionVecs_s[9]; 
+  ctx->solution.rho_s               = ctx->solution.solutionVecs_s[10];
+  ctx->solution.S_s                 = ctx->solution.solutionVecs_s[11];
+  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[12]; // TI
+  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[13]; // TI
+  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[14]; // TI
+  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[15];
+  ctx->solution.cp_s                = ctx->solution.solutionVecs_s[16];
+  ctx->solution.gamma_s             = ctx->solution.solutionVecs_s[17];
+  ctx->solution.dTdrs_s             = ctx->solution.solutionVecs_s[18];
+  ctx->solution.dTdrs_mix_s         = ctx->solution.solutionVecs_s[19]; // TI
+  ctx->solution.dfusdr_s            = ctx->solution.solutionVecs_s[20]; // TI
+  ctx->solution.dfusdr_temp_s       = ctx->solution.solutionVecs_s[21]; // TI
+  ctx->solution.cp_mix_s            = ctx->solution.solutionVecs_s[22]; // TI
 
   ierr = DMCreateLocalVector(ctx->da_s,&ctx->work_local_s);CHKERRQ(ierr);
 
@@ -148,18 +148,18 @@ PetscErrorCode destroy_ctx(Ctx* ctx)
   free_memory_interp(ctx);
   ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
-  for (i=0;i<NUMMESHVECS;++i){
-    ierr = VecDestroy(&ctx->mesh.meshVecs[i]);CHKERRQ(ierr);
+  for (i=0;i<NUMMESHVECS_B;++i){
+    ierr = VecDestroy(&ctx->mesh.meshVecs_b[i]);CHKERRQ(ierr);
   }
-  for (i=0;i<NUMMESHVECSS;++i){
-    ierr = VecDestroy(&ctx->mesh.meshVecsS[i]);CHKERRQ(ierr);
+  for (i=0;i<NUMMESHVECS_S;++i){
+    ierr = VecDestroy(&ctx->mesh.meshVecs_s[i]);CHKERRQ(ierr);
   }
-  for (i=0;i<NUMSOLUTIONVECS;++i){
-    ierr = VecDestroy(&ctx->solution.solutionVecs[i]);CHKERRQ(ierr);
+  for (i=0;i<NUMSOLUTIONVECS_B;++i){
+    ierr = VecDestroy(&ctx->solution.solutionVecs_b[i]);CHKERRQ(ierr);
   }
   ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
-  for (i=0;i<NUMSOLUTIONVECSS;++i){
-    ierr = VecDestroy(&ctx->solution.solutionVecsS[i]);CHKERRQ(ierr);
+  for (i=0;i<NUMSOLUTIONVECS_S;++i){
+    ierr = VecDestroy(&ctx->solution.solutionVecs_s[i]);CHKERRQ(ierr);
   }
   ierr = VecDestroy(&ctx->work_local_s);CHKERRQ(ierr);
 

@@ -26,25 +26,25 @@ PetscErrorCode set_mesh( Ctx *E)
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* Create vectors required for the mesh */
-    for (i=0;i<NUMMESHVECS;++i) {
-      ierr = DMCreateGlobalVector(E->da_b,&M->meshVecs[i]);CHKERRQ(ierr);
+    for (i=0;i<NUMMESHVECS_B;++i) {
+      ierr = DMCreateGlobalVector(E->da_b,&M->meshVecs_b[i]);CHKERRQ(ierr);
     }
     // TODO: We should be creating ALL the vecs at the same time - do that as we roll all this into one function (create these vecs outside this function)
 
-    M->area_b     = M->meshVecs[0];
-    M->dPdr_b     = M->meshVecs[1];
-    M->pressure_b = M->meshVecs[2];
-    M->radius_b   = M->meshVecs[3];
-    M->mix_b      = M->meshVecs[4];
+    M->area_b     = M->meshVecs_b[0];
+    M->dPdr_b     = M->meshVecs_b[1];
+    M->pressure_b = M->meshVecs_b[2];
+    M->radius_b   = M->meshVecs_b[3];
+    M->mix_b      = M->meshVecs_b[4];
 
-    for (i=0;i<NUMMESHVECSS;++i) {
-      ierr = DMCreateGlobalVector(E->da_s,&M->meshVecsS[i]);CHKERRQ(ierr);
+    for (i=0;i<NUMMESHVECS_S;++i) {
+      ierr = DMCreateGlobalVector(E->da_s,&M->meshVecs_s[i]);CHKERRQ(ierr);
     }
-    M->pressure_s = M->meshVecsS[0];
-    M->radius_s   = M->meshVecsS[1];
-    M->volume_s   = M->meshVecsS[2];
-    M->dPdr_s     = M->meshVecsS[3];
-    M->area_s     = M->meshVecsS[4];
+    M->pressure_s = M->meshVecs_s[0];
+    M->radius_s   = M->meshVecs_s[1];
+    M->volume_s   = M->meshVecs_s[2];
+    M->dPdr_s     = M->meshVecs_s[3];
+    M->area_s     = M->meshVecs_s[4];
 
     /* basic node spacing (negative) */
     M->dx_b = -(RADOUT-RADIN) / (numpts_b-1);
