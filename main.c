@@ -2,6 +2,9 @@ static char help[] ="Parallel magma ocean timestepper\n\
                      -n : specify the number of staggered points\n\
                      -sinit : specify an entropy value to base the initial condition upon\n";
 
+/* Note: if you would like more verbose output, see the preprocessor define
+         in global_defs.h */
+
 #include "petsc.h"
 #include "ctx.h" 
 
@@ -13,8 +16,13 @@ int main(int argc, char ** argv)
   TS             ts;      /* ODE solver object */
   Vec            S_s;     /* Solution Vector */
   Ctx            ctx;     /* Solver context */
+  PetscBool      test_view; /* View vectors for testing purposes */
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
+
+  /* Obtain a command-line argument for testing */
+  test_view = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-test_view",&test_view,NULL);CHKERRQ(ierr);
 
   // Note: it might make for a less-confusing code if all command-line 
   //       processing was here, instead of hidden in the ctx setup
@@ -26,7 +34,7 @@ int main(int argc, char ** argv)
   /* We will use this solution vector as our data object for timestepping */
   S_s = ctx.solution.S_s;
 
-  {
+  if (test_view) {
     PetscViewer viewer;
     ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
@@ -60,12 +68,12 @@ int main(int argc, char ** argv)
   /* Solve */
   ierr = TSSolve(ts,S_s);CHKERRQ(ierr);
 
-  /* For debugging, view some things stored in the context.
+  /* For testing, view some things stored in the context.
       Note that there are other viewer implementations, including 
       those that will write to a file which we should be able
       to open with python.
   */
-  {
+  if (test_view) {
     PetscViewer viewer;
     ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);

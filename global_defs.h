@@ -16,8 +16,8 @@
 #include "petsc.h"
 
 /* Define to have verbose and/or debugging output */
-#define VERBOSE 1
-#define DEBUGOUTPUT 1
+//#define VERBOSE 1
+////#define DEBUGOUTPUT 1
 
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */

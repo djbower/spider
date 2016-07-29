@@ -2,12 +2,14 @@
 
 PetscErrorCode set_lookups( Ctx *E ) 
 {
-    PetscErrorCode ierr;
     /* set all 1-D and 2-D lookups */
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_lookup:\n" );CHKERRQ(ierr);
+    {
+      PetscErrorCode ierr;
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"set_lookup:\n" );CHKERRQ(ierr);
+    }
 #endif
 
     /* solid lookups */
@@ -47,7 +49,6 @@ PetscErrorCode set_lookups( Ctx *E )
 static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 {
 
-    PetscErrorCode ierr;
     FILE *fp;
     size_t i=0, j=0, k=0;
     char string[100];
@@ -57,7 +58,10 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp2d:\n");CHKERRQ(ierr);
+    {
+      PetscErrorCode ierr;
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp2d:\n");CHKERRQ(ierr);
+    }
 #endif
     if (sizeof(PetscScalar) != sizeof(double)){
       perror("PetscScalar must be double to use the dataio functions here");
@@ -138,7 +142,6 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n )
 {
 
-    PetscErrorCode ierr;
     FILE *fp;
     size_t i=0;
     char string[100];
@@ -148,7 +151,10 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
     PetscFunctionBeginUser;
 
 #if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp1d:\n");CHKERRQ(ierr);
+    {
+      PetscErrorCode ierr;
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp1d:\n");CHKERRQ(ierr);
+    }
 #endif
     if (sizeof(PetscScalar) != sizeof(double)){
       SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"PetscScalar must be double to use the dataio functions here");
