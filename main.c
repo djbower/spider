@@ -1,5 +1,6 @@
 static char help[] ="Parallel magma ocean timestepper\n\
-                     -n : specify the number of staggered points";
+                     -n : specify the number of staggered points\n\
+                     -sinit : specify an entropy value to base the initial condition upon\n";
 
 #include "petsc.h"
 #include "ctx.h" 
@@ -14,6 +15,9 @@ int main(int argc, char ** argv)
   Ctx            ctx;     /* Solver context */
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
+
+  // Note: it might make for a less-confusing code if all command-line 
+  //       processing was here, instead of hidden in the ctx setup
 
   /* Perform all initialization for our problem, allocating data 
      Note that this checks for a command line option -n */

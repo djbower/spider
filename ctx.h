@@ -8,6 +8,7 @@
 #undef I
 
 #include "global_defs.h"
+#include "ic.h"
 
 /* common structures */
 
@@ -99,12 +100,13 @@ PetscErrorCode d_dr( Ctx *, Vec, Vec );
 PetscErrorCode set_d_dr2( Ctx * );
 PetscErrorCode free_memory_interp( Ctx * );
 PetscErrorCode set_capacitance( Ctx *, Vec );
-PetscErrorCode set_initial_condition( Ctx * );
 PetscErrorCode set_lookups( Ctx * );
 PetscErrorCode set_matprop_and_flux( Ctx * );
 PetscErrorCode set_mesh( Ctx * );
 PetscErrorCode set_core_cooling( Ctx * );
 PetscErrorCode set_twophase( Ctx * );
+
+PetscErrorCode set_initial_condition( Ctx *, PetscScalar );
 
 PetscScalar get_val1d( Interp1d *, PetscScalar );
 PetscScalar get_val2d( Interp2d *, PetscScalar, PetscScalar );

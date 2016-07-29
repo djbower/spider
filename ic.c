@@ -2,22 +2,21 @@
 
 static PetscErrorCode make_super_adiabatic( Ctx * );
 
-PetscErrorCode set_initial_condition( Ctx *E ) 
+/* set initial condition, taking a constant value and making it super_adiabatic  */
+PetscErrorCode set_initial_condition(Ctx *E, PetscScalar S_init ) 
 {
-    /* set initial condition */
-
     PetscErrorCode ierr;
     Solution       *S;
     PetscInt       numpts_b;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition:\n");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition : basing i.c. on a value of %f\n",S_init);CHKERRQ(ierr);
 #endif
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     S = &E->solution;
 
-    ierr = VecSet(S->S_s,SINIT);CHKERRQ(ierr);
+    ierr = VecSet(S->S_s,S_init);CHKERRQ(ierr);
 
     make_super_adiabatic( E ); 
 

@@ -6,6 +6,7 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   PetscErrorCode ierr;
   PetscInt       i,numpts_b,numpts_s; 
   PetscBool      set;
+  PetscScalar    S_init;
 
   PetscFunctionBeginUser;
 
@@ -128,11 +129,15 @@ PetscErrorCode setup_ctx(Ctx* ctx)
 
   set_core_cooling(ctx);
 
+  /* Obtain a command-line argument for S_init */
+  S_init = SINIT_DEFAULT;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&S_init,NULL);CHKERRQ(ierr);
+
   /* Create a solution vector (S at the staggered nodes) and fill with an initial condition 
       Note that this is inside the Ctx 
   */
   ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.S_s));CHKERRQ(ierr); 
-  set_initial_condition(ctx);CHKERRQ(ierr); 
+  set_initial_condition(ctx,S_init);CHKERRQ(ierr); 
 
   PetscFunctionReturn(0);
 }
