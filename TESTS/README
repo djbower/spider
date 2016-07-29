@@ -1,4 +1,4 @@
-Python rhs for initial condition (defined by SINIT in global_defs.h)
+Python ODE rhs for initial condition (defined by SINIT in global_defs.h)
 
 100 basic nodes
 
