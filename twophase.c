@@ -220,7 +220,6 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
        because they are only pressure-dependent */
 
     PetscErrorCode ierr;
-    Mesh *M;
     Solution *S;
 
     PetscFunctionBeginUser;
@@ -228,7 +227,6 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_mixed_phase\n");CHKERRQ(ierr);
 #endif
 
-    M = &E->mesh;
     S = &E->solution;
 
     /* dTdrs_mix = -dfusdr * (fusion_temp/fusion) + dfusdr_temp */
