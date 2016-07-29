@@ -9,3 +9,5 @@ py.rhs.[SINIT]
 SINIT = 3000 is super-liquidus
 SINIT = 1600 is sub-solidus
 SINIT = 2500 is a mixture
+
+See ../makefile for some tests which should match these
