@@ -38,8 +38,8 @@
 #define NUMPTS_S_DEFAULT NUMPTS_B_DEFAULT-1 /* automagically determined */
 
 /* initial condition: set entropy of adiabat */
-//static const PetscScalar SINIT_DEFAULT = 3000.0; // all super-liquidus
-static const PetscScalar SINIT_DEFAULT = 1600.0; // all sub-solidus
+static const PetscScalar SINIT = 3000.0; // all super-liquidus
+//static const PetscScalar SINIT = 1600.0; // all sub-solidus
 /* this initial condition spans all melt fractions and is useful
    for testing to make sure the RHS is correct */
 //static const PetscScalar SINIT_DEFAULT = 2500.0;

@@ -220,7 +220,6 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
        because they are only pressure-dependent */
 
     PetscErrorCode ierr;
-    Mesh *M;
     Solution *S;
 
     PetscFunctionBeginUser;
@@ -228,7 +227,6 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_mixed_phase\n");CHKERRQ(ierr);
 #endif
 
-    M = &E->mesh;
     S = &E->solution;
 
     /* dTdrs_mix = -dfusdr * (fusion_temp/fusion) + dfusdr_temp */
@@ -236,13 +234,11 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
     ierr = VecPointwiseMult(S->dTdrs_mix,S->dTdrs_mix,S->dfusdr);CHKERRQ(ierr);
     ierr = VecScale( S->dTdrs_mix, -1.0 );
     ierr = VecAXPY(S->dTdrs_mix,1.0,S->dfusdr_temp);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->dTdPs_mix,S->dTdrs_mix,M->dPdr_b);CHKERRQ(ierr);
 
     ierr = VecPointwiseDivide(S->dTdrs_mix_s,S->fusion_temp_s,S->fusion_s);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->dTdrs_mix_s,S->dTdrs_mix_s,S->dfusdr_s);CHKERRQ(ierr);
     ierr = VecScale( S->dTdrs_mix_s, -1.0 );
     ierr = VecAXPY(S->dTdrs_mix_s,1.0,S->dfusdr_temp_s);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->dTdrs_mix_s,S->dTdrs_mix_s,M->dPdr_s);CHKERRQ(ierr);
 
     /* cp_mix and cp_mix_s */
     ierr = VecPointwiseDivide(S->cp_mix,S->fusion,S->fusion_temp);CHKERRQ(ierr);

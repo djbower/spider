@@ -1,0 +1,37 @@
+these are outputs for the solution variable (i.e., S_s) and the rhs for the first 127 time steps using the python version of the code.
+
+The initial condition is 3000.0 (with the standard super adiabatic factor of 0.01)
+
+These results should be reproducable with our Petsc version.
+
+Python time stepper details:
+
+ [solver]
+216 # RHS returns dS/dt with units of J / ( kg K (6371000 s) )
+217 # 6371000 s is 73.73842592592592 days is 1 integration unit
+218 # delta time per time step (in integration units)
+219 dstep = 1 # integer (5 is about 1 year)
+220 # end time step
+221 endstep = 10000 # integer
+222 # output time step
+223 outstep = 1 # integer number of time steps
+224 # absolute tolerance
+225 atol = 1.0e-10
+226 # relative tolerance
+227 rtol = 1.0e-10
+228 # maximum order of method
+229 maxord = 1
+230 # maximum internal steps
+231 maxsteps = 50000
+232 # maximum convergence failures
+233 maxncf = 100
+234 # stability detection
+235 stablimdet = 0
+236 # report continuously
+237 report_continuously = 0
+238 # boundary condition switches
+239 EVENT = 0
+240 # melt fraction to pin surface
+241 phi_surface = 0.4
+242 # starting time step
+243 start_step = 0 
