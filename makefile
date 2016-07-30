@@ -53,7 +53,7 @@ test2: ${EXNAME}
 	@diff test2.tmp testref/test2.ref && \
     echo "\033[32mSuccess\033[0m" || \
     echo "\033[31mFailure: output does not match reference (see diff above)\033[0m"
-	#@rm -f test2.tmp
+	@rm -f test2.tmp
 
 # SINIT = 3000
 test3: ${EXNAME}
@@ -75,7 +75,7 @@ test4: ${EXNAME}
 	@diff test4.tmp testref/test4.ref && \
     echo "\033[32mSuccess\033[0m" || \
     echo "\033[31mFailure: output does not match reference (see diff above)\033[0m"
-	#@rm -f test4.tmp
+	@rm -f test4.tmp
 
 .PHONY: test test1 test2 test3 test4
 
