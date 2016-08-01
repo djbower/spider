@@ -9,9 +9,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void
 
   PetscFunctionBeginUser;
 
-#if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"Custom monitor: Step %D, t=%f\n",step,time);CHKERRQ(ierr);
-#endif
+  {
+    PetscReal minval,maxval;
+    ierr = VecMin(x,NULL,&minval);CHKERRQ(ierr);
+    ierr = VecMax(x,NULL,&maxval);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"Custom monitor: Step %D, t=%f. Min/Max %f/%f\n",step,time,minval,maxval);CHKERRQ(ierr);
+    
+  }
 
   /* Dump the solution to a file named for the timestep */
   {
