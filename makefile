@@ -1,29 +1,41 @@
+# executable name
 EXNAME = main
+
+# Required objects (rules included below build these from .c files)
+OBJ = main.o ctx.o rhs.o ic.o mesh.o lookup.o bc.o util.o twophase.o monitor.o
+
 ALL: ${EXNAME}
 
-.PHONY: ALL
-
-# TODO: add simple test against a ref output
-
 clean ::
-	rm -f *.o ${EXNAME}
+	rm -f ${EXNAME} ${OBJ}
+
+.PHONY: ALL clean
 
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
 PETSC_CC_INCLUDES+=-I/opt/local/include
 
-#CFLAGS+= -ferror-limit=3
-
 GSL_LIB=-L/opt/local/lib -lgsl -lgslcblas
 
-${EXNAME} : main.o ctx.o rhs.o ic.o mesh.o lookup.o bc.o util.o twophase.o
+${EXNAME} : ${OBJ}
 	-${CLINKER}  -o $@ $^  ${GSL_LIB} ${PETSC_TS_LIB} 
 	#${RM} $^
 
 %.o : global_defs.h
 
-# Some tests
+### Output ####################################################################
+
+# We do not by default clear any of the output data (so beware of stale files)
+#  use "make clear_output" to delete the output
+clear_output :
+	rm -f output/TIMESTEPPER/S_s/S_s*
+	rm -f output/TIMESTEPPER/rhs/rhs*
+
+.PHONY : clear_output
+
+### Tests #####################################################################
+
 # Note: to update the reference for a test, you can
 #  1. Comment out the @rm -f testX.tmp line
 #  2. Run the test

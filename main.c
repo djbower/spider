@@ -1,28 +1,34 @@
 static char help[] ="Parallel magma ocean timestepper\n\
                      -n : specify the number of staggered points\n\
-                     -sinit : specify an entropy value to base the initial condition upon\n";
+                     -sinit : specify an entropy value to base the initial condition upon\n\
+                     -monitor : use custom monitor to dump output\n";
 
 /* Note: if you would like more verbose output, see the preprocessor define
          in global_defs.h */
 
 #include "petsc.h"
 #include "ctx.h" 
+#include "monitor.h"
 
 PetscErrorCode RHSFunction(TS,PetscReal,Vec,Vec,void*);
 
 int main(int argc, char ** argv)
 {
   PetscErrorCode ierr;
-  TS             ts;      /* ODE solver object */
-  Vec            S_s;     /* Solution Vector */
-  Ctx            ctx;     /* Solver context */
+  TS             ts;        /* ODE solver object */
+  Vec            S_s;       /* Solution Vector */
+  Ctx            ctx;       /* Solver context */
   PetscBool      test_view; /* View vectors for testing purposes */
+  PetscBool      monitor;   /* View vectors for testing purposes */
+  const PetscReal t0 = 0;   /* Initial time */
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
   /* Obtain a command-line argument for testing */
   test_view = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-test_view",&test_view,NULL);CHKERRQ(ierr);
+  monitor = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&monitor,NULL);CHKERRQ(ierr);
 
   // Note: it might make for a less-confusing code if all command-line 
   //       processing was here, instead of hidden in the ctx setup
@@ -53,12 +59,30 @@ int main(int argc, char ** argv)
  // ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
   // TODO: More CVODE setup ...
 
+
   /* Set up the RHS Function */
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
 
   /* Set up the integration period */
   ierr = TSSetDuration(ts,1,1.e12);CHKERRQ(ierr); /* One time step, huge final time */
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
+
+  /* Set up a custom monitor for the timestepper. Note that if you just
+     want the solution at every timestep, you should be able to use
+
+       -ts_monitor_solution ascii:out.m:ascii_matlab
+
+  */
+  if (monitor) {
+    Vec dummy;
+
+    ierr = TSMonitorSet(ts,TSCustomMonitor,&ctx,NULL);CHKERRQ(ierr);
+
+    /* Wastefully compute the rhs now so we can see it at the first timestep */
+    ierr = VecDuplicate(S_s,&dummy);CHKERRQ(ierr);
+    ierr = RHSFunction(ts,t0,S_s,dummy,&ctx);CHKERRQ(ierr);
+    ierr = VecDestroy(&dummy);CHKERRQ(ierr);
+  }
 
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
