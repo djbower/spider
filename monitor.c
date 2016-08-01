@@ -1,6 +1,7 @@
 /* Here, we define a monitor to produce output for debugging */
 
 #include "monitor.h"
+#include "rhs.h"
 
 PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void * ptr)
 {
@@ -13,7 +14,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void
     PetscReal minval,maxval;
     ierr = VecMin(x,NULL,&minval);CHKERRQ(ierr);
     ierr = VecMax(x,NULL,&maxval);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"Custom monitor: Step %D, t=%f. Min/Max %f/%f\n",step,time,minval,maxval);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Writing output at macro Step %D, t=%f. Min/Max %f/%f\n",step,time,minval,maxval);CHKERRQ(ierr);
     
   }
 
@@ -33,10 +34,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
 
-  /* Dump the rhs stored in the ctx to a file named for the timestep */
+  /* Recompute the rhs stored in the ctx to a file named for the timestep */
   {
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
+
+    ierr = RHSFunction(ts,time,x,ctx->solution.rhs_s,ctx);CHKERRQ(ierr);
+
     ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/TIMESTEPPER/rhs/rhs_%D.m",step);CHKERRQ(ierr);
     ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"rhs_step_%D",step);CHKERRQ(ierr);
 
@@ -45,6 +49,11 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void
     ierr = PetscObjectSetName((PetscObject)x,vecname);CHKERRQ(ierr);
     ierr = VecView(ctx->solution.rhs_s,viewer);CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+  }
+
+  /* View the TS itself (except on first step)*/
+  if (step) {
+    ierr = TSView(ts,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
   }
 
   PetscFunctionReturn(0);

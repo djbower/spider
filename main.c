@@ -9,26 +9,33 @@ static char help[] ="Parallel magma ocean timestepper\n\
 #include "petsc.h"
 #include "ctx.h" 
 #include "monitor.h"
-
-PetscErrorCode RHSFunction(TS,PetscReal,Vec,Vec,void*);
+#include "rhs.h"
 
 int main(int argc, char ** argv)
 {
   PetscErrorCode ierr;
-  TS             ts;        /* ODE solver object */
-  Vec            S_s;       /* Solution Vector */
-  Ctx            ctx;       /* Solver context */
-  PetscBool      test_view; /* View vectors for testing purposes */
-  PetscBool      monitor;   /* View vectors for testing purposes */
-  const PetscReal t0 = 0;   /* Initial time */
+  TS             ts;                   /* ODE solver object */
+  Vec            S_s;                  /* Solution Vector */
+  Ctx            ctx;                  /* Solver context */
+  PetscBool      test_view;            /* View vectors for testing purposes */
+  PetscBool      monitor;              /* Macros step custom monitor (monitor.c) */
+  const PetscReal t0 = 0;              /* Initial time */
+  const PetscInt maxsteps = 1000000000;/* Max internal steps */
+  PetscInt       nstepsmacro = 100;    /* Max macros steps */
+  PetscReal      dtmacro = 1.0;        /* Macros step size (see stepover note) */
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
   /* Obtain a command-line argument for testing */
   test_view = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-test_view",&test_view,NULL);CHKERRQ(ierr);
-  monitor = PETSC_FALSE;
+  monitor = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&monitor,NULL);CHKERRQ(ierr);
+  nstepsmacro = 100;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&nstepsmacro,NULL);CHKERRQ(ierr);
+
+  ierr = PetscPrintf(PETSC_COMM_WORLD," *** Will perform %D macro steps of length %f\n",
+      nstepsmacro,dtmacro);CHKERRQ(ierr);
 
   // Note: it might make for a less-confusing code if all command-line 
   //       processing was here, instead of hidden in the ctx setup
@@ -56,47 +63,44 @@ int main(int argc, char ** argv)
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
   ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
- // ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
-  // TODO: More CVODE setup ...
-
+  ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts,1e-10,1e-10);CHKERRQ(ierr);
 
   /* Set up the RHS Function */
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
 
-  /* Set up the integration period */
-  ierr = TSSetDuration(ts,1,1.e12);CHKERRQ(ierr); /* One time step, huge final time */
-  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
-
-  /* Set up a custom monitor for the timestepper. Note that if you just
-     want the solution at every timestep, you should be able to use
-
-       -ts_monitor_solution ascii:out.m:ascii_matlab
-
-  */
-  if (monitor) {
-    Vec dummy;
-
-    ierr = TSMonitorSet(ts,TSCustomMonitor,&ctx,NULL);CHKERRQ(ierr);
-
-    /* Wastefully compute the rhs now so we can see it at the first timestep */
-    ierr = VecDuplicate(S_s,&dummy);CHKERRQ(ierr);
-    ierr = RHSFunction(ts,t0,S_s,dummy,&ctx);CHKERRQ(ierr);
-    ierr = VecDestroy(&dummy);CHKERRQ(ierr);
-  }
+  /* Set up the integration period for first macro step */
+  ierr = TSSetDuration(ts,maxsteps,dtmacro);CHKERRQ(ierr); 
+  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr); /* Note: will not compute at precisely the requested time (TODO: see if interpolate can be made to work) */
 
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
 
-  /* Set up some kind of monitor or viewer (omitted for now) */
-
-  /* Solve */
-  ierr = TSSolve(ts,S_s);CHKERRQ(ierr);
+  /* Solve macro steps (could also use a monitor which keeps some state) */
+  {
+    PetscReal time = t0;
+    PetscInt stepmacro=0;
+    if (monitor) {
+      ierr = TSCustomMonitor(ts,stepmacro,time,S_s,&ctx);CHKERRQ(ierr);
+    }
+    for (stepmacro=1;stepmacro<=nstepsmacro;++stepmacro){
+      const PetscInt time_next = (stepmacro + 1) * dtmacro;
+      ierr = TSSolve(ts,S_s);CHKERRQ(ierr);
+      ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
+      if (monitor) {
+        ierr = TSCustomMonitor(ts,stepmacro,time,S_s,&ctx);CHKERRQ(ierr);
+      }
+      ierr = TSSetDuration(ts,maxsteps,time_next);CHKERRQ(ierr); 
+    }
+  }
 
   /* For testing, view some things stored in the context.
       Note that there are other viewer implementations, including 
       those that will write to a file which we should be able
       to open with python.
   */
+  // TODO: update this to view after every macro step so we can automatically test 
+  //       that as well
   if (test_view) {
     PetscViewer viewer;
     ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
@@ -105,6 +109,7 @@ int main(int argc, char ** argv)
     ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing S_s ***\n");CHKERRQ(ierr);
     ierr = VecView(ctx.solution.S_s,viewer);CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing rhs_s ***\n");CHKERRQ(ierr);
+    // TODO: don't store the rhs like this. Just recompute it here
     ierr = VecView(ctx.solution.rhs_s,viewer);CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }

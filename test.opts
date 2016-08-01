@@ -1,28 +1,12 @@
 # size
--n 50
+#-n 50
 
 -options_left
--ts_view
 
-# Our custom monitor which dumps data
-#-monitor
-
-# Usual monitor
+# Usual monitor (substeps)
 -ts_monitor
 
-# Graphical monitor
-#-ts_monitor_draw_solution
+# Graphical monitor (substeps)
+-ts_monitor_draw_solution
 #-draw_pause 0.25
 
--ts_dt 1
-#-ts_max_steps 100000
-
--ts_rtol 1e-14
--ts_atol 0
-
--ts_type sundials
--ts_sundials_rtol 1e-10
--ts_sundials_atol 1e-10
-##-ts_sundials_linear_tolerance 1e-10
--ts_sundials_monitor_steps 
-#-ts_sundials_maxl 100
