@@ -22,7 +22,7 @@ ${EXNAME} : ${OBJ}
 	-${CLINKER}  -o $@ $^  ${GSL_LIB} ${PETSC_TS_LIB} 
 	#${RM} $^
 
-%.o : global_defs.h
+${OBJ} : global_defs.h
 
 ### Output ####################################################################
 
