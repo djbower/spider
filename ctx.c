@@ -181,7 +181,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     DM                da_s=E->da_s;
     Mesh              *M;
     Solution          *S;
-    Vec               pres_s, dSdr, drhodr, dTdrs;
+    Vec               pres_s, dSdr, drhodr, dTdrs, work_s;
     Interp2d          *ICM, *IEM, *IRM, *ITM, *ICS, *IES, *IRS, *ITS;
     const PetscScalar *arr_S_s, *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_cp_mix_s, *arr_dTdrs_mix_s, *arr_dPdr_s;
     PetscScalar       *arr_phi_s,*arr_rho_s,*arr_temp_s,*arr_cp_s,*arr_dTdrs_s;
@@ -200,10 +200,11 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     IRS = &E->solid_prop.rho;
     ITS = &E->solid_prop.temp;
 
-    ierr = VecCopy(S_in,S->S_s);CHKERRQ(ierr);
+    ierr = VecDuplicate(S_in,&work_s);CHKERRQ(ierr);
+    ierr = VecCopy(S_in,work_s);CHKERRQ(ierr);
 
-    // S->phi_s = (S->S_s - S->solidus_s)/S->fusion_s
-    ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
+    // S->phi_s = (work_s - S->solidus_s)/S->fusion_s
+    ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,work_s);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->phi_s,S->phi_s,S->fusion_s);CHKERRQ(ierr);
 
 
@@ -211,7 +212,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     ihi_s = ilo_s + w_s;
 
     ierr = DMDAVecGetArrayRead(da_s,M->dPdr_s,&arr_dPdr_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,work_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
@@ -228,18 +229,18 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
         /* melt only */
         if( arr_phi_s[i] >= 1.0 ){
             arr_phi_s[i] = 1.0;
-            arr_cp_s[i] = get_val2d( ICM, arr_pres_s[i], arr_S_s[i] );
+            arr_cp_s[i]    = get_val2d( ICM, arr_pres_s[i], arr_S_s[i] );
             arr_dTdrs_s[i] = get_val2d( IEM, arr_pres_s[i], arr_S_s[i] ) * arr_dPdr_s[i];
-            arr_rho_s[i] = get_val2d( IRM, arr_pres_s[i], arr_S_s[i] );
-            arr_temp_s[i] = get_val2d( ITM, arr_pres_s[i], arr_S_s[i] );
+            arr_rho_s[i]   = get_val2d( IRM, arr_pres_s[i], arr_S_s[i] );
+            arr_temp_s[i]  = get_val2d( ITM, arr_pres_s[i], arr_S_s[i] );
         }
         /* solid only */
         else if( arr_phi_s[i] <= 0.0 ){
             arr_phi_s[i] = 0.0;
-            arr_cp_s[i] = get_val2d( ICS, arr_pres_s[i], arr_S_s[i] );
+            arr_cp_s[i]    = get_val2d( ICS, arr_pres_s[i], arr_S_s[i] );
             arr_dTdrs_s[i] = get_val2d( IES, arr_pres_s[i], arr_S_s[i] ) * arr_dPdr_s[i];
-            arr_rho_s[i] = get_val2d( IRS, arr_pres_s[i], arr_S_s[i] );
-            arr_temp_s[i] = get_val2d( ITS, arr_pres_s[i], arr_S_s[i] );
+            arr_rho_s[i]   = get_val2d( IRS, arr_pres_s[i], arr_S_s[i] );
+            arr_temp_s[i]  = get_val2d( ITS, arr_pres_s[i], arr_S_s[i] );
         }
         /* mixed phase */
         else{
@@ -257,7 +258,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s,M->dPdr_s,&arr_dPdr_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,work_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
@@ -275,7 +276,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     ierr = VecDuplicate( S->rho_s, &drhodr );CHKERRQ(ierr);
     ierr = MatMult( E->d_dr2, S->rho_s, drhodr );CHKERRQ(ierr);
     ierr = VecPointwiseDivide( drhodr, drhodr, S->rho_s );CHKERRQ(ierr);
-    ierr = VecAXPY( S->gamma_s, 1.0, drhodr );CHKERRQ(ierr);
+    ierr = VecCopy( drhodr, S->gamma_s );CHKERRQ(ierr);
 
     /* 1/T * dT/drs */
     ierr = VecDuplicate( S->dTdrs_s, &dTdrs );CHKERRQ(ierr);
@@ -284,8 +285,8 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     ierr = VecAXPY( S->gamma_s, 1.0, dTdrs );CHKERRQ(ierr);
 
     /* 1/cp * dSdr */
-    ierr = VecDuplicate( S->S_s, &dSdr );CHKERRQ(ierr);
-    ierr = MatMult( E->d_dr2, S->S_s, dSdr );CHKERRQ(ierr);
+    ierr = VecDuplicate( work_s, &dSdr );CHKERRQ(ierr);
+    ierr = MatMult( E->d_dr2, work_s, dSdr );CHKERRQ(ierr);
     ierr = VecPointwiseDivide( dSdr, dSdr, S->cp_s );CHKERRQ(ierr);
     ierr = VecAXPY( S->gamma_s, 1.0, dSdr );CHKERRQ(ierr);
 
@@ -301,12 +302,14 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     // S->lhs_si = S->gamma_s * M->volume_si * S->rho_si * S->temp_si;
     ierr = VecPointwiseMult(S->lhs_s,M->volume_s,S->rho_s);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,S->temp_s);CHKERRQ(ierr);
+
     ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,S->gamma_s);CHKERRQ(ierr);
 
     /* clean up */
     ierr = VecDestroy( &drhodr );CHKERRQ(ierr);
     ierr = VecDestroy( &dSdr );CHKERRQ(ierr);
     ierr = VecDestroy( &dTdrs );CHKERRQ(ierr);
+    ierr = VecDestroy( &work_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
