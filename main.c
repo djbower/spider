@@ -1,7 +1,8 @@
 static char help[] ="Parallel magma ocean timestepper\n\
                      -n : specify the number of staggered points\n\
                      -sinit : specify an entropy value to base the initial condition upon\n\
-                     -monitor : use custom monitor to dump output\n";
+                     -monitor : use custom monitor to dump output\n\
+                     -nstepsmacro : specify the number of macro (output dump) steps\n";
 
 /* Note: if you would like more verbose output, see the preprocessor define
          in global_defs.h */
