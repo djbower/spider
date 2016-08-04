@@ -1,3 +1,7 @@
+# PETSc options file.
+# Use with
+#  ./main -options_file test.opts
+
 # size
 #-n 50
 
@@ -9,4 +13,12 @@
 # Graphical monitor (substeps)
 -ts_monitor_draw_solution
 #-draw_pause 0.25
+
+# Here are some fun opts for an adaptive rk solver, which shows
+# some crazy inaccuracies
+-ts_type arkimex 
+-ts_arkimex_type 1bee 
+-snes_mf
+-ts_rtol 1e-11
+-ts_atol 0
 
