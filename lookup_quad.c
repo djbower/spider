@@ -63,10 +63,12 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
       ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp2d:\n");CHKERRQ(ierr);
     }
 #endif
-    if (sizeof(PetscScalar) != sizeof(double)){
+
+    // DJB disabled for time being since my own functions support quad
+    /*if (sizeof(PetscScalar) != sizeof(double)){
       perror("PetscScalar must be double to use the dataio functions here");
       exit(-1);
-    }
+    }*/
 
     /* bilinear interpolation */
     // DJB double-precision
@@ -142,6 +144,8 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 
     /* if we store the x and y step, we can more quickly locate the
        relevant indices in the arrays */
+    /* DJB TODO: this does not work at present because the entropy
+       coordinate in the data tables is not constant */
     interp->dx = xa[1]-xa[0]; // TODO: confirm sign
     interp->dy = ya[1]-ya[0]; // TODO: confirm sign
 
@@ -170,9 +174,11 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
       ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp1d:\n");CHKERRQ(ierr);
     }
 #endif
-    if (sizeof(PetscScalar) != sizeof(double)){
+
+    // DJB disabled for time being since my own function supports quad
+    /*if (sizeof(PetscScalar) != sizeof(double)){
       SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"PetscScalar must be double to use the dataio functions here");
-    }
+    } */
 
     // DJB double-precision
     /* linear interpolation */
@@ -215,6 +221,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
     interp->ymax= ya[n-1];
 
     // DJB quad-precision
+    // TODO: check that spacing is constant
     interp->dx = xa[1]-xa[0];
 
     // DJB double-precision
@@ -240,8 +247,9 @@ PetscScalar get_val1d( Interp1d *I, PetscScalar x )
     // PDS: PetscFloorReal correct?
     /* DJB this assumes data is evenly spaced in input data file to
        enable us to locate the index in the array directly */
+    /* TODO: this only works because zero pressure is always the first
+       output.  Potential for a bug here */
     ind = PetscFloorReal( x/dx );
-
     x1 = xa[ind];  // x (pressure) to left
     y1 = ya[ind]; // y (quantity) to left
     y2 = ya[ind+1]; // y (quantity) to right
@@ -258,12 +266,50 @@ PetscScalar get_val1d( Interp1d *I, PetscScalar x )
 PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 {
     /* wrapper for evaluating a 2-D lookup */
+    /* bilinear interpolation that supports quad precision */
 
+    /* DJB TODO: does not work at present because entropy coordinate
+       in the data tables is not constantly spaced.  But it looks
+       like it can be, in which case this function will work well */
+
+    PetscScalar x1, x2, y1, y2, z1, z2, z3, z4;
     PetscScalar result;
+    PetscScalar dx, dy, *xa, *ya, *za, ymin, xmin;
+    PetscInt indx, indy, indz1, indz2, indz3, indz4;
+
+    dx = I->dx;
+    xa = I->xa;
+    dy = I->dy;
+    ya = I->ya;
+    za = I->za;
+    xmin = I->xmin;
+    ymin = I->ymin;
+
+    indx = PetscFloorReal( (x-xmin)/dx );
+    x1 = xa[indx]; // local min x
+    x2 = xa[indx+1]; // local max x
+
+    indy = PetscFloorReal( (y-ymin)/dy );
+    y1 = ya[indy]; // local min y
+    y2 = ya[indy+1]; // local max y
+
+    indz1 = indy*NX+indx; // min S, min P
+    z1 = za[indz1];
+    indz2 = indz1+1; // min S, max P
+    z2 = za[indz2];
+    indz3 = indz1+NX; // max S, min P
+    z3 = za[indz3];
+    indz4 = indz3+1; // max S, max P
+    z4 = za[indz4];
+
+    result = z1*(x2-x)*(y2-y);
+    result += z2*(x-x1)*(y2-y);
+    result += z3*(x2-x)*(y-y1);
+    result += z4*(x-x1)*(y-y1);
+    result /= (dx*dy);
 
     // DJB double-precision
     //result = gsl_spline2d_eval( I->interp, x, y, I->xacc, I->yacc );
-    result = 0.0; // DJB placeholder
 
     return result;
 }
