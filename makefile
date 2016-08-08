@@ -21,11 +21,12 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 
 # for quad-precision interpolation
 #PETSC_CC_INCLUDES+=''
-GSL_LIB=""
+#GSL_LIB=""
 
 
 ${EXNAME} : ${OBJ}
-	-${CLINKER}  -o $@ $^  ${GSL_LIB} ${PETSC_TS_LIB} 
+	#-${CLINKER}  -o $@ $^  ${GSL_LIB} ${PETSC_TS_LIB} 
+	-${CLINKER}  -o $@ $^ ${PETSC_TS_LIB} 
 	#${RM} $^
 
 ${OBJ} : global_defs.h

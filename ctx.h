@@ -20,6 +20,8 @@ typedef struct _Interp1d {
     PetscScalar ya[NLS];
     PetscScalar ymin;
     PetscScalar ymax;
+    // DJB for quad-precision interpolation only
+    PetscScalar dx;
     // DJB for double-precision interpolation only
     //gsl_interp *interp;
     //gsl_interp_accel *acc;
@@ -30,6 +32,12 @@ typedef struct _Interp2d {
     PetscScalar xmax;
     PetscScalar ymin;
     PetscScalar ymax;
+    // DJB for quad-precision interpolation only
+    PetscScalar xa[NX];
+    PetscScalar ya[NY];
+    PetscScalar za[NX*NY];
+    PetscScalar dx;
+    PetscScalar dy;
     // DJB for double-precision interpolation only
     //gsl_spline2d *interp;
     //gsl_interp_accel *xacc;

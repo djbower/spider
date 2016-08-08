@@ -69,7 +69,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
     }
 
     /* bilinear interpolation */
-    // DJB no longer needed
+    // DJB double-precision
     //const gsl_interp2d_type *T = gsl_interp2d_bilinear;
     //gsl_spline2d *spline = gsl_spline2d_alloc( T, NX, NY );
     //gsl_interp_accel *xacc = gsl_interp_accel_alloc();
@@ -110,7 +110,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
     }
 
     fclose( fp );
-    // DJB no longer needed
+    // DJB double precision
     //gsl_spline2d_init( spline, xa, ya, za, NX, NY );
 
     /* for debugging */
@@ -134,7 +134,18 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
     interp->ymin= ya[0];
     interp->ymax= ya[NY-1];
 
-    // DJB no longer needed
+    // DJB for quad-precision
+    // PDS: sizeof Petsc/MPI compatible?
+    memmove( interp->xa, xa, sizeof interp->xa );
+    memmove( interp->ya, ya, sizeof interp->ya );
+    memmove( interp->za, za, sizeof interp->za );
+
+    /* if we store the x and y step, we can more quickly locate the
+       relevant indices in the arrays */
+    interp->dx = xa[1]-xa[0]; // TODO: confirm sign
+    interp->dy = ya[1]-ya[0]; // TODO: confirm sign
+
+    // DJB double-precision
     //interp->interp = spline;
     //interp->xacc = xacc;
     //interp->yacc = yacc;
@@ -163,7 +174,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
       SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"PetscScalar must be double to use the dataio functions here");
     }
 
-    // DJB no longer needed
+    // DJB double-precision
     /* linear interpolation */
     //const gsl_interp_type *T = gsl_interp_linear;
     //gsl_interp *interpolation = gsl_interp_alloc( T, n );
@@ -192,7 +203,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 
     fclose( fp );
 
-    // DJB no longer needed
+    // DJB double-precision
     //gsl_interp_init( interpolation, xa, ya, n );
 
     // TODO: is this the correct way of copying an array?
@@ -203,7 +214,10 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
     interp->ymin= ya[0];
     interp->ymax= ya[n-1];
 
-    // DJB no longer needed
+    // DJB quad-precision
+    interp->dx = xa[1]-xa[0];
+
+    // DJB double-precision
     //interp->interp = interpolation;
     //interp->acc = acc;
 
@@ -214,11 +228,29 @@ PetscScalar get_val1d( Interp1d *I, PetscScalar x )
 {
     /* wrapper for evaluating a 1-D lookup */
 
-    PetscScalar result;
+    PetscScalar weight, x1, y1, y2, result;
+    PetscScalar dx, *xa, *ya;
+    PetscInt ind;
 
-    // DJB no longer needed
+    dx = I->dx;
+    xa = I->xa;
+    ya = I->ya;
+
+    /* simple linear interpolation */
+    // PDS: PetscFloorReal correct?
+    /* DJB this assumes data is evenly spaced in input data file to
+       enable us to locate the index in the array directly */
+    ind = PetscFloorReal( x/dx );
+
+    x1 = xa[ind];  // x (pressure) to left
+    y1 = ya[ind]; // y (quantity) to left
+    y2 = ya[ind+1]; // y (quantity) to right
+    weight = (x-x1) / dx; // 1.0 must equal y2, 0.0 must equal y1
+
+    result = y2 * weight + y1 * (1.0-weight);
+
+    // DJB double-precision
     //result = gsl_interp_eval( I->interp, I->xa, I->ya, x, I->acc );
-    result = 0.0; // DJB placeholder
 
     return result;
 }
@@ -229,7 +261,7 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 
     PetscScalar result;
 
-    // DJB no longer needed
+    // DJB double-precision
     //result = gsl_spline2d_eval( I->interp, x, y, I->xacc, I->yacc );
     result = 0.0; // DJB placeholder
 
