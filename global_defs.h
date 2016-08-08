@@ -6,11 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* DJB only for double-precision interpolation */
 /* gsl library for 1D and 2D interpolation */
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_interp.h>
-#include <gsl/gsl_interp2d.h>
-#include <gsl/gsl_spline2d.h>
+//#include <gsl/gsl_math.h>
+//#include <gsl/gsl_interp.h>
+//#include <gsl/gsl_interp2d.h>
+//#include <gsl/gsl_spline2d.h>
 
 /* PETSc (for data types) */
 #include "petsc.h"
