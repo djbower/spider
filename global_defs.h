@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+// DJB for quad precision only
+#include <quadmath.h>
 
 /* DJB only for double-precision interpolation */
 /* gsl library for 1D and 2D interpolation */
