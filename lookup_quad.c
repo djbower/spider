@@ -51,7 +51,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 
     FILE *fp;
     size_t i=0, j=0, k=0;
-    char string[100];
+    char string[100], xtemp[30], ytemp[30], ztemp[30];
     PetscScalar x, y, z;
     PetscScalar xa[NX], ya[NY], za[NX*NY];
     PetscScalar xscale, yscale, zscale;
@@ -90,10 +90,25 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
         if( i==HEAD-1 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
-            sscanf( string, "%lf %lf %lf", &xscale, &yscale, &zscale );
+            /* PDS: this general form of reading a string and then
+               converting to a float128 seems to be the way of doing it.
+               But does Petsc have its own function for doing this? */
+            // DJB for quad precision only
+            scanf( string, "%s %s %s", &xtemp, &ytemp, &ztemp );
+            xscale = strtoflt128(xtemp, NULL);
+            yscale = strtoflt128(ytemp, NULL);
+            zscale = strtoflt128(ztemp, NULL);
+            // DJB for double precision only
+            //sscanf( string, "%lf %lf %lf", &xscale, &yscale, &zscale );
         }
         if( i>=HEAD ){
-            sscanf(string, "%lf %lf %lf", &x, &y, &z );
+            // DJB for quad precision only
+            scanf( string, "%s %s %s", &xtemp, &ytemp, &ztemp );
+            x = strtoflt128(xtemp, NULL);;
+            y = strtoflt128(ytemp, NULL);
+            z = strtoflt128(ztemp, NULL);
+            // DJB for double precision only
+            //sscanf(string, "%lf %lf %lf", &x, &y, &z );
             /* lookup value */
             za[i-HEAD] = z * zscale;
             /* x coordinate */
@@ -165,7 +180,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 
     FILE *fp;
     size_t i=0;
-    char string[100];
+    char string[100], xtemp[30], ytemp[30];
     PetscScalar x, y, xscale, yscale;
     PetscScalar xa[n], ya[n];
 
@@ -200,10 +215,20 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
         if( i==HEAD-1 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
-            sscanf( string, "%lf %lf", &xscale, &yscale );
+            // DJB quad precision only
+            scanf( string, "%s %s", &xtemp, &ytemp );
+            xscale = strtoflt128(xtemp, NULL);
+            yscale = strtoflt128(ytemp, NULL);
+            // DJB double precision only
+            //sscanf( string, "%lf %lf", &xscale, &yscale );
             }
         if( i>=HEAD ){
-            sscanf(string, "%lf %lf", &x, &y );
+            // DJB quad precision only
+            scanf( string, "%s %s", &xtemp, &ytemp );
+            x = strtoflt128(xtemp, NULL);
+            y = strtoflt128(ytemp, NULL);
+            // DJB double precision only
+            //sscanf(string, "%lf %lf", &x, &y );
             xa[i-HEAD] = x * xscale;
             ya[i-HEAD] = y * yscale;
             }
