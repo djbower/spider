@@ -144,10 +144,13 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 
     /* if we store the x and y step, we can more quickly locate the
        relevant indices in the arrays */
+
+    /* DJB pressure is always constantly spaced (I think) */
+    interp->dx = xa[1]-xa[0]; // TODO: confirm sign
+
     /* DJB TODO: this does not work at present because the entropy
        coordinate in the data tables is not constant */
-    interp->dx = xa[1]-xa[0]; // TODO: confirm sign
-    interp->dy = ya[1]-ya[0]; // TODO: confirm sign
+    //interp->dy = ya[1]-ya[0]; // TODO: confirm sign
 
     // DJB double-precision
     //interp->interp = spline;
@@ -274,24 +277,37 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 
     PetscScalar x1, x2, y1, y2, z1, z2, z3, z4;
     PetscScalar result;
-    PetscScalar dx, dy, *xa, *ya, *za, ymin, xmin;
+    PetscScalar dx, *xa, *ya, *za, xmin; //dy,ymin
     PetscInt indx, indy, indz1, indz2, indz3, indz4;
+    PetscInt indt;
 
     dx = I->dx;
     xa = I->xa;
-    dy = I->dy;
+    // DJB only if entropy is evenly spaced in data files
+    //dy = I->dy;
     ya = I->ya;
     za = I->za;
     xmin = I->xmin;
-    ymin = I->ymin;
+    // DJB only if entropy is evenly spaced in data files
+    //ymin = I->ymin;
 
     indx = PetscFloorReal( (x-xmin)/dx );
     x1 = xa[indx]; // local min x
     x2 = xa[indx+1]; // local max x
 
-    indy = PetscFloorReal( (y-ymin)/dy );
+    /* DJB this requires entropy to be evenly spaced, which it is not */
+    //indy = PetscFloorReal( (y-ymin)/dy );
+
+    /* DJB more generic approach to finding minimum index when entropy
+       is not evenly spaced */
+    indt = 0;
+    while( (ya[indt]-y)<0) {
+        indt += 1;
+    }
+    indy = indt-1;
+
     y1 = ya[indy]; // local min y
-    y2 = ya[indy+1]; // local max y
+    y2 = ya[indy+1]; // local max y*/
 
     indz1 = indy*NX+indx; // min S, min P
     z1 = za[indz1];
@@ -306,7 +322,7 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
     result += z2*(x-x1)*(y2-y);
     result += z3*(x2-x)*(y-y1);
     result += z4*(x-x1)*(y-y1);
-    result /= (dx*dy);
+    result /= dx*(y2-y1);
 
     // DJB double-precision
     //result = gsl_spline2d_eval( I->interp, x, y, I->xacc, I->yacc );

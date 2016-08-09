@@ -37,7 +37,9 @@ typedef struct _Interp2d {
     PetscScalar ya[NY];
     PetscScalar za[NX*NY];
     PetscScalar dx;
-    PetscScalar dy;
+    /* DJB only if entropy spacing is constant in the datafiles
+       (currently it is not) */
+    //PetscScalar dy;
     // DJB for double-precision interpolation only
     //gsl_spline2d *interp;
     //gsl_interp_accel *xacc;
