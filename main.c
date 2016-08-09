@@ -64,8 +64,16 @@ int main(int argc, char ** argv)
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
   ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
-  ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
-  ierr = TSSundialsSetTolerance(ts,1e-10,1e-10);CHKERRQ(ierr);
+
+  /* DJB, PDS: commented this out since sundials does not seem to
+     compile with quad precision using Petsc (for PDS to take a
+     look at) */
+  //ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
+  //ierr = TSSundialsSetTolerance(ts,1e-10,1e-10);CHKERRQ(ierr);
+
+  // DJB for testing quad precision compiles (sundials broken)
+  ierr = TSSetType(ts,TSBEULER);
+  ierr = TSSetTolerances( ts, 1e-10, NULL, 1e-10, NULL );
 
   /* Set up the RHS Function */
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
