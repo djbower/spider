@@ -50,7 +50,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 {
 
     FILE *fp;
-    size_t i=0, j=0, k=0;
+    PetscInt i=0, j=0, k=0;
     char string[100], xtemp[30], ytemp[30], ztemp[30];
     PetscScalar x, y, z;
     PetscScalar xa[NX], ya[NY], za[NX*NY];
@@ -94,7 +94,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
                converting to a float128 seems to be the way of doing it.
                But does Petsc have its own function for doing this? */
             // DJB for quad precision only
-            scanf( string, "%s %s %s", &xtemp, &ytemp, &ztemp );
+            sscanf( string, "%s %s %s", xtemp, ytemp, ztemp );
             xscale = strtoflt128(xtemp, NULL);
             yscale = strtoflt128(ytemp, NULL);
             zscale = strtoflt128(ztemp, NULL);
@@ -103,7 +103,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
         }
         if( i>=HEAD ){
             // DJB for quad precision only
-            scanf( string, "%s %s %s", &xtemp, &ytemp, &ztemp );
+            sscanf( string, "%s %s %s", xtemp, ytemp, ztemp );
             x = strtoflt128(xtemp, NULL);;
             y = strtoflt128(ytemp, NULL);
             z = strtoflt128(ztemp, NULL);
@@ -179,7 +179,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 {
 
     FILE *fp;
-    size_t i=0;
+    PetscInt i=0;
     char string[100], xtemp[30], ytemp[30];
     PetscScalar x, y, xscale, yscale;
     PetscScalar xa[n], ya[n];
@@ -216,7 +216,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
             // DJB quad precision only
-            scanf( string, "%s %s", &xtemp, &ytemp );
+            sscanf( string, "%s %s", xtemp, ytemp );
             xscale = strtoflt128(xtemp, NULL);
             yscale = strtoflt128(ytemp, NULL);
             // DJB double precision only
@@ -224,7 +224,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
             }
         if( i>=HEAD ){
             // DJB quad precision only
-            scanf( string, "%s %s", &xtemp, &ytemp );
+            sscanf( string, "%s %s", xtemp, ytemp );
             x = strtoflt128(xtemp, NULL);
             y = strtoflt128(ytemp, NULL);
             // DJB double precision only
