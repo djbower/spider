@@ -65,8 +65,8 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_d_dr2( Ctx *E )
-{
+//PetscErrorCode set_d_dr2( Ctx *E )
+//{
     /* create a matrix containing the 2nd order accurate stencil for
        computing the 1st order derivative of a quantity at the 
        staggered nodes
@@ -79,7 +79,7 @@ PetscErrorCode set_d_dr2( Ctx *E )
 
        currently this matrix is global */
 
-    PetscErrorCode ierr;
+/*    PetscErrorCode ierr;
     PetscInt i, numpts_s, col[3], rstart, rend, ilo_s, ihi_s, w_s;
     PetscScalar dr, value[3];
     Mat A;
@@ -105,10 +105,10 @@ PetscErrorCode set_d_dr2( Ctx *E )
     A = E->d_dr2;
     ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,numpts_s,numpts_s);CHKERRQ(ierr);
     ierr = MatSetFromOptions(A);CHKERRQ(ierr);
-    ierr = MatSetUp(A);CHKERRQ(ierr);
+    ierr = MatSetUp(A);CHKERRQ(ierr);*/
 
     /* Set first and last row values, if appropriate */
-    if (!ilo_s) {
+    /*if (!ilo_s) {
       i = 0;
       col[0]=0; col[1]=1; col[2]=2;
       value[0]=-3.0/2.0; value[1]=2.0; value[2]=-0.5;
@@ -119,23 +119,23 @@ PetscErrorCode set_d_dr2( Ctx *E )
       col[0]=numpts_s-3; col[1]=numpts_s-2, col[2]=numpts_s-1;
       value[0]=0.5; value[1]=-2.0; value[2]=3.0/2.0;
       ierr = MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);CHKERRQ(ierr);
-    }
+    }*/
 
     /* set values corresponding to the mesh interior */
-    rstart = (ilo_s == 0      )  ? 1          : ilo_s;
+    /*rstart = (ilo_s == 0      )  ? 1          : ilo_s;
     rend   = (ihi_s == numpts_s) ? numpts_s-1 : ihi_s;
     value[0]=-0.5; value[1]=0.0; value[2]=0.5;
     for (i=rstart; i<rend; i++) {
         col[0] = i-1; col[1] = i; col[2] = i+1;
         ierr = MatSetValues(A,1,&i,3,col,value,INSERT_VALUES);CHKERRQ(ierr);
-    }
+    }*/
 
     /* Assemble the matrix */
-    ierr = MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-    ierr = MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+    /*ierr = MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+    ierr = MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);*/
 
     /* Must occur after assembly */
-    ierr = MatScale( A, 1.0/dr);CHKERRQ(ierr);
+    /*ierr = MatScale( A, 1.0/dr);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-}
+}*/

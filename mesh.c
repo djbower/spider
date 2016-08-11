@@ -102,7 +102,8 @@ PetscErrorCode set_mesh( Ctx *E)
     mixing_length( da_b, M->radius_b, M->mix_b);
 
     /* set derivative operators */
-    set_d_dr2( E );
+    // DJB not currently required
+    //set_d_dr2( E );
 
     PetscFunctionReturn(0);
 }

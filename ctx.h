@@ -66,7 +66,7 @@ typedef struct _Mesh {
 } Mesh;
 
 #define NUMSOLUTIONVECS_B 40
-#define NUMSOLUTIONVECS_S 23
+#define NUMSOLUTIONVECS_S 16
 typedef struct _Solution {
     /* TI means time-independent */
 
@@ -74,7 +74,7 @@ typedef struct _Solution {
     Vec alpha,alpha_mix,cond,cp,cp_mix,dfusdr,dfusdr_temp,dphidr,dSdr,dTdPs,dTdPs_mix,dTdrs,dTdrs_mix,Etot,fusion,fusion_curve,fusion_curve_temp,fusion_rho,fusion_temp,gsuper,Jcond,Jconv,Jgrav,Jheat,Jmass,Jmix,Jtot,kappah,liquidus,liquidus_rho,liquidus_temp,nu,phi,rho,S,solidus,solidus_rho,solidus_temp,temp,visc;
 
     Vec solutionVecs_s[NUMSOLUTIONVECS_S];
-    Vec fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rhs_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s, cp_s, gamma_s, dTdrs_s, dTdrs_mix_s, dfusdr_s, dfusdr_temp_s, cp_mix_s;
+    Vec fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rhs_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
 
 } Solution;
 
@@ -86,7 +86,8 @@ typedef struct _Ctx {
   Solution solution;
   DM       da_b,da_s;
   PetscScalar BC_BOT_FAC; // core-cooling boundary condition
-  Mat d_dr2; // for d/dr on staggered nodes
+  // DJB not currently required
+  //Mat d_dr2; // for d/dr on staggered nodes
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
@@ -98,7 +99,8 @@ PetscErrorCode setup_ctx(Ctx *);
 PetscErrorCode destroy_ctx(Ctx *);
 
 PetscErrorCode d_dr( Ctx *, Vec, Vec );
-PetscErrorCode set_d_dr2( Ctx * );
+// DJB not currently required
+//PetscErrorCode set_d_dr2( Ctx * );
 PetscErrorCode set_capacitance( Ctx *, Vec );
 PetscErrorCode set_lookups( Ctx * );
 PetscErrorCode set_matprop_and_flux( Ctx * );
