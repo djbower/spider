@@ -150,8 +150,6 @@ PetscErrorCode destroy_ctx(Ctx* ctx)
   PetscFunctionBeginUser;
 
   /* Destroy data allocated in Ctx */
-  /* DJB no longer need to free memory for quad interpolation case */
-  //free_memory_interp(ctx);
   ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
   for (i=0;i<NUMMESHVECS_B;++i){

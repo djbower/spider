@@ -5,22 +5,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// DJB for quad precision only
-#include <quadmath.h>
-
-/* DJB only for double-precision interpolation */
-/* gsl library for 1D and 2D interpolation */
-//#include <gsl/gsl_math.h>
-//#include <gsl/gsl_interp.h>
-//#include <gsl/gsl_interp2d.h>
-//#include <gsl/gsl_spline2d.h>
 
 /* PETSc (for data types) */
 #include "petsc.h"
 
-/* Define to have verbose and/or debugging output */
+/* Definitions */
+#define QUAD
 //#define VERBOSE 1
-////#define DEBUGOUTPUT 1
+//#define DEBUGOUTPUT 1
 
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */

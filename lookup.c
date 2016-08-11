@@ -50,8 +50,11 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 {
 
     FILE *fp;
-    size_t i=0, j=0, k=0;
+    PetscInt i=0, j=0, k=0;
     char string[100];
+#if (defined QUAD)
+    char xtemp[30], ytemp[30], ztemp[30];
+#endif
     PetscScalar x, y, z;
     PetscScalar xa[NX], ya[NY], za[NX*NY];
     PetscScalar xscale, yscale, zscale;
@@ -63,16 +66,6 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
       ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp2d:\n");CHKERRQ(ierr);
     }
 #endif
-    if (sizeof(PetscScalar) != sizeof(double)){
-      perror("PetscScalar must be double to use the dataio functions here");
-      exit(-1);
-    }
-
-    /* bilinear interpolation */
-    const gsl_interp2d_type *T = gsl_interp2d_bilinear;
-    gsl_spline2d *spline = gsl_spline2d_alloc( T, NX, NY );
-    gsl_interp_accel *xacc = gsl_interp_accel_alloc();
-    gsl_interp_accel *yacc = gsl_interp_accel_alloc();
 
     fp = fopen( filename, "r" );
 
@@ -87,10 +80,26 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
         if( i==HEAD-1 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
+#if (defined QUAD)
+            sscanf( string, "%s %s %s", xtemp, ytemp, ztemp );
+            xscale = strtoflt128(xtemp, NULL);
+            yscale = strtoflt128(ytemp, NULL);
+            zscale = strtoflt128(ztemp, NULL);
+#endif
+# if !(defined QUAD)
             sscanf( string, "%lf %lf %lf", &xscale, &yscale, &zscale );
+#endif
         }
         if( i>=HEAD ){
+#if (defined QUAD)
+            sscanf( string, "%s %s %s", xtemp, ytemp, ztemp );
+            x = strtoflt128(xtemp, NULL);;
+            y = strtoflt128(ytemp, NULL);
+            z = strtoflt128(ztemp, NULL);
+#endif
+#if !(defined QUAD)
             sscanf(string, "%lf %lf %lf", &x, &y, &z );
+#endif
             /* lookup value */
             za[i-HEAD] = z * zscale;
             /* x coordinate */
@@ -109,21 +118,16 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
     }
 
     fclose( fp );
-    gsl_spline2d_init( spline, xa, ya, za, NX, NY );
 
     /* for debugging */
-#if 0
-    {
-      PetscMPIInt rank;
-
-      ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
-      for (i=0; i<NX; i++ ){
-          ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, i, xa[i]);CHKERRQ(ierr);
-      }
-
-      for (j=0; j<NY; j++ ){
-          ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, j, ya[j]);
-      }
+#if (defined DEBUGOUTPUT)
+    PetscMPIInt rank;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+    for (i=0; i<NX; i++ ){
+        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, i, xa[i]);CHKERRQ(ierr);
+    }
+    for (j=0; j<NY; j++ ){
+        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, j, ya[j]);
     }
 #endif
 
@@ -132,9 +136,15 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
     interp->ymin= ya[0];
     interp->ymax= ya[NY-1];
 
-    interp->interp = spline;
-    interp->xacc = xacc;
-    interp->yacc = yacc;
+    memmove( interp->xa, xa, sizeof interp->xa );
+    memmove( interp->ya, ya, sizeof interp->ya );
+    memmove( interp->za, za, sizeof interp->za );
+
+    /* if we store the x and y step, we can more quickly locate the
+       relevant indices in the arrays by direct calculation, if the
+       data has constant spacing */
+    interp->dx = xa[1]-xa[0];
+    interp->dy = ya[1]-ya[0];
 
     PetscFunctionReturn(0);
 }
@@ -143,8 +153,11 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 {
 
     FILE *fp;
-    size_t i=0;
+    PetscInt i=0;
     char string[100];
+#if (defined QUAD)
+    char xtemp[30], ytemp[30];
+#endif
     PetscScalar x, y, xscale, yscale;
     PetscScalar xa[n], ya[n];
 
@@ -156,14 +169,6 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
       ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp1d:\n");CHKERRQ(ierr);
     }
 #endif
-    if (sizeof(PetscScalar) != sizeof(double)){
-      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"PetscScalar must be double to use the dataio functions here");
-    }
-
-    /* linear interpolation */
-    const gsl_interp_type *T = gsl_interp_linear;
-    gsl_interp *interpolation = gsl_interp_alloc( T, n );
-    gsl_interp_accel *acc = gsl_interp_accel_alloc();
 
     fp = fopen( filename, "r" );
 
@@ -176,10 +181,24 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
         if( i==HEAD-1 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
+#if (defined QUAD)
+            sscanf( string, "%s %s", xtemp, ytemp );
+            xscale = strtoflt128(xtemp, NULL);
+            yscale = strtoflt128(ytemp, NULL);
+#endif
+#if !(defined QUAD)
             sscanf( string, "%lf %lf", &xscale, &yscale );
+#endif
             }
         if( i>=HEAD ){
+#if (defined QUAD)
+            sscanf( string, "%s %s", xtemp, ytemp );
+            x = strtoflt128(xtemp, NULL);
+            y = strtoflt128(ytemp, NULL);
+#endif
+#if !(defined QUAD)
             sscanf(string, "%lf %lf", &x, &y );
+#endif
             xa[i-HEAD] = x * xscale;
             ya[i-HEAD] = y * yscale;
             }
@@ -188,9 +207,6 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 
     fclose( fp );
 
-    gsl_interp_init( interpolation, xa, ya, n );
-
-    // TODO: is this the correct way of copying an array?
     memmove( interp->xa, xa, sizeof interp->xa );
     interp->xmin= xa[0];
     interp->xmax= xa[n-1];
@@ -198,85 +214,98 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
     interp->ymin= ya[0];
     interp->ymax= ya[n-1];
 
-    interp->interp = interpolation;
-    interp->acc = acc;
+    interp->dx = xa[1]-xa[0];
 
     PetscFunctionReturn(0);
 }
 
 PetscScalar get_val1d( Interp1d *I, PetscScalar x )
 {
-    /* wrapper for evaluating a 1-D lookup */
+    /* wrapper for evaluating a 1-D lookup
+       linear interpolation */
 
-    PetscScalar result;
+    /* TODO this will fail if x falls outside the data range */
 
-    result = gsl_interp_eval( I->interp, I->xa, I->ya, x, I->acc );
+    PetscScalar weight, x1, y1, y2, result;
+    PetscScalar dx, *xa, *ya, xmin;
+    PetscInt ind;
+
+    dx = I->dx;
+    xa = I->xa;
+    xmin = I->xmin;
+    ya = I->ya;
+
+    /* this assumes data is evenly spaced in input data file to
+       enable us to locate the index in the array directly */
+    ind = PetscFloorReal( (x-xmin)/dx );
+    x1 = xa[ind];  // x (pressure) to left
+    y1 = ya[ind]; // y (quantity) to left
+    y2 = ya[ind+1]; // y (quantity) to right
+    weight = (x-x1) / dx;
+
+    result = y2 * weight + y1 * (1.0-weight);
 
     return result;
 }
 
 PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 {
-    /* wrapper for evaluating a 2-D lookup */
+    /* wrapper for evaluating a 2-D lookup
+       bilinear interpolation */
 
+    /* TODO this will fail if x, y falls outside the data range */
+
+    PetscScalar x1, x2, y1, y2, z1, z2, z3, z4;
     PetscScalar result;
+    PetscScalar dx, *xa, *ya, *za, xmin;
+    // only if y data is evenly spaced
+    //PetscScalar dy, ymin;
+    PetscInt indx, indy, indz1, indz2, indz3, indz4;
+    PetscInt indt;
 
-    result = gsl_spline2d_eval( I->interp, x, y, I->xacc, I->yacc );
+    dx = I->dx;
+    xa = I->xa;
+    // only if y data is evenly spaced
+    //dy = I->dy;
+    ya = I->ya;
+    za = I->za;
+    xmin = I->xmin;
+    // only if y data is evenly spaced
+    //ymin = I->ymin;
+
+    indx = PetscFloorReal( (x-xmin)/dx );
+    x1 = xa[indx]; // local min x
+    x2 = xa[indx+1]; // local max x
+
+    // only if y data is evenly spaced
+    //indy = PetscFloorReal( (y-ymin)/dy );
+
+    /* trivial algorithm to find minimum index when y data
+       is not evenly spaced */
+    indt = 0;
+    while( (ya[indt]-y)<0) {
+        indt += 1;
+    }
+    indy = indt-1;
+
+    y1 = ya[indy]; // local min y
+    y2 = ya[indy+1]; // local max y*/
+
+    indz1 = indy*NX+indx; // min S, min P
+    z1 = za[indz1];
+    indz2 = indz1+1; // min S, max P
+    z2 = za[indz2];
+    indz3 = indz1+NX; // max S, min P
+    z3 = za[indz3];
+    indz4 = indz3+1; // max S, max P
+    z4 = za[indz4];
+
+    // bilinear interpolation
+    result = z1*(x2-x)*(y2-y);
+    result += z2*(x-x1)*(y2-y);
+    result += z3*(x2-x)*(y-y1);
+    result += z4*(x-x1)*(y-y1);
+    result /= dx*(y2-y1);
 
     return result;
-}
-
-
-PetscErrorCode free_interp1d( Interp1d *I )
-{
-    /* free memory of Interp1d */
-
-    PetscFunctionBeginUser;
-
-    gsl_interp_free( I->interp );
-    gsl_interp_accel_free( I->acc );
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode free_interp2d( Interp2d *I )
-{
-    /* free memory of Interp2d */
-
-    PetscFunctionBeginUser;
-
-    gsl_spline2d_free( I->interp );
-    gsl_interp_accel_free( I->xacc );
-    gsl_interp_accel_free( I->yacc );
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode free_memory_interp( Ctx *E )
-{
-    /* free memory allocated by interpolation functions */
-
-    PetscFunctionBeginUser;
-
-    /* liquidus and solidus lookups */
-    free_interp1d( &E->solid_prop.liquidus );
-    free_interp1d( &E->solid_prop.solidus );
-    free_interp1d( &E->melt_prop.liquidus );
-    free_interp1d( &E->melt_prop.solidus );
-
-    /* solid properties lookup */
-    free_interp2d( &E->solid_prop.alpha );
-    free_interp2d( &E->solid_prop.cp );
-    free_interp2d( &E->solid_prop.dTdPs );
-    free_interp2d( &E->solid_prop.rho );
-    free_interp2d( &E->solid_prop.temp );
-
-    /* melt properties lookup */
-    free_interp2d( &E->melt_prop.alpha );
-    free_interp2d( &E->melt_prop.cp );
-    free_interp2d( &E->melt_prop.dTdPs );
-    free_interp2d( &E->melt_prop.rho );
-    free_interp2d( &E->melt_prop.temp );
-
-    PetscFunctionReturn(0);
 }

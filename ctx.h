@@ -20,11 +20,7 @@ typedef struct _Interp1d {
     PetscScalar ya[NLS];
     PetscScalar ymin;
     PetscScalar ymax;
-    // DJB for quad-precision interpolation only
     PetscScalar dx;
-    // DJB for double-precision interpolation only
-    //gsl_interp *interp;
-    //gsl_interp_accel *acc;
 } Interp1d;
 
 typedef struct _Interp2d {
@@ -32,18 +28,11 @@ typedef struct _Interp2d {
     PetscScalar xmax;
     PetscScalar ymin;
     PetscScalar ymax;
-    // DJB for quad-precision interpolation only
     PetscScalar xa[NX];
     PetscScalar ya[NY];
     PetscScalar za[NX*NY];
     PetscScalar dx;
-    /* DJB only if entropy spacing is constant in the datafiles
-       (currently it is not) */
-    //PetscScalar dy;
-    // DJB for double-precision interpolation only
-    //gsl_spline2d *interp;
-    //gsl_interp_accel *xacc;
-    //gsl_interp_accel *yacc;
+    PetscScalar dy;
 } Interp2d;
 
 /* lookup for a single phase */
@@ -110,7 +99,6 @@ PetscErrorCode destroy_ctx(Ctx *);
 
 PetscErrorCode d_dr( Ctx *, Vec, Vec );
 PetscErrorCode set_d_dr2( Ctx * );
-PetscErrorCode free_memory_interp( Ctx * );
 PetscErrorCode set_capacitance( Ctx *, Vec );
 PetscErrorCode set_lookups( Ctx * );
 PetscErrorCode set_matprop_and_flux( Ctx * );

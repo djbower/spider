@@ -2,8 +2,7 @@
 EXNAME = main
 
 # Required objects (rules included below build these from .c files)
-# DJB added _quad to lookup for quad-precision interpolation
-OBJ = main.o ctx.o rhs.o ic.o mesh.o lookup_quad.o bc.o util.o twophase.o monitor.o
+OBJ = main.o ctx.o rhs.o ic.o mesh.o lookup.o bc.o util.o twophase.o monitor.o
 
 ALL: ${EXNAME}
 
@@ -15,17 +14,7 @@ clean ::
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
-# DJB these are for GSL interpolation only (double precision)
-#PETSC_CC_INCLUDES+=-I/opt/local/include
-#GSL_LIB=-L/opt/local/lib -lgsl -lgslcblas
-
-# for quad-precision interpolation
-#PETSC_CC_INCLUDES+=''
-#GSL_LIB=""
-
-
 ${EXNAME} : ${OBJ}
-	#-${CLINKER}  -o $@ $^  ${GSL_LIB} ${PETSC_TS_LIB} 
 	-${CLINKER}  -o $@ $^ ${PETSC_TS_LIB} 
 	#${RM} $^
 
