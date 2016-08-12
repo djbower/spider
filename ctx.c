@@ -266,7 +266,7 @@ static PetscScalar zmap( PetscScalar z )
 
     zmap = shp*PetscSqr(z)+z*fac+1.0/shp \
         *PetscLogScalar(shp*z+fac);
-       zmap *= 0.5;
+    zmap *= 0.5;
     fwt = 0.5*(1.0+PetscTanhScalar( zmap ));
 
     return fwt;
