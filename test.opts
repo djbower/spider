@@ -19,6 +19,6 @@
 -ts_type arkimex 
 -ts_arkimex_type 1bee 
 -snes_mf
--ts_rtol 1e-11
+-ts_rtol 1e-15
 -ts_atol 0
 

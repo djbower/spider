@@ -87,36 +87,36 @@ static const PetscScalar CP_CMB = 1200.0; // J/K/kg
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-static const char LIQUIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/liquidus.dat";
+static const char LIQUIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/orig/liquidus.dat";
 
 /* solidus data file */
-static const char SOLIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/solidus.dat";
+static const char SOLIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/orig/solidus.dat";
 
 /* solid data files */
-static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/thermal_exp_solid.dat";
+static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/orig/thermal_exp_solid.dat";
 
-static const char CP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/heat_capacity_solid.dat";
+static const char CP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/orig/heat_capacity_solid.dat";
 
-static const char DTDPS_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/adiabat_temp_grad_solid.dat";
+static const char DTDPS_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/orig/adiabat_temp_grad_solid.dat";
 
-static const char RHO_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/density_solid.dat";
+static const char RHO_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/orig/density_solid.dat";
 
-static const char TEMP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/temperature_solid.dat";
+static const char TEMP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/orig/temperature_solid.dat";
 
 static const PetscScalar LOG10VISC_SOL = 21.0;
 
 static const PetscScalar COND_SOL = 4.0;
 
 /* melt data files */
-static const char ALPHA_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/thermal_exp_melt.dat";
+static const char ALPHA_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/orig/thermal_exp_melt.dat";
 
-static const char CP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/heat_capacity_melt.dat";
+static const char CP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/orig/heat_capacity_melt.dat";
 
-static const char DTDPS_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/adiabat_temp_grad_melt.dat";
+static const char DTDPS_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/orig/adiabat_temp_grad_melt.dat";
 
-static const char RHO_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/density_melt.dat";
+static const char RHO_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/orig/density_melt.dat";
 
-static const char TEMP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/temperature_melt.dat";
+static const char TEMP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/orig/temperature_melt.dat";
 
 static const PetscScalar LOG10VISC_MEL = 2.0;
 
