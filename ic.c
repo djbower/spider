@@ -2,21 +2,25 @@
 
 static PetscErrorCode make_super_adiabatic( Ctx * );
 
-/* set initial condition, taking a constant value and making it super_adiabatic  */
 PetscErrorCode set_initial_condition(Ctx *E, PetscScalar S_init ) 
 {
+# if (defined VERBOSE)
     PetscErrorCode ierr;
-    Solution       *S;
-    PetscInt       numpts_b;
+#endif
+    /* TODO: not required anymore I think */
+    //Solution       *S;
+    //PetscInt       numpts_b;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition : basing i.c. on a value of %f\n",S_init);CHKERRQ(ierr);
 #endif
-    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    S = &E->solution;
+    /* TODO: I don't think the below does anything */
+    //ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
-    ierr = VecSet(S->S_s,S_init);CHKERRQ(ierr);
+    /* TODO: no longer required I think */
+    //S = &E->solution;
+    //ierr = VecSet(S->S_s,S_init);CHKERRQ(ierr);
 
     make_super_adiabatic( E ); 
 
@@ -69,7 +73,7 @@ static PetscErrorCode make_super_adiabatic( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
-        arr_S_s[i] *= 1.0 + 0.01 * SUPERFAC * arr_pres_s[i]/pres_b_last;
+        arr_S_s[i] = PERTURB * arr_pres_s[i]/pres_b_last;
     }
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
