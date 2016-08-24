@@ -101,18 +101,11 @@ PetscErrorCode set_mesh( Ctx *E)
     /* mixing length is minimum distance from boundary */
     mixing_length( da_b, M->radius_b, M->mix_b);
 
-    /* set derivative operators */
-    // DJB not currently required
-    //set_d_dr2( E );
-
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
 {
-    /* non-dimensional area.  Not sure this really matters, would it
-       would seem that keeping these scalings close to 1.0 is
-       preferred for numerical accuracy? */
 
     PetscErrorCode    ierr;
     PetscScalar       *arr_area;
@@ -125,7 +118,7 @@ static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
     ierr = DMDAVecGetArrayRead(da,radius,&arr_radius);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da,area,&arr_area);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        arr_area[i] = PetscPowScalar( arr_radius[i]/RADOUT, 2.0 );
+        arr_area[i] = PetscPowScalar( arr_radius[i], 2.0 );
     }    
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_radius);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,area,&arr_area);CHKERRQ(ierr);
@@ -134,9 +127,6 @@ static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
 
 static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
 {
-    /* non-dimensional volume.  Not sure this really matters, but it
-       would seem that keeping these scalings close to 1.0 is 
-       preferred for numerical accuracy? */
 
     PetscErrorCode    ierr;
     PetscScalar       *arr_volume;
@@ -155,10 +145,10 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
     ierr = DMDAVecGetArrayRead(da_b,radius_local,&arr_radius);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,volume,&arr_volume);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        arr_volume[i] = PetscPowScalar(arr_radius[i]/RADOUT,3.0) - PetscPowScalar(arr_radius[i+1]/RADOUT,3.0);
+        arr_volume[i] = PetscPowScalar(arr_radius[i],3.0) - PetscPowScalar(arr_radius[i+1],3.0);
         arr_volume[i] *= 1.0 / 3.0;
     }
-    // TODO: here and elsewhere, it's very dangerous to use the same indice to refere to two DAs without checking that the local ranges are valid. 
+    // TODO: here and elsewhere, it's very dangerous to use the same indice to refer to two DAs without checking that the local ranges are valid. 
     ierr = DMDAVecRestoreArrayRead(da_b,radius_local,&arr_radius);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,volume,&arr_volume);CHKERRQ(ierr);
     PetscFunctionReturn(0);
@@ -201,7 +191,7 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure )
     ierr = DMDAVecGetArray(da,pressure,&arr_p);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
         dep = RADOUT - arr_r[i];
-        arr_p[i] = -RHOS * GRAVITY / BETA;
+        arr_p[i] = RHOS * GRAVITY / BETA;
         arr_p[i] *= PetscExpScalar( BETA * dep ) - 1.0;
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
@@ -223,7 +213,7 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad )
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
         dep = RADOUT - arr_r[i];
-        arr_g[i] = RHOS * GRAVITY * PetscExpScalar( BETA * dep );
+        arr_g[i] = -RHOS * GRAVITY * PetscExpScalar( BETA * dep );
     }
     ierr = DMDAVecRestoreArray(da,grad,&arr_g);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
