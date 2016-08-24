@@ -6,7 +6,6 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   PetscErrorCode ierr;
   PetscInt       i,numpts_b,numpts_s; 
   PetscBool      set;
-  PetscScalar    S_init;
 
   PetscFunctionBeginUser;
 
@@ -123,14 +122,14 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   set_core_cooling(ctx);
 
   /* Obtain a command-line argument for S_init */
-  S_init = SINIT_DEFAULT;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&S_init,NULL);CHKERRQ(ierr);
+  ctx->S_init = SINIT_DEFAULT;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&ctx->S_init,NULL);CHKERRQ(ierr);
 
   /* Create a solution vector (S at the staggered nodes) and fill with an initial condition 
       Note that this is inside the Ctx 
   */
   ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.S_s));CHKERRQ(ierr); 
-  set_initial_condition(ctx,S_init);CHKERRQ(ierr); 
+  set_initial_condition(ctx);CHKERRQ(ierr); 
 
   PetscFunctionReturn(0);
 }
@@ -174,9 +173,9 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     DM                da_s=E->da_s;
     Mesh              *M;
     Solution          *S;
-    Vec               pres_s, work_s;
+    Vec               pres_s, work_s, Sabs_s;
     Interp2d          *IRM, *ITM, *IRS, *ITS;
-    const PetscScalar *arr_S_s, *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s;
+    const PetscScalar *arr_S_s, *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_Sabs_s;
     PetscScalar       *arr_phi_s,*arr_rho_s,*arr_temp_s;
 
     PetscFunctionBeginUser;
@@ -189,11 +188,18 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     IRS = &E->solid_prop.rho;
     ITS = &E->solid_prop.temp;
 
+    /* duplicates the in vector.  Not sure if this is required
+       anymore or not */
     ierr = VecDuplicate(S_in,&work_s);CHKERRQ(ierr);
     ierr = VecCopy(S_in,work_s);CHKERRQ(ierr);
 
+    /* get absolute entropy */
+    ierr = VecDuplicate(S_in,&Sabs_s);CHKERRQ(ierr);
+    ierr = VecCopy(S_in,Sabs_s);CHKERRQ(ierr);
+    ierr = VecShift(Sabs_s,E->S_init);CHKERRQ(ierr);
+
     // S->phi_s = (work_s - S->solidus_s)/S->fusion_s
-    ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,work_s);CHKERRQ(ierr);
+    ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,Sabs_s);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->phi_s,S->phi_s,S->fusion_s);CHKERRQ(ierr);
 
 
@@ -201,6 +207,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     ihi_s = ilo_s + w_s;
 
     ierr = DMDAVecGetArrayRead(da_s,work_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,Sabs_s,&arr_Sabs_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
@@ -214,14 +221,14 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
         /* melt only */
         if( arr_phi_s[i] >= 1.0 ){
             arr_phi_s[i] = 1.0;
-            arr_rho_s[i]   = get_val2d( IRM, arr_pres_s[i], arr_S_s[i] );
-            arr_temp_s[i]  = get_val2d( ITM, arr_pres_s[i], arr_S_s[i] );
+            arr_rho_s[i]   = get_val2d( IRM, arr_pres_s[i], arr_Sabs_s[i] );
+            arr_temp_s[i]  = get_val2d( ITM, arr_pres_s[i], arr_Sabs_s[i] );
         }
         /* solid only */
         else if( arr_phi_s[i] <= 0.0 ){
             arr_phi_s[i] = 0.0;
-            arr_rho_s[i]   = get_val2d( IRS, arr_pres_s[i], arr_S_s[i] );
-            arr_temp_s[i]  = get_val2d( ITS, arr_pres_s[i], arr_S_s[i] );
+            arr_rho_s[i]   = get_val2d( IRS, arr_pres_s[i], arr_Sabs_s[i] );
+            arr_temp_s[i]  = get_val2d( ITS, arr_pres_s[i], arr_Sabs_s[i] );
         }
         /* mixed phase */
         else{
@@ -235,6 +242,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s,work_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,Sabs_s,&arr_Sabs_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
@@ -245,11 +253,12 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     ierr = DMDAVecRestoreArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
     // S->lhs_si = M->volume_si * S->rho_si * S->temp_si;
-    ierr = VecPointwiseMult(S->lhs_s,M->volume_s,S->rho_s);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,S->temp_s);CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->lhs_s,S->temp_s,S->rho_s);CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,M->volume_s);CHKERRQ(ierr);
 
     /* clean up */
     ierr = VecDestroy( &work_s);CHKERRQ(ierr);
+    ierr = VecDestroy( &Sabs_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

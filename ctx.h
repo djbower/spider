@@ -86,8 +86,7 @@ typedef struct _Ctx {
   Solution solution;
   DM       da_b,da_s;
   PetscScalar BC_BOT_FAC; // core-cooling boundary condition
-  // DJB not currently required
-  //Mat d_dr2; // for d/dr on staggered nodes
+  PetscScalar S_init; // initial entropy
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
@@ -108,7 +107,7 @@ PetscErrorCode set_mesh( Ctx * );
 PetscErrorCode set_core_cooling( Ctx * );
 PetscErrorCode set_twophase( Ctx * );
 
-PetscErrorCode set_initial_condition( Ctx *, PetscScalar );
+PetscErrorCode set_initial_condition( Ctx * );
 
 PetscScalar get_val1d( Interp1d *, PetscScalar );
 PetscScalar get_val2d( Interp2d *, PetscScalar, PetscScalar );

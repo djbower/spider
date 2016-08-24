@@ -2,7 +2,7 @@
 
 static PetscErrorCode make_super_adiabatic( Ctx * );
 
-PetscErrorCode set_initial_condition(Ctx *E, PetscScalar S_init ) 
+PetscErrorCode set_initial_condition(Ctx *E) 
 {
 # if (defined VERBOSE)
     PetscErrorCode ierr;
