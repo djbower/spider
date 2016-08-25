@@ -321,7 +321,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
     DM                da_s=E->da_s, da_b=E->da_b;
     Vec               pres;
-    PetscScalar       dr;
+    PetscScalar       dr, Sabs;
     PetscScalar       *arr_S,*arr_phi,*arr_nu,*arr_gsuper,*arr_kappah,*arr_Etot,*arr_dSdr,*arr_dTdPs,*arr_dTdrs,*arr_dphidr,*arr_alpha,*arr_temp,*arr_cp,*arr_cond,*arr_visc,*arr_rho,*arr_Jcond,*arr_Jconv,*arr_Jtot,*arr_Jheat,*arr_Jmix,*arr_Jgrav,*arr_Jmass;
     const PetscScalar *arr_S_s,*arr_phi_s,*arr_solidus,*arr_fusion,*arr_pres,*arr_area_b,*arr_dPdr_b,*arr_liquidus_rho,*arr_solidus_rho,*arr_cp_mix,*arr_dTdrs_mix,*arr_liquidus_temp,*arr_solidus_temp,*arr_fusion_rho,*arr_fusion_temp,*arr_mix_b;
     Mesh              *M;
@@ -404,7 +404,8 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       /* entropy: from simple average */
       arr_S[i] = average( arr_S_s[i], arr_S_s[i-1] ); 
 
-      /* TODO: here to get Sabs on basic nodes */
+      /* absolute entropy at basic nodes */
+      Sabs = arr_S[i] + E->S_init;
 
       /* dSdr: central difference, 2nd order accurate */
       arr_dSdr[i] = 1.0/dr * (arr_S_s[i]-arr_S_s[i-1]);
@@ -412,7 +413,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       /* dphidr: central difference, 2nd order accurate */
       arr_dphidr[i] = 1.0/dr * (arr_phi_s[i]-arr_phi_s[i-1]);
       /* melt fraction */
-      arr_phi[i] = (arr_S[i] - arr_solidus[i]) / arr_fusion[i];
+      arr_phi[i] = (Sabs - arr_solidus[i]) / arr_fusion[i];
 
       /* melt only */
       if( arr_phi[i] >= 1.0 ){
@@ -420,20 +421,20 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
         arr_phi[i] = 1.0;
 
         /* density */
-        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], arr_S[i] );
+        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], Sabs );
 
         /* adiabatic temperature gradient */
-        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], arr_S[i] );
+        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], Sabs );
         arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
 
         /* heat capacity */
-        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], arr_S[i] );
+        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], Sabs );
 
         /* temperature */
-        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], arr_S[i] );
+        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], Sabs );
 
         /* thermal expansion coefficient */
-        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], arr_S[i] );
+        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], Sabs );
 
         /* thermal conductivity */
         arr_cond[i] = COND_MEL;
@@ -448,20 +449,20 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
         arr_phi[i] = 0.0;
 
         /* density */
-        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], arr_S[i] );
+        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], Sabs );
 
         /* adiabatic temperature gradient */
-        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], arr_S[i] );
+        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], Sabs );
         arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
 
         /* heat capacity */
-        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], arr_S[i] );
+        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], Sabs );
 
         /* temperature */
-        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], arr_S[i] );
+        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], Sabs );
 
         /* thermal expansion coefficient */
-        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], arr_S[i] );
+        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], Sabs );
 
         /* thermal conductivity */
         arr_cond[i] = COND_SOL;
@@ -502,7 +503,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       arr_nu[i] = arr_visc[i] / arr_rho[i];
 
       /* gravity * super-adiabatic temperature gradient */
-      arr_gsuper[i] = GRAVITY * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
+      arr_gsuper[i] = -GRAVITY * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
 
       /* eddy diffusivity */
       PetscScalar kh,crit;
@@ -566,7 +567,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       }
 
       arr_Jgrav[i] = (rhol-rhos) * rhol * rhos / rho;
-      arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
+      arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * -GRAVITY * F;
       arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
 
       arr_Jmass[i] = arr_Jmix[i] + arr_Jgrav[i];
