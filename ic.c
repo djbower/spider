@@ -1,8 +1,8 @@
 #include "ic.h"
 
-static PetscErrorCode make_super_adiabatic( Ctx * );
+static PetscErrorCode make_super_adiabatic( Ctx *, Vec );
 
-PetscErrorCode set_initial_condition(Ctx *E) 
+PetscErrorCode set_initial_condition(Ctx *E, Vec S_in) 
 {
 # if (defined VERBOSE)
     PetscErrorCode ierr;
@@ -22,12 +22,12 @@ PetscErrorCode set_initial_condition(Ctx *E)
     //S = &E->solution;
     //ierr = VecSet(S->S_s,S_init);CHKERRQ(ierr);
 
-    make_super_adiabatic( E ); 
+    make_super_adiabatic( E, S_in ); 
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode make_super_adiabatic( Ctx *E ) 
+static PetscErrorCode make_super_adiabatic( Ctx *E, Vec S_in ) 
 {
     /* linear increase of entropy with pressure to make the initial
        entropy profile slightly superadiabatic */
@@ -38,7 +38,6 @@ static PetscErrorCode make_super_adiabatic( Ctx *E )
     const PetscScalar *arr_pres_b,*arr_pres_s;
     Vec               pres_b,pres_s;
     Mesh              *M;  
-    Solution          *S;  
     PetscMPIInt       rank,size;
     DM                da_s=E->da_s, da_b=E->da_b;
 
@@ -47,7 +46,6 @@ static PetscErrorCode make_super_adiabatic( Ctx *E )
     ierr = PetscPrintf(PETSC_COMM_WORLD,"make_super_adiabatic:\n");CHKERRQ(ierr);
 #endif
     M = &E->mesh;
-    S = &E->solution;
     pres_b = M->pressure_b;
     pres_s = M->pressure_s;
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
@@ -69,13 +67,13 @@ static PetscErrorCode make_super_adiabatic( Ctx *E )
 #if (defined DEBUGOUTPUT)
   ierr = PetscPrintf(PETSC_COMM_SELF,"[%d]   make_super_adiabatic: value of last point is %f\n",rank,pres_b_last);CHKERRQ(ierr);
 #endif
-    ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S_in,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
         arr_S_s[i] = PERTURB * arr_pres_s[i]/pres_b_last;
     }
-    ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,S_in,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
 

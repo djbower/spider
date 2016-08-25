@@ -107,11 +107,10 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.phi_s               = ctx->solution.solutionVecs_s[8];
   ctx->solution.rhs_s               = ctx->solution.solutionVecs_s[9]; 
   ctx->solution.rho_s               = ctx->solution.solutionVecs_s[10];
-  ctx->solution.S_s                 = ctx->solution.solutionVecs_s[11];
-  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[12]; // TI
-  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[13]; // TI
-  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[14]; // TI
-  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[15];
+  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[11]; // TI
+  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[12]; // TI
+  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[13]; // TI
+  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[14];
 
   ierr = DMCreateLocalVector(ctx->da_s,&ctx->work_local_s);CHKERRQ(ierr);
 
@@ -125,11 +124,7 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->S_init = SINIT_DEFAULT;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&ctx->S_init,NULL);CHKERRQ(ierr);
 
-  /* Create a solution vector (S at the staggered nodes) and fill with an initial condition 
-      Note that this is inside the Ctx 
-  */
-  ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.S_s));CHKERRQ(ierr); 
-  set_initial_condition(ctx);CHKERRQ(ierr); 
+  /* initial condition is set in main.c */
 
   PetscFunctionReturn(0);
 }
@@ -173,7 +168,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     DM                da_s=E->da_s;
     Mesh              *M;
     Solution          *S;
-    Vec               pres_s, work_s, Sabs_s;
+    Vec               pres_s, Sabs_s;
     Interp2d          *IRM, *ITM, *IRS, *ITS;
     const PetscScalar *arr_S_s, *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_Sabs_s;
     PetscScalar       *arr_phi_s,*arr_rho_s,*arr_temp_s;
@@ -190,8 +185,9 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
 
     /* duplicates the in vector.  Not sure if this is required
        anymore or not */
-    ierr = VecDuplicate(S_in,&work_s);CHKERRQ(ierr);
-    ierr = VecCopy(S_in,work_s);CHKERRQ(ierr);
+    /* TODO: DELETE */
+    /*ierr = VecDuplicate(S_in,&work_s);CHKERRQ(ierr);
+    ierr = VecCopy(S_in,work_s);CHKERRQ(ierr);*/
 
     /* get absolute entropy */
     ierr = VecDuplicate(S_in,&Sabs_s);CHKERRQ(ierr);
@@ -206,7 +202,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
 
-    ierr = DMDAVecGetArrayRead(da_s,work_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S_in,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,Sabs_s,&arr_Sabs_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
@@ -241,7 +237,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
 
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_s,work_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S_in,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,Sabs_s,&arr_Sabs_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
@@ -257,7 +253,6 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,M->volume_s);CHKERRQ(ierr);
 
     /* clean up */
-    ierr = VecDestroy( &work_s);CHKERRQ(ierr);
     ierr = VecDestroy( &Sabs_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -320,7 +315,7 @@ static PetscScalar viscosity_mix( PetscScalar meltf )
 
 }
 
-PetscErrorCode set_matprop_and_flux( Ctx *E )
+PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
@@ -351,10 +346,18 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ilo = ilo_b == 0        ? 1            : ilo_b;
     ihi = ihi_b == numpts_b ? numpts_b - 1 : ihi_b;
 
-    ierr = DMDAVecGetArray(    da_b,S->dphidr,&arr_dphidr);CHKERRQ(ierr);
-    ierr = DMGlobalToLocalBegin(da_s,S->S_s,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
-    ierr = DMGlobalToLocalEnd(da_s,S->S_s,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
+    // S_s related
+    // multi-processor, S_s_local is Vec
+    ierr = DMGlobalToLocalBegin(da_s,S_in,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(da_s,S_in,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S_s_local,&arr_S_s);CHKERRQ(ierr);
+
+    // phi_s related.  Already updated by set_capacitance
+    ierr = DMGlobalToLocalBegin(da_s,S->phi_s,INSERT_VALUES,phi_s_local);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(da_s,S->phi_s,INSERT_VALUES,phi_s_local);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,phi_s_local,&arr_phi_s);CHKERRQ(ierr);
+
+    ierr = DMDAVecGetArray(    da_b,S->dphidr,&arr_dphidr);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->phi,&arr_phi);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->fusion,&arr_fusion);CHKERRQ(ierr);
@@ -392,9 +395,6 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = DMDAVecGetArray(    da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->Jmass,&arr_Jmass);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
-    ierr = DMGlobalToLocalBegin(da_s,S->phi_s,INSERT_VALUES,phi_s_local);CHKERRQ(ierr);
-    ierr = DMGlobalToLocalEnd(da_s,S->phi_s,INSERT_VALUES,phi_s_local);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,phi_s_local,&arr_phi_s);CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){ // Note that these correspond to basic nodes being updated, but we also assume an ordering on the staggered nodes!
 
@@ -403,6 +403,8 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
          set_capacitance */
       /* entropy: from simple average */
       arr_S[i] = average( arr_S_s[i], arr_S_s[i-1] ); 
+
+      /* TODO: here to get Sabs on basic nodes */
 
       /* dSdr: central difference, 2nd order accurate */
       arr_dSdr[i] = 1.0/dr * (arr_S_s[i]-arr_S_s[i-1]);
@@ -573,8 +575,12 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       arr_Etot[i] = arr_Jtot[i] * arr_area_b[i];
 
     }
+
+    // S_s and phi_s related
+    ierr = DMDAVecRestoreArrayRead(da_s,S_s_local,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,phi_s_local,&arr_phi_s);CHKERRQ(ierr);
+
     ierr = DMDAVecRestoreArray(    da_b,S->dphidr,&arr_dphidr);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->phi,&arr_phi);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->fusion,&arr_fusion);CHKERRQ(ierr);
@@ -612,7 +618,6 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = DMDAVecRestoreArray(    da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->Jmass,&arr_Jmass);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
 
     ierr = VecDestroy(&S_s_local);CHKERRQ(ierr);
     ierr = VecDestroy(&phi_s_local);CHKERRQ(ierr);

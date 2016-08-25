@@ -8,7 +8,8 @@ static char help[] ="Parallel magma ocean timestepper\n\
          in global_defs.h */
 
 #include "petsc.h"
-#include "ctx.h" 
+#include "ic.h" 
+#include "ctx.h"
 #include "monitor.h"
 #include "rhs.h"
 
@@ -46,7 +47,10 @@ int main(int argc, char ** argv)
   ierr = setup_ctx(&ctx);CHKERRQ(ierr);
 
   /* We will use this solution vector as our data object for timestepping */
-  S_s = ctx.solution.S_s;
+  ierr = DMCreateGlobalVector( ctx.da_s, &S_s );CHKERRQ(ierr);
+
+  /* must call this after setup context */
+  set_initial_condition(&ctx,S_s);CHKERRQ(ierr);
 
   if (test_view) {
     PetscViewer viewer;
@@ -54,7 +58,7 @@ int main(int argc, char ** argv)
     ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing S_s initial condition ***\n");CHKERRQ(ierr);
-    ierr = VecView(ctx.solution.S_s,viewer);CHKERRQ(ierr);
+    ierr = VecView(S_s,viewer);CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
   
@@ -115,7 +119,7 @@ int main(int argc, char ** argv)
     ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing S_s ***\n");CHKERRQ(ierr);
-    ierr = VecView(ctx.solution.S_s,viewer);CHKERRQ(ierr);
+    ierr = VecView(S_s,viewer);CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing rhs_s ***\n");CHKERRQ(ierr);
     // TODO: don't store the rhs like this. Just recompute it here
     ierr = VecView(ctx.solution.rhs_s,viewer);CHKERRQ(ierr);
@@ -124,6 +128,7 @@ int main(int argc, char ** argv)
 
   /* Free allocated data in the context */
   ierr = destroy_ctx(&ctx);CHKERRQ(ierr);
+  ierr = VecDestroy(&S_s);CHKERRQ(ierr);
 
   /* Cleanup and finalize */
   ierr = TSDestroy(&ts);CHKERRQ(ierr);

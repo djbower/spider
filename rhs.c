@@ -32,7 +32,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
     set_capacitance( E, S_in );
 
     /* loop over basic (internal) nodes and populate E struct */
-    set_matprop_and_flux( E );
+    set_matprop_and_flux( E, S_in );
 
     /* surface radiative boundary condition
        parameterised ultra-thin thermal boundary layer
