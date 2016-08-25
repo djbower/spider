@@ -183,12 +183,6 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     IRS = &E->solid_prop.rho;
     ITS = &E->solid_prop.temp;
 
-    /* duplicates the in vector.  Not sure if this is required
-       anymore or not */
-    /* TODO: DELETE */
-    /*ierr = VecDuplicate(S_in,&work_s);CHKERRQ(ierr);
-    ierr = VecCopy(S_in,work_s);CHKERRQ(ierr);*/
-
     /* get absolute entropy */
     ierr = VecDuplicate(S_in,&Sabs_s);CHKERRQ(ierr);
     ierr = VecCopy(S_in,Sabs_s);CHKERRQ(ierr);
