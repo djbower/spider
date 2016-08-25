@@ -97,8 +97,6 @@ PetscErrorCode setup_ctx(Ctx *);
 PetscErrorCode destroy_ctx(Ctx *);
 
 PetscErrorCode d_dr( Ctx *, Vec, Vec );
-// DJB not currently required
-//PetscErrorCode set_d_dr2( Ctx * );
 PetscErrorCode set_capacitance( Ctx *, Vec );
 PetscErrorCode set_lookups( Ctx * );
 PetscErrorCode set_matprop_and_flux( Ctx *, Vec );

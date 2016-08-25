@@ -154,9 +154,6 @@ PetscErrorCode destroy_ctx(Ctx* ctx)
   }
   ierr = VecDestroy(&ctx->work_local_s);CHKERRQ(ierr);
 
-  // DJB not currently required
-  //ierr = MatDestroy(&ctx->d_dr2);CHKERRQ(ierr);
-
   PetscFunctionReturn(0);
 }
 
