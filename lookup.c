@@ -48,6 +48,7 @@ PetscErrorCode set_lookups( Ctx *E )
 
 static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 {
+    /* the header scalings in the input data file are ignored */
 
     FILE *fp;
     PetscInt i=0, j=0, k=0;
@@ -85,8 +86,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
             xscale = strtoflt128(xtemp, NULL);
             yscale = strtoflt128(ytemp, NULL);
             zscale = strtoflt128(ztemp, NULL);
-#endif
-# if !(defined QUAD)
+#else
             sscanf( string, "%lf %lf %lf", &xscale, &yscale, &zscale );
 #endif
         }
@@ -96,20 +96,19 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
             x = strtoflt128(xtemp, NULL);;
             y = strtoflt128(ytemp, NULL);
             z = strtoflt128(ztemp, NULL);
-#endif
-#if !(defined QUAD)
+#else
             sscanf(string, "%lf %lf %lf", &x, &y, &z );
 #endif
             /* lookup value */
-            za[i-HEAD] = z * zscale;
+            za[i-HEAD] = z; // * zscale;
             /* x coordinate */
             if( i<HEAD+NX ){
-                xa[j] = x * xscale;
+                xa[j] = x; // * xscale;
                 ++j;
             }
             /* y coordinate */
             if( (i-HEAD) % NX ==0 ){
-                ya[k] = y * yscale;
+                ya[k] = y; // * yscale;
                 ++k;
             }
 
@@ -151,6 +150,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 
 static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n )
 {
+    /* the header scalings in the input data file are ignored */
 
     FILE *fp;
     PetscInt i=0;
@@ -185,8 +185,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
             sscanf( string, "%s %s", xtemp, ytemp );
             xscale = strtoflt128(xtemp, NULL);
             yscale = strtoflt128(ytemp, NULL);
-#endif
-#if !(defined QUAD)
+#else
             sscanf( string, "%lf %lf", &xscale, &yscale );
 #endif
             }
@@ -195,12 +194,11 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
             sscanf( string, "%s %s", xtemp, ytemp );
             x = strtoflt128(xtemp, NULL);
             y = strtoflt128(ytemp, NULL);
-#endif
-#if !(defined QUAD)
+#else
             sscanf(string, "%lf %lf", &x, &y );
 #endif
-            xa[i-HEAD] = x * xscale;
-            ya[i-HEAD] = y * yscale;
+            xa[i-HEAD] = x; // * xscale;
+            ya[i-HEAD] = y; // * yscale;
             }
         ++i;
     }

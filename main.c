@@ -49,7 +49,7 @@ int main(int argc, char ** argv)
   /* We will use this solution vector as our data object for timestepping */
   ierr = DMCreateGlobalVector( ctx.da_s, &S_s );CHKERRQ(ierr);
 
-  /* must call this after setup context */
+  /* must call this after setup_ctx */
   set_initial_condition(&ctx,S_s);CHKERRQ(ierr);
 
   if (test_view) {
@@ -69,14 +69,13 @@ int main(int argc, char ** argv)
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
   ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
 
-  /* TODO (PDS) commented this out since sundials does not seem to
-     compile with quad precision using Petsc */
-  //ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
-  //ierr = TSSundialsSetTolerance(ts,1e-10,1e-10);CHKERRQ(ierr);
-
-  // for testing quad precision compiles (sundials broken)
+#if (defined QUAD)
   ierr = TSSetType(ts,TSBEULER);
   ierr = TSSetTolerances( ts, 1e-10, NULL, 1e-10, NULL );
+#else
+  ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts,1e-10,1e-10);CHKERRQ(ierr);
+#endif
 
   /* Set up the RHS Function */
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
