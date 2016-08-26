@@ -1,4 +1,4 @@
-*** Will perform 0 macro (output) steps of length 10000.000000
+*** Will perform 0 macro (output) steps of length 1.000000
 *** Writing output at macro Step 0, t=0.000000. Min/Max 0.000000/0.000099
 --- Printing S_s for testing ---
 %Vec Object:S_s_step_0 5 MPI processes

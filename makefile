@@ -101,8 +101,8 @@ test4: ${EXNAME}
 
 test5: ${EXNAME}
 	@rm -f test5.tmp
-	@echo "\033[34mRunning Test 5 (Sinit=3000, multiple time steps)\033[0m"
-	@${MPIEXEC} -n 1 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 3 -ts_view \
+	@echo "\033[34mRunning Test 5 (Sinit=3000, multiple tiny time steps)\033[0m"
+	@${MPIEXEC} -n 1 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 3 -ts_view -dtmacro 1e4 \
     2>&1 > test5.tmp
 	@diff test5.tmp testref/test5.ref && \
     echo "\033[32mSuccess\033[0m" || \
