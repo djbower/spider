@@ -1,10 +1,14 @@
-static char help[] ="Parallel magma ocean timestepper\n\
-                     -n : specify the number of staggered points\n\
-                     -sinit : specify an entropy value to base the initial condition upon\n\
-                     -monitor : use custom monitor to dump output\n\
-                     -nstepsmacro : specify the number of macro (output dump) steps\n";
+static char help[] =
+"Parallel magma ocean timestepper\n\
+-n : specify the number of staggered points\n\
+-sinit : specify an entropy value to base the initial condition upon\n\
+-monitor : use custom monitor to dump output\n\
+-test_view : with -monitor, also print out solution and rhs for testing\n\
+-nstepsmacro : specify the number of macro (output dump) steps\n\
+-dtmacro : specify the macro (output dump) time step (will not be exact!)\n\
+";
 
-/* Note: if you would like more verbose output, see the preprocessor define
+/* Note: if you would like more verbose output, see the preprocessor defines
          in global_defs.h */
 
 #include "petsc.h"
@@ -16,27 +20,26 @@ static char help[] ="Parallel magma ocean timestepper\n\
 int main(int argc, char ** argv)
 {
   PetscErrorCode ierr;
-  TS             ts;                   /* ODE solver object */
-  Vec            S_s;                  /* Solution Vector */
-  Ctx            ctx;                  /* Solver context */
-  PetscBool      test_view;            /* View vectors for testing purposes */
-  PetscBool      monitor;              /* Macros step custom monitor (monitor.c) */
-  const PetscReal t0 = 0;              /* Initial time */
-  const PetscInt maxsteps = 1000000000;/* Max internal steps */
-  PetscInt       nstepsmacro = 100;    /* Max macros steps */
-  PetscReal      dtmacro = 1.0;        /* Macros step size (see stepover note) */
+  TS             ts;                    /* ODE solver object */
+  Vec            S_s;                   /* Solution Vector */
+  Ctx            ctx;                   /* Solver context */
+  PetscBool      monitor = PETSC_TRUE;  /* Macros step custom monitor (monitor.c) */
+  const PetscReal t0 = 0;               /* Initial time */
+  const PetscInt maxsteps = 1000000000; /* Max internal steps */
+  PetscInt       nstepsmacro = 100;     /* Max macros steps */
+  PetscReal      dtmacro = 1.0;         /* Macros step size (see stepover note) */
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
   /* Obtain a command-line argument for testing */
-  test_view = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-test_view",&test_view,NULL);CHKERRQ(ierr);
-  monitor = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&monitor,NULL);CHKERRQ(ierr);
-  nstepsmacro = 100;
   ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&nstepsmacro,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&dtmacro,NULL);CHKERRQ(ierr);
 
-  ierr = PetscPrintf(PETSC_COMM_WORLD," *** Will perform %D macro steps of length %f\n",
+  /* This code proceeds by performing multiple solves with a TS object,
+     pausing to optionally produce output before updating the "final" time
+     and proceeding again */
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f\n",
       nstepsmacro,dtmacro);CHKERRQ(ierr);
 
   // Note: it might make for a less-confusing code if all command-line 
@@ -51,16 +54,6 @@ int main(int argc, char ** argv)
 
   /* must call this after setup_ctx */
   set_initial_condition(&ctx,S_s);CHKERRQ(ierr);
-
-  if (test_view) {
-    PetscViewer viewer;
-    ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
-    ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
-    ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing S_s initial condition ***\n");CHKERRQ(ierr);
-    ierr = VecView(S_s,viewer);CHKERRQ(ierr);
-    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
-  }
   
   /* Set up the Jacobian function (omitted for now) */
 
@@ -70,7 +63,7 @@ int main(int argc, char ** argv)
   ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
 
 #if (defined QUAD)
-  ierr = TSSetType(ts,TSBEULER);
+  ierr = TSSetType(ts,TSBEULER); //PDS TODO: replace this with TSARKIMEX or something else that's more sophisticated and native
   ierr = TSSetTolerances( ts, 1e-10, NULL, 1e-10, NULL );
 #else
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
@@ -82,7 +75,7 @@ int main(int argc, char ** argv)
 
   /* Set up the integration period for first macro step */
   ierr = TSSetDuration(ts,maxsteps,dtmacro);CHKERRQ(ierr); 
-  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr); /* Note: will not compute at precisely the requested time (TODO: see if interpolate can be made to work) */
+  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr); /* Note: will not compute at precisely the requested time (PDS TODO: see if interpolate can be made to work) */
 
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
@@ -105,28 +98,10 @@ int main(int argc, char ** argv)
     }
   }
 
-  /* For testing, view some things stored in the context.
-      Note that there are other viewer implementations, including 
-      those that will write to a file which we should be able
-      to open with python.
-  */
-  // TODO: update this to view after every macro step so we can automatically test 
-  //       that as well
-  if (test_view) {
-    PetscViewer viewer;
-    ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
-    ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
-    ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing S_s ***\n");CHKERRQ(ierr);
-    ierr = VecView(S_s,viewer);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD," *** Viewing rhs_s ***\n");CHKERRQ(ierr);
-    // TODO: don't store the rhs like this. Just recompute it here
-    ierr = VecView(ctx.solution.rhs_s,viewer);CHKERRQ(ierr);
-    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
-  }
-
   /* Free allocated data in the context */
   ierr = destroy_ctx(&ctx);CHKERRQ(ierr);
+
+  /* Destroy solution vector */
   ierr = VecDestroy(&S_s);CHKERRQ(ierr);
 
   /* Cleanup and finalize */

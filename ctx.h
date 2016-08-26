@@ -65,7 +65,7 @@ typedef struct _Mesh {
 } Mesh;
 
 #define NUMSOLUTIONVECS_B 40
-#define NUMSOLUTIONVECS_S 15
+#define NUMSOLUTIONVECS_S 14
 typedef struct _Solution {
     /* TI means time-independent */
 
@@ -73,7 +73,7 @@ typedef struct _Solution {
     Vec alpha,alpha_mix,cond,cp,cp_mix,dfusdr,dfusdr_temp,dphidr,dSdr,dTdPs,dTdPs_mix,dTdrs,dTdrs_mix,Etot,fusion,fusion_curve,fusion_curve_temp,fusion_rho,fusion_temp,gsuper,Jcond,Jconv,Jgrav,Jheat,Jmass,Jmix,Jtot,kappah,liquidus,liquidus_rho,liquidus_temp,nu,phi,rho,S,solidus,solidus_rho,solidus_temp,temp,visc;
 
     Vec solutionVecs_s[NUMSOLUTIONVECS_S];
-    Vec fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rhs_s, rho_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
+    Vec fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
 
 } Solution;
 

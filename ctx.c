@@ -105,12 +105,11 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.liquidus_s          = ctx->solution.solutionVecs_s[6]; // TI
   ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecs_s[7]; // TI
   ctx->solution.phi_s               = ctx->solution.solutionVecs_s[8];
-  ctx->solution.rhs_s               = ctx->solution.solutionVecs_s[9]; 
-  ctx->solution.rho_s               = ctx->solution.solutionVecs_s[10];
-  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[11]; // TI
-  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[12]; // TI
-  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[13]; // TI
-  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[14];
+  ctx->solution.rho_s               = ctx->solution.solutionVecs_s[9];
+  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[10]; // TI
+  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[11]; // TI
+  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[12]; // TI
+  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[13];
 
   ierr = DMCreateLocalVector(ctx->da_s,&ctx->work_local_s);CHKERRQ(ierr);
 

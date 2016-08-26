@@ -91,8 +91,5 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
     ierr = DMDAVecRestoreArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
 
-    /* copy to the Ctx for monitoring (only). This can be removed leater TODO */
-    ierr = VecCopy(rhs_s,E->solution.rhs_s);CHKERRQ(ierr);
-
   PetscFunctionReturn(0);
 }

@@ -26,7 +26,7 @@
    as a function of pressure */
 #define NLS 301 /* no. of coordinates in liq and sol datafiles */
 
-/* set mesh here (can be changed from the command line) */
+/* set default mesh here (can be changed from the command line) */
 /* number of basic mesh points */
 #define NUMPTS_B_DEFAULT 100
 /* number of staggered mesh points */
