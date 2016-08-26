@@ -90,7 +90,8 @@ typedef struct _Ctx {
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
 
-  // TODO: flatten this all out
+  // Note: there is no real reason that we have some data here and some in Solution and some in Mesh.
+  //       it could all be flattened out (and probably would be in a re-implementation)
 } Ctx;
 
 PetscErrorCode setup_ctx(Ctx *);

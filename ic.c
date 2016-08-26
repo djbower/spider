@@ -7,20 +7,14 @@ PetscErrorCode set_initial_condition(Ctx *E, Vec S_in)
 # if (defined VERBOSE)
     PetscErrorCode ierr;
 #endif
-    /* TODO: not required anymore I think */
-    //Solution       *S;
-    //PetscInt       numpts_b;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition : basing i.c. on a value of %f\n",S_init);CHKERRQ(ierr);
 #endif
-    /* TODO: I don't think the below does anything */
-    //ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-
-    /* TODO: no longer required I think */
-    //S = &E->solution;
-    //ierr = VecSet(S->S_s,S_init);CHKERRQ(ierr);
+    /* Note that we don't initialize the vector to anything here, as we used to,
+       as this is a pertubative approach and the values are set in the following 
+       function */
 
     make_super_adiabatic( E, S_in ); 
 

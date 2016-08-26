@@ -31,6 +31,14 @@ int main(int argc, char ** argv)
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
+  // Emit some warnings as a placeholder to ensure that we don't forget the QUAD flag if its needed.
+#if ((defined QUAD) && !(defined (PETSC_USER_REAL___FLOAT128)))
+    SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Configuration error. You appear to be using QUAD without a quad-precision build of PETSc");
+#endif
+#if (!(defined QUAD) && (defined (PETSC_USER_REAL___FLOAT128)))
+    SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Configuration error. You appear to be using a quad-precision build of PETSc without definiing QUAD here");
+#endif
+
   /* Obtain a command-line argument for testing */
   ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&monitor,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&nstepsmacro,NULL);CHKERRQ(ierr);
@@ -75,7 +83,7 @@ int main(int argc, char ** argv)
 
   /* Set up the integration period for first macro step */
   ierr = TSSetDuration(ts,maxsteps,dtmacro);CHKERRQ(ierr); 
-  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr); /* Note: will not compute at precisely the requested time (PDS TODO: see if interpolate can be made to work) */
+  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr); /* Note: will not compute at precisely the requested time (PDS TODO: see if interpolate or matchstep can be made to work) */
 
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);

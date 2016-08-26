@@ -20,17 +20,15 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void
     ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Writing output at macro Step %D, t=%f. Min/Max %f/%f\n",step,time,minval,maxval);CHKERRQ(ierr);
   }
 
-  // TODO PDS: discuss with Dan what output format is actually best here. Currently it dumps out MATLAB-style files for S_s and rhs_s at each timestep
-
   /* Dump the solution to a file named for the timestep */
   {
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
 
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/TIMESTEPPER/S_s/S_s_%D.m",step);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/S_s.%D.m",step);CHKERRQ(ierr);
     ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"S_s_step_%D",step);CHKERRQ(ierr);
     ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
-    ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
+    ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr); //Annoyingly, PETSc wants you to use binary output so badly that this is the easiest way to get full-precision ASCII..
     ierr = PetscObjectSetName((PetscObject)x,vecname);CHKERRQ(ierr);
     ierr = VecView(x,viewer);CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
@@ -53,11 +51,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void
     ierr = VecDuplicate(x,&rhs_s);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)rhs_s,"rhs_s");CHKERRQ(ierr);
     ierr = RHSFunction(ts,time,x,rhs_s,ctx);CHKERRQ(ierr);
+  // NOTE: we turn off dumping of the RHS for now, but retain this code as it may become useful later
+#if 0
     {
       PetscViewer viewer;
       char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
 
-      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/TIMESTEPPER/rhs/rhs_%D.m",step);CHKERRQ(ierr);
+      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/rhs_s.%D.m",step);CHKERRQ(ierr);
       ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"rhs_step_%D",step);CHKERRQ(ierr);
       ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
       ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
@@ -65,6 +65,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void
       ierr = VecView(rhs_s,viewer);CHKERRQ(ierr);
       ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
     }
+#endif
     
     if (test_view) {
       PetscViewer viewer;
