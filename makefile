@@ -42,10 +42,18 @@ clear_output :
 #  2. make testX
 #  3. cp testX.tmp testref/testX.ref
 
-test : test1 test2 test3 test4
+# To update a set, something like
+# for n in {1..7}; do cp test"$n".tmp testref/test"$n".ref; done
+
+TESTS = test1 test2 test3 test4 test5 test6 test7
+test : $(TESTS)
+
+.PHONY: test $(TESTS)
 
 # Base options.
 TEST_OPTIONS = -monitor -test_view
+
+#TODO: add an option so that these tests don't dump files (We use the output from -test_view)
 
 # SINIT = 1600 (see global_defs.h)
 test1: ${EXNAME}
@@ -91,15 +99,34 @@ test4: ${EXNAME}
     echo "\033[31mFailure: output does not match reference (see diff above)\033[0m"
 	@rm -f test4.tmp
 
-# SINIT = 3000, take multiple time steps
-# TODO ...
+test5: ${EXNAME}
+	@rm -f test5.tmp
+	@echo "\033[34mRunning Test 5 (Sinit=3000, multiple time steps)\033[0m"
+	@${MPIEXEC} -n 1 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 3 -ts_view \
+    2>&1 > test5.tmp
+	@diff test5.tmp testref/test5.ref && \
+    echo "\033[32mSuccess\033[0m" || \
+    echo "\033[31mFailure: output does not match reference (see diff above)\033[0m"
+	@rm -f test5.tmp
 
-# SINIT = 2500, take multiple time steps
-# TODO ...
+test6: ${EXNAME}
+	@rm -f test6.tmp
+	@echo "\033[34mRunning Test 6 (Sinit=2500, multiple tiny time steps)\033[0m"
+	@${MPIEXEC} -n 1 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 3 -ts_view -sinit 0.8352753205915197 -dtmacro 3.0 \
+    2>&1 > test6.tmp
+	@diff test6.tmp testref/test6.ref && \
+    echo "\033[32mSuccess\033[0m" || \
+    echo "\033[31mFailure: output does not match reference (see diff above)\033[0m"
+	@rm -f test6.tmp
 
-# SINIT = 2500, take multiple time steps, parallel
-# TODO ...
-
-.PHONY: test test1 test2 test3 test4
+test7: ${EXNAME}
+	@rm -f test7.tmp
+	@echo "\033[34mRunning Test 7 (Sinit=2500, multiple tiny time steps, parallel)\033[0m"
+	@${MPIEXEC} -n 3 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 3 -ts_view -sinit 0.8352753205915197 -dtmacro 3.0 \
+    2>&1 > test7.tmp
+	@diff test7.tmp testref/test7.ref && \
+    echo "\033[32mSuccess\033[0m" || \
+    echo "\033[31mFailure: output does not match reference (see diff above)\033[0m"
+	@rm -f test7.tmp
 
 include ${PETSC_DIR}/lib/petsc/conf/test
