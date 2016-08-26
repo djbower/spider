@@ -36,20 +36,22 @@ clear_output :
 
 ### Tests #####################################################################
 
-# Note: to update the reference for a test, you can
-#  1. Comment out the @rm -f testX.tmp line
-#  2. Run the test
+# Note: to update the reference for test X, you can
+#  1. Comment out the line 
+#       @rm -f testX.tmp
+#  2. make testX
 #  3. cp testX.tmp testref/testX.ref
 
 test : test1 test2 test3 test4
 
-TEST_OPTIONS = -test_view -ts_view 
+# Base options.
+TEST_OPTIONS = -monitor -test_view
 
-# SINIT = 1600
+# SINIT = 1600 (see global_defs.h)
 test1: ${EXNAME}
 	@rm -f test1.tmp
 	@echo "\033[34mRunning Test 1\033[0m"
-	@${MPIEXEC} -n 1 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 0 -sinit 1600 \
+	@${MPIEXEC} -n 1 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 0 -sinit 0.5345762051785725\
     2>&1 > test1.tmp
 	@diff test1.tmp testref/test1.ref && \
     echo "\033[32mSuccess\033[0m" || \
@@ -60,18 +62,18 @@ test1: ${EXNAME}
 test2: ${EXNAME}
 	@rm -f test2.tmp
 	@echo "\033[34mRunning Test 2\033[0m"
-	@${MPIEXEC} -n 1 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 0  -sinit 2500 \
+	@${MPIEXEC} -n 1 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 0  -sinit 0.8352753205915197 \
     2>&1 > test2.tmp
 	@diff test2.tmp testref/test2.ref && \
     echo "\033[32mSuccess\033[0m" || \
     echo "\033[31mFailure: output does not match reference (see diff above)\033[0m"
 	@rm -f test2.tmp
 
-# SINIT = 3000
+# SINIT = 3000 (default)
 test3: ${EXNAME}
 	@rm -f test3.tmp
 	@echo "\033[34mRunning Test 3\033[0m"
-	@${MPIEXEC} -n 1 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 0 -sinit 3000 \
+	@${MPIEXEC} -n 1 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 0 \
     2>&1 > test3.tmp
 	@diff test3.tmp testref/test3.ref && \
     echo "\033[32mSuccess\033[0m" || \
@@ -82,12 +84,21 @@ test3: ${EXNAME}
 test4: ${EXNAME}
 	@rm -f test4.tmp
 	@echo "\033[34mRunning Test 4\033[0m"
-	@${MPIEXEC} -n 5 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 0 -sinit 2500 \
+	@${MPIEXEC} -n 5 ./${EXNAME} ${TEST_OPTIONS} -nstepsmacro 0 -sinit 0.8352753205915197 \
     2>&1 > test4.tmp
 	@diff test4.tmp testref/test4.ref && \
     echo "\033[32mSuccess\033[0m" || \
     echo "\033[31mFailure: output does not match reference (see diff above)\033[0m"
 	@rm -f test4.tmp
+
+# SINIT = 3000, take multiple time steps
+# TODO ...
+
+# SINIT = 2500, take multiple time steps
+# TODO ...
+
+# SINIT = 2500, take multiple time steps, parallel
+# TODO ...
 
 .PHONY: test test1 test2 test3 test4
 
