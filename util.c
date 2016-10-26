@@ -41,7 +41,8 @@ PetscErrorCode d_dr( Ctx *E, Vec in_s, Vec out_b )
 #if (defined VERBOSE)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"d_dr\n");CHKERRQ(ierr);
 #endif
-    dr = E->mesh.dx_s;
+    // TODO FIXME
+    //dr = E->mesh.dx_s;
 
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;

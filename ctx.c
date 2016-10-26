@@ -322,7 +322,8 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     M = &E->mesh;
     S = &E->solution;
 
-    dr = M->dx_s;
+    // TODO FIXME
+    //dr = M->dx_s;
     pres = M->pressure_b;
 
     /* Create some local vectors for the staggered grid*/

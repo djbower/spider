@@ -53,8 +53,6 @@ typedef struct _Lookup {
 #define NUMMESHVECS_B 5
 #define NUMMESHVECS_S 5
 typedef struct _Mesh {
-    PetscScalar dx_b;
-    PetscScalar dx_s;
 
     Vec meshVecs_b[NUMMESHVECS_B];
     Vec area_b,dPdr_b,pressure_b,radius_b, mix_b;  

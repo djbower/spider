@@ -1,5 +1,7 @@
 #include "mesh.h"
 
+//static PetscErrorCode regular_mesh( Ctx * );
+static PetscErrorCode geometric_mesh( Ctx * );
 static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
 static PetscErrorCode mixing_length( DM, Vec, Vec );
@@ -10,8 +12,7 @@ PetscErrorCode set_mesh( Ctx *E)
 {
 
     PetscErrorCode ierr;
-    PetscScalar    *arr;
-    PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_b,w_s,numpts_b,numpts_s;
+    PetscInt       i;
     Mesh           *M;
     DM             da_b=E->da_b, da_s=E->da_s;
 
@@ -21,9 +22,6 @@ PetscErrorCode set_mesh( Ctx *E)
 #endif
 
     M = &E->mesh;
-
-    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* Create vectors required for the mesh */
     for (i=0;i<NUMMESHVECS_B;++i) {
@@ -46,31 +44,14 @@ PetscErrorCode set_mesh( Ctx *E)
     M->dPdr_s     = M->meshVecs_s[3];
     M->area_s     = M->meshVecs_s[4];
 
-    /* basic node spacing (negative) */
-    M->dx_b = -(RADOUT-RADIN) / (numpts_b-1);
+    /* for regular mesh, although without resolving the ultra-thin
+       thermal boundary layer at the base of the mantle this likely
+       gives wrong results */
+    //regular_mesh( E );
 
-    /* staggered node spacing (negative) */
-    M->dx_s = M->dx_b;
-
-    /* TODO: could also do a similar thing for d_dr? */
-
-    /* radius at basic nodes */
-    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b;
-    ierr = DMDAVecGetArray(da_b,M->radius_b,&arr);CHKERRQ(ierr);
-    for (i=ilo_b; i<ihi_b; ++i){
-        arr[i] = RADIN - (numpts_b-1-i)*M->dx_b;
-    }
-    ierr = DMDAVecRestoreArray(da_b,M->radius_b,&arr);CHKERRQ(ierr);
-
-    /* radius at staggered nodes */
-    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
-    ihi_s = ilo_s + w_s;
-    ierr = DMDAVecGetArray(da_s,M->radius_s,&arr);CHKERRQ(ierr);
-    for (i=ilo_s;i<ihi_s;++i){
-        arr[i] = RADIN - 0.5*M->dx_b - (numpts_s-1-i)*M->dx_b;
-    }
-    ierr = DMDAVecRestoreArray(da_s,M->radius_s,&arr);CHKERRQ(ierr);
+    /* need to use geometric mesh to resolve ultra-thin thermal
+       boundary layer at the base of the mantle */
+    geometric_mesh( E );
 
     /* Adams-Williamson EOS */
 
@@ -102,6 +83,111 @@ PetscErrorCode set_mesh( Ctx *E)
     mixing_length( da_b, M->radius_b, M->mix_b);
 
     PetscFunctionReturn(0);
+}
+
+/*static PetscErrorCode regular_mesh( Ctx *E )
+{
+
+    PetscErrorCode ierr;
+    PetscScalar    *arr;
+    PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_b,w_s,numpts_b,numpts_s;
+    Mesh           *M;
+    DM             da_b=E->da_b, da_s=E->da_s;
+
+    PetscFunctionBeginUser;
+
+    M = &E->mesh;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);*/
+
+    /* basic node spacing (negative) */
+    //M->dx_b = -(RADOUT-RADIN) / (numpts_b-1);
+
+    /* staggered node spacing (negative) */
+    //M->dx_s = M->dx_b;
+
+    /* radius at basic nodes */
+    /*ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+    ierr = DMDAVecGetArray(da_b,M->radius_b,&arr);CHKERRQ(ierr);
+    for (i=ilo_b; i<ihi_b; ++i){
+        arr[i] = RADIN - (numpts_b-1-i)*M->dx_b;
+    }
+    ierr = DMDAVecRestoreArray(da_b,M->radius_b,&arr);CHKERRQ(ierr);*/
+
+    /* radius at staggered nodes */
+    /*ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
+    ierr = DMDAVecGetArray(da_s,M->radius_s,&arr);CHKERRQ(ierr);
+    for (i=ilo_s;i<ihi_s;++i){
+        arr[i] = RADIN - 0.5*M->dx_b - (numpts_s-1-i)*M->dx_b;
+    }
+    ierr = DMDAVecRestoreArray(da_s,M->radius_s,&arr);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}*/
+
+static PetscErrorCode geometric_mesh( Ctx *E )
+{
+
+    PetscErrorCode ierr;
+    PetscScalar    *arr_b, *arr_s;
+    PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_b,w_s,numpts_b,numpts_s;
+    Mesh           *M;
+    DM             da_b=E->da_b, da_s=E->da_s;
+    // TODO: should not be hard-coded
+    PetscScalar    dr_min = 1.5696123057604772e-10; // 1 mm
+    PetscScalar    dr_max = 0.0023544184586407153; // 15 km
+    PetscScalar    geom_fac = 1.2;
+    PetscScalar    dr;
+    PetscInt       power;
+
+    PetscFunctionBeginUser;
+
+    M = &E->mesh;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    /* TODO: dynamically determine number of mesh points, and
+       automatically ensure that arr[0] = RADOUT and
+       arr[numpts_b-1] = RADIN */
+
+    /* TODO: does this work for parallel?  For Patrick to confirm.
+       Indices might mess up since I flip them to populate the array
+       so that it is order from RADOUT to RADIN (decreasing radius) */
+
+    /* radius at basic nodes */
+    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+    ierr = DMDAVecGetArray(da_b,M->radius_b,&arr_b);CHKERRQ(ierr);
+    arr_b[numpts_b-1] = RADIN;
+    for (i=ilo_b; i<ihi_b; ++i){
+        power = i;
+        dr = dr_min * PetscPowScalar( geom_fac, power);
+        if( dr > dr_max){
+            dr = dr_max;
+            }
+        arr_b[numpts_b-i-2] = arr_b[numpts_b-i-1] + dr;
+    }
+    // TODO: below is hacky.
+    arr_b[0] = RADOUT;
+
+    ierr = DMDAVecRestoreArray(da_b,M->radius_b,&arr_b);CHKERRQ(ierr);
+
+    /* radius at staggered nodes */
+    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
+    ierr = DMDAVecGetArray(da_s,M->radius_s,&arr_s);CHKERRQ(ierr);
+    for (i=ilo_s;i<ihi_s;++i){
+        arr_s[i] = 0.5 * (arr_b[i]+arr_b[i+1]);
+    }
+    ierr = DMDAVecRestoreArray(da_s,M->radius_s,&arr_s);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
 }
 
 static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
