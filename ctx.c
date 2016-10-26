@@ -115,6 +115,8 @@ PetscErrorCode setup_ctx(Ctx* ctx)
 
   set_mesh(ctx);
 
+  set_d_dr( ctx );
+
   set_twophase(ctx);
 
   set_core_cooling(ctx);

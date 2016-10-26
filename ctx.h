@@ -84,6 +84,7 @@ typedef struct _Ctx {
   DM       da_b,da_s;
   PetscScalar BC_BOT_FAC; // core-cooling boundary condition
   PetscScalar S_init; // initial entropy
+  Mat      d_dr;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
@@ -95,7 +96,7 @@ typedef struct _Ctx {
 PetscErrorCode setup_ctx(Ctx *);
 PetscErrorCode destroy_ctx(Ctx *);
 
-PetscErrorCode d_dr( Ctx *, Vec, Vec );
+PetscErrorCode set_d_dr( Ctx * ); // OLD HERE --> , Vec, Vec );
 PetscErrorCode set_capacitance( Ctx *, Vec );
 PetscErrorCode set_lookups( Ctx * );
 PetscErrorCode set_matprop_and_flux( Ctx *, Vec );
