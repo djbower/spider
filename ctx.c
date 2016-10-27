@@ -401,6 +401,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       Sabs = arr_S[i] + E->S_init;
 
       /* dSdr: central difference, 2nd order accurate */
+      // TODO FIXME dr doesn't exist anymore
       arr_dSdr[i] = 1.0/dr * (arr_S_s[i]-arr_S_s[i-1]);
 
       /* dphidr: central difference, 2nd order accurate */

@@ -84,7 +84,7 @@ typedef struct _Ctx {
   DM       da_b,da_s;
   PetscScalar BC_BOT_FAC; // core-cooling boundary condition
   PetscScalar S_init; // initial entropy
-  Mat      d_dr;
+  Mat      qty_at_b, ddr_at_b;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

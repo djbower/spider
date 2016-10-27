@@ -64,9 +64,6 @@ PetscErrorCode set_d_dr( Ctx *E )
     /* the first and last row are all zeros (implicitly, I think),
        to enable us to return a vector with length numpts_b */
 
-    // FIXME TODO this initialises the 'final' matrix
-    //ierr = MatCreate( PETSC_COMM_WORLD, &E->d_dr );CHKERRQ(ierr);
-
     // initialise A coefficient matrices
     ierr = MatCreate( PETSC_COMM_WORLD, &A1 );CHKERRQ(ierr);
     ierr = MatSetSizes(A1,PETSC_DECIDE,PETSC_DECIDE,numpts_b,numpts_s);CHKERRQ(ierr);
@@ -266,6 +263,9 @@ PetscErrorCode set_d_dr( Ctx *E )
     ierr = MatAXPY( S1a, 1.0, S2a, DIFFERENT_NONZERO_PATTERN ); CHKERRQ(ierr);
     ierr = VecReciprocal( count );
     ierr = MatDiagonalScale( S1a, count, NULL); CHKERRQ(ierr); 
+
+    /* store to context */
+    ierr = MatDuplicate( S1a, MAT_COPY_VALUES, &E->qty_at_b ); CHKERRQ(ierr);
 
     /* clean up temporary matrices and vectors */
     ierr = MatDestroy(&A1); CHKERRQ(ierr);
