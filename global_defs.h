@@ -40,8 +40,11 @@
 #define NUMPTS_S_DEFAULT NUMPTS_B_DEFAULT-1 /* automagically determined */
 
 /* initial condition: set entropy of adiabat */
+/* set at reference entropy */
+static const PetscScalar SINIT_DEFAULT = 1.0;
+
 /* 3000 entropy, all super-liquidus */
-static const PetscScalar SINIT_DEFAULT = 1.0023303847098235;
+//static const PetscScalar SINIT_DEFAULT = 1.0023303847098235;
 
 /* 2500 entropy, spans all melt fractions */
 //static const PetscScalar SINIT_DEFAULT = 0.8352753205915197;
@@ -50,7 +53,7 @@ static const PetscScalar SINIT_DEFAULT = 1.0023303847098235;
 //static const PetscScalar SINIT_DEFAULT = 0.5345762051785725;
 
 /* initial linear entropy perturbation */
-static const PetscScalar PERTURB = 1.0E-4;
+static const PetscScalar PERTURB = 1.0E-10;
 
 /* constants */
 /* outer radius */

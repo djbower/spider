@@ -4,18 +4,17 @@ static PetscErrorCode make_super_adiabatic( Ctx *, Vec );
 
 PetscErrorCode set_initial_condition(Ctx *E, Vec S_in) 
 {
-# if (defined VERBOSE)
+
     PetscErrorCode ierr;
-#endif
+    PetscScalar dS;
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition : basing i.c. on a value of %f\n",S_init);CHKERRQ(ierr);
-#endif
-    /* Note that we don't initialize the vector to anything here, as we used to,
-       as this is a pertubative approach and the values are set in the following 
-       function */
 
+    /* perturbation relative to reference entropy, which is defined
+       at a non-dimensional entropy of 1.0 */
+    dS = E->S_init - 1.0;
+    ierr = VecSet( S_in, dS ); CHKERRQ( ierr );
+    /* now add small gradient to initial perturbed value */
     make_super_adiabatic( E, S_in ); 
 
     PetscFunctionReturn(0);
@@ -50,7 +49,7 @@ static PetscErrorCode make_super_adiabatic( Ctx *E, Vec S_in )
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
     if (rank == size-1) { /* Assume that the last processor contains the last value */
-      const PetscInt ix = numpts_b-1; // Dangerous if PetscInt is not int!
+      const PetscInt ix = numpts_b-1; // FIXME: Dangerous if PetscInt is not int!
       ierr = VecGetValues(pres_b,1,&ix,&pres_b_last);
 #if (defined DEBUGOUTPUT)
       ierr = PetscPrintf(PETSC_COMM_SELF,"[%d]   make_super_adiabatic: scattering value %f\n",rank,pres_b_last);CHKERRQ(ierr);
@@ -65,7 +64,7 @@ static PetscErrorCode make_super_adiabatic( Ctx *E, Vec S_in )
     ierr = DMDAVecGetArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
-        arr_S_s[i] = PERTURB * arr_pres_s[i]/pres_b_last;
+        arr_S_s[i] += PERTURB * arr_pres_s[i]/pres_b_last;
     }
     ierr = DMDAVecRestoreArray(da_s,S_in,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);

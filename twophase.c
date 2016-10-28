@@ -206,9 +206,6 @@ static PetscErrorCode set_fusion_curve( Ctx *E )
     /* basic nodes */
     MatMult( E->ddr_at_b, S->fusion_curve_s, S->dfusdr );CHKERRQ(ierr);
     MatMult( E->ddr_at_b, S->fusion_curve_temp_s, S->dfusdr_temp );CHKERRQ(ierr);
-    /* TODO: old below here */
-    //d_dr( E, S->fusion_curve_s,      S->dfusdr      );
-    //d_dr( E, S->fusion_curve_temp_s, S->dfusdr_temp );
 
     PetscFunctionReturn(0);
 }
