@@ -1,16 +1,5 @@
 #include "util.h"
 
-PetscScalar average( PetscScalar a, PetscScalar b ) 
-{
-    /* arithmetic average of two numbers */
-
-    PetscScalar out;
-
-    out = 0.5 * (a+b);
-
-    return out;
-}
-
 PetscScalar combine_matprop( PetscScalar weight, PetscScalar mat1, PetscScalar mat2 )
 {
     /* linear weighting of two quantities */
@@ -41,7 +30,7 @@ PetscErrorCode set_d_dr( Ctx *E )
     PetscInt numpts_b, ilo_b, ihi_b, w_b;
     PetscScalar value[3], cc;
     PetscScalar *arr_radius_s, *arr_radius_b, dh, h1, h2;
-    Mat A1, B1, C1, S1a, S1b, A2, B2, C2, S2a, S2b;
+    Mat A1, B1, C1, S1a, S1b, dS1, A2, B2, C2, S2a, S2b, dS2;
     Mesh *M;
     Vec dx1, dx1sq, dx2, dx2sq, count;
 
@@ -240,13 +229,19 @@ PetscErrorCode set_d_dr( Ctx *E )
     /* for computing first estimate of S */
     // S1a: ax**2 term
     ierr = MatDuplicate( A1, MAT_COPY_VALUES, &S1a );CHKERRQ(ierr);
-    ierr = MatDiagonalScale( S1a, dx1sq, NULL); CHKERRQ(ierr);
+    ierr = MatDiagonalScale( S1a, dx1sq, NULL);CHKERRQ(ierr);
     // S1b: bx term
     ierr = MatDuplicate( B1, MAT_COPY_VALUES, &S1b );CHKERRQ(ierr);
-    ierr = MatDiagonalScale( S1b, dx1, NULL); CHKERRQ(ierr);
+    ierr = MatDiagonalScale( S1b, dx1, NULL);CHKERRQ(ierr);
     // add (final matrix is S1a)
-    ierr = MatAXPY( S1a, 1.0, S1b, SAME_NONZERO_PATTERN ); CHKERRQ(ierr); 
-    ierr = MatAXPY( S1a, 1.0, C1, SAME_NONZERO_PATTERN ); CHKERRQ(ierr);
+    ierr = MatAXPY( S1a, 1.0, S1b, SAME_NONZERO_PATTERN );CHKERRQ(ierr); 
+    ierr = MatAXPY( S1a, 1.0, C1, SAME_NONZERO_PATTERN );CHKERRQ(ierr);
+
+    /* for computing first estimate of dS/dr */
+    ierr = MatDuplicate( A1, MAT_COPY_VALUES, &dS1 );CHKERRQ(ierr);
+    ierr = MatDiagonalScale( dS1, dx1, NULL);CHKERRQ(ierr);
+    ierr = MatScale( dS1, 2.0);CHKERRQ(ierr);
+    ierr = MatAXPY( dS1, 1.0, B1, SAME_NONZERO_PATTERN );
 
     /* for computing second estimate of S */
     // S2a: ax**2 term
@@ -259,13 +254,22 @@ PetscErrorCode set_d_dr( Ctx *E )
     ierr = MatAXPY( S2a, 1.0, S2b, SAME_NONZERO_PATTERN ); CHKERRQ(ierr); 
     ierr = MatAXPY( S2a, 1.0, C2, SAME_NONZERO_PATTERN ); CHKERRQ(ierr);
 
+    /* for computing second estimate of dS/dr */
+    ierr = MatDuplicate( A2, MAT_COPY_VALUES, &dS2 );CHKERRQ(ierr);
+    ierr = MatDiagonalScale( dS2, dx2, NULL);CHKERRQ(ierr);
+    ierr = MatScale( dS2, 2.0);CHKERRQ(ierr);
+    ierr = MatAXPY( dS2, 1.0, B2, SAME_NONZERO_PATTERN );
+
     /* combine estimates by arithmetic average */
-    ierr = MatAXPY( S1a, 1.0, S2a, DIFFERENT_NONZERO_PATTERN ); CHKERRQ(ierr);
     ierr = VecReciprocal( count );
+    ierr = MatAXPY( S1a, 1.0, S2a, DIFFERENT_NONZERO_PATTERN ); CHKERRQ(ierr);
     ierr = MatDiagonalScale( S1a, count, NULL); CHKERRQ(ierr); 
+    ierr = MatAXPY( dS1, 1.0, dS2, DIFFERENT_NONZERO_PATTERN ); CHKERRQ(ierr);
+    ierr = MatDiagonalScale( dS1, count, NULL); CHKERRQ(ierr);
 
     /* store to context */
     ierr = MatDuplicate( S1a, MAT_COPY_VALUES, &E->qty_at_b ); CHKERRQ(ierr);
+    ierr = MatDuplicate( dS1, MAT_COPY_VALUES, &E->ddr_at_b ); CHKERRQ(ierr);
 
     /* clean up temporary matrices and vectors */
     ierr = MatDestroy(&A1); CHKERRQ(ierr);
@@ -276,8 +280,10 @@ PetscErrorCode set_d_dr( Ctx *E )
     ierr = MatDestroy(&C2); CHKERRQ(ierr);
     ierr = MatDestroy(&S1a); CHKERRQ(ierr);
     ierr = MatDestroy(&S1b); CHKERRQ(ierr);
+    ierr = MatDestroy(&dS1); CHKERRQ(ierr);
     ierr = MatDestroy(&S2a); CHKERRQ(ierr);
     ierr = MatDestroy(&S2b); CHKERRQ(ierr);
+    ierr = MatDestroy(&dS2); CHKERRQ(ierr);
     ierr = VecDestroy(&dx1); CHKERRQ(ierr);
     ierr = VecDestroy(&dx1sq); CHKERRQ(ierr);
     ierr = VecDestroy(&dx2); CHKERRQ(ierr);

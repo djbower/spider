@@ -96,7 +96,7 @@ typedef struct _Ctx {
 PetscErrorCode setup_ctx(Ctx *);
 PetscErrorCode destroy_ctx(Ctx *);
 
-PetscErrorCode set_d_dr( Ctx * ); // OLD HERE --> , Vec, Vec );
+PetscErrorCode set_d_dr( Ctx * );
 PetscErrorCode set_capacitance( Ctx *, Vec );
 PetscErrorCode set_lookups( Ctx * );
 PetscErrorCode set_matprop_and_flux( Ctx *, Vec );
@@ -107,7 +107,6 @@ PetscErrorCode set_twophase( Ctx * );
 PetscScalar get_val1d( Interp1d *, PetscScalar );
 PetscScalar get_val2d( Interp2d *, PetscScalar, PetscScalar );
 
-PetscScalar average( PetscScalar a, PetscScalar b );
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar);
 
 PetscScalar radiative_flux_with_dT( PetscScalar );

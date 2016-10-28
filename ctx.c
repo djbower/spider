@@ -155,6 +155,9 @@ PetscErrorCode destroy_ctx(Ctx* ctx)
   }
   ierr = VecDestroy(&ctx->work_local_s);CHKERRQ(ierr);
 
+  ierr = MatDestroy(&ctx->qty_at_b); CHKERRQ(ierr);
+  ierr = MatDestroy(&ctx->ddr_at_b); CHKERRQ(ierr);
+
   PetscFunctionReturn(0);
 }
 
@@ -313,7 +316,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
     DM                da_s=E->da_s, da_b=E->da_b;
     Vec               pres;
-    PetscScalar       dr, Sabs;
+    PetscScalar       Sabs;
     PetscScalar       *arr_S,*arr_phi,*arr_nu,*arr_gsuper,*arr_kappah,*arr_Etot,*arr_dSdr,*arr_dTdPs,*arr_dTdrs,*arr_dphidr,*arr_alpha,*arr_temp,*arr_cp,*arr_cond,*arr_visc,*arr_rho,*arr_Jcond,*arr_Jconv,*arr_Jtot,*arr_Jheat,*arr_Jmix,*arr_Jgrav,*arr_Jmass;
     const PetscScalar *arr_S_s,*arr_phi_s,*arr_solidus,*arr_fusion,*arr_pres,*arr_area_b,*arr_dPdr_b,*arr_liquidus_rho,*arr_solidus_rho,*arr_cp_mix,*arr_dTdrs_mix,*arr_liquidus_temp,*arr_solidus_temp,*arr_fusion_rho,*arr_fusion_temp,*arr_mix_b;
     Mesh              *M;
@@ -395,17 +398,22 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
          quantities, and these are previously computed in
          set_capacitance */
       /* entropy: from simple average */
-      arr_S[i] = average( arr_S_s[i], arr_S_s[i-1] ); 
+      // TODO FIXME
+      //arr_S[i] = average( arr_S_s[i], arr_S_s[i-1] ); 
+      arr_S[i] = 1.0;
 
       /* absolute entropy at basic nodes */
       Sabs = arr_S[i] + E->S_init;
 
       /* dSdr: central difference, 2nd order accurate */
       // TODO FIXME dr doesn't exist anymore
-      arr_dSdr[i] = 1.0/dr * (arr_S_s[i]-arr_S_s[i-1]);
+      //arr_dSdr[i] = 1.0/dr * (arr_S_s[i]-arr_S_s[i-1]);
+      arr_dSdr[i] = 1.0;
 
       /* dphidr: central difference, 2nd order accurate */
-      arr_dphidr[i] = 1.0/dr * (arr_phi_s[i]-arr_phi_s[i-1]);
+      // TODO FIXME new expression for dphi/dr
+      //arr_dphidr[i] = 1.0/dr * (arr_phi_s[i]-arr_phi_s[i-1]);
+      arr_dphidr[i] = 1.0;
       /* melt fraction */
       arr_phi[i] = (Sabs - arr_solidus[i]) / arr_fusion[i];
 

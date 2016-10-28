@@ -3,8 +3,7 @@
 
 #include "ctx.h"
 
-PetscScalar average( PetscScalar, PetscScalar );
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar );
-PetscErrorCode d_dr( Ctx *, Vec, Vec );
+PetscErrorCode set_d_dr( Ctx * );
 
 #endif
