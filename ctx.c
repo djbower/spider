@@ -311,8 +311,8 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     PetscErrorCode    ierr;
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
     DM                da_s=E->da_s, da_b=E->da_b;
-    Vec               pres;
-    PetscScalar       Sabs;
+    Vec               pres, dSdr, Sabs;
+    //PetscScalar       Sabs;
     PetscScalar       *arr_S,*arr_phi,*arr_nu,*arr_gsuper,*arr_kappah,*arr_Etot,*arr_dSdr,*arr_dTdPs,*arr_dTdrs,*arr_dphidr,*arr_alpha,*arr_temp,*arr_cp,*arr_cond,*arr_visc,*arr_rho,*arr_Jcond,*arr_Jconv,*arr_Jtot,*arr_Jheat,*arr_Jmix,*arr_Jgrav,*arr_Jmass;
     const PetscScalar *arr_S_s,*arr_phi_s,*arr_solidus,*arr_fusion,*arr_pres,*arr_area_b,*arr_dPdr_b,*arr_liquidus_rho,*arr_solidus_rho,*arr_cp_mix,*arr_dTdrs_mix,*arr_liquidus_temp,*arr_solidus_temp,*arr_fusion_rho,*arr_fusion_temp,*arr_mix_b;
     Mesh              *M;
@@ -320,12 +320,25 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     Vec               S_s_local,phi_s_local;
 
     PetscFunctionBeginUser;
+
     M = &E->mesh;
     S = &E->solution;
-
-    // TODO FIXME
-    //dr = M->dx_s;
     pres = M->pressure_b;
+
+    /* TODO: these might not work in parallel? */
+    /* can do a bunch of these operations using vectors */
+    /* dS/dr */
+    dSdr = S->dSdr;
+    MatMult( E->ddr_at_b, S_in, dSdr );
+
+    /* absolute entropy (Sabs) at basic nodes */
+    MatMult( E->qty_at_b, S_in, Sabs );
+    VecShift( Sabs, 1.0 );
+
+    /* DJB: got to changing Sabs above.  Need to talk to PS to find
+       out what the best approach is here before I change too much.
+       Seems like we should and can do more using Vecs directly, but
+       not sure how this will affect or break the parallelisation below */
 
     /* Create some local vectors for the staggered grid*/
     ierr = DMCreateLocalVector(da_s,&S_s_local);CHKERRQ(ierr);
@@ -374,7 +387,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     ierr = DMDAVecGetArrayRead(da_b,S->fusion_temp,&arr_fusion_temp);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->nu,&arr_nu);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->gsuper,&arr_gsuper);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->kappah,&arr_kappah);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->Etot,&arr_Etot);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->area_b,&arr_area_b);CHKERRQ(ierr);
@@ -604,7 +617,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     ierr = DMDAVecRestoreArrayRead(da_b,S->fusion_temp,&arr_fusion_temp);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->nu,&arr_nu);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->gsuper,&arr_gsuper);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->kappah,&arr_kappah);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->Etot,&arr_Etot);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->area_b,&arr_area_b);CHKERRQ(ierr);
