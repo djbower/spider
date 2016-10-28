@@ -171,7 +171,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     Solution          *S;
     Vec               pres_s, Sabs_s;
     Interp2d          *IRM, *ITM, *IRS, *ITS;
-    const PetscScalar *arr_S_s, *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_Sabs_s;
+    const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_Sabs_s;
     PetscScalar       *arr_phi_s,*arr_rho_s,*arr_temp_s;
 
     PetscFunctionBeginUser;
@@ -187,17 +187,14 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     /* get absolute entropy */
     ierr = VecDuplicate(S_in,&Sabs_s);CHKERRQ(ierr);
     ierr = VecCopy(S_in,Sabs_s);CHKERRQ(ierr);
-    ierr = VecShift(Sabs_s,E->S_init);CHKERRQ(ierr);
+    ierr = VecShift(Sabs_s,1.0);CHKERRQ(ierr);
 
-    // S->phi_s = (work_s - S->solidus_s)/S->fusion_s
     ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,Sabs_s);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->phi_s,S->phi_s,S->fusion_s);CHKERRQ(ierr);
-
 
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
 
-    ierr = DMDAVecGetArrayRead(da_s,S_in,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,Sabs_s,&arr_Sabs_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
@@ -232,7 +229,6 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
 
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_s,S_in,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,Sabs_s,&arr_Sabs_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
