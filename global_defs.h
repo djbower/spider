@@ -11,6 +11,11 @@
 
 /* Definitions */
 //#define QUAD
+/* FIXME: find out from PS why below is included as a check in main.c
+   it looks like there is an expectation that this is extracted from
+   the current petsc?  but unless I set this manually the code always
+   exits */
+//#define PETSC_USER_REAL___FLOAT128
 //#define VERBOSE 1
 //#define DEBUGOUTPUT 1
 
@@ -69,8 +74,8 @@ static const PetscScalar SHAPE_TRANSITION = 0.5;
 
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Potential temperature]**EXPBC */
-static const PetscScalar CONSTBC = 0.5372307709180459;
-static const PetscScalar EXPBC = 1.635769921155017;
+static const PetscScalar CONSTBC = 0.5432174352601898;
+static const PetscScalar EXPBC = 1.6042079063944077;
 static const PetscScalar SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar EMISSIVITY = 1.0; // emissivity
 static const PetscScalar TEQM = 0.0676813568808283; // equilibrium temp of planet

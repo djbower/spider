@@ -71,8 +71,8 @@ int main(int argc, char ** argv)
   ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
 
 #if (defined QUAD)
-  ierr = TSSetType(ts,TSBEULER); //PDS TODO: replace this with TSARKIMEX or something else that's more sophisticated and native
-  ierr = TSSetTolerances( ts, 1e-10, NULL, 1e-10, NULL );
+  ierr = TSSetType(ts,TSBEULER);CHKERRQ(ierr); //PDS TODO: replace this with TSARKIMEX or something else that's more sophisticated and native
+  ierr = TSSetTolerances( ts, 1e-10, NULL, 1e-10, NULL );CHKERRQ(ierr);
 #else
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
   ierr = TSSundialsSetTolerance(ts,1e-10,1e-10);CHKERRQ(ierr);
