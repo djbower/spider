@@ -11,11 +11,6 @@
 
 /* Definitions */
 //#define QUAD
-/* FIXME: find out from PS why below is included as a check in main.c
-   it looks like there is an expectation that this is extracted from
-   the current petsc?  but unless I set this manually the code always
-   exits */
-//#define PETSC_USER_REAL___FLOAT128
 //#define VERBOSE 1
 //#define DEBUGOUTPUT 1
 
