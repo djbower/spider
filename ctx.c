@@ -332,6 +332,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     MatMult( E->ddr_at_b, S_in, dSdr );
 
     /* absolute entropy (Sabs) at basic nodes */
+    ierr = DMGetGlobalVector(E->da_b,&Sabs);CHKERRQ(ierr);
     MatMult( E->qty_at_b, S_in, Sabs );
     VecShift( Sabs, 1.0 );
 
@@ -634,6 +635,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
     ierr = VecDestroy(&S_s_local);CHKERRQ(ierr);
     ierr = VecDestroy(&phi_s_local);CHKERRQ(ierr);
+    ierr = VecDestroy(&Sabs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
