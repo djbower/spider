@@ -155,21 +155,19 @@ static PetscErrorCode geometric_mesh( Ctx *E )
        automatically ensure that arr[0] = RADOUT and
        arr[numpts_b-1] = RADIN */
 
-    /* TODO: does this work for parallel?  For Patrick to confirm.
-       Indices might mess up since I flip them to populate the array
-       so that it is order from RADOUT to RADIN (decreasing radius) */
+    /* FIXME: update to work in parallel */
 
     /* radius at basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
     ierr = DMDAVecGetArray(da_b,M->radius_b,&arr_b);CHKERRQ(ierr);
     arr_b[numpts_b-1] = RADIN;
-    for (i=ilo_b; i<ihi_b; ++i){
+    for (i=ilo_b; i<ihi_b-1; ++i){ /* Note upper bound */
         power = i;
         dr = dr_min * PetscPowScalar( geom_fac, power);
         if( dr > dr_max){
             dr = dr_max;
-            }
+        }
         arr_b[numpts_b-i-2] = arr_b[numpts_b-i-1] + dr;
     }
     // TODO: below is hacky.
