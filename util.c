@@ -284,7 +284,7 @@ Process 56188 stopped
     ierr = MatAXPY( dS2, 1.0, B2, SAME_NONZERO_PATTERN );
 
     /* combine estimates by arithmetic average */
-    ierr = VecReciprocal( count );
+    ierr = VecReciprocal( count );CHKERRQ(ierr);
     ierr = MatAXPY( S1a, 1.0, S2a, DIFFERENT_NONZERO_PATTERN ); CHKERRQ(ierr);
     ierr = MatDiagonalScale( S1a, count, NULL); CHKERRQ(ierr); 
     ierr = MatAXPY( dS1, 1.0, dS2, DIFFERENT_NONZERO_PATTERN ); CHKERRQ(ierr);
