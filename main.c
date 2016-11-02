@@ -32,11 +32,11 @@ int main(int argc, char ** argv)
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
   // Emit some warnings as a placeholder to ensure that we don't forget the QUAD flag if its needed.
-#if ((defined QUAD) && !(defined (PETSC_USER_REAL___FLOAT128)))
-    SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Configuration error. You appear to be using QUAD without a quad-precision build of PETSc");
+#if ((defined QUAD) && !(defined (PETSC_USE_REAL___FLOAT128)))
+#error Configuration error. You appear to be using QUAD without a quad-precision build of PETSc
 #endif
-#if (!(defined QUAD) && (defined (PETSC_USER_REAL___FLOAT128)))
-    SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Configuration error. You appear to be using a quad-precision build of PETSc without definiing QUAD here");
+#if (!(defined QUAD) && (defined (PETSC_USE_REAL___FLOAT128)))
+#error Configuration error. You appear to be using a quad-precision build of PETSc without definiing QUAD here
 #endif
 
   /* Obtain a command-line argument for testing */
