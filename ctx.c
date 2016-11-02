@@ -138,8 +138,6 @@ PetscErrorCode destroy_ctx(Ctx* ctx)
   PetscFunctionBeginUser;
 
   /* Destroy data allocated in Ctx */
-  ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
-  ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
   for (i=0;i<NUMMESHVECS_B;++i){
     ierr = VecDestroy(&ctx->mesh.meshVecs_b[i]);CHKERRQ(ierr);
   }
@@ -157,6 +155,8 @@ PetscErrorCode destroy_ctx(Ctx* ctx)
 
   ierr = MatDestroy(&ctx->qty_at_b); CHKERRQ(ierr);
   ierr = MatDestroy(&ctx->ddr_at_b); CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
@@ -332,7 +332,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     MatMult( E->ddr_at_b, S_in, dSdr );
 
     /* absolute entropy (Sabs) at basic nodes */
-    ierr = DMGetGlobalVector(E->da_b,&Sabs);CHKERRQ(ierr);
+    ierr = DMCreateGlobalVector(E->da_b,&Sabs);CHKERRQ(ierr);
     MatMult( E->qty_at_b, S_in, Sabs );
     VecShift( Sabs, 1.0 );
 
