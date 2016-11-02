@@ -33,6 +33,7 @@ PetscErrorCode set_d_dr( Ctx *E )
     Mat A1, B1, C1, S1a, S1b, dS1, A2, B2, C2, S2a, S2b, dS2;
     Mesh *M;
     Vec dx1, dx1sq, dx2, dx2sq, count;
+    //Vec test;
 
     PetscFunctionBeginUser;
 
@@ -292,6 +293,10 @@ Process 56188 stopped
     /* store to context */
     ierr = MatDuplicate( S1a, MAT_COPY_VALUES, &E->qty_at_b ); CHKERRQ(ierr);
     ierr = MatDuplicate( dS1, MAT_COPY_VALUES, &E->ddr_at_b ); CHKERRQ(ierr);
+
+    /* test by taking d/dr of radius at staggered nodes */
+    //ierr = VecDuplicate(M->radius_b,&test);CHKERRQ(ierr);
+    //ierr = MatMult( E->ddr_at_b, M->radius_s, test );CHKERRQ(ierr);
 
     /* clean up temporary matrices and vectors */
     ierr = MatDestroy(&A1); CHKERRQ(ierr);

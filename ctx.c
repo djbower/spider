@@ -412,7 +412,8 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       arr_S[i] = 1.0;
 
       /* absolute entropy at basic nodes */
-      Sabs = arr_S[i] + E->S_init;
+      // FIXME
+      //Sabs = arr_S[i] + E->S_init;
 
       /* dSdr: central difference, 2nd order accurate */
       // TODO FIXME dr doesn't exist anymore
@@ -424,7 +425,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       //arr_dphidr[i] = 1.0/dr * (arr_phi_s[i]-arr_phi_s[i-1]);
       arr_dphidr[i] = 1.0;
       /* melt fraction */
-      arr_phi[i] = (Sabs - arr_solidus[i]) / arr_fusion[i];
+      arr_phi[i] = 1.0; // (Sabs - arr_solidus[i]) / arr_fusion[i];
 
       /* melt only */
       if( arr_phi[i] >= 1.0 ){
@@ -432,20 +433,20 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
         arr_phi[i] = 1.0;
 
         /* density */
-        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], Sabs );
+        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], 1.0 ); // Sabs );
 
         /* adiabatic temperature gradient */
-        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], Sabs );
+        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], 1.0);//Sabs );
         arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
 
         /* heat capacity */
-        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], Sabs );
+        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], 1.0);// Sabs );
 
         /* temperature */
-        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], Sabs );
+        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], 1.0);//Sabs );
 
         /* thermal expansion coefficient */
-        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], Sabs );
+        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], 1.0);//Sabs );
 
         /* thermal conductivity */
         arr_cond[i] = COND_MEL;
@@ -460,20 +461,20 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
         arr_phi[i] = 0.0;
 
         /* density */
-        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], Sabs );
+        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], 1.0);//Sabs );
 
         /* adiabatic temperature gradient */
-        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], Sabs );
+        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], 1.0);//Sabs );
         arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
 
         /* heat capacity */
-        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], Sabs );
+        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], 1.0);//Sabs );
 
         /* temperature */
-        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], Sabs );
+        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], 1.0);//Sabs );
 
         /* thermal expansion coefficient */
-        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], Sabs );
+        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], 1.0);//Sabs );
 
         /* thermal conductivity */
         arr_cond[i] = COND_SOL;
