@@ -67,7 +67,7 @@ int main(int argc, char ** argv)
   ierr = TSSetTolerances( ts, 1e-10, NULL, 1e-10, NULL );CHKERRQ(ierr);
 #else
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
-  ierr = TSSundialsSetTolerance(ts,1e-10,1e-10);CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts,1e-12,1e-12);CHKERRQ(ierr);
 #endif
 
   /* Set up the RHS Function */

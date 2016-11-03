@@ -35,19 +35,17 @@
 
 /* initial condition: set entropy of adiabat */
 /* set at reference entropy */
-static const PetscScalar SINIT_DEFAULT = 1.0;
+/* to compare with python test1 */
+//static const PetscScalar SINIT_DEFAULT = 1.0;
 
-/* 3000 entropy, all super-liquidus */
-//static const PetscScalar SINIT_DEFAULT = 1.0023303847098235;
+/* to compare with python test2 */
+//static const PetscScalar SINIT_DEFAULT = 0.8;
 
-/* 2500 entropy, spans all melt fractions */
-//static const PetscScalar SINIT_DEFAULT = 0.8352753205915197;
-
-/* 1600 entropy, all sub-solidus */
-//static const PetscScalar SINIT_DEFAULT = 0.5345762051785725;
+/* to compare with python test3 */
+static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial linear entropy perturbation */
-static const PetscScalar PERTURB = 1.0E-10;
+static const PetscScalar PERTURB = 1.0E-4;
 
 /* constants */
 /* outer radius */
