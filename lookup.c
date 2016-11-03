@@ -258,7 +258,10 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
     while( (ya[indt]-y)<0) {
         indt += 1;
     }
+
     indy = indt-1;
+    if (indy < 0 ){SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"2d array interpolation failed - value less than minimum in table");}
+	if (indy > NY-2){SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"2d array interpolation failed - value greater than maximum in table");}
 
     y1 = ya[indy]; // local min y
     y2 = ya[indy+1]; // local max y*/
