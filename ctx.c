@@ -566,9 +566,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       arr_Etot[i] = arr_Jtot[i] * arr_area_b[i];
 
     }
-
-    /* these next two vecs get destroyed at the end of this function,
-       but I will still restore them here.  Necessary or not? */
+  
     ierr = DMDAVecRestoreArrayRead(da_b,Sabs,&arr_Sabs); CHKERRQ(ierr); //
     ierr = DMDAVecRestoreArrayRead(da_b,dSdr,&arr_dSdr); CHKERRQ(ierr); //
     /* mesh quantities */
