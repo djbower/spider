@@ -25,11 +25,12 @@ ${OBJ} : global_defs.h
 # We do not by default clear any of the output data (so beware of stale files)
 #  use "make clear_output" to delete the output
 clear_output :
+	rm -f output/*.m
 	rm -rf output/TIMESTEPPER/S_s
-	mkdir output/TIMESTEPPER/S_s
+	mkdir -p output/TIMESTEPPER/S_s
 	touch output/TIMESTEPPER/S_s/.gitignore
 	rm -rf output/TIMESTEPPER/rhs
-	mkdir output/TIMESTEPPER/rhs
+	mkdir -p output/TIMESTEPPER/rhs
 	touch output/TIMESTEPPER/rhs/.gitignore
 
 .PHONY : clear_output
