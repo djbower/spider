@@ -10,7 +10,6 @@
 #include "petsc.h"
 
 /* Definitions */
-//#define QUAD
 //#define VERBOSE 1
 //#define DEBUGOUTPUT 1
 

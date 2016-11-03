@@ -53,7 +53,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
     FILE *fp;
     PetscInt i=0, j=0, k=0;
     char string[100];
-#if (defined QUAD)
+#if (defined PETSC_USE_REAL___FLOAT128)
     char xtemp[30], ytemp[30], ztemp[30];
 #endif
     //PetscScalar xscale, yscale, zscale;
@@ -78,7 +78,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
     // fgets reads in string, sscanf processes it
     while(fgets(string, sizeof(string), fp) != NULL) {
         if( i>=HEAD ){
-#if (defined QUAD)
+#if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( string, "%s %s %s", xtemp, ytemp, ztemp );
             x = strtoflt128(xtemp, NULL);;
             y = strtoflt128(ytemp, NULL);
@@ -142,7 +142,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
     FILE *fp;
     PetscInt i=0;
     char string[100];
-#if (defined QUAD)
+#if (defined PETSC_USE_REAL___FLOAT128)
     char xtemp[30], ytemp[30];
 #endif
     PetscScalar x, y, xa[n], ya[n];
@@ -164,7 +164,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
     // fgets reads in string, sscanf processes it
     while(fgets(string, sizeof(string), fp) != NULL) {
         if( i>=HEAD ){
-#if (defined QUAD)
+#if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( string, "%s %s", xtemp, ytemp );
             x = strtoflt128(xtemp, NULL);
             y = strtoflt128(ytemp, NULL);
