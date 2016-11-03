@@ -58,33 +58,33 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.dfusdr              = ctx->solution.solutionVecs_b[5];  // TI
   ctx->solution.dfusdr_temp         = ctx->solution.solutionVecs_b[6];  // TI
   ctx->solution.dphidr              = ctx->solution.solutionVecs_b[7];
-  ctx->solution.dSdr                = ctx->solution.solutionVecs_b[8];  // TI
-  ctx->solution.dTdPs               = ctx->solution.solutionVecs_b[9];
-  ctx->solution.dTdPs_mix           = ctx->solution.solutionVecs_b[10]; // TI
-  ctx->solution.dTdrs               = ctx->solution.solutionVecs_b[11];
-  ctx->solution.dTdrs_mix           = ctx->solution.solutionVecs_b[12]; // TI
-  ctx->solution.Etot                = ctx->solution.solutionVecs_b[13];
-  ctx->solution.fusion              = ctx->solution.solutionVecs_b[14]; // TI
-  ctx->solution.fusion_curve        = ctx->solution.solutionVecs_b[15]; // TI
-  ctx->solution.fusion_curve_temp   = ctx->solution.solutionVecs_b[16]; // TI
-  ctx->solution.fusion_rho          = ctx->solution.solutionVecs_b[17]; // TI
-  ctx->solution.fusion_temp         = ctx->solution.solutionVecs_b[18]; // TI
-  ctx->solution.gsuper              = ctx->solution.solutionVecs_b[19];
-  ctx->solution.Jcond               = ctx->solution.solutionVecs_b[20];
-  ctx->solution.Jconv               = ctx->solution.solutionVecs_b[21];
-  ctx->solution.Jgrav               = ctx->solution.solutionVecs_b[22];
-  ctx->solution.Jheat               = ctx->solution.solutionVecs_b[23];
-  ctx->solution.Jmass               = ctx->solution.solutionVecs_b[24];
-  ctx->solution.Jmix                = ctx->solution.solutionVecs_b[25];
-  ctx->solution.Jtot                = ctx->solution.solutionVecs_b[26];
-  ctx->solution.kappah              = ctx->solution.solutionVecs_b[27];
-  ctx->solution.liquidus            = ctx->solution.solutionVecs_b[28]; // TI
-  ctx->solution.liquidus_rho        = ctx->solution.solutionVecs_b[29]; // TI
-  ctx->solution.liquidus_temp       = ctx->solution.solutionVecs_b[30]; // TI
-  ctx->solution.nu                  = ctx->solution.solutionVecs_b[31];
-  ctx->solution.phi                 = ctx->solution.solutionVecs_b[32];
-  ctx->solution.rho                 = ctx->solution.solutionVecs_b[33];
-  ctx->solution.S                   = ctx->solution.solutionVecs_b[34];
+  ctx->solution.dSliqdr             = ctx->solution.solutionVecs_b[8];  // TI
+  ctx->solution.dSsoldr             = ctx->solution.solutionVecs_b[9];  // TI
+  ctx->solution.dTdPs               = ctx->solution.solutionVecs_b[10];
+  ctx->solution.dTdPs_mix           = ctx->solution.solutionVecs_b[11]; // TI
+  ctx->solution.dTdrs               = ctx->solution.solutionVecs_b[12];
+  ctx->solution.dTdrs_mix           = ctx->solution.solutionVecs_b[13]; // TI
+  ctx->solution.Etot                = ctx->solution.solutionVecs_b[14];
+  ctx->solution.fusion              = ctx->solution.solutionVecs_b[15]; // TI
+  ctx->solution.fusion_curve        = ctx->solution.solutionVecs_b[16]; // TI
+  ctx->solution.fusion_curve_temp   = ctx->solution.solutionVecs_b[17]; // TI
+  ctx->solution.fusion_rho          = ctx->solution.solutionVecs_b[18]; // TI
+  ctx->solution.fusion_temp         = ctx->solution.solutionVecs_b[19]; // TI
+  ctx->solution.gsuper              = ctx->solution.solutionVecs_b[20];
+  ctx->solution.Jcond               = ctx->solution.solutionVecs_b[21];
+  ctx->solution.Jconv               = ctx->solution.solutionVecs_b[22];
+  ctx->solution.Jgrav               = ctx->solution.solutionVecs_b[23];
+  ctx->solution.Jheat               = ctx->solution.solutionVecs_b[24];
+  ctx->solution.Jmass               = ctx->solution.solutionVecs_b[25];
+  ctx->solution.Jmix                = ctx->solution.solutionVecs_b[26];
+  ctx->solution.Jtot                = ctx->solution.solutionVecs_b[27];
+  ctx->solution.kappah              = ctx->solution.solutionVecs_b[28];
+  ctx->solution.liquidus            = ctx->solution.solutionVecs_b[29]; // TI
+  ctx->solution.liquidus_rho        = ctx->solution.solutionVecs_b[30]; // TI
+  ctx->solution.liquidus_temp       = ctx->solution.solutionVecs_b[31]; // TI
+  ctx->solution.nu                  = ctx->solution.solutionVecs_b[32];
+  ctx->solution.phi                 = ctx->solution.solutionVecs_b[33];
+  ctx->solution.rho                 = ctx->solution.solutionVecs_b[34];
   ctx->solution.solidus             = ctx->solution.solutionVecs_b[35]; // TI
   ctx->solution.solidus_rho         = ctx->solution.solutionVecs_b[36]; // TI
   ctx->solution.solidus_temp        = ctx->solution.solutionVecs_b[37]; // TI
@@ -310,40 +310,29 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
-    DM                da_s=E->da_s, da_b=E->da_b;
-    Vec               pres, dSdr, Sabs;
-    //PetscScalar       Sabs;
-    PetscScalar       *arr_S,*arr_phi,*arr_nu,*arr_gsuper,*arr_kappah,*arr_Etot,*arr_dSdr,*arr_dTdPs,*arr_dTdrs,*arr_dphidr,*arr_alpha,*arr_temp,*arr_cp,*arr_cond,*arr_visc,*arr_rho,*arr_Jcond,*arr_Jconv,*arr_Jtot,*arr_Jheat,*arr_Jmix,*arr_Jgrav,*arr_Jmass;
-    const PetscScalar *arr_S_s,*arr_phi_s,*arr_solidus,*arr_fusion,*arr_pres,*arr_area_b,*arr_dPdr_b,*arr_liquidus_rho,*arr_solidus_rho,*arr_cp_mix,*arr_dTdrs_mix,*arr_liquidus_temp,*arr_solidus_temp,*arr_fusion_rho,*arr_fusion_temp,*arr_mix_b;
+    DM                da_b=E->da_b;
+    Vec               dSdr, Sabs;
+    PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappah, *arr_Etot, *arr_dTdPs, *arr_dTdrs, *arr_dphidr, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_rho, *arr_Jcond, *arr_Jconv, *arr_Jtot, *arr_Jheat, *arr_Jmix, *arr_Jgrav, *arr_Jmass;
+    const PetscScalar *arr_dSdr, *arr_Sabs, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_area_b, *arr_dPdr_b, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
     Mesh              *M;
     Solution          *S;
-    Vec               S_s_local,phi_s_local;
 
     PetscFunctionBeginUser;
 
     M = &E->mesh;
     S = &E->solution;
-    pres = M->pressure_b;
 
     /* TODO: these might not work in parallel? */
-    /* can do a bunch of these operations using vectors */
     /* dS/dr */
-    dSdr = S->dSdr;
-    MatMult( E->ddr_at_b, S_in, dSdr );
+    ierr = DMCreateGlobalVector(E->da_b,&dSdr); CHKERRQ(ierr);
+    ierr = MatMult( E->ddr_at_b, S_in, dSdr ); CHKERRQ(ierr);
 
     /* absolute entropy (Sabs) at basic nodes */
-    ierr = DMCreateGlobalVector(E->da_b,&Sabs);CHKERRQ(ierr);
-    MatMult( E->qty_at_b, S_in, Sabs );
-    VecShift( Sabs, 1.0 );
-
-    /* DJB: got to changing Sabs above.  Need to talk to PS to find
-       out what the best approach is here before I change too much.
-       Seems like we should and can do more using Vecs directly, but
-       not sure how this will affect or break the parallelisation below */
-
-    /* Create some local vectors for the staggered grid*/
-    ierr = DMCreateLocalVector(da_s,&S_s_local);CHKERRQ(ierr);
-    ierr = DMCreateLocalVector(da_s,&phi_s_local);CHKERRQ(ierr);
+    ierr = DMCreateGlobalVector(E->da_b,&Sabs); CHKERRQ(ierr);
+    ierr = MatMult( E->qty_at_b, S_in, Sabs ); CHKERRQ(ierr);
+    /* shift by 1.0 because entropy perturbation is relative to 1.0
+       by definition */
+    ierr = VecShift( Sabs, 1.0 ); CHKERRQ(ierr);
 
     /* loop over all basic internal nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
@@ -352,81 +341,54 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     ilo = ilo_b == 0        ? 1            : ilo_b;
     ihi = ihi_b == numpts_b ? numpts_b - 1 : ihi_b;
 
-    // S_s related
-    // multi-processor, S_s_local is Vec
-    ierr = DMGlobalToLocalBegin(da_s,S_in,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
-    ierr = DMGlobalToLocalEnd(da_s,S_in,INSERT_VALUES,S_s_local);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S_s_local,&arr_S_s);CHKERRQ(ierr);
-
-    // phi_s related.  Already updated by set_capacitance
-    ierr = DMGlobalToLocalBegin(da_s,S->phi_s,INSERT_VALUES,phi_s_local);CHKERRQ(ierr);
-    ierr = DMGlobalToLocalEnd(da_s,S->phi_s,INSERT_VALUES,phi_s_local);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,phi_s_local,&arr_phi_s);CHKERRQ(ierr);
-
-    ierr = DMDAVecGetArray(    da_b,S->dphidr,&arr_dphidr);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->phi,&arr_phi);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->fusion,&arr_fusion);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->S,&arr_S);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,pres,&arr_pres);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->dTdPs,&arr_dTdPs);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->dTdrs,&arr_dTdrs);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->cp,&arr_cp);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->temp,&arr_temp);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->alpha,&arr_alpha);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->cond,&arr_cond);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->visc,&arr_visc);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->rho,&arr_rho);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->liquidus_rho,&arr_liquidus_rho);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->solidus_rho,&arr_solidus_rho);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->cp_mix,&arr_cp_mix);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dTdrs_mix,&arr_dTdrs_mix);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->liquidus_temp,&arr_liquidus_temp);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->fusion_rho,&arr_fusion_rho);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->fusion_temp,&arr_fusion_temp);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->nu,&arr_nu);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->gsuper,&arr_gsuper);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->kappah,&arr_kappah);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Etot,&arr_Etot);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->area_b,&arr_area_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->mix_b,&arr_mix_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Jcond,&arr_Jcond);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Jconv,&arr_Jconv);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Jheat,&arr_Jheat);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Jtot,&arr_Jtot);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Jmass,&arr_Jmass);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
+    /* calculated above */
+    ierr = DMDAVecGetArrayRead(da_b,Sabs,&arr_Sabs); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,dSdr,&arr_dSdr); CHKERRQ(ierr); //
+    /* mesh quantities */
+    ierr = DMDAVecGetArrayRead(da_b,M->area_b,&arr_area_b); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,M->mix_b,&arr_mix_b); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr); //
+    /* material properties */
+    ierr = DMDAVecGetArray(    da_b,S->alpha,&arr_alpha); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->cp,&arr_cp); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->cp_mix,&arr_cp_mix); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->dphidr,&arr_dphidr); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->dSliqdr,&arr_dSliqdr); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->dSsoldr,&arr_dSsoldr); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->dTdPs,&arr_dTdPs); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->dTdrs,&arr_dTdrs); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->dTdrs_mix,&arr_dTdrs_mix); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->fusion,&arr_fusion); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->fusion_rho,&arr_fusion_rho); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->fusion_temp,&arr_fusion_temp); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->liquidus_rho,&arr_liquidus_rho); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->liquidus_temp,&arr_liquidus_temp); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->nu,&arr_nu); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->phi,&arr_phi); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->rho,&arr_rho); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->solidus,&arr_solidus); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->solidus_rho,&arr_solidus_rho); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->solidus_temp,&arr_solidus_temp); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->temp,&arr_temp); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArray(    da_b,S->visc,&arr_visc); CHKERRQ(ierr); //
+    /* energy fluxes */
+    ierr = DMDAVecGetArray(    da_b,S->Etot,&arr_Etot); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(    da_b,S->Jcond,&arr_Jcond); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(    da_b,S->Jconv,&arr_Jconv); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(    da_b,S->Jgrav,&arr_Jgrav); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(    da_b,S->Jheat,&arr_Jheat); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(    da_b,S->Jmass,&arr_Jmass); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(    da_b,S->Jmix,&arr_Jmix); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(    da_b,S->Jtot,&arr_Jtot); CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){ // Note that these correspond to basic nodes being updated, but we also assume an ordering on the staggered nodes!
 
-      /* these quantities are determined from staggered node
-         quantities, and these are previously computed in
-         set_capacitance */
-      /* entropy: from simple average */
-      // TODO FIXME
-      //arr_S[i] = average( arr_S_s[i], arr_S_s[i-1] ); 
-      arr_S[i] = 1.0;
-
-      /* absolute entropy at basic nodes */
-      // FIXME
-      //Sabs = arr_S[i] + E->S_init;
-
-      /* dSdr: central difference, 2nd order accurate */
-      // TODO FIXME dr doesn't exist anymore
-      //arr_dSdr[i] = 1.0/dr * (arr_S_s[i]-arr_S_s[i-1]);
-      arr_dSdr[i] = 1.0;
-
-      /* dphidr: central difference, 2nd order accurate */
-      // TODO FIXME new expression for dphi/dr
-      //arr_dphidr[i] = 1.0/dr * (arr_phi_s[i]-arr_phi_s[i-1]);
-      arr_dphidr[i] = 1.0;
       /* melt fraction */
-      arr_phi[i] = 1.0; // (Sabs - arr_solidus[i]) / arr_fusion[i];
+      arr_phi[i] = (arr_Sabs[i] - arr_solidus[i]) / arr_fusion[i];
 
       /* melt only */
       if( arr_phi[i] >= 1.0 ){
@@ -434,26 +396,30 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
         arr_phi[i] = 1.0;
 
         /* density */
-        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], 1.0 ); // Sabs );
+        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
 
         /* adiabatic temperature gradient */
-        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], 1.0);//Sabs );
+        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
         arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
 
         /* heat capacity */
-        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], 1.0);// Sabs );
+        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
 
         /* temperature */
-        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], 1.0);//Sabs );
+        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
 
         /* thermal expansion coefficient */
-        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], 1.0);//Sabs );
+        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
 
         /* thermal conductivity */
         arr_cond[i] = COND_MEL;
 
         /* viscosity */
         arr_visc[i] = PetscPowScalar( 10.0, LOG10VISC_MEL );
+
+        /* dmelt/dr */
+        arr_dphidr[i] = 0.0;
+
       }
 
       /* solid only */
@@ -462,26 +428,30 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
         arr_phi[i] = 0.0;
 
         /* density */
-        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], 1.0);//Sabs );
+        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
 
         /* adiabatic temperature gradient */
-        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], 1.0);//Sabs );
+        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
         arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
 
         /* heat capacity */
-        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], 1.0);//Sabs );
+        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
 
         /* temperature */
-        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], 1.0);//Sabs );
+        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
 
         /* thermal expansion coefficient */
-        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], 1.0);//Sabs );
+        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
 
         /* thermal conductivity */
         arr_cond[i] = COND_SOL;
 
         /* viscosity */
         arr_visc[i] = PetscPowScalar( 10.0, LOG10VISC_SOL );
+
+        /* dmelt/dr */
+        arr_dphidr[i] = 0.0;
+
       }
 
       /* mixed phase */
@@ -509,7 +479,14 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
         /* viscosity */
         arr_visc[i] = viscosity_mix( arr_phi[i] );
+
+        /* dmelt/dr */
+        arr_dphidr[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
+        arr_dphidr[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
+        arr_dphidr[i] *= 1.0 / arr_fusion[i];
+
       }
+
 
       /* other useful material properties */
       /* kinematic viscosity */
@@ -590,52 +567,54 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
     }
 
-    // S_s and phi_s related
-    ierr = DMDAVecRestoreArrayRead(da_s,S_s_local,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,phi_s_local,&arr_phi_s);CHKERRQ(ierr);
+    /* these next two vecs get destroyed at the end of this function,
+       but I will still restore them here.  Necessary or not? */
+    ierr = DMDAVecRestoreArrayRead(da_b,Sabs,&arr_Sabs); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,dSdr,&arr_dSdr); CHKERRQ(ierr); //
+    /* mesh quantities */
+    ierr = DMDAVecRestoreArrayRead(da_b,M->area_b,&arr_area_b); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,M->mix_b,&arr_mix_b); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr); //
+    /* material properties */
+    ierr = DMDAVecRestoreArray(    da_b,S->alpha,&arr_alpha); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->cp,&arr_cp); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->cp_mix,&arr_cp_mix); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->dphidr,&arr_dphidr); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSliqdr,&arr_dSliqdr); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSsoldr,&arr_dSsoldr); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->dTdPs,&arr_dTdPs); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->dTdrs,&arr_dTdrs); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dTdrs_mix,&arr_dTdrs_mix); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->fusion,&arr_fusion); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->fusion_rho,&arr_fusion_rho); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->fusion_temp,&arr_fusion_temp); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->liquidus_rho,&arr_liquidus_rho); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->liquidus_temp,&arr_liquidus_temp); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->nu,&arr_nu); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->phi,&arr_phi); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->rho,&arr_rho); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->solidus,&arr_solidus); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->solidus_rho,&arr_solidus_rho); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->solidus_temp,&arr_solidus_temp); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->temp,&arr_temp); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArray(    da_b,S->visc,&arr_visc); CHKERRQ(ierr); //
+    /* energy fluxes */
+    ierr = DMDAVecRestoreArray(    da_b,S->Etot,&arr_Etot); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(    da_b,S->Jcond,&arr_Jcond); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(    da_b,S->Jconv,&arr_Jconv); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(    da_b,S->Jgrav,&arr_Jgrav); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(    da_b,S->Jheat,&arr_Jheat); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(    da_b,S->Jmass,&arr_Jmass); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(    da_b,S->Jmix,&arr_Jmix); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(    da_b,S->Jtot,&arr_Jtot); CHKERRQ(ierr);
 
-    ierr = DMDAVecRestoreArray(    da_b,S->dphidr,&arr_dphidr);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->phi,&arr_phi);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->fusion,&arr_fusion);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->S,&arr_S);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,pres,&arr_pres);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->dTdPs,&arr_dTdPs);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->dTdrs,&arr_dTdrs);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->cp,&arr_cp);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->temp,&arr_temp);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->alpha,&arr_alpha);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->cond,&arr_cond);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->visc,&arr_visc);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->rho,&arr_rho);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->liquidus_rho,&arr_liquidus_rho);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->solidus_rho,&arr_solidus_rho);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->cp_mix,&arr_cp_mix);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dTdrs_mix,&arr_dTdrs_mix);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->liquidus_temp,&arr_liquidus_temp);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->fusion_rho,&arr_fusion_rho);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->fusion_temp,&arr_fusion_temp);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->nu,&arr_nu);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->gsuper,&arr_gsuper);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->kappah,&arr_kappah);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Etot,&arr_Etot);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->area_b,&arr_area_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->mix_b,&arr_mix_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Jcond,&arr_Jcond);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Jconv,&arr_Jconv);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Jheat,&arr_Jheat);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Jtot,&arr_Jtot);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Jmass,&arr_Jmass);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
-
-    ierr = VecDestroy(&S_s_local);CHKERRQ(ierr);
-    ierr = VecDestroy(&phi_s_local);CHKERRQ(ierr);
-    ierr = VecDestroy(&Sabs);CHKERRQ(ierr);
+    /* clean up */
+    ierr = VecDestroy(&dSdr); CHKERRQ(ierr);
+    ierr = VecDestroy(&Sabs); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

@@ -204,8 +204,10 @@ static PetscErrorCode set_fusion_curve( Ctx *E )
     ierr = VecWAXPY(S->fusion_curve_temp_s,0.5,S->fusion_temp_s,S->solidus_temp_s);CHKERRQ(ierr);
 
     /* basic nodes */
-    MatMult( E->ddr_at_b, S->fusion_curve_s, S->dfusdr );CHKERRQ(ierr);
-    MatMult( E->ddr_at_b, S->fusion_curve_temp_s, S->dfusdr_temp );CHKERRQ(ierr);
+    MatMult( E->ddr_at_b, S->fusion_curve_s, S->dfusdr ); CHKERRQ(ierr);
+    MatMult( E->ddr_at_b, S->fusion_curve_temp_s, S->dfusdr_temp ); CHKERRQ(ierr);
+    MatMult( E->ddr_at_b, S->liquidus_s, S->dSliqdr ); CHKERRQ(ierr);
+    MatMult( E->ddr_at_b, S->solidus_s, S->dSsoldr ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
