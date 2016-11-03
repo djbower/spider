@@ -52,13 +52,13 @@ static PetscErrorCode make_super_adiabatic( Ctx *E, Vec S_in )
       const PetscInt ix = numpts_b-1; // FIXME: Dangerous if PetscInt is not int!
       ierr = VecGetValues(pres_b,1,&ix,&pres_b_last);
 #if (defined DEBUGOUTPUT)
-      ierr = PetscPrintf(PETSC_COMM_SELF,"[%d]   make_super_adiabatic: scattering value %f\n",rank,pres_b_last);CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_SELF,"[%d]   make_super_adiabatic: scattering value %f\n",rank,(double)pres_b_last);CHKERRQ(ierr);
 #endif
     }    
     MPI_Bcast(&pres_b_last,1,MPIU_SCALAR,size-1,PETSC_COMM_WORLD);
 
 #if (defined DEBUGOUTPUT)
-  ierr = PetscPrintf(PETSC_COMM_SELF,"[%d]   make_super_adiabatic: value of last point is %f\n",rank,pres_b_last);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_SELF,"[%d]   make_super_adiabatic: value of last point is %f\n",rank,(double)pres_b_last);CHKERRQ(ierr);
 #endif
     ierr = DMDAVecGetArray(da_s,S_in,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);

@@ -40,7 +40,7 @@ int main(int argc, char ** argv)
      pausing to optionally produce output before updating the "final" time
      and proceeding again */
   ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f\n",
-      nstepsmacro,dtmacro);CHKERRQ(ierr);
+      nstepsmacro,(double) dtmacro);CHKERRQ(ierr);
 
   // Note: it might make for a less-confusing code if all command-line 
   //       processing was here, instead of hidden in the ctx setup

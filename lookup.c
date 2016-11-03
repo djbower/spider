@@ -110,10 +110,10 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
     PetscMPIInt rank;
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
     for (i=0; i<NX; i++ ){
-        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, i, xa[i]);CHKERRQ(ierr);
+        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, i, (double) xa[i]);CHKERRQ(ierr);
     }
     for (j=0; j<NY; j++ ){
-        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, j, ya[j]);
+        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, j, (double) ya[j]);
     }
 #endif
 

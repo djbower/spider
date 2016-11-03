@@ -17,7 +17,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void
     PetscReal minval,maxval;
     ierr = VecMin(x,NULL,&minval);CHKERRQ(ierr);
     ierr = VecMax(x,NULL,&maxval);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Writing output at macro Step %D, t=%f. Min/Max %f/%f\n",step,time,minval,maxval);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Writing output at macro Step %D, t=%f. Min/Max %f/%f\n",step,time,(double)minval,(double)maxval);CHKERRQ(ierr);
   }
 
   /* Dump the solution to a file named for the timestep */
