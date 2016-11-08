@@ -27,7 +27,7 @@ int main(int argc, char ** argv)
   const PetscReal t0 = 0;               /* Initial time */
   const PetscInt maxsteps = 1000000000; /* Max internal steps */
   PetscInt       nstepsmacro = 100;     /* Max macros steps */
-  PetscReal      dtmacro = 1.0;         /* Macros step size (see stepover note) */
+  PetscReal      dtmacro = 100.0;         /* Macros step size (see stepover note) */
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
@@ -63,8 +63,15 @@ int main(int argc, char ** argv)
   ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
 
 #if (defined PETSC_USE_REAL___FLOAT128)
-  ierr = TSSetType(ts,TSEULER);CHKERRQ(ierr); //PDS TODO: replace this with TSARKIMEX or something else that's more sophisticated and native
+{
+  SNES snes;
+  ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); //PDS TODO: replace this with TSARKIMEX or something else that's more sophisticated and native
+  ierr = TSARKIMEXSetType(ts, TSARKIMEX1BEE ); CHKERRQ(ierr);
+  ierr = TSGetSNES(ts,&snes); CHKERRQ(ierr);
+  ierr = 
   ierr = TSSetTolerances( ts, 1e-10, NULL, 1e-10, NULL );CHKERRQ(ierr);
+}
+
 #else
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
   ierr = TSSundialsSetTolerance(ts,1e-12,1e-12);CHKERRQ(ierr);

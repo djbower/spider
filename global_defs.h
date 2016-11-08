@@ -36,13 +36,13 @@
 /* initial condition: set entropy of adiabat */
 /* set at reference entropy */
 /* to compare with python test1 */
-//static const PetscScalar SINIT_DEFAULT = 1.0;
+static const PetscScalar SINIT_DEFAULT = 1.0;
 
 /* to compare with python test2 */
 //static const PetscScalar SINIT_DEFAULT = 0.8;
 
 /* to compare with python test3 */
-static const PetscScalar SINIT_DEFAULT = 0.5;
+//static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial linear entropy perturbation */
 static const PetscScalar PERTURB = 1.0E-4;
