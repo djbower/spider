@@ -316,6 +316,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     const PetscScalar *arr_dSdr, *arr_Sabs, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_area_b, *arr_dPdr_b, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
     Mesh              *M;
     Solution          *S;
+    PetscScalar       gmelt; // DJB testing
 
     PetscFunctionBeginUser;
 
@@ -389,6 +390,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
       /* melt fraction */
       arr_phi[i] = (arr_Sabs[i] - arr_solidus[i]) / arr_fusion[i];
+      gmelt = arr_phi[i]; // DJB testing
 
       /* melt only */
       if( arr_phi[i] >= 1.0 ){
@@ -418,7 +420,8 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
         arr_visc[i] = PetscPowScalar( 10.0, LOG10VISC_MEL );
 
         /* dmelt/dr */
-        arr_dphidr[i] = 0.0;
+        // DJB testing
+        //arr_dphidr[i] = 0.0;
 
       }
 
@@ -487,6 +490,11 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
       }
 
+      /* DJB testing */
+      /* to smooth Jmix */
+      gmelt = ( gmelt - 1.0 ) / 1.0E-3;
+      gmelt = 0.5 * ( 1.0 + PetscTanhReal( gmelt ) );
+      arr_dphidr[i] *= 1.0-gmelt;
 
       /* other useful material properties */
       /* kinematic viscosity */
