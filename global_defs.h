@@ -29,7 +29,8 @@
 /* number of basic mesh points */
 /* you have to use the python script to a priori determine how many
    nodes there are in a given mesh */
-#define NUMPTS_B_DEFAULT 278
+//#define NUMPTS_B_DEFAULT 278
+#define NUMPTS_B_DEFAULT 2939
 /* number of staggered mesh points */
 #define NUMPTS_S_DEFAULT NUMPTS_B_DEFAULT-1 /* automagically determined */
 
