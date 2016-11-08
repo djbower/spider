@@ -1,0 +1,8 @@
+for configuring petsc with double precision:
+
+./configure --download-mpich --download-sundials --with-cc=gcc --with-cxx=g++ --with-fc=gfortran
+
+
+for configuring petsc with quad precision:
+
+./configure --with-precision=__float128 --download-f2cblaslapack --download-mpich --with-cc=gcc --with-cxx=g++ --with-fc=gfortran
