@@ -63,15 +63,10 @@ int main(int argc, char ** argv)
   ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
 
 #if (defined PETSC_USE_REAL___FLOAT128)
-{
-  SNES snes;
-  ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); //PDS TODO: replace this with TSARKIMEX or something else that's more sophisticated and native
+  ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); 
   ierr = TSARKIMEXSetType(ts, TSARKIMEX1BEE ); CHKERRQ(ierr);
-  ierr = TSGetSNES(ts,&snes); CHKERRQ(ierr);
-  ierr = 
+  ierr = PetscOptionsSetValue(NULL,"-snes_mf","1");CHKERRQ(ierr);
   ierr = TSSetTolerances( ts, 1e-10, NULL, 1e-10, NULL );CHKERRQ(ierr);
-}
-
 #else
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
   ierr = TSSundialsSetTolerance(ts,1e-12,1e-12);CHKERRQ(ierr);
