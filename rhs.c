@@ -45,6 +45,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
        ierr = VecGetValues(S->temp_s,1,&ind,&temp_s_0);CHKERRQ(ierr);
        val = radiative_flux_with_dT( temp_s_0 );
 
+       // DJB TESTING
+       //val = 0.0;
+
     /* Note - below is true because non-dim geom is exactly equal
        to one, so do not need to multiply by area of surface */
       ierr = VecSetValue(S->Etot,0,val,INSERT_VALUES);CHKERRQ(ierr);
@@ -62,6 +65,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
       /* energy flux */
       ierr = VecGetValues(S->Jtot,1,&ind,&val);CHKERRQ(ierr);
       val *= E->BC_BOT_FAC;
+      // DJB TESTING
+      //val = 0.0;
       ierr = VecSetValue(S->Jtot,ind2,val,INSERT_VALUES);CHKERRQ(ierr);
 
       /* energy flow */
