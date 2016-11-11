@@ -29,7 +29,8 @@
 /* number of basic mesh points */
 /* you have to use the python script to a priori determine how many
    nodes there are in a given mesh */
-#define NUMPTS_B_DEFAULT 278
+#define NUMPTS_B_DEFAULT 372
+//#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 656
 //#define NUMPTS_B_DEFAULT 2939
 /* number of staggered mesh points */
@@ -38,7 +39,7 @@
 /* initial condition: set entropy of adiabat */
 /* set at reference entropy */
 /* to compare with python test1 */
-static const PetscScalar SINIT_DEFAULT = 0.99999;
+static const PetscScalar SINIT_DEFAULT = 1.0;
 
 /* to compare with python test2 */
 //static const PetscScalar SINIT_DEFAULT = 0.8;
