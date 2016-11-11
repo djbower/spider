@@ -50,7 +50,7 @@ static PetscErrorCode make_ic_from_melt_fraction( Ctx *E, Vec S_in )
     PetscFunctionBeginUser;
 
     S = &E->solution;
-    dfus_s = S->fusion_curve_s;
+    dfus_s = S->fusion_s;
     liq_s = S->liquidus_s;
 
     /* melt fraction contour to follow */
