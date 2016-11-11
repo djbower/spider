@@ -420,8 +420,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
         arr_visc[i] = PetscPowScalar( 10.0, LOG10VISC_MEL );
 
         /* dmelt/dr */
-        // DJB testing
-        //arr_dphidr[i] = 0.0;
+        arr_dphidr[i] = 0.0;
 
       }
 
@@ -490,11 +489,14 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
       }
 
-      /* DJB testing */
-      /* to smooth Jmix */
-      gmelt = ( gmelt - 1.0 ) / 1.0E-3;
-      gmelt = 0.5 * ( 1.0 + PetscTanhReal( gmelt ) );
-      arr_dphidr[i] *= 1.0-gmelt;
+      /* DJB to smooth Jmix */
+      /* bizarrely, this seems to make the problem worse.  Wiggles at
+         the location where the entropy profile transitions from melt
+         to mixed phase seem to persist.  Without smoothing the wiggles
+         decay and go away */
+      //gmelt = ( gmelt - 1.0 ) / 1.0E-3;
+      //gmelt = 0.5 * ( 1.0 + PetscTanhReal( gmelt ) );
+      //arr_dphidr[i] *= 1.0-gmelt;
 
       /* other useful material properties */
       /* kinematic viscosity */
