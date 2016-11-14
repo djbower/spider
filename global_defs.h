@@ -29,8 +29,8 @@
 /* number of basic mesh points */
 /* you have to use the python script to a priori determine how many
    nodes there are in a given mesh */
-#define NUMPTS_B_DEFAULT 372
-//#define NUMPTS_B_DEFAULT 278
+//#define NUMPTS_B_DEFAULT 372
+#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 656
 //#define NUMPTS_B_DEFAULT 2939
 /* number of staggered mesh points */
@@ -48,7 +48,7 @@ static const PetscScalar SINIT_DEFAULT = 1.0;
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial linear entropy perturbation */
-static const PetscScalar PERTURB = 1.0E-4;
+static const PetscScalar PERTURB = 1.0E-10;
 
 /* constants */
 /* outer radius */
@@ -95,10 +95,10 @@ static const PetscScalar CP_CMB = 0.40093215388392944;
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-static const char LIQUIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/c/liquidus.dat";
+static const char LIQUIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/c/liquidus_linear_temp.dat";
 
 /* solidus data file */
-static const char SOLIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/c/solidus.dat";
+static const char SOLIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/c/solidus_linear_temp.dat";
 
 /* solid data files */
 static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/c/thermal_exp_solid.dat";
