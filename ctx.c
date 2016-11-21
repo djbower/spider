@@ -316,7 +316,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     const PetscScalar *arr_dSdr, *arr_Sabs, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_area_b, *arr_dPdr_b, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
     Mesh              *M;
     Solution          *S;
-    PetscScalar       gmelt; // DJB testing
+    PetscScalar       gmelt, smooth; // DJB testing
 
     PetscFunctionBeginUser;
 
@@ -388,41 +388,118 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
     for(i=ilo; i<ihi; ++i){ // Note that these correspond to basic nodes being updated, but we also assume an ordering on the staggered nodes!
 
-      /* melt fraction */
+      /* melt fraction, must truncate [0,1] later */
       arr_phi[i] = (arr_Sabs[i] - arr_solidus[i]) / arr_fusion[i];
-      gmelt = arr_phi[i]; // DJB testing
 
-      /* melt only */
-      if( arr_phi[i] >= 1.0 ){
+      /* generalised melt fraction for smoothing across liquidus */
+      /* gives +ve above liq, 0 at liq, -ve below */
+      gmeltliq = (arr_Sabs[i] - arr_liquidus) / arr_fusion[i];
+
+
+      /* generalised melt fraction for smoothing across liquidus */
+      gmelt = arr_phi[i]; // not truncated between 0 and 1
+
+      /* smooooooooooothing function */
+      smooth = ( gmelt - 1.0 ) / 1.0E-4;
+      smooth = 0.5 * ( 1.0 + PetscTanhReal( smooth ) );
+      // old below
+      //arr_dphidr[i] *= 1.0 - smooth;
+
+      /////////////////
+      /* mixed phase */
+      /////////////////
+
+      /* TODO: confirm that this cannot break for any value of i.
+         by inspection, I do not think it can */
+      /* density */
+      arr_rho[i] = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
+      arr_rho[i] = 1.0 / arr_rho[i];
+      /* adiabatic temperature gradient */
+      arr_dTdrs[i] = arr_dTdrs_mix[i];
+      arr_dTdPs[i] = arr_dTdrs[i] * 1.0 / arr_dPdr_b[i];
+      /* heat capacity */
+      arr_cp[i] = arr_cp_mix[i];
+      /* temperature */
+      arr_temp[i] = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
+      /* thermal expansion coefficient */
+      arr_alpha[i] = -arr_fusion_rho[i] / arr_fusion_temp[i] * 1.0 / arr_rho[i];
+      /* thermal conductivity */
+      arr_cond[i] = combine_matprop( arr_phi[i], COND_MEL, COND_SOL );
+      /* viscosity */
+      arr_visc[i] = viscosity_mix( arr_phi[i] );
+      /* dmelt/dr */
+      arr_dphidr[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
+      arr_dphidr[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
+      arr_dphidr[i] *= 1.0 / arr_fusion[i];
+
+      if (gmelt>0.5){
+        /* get melt properties */
         Lookup *L = &E->melt_prop;
-        arr_phi[i] = 1.0;
-
         /* density */
-        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
+        arr_rho[i] *= 
 
-        /* adiabatic temperature gradient */
-        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
-        arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
 
-        /* heat capacity */
-        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
+get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
 
-        /* temperature */
-        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
 
-        /* thermal expansion coefficient */
-        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
-
-        /* thermal conductivity */
-        arr_cond[i] = COND_MEL;
-
-        /* viscosity */
-        arr_visc[i] = PetscPowScalar( 10.0, LOG10VISC_MEL );
-
-        /* dmelt/dr */
-        arr_dphidr[i] = 0.0;
 
       }
+      else {
+          /* get solid properties */
+
+
+
+      }
+
+
+      ////////////////
+      /* melt phase */
+      ////////////////
+      Lookup *L = &E->melt_prop;
+      arr_rho[i] = get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
+      arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
+      if arr_dTdPs[i]
+      arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
+      arr_cp[i] = get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
+      arr_temp[i] = get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
+      arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
+      arr_cond[i] = COND_MEL;
+      arr_visc[i] = PetscPowScalar( 10.0, LOG10VISC_MEL );
+      arr_dphidr[i] = 0.0;
+
+
+
+      /* melt only */
+      //if( arr_phi[i] >= 1.0 ){
+      //  Lookup *L = &E->melt_prop;
+       // arr_phi[i] = 1.0;
+
+        /* density */
+        //arr_rho[i] = get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
+
+        /* adiabatic temperature gradient */
+        //arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
+       // arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
+
+        /* heat capacity */
+       // arr_cp[i] = get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
+
+        /* temperature */
+      //  arr_temp[i] = get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
+
+        /* thermal expansion coefficient */
+       // arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
+
+        /* thermal conductivity */
+       // arr_cond[i] = COND_MEL;
+
+        /* viscosity */
+        //arr_visc[i] = PetscPowScalar( 10.0, LOG10VISC_MEL );
+
+        /* dmelt/dr */
+        //arr_dphidr[i] = 0.0;
+
+      //}
 
       /* solid only */
       else if( arr_phi[i] <= 0.0 ){
@@ -494,9 +571,9 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
          the location where the entropy profile transitions from melt
          to mixed phase seem to persist.  Without smoothing the wiggles
          decay and go away */
-      //gmelt = ( gmelt - 1.0 ) / 1.0E-3;
-      //gmelt = 0.5 * ( 1.0 + PetscTanhReal( gmelt ) );
-      //arr_dphidr[i] *= 1.0-gmelt;
+      gmelt = ( gmelt - 1.0 ) / 1.0E-4;
+      gmelt = 0.5 * ( 1.0 + PetscTanhReal( gmelt ) );
+      arr_dphidr[i] *= 1.0-gmelt;
 
       /* other useful material properties */
       /* kinematic viscosity */
