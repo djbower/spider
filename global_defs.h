@@ -92,22 +92,22 @@ static const PetscScalar CP_CMB = 0.40093215388392944;
 
 /* smoothing parameters */
 /* smoothing switch */
-//static const PetscBool SMOOTH = 0;
+static const PetscBool SMOOTH = 0;
 /* width */
 static const PetscScalar WIDTH = 1.0E-4;
 /* below only used if SMOOTH = 1 */
 /* upper smoothing transition (melt fraction) */
-//static const PetscScalar CRIT1 = 1.0;
+static const PetscScalar CRIT1 = 1.0;
 /* lower smoothing transition (melt fraction) */
-//static const PetscScalar CRIT2 = 0.0;
+static const PetscScalar CRIT2 = 0.0;
 
 /* CASE 1 NO SMOOTHING */
 //static const PetscBool SMOOTH = 0;
 
 /* CASE 2 WITH SMOOTHING */
-static const PetscBool SMOOTH = 1;
-static const PetscScalar CRIT1 = 1.0;
-static const PetscScalar CRIT2 = 0.0;
+//static const PetscBool SMOOTH = 1;
+//static const PetscScalar CRIT1 = 1.0;
+//static const PetscScalar CRIT2 = 0.0;
 
 
 /* end of constants */
@@ -115,10 +115,10 @@ static const PetscScalar CRIT2 = 0.0;
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-static const char LIQUIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/c/liquidus_linear_temp.dat";
+static const char LIQUIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/c/liquidus.dat";
 
 /* solidus data file */
-static const char SOLIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/c/solidus_linear_temp.dat";
+static const char SOLIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/c/solidus.dat";
 
 /* solid data files */
 static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/c/thermal_exp_solid.dat";
