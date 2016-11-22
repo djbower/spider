@@ -171,10 +171,12 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     Solution          *S;
     Vec               pres_s, Sabs_s;
     Interp2d          *IRM, *ITM, *IRS, *ITS;
-    const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_Sabs_s;
+    const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_Sabs_s, *arr_liquidus_s, *arr_solidus_s, *arr_fusion_s;
     PetscScalar       *arr_phi_s,*arr_rho_s,*arr_temp_s;
+    PetscScalar       gphil, gphis, smth;
 
     PetscFunctionBeginUser;
+
     M = &E->mesh;
     S = &E->solution;
     pres_s = M->pressure_s;
@@ -197,6 +199,9 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
 
     ierr = DMDAVecGetArrayRead(da_s,Sabs_s,&arr_Sabs_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->liquidus_s,&arr_liquidus_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->solidus_s,&arr_solidus_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->fusion_s,&arr_fusion_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
@@ -206,31 +211,67 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     ierr = DMDAVecGetArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
-        /* melt only */
-        if( arr_phi_s[i] >= 1.0 ){
-            arr_phi_s[i] = 1.0;
-            arr_rho_s[i]   = get_val2d( IRM, arr_pres_s[i], arr_Sabs_s[i] );
-            arr_temp_s[i]  = get_val2d( ITM, arr_pres_s[i], arr_Sabs_s[i] );
-        }
-        /* solid only */
-        else if( arr_phi_s[i] <= 0.0 ){
-            arr_phi_s[i] = 0.0;
-            arr_rho_s[i]   = get_val2d( IRS, arr_pres_s[i], arr_Sabs_s[i] );
-            arr_temp_s[i]  = get_val2d( ITS, arr_pres_s[i], arr_Sabs_s[i] );
-        }
-        /* mixed phase */
-        else{
-            /* density */
-            arr_rho_s[i] = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
-            arr_rho_s[i] = 1.0 / arr_rho_s[i];
-            /* temperature */
-            arr_temp_s[i] = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
-        }
+
+      /* melt fraction, also truncated here [0,1] */
+      if (arr_phi_s[i] > 1.0){
+        /* superliquidus */
+        arr_phi_s[i] = 1.0;
+      }
+      if (arr_phi_s[i] < 0.0){
+        /* subsolidus */
+        arr_phi_s[i] = 0.0;
+      }
+
+      /////////////////
+      /* mixed phase */
+      /////////////////
+      /* density */
+      arr_rho_s[i] = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
+      arr_rho_s[i] = 1.0 / arr_rho_s[i];
+      /* temperature */
+      arr_temp_s[i] = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
+
+      if (arr_phi_s[i] > 0.5 ){
+
+        /* generalised melt fraction for smoothing across liquidus */
+        /* gives +ve above liq, 0 at liq, -ve below */
+        /* formally, it is the non-dimensional melt fraction difference
+           from the liquidus */
+        gphil = (arr_Sabs_s[i] - arr_liquidus_s[i]) / arr_fusion_s[i];
+        /* smooooooooooothing function */
+        smth = tanh_weight( gphil, 1.0, WIDTH );
+
+        /* get melt properties */
+        arr_rho_s[i]   *= 1.0 - smth;
+        arr_rho_s[i]   += smth * get_val2d( IRM, arr_pres_s[i], arr_Sabs_s[i] );
+        arr_temp_s[i]  *= 1.0 - smth;
+        arr_temp_s[i]  += smth * get_val2d( ITM, arr_pres_s[i], arr_Sabs_s[i] );
+      }
+
+      else {
+
+        /* generalised melt fraction for smoothing across solidus */
+        /* gives +ve above sol, 0 at sol, -ve velow */
+        /* formally, it is the non-dimensional melt fraction difference
+           from the solidus */
+        gphis = (arr_Sabs_s[i] - arr_solidus_s[i]) / arr_fusion_s[i];
+        /* smooooooooooothing function */
+        smth = tanh_weight( gphis, 1.0, WIDTH );
+
+        /* get solid properties */
+        arr_rho_s[i]   *= smth;
+        arr_rho_s[i]   += (1.0-smth) * get_val2d( IRS, arr_pres_s[i], arr_Sabs_s[i] );
+        arr_temp_s[i]  *= smth;
+        arr_temp_s[i]  += (1.0-smth) * get_val2d( ITS, arr_pres_s[i], arr_Sabs_s[i] );
+      }
 
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s,Sabs_s,&arr_Sabs_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_s,&arr_liquidus_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_s,&arr_solidus_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->fusion_s,&arr_fusion_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
