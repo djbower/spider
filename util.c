@@ -29,6 +29,8 @@ PetscErrorCode set_d_dr( Ctx *E )
 
     PetscFunctionBeginUser;
 
+    /* FIXME: can manually select derivative order here */
+
     set_d_dr_linear( E );
     //set_d_dr_quadratic( E );
 
@@ -39,6 +41,10 @@ PetscErrorCode set_d_dr( Ctx *E )
 
 PetscErrorCode set_d_dr_linear( Ctx *E )
 {
+
+    /* piece-wise linear interpolation between neighbouring
+       staggered nodes to get the basic node value and the
+       derivative at the basic node */
 
     PetscErrorCode ierr;
     PetscInt i, rstart, rend, col[2];
