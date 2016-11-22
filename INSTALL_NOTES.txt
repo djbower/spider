@@ -5,8 +5,7 @@ system:
 cd /somewhere/to/install
 git clone https://bitbucket.org/petsc/petsc -b maint petsc-maint
 cd petsc-maint
-./configure --download-mpich --download-sundials --with-cc=gcc
---with-cxx=g++ --with-fc=gfortran
+[See below for Petsc configure for double or quad precision]
 
 Then follow the instructions to build and test a debug build. It will
 produce a directory called arch-some-stuff which will be your
@@ -30,9 +29,8 @@ Better to use maint until we need something specific from master
 
 for configuring petsc with double precision:
 
-./configure --download-mpich --download-sundials --with-cc=gcc --with-cxx=g++ --with-fc=gfortran
-
+./configure --download-mpich --download-sundials --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --with-debugging=0 --FOPTFLAGS='-g -O3' --COPTFLAGS='-g -O3' --CXXOPTFLAGS='-g -O3'
 
 for configuring petsc with quad precision:
 
-./configure --with-precision=__float128 --download-f2cblaslapack --download-mpich --with-cc=gcc --with-cxx=g++ --with-fc=gfortran
+./configure --with-precision=__float128 --download-f2cblaslapack --download-mpich --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --with-debugging=0 --FOPTFLAGS='-g -O3' --COPTFLAGS='-g -O3' --CXXOPTFLAGS='-g -O3'
