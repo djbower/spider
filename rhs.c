@@ -59,7 +59,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
     if (rank == size-1) {
       PetscScalar val, val2;
       PetscInt    ind, ind2;
-      PetscScalar temp_s_0;
+      //PetscScalar temp_s_0;
 
       ind  = numpts_b-2; // penultimate basic node index
       ind2 = numpts_b-1; // last basic node index

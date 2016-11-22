@@ -90,6 +90,9 @@ static const PetscScalar RHO_CMB = 1.1922543609124883;
 /* heat capacity near CMB.  TODO: this is f(S,P) and thus time-dep */
 static const PetscScalar CP_CMB = 0.40093215388392944;
 
+/* smoothing width */
+static const PetscScalar WIDTH = 1.0E-4 ;
+
 /* end of constants */
 
 /* datafile locations and material-specific constants */

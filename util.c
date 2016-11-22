@@ -12,6 +12,18 @@ PetscScalar combine_matprop( PetscScalar weight, PetscScalar mat1, PetscScalar m
 
 }
 
+PetscScalar tanh_weight( PetscScalar qty, PetscScalar threshold, PetscScalar width )
+{
+    /* tanh weight for viscosity profile and smoothing */
+
+    PetscScalar    z;
+
+    z = ( qty - threshold ) / width;
+    z = 0.5 * ( 1.0 + PetscTanhScalar( z ) );
+    return z;
+
+}
+
 PetscErrorCode set_d_dr( Ctx *E )
 {
     /* interpolate quadratic functions to get val and dval/dr at
@@ -235,28 +247,6 @@ PetscErrorCode set_d_dr( Ctx *E )
     ierr = MatDuplicate( B1, MAT_COPY_VALUES, &S1b );CHKERRQ(ierr);
     ierr = MatDiagonalScale( S1b, dx1, NULL);CHKERRQ(ierr);
     // add (final matrix is S1a)
-    /* FIXME.  If str argument is 'SAME_NONZERO_PATTERN' it works for
-       double but crashes for quad precision.  If 'DIFFERENT_NONZERO_PATTERN'
-       it works for both double and quad.  But then quad crashes instead at
-       MatScale call.
-
-       Error looks like the following:
-
-Process 56188 stopped
-* thread #1: tid = 0x3d195, 0x00000001000ffc8f libpetsc.3.7.dylib`PetscMallocValidate(line=2492, function="MatScale_SeqAIJ", file="/Users/dan/Programs/petsc/petsc-maint-quad-no-sundials/src/mat/impls/aij/seq/aij.c") + 475 at mtr.c:131, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=EXC_I386_GPFLT)
-    frame #0: 0x00000001000ffc8f libpetsc.3.7.dylib`PetscMallocValidate(line=2492, function="MatScale_SeqAIJ", file="/Users/dan/Programs/petsc/petsc-maint-quad-no-sundials/src/mat/impls/aij/seq/aij.c") + 475 at mtr.c:131
-   128 	  PetscFunctionBegin;
-   129 	  head = TRhead; lasthead = NULL;
-   130 	  while (head) {
--> 131 	    if (head->classid != CLASSID_VALUE) {
-   132 	      (*PetscErrorPrintf)("PetscMallocValidate: error detected at  %s() line %d in %s\n",function,line,file);
-   133 	      (*PetscErrorPrintf)("Memory at address %p is corrupted\n",head);
-   134 	      (*PetscErrorPrintf)("Probably write past beginning or end of array\n");
-
-        Can PS add some memory management to allow this to work?  Perhaps in the 
-        case of quad we need to say how big the matrices are going to be?
-*/
-
     ierr = MatAXPY( S1a, 1.0, S1b, SAME_NONZERO_PATTERN );CHKERRQ(ierr); 
     ierr = MatAXPY( S1a, 1.0, C1, SAME_NONZERO_PATTERN );CHKERRQ(ierr);
 
@@ -319,6 +309,9 @@ Process 56188 stopped
 
     PetscFunctionReturn(0);
 }
+
+/* below is old, and needs editting if we wish to use it
+   to build a Petsc matrix as above */
 
 /*PetscErrorCode d_dr_regular( Ctx *E, Vec in_s, Vec out_b )
 {*/

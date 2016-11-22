@@ -262,7 +262,8 @@ static PetscScalar zmap( PetscScalar z )
     zmap = shp*PetscSqr(z)+z*fac+1.0/shp \
         *PetscLogScalar(shp*z+fac);
     zmap *= 0.5;
-    fwt = 0.5*(1.0+PetscTanhScalar( zmap ));
+
+    fwt = tanh_weight( zmap, 0.0, 1.0 );
 
     return fwt;
 }
@@ -292,11 +293,6 @@ static PetscScalar viscosity_mix( PetscScalar meltf )
 {
     PetscScalar fwt, log10visc, visc;
 
-    /* simple hyperbolic tan to get up and running */
-    /* need to code up function with skew */
-    /*arg = (1.0-meltf-F_THRESHOLD) / DF_TRANSITION;
-    fwt = 0.5 * ( 1.0 + tanh(arg) ); */
-
     fwt = viscosity_mix_skew( meltf );
 
     log10visc = fwt * LOG10VISC_SOL + (1.0 - fwt) * LOG10VISC_MEL;
@@ -313,10 +309,10 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     DM                da_b=E->da_b;
     Vec               dSdr, Sabs;
     PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappah, *arr_Etot, *arr_dTdPs, *arr_dTdrs, *arr_dphidr, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_rho, *arr_Jcond, *arr_Jconv, *arr_Jtot, *arr_Jheat, *arr_Jmix, *arr_Jgrav, *arr_Jmass;
-    const PetscScalar *arr_dSdr, *arr_Sabs, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_area_b, *arr_dPdr_b, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
+    const PetscScalar *arr_dSdr, *arr_Sabs, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_area_b, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
     Mesh              *M;
     Solution          *S;
-    PetscScalar       gphil, gphis, smth; // DJB testing
+    PetscScalar       gphil, gphis, smth;
 
     PetscFunctionBeginUser;
 
@@ -366,6 +362,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     ierr = DMDAVecGetArrayRead(da_b,S->fusion_temp,&arr_fusion_temp); CHKERRQ(ierr); //
     ierr = DMDAVecGetArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr); //
     ierr = DMDAVecGetArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr); //
+    ierr = DMDAVecGetArrayRead(da_b,S->liquidus,&arr_liquidus); CHKERRQ(ierr); //
     ierr = DMDAVecGetArrayRead(da_b,S->liquidus_rho,&arr_liquidus_rho); CHKERRQ(ierr); //
     ierr = DMDAVecGetArrayRead(da_b,S->liquidus_temp,&arr_liquidus_temp); CHKERRQ(ierr); //
     ierr = DMDAVecGetArray(    da_b,S->nu,&arr_nu); CHKERRQ(ierr); //
@@ -399,14 +396,6 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
         arr_phi[i] = 0.0;
       }
 
-      /* generalised melt fraction for smoothing across liquidus */
-      /* gives +ve above liq, 0 at liq, -ve below */
-      gphil = (arr_Sabs[i] - arr_liquidus[i]) / arr_fusion[i];
-
-      /* generalised melt fraction for smoothing across solidus */
-      /* gives +ve above sol, 0 at sol, -ve velow */
-      gphis = (arr_Sabs[i] - arr_solidus[i]) / arr_fusion[i];
-
       /////////////////
       /* mixed phase */
       /////////////////
@@ -437,9 +426,13 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
       if (arr_phi[i] > 0.5 ){
 
+        /* generalised melt fraction for smoothing across liquidus */
+        /* gives +ve above liq, 0 at liq, -ve below */
+        /* formally, it is the non-dimensional melt fraction difference
+           from the liquidus */
+        gphil = (arr_Sabs[i] - arr_liquidus[i]) / arr_fusion[i];
         /* smooooooooooothing function */
-        smth = ( gphil - 1.0 ) / 1.0E-4;
-        smth = 0.5 * ( 1.0 + PetscTanhReal( smth ) );
+        smth = tanh_weight( gphil, 1.0, WIDTH );
 
         /* get melt properties */
         Lookup *L = &E->melt_prop;
@@ -471,90 +464,42 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
       else {
 
+        /* generalised melt fraction for smoothing across solidus */
+        /* gives +ve above sol, 0 at sol, -ve velow */
+        /* formally, it is the non-dimensional melt fraction difference
+           from the solidus */
+        gphis = (arr_Sabs[i] - arr_solidus[i]) / arr_fusion[i];
         /* smooooooooooothing function */
-        smth = ( gphis - 1.0 ) / 1.0E-4;
-        smth = 0.5 * ( 1.0 + PetscTanhReal( smth ) );
+        smth = tanh_weight( gphis, 1.0, WIDTH );
 
         /* get solid properties */
         Lookup *L = &E->solid_prop;
-
-      }
-
-
-
-      /* solid only */
-      else if( arr_phi[i] <= 0.0 ){
-        //Lookup *L = &E->solid_prop;
-        arr_phi[i] = 0.0;
-
         /* density */
-        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
-
+        arr_rho[i] *= smth;
+        arr_rho[i] += (1.0-smth)*get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
         /* adiabatic temperature gradient */
-        arr_dTdPs[i] = get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
+        arr_dTdPs[i] *= smth;
+        arr_dTdPs[i] += (1.0-smth) * get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
         arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
-
         /* heat capacity */
-        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
-
+        arr_cp[i] *= smth;
+        arr_cp[i] += (1.0-smth) * get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
         /* temperature */
-        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
-
+        arr_temp[i] *= smth;
+        arr_temp[i] += (1.0-smth) * get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
         /* thermal expansion coefficient */
-        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
-
+        arr_alpha[i] *= smth;
+        arr_alpha[i] += (1.0-smth) * get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
         /* thermal conductivity */
-        arr_cond[i] = COND_SOL;
-
+        arr_cond[i] *= smth;
+        arr_cond[i] += (1.0-smth) * COND_SOL;
         /* viscosity */
-        arr_visc[i] = PetscPowScalar( 10.0, LOG10VISC_SOL );
-
+        arr_visc[i] *= smth;
+        arr_visc[i] += (1.0-smth) * PetscPowScalar( 10.0, LOG10VISC_SOL );
         /* dmelt/dr */
-        arr_dphidr[i] = 0.0;
+        arr_dphidr[i] *= smth;
 
       }
-
-      /* mixed phase */
-      else{
-        /* density */
-
-        arr_rho[i] = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
-        arr_rho[i] = 1.0 / arr_rho[i];
-
-        /* adiabatic temperature gradient */
-        arr_dTdrs[i] = arr_dTdrs_mix[i];
-        arr_dTdPs[i] = arr_dTdrs[i] * 1.0 / arr_dPdr_b[i];
-
-        /* heat capacity */
-        arr_cp[i] = arr_cp_mix[i];
-
-        /* temperature */
-        arr_temp[i] = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
-
-        /* thermal expansion coefficient */
-        arr_alpha[i] = -arr_fusion_rho[i] / arr_fusion_temp[i] * 1.0 / arr_rho[i];
-
-        /* thermal conductivity */
-        arr_cond[i] = combine_matprop( arr_phi[i], COND_MEL, COND_SOL );
-
-        /* viscosity */
-        arr_visc[i] = viscosity_mix( arr_phi[i] );
-
-        /* dmelt/dr */
-        arr_dphidr[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
-        arr_dphidr[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
-        arr_dphidr[i] *= 1.0 / arr_fusion[i];
-
-      }
-
-      /* DJB to smooth Jmix */
-      /* bizarrely, this seems to make the problem worse.  Wiggles at
-         the location where the entropy profile transitions from melt
-         to mixed phase seem to persist.  Without smoothing the wiggles
-         decay and go away */
-      gmelt = ( gmelt - 1.0 ) / 1.0E-4;
-      gmelt = 0.5 * ( 1.0 + PetscTanhReal( gmelt ) );
-      arr_dphidr[i] *= 1.0-gmelt;
 
       /* other useful material properties */
       /* kinematic viscosity */
@@ -658,6 +603,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     ierr = DMDAVecRestoreArrayRead(da_b,S->fusion_temp,&arr_fusion_temp); CHKERRQ(ierr); //
     ierr = DMDAVecRestoreArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr); //
     ierr = DMDAVecRestoreArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr); //
+    ierr = DMDAVecRestoreArrayRead(da_b,S->liquidus,&arr_liquidus); CHKERRQ(ierr); //
     ierr = DMDAVecRestoreArrayRead(da_b,S->liquidus_rho,&arr_liquidus_rho); CHKERRQ(ierr); //
     ierr = DMDAVecRestoreArrayRead(da_b,S->liquidus_temp,&arr_liquidus_temp); CHKERRQ(ierr); //
     ierr = DMDAVecRestoreArray(    da_b,S->nu,&arr_nu); CHKERRQ(ierr); //

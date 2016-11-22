@@ -108,6 +108,7 @@ PetscScalar get_val1d( Interp1d *, PetscScalar );
 PetscScalar get_val2d( Interp2d *, PetscScalar, PetscScalar );
 
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar);
+PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
 
 PetscScalar radiative_flux_with_dT( PetscScalar );
 #endif
