@@ -90,8 +90,25 @@ static const PetscScalar RHO_CMB = 1.1922543609124883;
 /* heat capacity near CMB.  TODO: this is f(S,P) and thus time-dep */
 static const PetscScalar CP_CMB = 0.40093215388392944;
 
-/* smoothing width */
+/* smoothing parameters */
+/* smoothing switch */
+//static const PetscBool SMOOTH = 0;
+/* width */
 static const PetscScalar WIDTH = 1.0E-4;
+/* below only used if SMOOTH = 1 */
+/* upper smoothing transition (melt fraction) */
+//static const PetscScalar CRIT1 = 1.0;
+/* lower smoothing transition (melt fraction) */
+//static const PetscScalar CRIT2 = 0.0;
+
+/* CASE 1 NO SMOOTHING */
+//static const PetscBool SMOOTH = 0;
+
+/* CASE 2 WITH SMOOTHING */
+static const PetscBool SMOOTH = 1;
+static const PetscScalar CRIT1 = 1.0;
+static const PetscScalar CRIT2 = 0.0;
+
 
 /* end of constants */
 

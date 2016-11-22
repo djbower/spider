@@ -231,15 +231,20 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
       /* temperature */
       arr_temp_s[i] = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
 
-      if (arr_phi_s[i] > 0.5 ){
+      if (arr_phi_s[i] >= CRIT1 ){
 
-        /* generalised melt fraction for smoothing across liquidus */
-        /* gives +ve above liq, 0 at liq, -ve below */
-        /* formally, it is the non-dimensional melt fraction difference
-           from the liquidus */
-        gphil = (arr_Sabs_s[i] - arr_liquidus_s[i]) / arr_fusion_s[i];
-        /* smooooooooooothing function */
-        smth = tanh_weight( gphil, 1.0, WIDTH );
+        if (SMOOTH){
+          /* generalised melt fraction for smoothing across liquidus */
+          /* gives +ve above liq, 0 at liq, -ve below */
+          /* formally, it is the non-dimensional melt fraction difference
+             from the liquidus */
+          gphil = (arr_Sabs_s[i] - arr_liquidus_s[i]) / arr_fusion_s[i];
+          /* smooooooooooothing function */
+          smth = tanh_weight( gphil, 1.0, WIDTH );
+        }
+        else{
+          smth = 1.0;
+        }
 
         /* get melt properties */
         arr_rho_s[i]   *= 1.0 - smth;
@@ -248,15 +253,20 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
         arr_temp_s[i]  += smth * get_val2d( ITM, arr_pres_s[i], arr_Sabs_s[i] );
       }
 
-      else {
+      else if (arr_phi_s[i] <= CRIT2 ) {
 
-        /* generalised melt fraction for smoothing across solidus */
-        /* gives +ve above sol, 0 at sol, -ve velow */
-        /* formally, it is the non-dimensional melt fraction difference
-           from the solidus */
-        gphis = (arr_Sabs_s[i] - arr_solidus_s[i]) / arr_fusion_s[i];
-        /* smooooooooooothing function */
-        smth = tanh_weight( gphis, 1.0, WIDTH );
+        if (SMOOTH){
+          /* generalised melt fraction for smoothing across solidus */
+          /* gives +ve above sol, 0 at sol, -ve velow */
+          /* formally, it is the non-dimensional melt fraction difference
+             from the solidus */
+          gphis = (arr_Sabs_s[i] - arr_solidus_s[i]) / arr_fusion_s[i];
+          /* smooooooooooothing function */
+          smth = tanh_weight( gphis, 1.0, WIDTH );
+        }
+        else{
+          smth = 1.0;
+        }
 
         /* get solid properties */
         arr_rho_s[i]   *= smth;
@@ -465,15 +475,20 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       arr_dphidr[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
       arr_dphidr[i] *= 1.0 / arr_fusion[i];
 
-      if (arr_phi[i] > 0.5 ){
+      if (arr_phi[i] >= CRIT1 ){
 
-        /* generalised melt fraction for smoothing across liquidus */
-        /* gives +ve above liq, 0 at liq, -ve below */
-        /* formally, it is the non-dimensional melt fraction difference
-           from the liquidus */
-        gphil = (arr_Sabs[i] - arr_liquidus[i]) / arr_fusion[i];
-        /* smooooooooooothing function */
-        smth = tanh_weight( gphil, 1.0, WIDTH );
+        if (SMOOTH){
+          /* generalised melt fraction for smoothing across liquidus */
+          /* gives +ve above liq, 0 at liq, -ve below */
+          /* formally, it is the non-dimensional melt fraction difference
+             from the liquidus */
+          gphil = (arr_Sabs[i] - arr_liquidus[i]) / arr_fusion[i];
+          /* smooooooooooothing function */
+          smth = tanh_weight( gphil, 1.0, WIDTH );
+        }
+        else{
+          smth = 1.0;
+        }
 
         /* get melt properties */
         Lookup *L = &E->melt_prop;
@@ -503,15 +518,20 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
         arr_dphidr[i] *= 1.0 - smth;
       }
 
-      else {
+      else if (arr_phi[i] <= CRIT2 ) {
 
-        /* generalised melt fraction for smoothing across solidus */
-        /* gives +ve above sol, 0 at sol, -ve velow */
-        /* formally, it is the non-dimensional melt fraction difference
-           from the solidus */
-        gphis = (arr_Sabs[i] - arr_solidus[i]) / arr_fusion[i];
-        /* smooooooooooothing function */
-        smth = tanh_weight( gphis, 1.0, WIDTH );
+        if (SMOOTH){
+          /* generalised melt fraction for smoothing across solidus */
+          /* gives +ve above sol, 0 at sol, -ve velow */
+          /* formally, it is the non-dimensional melt fraction difference
+             from the solidus */
+          gphis = (arr_Sabs[i] - arr_solidus[i]) / arr_fusion[i];
+          /* smooooooooooothing function */
+          smth = tanh_weight( gphis, 1.0, WIDTH );
+        }
+        else{
+          smth = 1.0;
+        }
 
         /* get solid properties */
         Lookup *L = &E->solid_prop;
