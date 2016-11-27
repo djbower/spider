@@ -19,15 +19,15 @@ static char help[] =
 
 int main(int argc, char ** argv)
 {
-  PetscErrorCode ierr;
-  TS             ts;                    /* ODE solver object */
-  Vec            S_s;                   /* Solution Vector */
-  Ctx            ctx;                   /* Solver context */
-  PetscBool      monitor = PETSC_TRUE;  /* Macros step custom monitor (monitor.c) */
-  const PetscReal t0 = 0;               /* Initial time */
-  const PetscInt maxsteps = -1;         /* Unlimited Max internal steps */
-  PetscInt       nstepsmacro = 1000000000;     /* Max macros steps */
-  PetscReal      dtmacro = 1.0;         /* Macros step size (see stepover note) */
+  PetscErrorCode  ierr;
+  TS              ts;                        /* ODE solver object */
+  Vec             S_s;                       /* Solution Vector */
+  Ctx             ctx;                       /* Solver context */
+  PetscBool       monitor = PETSC_TRUE;      /* Macro step custom monitor (monitor.c) */
+  const PetscReal t0 = 0;                    /* Initial time */
+  const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
+  PetscInt        nstepsmacro = 1000000000;  /* Max macros steps */
+  PetscReal       dtmacro = 1.0;             /* Macro step size */
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
