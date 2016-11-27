@@ -91,15 +91,16 @@ int main(int argc, char ** argv)
   /* Solve macro steps (could also use a monitor which keeps some state) */
   {
     PetscReal time = t0;
+    double walltime0 = MPI_Wtime();
     PetscInt stepmacro=0;
     if (monitor) {
-      ierr = TSCustomMonitor(ts,stepmacro,time,S_s,&ctx);CHKERRQ(ierr);
+      ierr = TSCustomMonitor(ts,stepmacro,time,S_s,&ctx,walltime0);CHKERRQ(ierr);
     }
     for (stepmacro=1;stepmacro<=nstepsmacro;++stepmacro){
       ierr = TSSolve(ts,S_s);CHKERRQ(ierr);
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (monitor) {
-        ierr = TSCustomMonitor(ts,stepmacro,time,S_s,&ctx);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,stepmacro,time,S_s,&ctx,walltime0);CHKERRQ(ierr);
       }
       ierr = TSSetDuration(ts,maxsteps,(stepmacro + 1) * dtmacro);CHKERRQ(ierr); 
     }

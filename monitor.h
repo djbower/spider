@@ -3,6 +3,6 @@
 
 #include "ctx.h"
 
-PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void * ptr);
+PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void * ptr, double walltime0);
 
 #endif
