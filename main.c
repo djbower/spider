@@ -96,13 +96,12 @@ int main(int argc, char ** argv)
       ierr = TSCustomMonitor(ts,stepmacro,time,S_s,&ctx);CHKERRQ(ierr);
     }
     for (stepmacro=1;stepmacro<=nstepsmacro;++stepmacro){
-      const PetscReal time_next = (stepmacro + 1) * dtmacro;
       ierr = TSSolve(ts,S_s);CHKERRQ(ierr);
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (monitor) {
         ierr = TSCustomMonitor(ts,stepmacro,time,S_s,&ctx);CHKERRQ(ierr);
       }
-      ierr = TSSetDuration(ts,maxsteps,time_next);CHKERRQ(ierr); 
+      ierr = TSSetDuration(ts,maxsteps,(stepmacro + 1) * dtmacro);CHKERRQ(ierr); 
     }
   }
 
