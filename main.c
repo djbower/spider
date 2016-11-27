@@ -68,7 +68,7 @@ int main(int argc, char ** argv)
   ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); 
   ierr = TSARKIMEXSetType(ts, TSARKIMEX1BEE ); CHKERRQ(ierr);
   ierr = PetscOptionsSetValue(NULL,"-snes_mf","1");CHKERRQ(ierr);
-  ierr = TSSetTolerances( ts, 1e-10, NULL, 1e-10, NULL );CHKERRQ(ierr);
+  ierr = TSSetTolerances( ts, 1e-5, NULL, 1e-10, NULL );CHKERRQ(ierr);
 //#else
 //  ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
 //  ierr = TSSundialsSetTolerance(ts,1e-11,1e-11);CHKERRQ(ierr);
