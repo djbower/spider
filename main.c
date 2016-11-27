@@ -25,7 +25,7 @@ int main(int argc, char ** argv)
   Ctx            ctx;                   /* Solver context */
   PetscBool      monitor = PETSC_TRUE;  /* Macros step custom monitor (monitor.c) */
   const PetscReal t0 = 0;               /* Initial time */
-  const PetscInt maxsteps = 1000000000; /* Max internal steps */
+  const PetscInt maxsteps = -1;         /* Unlimited Max internal steps */
   PetscInt       nstepsmacro = 1000000000;     /* Max macros steps */
   PetscReal      dtmacro = 1.0;         /* Macros step size (see stepover note) */
 
@@ -92,7 +92,7 @@ int main(int argc, char ** argv)
       ierr = TSCustomMonitor(ts,stepmacro,time,S_s,&ctx);CHKERRQ(ierr);
     }
     for (stepmacro=1;stepmacro<=nstepsmacro;++stepmacro){
-      const PetscInt time_next = (stepmacro + 1) * dtmacro;
+      const PetscReal time_next = (stepmacro + 1) * dtmacro;
       ierr = TSSolve(ts,S_s);CHKERRQ(ierr);
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (monitor) {
