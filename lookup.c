@@ -226,7 +226,7 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
        bilinear interpolation */
 
     /* TODO this will fail if x, y falls outside the data range */
-
+    PetscErrorCode ierr;
     PetscScalar x1, x2, y1, y2, z1, z2, z3, z4;
     PetscScalar result;
     PetscScalar dx, *xa, *ya, *za, xmin;
@@ -260,9 +260,14 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
     }
 
     indy = indt-1;
-    if (indy < 0 ){SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"2d array interpolation failed - value less than minimum in table");}
-	if (indy > NY-2){SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"2d array interpolation failed - value greater than maximum in table");}
-
+    if (indy < 0){
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 2d array interpolation produced value less than minimum in table. Truncating\n");CHKERRQ(ierr);
+      indy = 0;
+    }
+    if (indy > NY-2){
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 2d array interpolation produced value greater than maximum in table. Truncating\n");CHKERRQ(ierr);
+      indy = NY-2;
+    }
     y1 = ya[indy]; // local min y
     y2 = ya[indy+1]; // local max y*/
 
