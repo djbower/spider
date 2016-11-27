@@ -79,7 +79,7 @@ int main(int argc, char ** argv)
 
   /* Set up the integration period for first macro step */
   ierr = TSSetDuration(ts,maxsteps,dtmacro);CHKERRQ(ierr); 
-  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr); /* Note: will not compute at precisely the requested time (PDS TODO: see if interpolate or matchstep can be made to work) */
+  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr); 
 
   /* Set a very small iniital timestep to prevent problems with 
      challening initial conditions and adaptive steppers */
