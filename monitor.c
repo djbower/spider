@@ -25,7 +25,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
 
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/S_s.%D.m",step);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/S_s_%D.m",step);CHKERRQ(ierr);
     ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"S_s_step_%D",step);CHKERRQ(ierr);
     ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr); //Annoyingly, PETSc wants you to use binary output so badly that this is the easiest way to get full-precision ASCII..
