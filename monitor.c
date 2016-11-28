@@ -3,7 +3,7 @@
 #include "monitor.h"
 #include "rhs.h"
 
-PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void * ptr, double walltime0)
+PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, PetscReal time0, Vec x, void * ptr, double walltime0)
 {
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
@@ -18,7 +18,10 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec x, void
     ierr = VecMin(x,NULL,&minval);CHKERRQ(ierr);
     ierr = VecMax(x,NULL,&maxval);CHKERRQ(ierr);
     double walltime = MPI_Wtime() - walltime0;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"*** [%f s] Writing output at macro Step %D, t=%f. Min/Max %f/%f\n",walltime,step,(double)time,(double)minval,(double)maxval);CHKERRQ(ierr);
+    double time_per_walltime_hour = 3600.0 * (time-time0) / walltime;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,
+        "*** [%.2f s : %.2f time units / hour] Writing output at macro Step %D, t=%f. Min/Max %f/%f\n",
+        walltime,time_per_walltime_hour,step,(double)time,(double)minval,(double)maxval);CHKERRQ(ierr);
   }
 
   /* Dump the solution to a file named for the timestep */
