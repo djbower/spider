@@ -146,10 +146,9 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     // 372 basic nodes
     //PetscScalar    dr_max = 0.001569612305760477; // 10 km
     // 278 basic nodes
-    PetscScalar    dr_max = 0.0023544184586407153; // 15 km
+    //PetscScalar    dr_max = 0.0023544184586407153; // 15 km
     PetscScalar    geom_fac = 1.2;
-    PetscScalar    dr;
-    PetscInt       power;
+    PetscScalar    dr, dr_prev;
 
     PetscFunctionBeginUser;
 
@@ -169,12 +168,13 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     ihi_b = ilo_b + w_b;
     ierr = DMDAVecGetArray(da_b,M->radius_b,&arr_b);CHKERRQ(ierr);
     arr_b[numpts_b-1] = RADIN;
+    dr_prev = dr_min / geom_fac;
     for (i=ilo_b; i<ihi_b-1; ++i){ /* Note upper bound */
-        power = i;
-        dr = dr_min * PetscPowScalar( geom_fac, power);
+        dr = dr_prev * geom_fac;
         if( dr > dr_max){
             dr = dr_max;
         }
+        dr_prev = dr;
         arr_b[numpts_b-i-2] = arr_b[numpts_b-i-1] + dr;
     }
     // TODO: below is hacky.
