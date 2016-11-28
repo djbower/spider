@@ -139,6 +139,14 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     DM             da_b=E->da_b, da_s=E->da_s;
     // TODO: should not be hard-coded
     PetscScalar    dr_min = 1.5696123057604772e-10; // 1 mm
+    // 45928 basic nodes
+    //PetscScalar dr_max = 9.810076911002982e-06; // 62.5 m
+    // 22996 basic nodes
+    //PetscScalar dr_max = 1.9620153822005963e-05; // 125 m
+    // 11532 basic nodes
+    //PetscScalar dr_max = 3.924030764401193e-05; // 250 m
+    // 5802 basic nodes
+    PetscScalar dr_max = 7.848061528802385e-05; // 500 m
     // 2939 basic nodes
     //PetscScalar    dr_max = 0.0001569612305760477; // 1 km
     // 656 basic nodes
