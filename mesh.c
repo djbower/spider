@@ -146,7 +146,7 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     // 11532 basic nodes
     //PetscScalar dr_max = 3.924030764401193e-05; // 250 m
     // 5802 basic nodes
-    PetscScalar dr_max = 7.848061528802385e-05; // 500 m
+    //PetscScalar dr_max = 7.848061528802385e-05; // 500 m
     // 2939 basic nodes
     //PetscScalar    dr_max = 0.0001569612305760477; // 1 km
     // 656 basic nodes
@@ -154,7 +154,7 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     // 372 basic nodes
     //PetscScalar    dr_max = 0.001569612305760477; // 10 km
     // 278 basic nodes
-    //PetscScalar    dr_max = 0.0023544184586407153; // 15 km
+    PetscScalar    dr_max = 0.0023544184586407153; // 15 km
     PetscScalar    geom_fac = 1.2;
     PetscScalar    dr, dr_prev;
 

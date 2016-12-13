@@ -2,6 +2,7 @@
 
 static PetscErrorCode make_ic_from_adiabat( Ctx *, Vec );
 static PetscErrorCode make_ic_from_melt_fraction( Ctx *, Vec );
+static PetscErrorCode make_ic_from_file( Ctx *, Vec );
 static PetscErrorCode make_super_adiabatic( Ctx *, Vec );
 
 PetscErrorCode set_initial_condition(Ctx *E, Vec S_in) 
@@ -13,9 +14,60 @@ PetscErrorCode set_initial_condition(Ctx *E, Vec S_in)
     //make_ic_from_adiabat( E, S_in );
 
     /* ic from melt fraction */
-    make_ic_from_melt_fraction( E, S_in );
+    /*make_ic_from_melt_fraction( E, S_in ); */
+
+    /* read ic from file */
+    make_ic_from_file( E, S_in );
 
     PetscFunctionReturn(0);
+}
+
+static PetscErrorCode make_ic_from_file( Ctx *E, Vec S_in )
+{
+    PetscErrorCode    ierr;
+    FILE              *fp;
+    PetscInt          i=0;
+    /* initial condition file must be called this */
+    char              filename[7] = "X_s.0";
+    char              string[100];
+#if (defined PETSC_USE_REAL___FLOAT128)
+    char              xtemp[30], ytemp[30];
+#endif
+    PetscScalar       *arr;
+    PetscScalar       x, y;
+    //PetscScalar       xa[NUMPTS_S_DEFAULT];//, ya[NUMPTS_S_DEFAULT];
+
+    PetscFunctionBeginUser;
+
+    ierr = VecGetArray( S_in, &arr ); CHKERRQ(ierr);
+
+    fp = fopen( filename, "r" );
+
+    if(fp==NULL) {
+        perror("Error opening file.\n");
+        exit(-1);
+    }
+
+    // fgets reads in string, sscanf processes it
+    while(fgets(string, sizeof(string), fp) != NULL) {
+#if (defined PETSC_USE_REAL___FLOAT128)
+        sscanf( string, "%s %s", xtemp, ytemp );
+        x = strtoflt128(xtemp, NULL);
+        y = strtoflt128(ytemp, NULL);
+#else
+        sscanf(string, "%lf %lf", &x, &y );
+#endif
+        arr[i] = y;
+        //ya[i] = y;
+        ++i;
+    }
+
+    fclose( fp );
+
+    ierr = VecRestoreArray( S_in, &arr ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
 }
 
 static PetscErrorCode make_ic_from_adiabat( Ctx *E, Vec S_in )

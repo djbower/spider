@@ -30,11 +30,11 @@
 /* you have to use the python script to a priori determine how many
    nodes there are in a given mesh */
 
-//#define NUMPTS_B_DEFAULT 278
+#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 372
 //#define NUMPTS_B_DEFAULT 656
 //#define NUMPTS_B_DEFAULT 2939
-#define NUMPTS_B_DEFAULT 5802
+//#define NUMPTS_B_DEFAULT 5802
 //#define NUMPTS_B_DEFAULT 11532
 //#define NUMPTS_B_DEFAULT 22996
 //#define NUMPTS_B_DEFAULT 45928

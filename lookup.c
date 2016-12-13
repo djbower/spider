@@ -80,7 +80,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
         if( i>=HEAD ){
 #if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( string, "%s %s %s", xtemp, ytemp, ztemp );
-            x = strtoflt128(xtemp, NULL);;
+            x = strtoflt128(xtemp, NULL);
             y = strtoflt128(ytemp, NULL);
             z = strtoflt128(ztemp, NULL);
 #else
