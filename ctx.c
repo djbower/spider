@@ -173,7 +173,7 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     Interp2d          *IRM, *ITM, *IRS, *ITS;
     const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_Sabs_s, *arr_liquidus_s, *arr_solidus_s, *arr_fusion_s;
     PetscScalar       *arr_phi_s,*arr_rho_s,*arr_temp_s;
-    PetscScalar       gphil, gphis, smth;
+    PetscScalar       gphi, fwtl, fwts;
 
     PetscFunctionBeginUser;
 
@@ -212,6 +212,15 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
 
     for(i=ilo_s; i<ihi_s; ++i){
 
+      /* generalised melt fraction for smoothing across liquidus */
+      gphi = arr_phi_s[i];
+      /* fwtl -> 1.0 for gphi > 1.0 */
+      /* fwtl -> 0.0 for gphi < 1.0 */
+      fwtl = tanh_weight( gphi, 1.0, SWIDTH );
+      /* fwts -> 1.0 for gphi > 0.0 */
+      /* fwts -> 0.0 for gphi < 0.0 */
+      fwts = tanh_weight( gphi, 0.0, SWIDTH );
+
       /* melt fraction, also truncated here [0,1] */
       if (arr_phi_s[i] > 1.0){
         /* superliquidus */
@@ -231,48 +240,28 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
       /* temperature */
       arr_temp_s[i] = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
 
-      if (arr_phi_s[i] >= CRIT1 ){
-
-        if (SMOOTH){
-          /* generalised melt fraction for smoothing across liquidus */
-          /* gives +ve above liq, 0 at liq, -ve below */
-          /* formally, it is the non-dimensional melt fraction difference
-             from the liquidus */
-          gphil = (arr_Sabs_s[i] - arr_liquidus_s[i]) / arr_fusion_s[i];
-          /* smooooooooooothing function */
-          smth = tanh_weight( gphil, 1.0, WIDTH );
-        }
-        else{
-          smth = 1.0;
-        }
-
-        /* get melt properties */
-        arr_rho_s[i]   *= 1.0 - smth;
-        arr_rho_s[i]   += smth * get_val2d( IRM, arr_pres_s[i], arr_Sabs_s[i] );
-        arr_temp_s[i]  *= 1.0 - smth;
-        arr_temp_s[i]  += smth * get_val2d( ITM, arr_pres_s[i], arr_Sabs_s[i] );
+      ////////////////
+      /* melt phase */
+      ////////////////
+      if (gphi>0.5){
+          /* density */
+          arr_rho_s[i]   *= 1.0 - fwtl;
+          arr_rho_s[i]   += fwtl * get_val2d( IRM, arr_pres_s[i], arr_Sabs_s[i] );
+          /* temperature */
+          arr_temp_s[i]  *= 1.0 - fwtl;
+          arr_temp_s[i]  += fwtl * get_val2d( ITM, arr_pres_s[i], arr_Sabs_s[i] );
       }
 
-      else if (arr_phi_s[i] <= CRIT2 ) {
-
-        if (SMOOTH){
-          /* generalised melt fraction for smoothing across solidus */
-          /* gives +ve above sol, 0 at sol, -ve velow */
-          /* formally, it is the non-dimensional melt fraction difference
-             from the solidus */
-          gphis = (arr_Sabs_s[i] - arr_solidus_s[i]) / arr_fusion_s[i];
-          /* smooooooooooothing function */
-          smth = tanh_weight( gphis, 1.0, WIDTH );
-        }
-        else{
-          smth = 1.0;
-        }
-
-        /* get solid properties */
-        arr_rho_s[i]   *= smth;
-        arr_rho_s[i]   += (1.0-smth) * get_val2d( IRS, arr_pres_s[i], arr_Sabs_s[i] );
-        arr_temp_s[i]  *= smth;
-        arr_temp_s[i]  += (1.0-smth) * get_val2d( ITS, arr_pres_s[i], arr_Sabs_s[i] );
+      /////////////////
+      /* solid phase */
+      /////////////////
+      else if (gphi<=0.5){
+          /* density */
+          arr_rho_s[i]   *= fwts;
+          arr_rho_s[i]   *= ( 1.0 - fwts ) * get_val2d( IRS, arr_pres_s[i], arr_Sabs_s[i] );
+          /* temperature */
+          arr_temp_s[i]  *= fwts;
+          arr_temp_s[i]  += ( 1.0 - fwts ) * get_val2d( ITS, arr_pres_s[i], arr_Sabs_s[i] );
       }
 
     }
@@ -363,7 +352,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     const PetscScalar *arr_dSdr, *arr_Sabs, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_area_b, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
     Mesh              *M;
     Solution          *S;
-    PetscScalar       gphil, gphis, smth;
+    PetscScalar       gphi, fwtl, fwts;
 
     PetscFunctionBeginUser;
 
@@ -438,6 +427,16 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
       /* melt fraction, also truncated here [0,1] */
       arr_phi[i] = (arr_Sabs[i] - arr_solidus[i]) / arr_fusion[i];
+
+      /* generalised melt fraction for smoothing across liquidus */
+      gphi = arr_phi[i];
+      /* fwtl -> 1.0 for gphi > 1.0 */
+      /* fwtl -> 0.0 for gphi < 1.0 */
+      fwtl = tanh_weight( gphi, 1.0, SWIDTH );
+      /* fwts -> 1.0 for gphi > 0.0 */
+      /* fwts -> 0.0 for gphi < 0.0 */
+      fwts = tanh_weight( gphi, 0.0, SWIDTH );
+
       if (arr_phi[i] > 1.0){
         /* superliquidus */
         arr_phi[i] = 1.0;
@@ -475,90 +474,67 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       arr_dphidr[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
       arr_dphidr[i] *= 1.0 / arr_fusion[i];
 
-      if (arr_phi[i] >= CRIT1 ){
-
-        if (SMOOTH){
-          /* generalised melt fraction for smoothing across liquidus */
-          /* gives +ve above liq, 0 at liq, -ve below */
-          /* formally, it is the non-dimensional melt fraction difference
-             from the liquidus */
-          gphil = (arr_Sabs[i] - arr_liquidus[i]) / arr_fusion[i];
-          /* smooooooooooothing function */
-          smth = tanh_weight( gphil, 1.0, WIDTH );
-        }
-        else{
-          smth = 1.0;
-        }
+      ////////////////
+      /* melt phase */
+      ////////////////
+      if (gphi > 0.5 ){
 
         /* get melt properties */
         Lookup *L = &E->melt_prop;
         /* density */
-        arr_rho[i] *= 1.0 - smth;
-        arr_rho[i] += smth * get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
+        arr_rho[i] *= 1.0 - fwtl;
+        arr_rho[i] += fwtl * get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
         /* adiabatic temperature gradient */
-        arr_dTdPs[i] *= 1.0 - smth;
-        arr_dTdPs[i] += smth * get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
+        arr_dTdPs[i] *= 1.0 - fwtl;
+        arr_dTdPs[i] += fwtl * get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
         arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];      
         /* heat capacity */
-        arr_cp[i] *= 1.0 - smth;
-        arr_cp[i] += smth * get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
+        arr_cp[i] *= 1.0 - fwtl;
+        arr_cp[i] += fwtl * get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
         /* temperature */
-        arr_temp[i] *= 1.0 - smth;
-        arr_temp[i] += smth * get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
+        arr_temp[i] *= 1.0 - fwtl;
+        arr_temp[i] += fwtl * get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
         /* thermal expansion coefficient */
-        arr_alpha[i] *= 1.0 - smth;
-        arr_alpha[i] += smth * get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
+        arr_alpha[i] *= 1.0 - fwtl;
+        arr_alpha[i] += fwtl * get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
         /* thermal conductivity */
-        arr_cond[i] *= 1.0 - smth;
-        arr_cond[i] += smth * COND_MEL;
+        arr_cond[i] *= 1.0 - fwtl;
+        arr_cond[i] += fwtl * COND_MEL;
         /* viscosity */
-        arr_visc[i] *= 1.0 - smth;
-        arr_visc[i] += smth * PetscPowScalar( 10.0, LOG10VISC_MEL );
+        arr_visc[i] *= 1.0 - fwtl;
+        arr_visc[i] += fwtl * PetscPowScalar( 10.0, LOG10VISC_MEL );
         /* dmelt/dr */
-        arr_dphidr[i] *= 1.0 - smth;
+        arr_dphidr[i] *= 1.0 - fwtl;
       }
 
-      else if (arr_phi[i] <= CRIT2 ) {
-
-        if (SMOOTH){
-          /* generalised melt fraction for smoothing across solidus */
-          /* gives +ve above sol, 0 at sol, -ve velow */
-          /* formally, it is the non-dimensional melt fraction difference
-             from the solidus */
-          gphis = (arr_Sabs[i] - arr_solidus[i]) / arr_fusion[i];
-          /* smooooooooooothing function */
-          smth = tanh_weight( gphis, 1.0, WIDTH );
-        }
-        else{
-          smth = 1.0;
-        }
+      else if (gphi <= 0.5 ){
 
         /* get solid properties */
         Lookup *L = &E->solid_prop;
         /* density */
-        arr_rho[i] *= smth;
-        arr_rho[i] += (1.0-smth)*get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
+        arr_rho[i] *= fwts;
+        arr_rho[i] += (1.0-fwts)*get_val2d( &L->rho, arr_pres[i], arr_Sabs[i] );
         /* adiabatic temperature gradient */
-        arr_dTdPs[i] *= smth;
-        arr_dTdPs[i] += (1.0-smth) * get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
+        arr_dTdPs[i] *= fwts;
+        arr_dTdPs[i] += (1.0-fwts) * get_val2d( &L->dTdPs, arr_pres[i], arr_Sabs[i] );
         arr_dTdrs[i] = arr_dTdPs[i] * arr_dPdr_b[i];
         /* heat capacity */
-        arr_cp[i] *= smth;
-        arr_cp[i] += (1.0-smth) * get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
+        arr_cp[i] *= fwts;
+        arr_cp[i] += (1.0-fwts) * get_val2d( &L->cp, arr_pres[i], arr_Sabs[i] );
         /* temperature */
-        arr_temp[i] *= smth;
-        arr_temp[i] += (1.0-smth) * get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
+        arr_temp[i] *= fwts;
+        arr_temp[i] += (1.0-fwts) * get_val2d( &L->temp, arr_pres[i], arr_Sabs[i] );
         /* thermal expansion coefficient */
-        arr_alpha[i] *= smth;
-        arr_alpha[i] += (1.0-smth) * get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
+        arr_alpha[i] *= fwts;
+        arr_alpha[i] += (1.0-fwts) * get_val2d( &L->alpha, arr_pres[i], arr_Sabs[i] );
         /* thermal conductivity */
-        arr_cond[i] *= smth;
-        arr_cond[i] += (1.0-smth) * COND_SOL;
+        arr_cond[i] *= fwts;
+        arr_cond[i] += (1.0-fwts) * COND_SOL;
         /* viscosity */
-        arr_visc[i] *= smth;
-        arr_visc[i] += (1.0-smth) * PetscPowScalar( 10.0, LOG10VISC_SOL );
+        arr_visc[i] *= fwts;
+        arr_visc[i] += (1.0-fwts) * PetscPowScalar( 10.0, LOG10VISC_SOL );
         /* dmelt/dr */
-        arr_dphidr[i] *= smth;
+        arr_dphidr[i] *= fwts;
 
       }
 
