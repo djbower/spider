@@ -27,7 +27,7 @@ int main(int argc, char ** argv)
   const PetscReal t0 = 0;                    /* Initial time */
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
   PetscInt        nstepsmacro = 1000000000;  /* Max macros steps */
-  PetscReal       dtmacro = 1.0;             /* Macro step size */
+  PetscReal       dtmacro = 1000.0;             /* Macro step size */
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
@@ -68,7 +68,7 @@ int main(int argc, char ** argv)
   ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); 
   ierr = TSARKIMEXSetType(ts, TSARKIMEX1BEE ); CHKERRQ(ierr);
   ierr = PetscOptionsSetValue(NULL,"-snes_mf","1");CHKERRQ(ierr);
-  ierr = TSSetTolerances( ts, 1e-5, NULL, 1e-10, NULL );CHKERRQ(ierr);
+  ierr = TSSetTolerances( ts, 1e-5, NULL, 1e-11, NULL );CHKERRQ(ierr);
 //#else
 //  ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
 //  ierr = TSSundialsSetTolerance(ts,1e-11,1e-11);CHKERRQ(ierr);

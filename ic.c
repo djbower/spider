@@ -11,13 +11,13 @@ PetscErrorCode set_initial_condition(Ctx *E, Vec S_in)
     PetscFunctionBeginUser;
 
     /* ic from adiabat */
-    //make_ic_from_adiabat( E, S_in );
+    make_ic_from_adiabat( E, S_in );
 
     /* ic from melt fraction */
     /*make_ic_from_melt_fraction( E, S_in ); */
 
     /* read ic from file */
-    make_ic_from_file( E, S_in );
+    //make_ic_from_file( E, S_in );
 
     PetscFunctionReturn(0);
 }
