@@ -28,8 +28,14 @@ int main(int argc, char ** argv)
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
   PetscInt        nstepsmacro = 1000000000;  /* Max macros steps */
   PetscReal       dtmacro = 1000.0;             /* Macro step size */
+  PetscMPIInt     size;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
+  ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+  if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
+
+  /* We don't want to take the time to debug things in MPI (though the
+     problems are likely minor), so don't allow multi-rank runs */
 
   /* Obtain a command-line argument for testing */
   ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&monitor,NULL);CHKERRQ(ierr);
@@ -66,19 +72,18 @@ int main(int argc, char ** argv)
      Perhaps current arkimex is OK, but it seems to run slow for
      double precision, compared to BDF methods in SUNDIALS */
 
-//#if (defined PETSC_USE_REAL___FLOAT128)
-  /*ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); 
+#if (defined PETSC_USE_REAL___FLOAT128)
+  ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); 
   ierr = TSARKIMEXSetType(ts, TSARKIMEX1BEE ); CHKERRQ(ierr);
   ierr = PetscOptionsSetValue(NULL,"-snes_mf","1");CHKERRQ(ierr);
   ierr = TSSetTolerances( ts, 1e-11, NULL, 1e-11, NULL );CHKERRQ(ierr);
-  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);*/
-//#else
-
+  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
+#else
   /* SUNDIALS */
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
   ierr = TSSundialsSetTolerance(ts,1e-11,1e-11);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
-//#endif
+#endif
 
   /* Set up the RHS Function */
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
