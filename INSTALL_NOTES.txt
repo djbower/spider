@@ -25,12 +25,14 @@ If you want master, repeat the above but without the "-b maint" in the
 can then have parallel builds of the two versions of the library.
 Better to use maint until we need something specific from master 
 
-
-
 for configuring petsc with double precision:
 
-./configure --download-mpich --download-sundials --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --with-debugging=0 --FOPTFLAGS='-g -O3' --COPTFLAGS='-g -O3' --CXXOPTFLAGS='-g -O3'
+./configure PETSC_ARCH=arch-darwin-c --download-mpich --download-sundials --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --with-debugging=0 --FOPTFLAGS='-g -O3' --COPTFLAGS='-g -O3' --CXXOPTFLAGS='-g -O3'
+make PETSC_ARCH=arch-darwin-c
 
 for configuring petsc with quad precision:
 
-./configure --with-precision=__float128 --download-f2cblaslapack --download-mpich --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --with-debugging=0 --FOPTFLAGS='-g -O3' --COPTFLAGS='-g -O3' --CXXOPTFLAGS='-g -O3'
+./configure PETSC_ARCH=arch-darwin-c-quad --with-precision=__float128 --download-f2cblaslapack --download-mpich --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --with-debugging=0 --FOPTFLAGS='-g -O3' --COPTFLAGS='-g -O3' --CXXOPTFLAGS='-g -O3'
+make PETSC_ARCH=arch-darwin-c-quad
+
+for debugging build, use --with-debugging=1
