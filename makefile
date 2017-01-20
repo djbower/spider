@@ -14,6 +14,10 @@ clean ::
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
+# this is to ensure that the debugging commands work in LLDB
+# can presumably comment this out for optimised code
+CFLAGS+=-g -O0
+
 ${EXNAME} : ${OBJ}
 	-${CLINKER}  -o $@ $^ ${PETSC_TS_LIB} 
 	#${RM} $^

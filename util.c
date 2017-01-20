@@ -16,11 +16,11 @@ PetscScalar tanh_weight( PetscScalar qty, PetscScalar threshold, PetscScalar wid
 {
     /* tanh weight for viscosity profile and smoothing */
 
-    PetscScalar    z;
+    PetscScalar    fwt, z;
 
     z = ( qty - threshold ) / width;
-    z = 0.5 * ( 1.0 + PetscTanhScalar( z ) );
-    return z;
+    fwt = 0.5 * ( 1.0 + PetscTanhScalar( z ) );
+    return fwt;
 
 }
 
