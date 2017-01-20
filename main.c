@@ -62,16 +62,22 @@ int main(int argc, char ** argv)
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
   ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
 
-  /* DJB for like-for-like testing of double and quad precision use
-     arkimex solver */
+  /* PDS TODO: pick a solver that we can test quad precision for.
+     Perhaps current arkimex is OK, but it seems to run slow for
+     double precision, compared to BDF methods in SUNDIALS */
+
 //#if (defined PETSC_USE_REAL___FLOAT128)
-  ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); 
+  /*ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); 
   ierr = TSARKIMEXSetType(ts, TSARKIMEX1BEE ); CHKERRQ(ierr);
   ierr = PetscOptionsSetValue(NULL,"-snes_mf","1");CHKERRQ(ierr);
-  ierr = TSSetTolerances( ts, 1e-5, NULL, 1e-11, NULL );CHKERRQ(ierr);
+  ierr = TSSetTolerances( ts, 1e-11, NULL, 1e-11, NULL );CHKERRQ(ierr);
+  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);*/
 //#else
-//  ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
-//  ierr = TSSundialsSetTolerance(ts,1e-11,1e-11);CHKERRQ(ierr);
+
+  /* SUNDIALS */
+  ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts,1e-11,1e-11);CHKERRQ(ierr);
+  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
 //#endif
 
   /* Set up the RHS Function */
@@ -79,7 +85,6 @@ int main(int argc, char ** argv)
 
   /* Set up the integration period for first macro step */
   ierr = TSSetDuration(ts,maxsteps,dtmacro);CHKERRQ(ierr); 
-  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr); 
 
   /* Set a very small iniital timestep to prevent problems with 
      challening initial conditions and adaptive steppers */
