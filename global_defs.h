@@ -57,7 +57,7 @@ static const PetscScalar SINIT_DEFAULT = 1.01;
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial linear entropy perturbation */
-static const PetscScalar PERTURB = 1.0E-6;
+static const PetscScalar PERTURB = 1.0E-8;
 
 /* constants */
 /* outer radius */
@@ -84,7 +84,7 @@ static const PetscScalar SHAPE_TRANSITION = 0.5;
 static const PetscScalar CONSTBC = 0.0; //0.5432174352601898;
 static const PetscScalar EXPBC = 0.0; //1.6042079063944077;
 static const PetscScalar SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
-static const PetscScalar EMISSIVITY = 100.0; // emissivity
+static const PetscScalar EMISSIVITY = 1.0; // emissivity
 static const PetscScalar TEQM = 0.0676813568808283; // equilibrium temp of planet
 
 /* for core-cooling boundary condition at the bottom surface */
