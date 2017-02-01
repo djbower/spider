@@ -74,22 +74,20 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.Jcond               = ctx->solution.solutionVecs_b[21];
   ctx->solution.Jconv               = ctx->solution.solutionVecs_b[22];
   ctx->solution.Jgrav               = ctx->solution.solutionVecs_b[23];
-  ctx->solution.Jheat               = ctx->solution.solutionVecs_b[24];
-  ctx->solution.Jmass               = ctx->solution.solutionVecs_b[25];
-  ctx->solution.Jmix                = ctx->solution.solutionVecs_b[26];
-  ctx->solution.Jtot                = ctx->solution.solutionVecs_b[27];
-  ctx->solution.kappah              = ctx->solution.solutionVecs_b[28];
-  ctx->solution.liquidus            = ctx->solution.solutionVecs_b[29]; // TI
-  ctx->solution.liquidus_rho        = ctx->solution.solutionVecs_b[30]; // TI
-  ctx->solution.liquidus_temp       = ctx->solution.solutionVecs_b[31]; // TI
-  ctx->solution.nu                  = ctx->solution.solutionVecs_b[32];
-  ctx->solution.phi                 = ctx->solution.solutionVecs_b[33];
-  ctx->solution.rho                 = ctx->solution.solutionVecs_b[34];
-  ctx->solution.solidus             = ctx->solution.solutionVecs_b[35]; // TI
-  ctx->solution.solidus_rho         = ctx->solution.solutionVecs_b[36]; // TI
-  ctx->solution.solidus_temp        = ctx->solution.solutionVecs_b[37]; // TI
-  ctx->solution.temp                = ctx->solution.solutionVecs_b[38];
-  ctx->solution.visc                = ctx->solution.solutionVecs_b[39];
+  ctx->solution.Jmix                = ctx->solution.solutionVecs_b[24];
+  ctx->solution.Jtot                = ctx->solution.solutionVecs_b[25];
+  ctx->solution.kappah              = ctx->solution.solutionVecs_b[26];
+  ctx->solution.liquidus            = ctx->solution.solutionVecs_b[27]; // TI
+  ctx->solution.liquidus_rho        = ctx->solution.solutionVecs_b[28]; // TI
+  ctx->solution.liquidus_temp       = ctx->solution.solutionVecs_b[29]; // TI
+  ctx->solution.nu                  = ctx->solution.solutionVecs_b[30];
+  ctx->solution.phi                 = ctx->solution.solutionVecs_b[31];
+  ctx->solution.rho                 = ctx->solution.solutionVecs_b[32];
+  ctx->solution.solidus             = ctx->solution.solutionVecs_b[33]; // TI
+  ctx->solution.solidus_rho         = ctx->solution.solutionVecs_b[34]; // TI
+  ctx->solution.solidus_temp        = ctx->solution.solutionVecs_b[35]; // TI
+  ctx->solution.temp                = ctx->solution.solutionVecs_b[36];
+  ctx->solution.visc                = ctx->solution.solutionVecs_b[37];
 
   ierr = DMCreateLocalVector(ctx->da_b,&ctx->work_local_b);CHKERRQ(ierr);
 
@@ -348,7 +346,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
     DM                da_b=E->da_b;
     Vec               dSdr, Sabs;
-    PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappah, *arr_Etot, *arr_dTdPs, *arr_dTdrs, *arr_dphidr, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_rho, *arr_Jcond, *arr_Jconv, *arr_Jtot, *arr_Jheat, *arr_Jmix, *arr_Jgrav, *arr_Jmass;
+    PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappah, *arr_Etot, *arr_dTdPs, *arr_dTdrs, *arr_dphidr, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_rho, *arr_Jcond, *arr_Jconv, *arr_Jtot, *arr_Jmix, *arr_Jgrav;
     const PetscScalar *arr_dSdr, *arr_Sabs, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_area_b, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
     Mesh              *M;
     Solution          *S;
@@ -418,8 +416,6 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     ierr = DMDAVecGetArray(    da_b,S->Jcond,&arr_Jcond); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->Jconv,&arr_Jconv); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->Jgrav,&arr_Jgrav); CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Jheat,&arr_Jheat); CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Jmass,&arr_Jmass); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->Jmix,&arr_Jmix); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->Jtot,&arr_Jtot); CHKERRQ(ierr);
 
@@ -666,8 +662,6 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
     ierr = DMDAVecRestoreArray(    da_b,S->Jcond,&arr_Jcond); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->Jconv,&arr_Jconv); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->Jgrav,&arr_Jgrav); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Jheat,&arr_Jheat); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Jmass,&arr_Jmass); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->Jmix,&arr_Jmix); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->Jtot,&arr_Jtot); CHKERRQ(ierr);
 

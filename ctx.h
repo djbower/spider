@@ -62,7 +62,7 @@ typedef struct _Mesh {
 
 } Mesh;
 
-#define NUMSOLUTIONVECS_B 40
+#define NUMSOLUTIONVECS_B 38
 #define NUMSOLUTIONVECS_S 14
 typedef struct _Solution {
     /* TI means time-independent */
