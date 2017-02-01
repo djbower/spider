@@ -565,13 +565,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       arr_Jcond[i] *= -arr_cond[i];
 
       /* convective heat flux */
-      arr_Jconv[i] = -arr_rho[i] * arr_temp[i] * arr_kappah[i] * arr_dSdr[i];
-
-      /* also resets arrays since these change every time rhs
-         is called */
-      arr_Jheat[i] = arr_Jcond[i] + arr_Jconv[i];
-      // DJB UNCOMMENT BELOW
-      //arr_Jtot[i] = arr_Jheat[i];
+      arr_Jconv[i] = -arr_dSdr[i]; //arr_rho[i] * arr_temp[i] * arr_kappah[i] * arr_dSdr[i];
 
       //TODO: Need to clean up these declarations..
       PetscScalar dfus = arr_fusion[i];
@@ -584,14 +578,14 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       PetscScalar pref = temp * dfus;
 
       /* convective mixing */
-      arr_Jmix[i] = -pref * kappah * rho * arr_dphidr[i];
+      arr_Jmix[i] = -arr_dSdr[i] + arr_phi[i] * arr_dSliqdr[i];
+      arr_Jmix[i] += (1.0-arr_phi[i]) * arr_dSsoldr[i];
 
       /* DJB TESTING
          blend together convection and mixing */
-      arr_Jtot[i] = -arr_dSdr[i];
-      arr_Jtot[i] -= (1.0-fwtl) * dfus * arr_dphidr[i];
+      arr_Jtot[i] = arr_Jconv[i];
+      arr_Jtot[i] += (1.0-fwtl) * arr_Jmix[i];
       arr_Jtot[i] *= rho * temp * kappah;
-
 
       /* gravitational separation */
       // TODO: This all needs serious cleanup
@@ -617,7 +611,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
       //arr_Jmass[i] = arr_Jmix[i] + arr_Jgrav[i];
       // DJB UNCOMMENT BELOW!
       //arr_Jtot[i] += arr_Jmass[i];
-      arr_Jtot[i] += arr_Jgrav[i] + arr_Jcond[i];
+      arr_Jtot[i] += arr_Jcond[i] + arr_Jgrav[i];
 
       arr_Etot[i] = arr_Jtot[i] * arr_area_b[i];
 
