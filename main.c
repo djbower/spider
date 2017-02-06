@@ -29,15 +29,15 @@ int main(int argc, char ** argv)
   const PetscReal t0 = 0;                    /* Initial time */
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
   PetscInt        nstepsmacro = 1000000000;  /* Max macros steps */
-  PetscReal       dtmacro = 1000.0;             /* Macro step size */
+  PetscReal       dtmacro = 1000.0;          /* Macro step size */
   PetscMPIInt     size;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
-  ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
-  if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
 
   /* We don't want to take the time to debug things in MPI (though the
      problems are likely minor), so don't allow multi-rank runs */
+  ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+  if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
 
   /* Obtain a command-line argument for testing */
   ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&monitor,NULL);CHKERRQ(ierr);
@@ -50,8 +50,8 @@ int main(int argc, char ** argv)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f\n",
       nstepsmacro,(double) dtmacro);CHKERRQ(ierr);
 
-  // Note: it might make for a less-confusing code if all command-line 
-  //       processing was here, instead of hidden in the ctx setup
+  /* Note: it might make for a less-confusing code if all command-line 
+           processing was here, instead of hidden in the ctx setup */
 
   /* Perform all initialization for our problem, allocating data 
      Note that this checks for a command line option -n */
@@ -71,15 +71,14 @@ int main(int argc, char ** argv)
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
   ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
 
+#if (defined PETSC_USE_REAL___FLOAT128)
   /* PDS TODO: pick a solver that we can test quad precision for.
      Perhaps current arkimex is OK, but it seems to run slow for
      double precision, compared to BDF methods in SUNDIALS */
-
-#if (defined PETSC_USE_REAL___FLOAT128)
   ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); 
   ierr = TSARKIMEXSetType(ts, TSARKIMEX1BEE ); CHKERRQ(ierr);
   ierr = PetscOptionsSetValue(NULL,"-snes_mf","1");CHKERRQ(ierr);
-  ierr = TSSetTolerances( ts, 1e-11, NULL, 1e-11, NULL );CHKERRQ(ierr);
+  ierr = TSSetTolerances(ts, 1e-11, NULL, 1e-11, NULL);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
 #else
   /* SUNDIALS */
@@ -94,8 +93,8 @@ int main(int argc, char ** argv)
   /* Set up the integration period for first macro step */
   ierr = TSSetDuration(ts,maxsteps,dtmacro);CHKERRQ(ierr); 
 
-  /* Set a very small iniital timestep to prevent problems with 
-     challening initial conditions and adaptive steppers */
+  /* Set a very small initial timestep to prevent problems with 
+     challenging initial conditions and adaptive steppers */
   ierr = TSSetInitialTimeStep(ts,0.0,1e-10);CHKERRQ(ierr);
 
   /* Accept command line options */
