@@ -8,6 +8,9 @@ static PetscErrorCode make_super_adiabatic( Ctx *, Vec );
 PetscErrorCode set_initial_condition(Ctx *E, Vec S_in) 
 {
 
+    /* DJB NEED TO JUST STORE dXdr_b AND S0 IN INITIAL CONDITION
+       VECTOR */
+
     PetscFunctionBeginUser;
 
     /* ic from adiabat */
@@ -142,6 +145,8 @@ static PetscErrorCode make_super_adiabatic( Ctx *E, Vec S_in )
 {
     /* linear increase of entropy with pressure to make the initial
        entropy profile slightly superadiabatic */
+
+    /* DJB USE THIS FUNCTION TO JUST STORE dXdr_b */
 
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s,numpts_b;

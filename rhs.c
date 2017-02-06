@@ -28,6 +28,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr)
        the E struct for future access, and this step is done at the
        top of set_capacitance */
 
+    /* DJB FOR CONSISTENCY WITH PYTHON CODE, AND TRANSPARENCY, SHOULD
+       HERE TAKE DXDR AND INTEGRATE ALONG PROFILE TO GET S ETC.  THEN
+       SAVE THESE PROFILES IN STRUCT SO SUBSEQUENT FUNCTIONS CAN READ
+       THEM */
+
     /* loop over staggered nodes and populate E struct */
     set_capacitance( E, S_in );
 

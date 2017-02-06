@@ -21,6 +21,8 @@ int main(int argc, char ** argv)
 {
   PetscErrorCode  ierr;
   TS              ts;                        /* ODE solver object */
+  /* DJB BELOW NEEDS TO BE LENGTH NUM_BASIC+1 */
+  /* AND RENAME TO SOMETHING MORE DESCRIPTIVE */
   Vec             S_s;                       /* Solution Vector */
   Ctx             ctx;                       /* Solver context */
   PetscBool       monitor = PETSC_TRUE;      /* Macro step custom monitor (monitor.c) */
@@ -56,6 +58,7 @@ int main(int argc, char ** argv)
   ierr = setup_ctx(&ctx);CHKERRQ(ierr);
 
   /* We will use this solution vector as our data object for timestepping */
+  /* DJB THIS GLOBAL VECTOR NEEDS TO HAVE LENGTH NUM_BASIC+1 AND RENAME */
   ierr = DMCreateGlobalVector( ctx.da_s, &S_s );CHKERRQ(ierr);
 
   /* must call this after setup_ctx */
