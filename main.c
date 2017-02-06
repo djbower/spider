@@ -76,7 +76,7 @@ int main(int argc, char ** argv)
      Perhaps current arkimex is OK, but it seems to run slow for
      double precision, compared to BDF methods in SUNDIALS */
   ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); 
-  ierr = TSARKIMEXSetType(ts, TSARKIMEX1BEE ); CHKERRQ(ierr);
+  ierr = TSARKIMEXSetType(ts, TSARKIMEX5 ); CHKERRQ(ierr);
   ierr = PetscOptionsSetValue(NULL,"-snes_mf","1");CHKERRQ(ierr);
   ierr = TSSetTolerances(ts, 1e-11, NULL, 1e-11, NULL);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
@@ -102,17 +102,20 @@ int main(int argc, char ** argv)
 
   /* Solve macro steps (could also use a monitor which keeps some state) */
   {
-    PetscReal time = t0;
-    double walltime0 = MPI_Wtime();
+    PetscReal time = t0,timeprev;
+    double walltime0 = MPI_Wtime(),walltimeprev;
+    timeprev = t0;
+    walltimeprev = walltime0;
     PetscInt stepmacro=0;
     if (monitor) {
-      ierr = TSCustomMonitor(ts,stepmacro,time,t0,S_s,&ctx,walltime0);CHKERRQ(ierr);
+      ierr = TSCustomMonitor(ts,stepmacro,time,t0,timeprev,S_s,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
     }
     for (stepmacro=1;stepmacro<=nstepsmacro;++stepmacro){
       ierr = TSSolve(ts,S_s);CHKERRQ(ierr);
+      timeprev = time;
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (monitor) {
-        ierr = TSCustomMonitor(ts,stepmacro,time,t0,S_s,&ctx,walltime0);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,stepmacro,time,t0,timeprev,S_s,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
       }
       ierr = TSSetDuration(ts,maxsteps,(stepmacro + 1) * dtmacro);CHKERRQ(ierr); 
     }
