@@ -2,7 +2,7 @@
 EXNAME = main
 
 # Required objects (rules included below build these from .c files)
-OBJ = main.o ctx.o rhs.o ic.o mesh.o lookup.o bc.o util.o twophase.o monitor.o
+OBJ = main.o ctx.o rhs.o ic.o mesh.o lookup.o bc.o util.o twophase.o monitor.o aug.o
 
 ALL: ${EXNAME}
 
@@ -16,7 +16,7 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 
 # this is to ensure that the debugging commands work in LLDB
 # can presumably comment this out for optimised code
-#CFLAGS+=-g -O0
+CFLAGS+=-g -O0
 
 ${EXNAME} : ${OBJ}
 	-${CLINKER}  -o $@ $^ ${PETSC_TS_LIB} 

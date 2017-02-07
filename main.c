@@ -16,14 +16,14 @@ static char help[] =
 #include "ctx.h"
 #include "monitor.h"
 #include "rhs.h"
+#include "aug.h"
 
 int main(int argc, char ** argv)
 {
   PetscErrorCode  ierr;
   TS              ts;                        /* ODE solver object */
-  /* DJB BELOW NEEDS TO BE LENGTH NUM_BASIC+1 */
-  /* AND RENAME TO SOMETHING MORE DESCRIPTIVE */
-  Vec             S_s;                       /* Solution Vector */
+  Vec             S_s;
+  Vec             S_s_aug;                   /* Solution Vector (staggered points, plus an extra point) */
   Ctx             ctx;                       /* Solver context */
   PetscBool       monitor = PETSC_TRUE;      /* Macro step custom monitor (monitor.c) */
   const PetscReal t0 = 0;                    /* Initial time */
@@ -61,15 +61,20 @@ int main(int argc, char ** argv)
   /* DJB THIS GLOBAL VECTOR NEEDS TO HAVE LENGTH NUM_BASIC+1 AND RENAME */
   ierr = DMCreateGlobalVector( ctx.da_s, &S_s );CHKERRQ(ierr);
 
+
   /* must call this after setup_ctx */
   set_initial_condition(&ctx,S_s);CHKERRQ(ierr);
   
   /* Set up the Jacobian function (omitted for now) */
 
+  /* Create a special vector with an extra point and transfer IC */
+  ierr = CreateAug(S_s,&S_s_aug);CHKERRQ(ierr);
+  ierr = ToAug(S_s,S_s_aug);CHKERRQ(ierr);
+
   /* Set up timestepper */
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
-  ierr = TSSetSolution(ts,S_s);CHKERRQ(ierr);
+  ierr = TSSetSolution(ts,S_s_aug);CHKERRQ(ierr);
 
 #if (defined PETSC_USE_REAL___FLOAT128)
   /* PDS TODO: pick a solver that we can test quad precision for.
@@ -108,14 +113,14 @@ int main(int argc, char ** argv)
     walltimeprev = walltime0;
     PetscInt stepmacro=0;
     if (monitor) {
-      ierr = TSCustomMonitor(ts,stepmacro,time,t0,timeprev,S_s,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
+      ierr = TSCustomMonitor(ts,stepmacro,time,t0,timeprev,S_s_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
     }
     for (stepmacro=1;stepmacro<=nstepsmacro;++stepmacro){
-      ierr = TSSolve(ts,S_s);CHKERRQ(ierr);
+      ierr = TSSolve(ts,S_s_aug);CHKERRQ(ierr);
       timeprev = time;
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (monitor) {
-        ierr = TSCustomMonitor(ts,stepmacro,time,t0,timeprev,S_s,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,stepmacro,time,t0,timeprev,S_s_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
       }
       ierr = TSSetDuration(ts,maxsteps,(stepmacro + 1) * dtmacro);CHKERRQ(ierr); 
     }
@@ -126,6 +131,7 @@ int main(int argc, char ** argv)
 
   /* Destroy solution vector */
   ierr = VecDestroy(&S_s);CHKERRQ(ierr);
+  ierr = VecDestroy(&S_s_aug);CHKERRQ(ierr);
 
   /* Cleanup and finalize */
   ierr = TSDestroy(&ts);CHKERRQ(ierr);
