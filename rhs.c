@@ -10,15 +10,16 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   Ctx               *E = (Ctx*) ptr;
   Mesh              *M = &E->mesh;
   Solution          *S = &E->solution;
-  PetscScalar       *arr_rhs_b;
-  PetscScalar       S_b, S_s;
+  PetscScalar       *arr_rhs_b, *arr_radius_s, *arr_radius_b;
+  PetscScalar       *arr_S_b, *arr_S_s, *arr_dSdr_b;
   const PetscScalar *arr_Etot,*arr_lhs_s;
   PetscMPIInt       rank,size;
-  PetscInt          i,ihi,ilo,w_s,numpts_b;
+  PetscInt          i,ihi_s,ilo_s,w_s;
+  PetscInt          ihi_b,ilo_b,w_b,numpts_b;
   DM                da_s = E->da_s, da_b=E->da_b;
-  Vec               dSdr_b_in,rhs_b;
+  Vec               dSdr_b,rhs_b;
   PetscInt          ind;
-  PetscScalar       val;
+  PetscScalar       S0,val;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -29,32 +30,66 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
   MPI_Comm_size(PETSC_COMM_WORLD,&size);
 
+  /* for looping over staggered nodes */
+  ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+  ihi_s = ilo_s + w_s;
+  /* for looping over basic nodes */
+  ierr = DMDAGetCorners(da_s,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+  ihi_b = ilo_b + w_b;
+
   /* Transfer from the input vector to "dSdr_s_in", which is the same, minus the 
      extra point */
-  ierr = CreateUnAug(dSdr_b_aug_in,&dSdr_b_in);CHKERRQ(ierr);
-  ierr = FromAug(dSdr_b_aug_in,dSdr_b_in);CHKERRQ(ierr);
+  ierr = CreateUnAug(dSdr_b_aug_in,&dSdr_b);CHKERRQ(ierr);
+  ierr = FromAug(dSdr_b_aug_in,dSdr_b);CHKERRQ(ierr);
 
   /* Create rhs vector of "normal" size (no extra point) */
-  ierr = VecDuplicate(dSdr_b_in,&rhs_b);CHKERRQ(ierr);
+  ierr = VecDuplicate(dSdr_b,&rhs_b);CHKERRQ(ierr);
 
-  /* Get first staggered node value (stored as val) */
+  /* Get first staggered node value (stored as S0) */
   ind = 0;
-  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&val);CHKERRQ(ierr);
+  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&S0);CHKERRQ(ierr);
 
+  /* next section involves integrating to get the S profile, and this
+     is coded entirely for a serial run */
+  ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+  if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly im    plemented for serial runs");
 
-  /* DJB to here */
+  /* integrate to get S profile */
+  ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
 
+  /* S (absolute) at staggered and basic nodes */
+  arr_S_s[0] = 0.0;
+  /* note plus one for start of loop */
+  for(i=ilo_b+1; i<ihi_b; ++i){
+    /* S (absolute) at staggered nodes */
+    arr_S_s[i] = arr_dSdr_b[i] * (arr_radius_s[i] - arr_radius_s[i-1] );
+    arr_S_s[i] += arr_S_s[i-1]; // dS relative to first staggered value
+    arr_S_b[i] = arr_dSdr_b[i] * 0.5 * (arr_radius_b[i] - arr_radius_b[i-1] );
+    arr_S_b[i] += arr_S_s[i-1];
+    arr_S_s[i-1] += S0; // add large constant at end to try and retain precision
+    arr_S_b[i-1] += S0; // add large constant at end to try and retain precision
+  }
 
+  /* perhaps not required because first and last points are determined by
+     boundary conditions, but by setting to the value of the first staggered
+     node we might avoid falling off the end of the lookup and hence avoid
+     some potential bugs.  This is also the same as how the python code
+     currently operates */
+  arr_S_b[ihi_b] = arr_dSdr_b[ihi_b] * 0.5 * (arr_radius_b[ihi_b] - arr_radius_b[ihi_b-1] );
+  arr_S_b[ihi_b] += arr_S_s[ihi_b-1];
+  arr_S_s[ihi_b-1] += S0; // add large constant at end to try and retain precision
+  arr_S_b[ihi_b-1] += S0; // add large constant at end to try and retain precision
+  arr_S_b[ihi_b] += S0; // add large constant at end to try and retain precision
 
-
-  /* S_s_in is the solution array.  It's easiest to store this in
-     the E struct for future access, and this step is done at the
-     top of set_capacitance */
-
-  /* DJB FOR CONSISTENCY WITH PYTHON CODE, AND TRANSPARENCY, SHOULD
-     HERE TAKE DXDR AND INTEGRATE ALONG PROFILE TO GET S ETC.  THEN
-     SAVE THESE PROFILES IN STRUCT SO SUBSEQUENT FUNCTIONS CAN READ
-     THEM */
+  ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
 
   /* loop over staggered nodes and populate E struct */
   set_capacitance( E );
@@ -114,14 +149,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
 
   /* loop over staggered nodes except last node */
-  ierr = DMDAGetCorners(da_s,&ilo,0,0,&w_s,0,0);CHKERRQ(ierr);
-  ihi = ilo + w_s;
   ierr = DMDAVecGetArray(da_s,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalEnd(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
-  for(i=ilo; i<ihi; ++i){
+  for(i=ilo_s; i<ihi_s; ++i){
     arr_rhs_b[i] = arr_Etot[i+1] - arr_Etot[i];
     arr_rhs_b[i] /= arr_lhs_s[i];
   }

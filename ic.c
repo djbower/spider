@@ -87,9 +87,9 @@ static PetscErrorCode set_ic_from_perturbation( Ctx *E, Vec dSdr_in )
        are controlled by boundary conditions.  But for debugging and
        clarity it is convenient to explicitly set these values to
        zero */
-    ierr = VecSetValue( dSdr_in, 0, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+    //ierr = VecSetValue( dSdr_in, 0, 0.0, INSERT_VALUES); CHKERRQ(ierr);
     /* TODO: is next line compatible with command line input? */
-    ierr = VecSetValue( dSdr_in, NUMPTS_B_DEFAULT-1, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+    //ierr = VecSetValue( dSdr_in, NUMPTS_B_DEFAULT-1, 0.0, INSERT_VALUES); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
