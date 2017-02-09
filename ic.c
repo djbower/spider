@@ -73,7 +73,7 @@ PetscErrorCode set_initial_condition(Ctx *E, Vec dSdr_in)
 static PetscErrorCode set_ic_from_perturbation( Ctx *E, Vec dSdr_in )
 {
 
-    PetscErrorCode    ierr;
+    PetscErrorCode     ierr;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -81,6 +81,15 @@ static PetscErrorCode set_ic_from_perturbation( Ctx *E, Vec dSdr_in )
 #endif
 
     ierr = VecSet( dSdr_in, -IC_DSDR ); CHKERRQ( ierr );
+
+    /* these next two lines are simply convenient reminders that the
+       first and last values are meaningless because the fluxes here
+       are controlled by boundary conditions.  But for debugging and
+       clarity it is convenient to explicitly set these values to
+       zero */
+    ierr = VecSetValue( dSdr_in, 0, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+    /* TODO: is next line compatible with command line input? */
+    ierr = VecSetValue( dSdr_in, NUMPTS_B_DEFAULT-1, 0.0, INSERT_VALUES); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
