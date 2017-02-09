@@ -57,13 +57,11 @@ static const PetscScalar SINIT_DEFAULT = 1.01;
 /* to compare with python test3 */
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
-/* initial linear entropy perturbation */
-static const PetscScalar PERTURB = 1.0E-10;
+/* initial entropy gradient */
+static const PetscScalar IC_DSDR = 1.0E-10;
 
 /* constants */
-/* outer radius */
-static const PetscScalar RADOUT = 1.0;
-/* inner radius */
+/* core-mantle boundary radius */
 static const PetscScalar RADIN = 0.55;
 /* surface density for Adams-Williamson EOS for pressure */
 static const PetscScalar RHOS = 0.8842085571948184;
