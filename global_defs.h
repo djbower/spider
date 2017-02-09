@@ -31,7 +31,7 @@
    nodes there are in a given mesh */
 
 /* for constant mesh spacing */
-#define NUMPTS_B_DEFAULT 500
+#define NUMPTS_B_DEFAULT 200
 
 //#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 372
@@ -51,13 +51,14 @@
 static const PetscScalar SINIT_DEFAULT = 1.01;
 
 /* to compare with python test2 */
+/* TODO: refresh these tests */
 //static const PetscScalar SINIT_DEFAULT = 0.8;
 
 /* to compare with python test3 */
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial linear entropy perturbation */
-static const PetscScalar PERTURB = 1.0E-8;
+static const PetscScalar PERTURB = 1.0E-10;
 
 /* constants */
 /* outer radius */
@@ -71,7 +72,7 @@ static const PetscScalar BETA = 0.7081588803940101;
 /* grain size */
 static const PetscScalar GRAIN = 1.56961230576e-10;
 /* gravity.  Always constant and must be positive */
-static const PetscScalar GRAVITY = 5.277201242226583;
+static const PetscScalar GRAVITY = 5.2772012422265826;
 /* melt fraction threshold for rheology */
 static const PetscScalar F_THRESHOLD = 0.6;
 /* melt fraction transition width for rheology */
@@ -81,7 +82,7 @@ static const PetscScalar SHAPE_TRANSITION = 0.5;
 
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Potential temperature]**EXPBC */
-static const PetscScalar CONSTBC = 0.0; //0.5432174352601898;
+static const PetscScalar CONSTBC = 0.0; //0.0036006849671025;
 static const PetscScalar EXPBC = 0.0; //1.6042079063944077;
 static const PetscScalar SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar EMISSIVITY = 1.0; // emissivity
@@ -108,36 +109,36 @@ static const PetscScalar SWIDTH = 1.0E-2;
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-static const char LIQUIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/c/liquidus.dat";
+static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/liquidus.dat";
 
 /* solidus data file */
-static const char SOLIDUS[] = "../../../data/lookup/lookup-hires-RTmelt/c/solidus.dat";
+static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/solidus.dat";
 
 /* solid data files */
-static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/c/thermal_exp_solid.dat";
+static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_solid.dat";
 
-static const char CP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/c/heat_capacity_solid.dat";
+static const char CP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/heat_capacity_solid.dat";
 
-static const char DTDPS_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/c/adiabat_temp_grad_solid.dat";
+static const char DTDPS_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/adiabat_temp_grad_solid.dat";
 
-static const char RHO_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/c/density_solid.dat";
+static const char RHO_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/density_solid.dat";
 
-static const char TEMP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/c/temperature_solid.dat";
+static const char TEMP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_solid.dat";
 
 static const PetscScalar LOG10VISC_SOL = 6.99089665051;
 
 static const PetscScalar COND_SOL = 1.30871862439e-17;
 
 /* melt data files */
-static const char ALPHA_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/c/thermal_exp_melt.dat";
+static const char ALPHA_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_melt.dat";
 
-static const char CP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/c/heat_capacity_melt.dat";
+static const char CP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/heat_capacity_melt.dat";
 
-static const char DTDPS_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/c/adiabat_temp_grad_melt.dat";
+static const char DTDPS_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/adiabat_temp_grad_melt.dat";
 
-static const char RHO_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/c/density_melt.dat";
+static const char RHO_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/density_melt.dat";
 
-static const char TEMP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/c/temperature_melt.dat";
+static const char TEMP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_melt.dat";
 
 static const PetscScalar LOG10VISC_MEL = -12.0091033495;
 
