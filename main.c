@@ -69,6 +69,10 @@ int main(int argc, char ** argv)
   ierr = CreateAug(dSdr_b,&dSdr_b_aug);CHKERRQ(ierr);
   ierr = ToAug(dSdr_b,dSdr_b_aug);CHKERRQ(ierr);
 
+  /* include initial entropy at staggered node */
+  /* TODO: is this over-rideable from the command line? */
+  ierr = VecSetValue(dSdr_b_aug,0,SINIT_DEFAULT,INSERT_VALUES);CHKERRQ(ierr);
+
   /* Set up timestepper */
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);

@@ -83,11 +83,12 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.nu                  = ctx->solution.solutionVecs_b[30];
   ctx->solution.phi                 = ctx->solution.solutionVecs_b[31];
   ctx->solution.rho                 = ctx->solution.solutionVecs_b[32];
-  ctx->solution.solidus             = ctx->solution.solutionVecs_b[33]; // TI
-  ctx->solution.solidus_rho         = ctx->solution.solutionVecs_b[34]; // TI
-  ctx->solution.solidus_temp        = ctx->solution.solutionVecs_b[35]; // TI
-  ctx->solution.temp                = ctx->solution.solutionVecs_b[36];
-  ctx->solution.visc                = ctx->solution.solutionVecs_b[37];
+  ctx->solution.S                   = ctx->solution.solutionVecs_b[33];
+  ctx->solution.solidus             = ctx->solution.solutionVecs_b[34]; // TI
+  ctx->solution.solidus_rho         = ctx->solution.solutionVecs_b[35]; // TI
+  ctx->solution.solidus_temp        = ctx->solution.solutionVecs_b[36]; // TI
+  ctx->solution.temp                = ctx->solution.solutionVecs_b[37];
+  ctx->solution.visc                = ctx->solution.solutionVecs_b[38];
 
   ierr = DMCreateLocalVector(ctx->da_b,&ctx->work_local_b);CHKERRQ(ierr);
 
@@ -104,6 +105,7 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecs_s[7]; // TI
   ctx->solution.phi_s               = ctx->solution.solutionVecs_s[8];
   ctx->solution.rho_s               = ctx->solution.solutionVecs_s[9];
+  ctx->solution.S_s           = ctx->solution.solutionVecs_s[10];
   ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[10]; // TI
   ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[11]; // TI
   ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[12]; // TI
@@ -160,7 +162,7 @@ PetscErrorCode destroy_ctx(Ctx* ctx)
 }
 
 //NOTE: This function MUST be called first when computing the RHS
-PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
+PetscErrorCode set_capacitance( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
@@ -185,9 +187,9 @@ PetscErrorCode set_capacitance( Ctx *E, Vec S_in )
     ITS = &E->solid_prop.temp;
 
     /* get absolute entropy */
-    ierr = VecDuplicate(S_in,&Sabs_s);CHKERRQ(ierr);
-    ierr = VecCopy(S_in,Sabs_s);CHKERRQ(ierr);
-    ierr = VecShift(Sabs_s,1.0);CHKERRQ(ierr);
+    //ierr = VecDuplicate(S_in,&Sabs_s);CHKERRQ(ierr);
+    //ierr = VecCopy(S_in,Sabs_s);CHKERRQ(ierr);
+    //ierr = VecShift(Sabs_s,1.0);CHKERRQ(ierr);
 
     ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,Sabs_s);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->phi_s,S->phi_s,S->fusion_s);CHKERRQ(ierr);
@@ -340,7 +342,7 @@ static PetscScalar viscosity_mix( PetscScalar meltf )
 
 }
 
-PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
+PetscErrorCode set_matprop_and_flux( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
@@ -359,12 +361,12 @@ PetscErrorCode set_matprop_and_flux( Ctx *E, Vec S_in )
 
     /* TODO: these might not work in parallel? */
     /* dS/dr */
-    ierr = DMCreateGlobalVector(E->da_b,&dSdr); CHKERRQ(ierr);
-    ierr = MatMult( E->ddr_at_b, S_in, dSdr ); CHKERRQ(ierr);
+    //ierr = DMCreateGlobalVector(E->da_b,&dSdr); CHKERRQ(ierr);
+    //ierr = MatMult( E->ddr_at_b, S_in, dSdr ); CHKERRQ(ierr);
 
     /* absolute entropy (Sabs) at basic nodes */
     ierr = DMCreateGlobalVector(E->da_b,&Sabs); CHKERRQ(ierr);
-    ierr = MatMult( E->qty_at_b, S_in, Sabs ); CHKERRQ(ierr);
+    //ierr = MatMult( E->qty_at_b, S_in, Sabs ); CHKERRQ(ierr);
     /* shift by 1.0 because entropy perturbation is relative to 1.0
        by definition */
     ierr = VecShift( Sabs, 1.0 ); CHKERRQ(ierr);

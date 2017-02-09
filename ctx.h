@@ -62,16 +62,16 @@ typedef struct _Mesh {
 
 } Mesh;
 
-#define NUMSOLUTIONVECS_B 38
-#define NUMSOLUTIONVECS_S 14
+#define NUMSOLUTIONVECS_B 39
+#define NUMSOLUTIONVECS_S 15
 typedef struct _Solution {
     /* TI means time-independent */
 
     Vec solutionVecs_b[NUMSOLUTIONVECS_B];
-    Vec alpha, alpha_mix, cond, cp, cp_mix, dfusdr, dfusdr_temp, dphidr, dSliqdr, dSsoldr, dTdPs, dTdPs_mix, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, gsuper, Jcond, Jconv, Jgrav, Jheat, Jmass, Jmix, Jtot, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, rho, solidus, solidus_rho, solidus_temp, temp, visc;
+    Vec alpha, alpha_mix, cond, cp, cp_mix, dfusdr, dfusdr_temp, dphidr, dSliqdr, dSsoldr, dTdPs, dTdPs_mix, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, gsuper, Jcond, Jconv, Jgrav, Jheat, Jmass, Jmix, Jtot, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, rho, S, solidus, solidus_rho, solidus_temp, temp, visc;
 
     Vec solutionVecs_s[NUMSOLUTIONVECS_S];
-    Vec fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
+    Vec fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
 
 } Solution;
 
@@ -97,9 +97,9 @@ PetscErrorCode setup_ctx(Ctx *);
 PetscErrorCode destroy_ctx(Ctx *);
 
 PetscErrorCode set_d_dr( Ctx * );
-PetscErrorCode set_capacitance( Ctx *, Vec );
+PetscErrorCode set_capacitance( Ctx * );
 PetscErrorCode set_lookups( Ctx * );
-PetscErrorCode set_matprop_and_flux( Ctx *, Vec );
+PetscErrorCode set_matprop_and_flux( Ctx * );
 PetscErrorCode set_mesh( Ctx * );
 PetscErrorCode set_core_cooling( Ctx * );
 PetscErrorCode set_twophase( Ctx * );

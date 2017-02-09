@@ -4,18 +4,21 @@
 
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"
-PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_s_aug_in,Vec rhs_s_aug,void *ptr)
+PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,void *ptr)
 {
   PetscErrorCode ierr;
   Ctx               *E = (Ctx*) ptr;
   Mesh              *M = &E->mesh;
   Solution          *S = &E->solution;
-  PetscScalar       *arr_rhs_s;
+  PetscScalar       *arr_rhs_b;
+  PetscScalar       S_b, S_s;
   const PetscScalar *arr_Etot,*arr_lhs_s;
   PetscMPIInt       rank,size;
   PetscInt          i,ihi,ilo,w_s,numpts_b;
   DM                da_s = E->da_s, da_b=E->da_b;
-  Vec               S_s_in,rhs_s;
+  Vec               dSdr_b_in,rhs_b;
+  PetscInt          ind;
+  PetscScalar       val;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -26,13 +29,23 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_s_aug_in,Vec rhs_s_aug,void *
   MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
   MPI_Comm_size(PETSC_COMM_WORLD,&size);
 
-  /* Transfer from the input vector to "S_s_in", which is the same, minus the 
+  /* Transfer from the input vector to "dSdr_s_in", which is the same, minus the 
      extra point */
-  ierr = CreateUnAug(S_s_aug_in,&S_s_in);CHKERRQ(ierr);
-  ierr = FromAug(S_s_aug_in,S_s_in);CHKERRQ(ierr);
+  ierr = CreateUnAug(dSdr_b_aug_in,&dSdr_b_in);CHKERRQ(ierr);
+  ierr = FromAug(dSdr_b_aug_in,dSdr_b_in);CHKERRQ(ierr);
 
   /* Create rhs vector of "normal" size (no extra point) */
-  ierr = VecDuplicate(S_s_in,&rhs_s);CHKERRQ(ierr);
+  ierr = VecDuplicate(dSdr_b_in,&rhs_b);CHKERRQ(ierr);
+
+  /* Get first staggered node value (stored as val) */
+  ind = 0;
+  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&val);CHKERRQ(ierr);
+
+
+  /* DJB to here */
+
+
+
 
   /* S_s_in is the solution array.  It's easiest to store this in
      the E struct for future access, and this step is done at the
@@ -44,10 +57,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_s_aug_in,Vec rhs_s_aug,void *
      THEM */
 
   /* loop over staggered nodes and populate E struct */
-  set_capacitance( E, S_s_in );
+  set_capacitance( E );
 
   /* loop over basic (internal) nodes and populate E struct */
-  set_matprop_and_flux( E, S_s_in );
+  set_matprop_and_flux( E );
 
   /* surface radiative boundary condition
      parameterised ultra-thin thermal boundary layer
@@ -103,29 +116,29 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_s_aug_in,Vec rhs_s_aug,void *
   /* loop over staggered nodes except last node */
   ierr = DMDAGetCorners(da_s,&ilo,0,0,&w_s,0,0);CHKERRQ(ierr);
   ihi = ilo + w_s;
-  ierr = DMDAVecGetArray(da_s,rhs_s,&arr_rhs_s);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(da_s,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalEnd(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
   for(i=ilo; i<ihi; ++i){
-    arr_rhs_s[i] = arr_Etot[i+1] - arr_Etot[i];
-    arr_rhs_s[i] /= arr_lhs_s[i];
+    arr_rhs_b[i] = arr_Etot[i+1] - arr_Etot[i];
+    arr_rhs_b[i] /= arr_lhs_s[i];
   }
-  ierr = DMDAVecRestoreArray(da_s,rhs_s,&arr_rhs_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(da_s,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
 
   /* Transfer back  */
-  ierr = ToAug(rhs_s,rhs_s_aug);CHKERRQ(ierr);
+  ierr = ToAug(rhs_b,rhs_b_aug);CHKERRQ(ierr);
 
   /* Set zero in first position */
-  ierr = VecSetValue(rhs_s_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
-  ierr = VecAssemblyBegin(rhs_s_aug);CHKERRQ(ierr);
-  ierr = VecAssemblyEnd(rhs_s_aug);CHKERRQ(ierr);
+  ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
+  ierr = VecAssemblyBegin(rhs_b_aug);CHKERRQ(ierr);
+  ierr = VecAssemblyEnd(rhs_b_aug);CHKERRQ(ierr);
 
-  ierr = VecDestroy(&S_s_in);CHKERRQ(ierr);
-  ierr = VecDestroy(&rhs_s);CHKERRQ(ierr);
+  //ierr = VecDestroy(&S_s_in);CHKERRQ(ierr);
+  //ierr = VecDestroy(&rhs_s);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
