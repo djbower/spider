@@ -31,7 +31,7 @@
    nodes there are in a given mesh */
 
 /* for constant mesh spacing */
-#define NUMPTS_B_DEFAULT 10
+#define NUMPTS_B_DEFAULT 200
 
 //#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 372

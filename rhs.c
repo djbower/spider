@@ -14,12 +14,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   PetscScalar       *arr_S_b, *arr_S_s, *arr_dSdr_b;
   const PetscScalar *arr_Etot,*arr_lhs_s;
   PetscMPIInt       rank,size;
-  PetscInt          i,ihi_s,ilo_s,w_s;
-  PetscInt          ihi_b,ilo_b,w_b,numpts_b;
+  PetscInt          i,ihi_b,ilo_b,w_b,numpts_b;
   DM                da_s = E->da_s, da_b=E->da_b;
   Vec               rhs_b;
   PetscInt          ind;
-  PetscScalar       S0;
+  PetscScalar       S0,dS0dt;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -30,9 +29,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
   MPI_Comm_size(PETSC_COMM_WORLD,&size);
 
-  /* for looping over staggered nodes */
-  ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
-  ihi_s = ilo_s + w_s;
   /* for looping over basic nodes */
   ierr = DMDAGetCorners(da_s,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
   ihi_b = ilo_b + w_b;
@@ -111,10 +107,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
     ierr = VecGetValues(S->temp_s,1,&ind,&temp_s_0);CHKERRQ(ierr);
     val = radiative_flux_with_dT( temp_s_0 );
 
-    // DJB set to isothermal for testing
-    //ierr = VecGetValues(S->Etot,1,&ind,&temp_s_0);CHKERRQ(ierr);
-    //val = temp_s_0;
-
     /* Note - below is true because non-dim geom is exactly equal
        to one, so do not need to multiply by area of surface */
     ierr = VecSetValue(S->Etot,0,val,INSERT_VALUES);CHKERRQ(ierr);
@@ -125,22 +117,16 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   if (rank == size-1) {
     PetscScalar val, val2;
     PetscInt    ind, ind2;
-    //PetscScalar temp_s_0;
 
     ind  = numpts_b-2; // penultimate basic node index
     ind2 = numpts_b-1; // last basic node index
 
-    /* energy flux */
+    /* energy flux (Jtot) */
     ierr = VecGetValues(S->Jtot,1,&ind,&val);CHKERRQ(ierr);
     val *= E->BC_BOT_FAC;
-
-    // DJB set to isothermal for testing
-    //ierr = VecGetValues(S->Jtot,1,&ind,&temp_s_0);CHKERRQ(ierr);
-    //val = temp_s_0;
-
     ierr = VecSetValue(S->Jtot,ind2,val,INSERT_VALUES);CHKERRQ(ierr);
 
-    /* energy flow */
+    /* energy flow (Etot) */
     ierr = VecGetValues(M->area_b,1,&ind2,&val2);CHKERRQ(ierr);
     val2 *= val;
     ierr = VecSetValue(S->Etot,ind2,val2,INSERT_VALUES);CHKERRQ(ierr);
@@ -151,17 +137,29 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
   ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
 
-  /* loop over staggered nodes except last node */
-  ierr = DMDAVecGetArray(da_s,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
+  /* loop over basic nodes except last node */
+  ierr = DMDAVecGetArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalEnd(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
-  for(i=ilo_s; i<ihi_s; ++i){
-    arr_rhs_b[i] = arr_Etot[i+1] - arr_Etot[i];
-    arr_rhs_b[i] /= arr_lhs_s[i];
+  ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+
+  /* note plus one for start of loop */
+  for(i=ilo_b+1; i<ihi_b; ++i){
+    arr_rhs_b[i] = arr_Etot[i+1] * 1.0 / arr_lhs_s[i];
+    arr_rhs_b[i] += arr_Etot[i] * ( -1.0 / arr_lhs_s[i] - 1.0 / arr_lhs_s[i-1] );
+    arr_rhs_b[i] += arr_Etot[i-1] * 1.0 / arr_lhs_s[i-1];
+    arr_rhs_b[i] /= arr_radius_s[i] - arr_radius_s[i-1];
   }
-  ierr = DMDAVecRestoreArray(da_s,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
+
+  /* TODO: this will break in parallel*/
+  dS0dt = ( arr_Etot[1] - arr_Etot[0] ) / arr_lhs_s[0];
+
+  ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
 
@@ -169,12 +167,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = ToAug(rhs_b,rhs_b_aug);CHKERRQ(ierr);
 
   /* Set zero in first position */
-  ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
+  /* TODO: I think this breaks for parallel */
+  ierr = VecSetValue(rhs_b_aug,0,dS0dt,INSERT_VALUES);CHKERRQ(ierr);
   ierr = VecAssemblyBegin(rhs_b_aug);CHKERRQ(ierr);
   ierr = VecAssemblyEnd(rhs_b_aug);CHKERRQ(ierr);
 
-  //ierr = VecDestroy(&S_s_in);CHKERRQ(ierr);
-  //ierr = VecDestroy(&rhs_s);CHKERRQ(ierr);
+  ierr = VecDestroy(&rhs_b);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
