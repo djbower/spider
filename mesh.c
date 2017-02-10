@@ -1,7 +1,7 @@
 #include "mesh.h"
 
 static PetscErrorCode regular_mesh( Ctx * );
-static PetscErrorCode geometric_mesh( Ctx * );
+//static PetscErrorCode geometric_mesh( Ctx * );
 static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
 static PetscErrorCode mixing_length( DM, Vec, Vec );
@@ -127,6 +127,7 @@ static PetscErrorCode regular_mesh( Ctx *E )
 
 }
 
+#if 0
 static PetscErrorCode geometric_mesh( Ctx *E )
 {
 
@@ -200,6 +201,7 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     PetscFunctionReturn(0);
 
 }
+#endif
 
 static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
 {
