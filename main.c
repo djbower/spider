@@ -91,6 +91,7 @@ int main(int argc, char ** argv)
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
   ierr = TSSundialsSetTolerance(ts,1e-11,1e-11);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
+  //ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_INTERPOLATE);CHKERRQ(ierr);
 #endif
 
   /* Set up the RHS Function */
