@@ -93,7 +93,7 @@ static PetscErrorCode regular_mesh( Ctx *E )
     PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_b,w_s,numpts_b,numpts_s;
     Mesh           *M;
     DM             da_b=E->da_b, da_s=E->da_s;
-    PetscScalar    dx_b, dx_s;
+    PetscScalar    dx_b;
 
     PetscFunctionBeginUser;
 
@@ -104,9 +104,6 @@ static PetscErrorCode regular_mesh( Ctx *E )
 
     /* basic node spacing (negative) */
     dx_b = -(1.0-RADIN) / (numpts_b-1);
-
-    /* staggered node spacing (negative) */
-    dx_s = dx_b;
 
     /* radius at basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);

@@ -19,7 +19,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   DM                da_s = E->da_s, da_b=E->da_b;
   Vec               rhs_b;
   PetscInt          ind;
-  PetscScalar       S0,val;
+  PetscScalar       S0;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -39,7 +39,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* Transfer from the input vector to "S->dSdr", which is the same, minus the 
      extra point */
-  ierr = CreateUnAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
+  ierr = CreateUnAug(dSdr_b_aug_in,&S->dSdr);CHKERRQ(ierr);
   ierr = FromAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
 
   /* Create rhs vector of "normal" size (no extra point) */
