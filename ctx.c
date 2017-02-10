@@ -324,16 +324,15 @@ static PetscScalar viscosity_mix_skew( PetscScalar meltf )
     return fwt;
 }
 
-static PetscScalar viscosity_mix( PetscScalar meltf )
+static PetscScalar log_viscosity_mix( PetscScalar meltf )
 {
-    PetscScalar fwt, log10visc, visc;
+    PetscScalar fwt, lvisc;
 
     fwt = viscosity_mix_skew( meltf );
 
-    log10visc = fwt * LOG10VISC_SOL + (1.0 - fwt) * LOG10VISC_MEL;
-    visc = PetscPowScalar( 10.0, log10visc );
+    lvisc = fwt * LOG10VISC_SOL + (1.0 - fwt) * LOG10VISC_MEL;
 
-    return visc;
+    return lvisc;
 
 }
 
@@ -447,8 +446,8 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       arr_alpha[i] = -arr_fusion_rho[i] / arr_fusion_temp[i] * 1.0 / arr_rho[i];
       /* thermal conductivity */
       arr_cond[i] = combine_matprop( arr_phi[i], COND_MEL, COND_SOL );
-      /* viscosity */
-      arr_visc[i] = viscosity_mix( arr_phi[i] );
+      /* log viscosity */
+      arr_visc[i] = log_viscosity_mix( arr_phi[i] );
       /* dmelt/dr */
       arr_dphidr[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
       arr_dphidr[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
@@ -482,7 +481,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         arr_cond[i] += fwtl * COND_MEL;
         /* viscosity */
         arr_visc[i] *= 1.0 - fwtl;
-        arr_visc[i] += fwtl * PetscPowScalar( 10.0, LOG10VISC_MEL );
+        arr_visc[i] += fwtl * LOG10VISC_MEL;
         /* dmelt/dr */
         arr_dphidr[i] *= 1.0 - fwtl;
       }
@@ -512,11 +511,14 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         arr_cond[i] += (1.0-fwts) * COND_SOL;
         /* viscosity */
         arr_visc[i] *= fwts;
-        arr_visc[i] += (1.0-fwts) * PetscPowScalar( 10.0, LOG10VISC_SOL );
+        arr_visc[i] += (1.0-fwts) * LOG10VISC_SOL;
         /* dmelt/dr */
         arr_dphidr[i] *= fwts;
 
       }
+
+      /* compute viscosity */
+      arr_visc[i] = PetscPowScalar( 10.0, arr_visc[i] );
 
       /* other useful material properties */
       /* kinematic viscosity */

@@ -39,6 +39,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* Transfer from the input vector to "S->dSdr", which is the same, minus the 
      extra point */
+  /* TODO: check notation.  I think memory address is right for first line,
+     and pointer to vec for second? */
   ierr = CreateUnAug(dSdr_b_aug_in,&S->dSdr);CHKERRQ(ierr);
   ierr = FromAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
 
