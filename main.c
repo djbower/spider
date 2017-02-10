@@ -57,7 +57,6 @@ int main(int argc, char ** argv)
      Note that this checks for a command line option -n */
   ierr = setup_ctx(&ctx);CHKERRQ(ierr);
 
-  /* We will use this solution vector as our data object for timestepping */
   ierr = DMCreateGlobalVector( ctx.da_b, &dSdr_b );CHKERRQ(ierr);
 
   /* must call this after setup_ctx */
