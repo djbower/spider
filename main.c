@@ -82,14 +82,15 @@ int main(int argc, char ** argv)
      Perhaps current arkimex is OK, but it seems to run slow for
      double precision, compared to BDF methods in SUNDIALS */
   ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr); 
-  ierr = TSARKIMEXSetType(ts, TSARKIMEX5 ); CHKERRQ(ierr);
+  ierr = TSARKIMEXSetType(ts, TSARKIMEX5 );CHKERRQ(ierr);
   ierr = PetscOptionsSetValue(NULL,"-snes_mf","1");CHKERRQ(ierr);
-  ierr = TSSetTolerances(ts, 1e-11, NULL, 1e-11, NULL);CHKERRQ(ierr);
+  ierr = TSSetTolerances(ts, 1.0e-11, NULL, 1.0e-11, NULL);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
 #else
   /* SUNDIALS */
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
-  ierr = TSSundialsSetTolerance(ts,1e-11,1e-11);CHKERRQ(ierr);
+  ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts,1.0e-11,1.0e-11);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
   //ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_INTERPOLATE);CHKERRQ(ierr);
 #endif
