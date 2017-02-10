@@ -33,8 +33,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, PetscReal t
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
 
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/S_s_aug_%D.m",step);CHKERRQ(ierr);
-    ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"S_s_aug_step_%D",step);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/dSdr_b_aug_%D.m",step);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug_step_%D",step);CHKERRQ(ierr);
     ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr); //Annoyingly, PETSc wants you to use binary output so badly that this is the easiest way to get full-precision ASCII..
     ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
@@ -47,30 +47,30 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, PetscReal t
     ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing S_s_aug for testing ---\n",time);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing dSdr_b_aug for testing ---\n",time);CHKERRQ(ierr);
     ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
 
   /* Recompute the rhs to a file named for the timestep */
   {
-    Vec rhs_s_aug; 
+    Vec rhs_b_aug; 
 
-    ierr = VecDuplicate(x_aug,&rhs_s_aug);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)rhs_s_aug,"rhs_s_aug");CHKERRQ(ierr);
-    ierr = RHSFunction(ts,time,x_aug,rhs_s_aug,ctx);CHKERRQ(ierr);
+    ierr = VecDuplicate(x_aug,&rhs_b_aug);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)rhs_b_aug,"rhs_b_aug");CHKERRQ(ierr);
+    ierr = RHSFunction(ts,time,x_aug,rhs_b_aug,ctx);CHKERRQ(ierr);
   // NOTE: we turn off dumping of the RHS for now, but retain this code as it may become useful later
 #if 0
     {
       PetscViewer viewer;
       char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
 
-      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/rhs_s.%D.m",step);CHKERRQ(ierr);
+      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/rhs_b.%D.m",step);CHKERRQ(ierr);
       ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"rhs_step_%D",step);CHKERRQ(ierr);
       ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
       ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
       ierr = PetscObjectSetName((PetscObject)x,vecname);CHKERRQ(ierr);
-      ierr = VecView(rhs_s,viewer);CHKERRQ(ierr);
+      ierr = VecView(rhs_b,viewer);CHKERRQ(ierr);
       ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
     }
 #endif
@@ -81,8 +81,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, PetscReal t
       ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
       ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
       ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing rhs_s_aug for testing ---\n",time);CHKERRQ(ierr);
-      ierr = VecView(rhs_s_aug,viewer);CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing rhs_b_aug for testing ---\n",time);CHKERRQ(ierr);
+      ierr = VecView(rhs_b_aug,viewer);CHKERRQ(ierr);
       ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
     }
   }
