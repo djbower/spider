@@ -112,8 +112,6 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[13];
   ctx->solution.temp_s              = ctx->solution.solutionVecs_s[14];
 
-  ierr = DMCreateLocalVector(ctx->da_s,&ctx->work_local_s);CHKERRQ(ierr);
-
   set_mesh(ctx);
 
   set_d_dr( ctx );
@@ -152,7 +150,6 @@ PetscErrorCode destroy_ctx(Ctx* ctx)
   for (i=0;i<NUMSOLUTIONVECS_S;++i){
     ierr = VecDestroy(&ctx->solution.solutionVecs_s[i]);CHKERRQ(ierr);
   }
-  ierr = VecDestroy(&ctx->work_local_s);CHKERRQ(ierr);
 
   ierr = MatDestroy(&ctx->qty_at_b); CHKERRQ(ierr);
   ierr = MatDestroy(&ctx->ddr_at_b); CHKERRQ(ierr);
