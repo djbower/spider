@@ -17,7 +17,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   PetscInt          i,ihi_s,ilo_s,w_s;
   PetscInt          ihi_b,ilo_b,w_b,numpts_b;
   DM                da_s = E->da_s, da_b=E->da_b;
-  Vec               dSdr_b,rhs_b;
+  Vec               rhs_b;
   PetscInt          ind;
   PetscScalar       S0,val;
 
@@ -39,11 +39,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* Transfer from the input vector to "dSdr_s_in", which is the same, minus the 
      extra point */
-  ierr = CreateUnAug(dSdr_b_aug_in,&dSdr_b);CHKERRQ(ierr);
-  ierr = FromAug(dSdr_b_aug_in,dSdr_b);CHKERRQ(ierr);
+  ierr = CreateUnAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
+  ierr = FromAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
 
   /* Create rhs vector of "normal" size (no extra point) */
-  ierr = VecDuplicate(dSdr_b,&rhs_b);CHKERRQ(ierr);
+  ierr = VecDuplicate(S->dSdr,&rhs_b);CHKERRQ(ierr);
 
   /* Get first staggered node value (stored as S0) */
   ind = 0;
@@ -59,7 +59,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
 
   /* S (absolute) at staggered and basic nodes */
   arr_S_s[0] = 0.0;
@@ -89,7 +89,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArrayRead(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
 
   /* loop over staggered nodes and populate E struct */
   set_capacitance( E );
