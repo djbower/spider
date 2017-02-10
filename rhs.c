@@ -147,9 +147,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* note plus one for start of loop */
   for(i=ilo_b+1; i<ihi_b; ++i){
-    arr_rhs_b[i] = arr_Etot[i+1] * 1.0 / arr_lhs_s[i];
+    arr_rhs_b[i] = arr_Etot[i+1] * ( 1.0 / arr_lhs_s[i] );
     arr_rhs_b[i] += arr_Etot[i] * ( -1.0 / arr_lhs_s[i] - 1.0 / arr_lhs_s[i-1] );
-    arr_rhs_b[i] += arr_Etot[i-1] * 1.0 / arr_lhs_s[i-1];
+    arr_rhs_b[i] += arr_Etot[i-1] * ( 1.0 / arr_lhs_s[i-1] );
     arr_rhs_b[i] /= arr_radius_s[i] - arr_radius_s[i-1];
   }
 
