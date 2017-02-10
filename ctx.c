@@ -489,7 +489,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         Lookup *L = &E->solid_prop;
         /* density */
         arr_rho[i] *= fwts;
-        arr_rho[i] += (1.0-fwts)*get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
+        arr_rho[i] += (1.0-fwts) * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
         /* adiabatic temperature gradient */
         arr_dTdPs[i] *= fwts;
         arr_dTdPs[i] += (1.0-fwts) * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
