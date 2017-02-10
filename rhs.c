@@ -37,7 +37,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMDAGetCorners(da_s,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
   ihi_b = ilo_b + w_b;
 
-  /* Transfer from the input vector to "dSdr_s_in", which is the same, minus the 
+  /* Transfer from the input vector to "S->dSdr", which is the same, minus the 
      extra point */
   ierr = CreateUnAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
   ierr = FromAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
@@ -51,15 +51,16 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* next section involves integrating to get the S profile, and this
      is coded entirely for a serial run */
+  /* TODO: is this going to slow down the code if we run this check everytime? */
   ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
-  if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly im    plemented for serial runs");
+  if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
 
   /* integrate to get S profile */
-  ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
   /* S (absolute) at staggered and basic nodes */
   arr_S_s[0] = 0.0;
@@ -85,11 +86,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   arr_S_b[ihi_b-1] += S0; // add large constant at end to try and retain precision
   arr_S_b[ihi_b] += S0; // add large constant at end to try and retain precision
 
-  ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
   /* loop over staggered nodes and populate E struct */
   set_capacitance( E );
