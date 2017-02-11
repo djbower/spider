@@ -248,7 +248,7 @@ PetscErrorCode set_capacitance( Ctx *E )
       else if (gphi<=0.5){
           /* density */
           arr_rho_s[i]   *= fwts;
-          arr_rho_s[i]   *= ( 1.0 - fwts ) * get_val2d( IRS, arr_pres_s[i], arr_S_s[i] );
+          arr_rho_s[i]   += ( 1.0 - fwts ) * get_val2d( IRS, arr_pres_s[i], arr_S_s[i] );
           /* temperature */
           arr_temp_s[i]  *= fwts;
           arr_temp_s[i]  += ( 1.0 - fwts ) * get_val2d( ITS, arr_pres_s[i], arr_S_s[i] );
