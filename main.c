@@ -87,10 +87,26 @@ int main(int argc, char ** argv)
   ierr = TSSetTolerances(ts, 1.0e-15, NULL, 1.0e-15, NULL);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
 #else
-  /* SUNDIALS */
+#if 0
+  /* Backward Euler */
+  ierr = TSSetType(ts,TSBEULER);CHKERRQ(ierr);
+  ierr = PetscOptionsSetValue(NULL,"-snes_mf","1");CHKERRQ(ierr);
+  ierr = TSSetTolerances(ts, 1.0e-11, NULL, 1.0e-11, NULL);CHKERRQ(ierr);
+  ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
+#endif
+  /* SUNDIALS CVode, GMRES */
+  /* PETSC access the GMRES solver in SUNDIALS, which at the moment
+     has horrible performace in comparison to the direct dense solver
+     we are using in the python code.  We may need to precondition
+     and/or scale the solution vector for GMRES to work well? */
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
-  ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
+  //ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
+  //ierr = TSSundialsSetGramSchmidtType(ts,SUNDIALS_MODIFIED_GS);CHKERRQ(ierr);
+  //ierr = TSSundialsSetGramSchmidtType(ts,SUNDIALS_CLASSICAL_GS);CHKERRQ(ierr);
   ierr = TSSundialsSetTolerance(ts,1.0e-11,1.0e-11);CHKERRQ(ierr);
+  // LinearTolerance is 0.05 by default
+  ierr = TSSundialsSetLinearTolerance(ts,0.1);CHKERRQ(ierr);
+  //ierr = TSSundialsSetMaxl(ts,XXX); CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
   //ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_INTERPOLATE);CHKERRQ(ierr);
 #endif
