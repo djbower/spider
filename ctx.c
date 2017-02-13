@@ -248,7 +248,7 @@ PetscErrorCode set_capacitance( Ctx *E )
       else if (gphi<=0.5){
           /* density */
           arr_rho_s[i]   *= fwts;
-          arr_rho_s[i]   *= ( 1.0 - fwts ) * get_val2d( IRS, arr_pres_s[i], arr_S_s[i] );
+          arr_rho_s[i]   += ( 1.0 - fwts ) * get_val2d( IRS, arr_pres_s[i], arr_S_s[i] );
           /* temperature */
           arr_temp_s[i]  *= fwts;
           arr_temp_s[i]  += ( 1.0 - fwts ) * get_val2d( ITS, arr_pres_s[i], arr_S_s[i] );
@@ -433,7 +433,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       /* temperature */
       arr_temp[i] = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
       /* thermal expansion coefficient */
-      arr_alpha[i] = -arr_fusion_rho[i] / arr_fusion_temp[i] * 1.0 / arr_rho[i];
+      arr_alpha[i] = -arr_fusion_rho[i] / arr_fusion_temp[i] / arr_rho[i];
       /* thermal conductivity */
       arr_cond[i] = combine_matprop( arr_phi[i], COND_MEL, COND_SOL );
       /* log viscosity */
@@ -507,11 +507,11 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       arr_gsuper[i] = -GRAVITY * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
 
       /* eddy diffusivity */
-      PetscScalar kh,crit;
+      PetscScalar kh, crit;
       crit = 81.0 * PetscPowScalar(arr_nu[i],2);
       crit /= 4.0 * arr_alpha[i] * PetscPowScalar(arr_mix_b[i],4);
 
-      if( arr_gsuper[i] < 0.0 ){
+      if( arr_gsuper[i] <= 0.0 ){
         /* no convection, subadiabatic */
         kh = 0.0;
       } else if( arr_gsuper[i] > crit ){
@@ -549,8 +549,8 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
 
       /* blend together convection and mixing */
       arr_Jtot[i] = arr_Jconv[i];
-      arr_Jtot[i] += arr_Jmix[i] * (1.0-fwtl);
-      arr_Jmix[i] *= (1.0-fwtl); // currently not used
+      arr_Jmix[i] *= 1.0 - fwtl;
+      arr_Jtot[i] += arr_Jmix[i];
 
       /* gravitational separation */
       // TODO: This all needs serious cleanup
