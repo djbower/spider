@@ -442,7 +442,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       ////////////////
       /* melt phase */
       ////////////////
-      if (gphi > 0.5 ){
+      if (gphi > 0.5){
 
         /* get melt properties */
         Lookup *L = &E->melt_prop;
@@ -469,7 +469,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         arr_visc[i] += fwtl * LOG10VISC_MEL;
       }
 
-      else if (gphi <= 0.5 ){
+      else if (gphi <= 0.5){
 
         /* get solid properties */
         Lookup *L = &E->solid_prop;
@@ -548,8 +548,14 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       arr_Jmix[i] *= -arr_kappah[i] * arr_rho[i] * arr_temp[i];
 
       /* blend together convection and mixing */
+      if(gphi > 0.5){
+        arr_Jmix[i] *= 1.0 - fwtl;
+      }
+      else if (gphi <= 0.5){
+        arr_Jmix[i] *= fwts;
+      }
+
       arr_Jtot[i] = arr_Jconv[i];
-      arr_Jmix[i] *= 1.0 - fwtl;
       arr_Jtot[i] += arr_Jmix[i];
 
       /* gravitational separation */

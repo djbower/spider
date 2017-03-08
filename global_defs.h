@@ -31,7 +31,7 @@
    nodes there are in a given mesh */
 
 /* for constant mesh spacing */
-#define NUMPTS_B_DEFAULT 200
+#define NUMPTS_B_DEFAULT 100
 
 //#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 372
@@ -48,7 +48,7 @@
 /* initial condition: set entropy of adiabat */
 /* set at reference entropy */
 /* to compare with python test1 */
-static const PetscScalar SINIT_DEFAULT = 1.02;
+static const PetscScalar SINIT_DEFAULT = 1.01;
 
 /* to compare with python test2 */
 /* TODO: refresh these tests */
@@ -58,7 +58,7 @@ static const PetscScalar SINIT_DEFAULT = 1.02;
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial entropy gradient */
-static const PetscScalar IC_DSDR = 1.0E-10;
+static const PetscScalar IC_DSDR = -1.0E-10;
 
 /* constants */
 /* core-mantle boundary radius */
@@ -80,8 +80,8 @@ static const PetscScalar SHAPE_TRANSITION = 0.5;
 
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Potential temperature]**EXPBC */
-static const PetscScalar CONSTBC = 0.0036006849671025;
-static const PetscScalar EXPBC = 1.6042079063944077;
+static const PetscScalar CONSTBC = 0.0; // 0.0036006849671025;
+static const PetscScalar EXPBC = 0.0; //1.6042079063944077;
 static const PetscScalar SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar EMISSIVITY = 1.0; // emissivity
 static const PetscScalar TEQM = 0.0676813568808283; // equilibrium temp of planet

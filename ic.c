@@ -80,7 +80,7 @@ static PetscErrorCode set_ic_from_perturbation( Ctx *E, Vec dSdr_in )
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_perturbation:\n");CHKERRQ(ierr);
 #endif
 
-    ierr = VecSet( dSdr_in, -IC_DSDR ); CHKERRQ( ierr );
+    ierr = VecSet( dSdr_in, IC_DSDR ); CHKERRQ( ierr );
 
     /* these next two lines are simply convenient reminders that the
        first and last values are meaningless because the fluxes here
