@@ -29,7 +29,7 @@ int main(int argc, char ** argv)
   const PetscReal t0 = 0;                    /* Initial time */
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
   PetscInt        nstepsmacro = 1000000000;  /* Max macros steps */
-  PetscReal       dtmacro = 100000;          /* Macro step size */
+  PetscReal       dtmacro = 1000;          /* Macro step size */
   PetscMPIInt     size;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
@@ -77,7 +77,8 @@ int main(int argc, char ** argv)
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
   ierr = TSSetSolution(ts,dSdr_b_aug);CHKERRQ(ierr);
 
-#if (defined PETSC_USE_REAL___FLOAT128)
+#if 0
+if (defined PETSC_USE_REAL___FLOAT128)
   /* PDS TODO: pick a solver that we can test quad precision for.
      Perhaps current arkimex is OK, but it seems to run slow for
      double precision, compared to BDF methods in SUNDIALS */
@@ -86,7 +87,8 @@ int main(int argc, char ** argv)
   ierr = PetscOptionsSetValue(NULL,"-snes_mf","1");CHKERRQ(ierr);
   ierr = TSSetTolerances(ts, 1.0e-15, NULL, 1.0e-15, NULL);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
-#else
+else
+# endif
 #if 0
   /* Backward Euler */
   ierr = TSSetType(ts,TSBEULER);CHKERRQ(ierr);
@@ -103,13 +105,13 @@ int main(int argc, char ** argv)
   //ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
   //ierr = TSSundialsSetGramSchmidtType(ts,SUNDIALS_MODIFIED_GS);CHKERRQ(ierr);
   //ierr = TSSundialsSetGramSchmidtType(ts,SUNDIALS_CLASSICAL_GS);CHKERRQ(ierr);
-  ierr = TSSundialsSetTolerance(ts,1.0e-11,1.0e-11);CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts,1.0e-22,1.0e-22);CHKERRQ(ierr);
   // LinearTolerance is 0.05 by default
-  ierr = TSSundialsSetLinearTolerance(ts,0.1);CHKERRQ(ierr);
+  //ierr = TSSundialsSetLinearTolerance(ts,0.1);CHKERRQ(ierr);
   //ierr = TSSundialsSetMaxl(ts,XXX); CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
   //ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_INTERPOLATE);CHKERRQ(ierr);
-#endif
+//#endif
 
   /* Set up the RHS Function */
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
