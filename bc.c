@@ -3,22 +3,24 @@
 static PetscScalar radiative_flux( PetscScalar );
 static PetscScalar utbl_temp_drop( PetscScalar );
 
-PetscErrorCode set_core_cooling( Ctx *E )
+PetscErrorCode get_core_cooling( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          ix;             // index of last basic node
     PetscInt          ix2;            // index of penultimate basic node
     PetscInt          numpts_b;
-    PetscScalar       fac,vol,area1,area2;
+    PetscScalar       fac,vol,area1,area2,rho_cmb,cp_cmb;
     PetscMPIInt       rank, size;
 
     Mesh              *M; 
+    Solution          *S;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_core_cooling:\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"get_core_cooling:\n");CHKERRQ(ierr);
 #endif
     M = &E->mesh;
+    S = &E->solution;
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ix  = numpts_b-1;
     ix2 = numpts_b-2;
@@ -31,15 +33,18 @@ PetscErrorCode set_core_cooling( Ctx *E )
         ierr = VecGetValues( M->area_b,1,&ix,&area1);CHKERRQ(ierr);
         ierr = VecGetValues( M->area_b,1,&ix2,&area2);CHKERRQ(ierr);
         ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr);
+        ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
+        ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
         fac = 4.0 * M_PI * vol;
-        fac *= RHO_CMB * CP_CMB;
+        fac *= rho_cmb * cp_cmb;
         fac /= CP_CORE * MCORE * TFAC_CORE_AVG;
-        fac += 1.0;
-        fac = area2 / ( area1 * fac );
+        fac = 1.0 / (1.0 + fac);
+        fac *= area2 / area1;
         E->BC_BOT_FAC = fac;
-    }   
+    }
 
     PetscFunctionReturn(0);
+
 }
 
 static PetscScalar utbl_temp_drop( PetscScalar temp )

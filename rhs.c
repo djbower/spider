@@ -122,6 +122,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
     /* energy flux (Jtot) */
     ierr = VecGetValues(S->Jtot,1,&ind,&val);CHKERRQ(ierr);
+    get_core_cooling( E );
     val *= E->BC_BOT_FAC;
     ierr = VecSetValue(S->Jtot,ind2,val,INSERT_VALUES);CHKERRQ(ierr);
 

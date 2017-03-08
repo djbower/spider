@@ -63,14 +63,14 @@ typedef struct _Mesh {
 } Mesh;
 
 #define NUMSOLUTIONVECS_B 37
-#define NUMSOLUTIONVECS_S 15
+#define NUMSOLUTIONVECS_S 17
 typedef struct _Solution {
 
     Vec solutionVecs_b[NUMSOLUTIONVECS_B];
     Vec alpha, alpha_mix, cond, cp, cp_mix, dfusdr, dfusdr_temp, dSdr, dSliqdr, dSsoldr, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, rho, S, solidus, solidus_rho, solidus_temp, temp, visc;
 
     Vec solutionVecs_s[NUMSOLUTIONVECS_S];
-    Vec fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
+    Vec cp_s, cp_mix_s, fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
 
 } Solution;
 
@@ -100,7 +100,6 @@ PetscErrorCode set_capacitance( Ctx * );
 PetscErrorCode set_lookups( Ctx * );
 PetscErrorCode set_matprop_and_flux( Ctx * );
 PetscErrorCode set_mesh( Ctx * );
-PetscErrorCode set_core_cooling( Ctx * );
 PetscErrorCode set_twophase( Ctx * );
 
 PetscScalar get_val1d( Interp1d *, PetscScalar );
@@ -110,4 +109,6 @@ PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar);
 PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
 
 PetscScalar radiative_flux_with_dT( PetscScalar );
+PetscErrorCode get_core_cooling( Ctx * );
+
 #endif

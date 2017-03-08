@@ -93,29 +93,29 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   for (i=0;i<NUMSOLUTIONVECS_S;++i){
     ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.solutionVecs_s[i]));CHKERRQ(ierr);
   }
-  ctx->solution.fusion_s            = ctx->solution.solutionVecs_s[0];
-  ctx->solution.fusion_curve_s      = ctx->solution.solutionVecs_s[1];
-  ctx->solution.fusion_curve_temp_s = ctx->solution.solutionVecs_s[2];
-  ctx->solution.fusion_temp_s       = ctx->solution.solutionVecs_s[3];
-  ctx->solution.lhs_s               = ctx->solution.solutionVecs_s[4];
-  ctx->solution.liquidus_rho_s      = ctx->solution.solutionVecs_s[5];
-  ctx->solution.liquidus_s          = ctx->solution.solutionVecs_s[6];
-  ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecs_s[7];
-  ctx->solution.phi_s               = ctx->solution.solutionVecs_s[8];
-  ctx->solution.rho_s               = ctx->solution.solutionVecs_s[9];
-  ctx->solution.S_s                 = ctx->solution.solutionVecs_s[10];
-  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[11];
-  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[12];
-  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[13];
-  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[14];
+  ctx->solution.cp_s                = ctx->solution.solutionVecs_s[0];
+  ctx->solution.cp_mix_s            = ctx->solution.solutionVecs_s[1];
+  ctx->solution.fusion_s            = ctx->solution.solutionVecs_s[2];
+  ctx->solution.fusion_curve_s      = ctx->solution.solutionVecs_s[3];
+  ctx->solution.fusion_curve_temp_s = ctx->solution.solutionVecs_s[4];
+  ctx->solution.fusion_temp_s       = ctx->solution.solutionVecs_s[5];
+  ctx->solution.lhs_s               = ctx->solution.solutionVecs_s[6];
+  ctx->solution.liquidus_rho_s      = ctx->solution.solutionVecs_s[7];
+  ctx->solution.liquidus_s          = ctx->solution.solutionVecs_s[8];
+  ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecs_s[9];
+  ctx->solution.phi_s               = ctx->solution.solutionVecs_s[10];
+  ctx->solution.rho_s               = ctx->solution.solutionVecs_s[11];
+  ctx->solution.S_s                 = ctx->solution.solutionVecs_s[12];
+  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[13];
+  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[14];
+  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[15];
+  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[16];
 
   set_mesh(ctx);
 
   set_d_dr( ctx );
 
   set_twophase(ctx);
-
-  set_core_cooling(ctx);
 
   /* Obtain a command-line argument for S_init */
   ctx->S_init = SINIT_DEFAULT;
@@ -165,9 +165,8 @@ PetscErrorCode set_capacitance( Ctx *E )
     Mesh              *M;
     Solution          *S;
     Vec               pres_s;
-    Interp2d          *IRM, *ITM, *IRS, *ITS;
-    const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_S_s, *arr_liquidus_s, *arr_solidus_s, *arr_fusion_s;
-    PetscScalar       *arr_phi_s,*arr_rho_s,*arr_temp_s;
+    const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_S_s, *arr_liquidus_s, *arr_solidus_s, *arr_fusion_s, *arr_cp_mix_s;
+    PetscScalar       *arr_phi_s, *arr_rho_s, *arr_temp_s, *arr_cp_s;
     PetscScalar       gphi, fwtl, fwts;
 
     PetscFunctionBeginUser;
@@ -175,11 +174,6 @@ PetscErrorCode set_capacitance( Ctx *E )
     M = &E->mesh;
     S = &E->solution;
     pres_s = M->pressure_s;
-
-    IRM = &E->melt_prop.rho;
-    ITM = &E->melt_prop.temp;
-    IRS = &E->solid_prop.rho;
-    ITS = &E->solid_prop.temp;
 
     ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->phi_s,S->phi_s,S->fusion_s);CHKERRQ(ierr);
@@ -199,6 +193,8 @@ PetscErrorCode set_capacitance( Ctx *E )
     ierr = DMDAVecGetArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->rho_s,&arr_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->cp_mix_s,&arr_cp_mix_s);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
 
@@ -229,29 +225,43 @@ PetscErrorCode set_capacitance( Ctx *E )
       arr_rho_s[i] = 1.0 / arr_rho_s[i];
       /* temperature */
       arr_temp_s[i] = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
+      /* heat capacity */
+      arr_cp_s[i] = arr_cp_mix_s[i];
 
       ////////////////
       /* melt phase */
       ////////////////
-      if (gphi>0.5){
+      if (gphi > 0.5){
+
+          /* get melt properties */
+          Lookup *L = &E->melt_prop;
           /* density */
           arr_rho_s[i]   *= 1.0 - fwtl;
-          arr_rho_s[i]   += fwtl * get_val2d( IRM, arr_pres_s[i], arr_S_s[i] );
+          arr_rho_s[i]   += fwtl * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
           /* temperature */
           arr_temp_s[i]  *= 1.0 - fwtl;
-          arr_temp_s[i]  += fwtl * get_val2d( ITM, arr_pres_s[i], arr_S_s[i] );
+          arr_temp_s[i]  += fwtl * get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
+          /* heat capacity */
+          arr_cp_s[i]    *= 1.0 - fwtl;
+          arr_cp_s[i]    += fwtl * get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
       }
 
       /////////////////
       /* solid phase */
       /////////////////
       else if (gphi<=0.5){
+
+          /* get solid properties */
+          Lookup *L = &E->solid_prop;
           /* density */
           arr_rho_s[i]   *= fwts;
-          arr_rho_s[i]   += ( 1.0 - fwts ) * get_val2d( IRS, arr_pres_s[i], arr_S_s[i] );
+          arr_rho_s[i]   += ( 1.0 - fwts ) * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
           /* temperature */
           arr_temp_s[i]  *= fwts;
-          arr_temp_s[i]  += ( 1.0 - fwts ) * get_val2d( ITS, arr_pres_s[i], arr_S_s[i] );
+          arr_temp_s[i]  += ( 1.0 - fwts ) * get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
+          /* heat capacity */
+          arr_cp_s[i]    *= fwts;
+          arr_cp_s[i]    += ( 1.0 - fwts ) * get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
       }
 
     }
@@ -265,9 +275,11 @@ PetscErrorCode set_capacitance( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->cp_mix_s,&arr_cp_mix_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->rho_s,&arr_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
 
     // S->lhs_si = M->volume_si * S->rho_si * S->temp_si;
     ierr = VecPointwiseMult(S->lhs_s,S->temp_s,S->rho_s);CHKERRQ(ierr);
