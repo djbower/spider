@@ -29,7 +29,7 @@ int main(int argc, char ** argv)
   const PetscReal t0 = 0;                    /* Initial time */
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
   PetscInt        nstepsmacro = 1000000000;  /* Max macros steps */
-  PetscReal       dtmacro = 1000;          /* Macro step size */
+  PetscReal       dtmacro = 100000;          /* Macro step size */
   PetscMPIInt     size;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
@@ -105,7 +105,7 @@ else
   //ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
   //ierr = TSSundialsSetGramSchmidtType(ts,SUNDIALS_MODIFIED_GS);CHKERRQ(ierr);
   //ierr = TSSundialsSetGramSchmidtType(ts,SUNDIALS_CLASSICAL_GS);CHKERRQ(ierr);
-  ierr = TSSundialsSetTolerance(ts,1.0e-22,1.0e-22);CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts,1.0e-15,1.0e-15);CHKERRQ(ierr);
   // LinearTolerance is 0.05 by default
   //ierr = TSSundialsSetLinearTolerance(ts,0.1);CHKERRQ(ierr);
   //ierr = TSSundialsSetMaxl(ts,XXX); CHKERRQ(ierr);
