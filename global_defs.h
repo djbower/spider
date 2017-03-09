@@ -81,7 +81,7 @@ static const PetscScalar SHAPE_TRANSITION = 0.5;
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Potential temperature]**EXPBC */
 static const PetscScalar CONSTBC = 0.0; // 0.0036006849671025;
-static const PetscScalar EXPBC = 1.6042079063944077;
+static const PetscScalar EXPBC = 0.0; //1.6042079063944077;
 static const PetscScalar SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar EMISSIVITY = 1.0; // emissivity
 static const PetscScalar TEQM = 0.0676813568808283; // equilibrium temp of planet

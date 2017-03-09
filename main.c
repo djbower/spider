@@ -80,13 +80,14 @@ int main(int argc, char ** argv)
   /* always use SUNDIALS CVODE (BDF) */
   /* must use direct solver, so requires Patrick's hacks */
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
-  ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
+  // next seems to be set by default
+  //ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
   //ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_INTERPOLATE);CHKERRQ(ierr);
 
   /* can tighten tolerances for quad */
 #if (defined PETSC_USE_REAL___FLOAT128)
-  ierr = TSSetTolerances(ts, 1.0e-15, NULL, 1.0e-15, NULL);CHKERRQ(ierr);
+  ierr = TSSetTolerances(ts, 1.0e-18, NULL, 1.0e-18, NULL);CHKERRQ(ierr);
 #else
   ierr = TSSetTolerances(ts, 1.0e-11, NULL, 1.0e-11, NULL);CHKERRQ(ierr);
 #endif
