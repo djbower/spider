@@ -87,7 +87,7 @@ int main(int argc, char ** argv)
 
   /* can tighten tolerances for quad */
 #if (defined PETSC_USE_REAL___FLOAT128)
-  ierr = TSSundialsSetTolerance(ts, 1.0e-11, 1.0e-11 );CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts, 1.0e-18, 1.0e-18 );CHKERRQ(ierr);
 #else
   ierr = TSSundialsSetTolerance(ts, 1.0e-11, 1.0e-11 );CHKERRQ(ierr);
 #endif
