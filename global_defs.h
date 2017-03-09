@@ -87,7 +87,7 @@ static const PetscScalar EMISSIVITY = 1.0; // emissivity
 static const PetscScalar TEQM = 0.0676813568808283; // equilibrium temp of planet
 
 /* for core-cooling boundary condition at the bottom surface */
-/* mass of core (perhaps excluding inner core?) */
+/* mass of core excluding compositional variation of inner core */
 static const PetscScalar MCORE = 1.62225737775007;
 /* heat capacity of core */
 static const PetscScalar CP_CORE = 0.2940169128482149;
