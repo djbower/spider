@@ -1,5 +1,8 @@
 #include "lookup.h"
 
+static PetscErrorCode set_interp2d( const char *, Interp2d * );
+static PetscErrorCode set_interp1d( const char *, Interp1d *, PetscInt );
+
 PetscErrorCode set_lookups( Ctx *E ) 
 {
     /* set all 1-D and 2-D lookups */
