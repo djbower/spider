@@ -163,11 +163,12 @@ PetscErrorCode set_capacitance( Ctx *E )
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s=E->da_s;
     Mesh              *M;
+    Lookup            *L;
     Solution          *S;
     Vec               pres_s;
     const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_S_s, *arr_liquidus_s, *arr_solidus_s, *arr_fusion_s, *arr_cp_mix_s;
     PetscScalar       *arr_phi_s, *arr_rho_s, *arr_temp_s, *arr_cp_s;
-    PetscScalar       gphi, fwtl, fwts;
+    PetscScalar       gphi, fwtl, fwts, fwtm;
 
     PetscFunctionBeginUser;
 
@@ -198,14 +199,12 @@ PetscErrorCode set_capacitance( Ctx *E )
 
     for(i=ilo_s; i<ihi_s; ++i){
 
-      /* generalised melt fraction for smoothing across liquidus */
+      /* generalised melt fraction for smoothing */
       gphi = arr_phi_s[i];
-      /* fwtl -> 1.0 for gphi > 1.0 */
-      /* fwtl -> 0.0 for gphi < 1.0 */
+      /* weights for each phase */
       fwtl = tanh_weight( gphi, 1.0, SWIDTH );
-      /* fwts -> 1.0 for gphi > 0.0 */
-      /* fwts -> 0.0 for gphi < 0.0 */
-      fwts = tanh_weight( gphi, 0.0, SWIDTH );
+      fwts = 1.0 - tanh_weight( gphi, 0.0, SWIDTH );
+      fwtm = (1.0-fwtl) * (1.0-fwts);
 
       /* melt fraction, also truncated here [0,1] */
       if (arr_phi_s[i] > 1.0){
@@ -223,46 +222,37 @@ PetscErrorCode set_capacitance( Ctx *E )
       /* density */
       arr_rho_s[i] = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
       arr_rho_s[i] = 1.0 / arr_rho_s[i];
+      arr_rho_s[i] *= fwtm;
       /* temperature */
       arr_temp_s[i] = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
+      arr_temp_s[i] *= fwtm;
       /* heat capacity */
       arr_cp_s[i] = arr_cp_mix_s[i];
+      arr_cp_s[i] *= fwtm;
 
       ////////////////
       /* melt phase */
       ////////////////
-      if (gphi > 0.5){
-
-          /* get melt properties */
-          Lookup *L = &E->melt_prop;
-          /* density */
-          arr_rho_s[i]   *= 1.0 - fwtl;
-          arr_rho_s[i]   += fwtl * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
-          /* temperature */
-          arr_temp_s[i]  *= 1.0 - fwtl;
-          arr_temp_s[i]  += fwtl * get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
-          /* heat capacity */
-          arr_cp_s[i]    *= 1.0 - fwtl;
-          arr_cp_s[i]    += fwtl * get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
-      }
+      /* get melt properties */
+      L = &E->melt_prop;
+      /* density */
+      arr_rho_s[i]   += fwtl * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
+      /* temperature */
+      arr_temp_s[i]  += fwtl * get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
+      /* heat capacity */
+      arr_cp_s[i]    += fwtl * get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
 
       /////////////////
       /* solid phase */
       /////////////////
-      else if (gphi<=0.5){
-
-          /* get solid properties */
-          Lookup *L = &E->solid_prop;
-          /* density */
-          arr_rho_s[i]   *= fwts;
-          arr_rho_s[i]   += ( 1.0 - fwts ) * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
-          /* temperature */
-          arr_temp_s[i]  *= fwts;
-          arr_temp_s[i]  += ( 1.0 - fwts ) * get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
-          /* heat capacity */
-          arr_cp_s[i]    *= fwts;
-          arr_cp_s[i]    += ( 1.0 - fwts ) * get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
-      }
+      /* get solid properties */
+      L = &E->solid_prop;
+      /* density */
+      arr_rho_s[i]   += fwts * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
+      /* temperature */
+      arr_temp_s[i]  += fwts * get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
+      /* heat capacity */
+      arr_cp_s[i]    += fwts * get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
 
     }
 
