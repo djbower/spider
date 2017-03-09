@@ -89,14 +89,10 @@ static const PetscScalar TEQM = 0.0676813568808283; // equilibrium temp of plane
 /* for core-cooling boundary condition at the bottom surface */
 /* mass of core (perhaps excluding inner core?) */
 static const PetscScalar MCORE = 1.62225737775007;
-/* mass-weighted average core temperature as a fraction of CMB temp */
-static const PetscScalar TFAC_CORE_AVG = 1.147;
 /* heat capacity of core */
 static const PetscScalar CP_CORE = 0.2940169128482149;
-/* density near CMB. TODO: this is f(S,P) and thus time-dep */
-static const PetscScalar RHO_CMB = 1.1922543609124883;
-/* heat capacity near CMB.  TODO: this is f(S,P) and thus time-dep */
-static const PetscScalar CP_CMB = 0.40093215388392944;
+/* mass-weighted average core temperature as a fraction of CMB temp */
+static const PetscScalar TFAC_CORE_AVG = 1.147;
 
 /* smoothing parameters */
 /* width */

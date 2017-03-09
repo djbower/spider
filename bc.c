@@ -36,6 +36,9 @@ PetscErrorCode get_core_cooling( Ctx *E )
         ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
         ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
         fac = 4.0 * M_PI * vol;
+        /* previous value used when constant */
+        //rho_cmb = 1.1922543609124883;
+        //cp_cmb = 0.40093215388392944;
         fac *= rho_cmb * cp_cmb;
         fac /= CP_CORE * MCORE * TFAC_CORE_AVG;
         fac = 1.0 / (1.0 + fac);
