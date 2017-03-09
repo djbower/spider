@@ -1,5 +1,5 @@
 static char help[] =
-"Parallel magma ocean timestepper\n\
+"Magma ocean timestepper\n\
 -n : specify the number of staggered points\n\
 -sinit : specify an entropy value to base the initial condition upon\n\
 -monitor : use custom monitor to dump output\n\
@@ -87,9 +87,9 @@ int main(int argc, char ** argv)
 
   /* can tighten tolerances for quad */
 #if (defined PETSC_USE_REAL___FLOAT128)
-  ierr = TSSetTolerances(ts, 1.0e-18, NULL, 1.0e-18, NULL);CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts, 1.0e-11, 1.0e-11 );CHKERRQ(ierr);
 #else
-  ierr = TSSetTolerances(ts, 1.0e-11, NULL, 1.0e-11, NULL);CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts, 1.0e-11, 1.0e-11 );CHKERRQ(ierr);
 #endif
 
   /* Set up the RHS Function */
