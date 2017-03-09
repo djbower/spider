@@ -1,3 +1,77 @@
+--------------------------
+GENERAL INSTALLATION NOTES
+--------------------------
+
+----------------------------------------------------
+SECTION 1: INSTALL SUNDIALS WITH QUADRUPLE PRECISION
+----------------------------------------------------
+
+1. Patrick needs to give you read access to his bitbucket to obtain
+   the quad-supported version of SUNDIALS
+
+2. My clone command is:
+   git clone https://djbower@bitbucket.org/psanan/sundials-quad.git sundials-quad
+ 
+3. [Optional] Install gcc compilers to the default location from:
+       http://hpc.sourceforge.net
+
+   This will install everything into /usr/local
+
+   This step is optional because I think the default CC compiler that
+   comes with Mac is OK also.  You only need a C compiler.
+
+4. Install Sundials:
+   Notes:
+       a. see installation instructions in Sundials manual
+       b. use srcdir, builddir, and instdir to create a local build
+       c. easiest to use ccmake
+          Something like:
+              /opt/local/bin/ccmake ../srcdir
+       d. can change compilers if desired, e.g., change c compiler to
+              /usr/local/bin/gcc
+       e. must set:
+              CMAKE_C_FLAGS = -g -O2 -fPIC
+       f. my commands look something like the following, here, the 
+          source code is in srcdir, the build is occuring in builddir,
+          and the library is installed into instdir.
+              ccmake ../srcdir
+              BUILD_SHARED_LIBS: ON
+              BUILD_STATIC_LIBS: ON
+              CMAKE_C_COMPILER: /usr/local/bin/gcc
+              CMAKE_AR (‘toggle to advanced mode’):
+                  /usr/local/bin/gcc-ar
+              ??? CMAKE_C_FLAGS: -g -O2 -fPIC
+              CMAKE_INSTALL_PREFIX: ../instdir
+              EXAMPLES_INSTALL_PATH: ../instdir/examples
+              SUNDIALS_PRECISION: quadruple
+       g. make
+       h. make install
+
+-------------------------------------------------
+SECTION 2: INSTALL PETSC WITH QUADRUPLE PRECISION
+-------------------------------------------------
+
+5. You should then be able to use this quad library with our hack of PETSc - see
+      https://bitbucket.org/psanan/petscfork/branch/psanan/ts-sundials-quad-hack?dest=maint
+
+6. Make sure that you use the psanan/ts-sundials-quad-hack branch (otherwise you'll get an error
+   about sundials not supporting __float128).
+
+7a Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS
+   that we just created:
+
+7b At the time of this writing, configured (on Ubuntu) with options like:
+   ./configure --with-debugging=0 --with-fc=0 --with-precision=__float128 --with-sundials=1 --with-sundia    ls-dir=/home/patrick/sundials_sandbox --download-mpich --download-f2cblaslapack --with-cc=gcc --with-cxx    =g++ --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+
+-----------------------
+END OF NEW INSTRUCTIONS
+-----------------------
+
+
+-----------------------------
+#### PREVIOUS BELOW HERE ####
+-----------------------------
+
 The following should work to clone the maint branch and build. You
 should change the C/C++/Fortran compilers to whatever works on your
 system:
