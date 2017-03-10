@@ -29,7 +29,7 @@ int main(int argc, char ** argv)
   const PetscReal t0 = 0;                    /* Initial time */
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
   PetscInt        nstepsmacro = 1000000000;  /* Max macros steps */
-  PetscReal       dtmacro = 100; //00000;          /* Macro step size */
+  PetscReal       dtmacro = 100000; //00000;          /* Macro step size */
   PetscMPIInt     size;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
@@ -100,7 +100,8 @@ int main(int argc, char ** argv)
 
   /* Set a very small initial timestep to prevent problems with 
      challenging initial conditions and adaptive steppers */
-  ierr = TSSetInitialTimeStep(ts,0.0,1e-10);CHKERRQ(ierr);
+  /* DJB with revised code this probably is not necessary anymore */
+  //ierr = TSSetInitialTimeStep(ts,0.0,1e-10);CHKERRQ(ierr);
 
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
