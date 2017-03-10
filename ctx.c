@@ -162,6 +162,7 @@ PetscErrorCode set_capacitance( Ctx *E )
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s=E->da_s;
+    Lookup            *L;
     Mesh              *M;
     Solution          *S;
     Vec               pres_s;
@@ -198,7 +199,7 @@ PetscErrorCode set_capacitance( Ctx *E )
 
     for(i=ilo_s; i<ihi_s; ++i){
 
-      /* generalised melt fraction for smoothing across liquidus */
+      /* generalised melt fraction for smoothing */
       gphi = arr_phi_s[i];
       /* fwtl -> 1.0 for gphi > 1.0 */
       /* fwtl -> 0.0 for gphi < 1.0 */
@@ -234,7 +235,7 @@ PetscErrorCode set_capacitance( Ctx *E )
       if (gphi > 0.5){
 
           /* get melt properties */
-          Lookup *L = &E->melt_prop;
+          L = &E->melt_prop;
           /* density */
           arr_rho_s[i]   *= 1.0 - fwtl;
           arr_rho_s[i]   += fwtl * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
@@ -252,7 +253,7 @@ PetscErrorCode set_capacitance( Ctx *E )
       else if (gphi<=0.5){
 
           /* get solid properties */
-          Lookup *L = &E->solid_prop;
+          L = &E->solid_prop;
           /* density */
           arr_rho_s[i]   *= fwts;
           arr_rho_s[i]   += ( 1.0 - fwts ) * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
@@ -349,6 +350,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     DM                da_b=E->da_b;
     PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappah, *arr_Etot, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_rho, *arr_Jcond, *arr_Jconv, *arr_Jtot, *arr_Jmix, *arr_Jgrav;
     const PetscScalar *arr_dSdr, *arr_S_b, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_area_b, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
+    Lookup            *L;
     Mesh              *M;
     Solution          *S;
     PetscScalar       gphi, fwtl, fwts;
@@ -457,7 +459,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       if (gphi > 0.5){
 
         /* get melt properties */
-        Lookup *L = &E->melt_prop;
+        L = &E->melt_prop;
         /* density */
         arr_rho[i] *= 1.0 - fwtl;
         arr_rho[i] += fwtl * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
@@ -484,7 +486,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       else if (gphi <= 0.5){
 
         /* get solid properties */
-        Lookup *L = &E->solid_prop;
+        L = &E->solid_prop;
         /* density */
         arr_rho[i] *= fwts;
         arr_rho[i] += (1.0-fwts) * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
