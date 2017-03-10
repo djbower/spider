@@ -41,6 +41,8 @@ SECTION 1: INSTALL SUNDIALS WITH QUADRUPLE PRECISION
               CMAKE_AR (‘toggle to advanced mode’):
                   /usr/local/bin/gcc-ar
               ??? CMAKE_C_FLAGS: -g -O2 -fPIC
+              probably best to use same as PETSc below
+              CMAKE_C_FLAGS: -g -O3
               CMAKE_INSTALL_PREFIX: ../instdir
               EXAMPLES_INSTALL_PATH: ../instdir/examples
               SUNDIALS_PRECISION: quadruple
