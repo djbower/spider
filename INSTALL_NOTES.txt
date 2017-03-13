@@ -120,7 +120,7 @@ petsc-quad-direct
 cd petsc-quad-direct/
 git checkout psanan/ts-sundials-quad-hack
 
-PS: is it necessary to download mpich?
+PS: is it necessary to download mpich / f2cblaslapack?
 3a. configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created:
 
 ./configure --with-debugging=0 --with-fc=0 --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/Users/dan/Programs/sundials-quad/instdir --download-mpich --download-f2cblaslapack --with-cc=gcc --with-cxx=g++ --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
