@@ -138,6 +138,13 @@ make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-dar
 make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct
 PETSC_ARCH=arch-darwin-c-opt streams
 
+------
+C CODE
+------
+
+1. set PETSC_DIR and PETSC_ARCH to the PETSc installation that you wish to use (either the quad or double precision, as above)
+2. make
+
 
 ------------------------------------------------
 OLD INSTRUCTIONS.  KEPT FOR REFERENCE BUT IGNORE
