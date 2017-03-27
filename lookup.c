@@ -188,7 +188,6 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
     memmove( interp->ya, ya, sizeof interp->ya );
     interp->ymin= ya[0];
     interp->ymax= ya[n-1];
-    interp->dx = xa[1]-xa[0];
     interp->n = n;
 
     PetscFunctionReturn(0);
@@ -200,48 +199,53 @@ PetscScalar get_val1d( Interp1d *I, PetscScalar x )
        linear interpolation with truncation for values
        that fall outside the data lookup range */
 
-    PetscScalar weight, x1, y1, y2, result;
-    PetscScalar dx, *xa, *ya, xmin;
+    PetscScalar w1, result;
+    PetscScalar *xa, *ya, xmax, xmin;
     PetscInt ind, n;
 
-    dx = I->dx;
     xa = I->xa;
+    xmax = I->xmax;
     xmin = I->xmin;
     ya = I->ya;
     n = I->n;
 
-    /* this assumes data is evenly spaced in input data file to
-       enable us to locate the index in the array directly */
-    ind = PetscFloorReal( (x-xmin)/dx );
+    /* to reproduce the behaviour of scipy.interpolate.interp1d the
+       code should produce a ValueError if interpolation is
+       attempted on a value outside of the range of x (where
+       extrapolation is necessary). Here we truncate instead. */
 
-    /* truncate if data falls outside range */
-    if (ind < 0){
-        /* to reproduce the behaviour of scipy.interpolate.interp1d
-           the code should produce a ValueError if interpolation is
-           attempted on a value outside of the range of x (where
-           extrapolation is necessary). Here we truncate instead. */
+    if( x<xmin ){
 #if (defined VERBOSE)
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 1d array interpolation produced value less than minimum in table. Truncating\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x<xmin.  Truncating\n");CHKERRQ(ierr);
 #endif
-      ind = 0;
-      weight = 0.0;
+      //x = xmin; // not actually required for calculation
+      ind = 0; // minimum index, max index is always +1
+      w1 = 0.0; // distance from leftmost (smallest) value
     }
-    else if (ind > n-2){
+    else if( x>xmax ){
 #if (defined VERBOSE)
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 1d array interpolation produced value greater than maximum in table. Truncating\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x>xmax.  Truncating\n");CHKERRQ(ierr);
 #endif
-      ind = n-2;
-      weight = 1.0;
+      //x = xmax; // not actually required for calculation
+      ind = n-2; // minimum index, max index is always +1
+      w1 = 1.0; // distance from leftmost (smallest) value
     }
     else{
-      x1 = xa[ind];  // x (pressure) to left
-      weight = (x-x1) / dx;
+      // loop to find minimum index
+      /* trivial algorithm to find minimum index when x data
+         is not evenly spaced */
+      ind = 0;
+      while( (x-xa[ind])>0) {
+        ind += 1;
+      }
+      /* loop exits when sign changes, meaning that previous index
+         is the minimum index */
+      ind -= 1;
+      // w1 is 0 at leftmost (minimum) x, 1 at rightmost (maximum) x
+      w1 = (x-xa[ind]) / (xa[ind+1]-xa[ind]); // weighting
     }
 
-    y1 = ya[ind]; // y (quantity) to left
-    y2 = ya[ind+1]; // y (quantity) to right
-
-    result = y2 * weight + y1 * (1.0-weight);
+    result = ya[ind] * (1.0-w1) + ya[ind+1] * w1;
 
     return result;
 }
@@ -251,11 +255,11 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
     /* wrapper for evaluating a 2-D lookup
        bilinear interpolation */
 
-    /* TODO this will fail if x, y falls outside the data range */
 #if (defined VERBOSE)
     PetscErrorCode ierr;
 #endif
     PetscScalar x1, x2, y1, y2, z1, z2, z3, z4;
+    PetscScalar w1, w2, w3, w4; // weights
     PetscScalar result;
     PetscScalar dx, *xa, *ya, *za, xmin;
     // only if y data is evenly spaced
@@ -274,8 +278,43 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
     //ymin = I->ymin;
 
     indx = PetscFloorReal( (x-xmin)/dx );
-    x1 = xa[indx]; // local min x
-    x2 = xa[indx+1]; // local max x
+
+    /* truncate if data falls outside range */
+    if (indx < 0){
+        /* to reproduce the behaviour of scipy.interpolate.RectBivariateSpline
+           the code should truncate if interpolation is attempted on a
+           value outside of the range of x. */
+#if (defined VERBOSE)
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 2d array interpolation produced x value less than minimum in table. Truncating\n");CHKERRQ(ierr);
+#endif
+      indx = 0;
+      w1 = 0.0; // x-x1
+      // note in below x must be truncated (x=xa[0])
+      w2 = xa[1]-xa[0]; // x2-x
+    }
+    else if (indx > NX-2){
+#if (defined VERBOSE)
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 2d array interpolation produced x value greater than maximum in table. Truncating\n");CHKERRQ(ierr);
+#endif
+      indx = n-2;
+      // note in below x must be truncated (x=xa[indx+1])
+      w1 = xa[indx+1]-xa[indx]; // x-x1
+      w2 = 0.0; // x2-x
+    }
+    else{
+      x1 = xa[indx]; // local min x
+      x2 = xa[indx+1]; // local max x
+      w1 = x-x1;
+      w2 = x2-x;
+      ///////////x1 = xa[ind];  // x (pressure) to left
+      ///////////weight = (x-x1) / dx;
+    }
+
+    ////////////y1 = ya[ind]; // y (quantity) to left
+
+    //x1 = xa[indx]; // local min x
+    //x2 = xa[indx+1]; // local max x
+
 
     // only if y data is evenly spaced
     //indy = PetscFloorReal( (y-ymin)/dy );
@@ -302,6 +341,8 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
     }
     y1 = ya[indy]; // local min y
     y2 = ya[indy+1]; // local max y*/
+
+
 
     indz1 = indy*NX+indx; // min S, min P
     z1 = za[indz1];

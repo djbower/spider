@@ -19,7 +19,6 @@ typedef struct _Interp1d {
     PetscScalar ya[NLS];
     PetscScalar ymin;
     PetscScalar ymax;
-    PetscScalar dx;
     PetscInt    n;
 } Interp1d;
 
