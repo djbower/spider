@@ -290,7 +290,6 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x<xmin.  Truncating\n");CHKERRQ(ierr);
 #endif
-      //x = xmin; // not actually required for calculation
       indx = 0; // minimum index, max index is always +1
       x = xmin;
     }
@@ -298,15 +297,14 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x>xmax.  Truncating\n");CHKERRQ(ierr);
 #endif
-      //x = xmax; // not actually required for calculation
-      indx = NX-2;
+      indx = NX-2; // minimum index, max index is always +1
       x = xmax;
     }
     else{
-      indx = PetscFloorReal( (x-xmin)/dx );
+      indx = PetscFloorReal( (x-xmin)/dx );  // minimum index
     }
 
-    /* weightings */
+    // x weights
     w1 = x-xa[indx]; // x-x1
     w2 = xa[indx+1]-x; // x2-x
 
@@ -316,7 +314,6 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y<ymin.  Truncating\n");CHKERRQ(ierr);
 #endif
-      //y = ymin; // not actually required for calculation
       indy = 0; // minimum index, max index is always +1
       y = ymin;
     }
@@ -324,7 +321,6 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y>ymax.  Truncating\n");CHKERRQ(ierr);
 #endif
-      //y = ymax; // not actually required for calculation
       indy = NY-2; // minimum index, max index is always +1
       y = ymax;
     }
@@ -341,17 +337,17 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
       indy -= 1;
     }
 
-    /* weightings */
+    // y weights
     w3 = y-ya[indy]; // y-y1
     w4 = ya[indy+1]-y; // y2-y
 
-    indz1 = indy*NX+indx; // min S, min P
+    indz1 = indy*NX+indx; // min S (y), min P (x)
     z1 = za[indz1];
-    indz2 = indz1+1; // min S, max P
+    indz2 = indz1+1; // min S (y), max P (x)
     z2 = za[indz2];
-    indz3 = indz1+NX; // max S, min P
+    indz3 = indz1+NX; // max S (y), min P (x)
     z3 = za[indz3];
-    indz4 = indz3+1; // max S, max P
+    indz4 = indz3+1; // max S (y), max P (x)
     z4 = za[indz4];
 
     // bilinear interpolation
@@ -359,7 +355,7 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
     result += z2 * w1 * w4;
     result += z3 * w2 * w3;
     result += z4 * w1 * w3;
-    result /= dx;
+    result /= dx; // dx
     result /= ya[indy+1]-ya[indy]; // dy
 
     return result;
