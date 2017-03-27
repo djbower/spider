@@ -308,7 +308,7 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 
     /* weightings */
     w1 = x-xa[indx]; // x-x1
-    w2 = xa[indx+1]-xa[indx]; // x2-x
+    w2 = xa[indx+1]-x; // x2-x
 
 
     /* for entropy (y), irregular spacing assumed */
