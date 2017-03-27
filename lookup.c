@@ -218,17 +218,15 @@ PetscScalar get_val1d( Interp1d *I, PetscScalar x )
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x<xmin.  Truncating\n");CHKERRQ(ierr);
 #endif
-      //x = xmin; // not actually required for calculation
       ind = 0; // minimum index, max index is always +1
-      w1 = 0.0; // distance from leftmost (smallest) value
+      x = xmin;
     }
     else if( x>xmax ){
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x>xmax.  Truncating\n");CHKERRQ(ierr);
 #endif
-      //x = xmax; // not actually required for calculation
       ind = n-2; // minimum index, max index is always +1
-      w1 = 1.0; // distance from leftmost (smallest) value
+      x = xmax;
     }
     else{
       // loop to find minimum index
@@ -241,9 +239,10 @@ PetscScalar get_val1d( Interp1d *I, PetscScalar x )
       /* loop exits when sign changes, meaning that previous index
          is the minimum index */
       ind -= 1;
-      // w1 is 0 at leftmost (minimum) x, 1 at rightmost (maximum) x
-      w1 = (x-xa[ind]) / (xa[ind+1]-xa[ind]); // weighting
     }
+
+    // w1 is 0 at leftmost (minimum) x, 1 at rightmost (maximum) x
+    w1 = (x-xa[ind]) / (xa[ind+1]-xa[ind]); // weighting
 
     result = ya[ind] * (1.0-w1) + ya[ind+1] * w1;
 
@@ -252,97 +251,99 @@ PetscScalar get_val1d( Interp1d *I, PetscScalar x )
 
 PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 {
-    /* wrapper for evaluating a 2-D lookup
-       bilinear interpolation */
+    /* wrapper for evaluating a 2-D lookup using bilinear 
+       interpolation.
+
+       Note that this assumes that x data (pressure) is evenly
+       spaced so we use a faster lookup approach by computing
+       indices directly rather than looping through data */
 
 #if (defined VERBOSE)
     PetscErrorCode ierr;
 #endif
-    PetscScalar x1, x2, y1, y2, z1, z2, z3, z4;
+    PetscScalar z1, z2, z3, z4;
     PetscScalar w1, w2, w3, w4; // weights
     PetscScalar result;
-    PetscScalar dx, *xa, *ya, *za, xmin;
-    // only if y data is evenly spaced
-    //PetscScalar dy, ymin;
+    PetscScalar dx, *xa, *ya, *za;
+    PetscScalar xmin, xmax, ymin, ymax;
+    // below only if y data is evenly spaced
+    //PetscScalar dy;
     PetscInt indx, indy, indz1, indz2, indz3, indz4;
-    PetscInt indt;
 
     dx = I->dx;
     xa = I->xa;
-    // only if y data is evenly spaced
-    //dy = I->dy;
     ya = I->ya;
     za = I->za;
     xmin = I->xmin;
-    // only if y data is evenly spaced
-    //ymin = I->ymin;
+    xmax = I->xmax;
+    ymin = I->ymin;
+    ymax = I->ymax;
+    // below only if y data is evenly spaced
+    //dy = I->dy;
 
-    indx = PetscFloorReal( (x-xmin)/dx );
+    /* to reproduce the behaviour of scipy.interpolate.RectBivariateSpline
+       the code should truncate if interpolation is attempted on a
+       value outside of the lookup data range */
 
-    /* truncate if data falls outside range */
-    if (indx < 0){
-        /* to reproduce the behaviour of scipy.interpolate.RectBivariateSpline
-           the code should truncate if interpolation is attempted on a
-           value outside of the range of x. */
+    /* for pressure (x), constant spacing assumed */
+    if( x<xmin ){
 #if (defined VERBOSE)
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 2d array interpolation produced x value less than minimum in table. Truncating\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x<xmin.  Truncating\n");CHKERRQ(ierr);
 #endif
-      indx = 0;
-      w1 = 0.0; // x-x1
-      // note in below x must be truncated (x=xa[0])
-      w2 = xa[1]-xa[0]; // x2-x
+      //x = xmin; // not actually required for calculation
+      indx = 0; // minimum index, max index is always +1
+      x = xmin;
     }
-    else if (indx > NX-2){
+    else if( x>xmax ){
 #if (defined VERBOSE)
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 2d array interpolation produced x value greater than maximum in table. Truncating\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x>xmax.  Truncating\n");CHKERRQ(ierr);
 #endif
-      indx = n-2;
-      // note in below x must be truncated (x=xa[indx+1])
-      w1 = xa[indx+1]-xa[indx]; // x-x1
-      w2 = 0.0; // x2-x
+      //x = xmax; // not actually required for calculation
+      indx = NX-2;
+      x = xmax;
     }
     else{
-      x1 = xa[indx]; // local min x
-      x2 = xa[indx+1]; // local max x
-      w1 = x-x1;
-      w2 = x2-x;
-      ///////////x1 = xa[ind];  // x (pressure) to left
-      ///////////weight = (x-x1) / dx;
+      indx = PetscFloorReal( (x-xmin)/dx );
     }
 
-    ////////////y1 = ya[ind]; // y (quantity) to left
+    /* weightings */
+    w1 = x-xa[indx]; // x-x1
+    w2 = xa[indx+1]-xa[indx]; // x2-x
 
-    //x1 = xa[indx]; // local min x
-    //x2 = xa[indx+1]; // local max x
 
-
-    // only if y data is evenly spaced
-    //indy = PetscFloorReal( (y-ymin)/dy );
-
-    /* trivial algorithm to find minimum index when y data
-       is not evenly spaced */
-    indt = 0;
-    while( (ya[indt]-y)<0) {
-        indt += 1;
-    }
-
-    indy = indt-1;
-    if (indy < 0){
+    /* for entropy (y), irregular spacing assumed */
+    if( y<ymin ){
 #if (defined VERBOSE)
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 2d array interpolation produced value less than minimum in table. Truncating\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y<ymin.  Truncating\n");CHKERRQ(ierr);
 #endif
+      //y = ymin; // not actually required for calculation
+      indy = 0; // minimum index, max index is always +1
+      y = ymin;
+    }
+    else if( y>ymax ){
+#if (defined VERBOSE)
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y>ymax.  Truncating\n");CHKERRQ(ierr);
+#endif
+      //y = ymax; // not actually required for calculation
+      indy = NY-2; // minimum index, max index is always +1
+      y = ymax;
+    }
+    else{
+      // loop to find minimum index
+      /* trivial algorithm to find minimum index when x data
+         is not evenly spaced */
       indy = 0;
+      while( (y-ya[indy])>0) {
+        indy += 1;
+      }
+      /* loop exits when sign changes, meaning that previous index
+         is the minimum index */
+      indy -= 1;
     }
-    if (indy > NY-2){
-#if (defined VERBOSE)
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 2d array interpolation produced value greater than maximum in table. Truncating\n");CHKERRQ(ierr);
-#endif
-      indy = NY-2;
-    }
-    y1 = ya[indy]; // local min y
-    y2 = ya[indy+1]; // local max y*/
 
-
+    /* weightings */
+    w3 = y-ya[indy]; // y-y1
+    w4 = ya[indy+1]-y; // y2-y
 
     indz1 = indy*NX+indx; // min S, min P
     z1 = za[indz1];
@@ -354,11 +355,12 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
     z4 = za[indz4];
 
     // bilinear interpolation
-    result = z1*(x2-x)*(y2-y);
-    result += z2*(x-x1)*(y2-y);
-    result += z3*(x2-x)*(y-y1);
-    result += z4*(x-x1)*(y-y1);
-    result /= dx*(y2-y1);
+    result = z1 * w2 * w4;
+    result += z2 * w1 * w4;
+    result += z3 * w2 * w3;
+    result += z4 * w1 * w3;
+    result /= dx;
+    result /= ya[indy+1]-ya[indy]; // dy
 
     return result;
 }
