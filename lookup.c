@@ -188,8 +188,8 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
     memmove( interp->ya, ya, sizeof interp->ya );
     interp->ymin= ya[0];
     interp->ymax= ya[n-1];
-
     interp->dx = xa[1]-xa[0];
+    interp->n = n;
 
     PetscFunctionReturn(0);
 }
@@ -197,26 +197,49 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 PetscScalar get_val1d( Interp1d *I, PetscScalar x )
 {
     /* wrapper for evaluating a 1-D lookup
-       linear interpolation */
-
-    /* TODO this will fail if x falls outside the data range */
+       linear interpolation with truncation for values
+       that fall outside the data lookup range */
 
     PetscScalar weight, x1, y1, y2, result;
     PetscScalar dx, *xa, *ya, xmin;
-    PetscInt ind;
+    PetscInt ind, n;
 
     dx = I->dx;
     xa = I->xa;
     xmin = I->xmin;
     ya = I->ya;
+    n = I->n;
 
     /* this assumes data is evenly spaced in input data file to
        enable us to locate the index in the array directly */
     ind = PetscFloorReal( (x-xmin)/dx );
-    x1 = xa[ind];  // x (pressure) to left
+
+    /* truncate if data falls outside range */
+    if (ind < 0){
+        /* to reproduce the behaviour of scipy.interpolate.interp1d
+           the code should produce a ValueError if interpolation is
+           attempted on a value outside of the range of x (where
+           extrapolation is necessary). Here we truncate instead. */
+#if (defined VERBOSE)
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 1d array interpolation produced value less than minimum in table. Truncating\n");CHKERRQ(ierr);
+#endif
+      ind = 0;
+      weight = 0.0;
+    }
+    else if (ind > n-2){
+#if (defined VERBOSE)
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: 1d array interpolation produced value greater than maximum in table. Truncating\n");CHKERRQ(ierr);
+#endif
+      ind = n-2;
+      weight = 1.0;
+    }
+    else{
+      x1 = xa[ind];  // x (pressure) to left
+      weight = (x-x1) / dx;
+    }
+
     y1 = ya[ind]; // y (quantity) to left
     y2 = ya[ind+1]; // y (quantity) to right
-    weight = (x-x1) / dx;
 
     result = y2 * weight + y1 * (1.0-weight);
 

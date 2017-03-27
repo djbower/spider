@@ -20,6 +20,7 @@ typedef struct _Interp1d {
     PetscScalar ymin;
     PetscScalar ymax;
     PetscScalar dx;
+    PetscInt    n;
 } Interp1d;
 
 typedef struct _Interp2d {
