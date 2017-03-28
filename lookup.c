@@ -186,6 +186,10 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
     interp->xmin= xa[0];
     interp->xmax= xa[n-1];
     memmove( interp->ya, ya, sizeof interp->ya );
+    /* ymin and ymax are not used at present, and it might be
+       dangerous to do so since for the middle-out solidus and
+       liquidus data the maximum entropy is not at the end of the
+       array since the maximum occurs around mid-mantle pressures */
     interp->ymin= ya[0];
     interp->ymax= ya[n-1];
     interp->n = n;
@@ -214,14 +218,14 @@ PetscScalar get_val1d( Interp1d *I, PetscScalar x )
        attempted on a value outside of the range of x (where
        extrapolation is necessary). Here we truncate instead. */
 
-    if( x<xmin ){
+    if( x<=xmin ){
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x<xmin.  Truncating\n");CHKERRQ(ierr);
 #endif
       ind = 0; // minimum index, max index is always +1
       x = xmin;
     }
-    else if( x>xmax ){
+    else if( x>=xmax ){
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x>xmax.  Truncating\n");CHKERRQ(ierr);
 #endif
@@ -286,14 +290,14 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
        value outside of the lookup data range */
 
     /* for pressure (x), constant spacing assumed */
-    if( x<xmin ){
+    if( x<=xmin ){
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x<xmin.  Truncating\n");CHKERRQ(ierr);
 #endif
       indx = 0; // minimum index, max index is always +1
       x = xmin;
     }
-    else if( x>xmax ){
+    else if( x>=xmax ){
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x>xmax.  Truncating\n");CHKERRQ(ierr);
 #endif
@@ -310,14 +314,14 @@ PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 
 
     /* for entropy (y), irregular spacing assumed */
-    if( y<ymin ){
+    if( y<=ymin ){
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y<ymin.  Truncating\n");CHKERRQ(ierr);
 #endif
       indy = 0; // minimum index, max index is always +1
       y = ymin;
     }
-    else if( y>ymax ){
+    else if( y>=ymax ){
 #if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y>ymax.  Truncating\n");CHKERRQ(ierr);
 #endif

@@ -24,9 +24,9 @@
 /* 1-D datafiles containing liquidus and solidus
    as a function of pressure */
 // NLS 301 is for lookup-fusion/bridgmanite
-//#define NLS 301 /* no. of coordinates in liq and sol datafiles */
+#define NLS 301 /* no. of coordinates in liq and sol datafiles */
 // NLS 876 is for lookup-fusion/2011_andrault
-#define NLS 876
+//#define NLS 876
 
 /* set default mesh here (can be changed from the command line) */
 /* number of basic mesh points */
@@ -106,12 +106,12 @@ static const PetscScalar SWIDTH = 1.0E-2;
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/liquidus.dat";
-static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/liquidus.dat";
+static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/liquidus.dat";
+//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/liquidus.dat";
 
 /* solidus data file */
-//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/solidus.dat";
-static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/solidus.dat";
+static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/solidus.dat";
+//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/solidus.dat";
 
 /* solid data files */
 static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_solid.dat";
