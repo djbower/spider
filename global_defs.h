@@ -72,11 +72,11 @@ static const PetscScalar GRAIN = 1.56961230576e-10;
 /* gravity.  Always constant and must be positive */
 static const PetscScalar GRAVITY = 5.2772012422265826;
 /* melt fraction threshold for rheology */
-static const PetscScalar F_THRESHOLD = 0.6;
+static const PetscScalar PHI_CRITICAL = 0.4;
 /* melt fraction transition width for rheology */
-static const PetscScalar DF_TRANSITION = 0.15;
+static const PetscScalar PHI_WIDTH = 0.15;
 /* melt fraction shape transition for skew */
-static const PetscScalar SHAPE_TRANSITION = 0.5;
+static const PetscScalar PHI_SKEW = 0.0;
 
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Potential temperature]**EXPBC */
