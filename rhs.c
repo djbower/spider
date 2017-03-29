@@ -95,47 +95,31 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* loop over basic (internal) nodes and populate E struct */
   set_matprop_and_flux( E );
 
-  /* surface radiative boundary condition
-     parameterised ultra-thin thermal boundary layer
-     constants given by fit (python script) */
-
-  // NOTE: here we assume that the first rank has the first point
-  //if (!rank) {
-  //  PetscScalar temp_s_0,val;
-  //  PetscInt ind = 0;
-  //  ierr = VecGetValues(S->temp_s,1,&ind,&temp_s_0);CHKERRQ(ierr);
-
-    // remove below
-    //val = radiative_flux_with_dT( temp_s_0 );
-
-    /* Note - below is true because non-dim geom is exactly equal
-       to one, so do not need to multiply by area of surface */
-  //  ierr = VecSetValue(S->Etot,0,val,INSERT_VALUES);CHKERRQ(ierr);
-  //  ierr = VecSetValue(S->Jtot,0,val,INSERT_VALUES);CHKERRQ(ierr);
- // }
-
   set_surface_flux( E );
 
   // NOTE: here, we somewhat dangerously assume that the last proc has the last point 
-  if (rank == size-1) {
-    PetscScalar val, val2;
-    PetscInt    ind, ind2;
+  //if (rank == size-1) {
+  //  PetscScalar val, val2;
+  //  PetscInt    ind, ind2;
 
-    ind  = numpts_b-2; // penultimate basic node index
-    ind2 = numpts_b-1; // last basic node index
+  //  ind  = numpts_b-2; // penultimate basic node index
+   // ind2 = numpts_b-1; // last basic node index
 
     /* energy flux (Jtot) */
-    ierr = VecGetValues(S->Jtot,1,&ind,&val);CHKERRQ(ierr);
-    get_core_cooling( E );
-    val *= E->BC_BOT_FAC;
-    ierr = VecSetValue(S->Jtot,ind2,val,INSERT_VALUES);CHKERRQ(ierr);
+  //  ierr = VecGetValues(S->Jtot,1,&ind,&val);CHKERRQ(ierr);
+  //  get_core_cooling( E );
+  //  val *= E->BC_BOT_FAC;
+  //  ierr = VecSetValue(S->Jtot,ind2,val,INSERT_VALUES);CHKERRQ(ierr);
 
     /* energy flow (Etot) */
-    ierr = VecGetValues(M->area_b,1,&ind2,&val2);CHKERRQ(ierr);
-    val2 *= val;
-    ierr = VecSetValue(S->Etot,ind2,val2,INSERT_VALUES);CHKERRQ(ierr);
+  //  ierr = VecGetValues(M->area_b,1,&ind2,&val2);CHKERRQ(ierr);
+  //  val2 *= val;
+   // ierr = VecSetValue(S->Etot,ind2,val2,INSERT_VALUES);CHKERRQ(ierr);
 
-  }
+ // }
+
+  set_core_mantle_flux( E );
+
   ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
   ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
   ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);

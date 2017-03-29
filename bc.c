@@ -9,7 +9,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscErrorCode    ierr;
     PetscMPIInt       rank;
     PetscScalar       temp_s_0, phi_s_0, Q1, Q2, Qout, fwt;
-    PetscInt          ind = 0;
+    PetscInt          ind;
     PetscScalar       G0, R0, R1, R2, E0, E1, E2;
     Mesh              *M; 
     Solution          *S;
@@ -24,8 +24,10 @@ PetscErrorCode set_surface_flux( Ctx *E )
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
 
     if (!rank){
+      ind = 0;
       ierr = VecGetValues(S->phi_s,1,&ind,&phi_s_0);CHKERRQ(ierr);
-      fwt = tanh_weight( phi_s_0, PHI_CRITICAL, PHI_WIDTH );
+      /* SWIDTH or PHI_WIDTH most appropriate choice here? */
+      fwt = tanh_weight( phi_s_0, PHI_CRITICAL, SWIDTH );
 
       // radiative surface
       ierr = VecGetValues(S->temp_s,1,&ind,&temp_s_0);CHKERRQ(ierr);
@@ -57,13 +59,14 @@ PetscErrorCode set_surface_flux( Ctx *E )
 }
 
 
-PetscErrorCode get_core_cooling( Ctx *E )
+PetscErrorCode set_core_mantle_flux( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          ix;             // index of last basic node
     PetscInt          ix2;            // index of penultimate basic node
     PetscInt          numpts_b;
     PetscScalar       fac,vol,area1,area2,rho_cmb,cp_cmb;
+    PetscScalar       val;
     PetscMPIInt       rank, size;
 
     Mesh              *M; 
@@ -71,7 +74,7 @@ PetscErrorCode get_core_cooling( Ctx *E )
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"get_core_cooling:\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_core_mantle_flux:\n");CHKERRQ(ierr);
 #endif
     M = &E->mesh;
     S = &E->solution;
@@ -99,7 +102,16 @@ PetscErrorCode get_core_cooling( Ctx *E )
         fac /= CP_CORE * MCORE * TFAC_CORE_AVG;
         fac = 1.0 / (1.0 + fac);
         fac *= area2 / area1;
-        E->BC_BOT_FAC = fac;
+
+        /* energy flux (Jtot) */
+        ierr = VecGetValues(S->Jtot,1,&ix2,&val);CHKERRQ(ierr);
+        val *= fac;
+        ierr = VecSetValue(S->Jtot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
+
+        /* energy flow (Etot) */
+        val *= area1;
+        ierr = VecSetValue(S->Etot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
+
     }
 
     PetscFunctionReturn(0);
