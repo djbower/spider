@@ -658,5 +658,10 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = DMDAVecRestoreArray(    da_b,S->Jmix,&arr_Jmix); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->Jtot,&arr_Jtot); CHKERRQ(ierr);
 
+    ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }

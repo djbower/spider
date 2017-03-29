@@ -120,11 +120,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   set_core_mantle_flux( E );
 
-  ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
-  ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
-  ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
-  ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
-
   /* loop over basic nodes except last node */
   ierr = DMDAVecGetArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);

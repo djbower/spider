@@ -54,6 +54,11 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
     }
 
+    ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 
 }
@@ -113,6 +118,11 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
         ierr = VecSetValue(S->Etot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
 
     }
+
+    ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
