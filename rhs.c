@@ -100,17 +100,21 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
      constants given by fit (python script) */
 
   // NOTE: here we assume that the first rank has the first point
-  if (!rank) {
-    PetscScalar temp_s_0,val;
-    PetscInt ind = 0;
-    ierr = VecGetValues(S->temp_s,1,&ind,&temp_s_0);CHKERRQ(ierr);
-    val = radiative_flux_with_dT( temp_s_0 );
+  //if (!rank) {
+  //  PetscScalar temp_s_0,val;
+  //  PetscInt ind = 0;
+  //  ierr = VecGetValues(S->temp_s,1,&ind,&temp_s_0);CHKERRQ(ierr);
+
+    // remove below
+    //val = radiative_flux_with_dT( temp_s_0 );
 
     /* Note - below is true because non-dim geom is exactly equal
        to one, so do not need to multiply by area of surface */
-    ierr = VecSetValue(S->Etot,0,val,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(S->Jtot,0,val,INSERT_VALUES);CHKERRQ(ierr);
-  }
+  //  ierr = VecSetValue(S->Etot,0,val,INSERT_VALUES);CHKERRQ(ierr);
+  //  ierr = VecSetValue(S->Jtot,0,val,INSERT_VALUES);CHKERRQ(ierr);
+ // }
+
+  set_surface_flux( E );
 
   // NOTE: here, we somewhat dangerously assume that the last proc has the last point 
   if (rank == size-1) {

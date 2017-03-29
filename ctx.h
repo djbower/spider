@@ -108,7 +108,7 @@ PetscScalar get_val2d( Interp2d *, PetscScalar, PetscScalar );
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar);
 PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
 
-PetscScalar radiative_flux_with_dT( PetscScalar );
 PetscErrorCode get_core_cooling( Ctx * );
+PetscErrorCode set_surface_flux( Ctx * );
 
 #endif
