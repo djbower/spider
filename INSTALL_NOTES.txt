@@ -35,8 +35,7 @@ git checkout psanan/ts-sundials-quad-hack
 
 PS: is it necessary to download mpich?
 3a. configure PETSc using the following command:
-./configure --with-debugging=0 --with-fc=0 --download-sundials --download-mpich
---with-cc=gcc --with-cxx=g++ --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+./configure --with-debugging=0 --with-fc=0 --download-sundials --download-mpich --with-cc=gcc --with-cxx=g++ --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 3b.  [Aside] For a debug build, amend command above to use --with-debugging=1
 and remove optimisation flags
