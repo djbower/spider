@@ -291,13 +291,14 @@ PetscErrorCode set_capacitance( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+#if 0
 static PetscScalar zmap( PetscScalar z )
 {
     /* for skewed viscosity profile */
 
     PetscScalar fac, fwt, zmap, shp;
 
-    shp = SHAPE_TRANSITION;
+    shp = PHI_SKEW;
 
     fac = PetscSqrtScalar(PetscSqr(shp*z)+1.0);
 
@@ -309,7 +310,9 @@ static PetscScalar zmap( PetscScalar z )
 
     return fwt;
 }
+#endif
 
+#if 0
 static PetscScalar viscosity_mix_skew( PetscScalar meltf )
 {
     /* skewed viscosity in mixed phase region */
@@ -330,14 +333,30 @@ static PetscScalar viscosity_mix_skew( PetscScalar meltf )
 
     return fwt;
 }
+#endif
+
+static PetscScalar viscosity_mix_no_skew( PetscScalar meltf )
+{
+    /* viscosity in mixed phase region with no skew */
+
+    PetscScalar fwt;
+
+    fwt = tanh_weight( meltf, PHI_CRITICAL, PHI_WIDTH );
+
+    return fwt;
+
+}
 
 static PetscScalar log_viscosity_mix( PetscScalar meltf )
 {
     PetscScalar fwt, lvisc;
 
-    fwt = viscosity_mix_skew( meltf );
+    /* below needs revising to use critical melt fraction and not
+       critical solid fraction */
+    //fwt = viscosity_mix_skew( meltf );
 
-    lvisc = fwt * LOG10VISC_SOL + (1.0 - fwt) * LOG10VISC_MEL;
+    fwt = viscosity_mix_no_skew( meltf );
+    lvisc = fwt * LOG10VISC_MEL + (1.0 - fwt) * LOG10VISC_SOL;
 
     return lvisc;
 
@@ -638,6 +657,11 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = DMDAVecRestoreArray(    da_b,S->Jgrav,&arr_Jgrav); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->Jmix,&arr_Jmix); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->Jtot,&arr_Jtot); CHKERRQ(ierr);
+
+    ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

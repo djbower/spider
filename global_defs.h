@@ -23,10 +23,7 @@
 
 /* 1-D datafiles containing liquidus and solidus
    as a function of pressure */
-// NLS 301 is for lookup-fusion/bridgmanite
 #define NLS 301 /* no. of coordinates in liq and sol datafiles */
-// NLS 876 is for lookup-fusion/2011_andrault
-//#define NLS 876
 
 /* set default mesh here (can be changed from the command line) */
 /* number of basic mesh points */
@@ -75,11 +72,11 @@ static const PetscScalar GRAIN = 1.56961230576e-10;
 /* gravity.  Always constant and must be positive */
 static const PetscScalar GRAVITY = 5.2772012422265826;
 /* melt fraction threshold for rheology */
-static const PetscScalar F_THRESHOLD = 0.6;
+static const PetscScalar PHI_CRITICAL = 0.4;
 /* melt fraction transition width for rheology */
-static const PetscScalar DF_TRANSITION = 0.15;
+static const PetscScalar PHI_WIDTH = 0.15;
 /* melt fraction shape transition for skew */
-static const PetscScalar SHAPE_TRANSITION = 0.5;
+static const PetscScalar PHI_SKEW = 0.0;
 
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Potential temperature]**EXPBC */
@@ -106,12 +103,12 @@ static const PetscScalar SWIDTH = 1.0E-2;
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/liquidus.dat";
-//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/liquidus.dat";
+//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/liquidus.dat";
+static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/liquidus.dat";
 
 /* solidus data file */
-static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/solidus.dat";
-//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/solidus.dat";
+//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/solidus.dat";
+static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/solidus.dat";
 
 /* solid data files */
 static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_solid.dat";

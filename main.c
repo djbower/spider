@@ -29,7 +29,7 @@ int main(int argc, char ** argv)
   const PetscReal t0 = 0;                    /* Initial time */
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
   PetscInt        nstepsmacro = 1000000000;  /* Max macros steps */
-  PetscReal       dtmacro = 100000; //00000;          /* Macro step size */
+  PetscReal       dtmacro = 1000;        /* Macro step size */
   PetscMPIInt     size;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
