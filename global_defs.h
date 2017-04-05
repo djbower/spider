@@ -58,7 +58,7 @@ static const PetscScalar SINIT_DEFAULT = 1.02;
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial entropy gradient */
-static const PetscScalar IC_DSDR = -1.0E-10;
+static const PetscScalar IC_DSDR = -1.0E-8;
 
 /* constants */
 /* core-mantle boundary radius */
