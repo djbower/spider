@@ -2,7 +2,7 @@
 
 static PetscScalar radiative_flux_with_dT( PetscScalar );
 static PetscScalar radiative_flux( PetscScalar );
-static PetscScalar utbl_temp_drop( PetscScalar );
+static PetscScalar tsurf_param( PetscScalar );
 
 PetscErrorCode set_surface_flux( Ctx *E )
 {
@@ -132,13 +132,22 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 
 }
 
-static PetscScalar utbl_temp_drop( PetscScalar temp )
+static PetscScalar tsurf_param( PetscScalar temp )
 {
-    PetscScalar dT;
+    PetscScalar Ts, c, fac, num, den;
+    c = CONSTBC;
 
-    dT = CONSTBC * PetscPowScalar( temp, EXPBC );
+    fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
+    fac = PetscPowScalar( fac, 1.0/2.0 );
+    fac += 9.0*temp*PetscPowScalar(c,2.0);
+    // numerator
+    num = PetscPowScalar(2.0,1.0/3)*PetscPowScalar(fac,2.0/3)-2.0*PetscPowScalar(3.0,1.0/3)*c;
+    // denominator
+    den = PetscPowScalar(6.0,2.0/3)*c*PetscPowScalar(fac,1.0/3);
+    // surface temperature
+    Ts = num / den;
 
-    return dT;
+    return Ts;
 }
 
 static PetscScalar radiative_flux( PetscScalar temp )
@@ -154,11 +163,15 @@ static PetscScalar radiative_flux( PetscScalar temp )
 
 static PetscScalar radiative_flux_with_dT( PetscScalar temp )
 {
-    PetscScalar dT, temp0, flux;
+    PetscScalar Ts, flux;
 
-    dT = utbl_temp_drop( temp );
-    temp0 = temp - dT;
-    flux = radiative_flux( temp0 );
+    if( CONSTBC == 0.0 ){
+        Ts = temp;
+    }
+    else{
+        Ts = tsurf_param( temp );
+    }
+    flux = radiative_flux( Ts );
 
     return flux;
 }

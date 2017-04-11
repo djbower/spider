@@ -31,7 +31,7 @@
    nodes there are in a given mesh */
 
 /* for constant mesh spacing */
-#define NUMPTS_B_DEFAULT 200
+#define NUMPTS_B_DEFAULT 100
 
 //#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 372
@@ -58,7 +58,7 @@ static const PetscScalar SINIT_DEFAULT = 1.02;
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial entropy gradient */
-static const PetscScalar IC_DSDR = -1.0E-8;
+static const PetscScalar IC_DSDR = -1.0E-3;
 
 /* constants */
 /* core-mantle boundary radius */
