@@ -70,7 +70,7 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
     PetscInt          ix;             // index of last basic node
     PetscInt          ix2;            // index of penultimate basic node
     PetscInt          numpts_b;
-    PetscScalar       fac,vol,area1,area2,rho_cmb,cp_cmb;
+    PetscScalar       fac,vol,vol_core,area1,area2,rho_cmb,cp_cmb;
     PetscScalar       val;
     PetscMPIInt       rank, size;
 
@@ -103,8 +103,12 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
         //cp_cmb = 0.40093215388392944;
         // gives a fac of:
         // 1.00069301288
-        fac *= rho_cmb * cp_cmb;
-        fac /= CP_CORE * MCORE * TFAC_CORE_AVG;
+        vol_core = 1.0/3.0 * PetscPowScalar(RADIN,3.0);
+        fac = vol / vol_core;
+        fac *= rho_cmb / RHO_CORE;
+        fac *= cp_cmb / CP_CORE;
+        fac /= TFAC_CORE_AVG;
+
         fac = 1.0 / (1.0 + fac);
         fac *= area2 / area1;
 

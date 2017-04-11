@@ -79,16 +79,21 @@ static const PetscScalar PHI_WIDTH = 0.15;
 static const PetscScalar PHI_SKEW = 0.0;
 
 /* for radiative thermal boundary condition at the top surface */
-/* dT = CONSTBC * [Potential temperature]**EXPBC */
-static const PetscScalar CONSTBC = 0.0; // 0.0036006849671025;
-static const PetscScalar EXPBC = 0.0; //1.6042079063944077;
+/* dT = CONSTBC * [Surface temperature]**3 */
+/* where dT and Surface temperature are non-dimensional */
+/* you can extract the value of CONSTBC by looking at the non-dimensional
+   value in a run.log output by the python evolution code.  Or alternatively,
+   CONSTBC here is [dimensional CONSTBC] * [TEMP0]**2, where TEMP0 is the
+   dimensional (scaling) temperature.  See python script for more information */
+//static const PetscScalar CONSTBC = 0.0;
+static const PetscScalar CONSTBC = 1.6269986040244828; // 1.0E-7 in python
 static const PetscScalar SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar EMISSIVITY = 1.0; // emissivity
 static const PetscScalar TEQM = 0.0676813568808283; // equilibrium temp of planet
 
 /* for core-cooling boundary condition at the bottom surface */
-/* mass of core excluding compositional variation of inner core */
-static const PetscScalar MCORE = 1.62225737775007;
+/* density of core */
+static const PetscScalar RHO_CORE = 2.3277861514910865;
 /* heat capacity of core */
 static const PetscScalar CP_CORE = 0.2940169128482149;
 /* mass-weighted average core temperature as a fraction of CMB temp */

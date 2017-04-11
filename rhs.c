@@ -97,27 +97,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   set_surface_flux( E );
 
-  // NOTE: here, we somewhat dangerously assume that the last proc has the last point 
-  //if (rank == size-1) {
-  //  PetscScalar val, val2;
-  //  PetscInt    ind, ind2;
-
-  //  ind  = numpts_b-2; // penultimate basic node index
-   // ind2 = numpts_b-1; // last basic node index
-
-    /* energy flux (Jtot) */
-  //  ierr = VecGetValues(S->Jtot,1,&ind,&val);CHKERRQ(ierr);
-  //  get_core_cooling( E );
-  //  val *= E->BC_BOT_FAC;
-  //  ierr = VecSetValue(S->Jtot,ind2,val,INSERT_VALUES);CHKERRQ(ierr);
-
-    /* energy flow (Etot) */
-  //  ierr = VecGetValues(M->area_b,1,&ind2,&val2);CHKERRQ(ierr);
-  //  val2 *= val;
-   // ierr = VecSetValue(S->Etot,ind2,val2,INSERT_VALUES);CHKERRQ(ierr);
-
- // }
-
   set_core_mantle_flux( E );
 
   /* loop over basic nodes except last node */
