@@ -28,7 +28,7 @@ int main(int argc, char ** argv)
   PetscBool       monitor = PETSC_TRUE;      /* Macro step custom monitor (monitor.c) */
   const PetscReal t0 = 0;                    /* Initial time */
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
-  PetscInt        nstepsmacro = 1000000000;  /* Max macros steps */
+  PetscInt        nstepsmacro = 1000;  /* Max macros steps */
   PetscReal       dtmacro = 100000;        /* Macro step size */
   PetscMPIInt     size;
 
