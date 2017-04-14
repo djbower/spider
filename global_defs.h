@@ -58,7 +58,10 @@ static const PetscScalar SINIT_DEFAULT = 1.02;
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial entropy gradient */
-static const PetscScalar IC_DSDR = -1.0E-8;
+// for middle out cases
+//static const PetscScalar IC_DSDR = -1.0E-8;
+// for bottom up cases
+static const PetscScalar IC_DSDR = -1.0E-3;
 
 /* constants */
 /* core-mantle boundary radius */
@@ -85,8 +88,8 @@ static const PetscScalar PHI_SKEW = 0.0;
    value in a run.log output by the python evolution code.  Or alternatively,
    CONSTBC here is [dimensional CONSTBC] * [TEMP0]**2, where TEMP0 is the
    dimensional (scaling) temperature.  See python script for more information */
-static const PetscScalar CONSTBC = 0.0;
-//static const PetscScalar CONSTBC = 1.6269986040244828; // 1.0E-7 in python
+//static const PetscScalar CONSTBC = 0.0;
+static const PetscScalar CONSTBC = 1.6269986040244828; // 1.0E-7 in python
 static const PetscScalar SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar EMISSIVITY = 1.0; // emissivity
 static const PetscScalar TEQM = 0.0676813568808283; // equilibrium temp of planet
@@ -108,12 +111,12 @@ static const PetscScalar SWIDTH = 1.0E-2;
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/liquidus.dat";
-//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/liquidus.dat";
+//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/liquidus.dat";
+static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/liquidus.dat";
 
 /* solidus data file */
-static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/solidus.dat";
-//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/solidus.dat";
+//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/solidus.dat";
+static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/solidus.dat";
 
 /* solid data files */
 static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_solid.dat";

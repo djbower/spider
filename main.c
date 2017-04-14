@@ -28,8 +28,17 @@ int main(int argc, char ** argv)
   PetscBool       monitor = PETSC_TRUE;      /* Macro step custom monitor (monitor.c) */
   const PetscReal t0 = 0;                    /* Initial time */
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
+
+  /* for the current non-dimensional time scaling for an Earth radius planet:
+     each time step is 5.810341565106721e-05 years */
+  /* early evolution */
   PetscInt        nstepsmacro = 1000;  /* Max macros steps */
-  PetscReal       dtmacro = 100000;        /* Macro step size */
+  PetscReal       dtmacro = 100000;        /* Macro step size 10^5 */
+  /* late evolution */
+  /* this integrates to a bit beyond 4.55 Byr */
+  //PetscInt        nstepsmacro = 8000;  /* Max macros steps */
+  //PetscReal       dtmacro = 10000000000; /* Macro step size 10^10 */
+
   PetscMPIInt     size;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
