@@ -16,10 +16,18 @@
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
 #define HEAD 4 /* number of header lines in datafile */
+
+/* these next values are for lookup-hires-RTmelt */
 #define NROWS 10100 /* number of coordinates in datafiles */
 /* N.B., NROWS = NX * NY */
 #define NX 101 /* no. of x coordinates in datafiles */
 #define NY 100 /* no. of y coordinates in datafiles */
+
+/* these next values are for lookup-hires-RTpress */
+//#define NROWS 15100 /* number of coordinates in datafiles */
+/* N.B., NROWS = NX * NY */
+//#define NX 151 /* no. of x coordinates in datafiles */
+//#define NY 100 /* no. of y coordinates in datafiles */
 
 /* 1-D datafiles containing liquidus and solidus
    as a function of pressure */
@@ -111,11 +119,11 @@ static const PetscScalar SWIDTH = 1.0E-2;
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/liquidus.dat";
+//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/liquidus.dat";
 static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/liquidus.dat";
 
 /* solidus data file */
-//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/bridgmanite/solidus.dat";
+//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/solidus.dat";
 static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/solidus.dat";
 
 /* solid data files */
