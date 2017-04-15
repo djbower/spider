@@ -73,6 +73,9 @@ static const PetscScalar SINIT_DEFAULT = 1.02;
 static const PetscScalar IC_DSDR = -1.0E-3;
 
 /* constants */
+/* dimensional time scaling */
+/* must be updated if radius of planet changes! */
+static const PetscScalar TIME0YEARS = 5.810341565106721e-05;
 /* core-mantle boundary radius */
 static const PetscScalar RADIN = 0.55;
 /* surface density for Adams-Williamson EOS for pressure */

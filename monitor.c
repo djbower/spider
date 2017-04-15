@@ -3,7 +3,7 @@
 #include "monitor.h"
 #include "rhs.h"
 
-PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, PetscReal time0, PetscReal timeprev, Vec x_aug, void * ptr, double walltime0, double *walltimeprev)
+PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscReal time, PetscReal time0, PetscReal timeprev, Vec x_aug, void * ptr, double walltime0, double *walltimeprev)
 {
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
@@ -32,9 +32,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, PetscReal t
   {
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
-
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/dSdr_b_aug_%D.m",step);CHKERRQ(ierr);
-    ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug_step_%D",step);CHKERRQ(ierr);
+    /* new from DJB.  Decided it was simplest to output time in years, 
+       which is dtmacro*step.  This makes it easier to restart models
+       and quickly analyse output */
+    long long nstep;
+    nstep = (long long) dtmacro * (long long) step;
+    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/dSdr_b_aug.%lld.m",nstep);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug_%lld",nstep);CHKERRQ(ierr);
     ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr); //Annoyingly, PETSc wants you to use binary output so badly that this is the easiest way to get full-precision ASCII..
     ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);

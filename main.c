@@ -28,16 +28,17 @@ int main(int argc, char ** argv)
   PetscBool       monitor = PETSC_TRUE;      /* Macro step custom monitor (monitor.c) */
   const PetscReal t0 = 0;                    /* Initial time */
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
+  PetscReal       nexttime;                  /* next time to integrate to */
 
   /* for the current non-dimensional time scaling for an Earth radius planet:
      each time step is 5.810341565106721e-05 years */
   /* early evolution */
-  PetscInt        nstepsmacro = 1000;  /* Max macros steps */
-  PetscReal       dtmacro = 100000;        /* Macro step size 10^5 */
+  //PetscInt        nstepsmacro = 1000;  /* Max macros steps */
+  //PetscReal       dtmacro = 10;        /* Macro step size (years) */
   /* late evolution */
-  /* this integrates to a bit beyond 4.55 Byr */
-  //PetscInt        nstepsmacro = 8000;  /* Max macros steps */
-  //PetscReal       dtmacro = 10000000000; /* Macro step size 10^10 */
+  /* this integrates to 4.55 Byr */
+  PetscInt        nstepsmacro = 455;  /* Max macros steps */
+  PetscReal       dtmacro = 10000000; /* Macro step size (years) */
 
   PetscMPIInt     size;
 
@@ -105,7 +106,9 @@ int main(int argc, char ** argv)
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
 
   /* Set up the integration period for first macro step */
-  ierr = TSSetDuration(ts,maxsteps,dtmacro);CHKERRQ(ierr); 
+  /* DJB convert from years to non-dimensional time */
+  nexttime = dtmacro / TIME0YEARS; // non-dim time
+  ierr = TSSetDuration(ts,maxsteps,nexttime);CHKERRQ(ierr);
 
   /* Set a very small initial timestep to prevent problems with 
      challenging initial conditions and adaptive steppers */
@@ -123,16 +126,19 @@ int main(int argc, char ** argv)
     walltimeprev = walltime0;
     PetscInt stepmacro=0;
     if (monitor) {
-      ierr = TSCustomMonitor(ts,stepmacro,time,t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
+      ierr = TSCustomMonitor(ts,dtmacro,stepmacro,time,t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
     }
     for (stepmacro=1;stepmacro<=nstepsmacro;++stepmacro){
       ierr = TSSolve(ts,dSdr_b_aug);CHKERRQ(ierr);
       timeprev = time;
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (monitor) {
-        ierr = TSCustomMonitor(ts,stepmacro,time,t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,dtmacro,stepmacro,time,t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
       }
-      ierr = TSSetDuration(ts,maxsteps,(stepmacro + 1) * dtmacro);CHKERRQ(ierr); 
+      /* DJB: convert from years to non-dimensional time */
+      nexttime = (stepmacro + 1) * dtmacro;
+      nexttime /= TIME0YEARS;
+      ierr = TSSetDuration(ts,maxsteps,nexttime);CHKERRQ(ierr); 
     }
   }
 
