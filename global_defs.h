@@ -18,16 +18,17 @@
 #define HEAD 4 /* number of header lines in datafile */
 
 /* these next values are for lookup-hires-RTmelt */
-#define NROWS 10100 /* number of coordinates in datafiles */
+/* note that you must also change the file locations below! */
+//#define NROWS 10100 /* number of coordinates in datafiles */
 /* N.B., NROWS = NX * NY */
-#define NX 101 /* no. of x coordinates in datafiles */
-#define NY 100 /* no. of y coordinates in datafiles */
+//#define NX 101 /* no. of x coordinates in datafiles */
+//#define NY 100 /* no. of y coordinates in datafiles */
 
 /* these next values are for lookup-hires-RTpress */
-//#define NROWS 15100 /* number of coordinates in datafiles */
+#define NROWS 15100 /* number of coordinates in datafiles */
 /* N.B., NROWS = NX * NY */
-//#define NX 151 /* no. of x coordinates in datafiles */
-//#define NY 100 /* no. of y coordinates in datafiles */
+#define NX 151 /* no. of x coordinates in datafiles */
+#define NY 100 /* no. of y coordinates in datafiles */
 
 /* 1-D datafiles containing liquidus and solidus
    as a function of pressure */
@@ -119,38 +120,38 @@ static const PetscScalar SWIDTH = 1.0E-2;
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/liquidus.dat";
-static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/liquidus.dat";
+//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2009_stixrude/RTpress/liquidus.dat";
+static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/RTpress/liquidus.dat";
 
 /* solidus data file */
-//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/solidus.dat";
-static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/solidus.dat";
+//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2009_stixrude/RTpress/solidus.dat";
+static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/RTpress/solidus.dat";
 
 /* solid data files */
-static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_solid.dat";
+static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTpress/evo/thermal_exp_solid.dat";
 
-static const char CP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/heat_capacity_solid.dat";
+static const char CP_SOL[] = "../../../data/lookup/lookup-hires-RTpress/evo/heat_capacity_solid.dat";
 
-static const char DTDPS_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/adiabat_temp_grad_solid.dat";
+static const char DTDPS_SOL[] = "../../../data/lookup/lookup-hires-RTpress/evo/adiabat_temp_grad_solid.dat";
 
-static const char RHO_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/density_solid.dat";
+static const char RHO_SOL[] = "../../../data/lookup/lookup-hires-RTpress/evo/density_solid.dat";
 
-static const char TEMP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_solid.dat";
+static const char TEMP_SOL[] = "../../../data/lookup/lookup-hires-RTpress/evo/temperature_solid.dat";
 
 static const PetscScalar LOG10VISC_SOL = 6.99089665051;
 
 static const PetscScalar COND_SOL = 1.30871862439e-17;
 
 /* melt data files */
-static const char ALPHA_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_melt.dat";
+static const char ALPHA_MEL[] = "../../../data/lookup/lookup-hires-RTpress/evo/thermal_exp_melt.dat";
 
-static const char CP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/heat_capacity_melt.dat";
+static const char CP_MEL[] = "../../../data/lookup/lookup-hires-RTpress/evo/heat_capacity_melt.dat";
 
-static const char DTDPS_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/adiabat_temp_grad_melt.dat";
+static const char DTDPS_MEL[] = "../../../data/lookup/lookup-hires-RTpress/evo/adiabat_temp_grad_melt.dat";
 
-static const char RHO_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/density_melt.dat";
+static const char RHO_MEL[] = "../../../data/lookup/lookup-hires-RTpress/evo/density_melt.dat";
 
-static const char TEMP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_melt.dat";
+static const char TEMP_MEL[] = "../../../data/lookup/lookup-hires-RTpress/evo/temperature_melt.dat";
 
 static const PetscScalar LOG10VISC_MEL = -12.0091033495;
 
