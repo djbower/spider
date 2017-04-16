@@ -30,13 +30,13 @@ int main(int argc, char ** argv)
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
   PetscReal       nexttime;                  /* next time to integrate to */
 
-  /* for the current non-dimensional time scaling for an Earth radius planet:
-     each time step is 5.810341565106721e-05 years */
-  /* early evolution */
+  /* early evolution to 10 kyr */
   //PetscInt        nstepsmacro = 1000;  /* Max macros steps */
   //PetscReal       dtmacro = 10;        /* Macro step size (years) */
-  /* late evolution */
-  /* this integrates to 4.55 Byr */
+  /* middle evolution to 100 Myr */
+  //PetscInt        nstepsmacro = 10000;  /* Max macros steps */
+  //PetscReal       dtmacro = 10000; /* Macro step size (years) */
+  /* late evolution to 4.55 Byr */
   PetscInt        nstepsmacro = 455;  /* Max macros steps */
   PetscReal       dtmacro = 10000000; /* Macro step size (years) */
 
