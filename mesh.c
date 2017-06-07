@@ -290,7 +290,7 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure )
     ierr = DMDAVecGetArray(da,pressure,&arr_p);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
         dep = 1.0 - arr_r[i];
-        arr_p[i] = RHOS * GRAVITY / BETA;
+        arr_p[i] = RHOS * -GRAVITY / BETA;
         arr_p[i] *= PetscExpScalar( BETA * dep ) - 1.0;
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
@@ -312,7 +312,7 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad )
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
         dep = 1.0 - arr_r[i];
-        arr_g[i] = -RHOS * GRAVITY * PetscExpScalar( BETA * dep );
+        arr_g[i] = RHOS * GRAVITY * PetscExpScalar( BETA * dep );
     }
     ierr = DMDAVecRestoreArray(da,grad,&arr_g);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);

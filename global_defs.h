@@ -84,8 +84,8 @@ static const PetscScalar RHOS = 0.8842085571948184;
 static const PetscScalar BETA = 0.7081588803940101;
 /* grain size */
 static const PetscScalar GRAIN = 1.56961230576e-10;
-/* gravity.  Always constant and must be positive */
-static const PetscScalar GRAVITY = 5.2772012422265826;
+/* gravity.  Always constant and must be negative */
+static const PetscScalar GRAVITY = -5.2772012422265826;
 /* melt fraction threshold for rheology */
 static const PetscScalar PHI_CRITICAL = 0.4;
 /* melt fraction transition width for rheology */

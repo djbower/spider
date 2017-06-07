@@ -537,7 +537,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       arr_nu[i] = arr_visc[i] / arr_rho[i];
 
       /* gravity * super-adiabatic temperature gradient */
-      arr_gsuper[i] = -GRAVITY * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
+      arr_gsuper[i] = GRAVITY * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
 
       /* eddy diffusivity */
       PetscScalar kh, crit;
@@ -608,8 +608,8 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         F /= PetscPowScalar( rhol+(rhos-rhol)*phi, 4.5 );
       }
 
-      arr_Jgrav[i] = (rhol-rhos) * rhol * rhos / rho;
-      arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * -GRAVITY * F;
+      arr_Jgrav[i] = (rhol-rhos) * rho;
+      arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
       arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
 
       arr_Jtot[i] += arr_Jcond[i] + arr_Jgrav[i];
