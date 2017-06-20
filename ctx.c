@@ -650,6 +650,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,S->solidus_temp,&arr_solidus_temp); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->temp,&arr_temp); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->visc,&arr_visc); CHKERRQ(ierr);
+
     /* energy fluxes */
     ierr = DMDAVecRestoreArray(    da_b,S->Etot,&arr_Etot); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->Jcond,&arr_Jcond); CHKERRQ(ierr);
@@ -662,6 +663,8 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
     ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+
+    set_Jtot( E );
 
     PetscFunctionReturn(0);
 }

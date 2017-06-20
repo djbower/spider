@@ -111,4 +111,6 @@ PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
 PetscErrorCode set_surface_flux( Ctx * );
 PetscErrorCode set_core_mantle_flux( Ctx * );
 
+PetscErrorCode set_Jtot( Ctx * );
+
 #endif
