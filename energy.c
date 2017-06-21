@@ -85,7 +85,6 @@ static PetscErrorCode set_Jgrav( Ctx *E )
     const PetscScalar *arr_cond1, *arr_cond2, *arr_liquidus_rho, *arr_phi, *arr_solidus_rho;
     PetscScalar icond1, icond2, irhos, irhol, iphi;
     PetscScalar *arr_F;
-    PetscScalar iF;
 
     PetscFunctionBeginUser;
 
@@ -138,19 +137,18 @@ static PetscErrorCode set_Jgrav( Ctx *E )
     for(i=ilo; i<ihi; ++i){
         icond1 = arr_cond1[i];
         icond2 = arr_cond2[i];
-        iF = arr_F[i];
         iphi = arr_phi[i];
         irhol = arr_liquidus_rho[i];
         irhos = arr_solidus_rho[i];
 
         if(iphi < icond1){
-            iF = 0.001*PetscPowScalar(irhos,2)*PetscPowScalar(iphi,3);
-            iF /= PetscPowScalar(irhol,2)*(1.0-iphi);
+            arr_F[i] = 0.001*PetscPowScalar(irhos,2)*PetscPowScalar(iphi,3);
+            arr_F[i] /= PetscPowScalar(irhol,2)*(1.0-iphi);
         } else if(iphi > icond2){
-            iF = 2.0/9.0 * iphi * (1.0-iphi);
+            arr_F[i] = 2.0/9.0 * iphi * (1.0-iphi);
         } else{
-            iF = 5.0/7.0*PetscPowScalar(irhos,4.5)*PetscPowScalar(iphi,5.5)*(1.0-iphi);
-            iF /= PetscPowScalar( irhol+(irhos-irhol)*iphi, 4.5 );
+            arr_F[i] = 5.0/7.0*PetscPowScalar(irhos,4.5)*PetscPowScalar(iphi,5.5)*(1.0-iphi);
+            arr_F[i] /= PetscPowScalar( irhol+(irhos-irhol)*iphi, 4.5 );
         }
     }
 
