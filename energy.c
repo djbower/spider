@@ -21,8 +21,7 @@ PetscErrorCode set_Jtot( Ctx *E )
     ierr = set_Jgrav( E );
 
     /* total heat flux by summing terms */
-    ierr = VecAYPX( S->Jtot, 1.0, S->Jconv );CHKERRQ(ierr);
-    ierr = VecAYPX( S->Jtot, 1.0, S->Jmix );CHKERRQ(ierr);
+    ierr = VecWAXPY( S->Jtot, 1.0, S->Jconv, S->Jmix );CHKERRQ(ierr);
     ierr = VecAYPX( S->Jtot, 1.0, S->Jcond );CHKERRQ(ierr);
     ierr = VecAYPX( S->Jtot, 1.0, S->Jgrav );CHKERRQ(ierr);
 
@@ -34,7 +33,7 @@ PetscErrorCode set_Jtot( Ctx *E )
 static PetscErrorCode set_Jconv( Ctx *E )
 {
     PetscErrorCode ierr;
-    Solution *S;
+    Solution       *S;
 
     PetscFunctionBeginUser;
 
@@ -56,7 +55,10 @@ static PetscErrorCode set_Jconv( Ctx *E )
 static PetscErrorCode set_Jmix( Ctx *E )
 {
     PetscErrorCode ierr;
-    Solution *S;
+    DM             da_b=E->da_b;
+    Solution       *S;
+    PetscInt       i, ilo, ihi, w;
+    PetscScalar    *arr_gphi, *arr_fwtl, *arr_fwts, *arr_Jmix;
 
     PetscFunctionBeginUser;
 
@@ -69,12 +71,36 @@ static PetscErrorCode set_Jmix( Ctx *E )
     ierr = VecWAXPY(S->Jmix,-1.0,S->dSliqdr,S->dSsoldr);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->phi);CHKERRQ(ierr);
     ierr = VecAYPX(S->Jmix,1.0,S->dSdr);CHKERRQ(ierr);
-    ierr = VecAYPX(S->Jmix,-1.0,S->dSsoldr);CHKERRQ(ierr);
+    ierr = VecAXPY(S->Jmix,-1.0,S->dSsoldr);CHKERRQ(ierr);
     // arr_Jmix[i] *= -arr_kappah[i] * arr_rho[i] * arr_temp[i];
     ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->kappah);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->rho);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->temp);CHKERRQ(ierr);
     ierr = VecScale(S->Jmix,-1.0);CHKERRQ(ierr);
+
+    ierr = DMDAGetCorners(da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ihi = ilo + w;
+
+    ierr = DMDAVecGetArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
+
+    /* to smoothly blend in convective mixing across the liquidus
+       and solidus */
+    for(i=ilo; i<ihi; ++i){
+        if(arr_gphi[i] > 0.5){
+            arr_Jmix[i] *= 1.0 - arr_fwtl[i];
+        }
+        else if (arr_gphi[i] <= 0.5){
+            arr_Jmix[i] *= arr_fwts[i];
+        }   
+    }
+
+    ierr = DMDAVecRestoreArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -100,6 +126,10 @@ static PetscErrorCode set_Jcond( Ctx *E )
     ierr = VecPointwiseMult(S->Jcond, S->Jcond, S->cond);CHKERRQ(ierr);
     ierr = VecScale(S->Jcond, -1.0);CHKERRQ(ierr);
 
+    /* at the moment, thermophysical properties are only computed at
+       the basic internal nodes, so temp/cp = 0/0 = NaN at the top
+       and bottom surface */
+
     PetscFunctionReturn(0);
 
 }
@@ -110,7 +140,7 @@ static PetscErrorCode set_Jgrav( Ctx *E )
     PetscErrorCode ierr;
     Solution *S;
     Vec cond1, cond2, rho, rhol, rhos, F;
-    PetscInt i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
+    PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
     DM da_b=E->da_b;
     const PetscScalar *arr_cond1, *arr_cond2, *arr_liquidus_rho, *arr_phi, *arr_solidus_rho;
     PetscScalar icond1, icond2, irhos, irhol, iphi;
@@ -119,10 +149,11 @@ static PetscErrorCode set_Jgrav( Ctx *E )
     PetscFunctionBeginUser;
 
     S = &E->solution;
-    numpts_b = NUMPTS_B_DEFAULT;
     rho = S->rho;
     rhol = S->liquidus_rho;
     rhos = S->solidus_rho;
+
+    ierr = DMDAGetInfo(da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &F );CHKERRQ(ierr);
     ierr = VecSetSizes( F, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
@@ -150,10 +181,7 @@ static PetscErrorCode set_Jgrav( Ctx *E )
 
     /* loop over all basic internal nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ierr = DMDAGetInfo(da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
-    ilo = ilo_b == 0        ? 1            : ilo_b;
-    ihi = ihi_b == numpts_b ? numpts_b - 1 : ihi_b;
 
     ierr = DMDAVecGetArrayRead(da_b, cond1, &arr_cond1);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b, cond2, &arr_cond2);CHKERRQ(ierr);
@@ -164,7 +192,7 @@ static PetscErrorCode set_Jgrav( Ctx *E )
 
     /* (I think) unavoidably have to loop over array to build F, since
        Petsc Vecs do not support logic operations? */
-    for(i=ilo; i<ihi; ++i){
+    for(i=ilo_b; i<ihi_b; ++i){
         icond1 = arr_cond1[i];
         icond2 = arr_cond2[i];
         iphi = arr_phi[i];

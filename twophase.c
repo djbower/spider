@@ -21,6 +21,62 @@ PetscErrorCode set_twophase( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode set_gphi_smooth( Ctx *E )
+{
+    /* smoothing at each radial coordinate as a function
+       of generalised melt fraction */
+
+    PetscErrorCode ierr;
+    DM             da_s=E->da_s, da_b=E->da_b;
+    Solution       *S;
+    PetscInt       i, ilo_s, ihi_s, w_s, ilo, ihi, w;
+    PetscScalar    *arr_gphi_s, *arr_fwtl_s, *arr_fwts_s, *arr_gphi, *arr_fwtl, *arr_fwts;
+
+    S = &E->solution;
+
+    PetscFunctionBeginUser;
+
+    /* basic nodes */
+    ierr = VecWAXPY(S->gphi,-1.0,S->solidus,S->S);CHKERRQ(ierr);
+    ierr = VecPointwiseDivide(S->gphi,S->gphi,S->fusion);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ihi = ilo + w;
+
+    ierr = DMDAVecGetArray(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
+
+    for(i=ilo; i<ihi; ++i){
+        arr_fwtl[i] = tanh_weight( arr_gphi[i], 1.0, SWIDTH );
+        arr_fwts[i] = tanh_weight( arr_gphi[i], 0.0, SWIDTH );
+    }
+
+    ierr = DMDAVecRestoreArray(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
+
+    /* staggered nodes */
+    ierr = VecWAXPY(S->gphi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
+    ierr = VecPointwiseDivide(S->gphi_s,S->gphi_s,S->fusion_s);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
+
+    ierr = DMDAVecGetArray(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->gphi_s,&arr_gphi_s);CHKERRQ(ierr);
+
+    for(i=ilo_s; i<ihi_s; ++i){
+        arr_fwtl_s[i] = tanh_weight( arr_gphi_s[i], 1.0, SWIDTH );
+        arr_fwts_s[i] = tanh_weight( arr_gphi_s[i], 0.0, SWIDTH );
+    }
+
+    ierr = DMDAVecRestoreArray(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->gphi_s,&arr_gphi_s);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 static PetscErrorCode set_liquidus( Ctx *E )
 {
     /* liquidus */

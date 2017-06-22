@@ -3,4 +3,6 @@
 
 #include "ctx.h"
 
+PetscErrorCode set_Jtot( Ctx * );
+
 #endif
