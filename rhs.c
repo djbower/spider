@@ -1,6 +1,7 @@
-#include "petsc.h"
 #include "ctx.h"
 #include "aug.h"
+#include "bc.h"
+#include "energy.h"
 
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"
@@ -89,11 +90,15 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
+  set_gphi_smooth( E );
+
   /* loop over staggered nodes and populate E struct */
   set_capacitance( E );
 
   /* loop over basic (internal) nodes and populate E struct */
   set_matprop_and_flux( E );
+
+  set_Etot( E );
 
   set_surface_flux( E );
 

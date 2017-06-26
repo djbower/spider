@@ -107,12 +107,6 @@ PetscScalar get_val2d( Interp2d *, PetscScalar, PetscScalar );
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar);
 PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
 
-// DJB TESTING I THINK THIS IS A BETTER WAY OF DOING IT
-//#include "bc.h"
-PetscErrorCode set_surface_flux( Ctx * );
-PetscErrorCode set_core_mantle_flux( Ctx * );
-
 PetscErrorCode set_gphi_smooth( Ctx * );
-PetscErrorCode set_Jtot( Ctx * );
 
 #endif

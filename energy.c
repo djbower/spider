@@ -1,12 +1,42 @@
 #include "energy.h"
 
+static PetscErrorCode set_Jtot( Ctx * );
 static PetscErrorCode set_Jconv( Ctx * );
 static PetscErrorCode set_Jmix( Ctx * );
 static PetscErrorCode set_Jcond( Ctx * );
 static PetscErrorCode set_Jgrav( Ctx * );
 
-/* total heat flux */
-PetscErrorCode set_Jtot( Ctx *E )
+/* can add internal heat sources below here */
+
+
+
+/* energy fluxes below here */
+
+/* total energy flow (flux*area) at basic nodes */
+PetscErrorCode set_Etot( Ctx *E )
+{
+    PetscErrorCode ierr;
+    Mesh *M;
+    Solution *S;
+
+    PetscFunctionBeginUser;
+
+    M = &E->mesh;
+    S = &E->solution;
+
+    ierr = set_Jtot(E); CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->Etot,S->Jtot,M->area_b); CHKERRQ(ierr);
+
+    // PS to check
+    ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+/* total heat flux at basic nodes */
+static PetscErrorCode set_Jtot( Ctx *E )
 {
     PetscErrorCode ierr;
     Solution *S;
@@ -25,11 +55,15 @@ PetscErrorCode set_Jtot( Ctx *E )
     ierr = VecAYPX( S->Jtot, 1.0, S->Jcond );CHKERRQ(ierr);
     ierr = VecAYPX( S->Jtot, 1.0, S->Jgrav );CHKERRQ(ierr);
 
+    // PS to check
+    ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 
 }
 
-/* convective heat flux */
+/* convective heat flux at basic nodes */
 static PetscErrorCode set_Jconv( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -51,7 +85,7 @@ static PetscErrorCode set_Jconv( Ctx *E )
 
 }
 
-/* mixing (latent) heat flux */
+/* mixing heat flux (latent heat transport) at basic nodes */
 static PetscErrorCode set_Jmix( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -106,7 +140,7 @@ static PetscErrorCode set_Jmix( Ctx *E )
 
 }
 
-/* conductive heat flux */
+/* conductive heat flux at basic nodes */
 static PetscErrorCode set_Jcond( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -134,7 +168,7 @@ static PetscErrorCode set_Jcond( Ctx *E )
 
 }
 
-/* gravitational separation heat flux */
+/* gravitational separation heat flux at basic nodes */
 static PetscErrorCode set_Jgrav( Ctx *E )
 {
     PetscErrorCode ierr;

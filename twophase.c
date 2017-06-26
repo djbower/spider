@@ -47,7 +47,11 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){
+        /* fwtl -> 1.0 for gphi > 1.0 */
+        /* fwtl -> 0.0 for gphi < 1.0 */
         arr_fwtl[i] = tanh_weight( arr_gphi[i], 1.0, SWIDTH );
+        /* fwts -> 1.0 for gphi > 0.0 */
+        /* fwts -> 0.0 for gphi < 0.0 */
         arr_fwts[i] = tanh_weight( arr_gphi[i], 0.0, SWIDTH );
     }
 
