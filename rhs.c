@@ -2,6 +2,8 @@
 #include "aug.h"
 #include "bc.h"
 #include "energy.h"
+#include "matprop.h"
+#include "twophase.h"
 
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"
@@ -93,10 +95,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   set_gphi_smooth( E );
 
   /* loop over staggered nodes and populate E struct */
-  set_capacitance( E );
+  set_capacitance_staggered( E );
 
   /* loop over basic (internal) nodes and populate E struct */
-  set_matprop_and_flux( E );
+  set_matprop_basic( E );
+
+  //set_matprop_and_flux( E );
 
   set_Etot( E );
 

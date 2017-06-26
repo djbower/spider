@@ -1,180 +1,43 @@
-#include "ctx.h"
+#include "matprop.h"
 
-/* Set up the Context */
-PetscErrorCode setup_ctx(Ctx* ctx)
+static PetscErrorCode set_matprop_staggered( Ctx * );
+static PetscScalar log_viscosity_mix( PetscScalar );
+static PetscScalar viscosity_mix_no_skew( PetscScalar );
+
+PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
-  PetscErrorCode ierr;
-  PetscInt       i,numpts_b,numpts_s; 
-  PetscBool      set;
+    PetscErrorCode    ierr;
+    Mesh              *M;
+    Solution          *S;
 
-  PetscFunctionBeginUser;
+    PetscFunctionBeginUser;
 
-  /* Initialize context with parameters (most parameters are constants in global_defs.h, though) */
-  set_lookups(ctx);
+    M = &E->mesh;
+    S = &E->solution;
 
-  /* Check for a command line option -n to set the number of *staggered* points */
-  ierr = PetscOptionsGetInt(NULL,NULL,"-n",&numpts_s,&set);CHKERRQ(ierr);
-  if (set){
-    numpts_b = numpts_s + 1;
-  } else {
-    numpts_b = NUMPTS_B_DEFAULT;
-    numpts_s = NUMPTS_S_DEFAULT;
-  }
+    ierr = set_matprop_staggered( E ); CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->lhs_s,S->temp_s,S->rho_s); CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,M->volume_s); CHKERRQ(ierr);
 
-  /* Set up a parallel structured grid as DMComposite with two included DMDAs
-     This is used to define vectors which hold the solution. The included 
-     DMDAs are used to create vectors which hold various properties
-     living on the same primal and staggered nodes.
-  */
-  const PetscInt stencilWidth = 1; //TODO: check that this is appropriate
-  const PetscInt dof = 1;
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,numpts_b,dof,stencilWidth,NULL,&ctx->da_b);CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,numpts_s,dof,stencilWidth,NULL,&ctx->da_s);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 
-#if (defined DEBUGOUTPUT)
-  {
-    PetscInt ilo_b,w_b,ihi_b,ilo_s,w_s,ihi_s;
-    PetscMPIInt rank;
-
-    ierr = DMDAGetCorners(ctx->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b;
-    ierr = DMDAGetCorners(ctx->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
-    ihi_s = ilo_s + w_s;
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_SELF,"[%d] index ranges b:%d<=i<%d, s:%d<=i<%d\n",rank,ilo_b,ihi_b,ilo_s,ihi_s);CHKERRQ(ierr);
-  }
-#endif
-
-  /* Continue to initialize context with distributed data */
-
-  for (i=0;i<NUMSOLUTIONVECS_B;++i){
-    ierr = DMCreateGlobalVector(ctx->da_b,&(ctx->solution.solutionVecs_b[i]));CHKERRQ(ierr);
-  }
-  ctx->solution.alpha               = ctx->solution.solutionVecs_b[0];
-  ctx->solution.alpha_mix           = ctx->solution.solutionVecs_b[1];
-  ctx->solution.cond                = ctx->solution.solutionVecs_b[2];
-  ctx->solution.cp                  = ctx->solution.solutionVecs_b[3];
-  ctx->solution.cp_mix              = ctx->solution.solutionVecs_b[4];
-  ctx->solution.dfusdr              = ctx->solution.solutionVecs_b[5];
-  ctx->solution.dfusdr_temp         = ctx->solution.solutionVecs_b[6];
-  ctx->solution.dSdr                = ctx->solution.solutionVecs_b[7];
-  ctx->solution.dSliqdr             = ctx->solution.solutionVecs_b[8];
-  ctx->solution.dSsoldr             = ctx->solution.solutionVecs_b[9];
-  ctx->solution.dTdrs               = ctx->solution.solutionVecs_b[10];
-  ctx->solution.dTdrs_mix           = ctx->solution.solutionVecs_b[11];
-  ctx->solution.Etot                = ctx->solution.solutionVecs_b[12];
-  ctx->solution.fusion              = ctx->solution.solutionVecs_b[13];
-  ctx->solution.fusion_curve        = ctx->solution.solutionVecs_b[14];
-  ctx->solution.fusion_curve_temp   = ctx->solution.solutionVecs_b[15];
-  ctx->solution.fusion_rho          = ctx->solution.solutionVecs_b[16];
-  ctx->solution.fusion_temp         = ctx->solution.solutionVecs_b[17];
-  ctx->solution.fwtl                = ctx->solution.solutionVecs_b[18]; // weight for liquid
-  ctx->solution.fwts                = ctx->solution.solutionVecs_b[19]; // weight for solid
-  ctx->solution.gphi                = ctx->solution.solutionVecs_b[20];
-  ctx->solution.gsuper              = ctx->solution.solutionVecs_b[21];
-  ctx->solution.Jcond               = ctx->solution.solutionVecs_b[22];
-  ctx->solution.Jconv               = ctx->solution.solutionVecs_b[23];
-  ctx->solution.Jgrav               = ctx->solution.solutionVecs_b[24];
-  ctx->solution.Jmix                = ctx->solution.solutionVecs_b[25];
-  ctx->solution.Jtot                = ctx->solution.solutionVecs_b[26];
-  ctx->solution.kappah              = ctx->solution.solutionVecs_b[27];
-  ctx->solution.liquidus            = ctx->solution.solutionVecs_b[28];
-  ctx->solution.liquidus_rho        = ctx->solution.solutionVecs_b[29];
-  ctx->solution.liquidus_temp       = ctx->solution.solutionVecs_b[30];
-  ctx->solution.nu                  = ctx->solution.solutionVecs_b[31];
-  ctx->solution.phi                 = ctx->solution.solutionVecs_b[32];
-  ctx->solution.rho                 = ctx->solution.solutionVecs_b[33];
-  ctx->solution.S                   = ctx->solution.solutionVecs_b[34];
-  ctx->solution.solidus             = ctx->solution.solutionVecs_b[35];
-  ctx->solution.solidus_rho         = ctx->solution.solutionVecs_b[36];
-  ctx->solution.solidus_temp        = ctx->solution.solutionVecs_b[37];
-  ctx->solution.temp                = ctx->solution.solutionVecs_b[38];
-  ctx->solution.visc                = ctx->solution.solutionVecs_b[39];
-
-  ierr = DMCreateLocalVector(ctx->da_b,&ctx->work_local_b);CHKERRQ(ierr);
-
-  for (i=0;i<NUMSOLUTIONVECS_S;++i){
-    ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.solutionVecs_s[i]));CHKERRQ(ierr);
-  }
-  ctx->solution.cp_s                = ctx->solution.solutionVecs_s[0];
-  ctx->solution.cp_mix_s            = ctx->solution.solutionVecs_s[1];
-  ctx->solution.fusion_s            = ctx->solution.solutionVecs_s[2];
-  ctx->solution.fusion_curve_s      = ctx->solution.solutionVecs_s[3];
-  ctx->solution.fusion_curve_temp_s = ctx->solution.solutionVecs_s[4];
-  ctx->solution.fusion_temp_s       = ctx->solution.solutionVecs_s[5];
-  ctx->solution.fwtl_s              = ctx->solution.solutionVecs_s[6]; // weight for liquid
-  ctx->solution.fwts_s              = ctx->solution.solutionVecs_s[7]; // weight for solid
-  ctx->solution.gphi_s              = ctx->solution.solutionVecs_s[8];
-  ctx->solution.lhs_s               = ctx->solution.solutionVecs_s[9];
-  ctx->solution.liquidus_rho_s      = ctx->solution.solutionVecs_s[10];
-  ctx->solution.liquidus_s          = ctx->solution.solutionVecs_s[11];
-  ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecs_s[12];
-  ctx->solution.phi_s               = ctx->solution.solutionVecs_s[13];
-  ctx->solution.rho_s               = ctx->solution.solutionVecs_s[14];
-  ctx->solution.S_s                 = ctx->solution.solutionVecs_s[15];
-  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[16];
-  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[17];
-  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[18];
-  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[19];
-
-  set_mesh(ctx);
-
-  set_d_dr( ctx );
-
-  set_twophase(ctx);
-
-  /* Obtain a command-line argument for S_init */
-  ctx->S_init = SINIT_DEFAULT;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&ctx->S_init,NULL);CHKERRQ(ierr);
-
-  /* initial condition is set in main.c */
-
-  PetscFunctionReturn(0);
 }
 
-PetscErrorCode destroy_ctx(Ctx* ctx)
-{
-  PetscErrorCode ierr;
-  PetscInt       i;
-
-  PetscFunctionBeginUser;
-
-  /* Destroy data allocated in Ctx */
-  for (i=0;i<NUMMESHVECS_B;++i){
-    ierr = VecDestroy(&ctx->mesh.meshVecs_b[i]);CHKERRQ(ierr);
-  }
-  for (i=0;i<NUMMESHVECS_S;++i){
-    ierr = VecDestroy(&ctx->mesh.meshVecs_s[i]);CHKERRQ(ierr);
-  }
-  for (i=0;i<NUMSOLUTIONVECS_B;++i){
-    ierr = VecDestroy(&ctx->solution.solutionVecs_b[i]);CHKERRQ(ierr);
-  }
-  ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
-  for (i=0;i<NUMSOLUTIONVECS_S;++i){
-    ierr = VecDestroy(&ctx->solution.solutionVecs_s[i]);CHKERRQ(ierr);
-  }
-
-  ierr = MatDestroy(&ctx->qty_at_b); CHKERRQ(ierr);
-  ierr = MatDestroy(&ctx->ddr_at_b); CHKERRQ(ierr);
-  ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
-  ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
-
-  PetscFunctionReturn(0);
-}
-
-//NOTE: This function MUST be called first when computing the RHS
-#if 0
-PetscErrorCode set_capacitance( Ctx *E )
+static PetscErrorCode set_matprop_staggered( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s=E->da_s;
-    Lookup            *L;
-    Mesh              *M;
-    Solution          *S;
+    Lookup            *L; 
+    Mesh              *M; 
+    Solution          *S; 
     Vec               pres_s;
-    const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_S_s, *arr_liquidus_s, *arr_solidus_s, *arr_fusion_s, *arr_cp_mix_s;
+    // material properties that are updated here
     PetscScalar       *arr_phi_s, *arr_rho_s, *arr_temp_s, *arr_cp_s;
+    // material properties used to update above
+    const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_S_s, *arr_liquidus_s, *arr_solidus_s, *arr_fusion_s, *arr_cp_mix_s;
+    // for smoothing properties across liquidus and solidus
+    const PetscScalar *arr_gphi_s, *arr_fwtl_s, *arr_fwts_s;
     PetscScalar       gphi, fwtl, fwts;
 
     PetscFunctionBeginUser;
@@ -198,6 +61,9 @@ PetscErrorCode set_capacitance( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->gphi_s,&arr_gphi_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->rho_s,&arr_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
@@ -206,14 +72,10 @@ PetscErrorCode set_capacitance( Ctx *E )
 
     for(i=ilo_s; i<ihi_s; ++i){
 
-      /* generalised melt fraction for smoothing */
-      gphi = arr_phi_s[i];
-      /* fwtl -> 1.0 for gphi > 1.0 */
-      /* fwtl -> 0.0 for gphi < 1.0 */
-      fwtl = tanh_weight( gphi, 1.0, SWIDTH );
-      /* fwts -> 1.0 for gphi > 0.0 */
-      /* fwts -> 0.0 for gphi < 0.0 */
-      fwts = tanh_weight( gphi, 0.0, SWIDTH );
+      // for smoothing
+      gphi = arr_gphi_s[i];
+      fwtl = arr_fwtl_s[i];
+      fwts = arr_fwts_s[i];
 
       /* melt fraction, also truncated here [0,1] */
       if (arr_phi_s[i] > 1.0){
@@ -284,98 +146,18 @@ PetscErrorCode set_capacitance( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->cp_mix_s,&arr_cp_mix_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->gphi_s,&arr_gphi_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->rho_s,&arr_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
 
-    // S->lhs_si = M->volume_si * S->rho_si * S->temp_si;
-    ierr = VecPointwiseMult(S->lhs_s,S->temp_s,S->rho_s);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,M->volume_s);CHKERRQ(ierr);
-
-    /* clean up */
-
     PetscFunctionReturn(0);
 }
-#endif
 
-#if 0
-static PetscScalar zmap( PetscScalar z )
-{
-    /* for skewed viscosity profile */
-
-    PetscScalar fac, fwt, zmap, shp;
-
-    shp = PHI_SKEW;
-
-    fac = PetscSqrtScalar(PetscSqr(shp*z)+1.0);
-
-    zmap = shp*PetscSqr(z)+z*fac+1.0/shp \
-        *PetscLogScalar(shp*z+fac);
-    zmap *= 0.5;
-
-    fwt = tanh_weight( zmap, 0.0, 1.0 );
-
-    return fwt;
-}
-#endif
-
-#if 0
-static PetscScalar viscosity_mix_skew( PetscScalar meltf )
-{
-    /* skewed viscosity in mixed phase region */
-
-    PetscScalar fsol, fwt, fwt2, fwt3, z;
-
-    fsol = 1.0 - meltf;
-    z = (fsol-F_THRESHOLD) / DF_TRANSITION;
-    fwt = zmap( z );
-
-    z = (1.0-F_THRESHOLD) / DF_TRANSITION;
-    fwt2 = zmap( z );
-
-    z = -F_THRESHOLD / DF_TRANSITION;
-    fwt3 = zmap( z );
-
-    fwt = -(fwt-fwt3)/(fwt3-fwt2);
-
-    return fwt;
-}
-#endif
-
-#if 0
-static PetscScalar viscosity_mix_no_skew( PetscScalar meltf )
-{
-    /* viscosity in mixed phase region with no skew */
-
-    PetscScalar fwt;
-
-    fwt = tanh_weight( meltf, PHI_CRITICAL, PHI_WIDTH );
-
-    return fwt;
-
-}
-#endif
-
-#if 0
-static PetscScalar log_viscosity_mix( PetscScalar meltf )
-{
-    PetscScalar fwt, lvisc;
-
-    /* below needs revising to use critical melt fraction and not
-       critical solid fraction */
-    //fwt = viscosity_mix_skew( meltf );
-
-    fwt = viscosity_mix_no_skew( meltf );
-    lvisc = fwt * LOG10VISC_MEL + (1.0 - fwt) * LOG10VISC_SOL;
-
-    return lvisc;
-
-}
-#endif
-
-#if 0
-PetscErrorCode set_matprop_and_flux( Ctx *E )
+PetscErrorCode set_matprop_basic( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
@@ -386,15 +168,18 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     const PetscScalar *arr_dSdr, *arr_S_b, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_gphi, *arr_fwtl, *arr_fwts;
-    PetscScalar       gphi;
-    Lookup            *L;
-    Mesh              *M;
-    Solution          *S;
+    PetscScalar       gphi, fwtl, fwts;
+    Lookup            *L; 
+    Mesh              *M; 
+    Solution          *S; 
 
     PetscFunctionBeginUser;
 
     M = &E->mesh;
     S = &E->solution;
+
+    ierr = VecWAXPY(S->phi,-1.0,S->solidus,S->S);CHKERRQ(ierr);
+    ierr = VecPointwiseDivide(S->phi,S->phi,S->fusion);CHKERRQ(ierr);
 
     /* loop over all basic internal nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
@@ -438,13 +223,12 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
     ierr = DMDAVecGetArray(    da_b,S->temp,&arr_temp); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->visc,&arr_visc); CHKERRQ(ierr);
 
-    for(i=ilo; i<ihi; ++i){ // Note that these correspond to basic nodes being updated, but we also assume an ordering on the staggered nodes!
+    for(i=ilo; i<ihi; ++i){
 
-      /* generalised melt fraction */
+      /* for smoothing */
       gphi = arr_gphi[i];
-
-      /* melt fraction */
-      arr_phi[i] = (arr_S_b[i] - arr_solidus[i]) / arr_fusion[i];
+      fwtl = arr_fwtl[i];
+      fwts = arr_fwts[i];
 
       /* truncate melt fraction */
       if (arr_phi[i] > 1.0){
@@ -455,7 +239,6 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         /* subsolidus */
         arr_phi[i] = 0.0;
       }
-
       /////////////////
       /* mixed phase */
       /////////////////
@@ -486,26 +269,26 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         /* get melt properties */
         L = &E->melt_prop;
         /* density */
-        arr_rho[i] *= 1.0 - arr_fwtl[i];
-        arr_rho[i] += arr_fwtl[i] * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
+        arr_rho[i] *= 1.0 - fwtl;
+        arr_rho[i] += fwtl * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
         /* adiabatic temperature gradient */
-        arr_dTdrs[i] *= 1.0 - arr_fwtl[i];
-        arr_dTdrs[i] += arr_fwtl[i] * arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
+        arr_dTdrs[i] *= 1.0 - fwtl;
+        arr_dTdrs[i] += fwtl * arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
         /* heat capacity */
-        arr_cp[i] *= 1.0 - arr_fwtl[i];
-        arr_cp[i] += arr_fwtl[i] * get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
+        arr_cp[i] *= 1.0 - fwtl;
+        arr_cp[i] += fwtl * get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
         /* temperature */
-        arr_temp[i] *= 1.0 - arr_fwtl[i];
-        arr_temp[i] += arr_fwtl[i] * get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
+        arr_temp[i] *= 1.0 - fwtl;
+        arr_temp[i] += fwtl * get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
         /* thermal expansion coefficient */
-        arr_alpha[i] *= 1.0 - arr_fwtl[i];
-        arr_alpha[i] += arr_fwtl[i] * get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
+        arr_alpha[i] *= 1.0 - fwtl;
+        arr_alpha[i] += fwtl * get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
         /* thermal conductivity */
-        arr_cond[i] *= 1.0 - arr_fwtl[i];
-        arr_cond[i] += arr_fwtl[i] * COND_MEL;
+        arr_cond[i] *= 1.0 - fwtl;
+        arr_cond[i] += fwtl * COND_MEL;
         /* viscosity */
-        arr_visc[i] *= 1.0 - arr_fwtl[i];
-        arr_visc[i] += arr_fwtl[i] * LOG10VISC_MEL;
+        arr_visc[i] *= 1.0 - fwtl;
+        arr_visc[i] += fwtl * LOG10VISC_MEL;
       }
 
       else if (gphi <= 0.5){
@@ -513,26 +296,26 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
         /* get solid properties */
         L = &E->solid_prop;
         /* density */
-        arr_rho[i] *= arr_fwts[i];
-        arr_rho[i] += (1.0-arr_fwts[i]) * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
+        arr_rho[i] *= fwts;
+        arr_rho[i] += (1.0-fwts) * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
         /* adiabatic temperature gradient */
-        arr_dTdrs[i] *= arr_fwts[i];
-        arr_dTdrs[i] += (1.0-arr_fwts[i]) * arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
+        arr_dTdrs[i] *= fwts;
+        arr_dTdrs[i] += (1.0-fwts) * arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
         /* heat capacity */
-        arr_cp[i] *= arr_fwts[i];
-        arr_cp[i] += (1.0-arr_fwts[i]) * get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
+        arr_cp[i] *= fwts;
+        arr_cp[i] += (1.0-fwts) * get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
         /* temperature */
-        arr_temp[i] *= arr_fwts[i];
-        arr_temp[i] += (1.0-arr_fwts[i]) * get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
+        arr_temp[i] *= fwts;
+        arr_temp[i] += (1.0-fwts) * get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
         /* thermal expansion coefficient */
-        arr_alpha[i] *= arr_fwts[i];
-        arr_alpha[i] += (1.0-arr_fwts[i]) * get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
+        arr_alpha[i] *= fwts;
+        arr_alpha[i] += (1.0-fwts) * get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
         /* thermal conductivity */
-        arr_cond[i] *= arr_fwts[i];
-        arr_cond[i] += (1.0-arr_fwts[i]) * COND_SOL;
+        arr_cond[i] *= fwts;
+        arr_cond[i] += (1.0-fwts) * COND_SOL;
         /* viscosity */
-        arr_visc[i] *= arr_fwts[i];
-        arr_visc[i] += (1.0-arr_fwts[i]) * LOG10VISC_SOL;
+        arr_visc[i] *= fwts;
+        arr_visc[i] += (1.0-fwts) * LOG10VISC_SOL;
       }
 
       /* compute viscosity */
@@ -563,7 +346,7 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
       arr_kappah[i] = kh;
 
     }
- 
+
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->S,&arr_S_b); CHKERRQ(ierr);
     /* mesh quantities */
@@ -601,4 +384,29 @@ PetscErrorCode set_matprop_and_flux( Ctx *E )
 
     PetscFunctionReturn(0);
 }
-#endif
+
+static PetscScalar log_viscosity_mix( PetscScalar meltf )
+{
+    PetscScalar fwt, lvisc;
+
+    /* below needs revising to use critical melt fraction and not
+       critical solid fraction */
+    //fwt = viscosity_mix_skew( meltf );
+
+    fwt = viscosity_mix_no_skew( meltf );
+    lvisc = fwt * LOG10VISC_MEL + (1.0 - fwt) * LOG10VISC_SOL;
+
+    return lvisc;
+}
+
+static PetscScalar viscosity_mix_no_skew( PetscScalar meltf )
+{
+    /* viscosity in mixed phase region with no skew */
+
+    PetscScalar fwt;
+
+    fwt = tanh_weight( meltf, PHI_CRITICAL, PHI_WIDTH );
+
+    return fwt;
+
+}

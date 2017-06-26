@@ -95,9 +95,9 @@ PetscErrorCode setup_ctx(Ctx *);
 PetscErrorCode destroy_ctx(Ctx *);
 
 PetscErrorCode set_d_dr( Ctx * );
-PetscErrorCode set_capacitance( Ctx * );
+// TO DELETE DJB PetscErrorCode set_capacitance( Ctx * );
 PetscErrorCode set_lookups( Ctx * );
-PetscErrorCode set_matprop_and_flux( Ctx * );
+// TO DELETE DJB PetscErrorCode set_matprop_and_flux( Ctx * );
 PetscErrorCode set_mesh( Ctx * );
 PetscErrorCode set_twophase( Ctx * );
 
