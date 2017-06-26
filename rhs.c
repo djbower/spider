@@ -100,8 +100,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* loop over basic (internal) nodes and populate E struct */
   set_matprop_basic( E );
 
-  //set_matprop_and_flux( E );
-
   set_Etot( E );
 
   set_surface_flux( E );

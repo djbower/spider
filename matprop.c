@@ -37,8 +37,8 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     // material properties used to update above
     const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_S_s, *arr_liquidus_s, *arr_solidus_s, *arr_fusion_s, *arr_cp_mix_s;
     // for smoothing properties across liquidus and solidus
-    const PetscScalar *arr_gphi_s, *arr_fwtl_s, *arr_fwts_s;
-    PetscScalar       gphi, fwtl, fwts;
+    const PetscScalar *arr_fwtl_s, *arr_fwts_s;
+    PetscScalar       fwtl, fwts;
 
     PetscFunctionBeginUser;
 
@@ -61,7 +61,6 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->gphi_s,&arr_gphi_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
@@ -73,7 +72,6 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     for(i=ilo_s; i<ihi_s; ++i){
 
       // for smoothing
-      gphi = arr_gphi_s[i];
       fwtl = arr_fwtl_s[i];
       fwts = arr_fwts_s[i];
 
@@ -101,7 +99,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
       ////////////////
       /* melt phase */
       ////////////////
-      if (gphi > 0.5){
+      if (arr_phi_s[i] > 0.5){
 
           /* get melt properties */
           L = &E->melt_prop;
@@ -119,7 +117,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
       /////////////////
       /* solid phase */
       /////////////////
-      else if (gphi<=0.5){
+      else if (arr_phi_s[i]<=0.5){
 
           /* get solid properties */
           L = &E->solid_prop;
@@ -146,7 +144,6 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->cp_mix_s,&arr_cp_mix_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->gphi_s,&arr_gphi_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
@@ -167,8 +164,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     // material properties used to update above
     const PetscScalar *arr_dSdr, *arr_S_b, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
     // for smoothing properties across liquidus and solidus
-    const PetscScalar *arr_gphi, *arr_fwtl, *arr_fwts;
-    PetscScalar       gphi, fwtl, fwts;
+    const PetscScalar *arr_fwtl, *arr_fwts;
+    PetscScalar       fwtl, fwts;
     Lookup            *L; 
     Mesh              *M; 
     Solution          *S; 
@@ -208,7 +205,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->fusion_temp,&arr_fusion_temp); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->fwtl,&arr_fwtl); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->fwts,&arr_fwts); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->gphi,&arr_gphi); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->liquidus,&arr_liquidus); CHKERRQ(ierr);
@@ -226,7 +222,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     for(i=ilo; i<ihi; ++i){
 
       /* for smoothing */
-      gphi = arr_gphi[i];
       fwtl = arr_fwtl[i];
       fwts = arr_fwts[i];
 
@@ -264,7 +259,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       ////////////////
       /* melt phase */
       ////////////////
-      if (gphi > 0.5){
+      if (arr_phi[i] > 0.5){
 
         /* get melt properties */
         L = &E->melt_prop;
@@ -291,7 +286,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
         arr_visc[i] += fwtl * LOG10VISC_MEL;
       }
 
-      else if (gphi <= 0.5){
+      else if (arr_phi[i] <= 0.5){
 
         /* get solid properties */
         L = &E->solid_prop;
@@ -367,7 +362,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,S->fusion_temp,&arr_fusion_temp); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->fwtl,&arr_fwtl); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->fwts,&arr_fwts); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->gphi,&arr_gphi); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->liquidus,&arr_liquidus); CHKERRQ(ierr);
@@ -410,3 +404,47 @@ static PetscScalar viscosity_mix_no_skew( PetscScalar meltf )
     return fwt;
 
 }
+
+#if 0
+static PetscScalar viscosity_mix_skew( PetscScalar meltf )
+{
+    /* skewed viscosity in mixed phase region */
+
+    PetscScalar fsol, fwt, fwt2, fwt3, z;
+
+    fsol = 1.0 - meltf;
+    z = (fsol-F_THRESHOLD) / DF_TRANSITION;
+    fwt = zmap( z );
+
+    z = (1.0-F_THRESHOLD) / DF_TRANSITION;
+    fwt2 = zmap( z );
+
+    z = -F_THRESHOLD / DF_TRANSITION;
+    fwt3 = zmap( z );
+
+    fwt = -(fwt-fwt3)/(fwt3-fwt2);
+
+    return fwt;
+}
+#endif
+
+#if 0
+static PetscScalar zmap( PetscScalar z )
+{
+    /* for skewed viscosity profile */
+
+    PetscScalar fac, fwt, zmap, shp;
+
+    shp = PHI_SKEW;
+
+    fac = PetscSqrtScalar(PetscSqr(shp*z)+1.0);
+
+    zmap = shp*PetscSqr(z)+z*fac+1.0/shp \
+        *PetscLogScalar(shp*z+fac);
+    zmap *= 0.5;
+
+    fwt = tanh_weight( zmap, 0.0, 1.0 );
+
+    return fwt;
+}
+#endif
