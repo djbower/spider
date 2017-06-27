@@ -8,5 +8,6 @@ PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
 PetscErrorCode set_d_dr( Ctx * );
 PetscErrorCode set_d_dr_linear( Ctx * );
 PetscErrorCode set_d_dr_quadratic( Ctx * );
+PetscErrorCode set_entropy( Ctx *, PetscScalar );
 
 #endif

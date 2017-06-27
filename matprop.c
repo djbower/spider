@@ -181,12 +181,16 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = VecWAXPY(S->phi,-1.0,S->solidus,S->S);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->phi,S->phi,S->fusion);CHKERRQ(ierr);
 
-    /* loop over all basic internal nodes */
+    /* loop over all basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ierr = DMDAGetInfo(da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
-    ilo = ilo_b == 0        ? 1            : ilo_b;
-    ihi = ihi_b == numpts_b ? numpts_b - 1 : ihi_b;
+    /* loop over all basic nodes */
+    ilo = ilo_b;
+    ihi = ihi_b;
+    /* restrict to basic nodes by uncommenting below */
+    //ilo = ilo_b == 0        ? 1            : ilo_b;
+    //ihi = ihi_b == numpts_b ? numpts_b - 1 : ihi_b;
 
     ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->S,&arr_S_b); CHKERRQ(ierr);

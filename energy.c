@@ -5,12 +5,47 @@ static PetscErrorCode set_Jconv( Ctx * );
 static PetscErrorCode set_Jmix( Ctx * );
 static PetscErrorCode set_Jcond( Ctx * );
 static PetscErrorCode set_Jgrav( Ctx * );
+static PetscErrorCode set_Hdecay( Ctx * );
 
-/* can add internal heat sources below here */
+///////////////////////////
+/* internal heat sources */
+///////////////////////////
+/* total internal heat generation */
+PetscErrorCode set_Htot( Ctx *E )
+{
+    PetscErrorCode ierr;
+    //Mesh           *M = &E->mesh;
+    Solution       *S = &E->solution;
 
+    PetscFunctionBeginUser;
 
+    set_Hdecay( E );
 
-/* energy fluxes below here */
+    /* total internal heat generation by summing terms */
+    ierr = VecSet( S->Htot, 0.0 ); CHKERRQ(ierr);
+    ierr = VecAXPY( S->Htot, 1.0, S->Hdecay ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+/* internal heat generation from radionuclides */
+static PetscErrorCode set_Hdecay( Ctx *E )
+{
+    PetscErrorCode ierr;
+    //Mesh           *M = &E->mesh;
+    Solution       *S = &E->solution;
+
+    PetscFunctionBeginUser;
+
+    /* do stuff here */
+    ierr = VecSet( S->Hdecay, 0.0 ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+///////////////////
+/* energy fluxes */
+///////////////////
 
 /* total energy flow (flux*area) at basic nodes */
 PetscErrorCode set_Etot( Ctx *E )
@@ -27,9 +62,9 @@ PetscErrorCode set_Etot( Ctx *E )
     ierr = set_Jtot(E); CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Etot,S->Jtot,M->area_b); CHKERRQ(ierr);
 
-    // PS to check
-    ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
+    // I don't think this has to be done here?
+    //ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
+    //ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -55,9 +90,9 @@ static PetscErrorCode set_Jtot( Ctx *E )
     ierr = VecAYPX( S->Jtot, 1.0, S->Jcond );CHKERRQ(ierr);
     ierr = VecAYPX( S->Jtot, 1.0, S->Jgrav );CHKERRQ(ierr);
 
-    // PS to check
-    ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+    // I don't think this has to be done here?
+    //ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+    //ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 

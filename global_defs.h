@@ -12,6 +12,7 @@
 /* Definitions */
 //#define VERBOSE 1
 //#define DEBUGOUTPUT 1
+#define HEATGEN 1
 
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */

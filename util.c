@@ -1,5 +1,71 @@
 #include "util.h"
 
+/* integrate dS/dr to get the entropy profile
+   this function only works in serial */
+PetscErrorCode set_entropy( Ctx *E, PetscScalar S0 )
+{
+    PetscErrorCode ierr;
+    Mesh           *M = &E->mesh;
+    Solution       *S = &E->solution;
+    PetscScalar    *arr_S_b, *arr_S_s, *arr_dSdr_b, *arr_radius_s, *arr_radius_b;
+    PetscInt       i, ihi_b, ilo_b, w_b;
+#if (defined VERBOSE)
+    PetscMPIInt    size;
+#endif
+    DM             da_s = E->da_s, da_b=E->da_b;
+
+    PetscFunctionBeginUser;
+
+#if (defined VERBOSE)
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+    if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
+#endif
+
+    /* for looping over basic nodes */
+    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+
+    ierr = DMDAVecGetArray(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+
+    /* S (absolute) at all staggered and basic internal nodes */
+    arr_S_s[0] = 0.0;
+    /* note plus one for start of loop */
+    for(i=ilo_b+1; i<ihi_b-1; ++i){
+      /* S (absolute) at staggered nodes */
+      arr_S_s[i] = arr_dSdr_b[i] * (arr_radius_s[i] - arr_radius_s[i-1] );
+      arr_S_s[i] += arr_S_s[i-1]; // dS relative to first staggered value
+      arr_S_b[i] = arr_dSdr_b[i] * 0.5 * (arr_radius_b[i] - arr_radius_b[i-1] );
+      arr_S_b[i] += arr_S_s[i-1];
+      arr_S_s[i-1] += S0; // add at end to try and retain precision
+      arr_S_b[i-1] += S0; // add at end to try and retain precision
+    }
+    /* loop above terminates before we have added the constant offset
+       to the last staggered node value.  So do that here */
+    arr_S_s[ihi_b-2] += S0; // add at end to try and retain precision
+    arr_S_b[ihi_b-2] += S0; // add at end to try and retain precision
+
+    /* now deal with top and bottom surfaces (outermost basic nodes)
+       use gradients to give estimates of entropy at the top
+       and bottom surfaces by extrapolation.  Remember that S0 has already
+       been included by the loop above over the basic internal nodes */
+    arr_S_b[0] = -arr_dSdr_b[1] * 0.5 * (arr_radius_b[1] - arr_radius_b[0]);
+    arr_S_b[0] += arr_S_s[0];
+    arr_S_b[ihi_b-1] = arr_dSdr_b[ihi_b-2] * 0.5 * (arr_radius_b[ihi_b-1]-arr_radius_b[ihi_b-2]);
+    arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
+
+    ierr = DMDAVecRestoreArray(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 PetscScalar combine_matprop( PetscScalar weight, PetscScalar mat1, PetscScalar mat2 )
 {
     /* linear weighting of two quantities */
@@ -9,7 +75,6 @@ PetscScalar combine_matprop( PetscScalar weight, PetscScalar mat1, PetscScalar m
     out = weight * mat1 + (1.0-weight) * mat2;
 
     return out;
-
 }
 
 PetscScalar tanh_weight( PetscScalar qty, PetscScalar threshold, PetscScalar width )
@@ -21,7 +86,6 @@ PetscScalar tanh_weight( PetscScalar qty, PetscScalar threshold, PetscScalar wid
     z = ( qty - threshold ) / width;
     fwt = 0.5 * ( 1.0 + PetscTanhScalar( z ) );
     return fwt;
-
 }
 
 PetscErrorCode set_d_dr( Ctx *E )
@@ -35,7 +99,6 @@ PetscErrorCode set_d_dr( Ctx *E )
     //set_d_dr_quadratic( E );
 
     PetscFunctionReturn(0);
-
 }
 
 
@@ -119,7 +182,6 @@ PetscErrorCode set_d_dr_linear( Ctx *E )
     ierr = MatDestroy(&B); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 

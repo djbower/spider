@@ -26,6 +26,8 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
     if (!rank){
       ind = 0;
+      /* could possibly formulate below using surface values, as now we
+         extrapolate to get values at the surface */
       ierr = VecGetValues(S->phi_s,1,&ind,&phi_s_0);CHKERRQ(ierr);
       /* SWIDTH or PHI_WIDTH most appropriate choice here? */
       fwt = tanh_weight( phi_s_0, PHI_CRITICAL, SWIDTH );
