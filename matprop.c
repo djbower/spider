@@ -1,4 +1,6 @@
 #include "matprop.h"
+#include "util.h"
+#include "lookup.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar log_viscosity_mix( PetscScalar );

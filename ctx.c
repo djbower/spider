@@ -1,4 +1,8 @@
 #include "ctx.h"
+#include "mesh.h"
+#include "twophase.h"
+#include "lookup.h"
+#include "util.h"
 
 /* Set up the Context */
 PetscErrorCode setup_ctx(Ctx* ctx)

@@ -1,4 +1,5 @@
 #include "bc.h"
+#include "util.h"
 
 static PetscScalar radiative_flux_with_dT( PetscScalar );
 static PetscScalar radiative_flux( PetscScalar );

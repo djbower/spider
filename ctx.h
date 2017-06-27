@@ -91,22 +91,9 @@ typedef struct _Ctx {
   //       it could all be flattened out (and probably would be in a re-implementation)
 } Ctx;
 
+/* prototype definitions must come at the end, since before this
+   point the code doesn't know about the Ctx structure */
 PetscErrorCode setup_ctx(Ctx *);
 PetscErrorCode destroy_ctx(Ctx *);
-
-PetscErrorCode set_d_dr( Ctx * );
-// TO DELETE DJB PetscErrorCode set_capacitance( Ctx * );
-PetscErrorCode set_lookups( Ctx * );
-// TO DELETE DJB PetscErrorCode set_matprop_and_flux( Ctx * );
-PetscErrorCode set_mesh( Ctx * );
-PetscErrorCode set_twophase( Ctx * );
-
-PetscScalar get_val1d( Interp1d *, PetscScalar );
-PetscScalar get_val2d( Interp2d *, PetscScalar, PetscScalar );
-
-PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar);
-PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
-
-PetscErrorCode set_gphi_smooth( Ctx * );
 
 #endif

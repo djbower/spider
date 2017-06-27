@@ -1,4 +1,6 @@
 #include "twophase.h"
+#include "util.h"
+#include "lookup.h"
 
 static PetscErrorCode set_liquidus( Ctx * );
 static PetscErrorCode set_solidus( Ctx * );
