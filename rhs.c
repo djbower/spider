@@ -15,7 +15,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   Mesh              *M = &E->mesh;
   Solution          *S = &E->solution;
   PetscScalar       *arr_rhs_b, *arr_radius_s, *arr_radius_b;
-  const PetscScalar *arr_Etot,*arr_lhs_s;
+  const PetscScalar *arr_Etot, *arr_lhs_s, *arr_temp_s, *arr_Htot_s;
   PetscMPIInt       rank,size;
   PetscInt          i,ihi_b,ilo_b,w_b,numpts_b;
   DM                da_s = E->da_s, da_b=E->da_b;
@@ -60,6 +60,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   set_Etot( E );
 
+  set_Htot( E );
+
   set_surface_flux( E );
 
   set_core_mantle_flux( E );
@@ -69,16 +71,23 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMGlobalToLocalBegin(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalEnd(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s,S->temp_s,&arr_temp_s); CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
   /* note plus one for start of loop */
   for(i=ilo_b+1; i<ihi_b; ++i){
+    /* fluxes */
     arr_rhs_b[i] = arr_Etot[i+1] * ( 1.0 / arr_lhs_s[i] );
     arr_rhs_b[i] += arr_Etot[i] * ( -1.0 / arr_lhs_s[i] - 1.0 / arr_lhs_s[i-1] );
     arr_rhs_b[i] += arr_Etot[i-1] * ( 1.0 / arr_lhs_s[i-1] );
-    arr_rhs_b[i] /= arr_radius_s[i] - arr_radius_s[i-1];
+    /* internal heat generation */
+    arr_rhs_b[i] += arr_Htot_s[i] / arr_temp_s[i];
+    arr_rhs_b[i] -= arr_Htot_s[i] / arr_temp_s[i-1];
+    /* d/dr term */
+    arr_rhs_b[i] /= arr_radius_s[i] - arr_radius_s[i-1]; // note this is negative
   }
 
   /* TODO: this will break in parallel*/
@@ -88,7 +97,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
   /* Transfer back  */
   ierr = ToAug(rhs_b,rhs_b_aug);CHKERRQ(ierr);

@@ -5,7 +5,7 @@ static PetscErrorCode set_Jconv( Ctx * );
 static PetscErrorCode set_Jmix( Ctx * );
 static PetscErrorCode set_Jcond( Ctx * );
 static PetscErrorCode set_Jgrav( Ctx * );
-static PetscErrorCode set_Hdecay( Ctx * );
+static PetscErrorCode set_Hradio( Ctx * );
 
 ///////////////////////////
 /* internal heat sources */
@@ -19,17 +19,22 @@ PetscErrorCode set_Htot( Ctx *E )
 
     PetscFunctionBeginUser;
 
-    set_Hdecay( E );
+    set_Hradio( E );
 
     /* total internal heat generation by summing terms */
-    ierr = VecSet( S->Htot, 0.0 ); CHKERRQ(ierr);
-    ierr = VecAXPY( S->Htot, 1.0, S->Hdecay ); CHKERRQ(ierr);
+    ierr = VecSet( S->Htot_s, 0.0 ); CHKERRQ(ierr);
+    ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
+
+    /* Htot = int_V rho H dV */
+    /* where rho is kg/m^3
+             H   is W/kg
+             dV  is m^3 */
 
     PetscFunctionReturn(0);
 }
 
 /* internal heat generation from radionuclides */
-static PetscErrorCode set_Hdecay( Ctx *E )
+static PetscErrorCode set_Hradio( Ctx *E )
 {
     PetscErrorCode ierr;
     //Mesh           *M = &E->mesh;
@@ -38,7 +43,7 @@ static PetscErrorCode set_Hdecay( Ctx *E )
     PetscFunctionBeginUser;
 
     /* do stuff here */
-    ierr = VecSet( S->Hdecay, 0.0 ); CHKERRQ(ierr);
+    ierr = VecSet( S->Hradio_s, 1.0E-8 ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
