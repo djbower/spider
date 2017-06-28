@@ -4,6 +4,6 @@
 #include "ctx.h"
 
 PetscErrorCode set_Etot( Ctx * );
-PetscErrorCode set_Htot( Ctx * );
+PetscErrorCode set_Htot( Ctx *, PetscReal t );
 
 #endif

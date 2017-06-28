@@ -5,13 +5,13 @@ static PetscErrorCode set_Jconv( Ctx * );
 static PetscErrorCode set_Jmix( Ctx * );
 static PetscErrorCode set_Jcond( Ctx * );
 static PetscErrorCode set_Jgrav( Ctx * );
-static PetscErrorCode set_Hradio( Ctx * );
+static PetscErrorCode set_Hradio( Ctx *, PetscReal t );
 
 ///////////////////////////
 /* internal heat sources */
 ///////////////////////////
 /* total internal heat generation */
-PetscErrorCode set_Htot( Ctx *E )
+PetscErrorCode set_Htot( Ctx *E, PetscReal t )
 {
     PetscErrorCode ierr;
     //Mesh           *M = &E->mesh;
@@ -19,25 +19,42 @@ PetscErrorCode set_Htot( Ctx *E )
 
     PetscFunctionBeginUser;
 
-    set_Hradio( E );
+    set_Hradio( E, t );
 
     /* Htot = int_V rho H dV */
 
     /* total internal heat generation by summing terms */
     ierr = VecSet( S->Htot_s, 0.0 ); CHKERRQ(ierr);
+
+/* Tim Lichtenberg should turn on HEATGEN in global_defs.h
+   to activate this function */
+#if (defined HEATGEN)
     ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
+#endif
 
     PetscFunctionReturn(0);
 }
 
 /* internal heat generation from radionuclides */
-static PetscErrorCode set_Hradio( Ctx *E )
+/* template function for Tim Lichtenberg to amend */
+static PetscErrorCode set_Hradio( Ctx *E, PetscReal t )
 {
     PetscErrorCode ierr;
     //Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
+    PetscReal      dimt;
+    PetscScalar    Alheat;
+    PetscScalar    thalf = 7.17E5; // years (from Tim's spreadsheet)
+    /* initial heating rate of Al26 */
+    /* way higher than it should be, but useful for checking
+       the code */
+    PetscScalar    Alinit = 1.526E-7; // W/kg (from Tim's spreadsheet)
+    PetscScalar    decayconst = log(2)/thalf; // 1/years
 
     PetscFunctionBeginUser;
+
+    /* current dimensional time in years */
+    dimt = t * TIME0YEARS;
 
     /* a simple calculation for Earth (r=6371000, core size=0.55)
        tells you that to balance a heat flux of 10^6 W requires
@@ -49,8 +66,13 @@ static PetscErrorCode set_Hradio( Ctx *E )
     /* this applies constant heating throughout the domain */
     //ierr = VecSet( S->Hradio_s, 1.0E-8 ); CHKERRQ(ierr);
 
-    // by default no heating */
-    ierr = VecSet( S->Hradio_s, 0.0 ); CHKERRQ(ierr);
+    // no heating example */
+    //ierr = VecSet( S->Hradio_s, 0.0 ); CHKERRQ(ierr);
+
+    /* decay Al26 radiogenic heat production with time */
+    Alheat = Alinit*exp(-decayconst*dimt);
+    Alheat /= 6584.128807671617; // non-dimensionalise as below
+    ierr = VecSet( S->Hradio_s, Alheat ); CHKERRQ(ierr);
 
     /* the dimensional scaling for heat sources is:
            6584.128807671617 W / kg

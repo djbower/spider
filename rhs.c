@@ -60,7 +60,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   set_Etot( E );
 
-  set_Htot( E );
+  set_Htot( E, t );
 
   set_surface_flux( E );
 

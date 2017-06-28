@@ -13,6 +13,9 @@
 //#define VERBOSE 1
 //#define DEBUGOUTPUT 1
 
+/* for Tim Lichtenberg.  Uncomment to include radiogenic heating */
+//#define HEATGEN 1
+
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
 #define HEAD 4 /* number of header lines in datafile */
