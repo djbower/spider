@@ -26,30 +26,23 @@ profile or bash_profile and resource (clear these variables)
 1. get the hacked version of PETSc (Patrick must give you read access to his
 bitbucket):
 
-git clone
-https://bitbucket.org/psanan/petscfork/branch/psanan/ts-sundials-quad-hack petsc-double-direct
+git clone https://bitbucket.org/psanan/petscfork -b psanan/ts-sundials-quad-hack petsc-double-direct
 
-2. change directories and switch to the hacked branch:
+2. change directories
 cd petsc-double-direct/
-git checkout psanan/ts-sundials-quad-hack
 
-PS: is it necessary to download mpich?
 3a. configure PETSc using the following command:
 ./configure --with-debugging=0 --with-fc=0 --download-sundials --download-mpich --with-cc=gcc --with-cxx=g++ --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 3b.  [Aside] For a debug build, amend command above to use --with-debugging=1
 and remove optimisation flags
 
-4. make (the following all assume an optimised build, i.e, 3a above):
+4. make (the following all assume an optimised build, i.e, 3a above).
+PETSc's configure process, if successful, will end by printing out this command, which you can copy and paste:
 make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-darwin-c-opt all
 
-5. run tests:
+5. run tests (PETSc's make process will print this out for you to copy and paste):
 make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-darwin-c-opt test
-
-6. test streams:
-make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct
-PETSC_ARCH=arch-darwin-c-opt streams
-
 
 -------------------
 QUADRUPLE PRECISION
@@ -71,8 +64,8 @@ profile or bash_profile and resource (clear these variables)
 1. Patrick needs to give you read access to his bitbucket to obtain
    the quad-supported version of SUNDIALS
 
-2. My clone command is:
-   git clone https://djbower@bitbucket.org/psanan/sundials-quad.git sundials-quad
+2. Clone from git repository:
+   git clone https://bitbucket.org/psanan/sundials-quad.git sundials-quad
  
 3. Install Sundials:
    Notes:
@@ -110,16 +103,11 @@ profile or bash_profile and resource (clear these variables)
 1. get the hacked version of PETSc (Patrick must give you read access to his
 bitbucket):
 
-git clone
-https://bitbucket.org/psanan/petscfork/branch/psanan/ts-sundials-quad-hack
-petsc-quad-direct
+git clone https://bitbucket.org/psanan/petscfork -b psanan/ts-sundials-quad-hack petsc-quad-direct
 
-2. change directories and switch to the hacked branch (otherwise you'll get an error about sundials not supporting __float128).
-
+2. change directories
 cd petsc-quad-direct/
-git checkout psanan/ts-sundials-quad-hack
 
-PS: is it necessary to download mpich / f2cblaslapack?
 3a. configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created:
 
 ./configure --with-debugging=0 --with-fc=0 --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/Users/dan/Programs/sundials-quad/instdir --download-mpich --download-f2cblaslapack --with-cc=gcc --with-cxx=g++ --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
@@ -132,10 +120,6 @@ make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-dar
 
 5. run tests:
 make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-darwin-c-opt test
-
-6. test streams:
-make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct
-PETSC_ARCH=arch-darwin-c-opt streams
 
 ------
 C CODE
