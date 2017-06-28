@@ -39,12 +39,18 @@ static PetscErrorCode set_Hradio( Ctx *E )
 
     PetscFunctionBeginUser;
 
+    /* a simple calculation for Earth (r=6371000, core size=0.55)
+       tells you that to balance a heat flux of 10^6 W requires
+       internal heating around 1.41E-4 W/kg, which non-dimensionalised
+       is about 2.14E-8 */
+
     /* do stuff here */
-    /* for something simple, this applies constant heating throughout
-       the domain */
-    /* I think a rough estimate of heating by Al26 is 1E-6 W/kg
-       which when non-dimensionalised is around 1.5E-10 */
-    ierr = VecSet( S->Hradio_s, 1.5E-10 ); CHKERRQ(ierr);
+
+    /* this applies constant heating throughout the domain */
+    //ierr = VecSet( S->Hradio_s, 1.0E-8 ); CHKERRQ(ierr);
+
+    // by default no heating */
+    ierr = VecSet( S->Hradio_s, 0.0 ); CHKERRQ(ierr);
 
     /* the dimensional scaling for heat sources is:
            6584.128807671617 W / kg

@@ -70,7 +70,7 @@ static const PetscScalar SINIT_DEFAULT = 1.02;
 // for middle out cases
 //static const PetscScalar IC_DSDR = -1.0E-8;
 // for bottom up cases
-static const PetscScalar IC_DSDR = -1.0E-3;
+static const PetscScalar IC_DSDR = -1.0E-6;
 
 /* constants */
 /* dimensional time scaling */
