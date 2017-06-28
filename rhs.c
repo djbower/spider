@@ -91,7 +91,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   }
 
   /* TODO: this will break in parallel*/
+  /* fluxes */
   dS0dt = ( arr_Etot[1] - arr_Etot[0] ) / arr_lhs_s[0];
+  /* internal heat generation */
+  dS0dt += arr_Htot_s[0] / arr_temp_s[0];
 
   ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
