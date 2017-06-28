@@ -40,7 +40,11 @@ static PetscErrorCode set_Hradio( Ctx *E )
     PetscFunctionBeginUser;
 
     /* do stuff here */
-    ierr = VecSet( S->Hradio_s, 0.0 ); CHKERRQ(ierr);
+    /* for something simple, this applies constant heating throughout
+       the domain */
+    /* I think a rough estimate of heating by Al26 is 1E-6 W/kg
+       which when non-dimensionalised is around 1.5E-10 */
+    ierr = VecSet( S->Hradio_s, 1.5E-10 ); CHKERRQ(ierr);
 
     /* the dimensional scaling for heat sources is:
            6584.128807671617 W / kg
