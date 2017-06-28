@@ -21,14 +21,11 @@ PetscErrorCode set_Htot( Ctx *E )
 
     set_Hradio( E );
 
+    /* Htot = int_V rho H dV */
+
     /* total internal heat generation by summing terms */
     ierr = VecSet( S->Htot_s, 0.0 ); CHKERRQ(ierr);
     ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
-
-    /* Htot = int_V rho H dV */
-    /* where rho is kg/m^3
-             H   is W/kg
-             dV  is m^3 */
 
     PetscFunctionReturn(0);
 }
@@ -43,7 +40,13 @@ static PetscErrorCode set_Hradio( Ctx *E )
     PetscFunctionBeginUser;
 
     /* do stuff here */
-    ierr = VecSet( S->Hradio_s, 1.0E-8 ); CHKERRQ(ierr);
+    ierr = VecSet( S->Hradio_s, 0.0 ); CHKERRQ(ierr);
+
+    /* the dimensional scaling for heat sources is:
+           6584.128807671617 W / kg
+       so once you compute your desired dimensional heating,
+       divide by the above number to get the quantity in
+       non-dimensional units (required for the code) */
 
     PetscFunctionReturn(0);
 }
