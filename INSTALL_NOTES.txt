@@ -35,7 +35,6 @@ cd petsc-double-direct/
 ./configure --with-debugging=0 --with-fc=0 --download-sundials --download-mpich --with-cc=gcc --with-cxx=g++ --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 3b.  [Aside] For a debug build, amend command above to use --with-debugging=1
-and remove optimisation flags
 
 4. make (the following all assume an optimised build, i.e, 3a above).
 PETSc's configure process, if successful, will end by printing out this command, which you can copy and paste:
@@ -113,7 +112,6 @@ cd petsc-quad-direct/
 ./configure --with-debugging=0 --with-fc=0 --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/Users/dan/Programs/sundials-quad/instdir --download-mpich --download-f2cblaslapack --with-cc=gcc --with-cxx=g++ --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 3b.  [Aside] For a debug build, amend command above to use --with-debugging=1
-and remove optimisation flags
 
 4. make (the following all assume an optimised build, i.e, 3a above):
 make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-darwin-c-opt all
