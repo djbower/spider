@@ -1,11 +1,21 @@
 #include "energy.h"
 
 static PetscErrorCode set_Jtot( Ctx * );
-static PetscErrorCode set_Jconv( Ctx * );
-static PetscErrorCode set_Jmix( Ctx * );
-static PetscErrorCode set_Jcond( Ctx * );
-static PetscErrorCode set_Jgrav( Ctx * );
-static PetscErrorCode set_Hradio( Ctx *, PetscReal t );
+#ifdef CONDUCTION
+static PetscErrorCode append_Jcond( Ctx * );
+#endif
+#ifdef CONVECTION
+static PetscErrorCode append_Jconv( Ctx * );
+#endif
+#ifdef MIXING
+static PetscErrorCode append_Jmix( Ctx * );
+#endif
+#ifdef SEPARATION
+static PetscErrorCode append_Jgrav( Ctx * );
+#endif
+#ifdef HRADIO
+static PetscErrorCode append_Hradio( Ctx *, PetscReal t );
+#endif
 
 ///////////////////////////
 /* internal heat sources */
@@ -19,25 +29,22 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal t )
 
     PetscFunctionBeginUser;
 
-    set_Hradio( E, t );
-
     /* Htot = int_V rho H dV */
 
-    /* total internal heat generation by summing terms */
+    /* initialise to zero */
     ierr = VecSet( S->Htot_s, 0.0 ); CHKERRQ(ierr);
 
-/* Tim Lichtenberg should turn on HEATGEN in global_defs.h
-   to activate this function */
-#if (defined HEATGEN)
-    ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
+    /* total internal heat generation by summing terms */
+#ifdef HRADIO
+    ierr = append_Hradio( E, t ); CHKERRQ(ierr);
 #endif
 
     PetscFunctionReturn(0);
 }
 
-/* internal heat generation from radionuclides */
-/* template function for Tim Lichtenberg to amend */
-static PetscErrorCode set_Hradio( Ctx *E, PetscReal t )
+#ifdef HRADIO
+/* radiogenic heat generation */
+static PetscErrorCode append_Hradio( Ctx *E, PetscReal t )
 {
     PetscErrorCode ierr;
     //Mesh           *M = &E->mesh;
@@ -80,8 +87,11 @@ static PetscErrorCode set_Hradio( Ctx *E, PetscReal t )
        divide by the above number to get the quantity in
        non-dimensional units (required for the code) */
 
+    ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
+#endif
 
 ///////////////////
 /* energy fluxes */
@@ -120,15 +130,22 @@ static PetscErrorCode set_Jtot( Ctx *E )
 
     S = &E->solution;
 
-    ierr = set_Jconv( E );
-    ierr = set_Jmix( E );
-    ierr = set_Jcond( E );
-    ierr = set_Jgrav( E );
+    /* must initialise to zero */
+    ierr = VecSet( S->Jtot, 0.0 ); CHKERRQ(ierr);
 
     /* total heat flux by summing terms */
-    ierr = VecWAXPY( S->Jtot, 1.0, S->Jconv, S->Jmix );CHKERRQ(ierr);
-    ierr = VecAYPX( S->Jtot, 1.0, S->Jcond );CHKERRQ(ierr);
-    ierr = VecAYPX( S->Jtot, 1.0, S->Jgrav );CHKERRQ(ierr);
+#ifdef CONDUCTION
+    ierr = append_Jcond( E );
+#endif
+#ifdef CONVECTION
+    ierr = append_Jconv( E );
+#endif
+#ifdef MIXING
+    ierr = append_Jmix( E );
+#endif
+#ifdef SEPARATION
+    ierr = append_Jgrav( E );
+#endif
 
     // I don't think this has to be done here?
     //ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
@@ -138,8 +155,9 @@ static PetscErrorCode set_Jtot( Ctx *E )
 
 }
 
+#ifdef CONVECTION
 /* convective heat flux at basic nodes */
-static PetscErrorCode set_Jconv( Ctx *E )
+static PetscErrorCode append_Jconv( Ctx *E )
 {
     PetscErrorCode ierr;
     Solution       *S;
@@ -156,12 +174,16 @@ static PetscErrorCode set_Jconv( Ctx *E )
     ierr = VecPointwiseMult(S->Jconv, S->Jconv, S->temp);CHKERRQ(ierr);
     ierr = VecScale(S->Jconv, -1.0);CHKERRQ(ierr);
 
+    ierr = VecAXPY( S->Jtot, 1.0, S->Jconv ); CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 
 }
+#endif
 
+#ifdef MIXING
 /* mixing heat flux (latent heat transport) at basic nodes */
-static PetscErrorCode set_Jmix( Ctx *E )
+static PetscErrorCode append_Jmix( Ctx *E )
 {
     PetscErrorCode ierr;
     DM             da_b=E->da_b;
@@ -211,12 +233,16 @@ static PetscErrorCode set_Jmix( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
+    ierr = VecAXPY( S->Jtot, 1.0, S->Jmix ); CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 
 }
+#endif
 
+#ifdef CONDUCTION
 /* conductive heat flux at basic nodes */
-static PetscErrorCode set_Jcond( Ctx *E )
+static PetscErrorCode append_Jcond( Ctx *E )
 {
     PetscErrorCode ierr;
     Solution *S;
@@ -239,12 +265,16 @@ static PetscErrorCode set_Jcond( Ctx *E )
        the basic internal nodes, so temp/cp = 0/0 = NaN at the top
        and bottom surface */
 
+    ierr = VecAXPY( S->Jtot, 1.0, S->Jcond ); CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 
 }
+#endif
 
+#ifdef SEPARATION
 /* gravitational separation heat flux at basic nodes */
-static PetscErrorCode set_Jgrav( Ctx *E )
+static PetscErrorCode append_Jgrav( Ctx *E )
 {
     PetscErrorCode ierr;
     Solution *S;
@@ -342,6 +372,9 @@ static PetscErrorCode set_Jgrav( Ctx *E )
     ierr = VecDestroy(&cond2);CHKERRQ(ierr);
     ierr = VecDestroy(&F);CHKERRQ(ierr);
 
+    ierr = VecAXPY( S->Jtot, 1.0, S->Jgrav ); CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 
 }
+#endif
