@@ -47,7 +47,7 @@
    nodes there are in a given mesh */
 
 /* for constant mesh spacing */
-#define NUMPTS_B_DEFAULT 200
+#define NUMPTS_B_DEFAULT 20
 
 //#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 372
@@ -68,7 +68,7 @@
 
 /* to compare with python test2 */
 /* TODO: refresh these tests */
-static const PetscScalar SINIT_DEFAULT = 1.02;
+static const PetscScalar SINIT_DEFAULT = 0.7;
 
 /* to compare with python test3 */
 //static const PetscScalar SINIT_DEFAULT = 0.5;
@@ -77,7 +77,7 @@ static const PetscScalar SINIT_DEFAULT = 1.02;
 // for middle out cases
 //static const PetscScalar IC_DSDR = -1.0E-8;
 // for bottom up cases
-static const PetscScalar IC_DSDR = -1.0E-6;
+static const PetscScalar IC_DSDR = -1.0E-3;
 
 /* constants */
 /* dimensional time scaling */
