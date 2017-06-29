@@ -49,7 +49,7 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal t )
     PetscErrorCode ierr;
     //Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
-    PetscReal      dimt;
+    PetscReal      tyrs = t * TIME0YEARS; // time in years
     PetscScalar    Alheat;
     PetscScalar    thalf = 7.17E5; // years (from Tim's spreadsheet)
     /* initial heating rate of Al26 */
@@ -59,9 +59,6 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal t )
     PetscScalar    decayconst = log(2)/thalf; // 1/years
 
     PetscFunctionBeginUser;
-
-    /* current dimensional time in years */
-    dimt = t * TIME0YEARS;
 
     /* a simple calculation for Earth (r=6371000, core size=0.55)
        tells you that to balance a heat flux of 10^6 W requires
@@ -77,7 +74,7 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal t )
     //ierr = VecSet( S->Hradio_s, 0.0 ); CHKERRQ(ierr);
 
     /* decay Al26 radiogenic heat production with time */
-    Alheat = Alinit*exp(-decayconst*dimt);
+    Alheat = Alinit*exp(-decayconst*tyrs);
     Alheat /= 6584.128807671617; // non-dimensionalise as below
     ierr = VecSet( S->Hradio_s, Alheat ); CHKERRQ(ierr);
 

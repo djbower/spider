@@ -1,54 +1,56 @@
 #include "bc.h"
 #include "util.h"
 
-static PetscScalar radiative_flux_with_dT( PetscScalar );
-static PetscScalar radiative_flux( PetscScalar );
+#if defined GREYBODY || defined HYBRID
+static PetscScalar greybody_with_dT( PetscScalar, PetscReal );
+static PetscScalar greybody( PetscScalar, PetscReal );
 static PetscScalar tsurf_param( PetscScalar );
+#endif
+#ifdef ZAHNLE
+static PetscScalar zahnle( PetscScalar, PetscReal );
+#endif
+#ifdef HAMANO
+static PetscScalar hamano( PetscScalar, PetscReal );
+#endif
+#ifdef HYBRID
+static PetscScalar hybrid( Ctx *, PetscScalar, PetscReal );
+#endif
 
-PetscErrorCode set_surface_flux( Ctx *E )
+PetscErrorCode set_surface_flux( Ctx *E, PetscReal t )
 {
     PetscErrorCode    ierr;
     PetscMPIInt       rank;
-    PetscScalar       temp_s_0, phi_s_0, Q1, Q2, Qout, fwt;
+    PetscScalar       temp0, Qout;
     PetscInt          ind;
-    PetscScalar       G0, R0, R1, R2, E0, E1, E2;
-    Mesh              *M; 
-    Solution          *S;
+    PetscReal         tyrs = t * TIME0YEARS; // time in years
+    Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_surface_flux:\n");CHKERRQ(ierr);
 #endif
-    M = &E->mesh;
-    S = &E->solution;
-
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
 
     if (!rank){
+      /* get surface values to pass to flux boundary condition
+         function that is chosen by user */
       ind = 0;
-      /* could possibly formulate below using surface values, as now we
-         extrapolate to get values at the surface */
-      ierr = VecGetValues(S->phi_s,1,&ind,&phi_s_0);CHKERRQ(ierr);
-      /* SWIDTH or PHI_WIDTH most appropriate choice here? */
-      fwt = tanh_weight( phi_s_0, PHI_CRITICAL, SWIDTH );
 
-      // radiative surface
-      ierr = VecGetValues(S->temp_s,1,&ind,&temp_s_0);CHKERRQ(ierr);
-      Q1 = radiative_flux_with_dT( temp_s_0 );
+      /* surface temperature */
+      ierr = VecGetValues(S->temp,1,&ind,&temp0); CHKERRQ(ierr);
 
-      // energy flux from energy gradient
-      ierr = VecGetValues(M->area_b,1,&ind,&G0); CHKERRQ(ierr);
-      ierr = VecGetValues(M->radius_b,1,&ind,&R0); CHKERRQ(ierr);
-      ind = 1;
-      ierr = VecGetValues(M->radius_b,1,&ind,&R1); CHKERRQ(ierr);
-      ierr = VecGetValues(S->Etot,1,&ind,&E1); CHKERRQ(ierr);
-      ind = 2;
-      ierr = VecGetValues(M->radius_b,1,&ind,&R2); CHKERRQ(ierr);
-      ierr = VecGetValues(S->Etot,1,&ind,&E2); CHKERRQ(ierr);
-      E0 = E1 - (E2-E1)*(R2-R1)/(R1-R0); // energy at surface
-      Q2 = E0 / G0; // G0 should be 1.0 by definition
-
-      Qout = Q1 * fwt + Q2 * (1.0 - fwt);
+#ifdef HAMANO
+      Qout = hamano( temp0, tyrs );
+#endif
+#ifdef ZAHNLE
+      Qout = zahnle( temp0, tyrs );
+#endif
+#ifdef GREYBODY
+      Qout = greybody_with_dT( temp0, tyrs );
+#endif
+#ifdef HYBRID
+      Qout = hybrid( E, temp0, tyrs );
+#endif
 
       /* Note - below is true because non-dim geom is exactly equal
          to one, so do not need to multiply by area of surface */
@@ -66,6 +68,76 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
 }
 
+#ifdef HYBRID
+static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
+{
+    PetscErrorCode ierr;
+    PetscInt       ind;
+    PetscScalar    phi0, Q1, Q2, Qout, fwt;
+    PetscScalar    G0, R0, R1, R2, E0, E1, E2;
+    Mesh           *M = &E->mesh;
+    Solution       *S = &E->solution;
+
+    /* for weight of different fluxes */
+    ind = 0;
+    ierr = VecGetValues(S->phi,1,&ind,&phi0); CHKERRQ(ierr);
+    /* SWIDTH or PHI_WIDTH most appropriate choice here? */
+    fwt = tanh_weight( phi0, PHI_CRITICAL, SWIDTH );
+
+    // grey body
+    Q1 = greybody_with_dT( temp0, tyrs );
+
+    // energy flux from energy gradient
+    ierr = VecGetValues(M->area_b,1,&ind,&G0); CHKERRQ(ierr);
+    ierr = VecGetValues(M->radius_b,1,&ind,&R0); CHKERRQ(ierr);
+    ind = 1;
+    ierr = VecGetValues(M->radius_b,1,&ind,&R1); CHKERRQ(ierr);
+    ierr = VecGetValues(S->Etot,1,&ind,&E1); CHKERRQ(ierr);
+    ind = 2;
+    ierr = VecGetValues(M->radius_b,1,&ind,&R2); CHKERRQ(ierr);
+    ierr = VecGetValues(S->Etot,1,&ind,&E2); CHKERRQ(ierr);
+    E0 = E1 - (E2-E1)*(R2-R1)/(R1-R0); // energy at surface
+    Q2 = E0 / G0; // G0 should be 1.0 by definition
+
+    Qout = Q1 * fwt + Q2 * (1.0 - fwt);
+
+    return Qout;
+
+}
+#endif
+
+#ifdef ZAHNLE
+static PetscScalar zahnle( PetscScalar Tsurf, PetscReal tyrs )
+{
+    PetscScalar       Fsurf;
+    PetscScalar       Tsurf_dim;
+
+    // Tsurf is non-dimensional in the code
+    Tsurf_dim = Tsurf * TEMPERATURE0;
+
+    // calculate by Irene in SI units
+    Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf_dim);
+
+    // now need to non-dimensionalise flux
+    Fsurf /= FLUX0;
+
+    return Fsurf;
+
+}
+#endif
+
+#ifdef HAMANO
+static PetscScalar hamano( PetscScalar Tsurf, PetscReal tyrs )
+{
+    PetscScalar       Fsurf;
+
+    /* add code here */
+    Fsurf = 0.0;
+
+    return Fsurf;
+
+}
+#endif
 
 PetscErrorCode set_core_mantle_flux( Ctx *E )
 {
@@ -135,6 +207,7 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 
 }
 
+#if defined(GREYBODY) || defined(HYBRID)
 static PetscScalar tsurf_param( PetscScalar temp )
 {
     PetscScalar Ts, c, fac, num, den;
@@ -152,29 +225,35 @@ static PetscScalar tsurf_param( PetscScalar temp )
 
     return Ts;
 }
+#endif
 
-static PetscScalar radiative_flux( PetscScalar temp )
+#if defined(GREYBODY) || defined(HYBRID)
+static PetscScalar greybody( PetscScalar Tsurf, PetscReal tyrs )
 {
-    PetscScalar flux;
+    PetscScalar Fsurf;
 
-    flux = PetscPowScalar(temp,4.0)-PetscPowScalar(TEQM,4.0);
-    flux *= SIGMA * EMISSIVITY;
+    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(TEQM,4.0);
+    Fsurf *= SIGMA * EMISSIVITY;
 
-    return flux;
+    return Fsurf;
 }
+#endif
 
-
-static PetscScalar radiative_flux_with_dT( PetscScalar temp )
+#if defined(GREYBODY) || defined(HYBRID)
+static PetscScalar greybody_with_dT( PetscScalar Tsurf, PetscReal tyrs )
 {
-    PetscScalar Ts, flux;
+    PetscScalar Ts, Fsurf;
 
+    /* no parameterised ultra-thin thermal boundary layer */
     if( CONSTBC == 0.0 ){
-        Ts = temp;
+        Ts = Tsurf;
     }
+    /* parameterised ultra-thin thermal boundary layer */
     else{
-        Ts = tsurf_param( temp );
+        Ts = tsurf_param( Tsurf );
     }
-    flux = radiative_flux( Ts );
+    Fsurf = greybody( Ts, tyrs );
 
-    return flux;
+    return Fsurf;
 }
+#endif

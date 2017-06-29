@@ -20,6 +20,14 @@
 #define SEPARATION
 //#define HRADIO
 
+/* select which surface boundary condition to use */
+/* these are mutually exclusive, so only leave one
+   of them uncommented */
+//#define GREYBODY
+//#define HAMANO
+//#define HYBRID
+#define ZAHNLE
+
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
 #define HEAD 4 /* number of header lines in datafile */
@@ -77,9 +85,19 @@ static const PetscScalar SINIT_DEFAULT = 1.02;
 static const PetscScalar IC_DSDR = -1.0E-6;
 
 /* constants */
+/* do not change any of the next four constants without first
+   consulting Dan! */
+static const PetscScalar RADIUS0 = 6371000.0; // m (outer radius of planet)
+static const PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
+static const PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
+static const PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
+
 /* dimensional time scaling */
-/* must be updated if radius of planet changes! */
-static const PetscScalar TIME0YEARS = 5.810341565106721e-05;
+#define TIME0YEARS RADIUS0/PetscSqrtScalar(ENTROPY0*TEMPERATURE0)/(3600.0*24.0*365.25); // 5.810341565106721e-05;
+
+/* dimensional flux scaling */
+# define FLUX0 DENSITY0*PetscPowScalar(ENTROPY0*TEMPERATURE0,3.0/2.0);
+
 /* core-mantle boundary radius */
 static const PetscScalar RADIN = 0.55;
 /* surface density for Adams-Williamson EOS for pressure */
@@ -106,6 +124,7 @@ static const PetscScalar PHI_SKEW = 0.0;
    dimensional (scaling) temperature.  See python script for more information */
 //static const PetscScalar CONSTBC = 0.0;
 static const PetscScalar CONSTBC = 1.6269986040244828; // 1.0E-7 in python
+/* SB constant non-dimensionalisation depends on RADIUS0 */
 static const PetscScalar SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar EMISSIVITY = 1.0; // emissivity
 static const PetscScalar TEQM = 0.0676813568808283; // equilibrium temp of planet

@@ -62,7 +62,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   set_Htot( E, t );
 
-  set_surface_flux( E );
+  set_surface_flux( E, t );
 
   set_core_mantle_flux( E );
 
