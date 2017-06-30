@@ -9,13 +9,10 @@ static PetscScalar viscosity_mix_no_skew( PetscScalar );
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
     PetscErrorCode    ierr;
-    Mesh              *M;
-    Solution          *S;
+    Mesh              *M = &E->mesh;
+    Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
-
-    M = &E->mesh;
-    S = &E->solution;
 
     ierr = set_matprop_staggered( E ); CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->lhs_s,S->temp_s,S->rho_s); CHKERRQ(ierr);
@@ -31,9 +28,9 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s=E->da_s;
     Lookup            *L; 
-    Mesh              *M; 
-    Solution          *S; 
-    Vec               pres_s;
+    Mesh              *M = &E->mesh; 
+    Solution          *S = &E->solution; 
+    Vec               pres_s = M->pressure_s;
     // material properties that are updated here
     PetscScalar       *arr_phi_s, *arr_rho_s, *arr_temp_s, *arr_cp_s;
     // material properties used to update above
@@ -43,10 +40,6 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     PetscScalar       fwtl, fwts;
 
     PetscFunctionBeginUser;
-
-    M = &E->mesh;
-    S = &E->solution;
-    pres_s = M->pressure_s;
 
     ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->phi_s,S->phi_s,S->fusion_s);CHKERRQ(ierr);
@@ -170,13 +163,10 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     const PetscScalar *arr_fwtl, *arr_fwts;
     PetscScalar       fwtl, fwts;
     Lookup            *L; 
-    Mesh              *M; 
-    Solution          *S; 
+    Mesh              *M = &E->mesh;
+    Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
-
-    M = &E->mesh;
-    S = &E->solution;
 
     ierr = VecWAXPY(S->phi,-1.0,S->solidus,S->S);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->phi,S->phi,S->fusion);CHKERRQ(ierr);
@@ -411,6 +401,8 @@ static PetscScalar viscosity_mix_no_skew( PetscScalar meltf )
     return fwt;
 
 }
+
+/* below is for the skewed viscosity formulation worked out by ASW */
 
 #if 0
 static PetscScalar viscosity_mix_skew( PetscScalar meltf )
