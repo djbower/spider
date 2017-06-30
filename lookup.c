@@ -51,8 +51,6 @@ PetscErrorCode set_lookups( Ctx *E )
 
 static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 {
-    /* the header scalings in the input data file are ignored */
-
     FILE *fp;
     PetscInt i=0, j=0, k=0;
     char string[100];
@@ -153,8 +151,6 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 
 static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n )
 {
-    /* the header scalings in the input data file are ignored */
-
     FILE *fp;
     PetscInt i=0;
     char string[100];
