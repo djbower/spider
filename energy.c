@@ -44,12 +44,11 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal t )
 
 #ifdef HRADIO
 /* radiogenic heat generation */
-static PetscErrorCode append_Hradio( Ctx *E, PetscReal t )
+static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
 {
     PetscErrorCode ierr;
     //Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
-    PetscReal      tyrs = t * TIME0YEARS; // time in years
     PetscScalar    Alheat;
     PetscScalar    thalf = 7.17E5; // years (from Tim's spreadsheet)
     /* initial heating rate of Al26 */
@@ -75,14 +74,7 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal t )
 
     /* decay Al26 radiogenic heat production with time */
     Alheat = Alinit*exp(-decayconst*tyrs);
-    Alheat /= 6584.128807671617; // non-dimensionalise as below
     ierr = VecSet( S->Hradio_s, Alheat ); CHKERRQ(ierr);
-
-    /* the dimensional scaling for heat sources is:
-           6584.128807671617 W / kg
-       so once you compute your desired dimensional heating,
-       divide by the above number to get the quantity in
-       non-dimensional units (required for the code) */
 
     ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
 
@@ -108,10 +100,6 @@ PetscErrorCode set_Etot( Ctx *E )
 
     ierr = set_Jtot(E); CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Etot,S->Jtot,M->area_b); CHKERRQ(ierr);
-
-    // I don't think this has to be done here?
-    //ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
-    //ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
