@@ -73,7 +73,7 @@
 /* set at reference entropy */
 /* to compare with python test1 */
 ///static const PetscScalar SINIT_DEFAULT = 1.02;
-static const PetscScalar SINIT_DEFAULT = 3052.885602072091
+static const PetscScalar SINIT_DEFAULT = 3052.885602072091;
 
 /* to compare with python test2 */
 /* TODO: refresh these tests */
@@ -84,7 +84,7 @@ static const PetscScalar SINIT_DEFAULT = 3052.885602072091
 
 /* initial entropy gradient */
 ///static const PetscScalar IC_DSDR = -1.0E-3;
-static const PetscScalar IC_DSDR = -4.6978890285209187e-07
+static const PetscScalar IC_DSDR = -4.6978890285209187e-07;
 
 /* constants */
 /* do not change any of the next four constants without first
