@@ -89,7 +89,7 @@ static const PetscScalar IC_DSDR = -4.6978890285209187e-07;
 /* constants */
 /* do not change any of the next four constants without first
    consulting Dan! */
-static const PetscScalar RADIUS0 = 6371000.0; // m (outer radius of planet)
+static const PetscScalar RADOUT = 6371000.0; // m (outer radius of planet)
 ///static const PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
 ///static const PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
 ///static const PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
@@ -106,7 +106,7 @@ static const PetscScalar YRINSECS = 31557600.0; // s
 
 /* core-mantle boundary radius */
 ///static const PetscScalar RADIN = 0.55;
-static const PetscScalar RADIN = 3504050.0;
+static const PetscScalar RADIN = 3504050.0; // m (inner radius of mantle)
 /* surface density for Adams-Williamson EOS for pressure */
 //static const PetscScalar RHOS = 0.8842085571948184;
 static const PetscScalar RHOS = 4078.95095544;
