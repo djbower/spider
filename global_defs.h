@@ -99,7 +99,7 @@ static const PetscScalar RADOUT = 6371000.0; // m (outer radius of planet)
 ///#define TIME0YEARS RADIUS0/PetscSqrtScalar(ENTROPY0*TEMPERATURE0)/(3600.0*24.0*365.25); // 5.810341565106721e-05;
 
 /* seconds in 1 year */
-static const PetscScalar YRINSECS = 31557600.0; // s
+static const PetscScalar SECSINYR = 31557600.0; // s
 
 /* dimensional flux scaling */
 ///#define FLUX0 DENSITY0*PetscPowScalar(ENTROPY0*TEMPERATURE0,3.0/2.0);
@@ -112,7 +112,7 @@ static const PetscScalar RADIN = 3504050.0; // m (inner radius of mantle)
 static const PetscScalar RHOS = 4078.95095544;
 /* parameter for Adams-Williamson EOS for pressure */
 //static const PetscScalar BETA = 0.7081588803940101;
-static const PetscScalar BETA = 1.1115348931000002e-07;
+static const PetscScalar BETA = 1.1115348931000002e-07; // m^{-1}
 /* grain size */
 static const PetscScalar GRAIN = 1.0e-3;
 /* gravity.  Always constant and must be negative */

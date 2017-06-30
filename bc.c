@@ -51,10 +51,9 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
       Qout = hybrid( E, temp0, tyrs );
 #endif
 
-      /* Note - below is true because non-dim geom is exactly equal
-         to one, so do not need to multiply by area of surface */
-      ierr = VecSetValue(S->Etot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
+      Qout *= PetscSqr( RADOUT );
+      ierr = VecSetValue(S->Etot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
 
     }
 

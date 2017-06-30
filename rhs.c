@@ -114,7 +114,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = VecAssemblyEnd(rhs_b_aug);CHKERRQ(ierr);
 
   /* convert time from per second to per year */
-  ierr = VecScale( rhs_b_aug, YRINSECS );
+  ierr = VecScale( rhs_b_aug, SECSINYR );
 
   ierr = VecDestroy(&rhs_b);CHKERRQ(ierr);
 
