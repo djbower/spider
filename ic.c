@@ -87,62 +87,12 @@ static PetscErrorCode set_ic_from_perturbation( Ctx *E, Vec dSdr_in )
        are controlled by boundary conditions.  But for debugging and
        clarity it is convenient to explicitly set these values to
        zero */
-    //ierr = VecSetValue( dSdr_in, 0, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+    ierr = VecSetValue( dSdr_in, 0, 0.0, INSERT_VALUES); CHKERRQ(ierr);
     // TODO: is next line compatible with command line input? */
-    //ierr = VecSetValue( dSdr_in, NUMPTS_B_DEFAULT-1, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+    ierr = VecSetValue( dSdr_in, NUMPTS_B_DEFAULT-1, 0.0, INSERT_VALUES); CHKERRQ(ierr);
 
-    //VecAssemblyBegin( dSdr_in );
-    //VecAssemblyEnd( dSdr_in );
+    VecAssemblyBegin( dSdr_in );
+    VecAssemblyEnd( dSdr_in );
 
     PetscFunctionReturn(0);
 }
-
-/* TODO: refresh for new approach with dSdr_b */
-/* possibly broken at present */
-//static PetscErrorCode set_ic_from_melt_fraction( Ctx *E, Vec S_in )
-//{
-
-//    PetscErrorCode    ierr;
-//    PetscScalar       meltf, val, maxval, step;
-//    PetscInt          i, ilo;
-//    Vec               liq_s, dfus_s;
-//    Solution          *S;
-//    PetscScalar       *arr;
-
-//    PetscFunctionBeginUser;
-
-  //  S = &E->solution;
-  //  dfus_s = S->fusion_s;
-  //  liq_s = S->liquidus_s;
-
-    /* melt fraction contour to follow */
- //   meltf = 0.99;
- //   val = 1.0 - meltf;
-
-  //  ierr = VecCopy( liq_s, S_in ); CHKERRQ(ierr);
- //   ierr = VecAXPY( S_in, -val, dfus_s ); CHKERRQ(ierr);
-  //  ierr = VecShift( S_in, -1.0 ); CHKERRQ(ierr); // (1.0 is reference)
-
-    /* find overturn point and set everything to right to overturn value */
- //   ierr = VecMax( S_in, &ilo, &maxval );
- //   ierr = VecGetArray( S_in, &arr );
-  //  for(i=ilo; i<NUMPTS_S_DEFAULT; ++i){
- //       arr[i] = maxval;
- //   }
-
-    /* entropy drop.  Everything to left cannot drop by more than this
-       value relative to the overturn value */
- //   step = 0.0075;
- //   for(i=0; i<ilo; ++i){
- //       if(arr[i] < maxval-step){
- //           arr[i] = maxval-step;
- //       }
- //   }
-
- //   ierr = VecRestoreArray( S_in, &arr );
-
-    /* now add small gradient to initial perturbed value */
-//    make_super_adiabatic( E, S_in );
-
-//    PetscFunctionReturn(0);
-//}
