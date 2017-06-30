@@ -109,7 +109,9 @@ static PetscScalar zahnle( PetscScalar Tsurf, PetscReal tyrs )
 {
     PetscScalar       Fsurf;
 
-    // calculate by Irene in SI units
+    /* fit to Zahnle et al. (1988) from Solomatov and Stevenson (1993)
+       Eqn. 40 */
+
     Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf);
 
     return Fsurf;
