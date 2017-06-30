@@ -16,13 +16,12 @@ static PetscScalar hamano( PetscScalar, PetscReal );
 static PetscScalar hybrid( Ctx *, PetscScalar, PetscReal );
 #endif
 
-PetscErrorCode set_surface_flux( Ctx *E, PetscReal t )
+PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
 {
     PetscErrorCode    ierr;
     PetscMPIInt       rank;
     PetscScalar       temp0, Qout;
     PetscInt          ind;
-    PetscReal         tyrs = t * TIME0YEARS; // time in years
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -110,16 +109,9 @@ static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
 static PetscScalar zahnle( PetscScalar Tsurf, PetscReal tyrs )
 {
     PetscScalar       Fsurf;
-    PetscScalar       Tsurf_dim;
-
-    // Tsurf is non-dimensional in the code
-    Tsurf_dim = Tsurf * TEMPERATURE0;
 
     // calculate by Irene in SI units
-    Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf_dim);
-
-    // now need to non-dimensionalise flux
-    Fsurf /= FLUX0;
+    Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf);
 
     return Fsurf;
 
