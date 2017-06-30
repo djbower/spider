@@ -60,8 +60,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   set_Etot( E );
 
+  /* note pass in current time in years here */
   set_Htot( E, t );
 
+  /* note pass in current time in years here */
   set_surface_flux( E, t );
 
   set_core_mantle_flux( E );
