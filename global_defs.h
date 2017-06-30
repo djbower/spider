@@ -73,7 +73,7 @@
 /* initial condition: set entropy of adiabat */
 /* set at reference entropy */
 /* to compare with python test1 */
-///static const PetscScalar SINIT_DEFAULT = 1.02;
+// non-dim was 1.02;
 static const PetscScalar SINIT_DEFAULT = 3052.885602072091;
 
 /* to compare with python test2 */
@@ -84,35 +84,24 @@ static const PetscScalar SINIT_DEFAULT = 3052.885602072091;
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial entropy gradient */
-///static const PetscScalar IC_DSDR = -1.0E-3;
+// non-dim was IC_DSDR = -1.0E-3;
 static const PetscScalar IC_DSDR = -4.6978890285209187e-07;
 
-/* constants */
-/* do not change any of the next four constants without first
-   consulting Dan! */
+/* planetary radius */
 static const PetscScalar RADOUT = 6371000.0; // m (outer radius of planet)
-///static const PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
-///static const PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
-///static const PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
-
-/* DJB TO SORT OUT DIMENSIONAL SCALINGS BELOW */
-/* dimensional time scaling */
-///#define TIME0YEARS RADIUS0/PetscSqrtScalar(ENTROPY0*TEMPERATURE0)/(3600.0*24.0*365.25); // 5.810341565106721e-05;
 
 /* seconds in 1 year */
 static const PetscScalar SECSINYR = 31557600.0; // s
 
-/* dimensional flux scaling */
-///#define FLUX0 DENSITY0*PetscPowScalar(ENTROPY0*TEMPERATURE0,3.0/2.0);
-
 /* core-mantle boundary radius */
-///static const PetscScalar RADIN = 0.55;
+// non-dim was 0.55;
 static const PetscScalar RADIN = 3504050.0; // m (inner radius of mantle)
+
 /* surface density for Adams-Williamson EOS for pressure */
-//static const PetscScalar RHOS = 0.8842085571948184;
+// non-dim was RHOS = 0.8842085571948184;
 static const PetscScalar RHOS = 4078.95095544;
 /* parameter for Adams-Williamson EOS for pressure */
-//static const PetscScalar BETA = 0.7081588803940101;
+// non-dim was BETA = 0.7081588803940101;
 static const PetscScalar BETA = 1.1115348931000002e-07; // m^{-1}
 /* grain size */
 static const PetscScalar GRAIN = 1.0e-3;
@@ -127,35 +116,27 @@ static const PetscScalar PHI_SKEW = 0.0;
 
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Surface temperature]**3 */
-/* where dT and Surface temperature are non-dimensional */
-/* you can extract the value of CONSTBC by looking at the non-dimensional
-   value in a run.log output by the python evolution code.  Or alternatively,
-   CONSTBC here is [dimensional CONSTBC] * [TEMP0]**2, where TEMP0 is the
-   dimensional (scaling) temperature.  See python script for more information */
 //static const PetscScalar CONSTBC = 0.0;
-//static const PetscScalar CONSTBC = 1.6269986040244828; // 1.0E-7 in python
+// non-dim was CONSTBC = 1.6269986040244828; // 1.0E-7 in python
 static const PetscScalar CONSTBC = 1.0e-07; // 1.0E-7 in python
-/* SB constant non-dimensionalisation depends on RADIUS0 */
-//static const PetscScalar SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
+// non-dim was SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar SIGMA = 5.670367e-08; // Stefan-Boltzmann constant
 static const PetscScalar EMISSIVITY = 1.0; // emissivity
-///static const PetscScalar TEQM = 0.0676813568808283; // equilibrium temp of planet
+// non-dim was TEQM = 0.0676813568808283; // equilibrium temp of planet
 static const PetscScalar TEQM = 273.0; // equilibrium temp of planet
 
 /* for core-cooling boundary condition at the bottom surface */
 /* density of core */
-///static const PetscScalar RHO_CORE = 2.3277861514910865;
+// non-dim was RHO_CORE = 2.3277861514910865;
 static const PetscScalar RHO_CORE = 10738.332568062382;
 /* heat capacity of core */
-///static const PetscScalar CP_CORE = 0.2940169128482149;
+// non-dim was CP_CORE = 0.2940169128482149;
 static const PetscScalar CP_CORE = 880.0;
 /* mass-weighted average core temperature as a fraction of CMB temp */
 static const PetscScalar TFAC_CORE_AVG = 1.147;
 
 /* smoothing parameters */
 /* width */
-///static const PetscScalar SWIDTH = 1.0E-2;
-/* these units stay the same (units of melt fraction) */
 static const PetscScalar SWIDTH = 1.0E-2;
 
 /* end of constants */
