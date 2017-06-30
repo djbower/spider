@@ -103,7 +103,7 @@ static PetscErrorCode regular_mesh( Ctx *E )
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* basic node spacing (negative) */
-    dx_b = -(1.0-RADIN) / (numpts_b-1);
+    dx_b = -(RADOUT-RADIN) / (numpts_b-1);
 
     /* radius at basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
@@ -268,7 +268,7 @@ static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix )
     ierr = DMDAVecGetArray(da,mix,&arr_m);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
         rad1 = arr_r[i] - RADIN;
-        rad2 = 1.0 - arr_r[i];
+        rad2 = RADOUT - arr_r[i];
         arr_m[i] = PetscMin( rad1, rad2 );
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
@@ -289,7 +289,7 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure )
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da,pressure,&arr_p);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        dep = 1.0 - arr_r[i];
+        dep = RADOUT - arr_r[i];
         arr_p[i] = RHOS * -GRAVITY / BETA;
         arr_p[i] *= PetscExpScalar( BETA * dep ) - 1.0;
     }
@@ -311,7 +311,7 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad )
     ierr = DMDAVecGetArray(da,grad,&arr_g);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        dep = 1.0 - arr_r[i];
+        dep = RADOUT - arr_r[i];
         arr_g[i] = RHOS * GRAVITY * PetscExpScalar( BETA * dep );
     }
     ierr = DMDAVecRestoreArray(da,grad,&arr_g);CHKERRQ(ierr);
