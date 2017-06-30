@@ -88,14 +88,14 @@ static const PetscScalar SINIT_DEFAULT = 3052.885602072091;
 static const PetscScalar IC_DSDR = -4.6978890285209187e-07;
 
 /* planetary radius */
-static const PetscScalar RADOUT = 6371000.0; // m (outer radius of planet)
+static const PetscScalar RADIUS = 6371000.0; // m (outer radius of planet)
+//static const PetscScalar RADIUS = 3185500.0; // m (outer radius of planet)
 
 /* seconds in 1 year */
 static const PetscScalar SECSINYR = 31557600.0; // s
 
 /* core-mantle boundary radius */
-// non-dim was 0.55;
-static const PetscScalar RADIN = 3504050.0; // m (inner radius of mantle)
+static const PetscScalar CORESIZE = 0.55; // radius fraction
 
 /* surface density for Adams-Williamson EOS for pressure */
 // non-dim was RHOS = 0.8842085571948184;

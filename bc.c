@@ -52,7 +52,7 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
 #endif
 
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
-      Qout *= PetscSqr( RADOUT );
+      Qout *= PetscSqr( RADIUS );
       ierr = VecSetValue(S->Etot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
 
     }
@@ -166,7 +166,7 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
         ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
         ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
         fac = 4.0 * M_PI * vol;
-        vol_core = 1.0/3.0 * PetscPowScalar(RADIN,3.0);
+        vol_core = 1.0/3.0 * PetscPowScalar(CORESIZE,3.0) * PetscPowScalar(RADIUS,3.0);
         fac = vol / vol_core;
         fac *= rho_cmb / RHO_CORE;
         fac *= cp_cmb / CP_CORE;
