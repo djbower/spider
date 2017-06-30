@@ -96,10 +96,13 @@ static const PetscScalar RADIUS0 = 6371000.0; // m (outer radius of planet)
 
 /* DJB TO SORT OUT DIMENSIONAL SCALINGS BELOW */
 /* dimensional time scaling */
-#define TIME0YEARS RADIUS0/PetscSqrtScalar(ENTROPY0*TEMPERATURE0)/(3600.0*24.0*365.25); // 5.810341565106721e-05;
+///#define TIME0YEARS RADIUS0/PetscSqrtScalar(ENTROPY0*TEMPERATURE0)/(3600.0*24.0*365.25); // 5.810341565106721e-05;
+
+/* seconds in 1 year */
+static const PetscScalar YRINSECS = 31557600.0; // s
 
 /* dimensional flux scaling */
-# define FLUX0 DENSITY0*PetscPowScalar(ENTROPY0*TEMPERATURE0,3.0/2.0);
+///#define FLUX0 DENSITY0*PetscPowScalar(ENTROPY0*TEMPERATURE0,3.0/2.0);
 
 /* core-mantle boundary radius */
 ///static const PetscScalar RADIN = 0.55;
