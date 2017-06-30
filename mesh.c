@@ -13,15 +13,13 @@ PetscErrorCode set_mesh( Ctx *E)
 
     PetscErrorCode ierr;
     PetscInt       i;
-    Mesh           *M;
+    Mesh           *M = &E->mesh;
     DM             da_b=E->da_b, da_s=E->da_s;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_mesh:\n");CHKERRQ(ierr);
 #endif
-
-    M = &E->mesh;
 
     /* Create vectors required for the mesh */
     for (i=0;i<NUMMESHVECS_B;++i) {
@@ -91,13 +89,11 @@ static PetscErrorCode regular_mesh( Ctx *E )
     PetscErrorCode ierr;
     PetscScalar    *arr;
     PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_b,w_s,numpts_b,numpts_s;
-    Mesh           *M;
+    Mesh           *M = &E->mesh;
     DM             da_b=E->da_b, da_s=E->da_s;
     PetscScalar    dx_b;
 
     PetscFunctionBeginUser;
-
-    M = &E->mesh;
 
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
@@ -318,4 +314,3 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad )
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-
