@@ -19,6 +19,7 @@
 #define MIXING
 #define SEPARATION
 //#define HRADIO
+//#define HTIDAL
 
 /* select which surface boundary condition to use */
 /* these are mutually exclusive, so only leave one

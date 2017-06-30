@@ -110,18 +110,19 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.fwts_s              = ctx->solution.solutionVecs_s[7]; // weight for solid
   ctx->solution.gphi_s              = ctx->solution.solutionVecs_s[8];
   ctx->solution.Hradio_s            = ctx->solution.solutionVecs_s[9];
-  ctx->solution.Htot_s              = ctx->solution.solutionVecs_s[10];
-  ctx->solution.lhs_s               = ctx->solution.solutionVecs_s[11];
-  ctx->solution.liquidus_rho_s      = ctx->solution.solutionVecs_s[12];
-  ctx->solution.liquidus_s          = ctx->solution.solutionVecs_s[13];
-  ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecs_s[14];
-  ctx->solution.phi_s               = ctx->solution.solutionVecs_s[15];
-  ctx->solution.rho_s               = ctx->solution.solutionVecs_s[16];
-  ctx->solution.S_s                 = ctx->solution.solutionVecs_s[17];
-  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[18];
-  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[19];
-  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[20];
-  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[21];
+  ctx->solution.Htidal_s            = ctx->solution.solutionVecs_s[10];
+  ctx->solution.Htot_s              = ctx->solution.solutionVecs_s[11];
+  ctx->solution.lhs_s               = ctx->solution.solutionVecs_s[12];
+  ctx->solution.liquidus_rho_s      = ctx->solution.solutionVecs_s[13];
+  ctx->solution.liquidus_s          = ctx->solution.solutionVecs_s[14];
+  ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecs_s[15];
+  ctx->solution.phi_s               = ctx->solution.solutionVecs_s[16];
+  ctx->solution.rho_s               = ctx->solution.solutionVecs_s[17];
+  ctx->solution.S_s                 = ctx->solution.solutionVecs_s[18];
+  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[19];
+  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[20];
+  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[21];
+  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[22];
 
   set_mesh(ctx);
 

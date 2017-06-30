@@ -14,17 +14,19 @@ static PetscErrorCode append_Jmix( Ctx * );
 static PetscErrorCode append_Jgrav( Ctx * );
 #endif
 #ifdef HRADIO
-static PetscErrorCode append_Hradio( Ctx *, PetscReal t );
+static PetscErrorCode append_Hradio( Ctx *, PetscReal tyrs );
+#endif
+#ifdef HTIDAL
+static PetscErrorCode append_Htidal( Ctx *, PetscReal tyrs );
 #endif
 
 ///////////////////////////
 /* internal heat sources */
 ///////////////////////////
 /* total internal heat generation */
-PetscErrorCode set_Htot( Ctx *E, PetscReal t )
+PetscErrorCode set_Htot( Ctx *E, PetscReal tyrs )
 {
     PetscErrorCode ierr;
-    //Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -36,7 +38,10 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal t )
 
     /* total internal heat generation by summing terms */
 #ifdef HRADIO
-    ierr = append_Hradio( E, t ); CHKERRQ(ierr);
+    ierr = append_Hradio( E, tyrs ); CHKERRQ(ierr);
+#endif
+#ifdef HTIDAL
+    ierr = append_Htidal( E, tyrs ); CHKERRQ(ierr);
 #endif
 
     PetscFunctionReturn(0);
@@ -47,13 +52,10 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal t )
 static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
 {
     PetscErrorCode ierr;
-    //Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
     PetscScalar    Alheat;
     PetscScalar    thalf = 7.17E5; // years (from Tim's spreadsheet)
     /* initial heating rate of Al26 */
-    /* way higher than it should be, but useful for checking
-       the code */
     PetscScalar    Alinit = 1.526E-7; // W/kg (from Tim's spreadsheet)
     PetscScalar    decayconst = log(2)/thalf; // 1/years
 
@@ -61,13 +63,12 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
 
     /* a simple calculation for Earth (r=6371000, core size=0.55)
        tells you that to balance a heat flux of 10^6 W requires
-       internal heating around 1.41E-4 W/kg, which non-dimensionalised
-       is about 2.14E-8 */
+       internal heating around 1.41E-4 W/kg */
 
     /* do stuff here */
 
     /* this applies constant heating throughout the domain */
-    //ierr = VecSet( S->Hradio_s, 1.0E-8 ); CHKERRQ(ierr);
+    //ierr = VecSet( S->Hradio_s, 1.41E-4 ); CHKERRQ(ierr);
 
     // no heating example */
     //ierr = VecSet( S->Hradio_s, 0.0 ); CHKERRQ(ierr);
@@ -82,6 +83,25 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
 }
 #endif
 
+#ifdef HTIDAL
+/* tidal heat generation */
+static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
+{
+    PetscErrorCode ierr;
+    Solution       *S = &E->solution;
+
+    PetscFunctionBeginUser;
+
+    /* do stuff here */
+    ierr = VecSet( S->Htidal_s, 0.0 ); CHKERRQ(ierr);
+
+    ierr = VecAXPY( S->Htot_s, 1.0, S->Htidal_s ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+#endif
+
+
 ///////////////////
 /* energy fluxes */
 ///////////////////
@@ -90,13 +110,10 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
 PetscErrorCode set_Etot( Ctx *E )
 {
     PetscErrorCode ierr;
-    Mesh *M;
-    Solution *S;
+    Mesh           *M = &E->mesh;
+    Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
-
-    M = &E->mesh;
-    S = &E->solution;
 
     ierr = set_Jtot(E); CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Etot,S->Jtot,M->area_b); CHKERRQ(ierr);
@@ -109,13 +126,11 @@ PetscErrorCode set_Etot( Ctx *E )
 static PetscErrorCode set_Jtot( Ctx *E )
 {
     PetscErrorCode ierr;
-    Solution *S;
+    Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
 
-    S = &E->solution;
-
-    /* must initialise to zero */
+    /* initialise to zero */
     ierr = VecSet( S->Jtot, 0.0 ); CHKERRQ(ierr);
 
     /* total heat flux by summing terms */
@@ -132,10 +147,6 @@ static PetscErrorCode set_Jtot( Ctx *E )
     ierr = append_Jgrav( E );
 #endif
 
-    // I don't think this has to be done here?
-    //ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
-    //ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
-
     PetscFunctionReturn(0);
 
 }
@@ -145,11 +156,9 @@ static PetscErrorCode set_Jtot( Ctx *E )
 static PetscErrorCode append_Jconv( Ctx *E )
 {
     PetscErrorCode ierr;
-    Solution       *S;
+    Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
-
-    S = &E->solution;
 
     /* convective heat flux */
     //   arr_Jconv[i] = -arr_dSdr[i] * arr_kappah[i] * arr_rho[i] * arr_temp[i];
@@ -171,14 +180,12 @@ static PetscErrorCode append_Jconv( Ctx *E )
 static PetscErrorCode append_Jmix( Ctx *E )
 {
     PetscErrorCode ierr;
-    DM             da_b=E->da_b;
-    Solution       *S;
+    DM             da_b = E->da_b;
+    Solution       *S = &E->solution;
     PetscInt       i, ilo, ihi, w;
     PetscScalar    *arr_gphi, *arr_fwtl, *arr_fwts, *arr_Jmix;
 
     PetscFunctionBeginUser;
-
-    S = &E->solution;
 
     /* convective mixing */
     // these first two lines give F_Jmix (in the python script)
@@ -230,11 +237,9 @@ static PetscErrorCode append_Jmix( Ctx *E )
 static PetscErrorCode append_Jcond( Ctx *E )
 {
     PetscErrorCode ierr;
-    Solution *S;
+    Solution *S = &E->solution;
 
     PetscFunctionBeginUser;
-
-    S = &E->solution;
 
     /* conductive heat flux */
     //   arr_Jcond[i] = arr_temp[i] / arr_cp[i] * arr_dSdr[i] + arr_dTdrs[i];
@@ -262,8 +267,13 @@ static PetscErrorCode append_Jcond( Ctx *E )
 static PetscErrorCode append_Jgrav( Ctx *E )
 {
     PetscErrorCode ierr;
-    Solution *S;
-    Vec cond1, cond2, rho, rhol, rhos, F;
+    Solution *S = &E->solution;
+    Vec cond1, cond2, F;
+    Vec rho = S->rho;
+    Vec rhol = S->liquidus_rho;
+    Vec rhos = S->solidus_rho;
+
+//rho, rhol, rhos, F;
     PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
     DM da_b=E->da_b;
     const PetscScalar *arr_cond1, *arr_cond2, *arr_liquidus_rho, *arr_phi, *arr_solidus_rho;
@@ -272,10 +282,10 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 
     PetscFunctionBeginUser;
 
-    S = &E->solution;
-    rho = S->rho;
-    rhol = S->liquidus_rho;
-    rhos = S->solidus_rho;
+    //S = &E->solution;
+    //rho = S->rho;
+    //rhol = S->liquidus_rho;
+    //rhos = S->solidus_rho;
 
     ierr = DMDAGetInfo(da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
