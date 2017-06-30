@@ -61,6 +61,10 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
 
     PetscFunctionBeginUser;
 
+    /* we may need a time offset here (toff) to account for the fact
+       that our magma ocean model does not coincide with time zero
+       according to cosmochemistry */
+
     /* a simple calculation for Earth (r=6371000, core size=0.55)
        tells you that to balance a heat flux of 10^6 W requires
        internal heating around 1.41E-4 W/kg */
