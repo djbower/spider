@@ -123,6 +123,8 @@ static PetscScalar hamano( PetscScalar Tsurf, PetscReal tyrs )
     PetscScalar       Fsurf;
 
     /* add code here */
+    /* build your own function of surface temperature (Tsurf) and
+       time in years (tyrs) */
     Fsurf = 0.0;
 
     return Fsurf;
@@ -164,11 +166,6 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
         ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
         ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
         fac = 4.0 * M_PI * vol;
-        /* previous value used when constant */
-        //rho_cmb = 1.1922543609124883;
-        //cp_cmb = 0.40093215388392944;
-        // gives a fac of:
-        // 1.00069301288
         vol_core = 1.0/3.0 * PetscPowScalar(RADIN,3.0);
         fac = vol / vol_core;
         fac *= rho_cmb / RHO_CORE;
@@ -189,6 +186,8 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 
     }
 
+    /* this is the only place where VecAssembly calls operate
+       on Jtot and Etot */
     ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
     ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
