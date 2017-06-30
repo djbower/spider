@@ -59,7 +59,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 #if (defined PETSC_USE_REAL___FLOAT128)
     char xtemp[30], ytemp[30], ztemp[30];
 #endif
-    //PetscScalar xscale, yscale, zscale;
+    PetscScalar xscale, yscale, zscale;
     PetscScalar x, y, z;
     PetscScalar xa[NX], ya[NY], za[NX*NY];
 
@@ -80,6 +80,19 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 
     // fgets reads in string, sscanf processes it
     while(fgets(string, sizeof(string), fp) != NULL) {
+        /* get column scalings from last line of header */
+        if( i==HEAD-1 ){
+            /* remove # at start of line */
+            memmove( string, string+1, strlen(string) );
+#if (defined PETSC_USE_REAL___FLOAT128)
+            sscanf( string, "%s %s %s", xtemp, ytemp, ztemp );
+            xscale = strtoflt128(xtemp, NULL);
+            yscale = strtoflt128(ytemp, NULL);
+            zscale = strtoflt128(ztemp, NULL);
+#else
+            sscanf( string, "%lf %lf %lf", &xscale, &yscale, &zscale );
+#endif
+        }
         if( i>=HEAD ){
 #if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( string, "%s %s %s", xtemp, ytemp, ztemp );
@@ -90,15 +103,15 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
             sscanf(string, "%lf %lf %lf", &x, &y, &z );
 #endif
             /* lookup value */
-            za[i-HEAD] = z;
+            za[i-HEAD] = z * zscale;
             /* x coordinate */
             if( i<HEAD+NX ){
-                xa[j] = x;
+                xa[j] = x * xscale;
                 ++j;
             }
             /* y coordinate */
             if( (i-HEAD) % NX ==0 ){
-                ya[k] = y;
+                ya[k] = y * yscale;
                 ++k;
             }
 
@@ -148,7 +161,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 #if (defined PETSC_USE_REAL___FLOAT128)
     char xtemp[30], ytemp[30];
 #endif
-    PetscScalar x, y, xa[n], ya[n];
+    PetscScalar x, y, xscale, yscale, xa[n], ya[n];
 
     PetscFunctionBeginUser;
 
@@ -166,6 +179,18 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
     }
     // fgets reads in string, sscanf processes it
     while(fgets(string, sizeof(string), fp) != NULL) {
+        /* get column scalings from last line of header */
+        if( i==HEAD-1 ){
+           /* remove # at start of line */
+            memmove( string, string+1, strlen(string) );
+#if (defined PETSC_USE_REAL___FLOAT128)
+            sscanf( string, "%s %s", xtemp, ytemp );
+            xscale = strtoflt128(xtemp, NULL);
+            yscale = strtoflt128(ytemp, NULL);
+#else
+            sscanf(string, "%lf %lf", &xscale, &yscale );
+#endif
+        }
         if( i>=HEAD ){
 #if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( string, "%s %s", xtemp, ytemp );
@@ -174,8 +199,8 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 #else
             sscanf(string, "%lf %lf", &x, &y );
 #endif
-            xa[i-HEAD] = x;
-            ya[i-HEAD] = y;
+            xa[i-HEAD] = x * xscale;
+            ya[i-HEAD] = y * yscale;
             }
         ++i;
     }
