@@ -106,8 +106,7 @@ int main(int argc, char ** argv)
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
 
   /* Set up the integration period for first macro step */
-  /* DJB convert from years to non-dimensional time */
-  nexttime = dtmacro / TIME0YEARS; // non-dim time
+  nexttime = dtmacro; // years
   ierr = TSSetDuration(ts,maxsteps,nexttime);CHKERRQ(ierr);
 
   /* Set a very small initial timestep to prevent problems with 
@@ -135,9 +134,7 @@ int main(int argc, char ** argv)
       if (monitor) {
         ierr = TSCustomMonitor(ts,dtmacro,stepmacro,time,t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
       }
-      /* DJB: convert from years to non-dimensional time */
-      nexttime = (stepmacro + 1) * dtmacro;
-      nexttime /= TIME0YEARS;
+      nexttime = (stepmacro + 1) * dtmacro; // years
       ierr = TSSetDuration(ts,maxsteps,nexttime);CHKERRQ(ierr); 
     }
   }
