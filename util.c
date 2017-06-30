@@ -1,5 +1,8 @@
 #include "util.h"
 
+static PetscErrorCode set_d_dr_linear( Ctx * );
+//static PetscErrorCode set_d_dr_quadratic( Ctx * );
+
 /* integrate dS/dr to get the entropy profile
    this function only works in serial */
 PetscErrorCode set_entropy( Ctx *E, PetscScalar S0 )
@@ -102,7 +105,7 @@ PetscErrorCode set_d_dr( Ctx *E )
 }
 
 
-PetscErrorCode set_d_dr_linear( Ctx *E )
+static PetscErrorCode set_d_dr_linear( Ctx *E )
 {
 
     /* piece-wise linear interpolation between neighbouring
@@ -184,8 +187,8 @@ PetscErrorCode set_d_dr_linear( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-
-PetscErrorCode set_d_dr_quadratic( Ctx *E )
+#if 0
+static PetscErrorCode set_d_dr_quadratic( Ctx *E )
 {
     /* interpolate quadratic functions to get val and dval/dr at
        basic nodes.  For overlapping regions can get an estimate
@@ -470,3 +473,4 @@ PetscErrorCode set_d_dr_quadratic( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+#endif

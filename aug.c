@@ -1,7 +1,7 @@
 /* Helper functions to convert back and forth between standard and
    "augmented" vectors */
 
-#include "petsc.h"
+#include "aug.h"
 
 PetscErrorCode CreateAug(Vec in, Vec *out_aug){
   PetscErrorCode ierr;
