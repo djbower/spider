@@ -69,15 +69,12 @@ PetscErrorCode set_mesh( Ctx *E)
     aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s );
 
     /* surface area at basic nodes, without 4*pi term */
-    /* and now non-dimensional */
     spherical_area( da_b, M->radius_b, M->area_b);
 
     /* surface area at staggered nodes, without 4*pi term */
-    /* and now non-dimensional */
     spherical_area( da_s, M->radius_s, M->area_s );
 
     /* volume of spherical cells, without 4*pi term */
-    /* and now non-dimensional */
     spherical_volume( E, M->radius_b, M->volume_s);
 
     /* mixing length is minimum distance from boundary */
@@ -330,7 +327,6 @@ static PetscErrorCode aw_total_mass( Ctx *E )
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     Vec            mass_s;
-    PetscScalar    mass0;   
  
     PetscFunctionBeginUser;
 
@@ -338,10 +334,8 @@ static PetscErrorCode aw_total_mass( Ctx *E )
     ierr = VecCopy( M->rho_s, mass_s ); CHKERRQ(ierr);
 
     ierr = VecPointwiseMult( mass_s, mass_s, M->volume_s );
-    ierr = VecSum( mass_s, &mass0 );
-    mass0 *= 4.0 * PETSC_PI;
-
-    M->mass0 = mass0;
+    ierr = VecSum( mass_s, &M->mass0 );
+    M->mass0 *= 4.0 * PETSC_PI;
 
     VecDestroy( &mass_s );
 
