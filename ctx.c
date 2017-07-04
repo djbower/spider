@@ -3,6 +3,7 @@
 #include "twophase.h"
 #include "lookup.h"
 #include "util.h"
+#include "atmosphere.h"
 
 /* Set up the Context */
 PetscErrorCode setup_ctx(Ctx* ctx)
@@ -129,6 +130,10 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   set_d_dr( ctx );
 
   set_twophase(ctx);
+
+  /* DJB atmosphere */
+  set_initial_water(ctx);
+  set_initial_carbon(ctx);
 
   /* Obtain a command-line argument for S_init */
   ctx->S_init = SINIT_DEFAULT;

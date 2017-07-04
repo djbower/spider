@@ -5,8 +5,10 @@ static PetscErrorCode regular_mesh( Ctx * );
 static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
 static PetscErrorCode mixing_length( DM, Vec, Vec );
+static PetscErrorCode aw_density( DM, Vec, Vec );
 static PetscErrorCode aw_pressure( DM, Vec, Vec );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec );
+static PetscErrorCode aw_total_mass( Ctx * );
 
 PetscErrorCode set_mesh( Ctx *E)
 {
@@ -41,6 +43,7 @@ PetscErrorCode set_mesh( Ctx *E)
     M->volume_s   = M->meshVecs_s[2];
     M->dPdr_s     = M->meshVecs_s[3];
     M->area_s     = M->meshVecs_s[4];
+    M->rho_s      = M->meshVecs_s[5];
 
     /* for regular mesh, although without resolving the ultra-thin
        thermal boundary layer at the base of the mantle this likely
@@ -79,6 +82,13 @@ PetscErrorCode set_mesh( Ctx *E)
 
     /* mixing length is minimum distance from boundary */
     mixing_length( da_b, M->radius_b, M->mix_b);
+
+    /* density at staggered nodes */
+    aw_density( da_s, M->radius_s, M->rho_s );
+
+    /* DJB atmosphere testing */
+    /* compute total mass */
+    aw_total_mass( E );
 
     PetscFunctionReturn(0);
 }
@@ -292,6 +302,51 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure )
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,pressure,&arr_p);CHKERRQ(ierr);
     PetscFunctionReturn(0);
+}
+
+static PetscErrorCode aw_density( DM da, Vec radius, Vec density )
+{
+    PetscErrorCode    ierr;
+    PetscScalar       dep, *arr_density;
+    const PetscScalar *arr_r;
+    PetscInt          i,ilo,ihi,w;
+
+    PetscFunctionBeginUser;
+    ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ihi = ilo + w;
+    ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da,density,&arr_density);CHKERRQ(ierr);
+    for(i=ilo; i<ihi; ++i){
+        dep = RADIUS - arr_r[i];
+        arr_density[i] = RHOS * PetscExpScalar( BETA * dep );
+    }
+    ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da,density,&arr_density);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode aw_total_mass( Ctx *E )
+{
+    PetscErrorCode ierr;
+    Mesh           *M = &E->mesh;
+    Vec            mass_s;
+    PetscScalar    mass0;   
+ 
+    PetscFunctionBeginUser;
+
+    ierr = VecDuplicate( M->rho_s, &mass_s ); CHKERRQ(ierr);
+    ierr = VecCopy( M->rho_s, mass_s ); CHKERRQ(ierr);
+
+    ierr = VecPointwiseMult( mass_s, mass_s, M->volume_s );
+    ierr = VecSum( mass_s, &mass0 );
+    mass0 *= 4.0 * PETSC_PI;
+
+    M->mass0 = mass0;
+
+    VecDestroy( &mass_s );
+
+    PetscFunctionReturn(0);
+
 }
 
 static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad )

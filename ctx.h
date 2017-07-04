@@ -34,6 +34,18 @@ typedef struct _Interp2d {
     PetscScalar dy;
 } Interp2d;
 
+/* DJB for atmosphere */
+typedef struct _Volatile {
+    PetscScalar M0; // initial mass of liquid
+    PetscScalar X0; // initial mass fraction of volatile
+    PetscScalar Mliq; // mass of liquid (time-dependent)
+    PetscScalar Msol; // mass of solid (time-dependent)
+    PetscScalar Matm; // mass of atmosphere (time-dependent)
+    PetscScalar kdist; // distribution coefficient
+    PetscScalar P; // partial pressure (time-dependent)
+    PetscScalar Xliq; // to solve for
+} Volatile;
+
 /* lookup for a single phase */
 typedef struct _Lookup {
     Interp2d rho; /* density, kg / m^3 */
@@ -51,14 +63,18 @@ typedef struct _Lookup {
 } Lookup;
 
 #define NUMMESHVECS_B 5
-#define NUMMESHVECS_S 5
+#define NUMMESHVECS_S 6
 typedef struct _Mesh {
 
     Vec meshVecs_b[NUMMESHVECS_B];
     Vec area_b,dPdr_b,pressure_b,radius_b, mix_b;  
 
     Vec meshVecs_s[NUMMESHVECS_S];
-    Vec pressure_s,radius_s,volume_s,dPdr_s,area_s;
+    Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,rho_s;
+
+    /* DJB atmosphere.  For seeing what the 'pressure' estimate of the
+       mass is */
+    PetscScalar mass0;
 
 } Mesh;
 
@@ -83,6 +99,8 @@ typedef struct _Ctx {
   DM       da_b,da_s;
   PetscScalar S_init; // initial entropy
   Mat      qty_at_b, ddr_at_b;
+  Volatile vol_carbon;
+  Volatile vol_water;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

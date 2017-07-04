@@ -16,9 +16,55 @@ PetscErrorCode atmosphere_test( Ctx *E )
     t3 = get_solid_mass( E );
 
     PetscFunctionReturn(0);
+}
+
+PetscErrorCode set_initial_water( Ctx *E )
+{
+    PetscErrorCode ierr;
+    Volatile       *W = &E->vol_water;
+
+    PetscFunctionBeginUser;
+
+    W->kdist = KDIST_WATER;
+    W->X0 = X0_WATER_WT_PERCENT / 100.0;
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode set_initial_carbon( Ctx *E )
+{
+    PetscErrorCode ierr;
+    Volatile       *C = &E->vol_carbon;
+
+    PetscFunctionBeginUser;
+
+    C->kdist = KDIST_CARBON;
+    C->X0 = X0_CARBON_WT_PERCENT / 100.0;
+
+    PetscFunctionReturn(0);
+}
+
+
+
+
+
+
+PetscErrorCode set_H20( Ctx *E )
+{
+    PetscErrorCode ierr;
+    Volatile       *W = &E->vol_water;
+
+    PetscFunctionBeginUser;
+
+    PetscFunctionReturn(0);
 
 }
 
+
+/* TODO: since the masses of the liquid and solid parts of the mantle
+   depend on the density structure, there is no guarantee that the
+   mass of the overall mantle remains constant.  This will influence
+   the volatile exchange, but probably only slightly. */
 
 static PetscScalar get_total_mass( Ctx *E )
 {
@@ -132,4 +178,30 @@ static PetscScalar get_solid_mass( Ctx *E )
 
     return mass_solid;
 
+}
+
+/* partial pressures of volatiles
+   x_vol is mass fraction of volatiles "in the magma" (Lebrun)
+   according to my derivation, "in the magma" is for melt
+   fractions higher than the rheological transition */
+
+static PetscScalar get_partialP_H2O( PetscScalar x_vol )
+{
+    PetscScalar p;
+
+    /* Lebrun et al. (2013) eqn, 16 */
+    p = x_vol / 6.8E-8;
+    p = PetscPowScalar( p, 1.0/0.7 );
+
+    return p;
+}
+
+static PetscScalar get_partialP_CO2( PetscScalar x_vol )
+{
+    PetscScalar p;
+
+    /* Lebrun et al. (2013) eqn. 17 */
+    p = x_vol / 4.4E-12;
+
+    return p;
 }
