@@ -53,6 +53,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   set_entropy( E, S0 ); CHKERRQ(ierr);
 
+  /* DJB atmosphere */
+  set_partialP( E );
+
   set_gphi_smooth( E );
 
   set_capacitance_staggered( E );
@@ -64,6 +67,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* note pass in current time in years here */
   set_Htot( E, t );
 
+  /* DJB atmosphere
+     the surface flux should match the flux at the top of the atmosphere
+     we know the partial pressure of H20 and C02
+     ic assumes no initial atmosphere
   /* note pass in current time in years here */
   set_surface_flux( E, t );
 

@@ -3,7 +3,8 @@
 static PetscScalar get_total_mass( Ctx * );
 static PetscScalar get_liquid_mass( Ctx * );
 static PetscScalar get_solid_mass( Ctx * );
-
+static PetscScalar get_partialP_water( PetscScalar );
+static PetscScalar get_partialP_carbon( PetscScalar );
 
 PetscErrorCode atmosphere_test( Ctx *E )
 {
@@ -20,7 +21,6 @@ PetscErrorCode atmosphere_test( Ctx *E )
 
 PetscErrorCode set_initial_water( Ctx *E )
 {
-    PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     Volatile       *W = &E->vol_water;
 
@@ -28,6 +28,7 @@ PetscErrorCode set_initial_water( Ctx *E )
 
     W->kdist = KDIST_WATER;
     W->X0 = X0_WATER_WT_PERCENT / 100.0;
+    W->X = W->X0;
     /* setting the initial mass of the magma ocean according
        to the density profile used to compute the reference
        pressure profile */
@@ -38,7 +39,6 @@ PetscErrorCode set_initial_water( Ctx *E )
 
 PetscErrorCode set_initial_carbon( Ctx *E )
 {
-    PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     Volatile       *C = &E->vol_carbon;
 
@@ -46,6 +46,7 @@ PetscErrorCode set_initial_carbon( Ctx *E )
 
     C->kdist = KDIST_CARBON;
     C->X0 = X0_CARBON_WT_PERCENT / 100.0;
+    C->X = C->X0;
     /* setting the initial mass of the magma ocean according
        to the density profile used to compute the reference
        pressure profile */
@@ -53,11 +54,6 @@ PetscErrorCode set_initial_carbon( Ctx *E )
 
     PetscFunctionReturn(0);
 }
-
-
-
-
-
 
 PetscErrorCode set_H20( Ctx *E )
 {
@@ -195,7 +191,21 @@ static PetscScalar get_solid_mass( Ctx *E )
    according to my derivation, "in the magma" is for melt
    fractions higher than the rheological transition */
 
-static PetscScalar get_partialP_H2O( PetscScalar x_vol )
+PetscErrorCode set_partialP( Ctx *E )
+{
+    Volatile       *W = &E->vol_water;
+    Volatile       *C = &E->vol_carbon;
+
+    PetscFunctionBeginUser;
+
+    W->P = get_partialP_water( W->X );
+    C->P = get_partialP_carbon( C->X );
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscScalar get_partialP_water( PetscScalar x_vol )
 {
     PetscScalar p;
 
@@ -206,7 +216,7 @@ static PetscScalar get_partialP_H2O( PetscScalar x_vol )
     return p;
 }
 
-static PetscScalar get_partialP_CO2( PetscScalar x_vol )
+static PetscScalar get_partialP_carbon( PetscScalar x_vol )
 {
     PetscScalar p;
 

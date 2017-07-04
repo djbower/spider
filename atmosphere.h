@@ -6,5 +6,6 @@
 PetscErrorCode set_initial_carbon( Ctx * );
 PetscErrorCode set_initial_water( Ctx * );
 PetscErrorCode atmosphere_test( Ctx * );
+PetscErrorCode set_partialP( Ctx * );
 
 #endif

@@ -42,6 +42,7 @@ typedef struct _Volatile {
     PetscScalar Msol; // mass of solid (time-dependent)
     PetscScalar Matm; // mass of atmosphere (time-dependent)
     PetscScalar kdist; // distribution coefficient
+    PetscScalar X; // mass fraction of volatile (time-dependent)
     PetscScalar P; // partial pressure (time-dependent)
     PetscScalar Xliq; // to solve for
 } Volatile;
@@ -99,6 +100,8 @@ typedef struct _Ctx {
   DM       da_b,da_s;
   PetscScalar S_init; // initial entropy
   Mat      qty_at_b, ddr_at_b;
+
+  /* DJB atmosphere testing */
   Volatile vol_carbon;
   Volatile vol_water;
 
