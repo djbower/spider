@@ -5,6 +5,7 @@
 #include "matprop.h"
 #include "twophase.h"
 #include "util.h"
+#include "atmosphere.h"
 
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"
@@ -119,6 +120,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = VecScale( rhs_b_aug, SECSINYR );
 
   ierr = VecDestroy(&rhs_b);CHKERRQ(ierr);
+
+  /* DJB testing atmosphere here */
+  atmosphere_test( E );
+
+  /* end of testing atmosphere */
 
   PetscFunctionReturn(0);
 }
