@@ -23,6 +23,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   Vec               rhs_b;
   PetscInt          ind;
   PetscScalar       S0,dS0dt;
+  PetscScalar       emiss; // DJB atmosphere
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -53,9 +54,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   set_entropy( E, S0 ); CHKERRQ(ierr);
 
-  /* DJB atmosphere */
-  set_partialP( E );
-
   set_gphi_smooth( E );
 
   set_capacitance_staggered( E );
@@ -71,8 +69,13 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
      the surface flux should match the flux at the top of the atmosphere
      we know the partial pressure of H20 and C02
      ic assumes no initial atmosphere
-  /* note pass in current time in years here */
-  set_surface_flux( E, t );
+     note pass in current time in years here */
+
+  /* DJB atmosphere */
+  emiss = get_emissivity( E );
+  /* end of atmosphere */
+
+  set_surface_flux( E, t, emiss );
 
   set_core_mantle_flux( E );
 
@@ -127,11 +130,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = VecScale( rhs_b_aug, SECSINYR );
 
   ierr = VecDestroy(&rhs_b);CHKERRQ(ierr);
-
-  /* DJB testing atmosphere here */
-  atmosphere_test( E );
-
-  /* end of testing atmosphere */
 
   PetscFunctionReturn(0);
 }

@@ -38,6 +38,7 @@ typedef struct _Interp2d {
 typedef struct _Volatile {
     PetscScalar M0; // initial mass of liquid
     PetscScalar X0; // initial mass fraction of volatile
+    PetscScalar X0M0; // initial mass of volatile
     PetscScalar Mliq; // mass of liquid (time-dependent)
     PetscScalar Msol; // mass of solid (time-dependent)
     PetscScalar Matm; // mass of atmosphere (time-dependent)
@@ -45,6 +46,8 @@ typedef struct _Volatile {
     PetscScalar X; // mass fraction of volatile (time-dependent)
     PetscScalar P; // partial pressure (time-dependent)
     PetscScalar Xliq; // to solve for
+    PetscScalar kabs; // absorption coefficient
+    PetscScalar P0; // pressure for absorption coefficient
 } Volatile;
 
 /* lookup for a single phase */

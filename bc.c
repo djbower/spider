@@ -2,8 +2,8 @@
 #include "util.h"
 
 #if defined GREYBODY || defined HYBRID
-static PetscScalar greybody_with_dT( PetscScalar, PetscReal );
-static PetscScalar greybody( PetscScalar, PetscReal );
+static PetscScalar greybody_with_dT( PetscScalar, PetscReal, PetscScalar );
+static PetscScalar greybody( PetscScalar, PetscReal, PetscScalar );
 static PetscScalar tsurf_param( PetscScalar );
 #endif
 #ifdef ZAHNLE
@@ -16,7 +16,7 @@ static PetscScalar hamano( PetscScalar, PetscReal );
 static PetscScalar hybrid( Ctx *, PetscScalar, PetscReal );
 #endif
 
-PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
+PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs, PetscScalar emiss )
 {
     PetscErrorCode    ierr;
     PetscMPIInt       rank;
@@ -45,7 +45,7 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
       Qout = zahnle( temp0, tyrs );
 #endif
 #ifdef GREYBODY
-      Qout = greybody_with_dT( temp0, tyrs );
+      Qout = greybody_with_dT( temp0, tyrs, emiss );
 #endif
 #ifdef HYBRID
       Qout = hybrid( E, temp0, tyrs );
@@ -220,19 +220,19 @@ static PetscScalar tsurf_param( PetscScalar temp )
 #endif
 
 #if defined(GREYBODY) || defined(HYBRID)
-static PetscScalar greybody( PetscScalar Tsurf, PetscReal tyrs )
+static PetscScalar greybody( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss )
 {
     PetscScalar Fsurf;
 
     Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(TEQM,4.0);
-    Fsurf *= SIGMA * EMISSIVITY;
+    Fsurf *= SIGMA * emiss;
 
     return Fsurf;
 }
 #endif
 
 #if defined(GREYBODY) || defined(HYBRID)
-static PetscScalar greybody_with_dT( PetscScalar Tsurf, PetscReal tyrs )
+static PetscScalar greybody_with_dT( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss )
 {
     PetscScalar Ts, Fsurf;
 
@@ -244,7 +244,7 @@ static PetscScalar greybody_with_dT( PetscScalar Tsurf, PetscReal tyrs )
     else{
         Ts = tsurf_param( Tsurf );
     }
-    Fsurf = greybody( Ts, tyrs );
+    Fsurf = greybody( Ts, tyrs, emiss );
 
     return Fsurf;
 }

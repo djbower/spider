@@ -132,6 +132,7 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   set_twophase(ctx);
 
   /* DJB atmosphere */
+  /* must come after set_mesh */
   set_initial_water(ctx);
   set_initial_carbon(ctx);
 

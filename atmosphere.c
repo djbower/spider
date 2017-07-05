@@ -2,22 +2,88 @@
 
 static PetscScalar get_total_mass( Ctx * );
 static PetscScalar get_liquid_mass( Ctx * );
+#if 0
 static PetscScalar get_solid_mass( Ctx * );
+#endif
 static PetscScalar get_partialP_water( PetscScalar );
 static PetscScalar get_partialP_carbon( PetscScalar );
+static PetscErrorCode set_partialP( Ctx * );
+static PetscScalar get_atmosphere_mass( Volatile * );
+static PetscScalar get_optical_depth( Volatile * );
 
-PetscErrorCode atmosphere_test( Ctx *E )
+PetscScalar get_emissivity( Ctx *E )
 {
-    PetscScalar t1, t2, t3;
+    PetscScalar    mass_liq, mass_tot, frac_liq, frac_sol;
+    PetscScalar    M0, mass_atm, emiss, tau;
+    //PetscScalar    mass_sol;
+    Volatile       *W = &E->vol_water;
+    Volatile       *C = &E->vol_carbon;
 
-    PetscFunctionBeginUser;
+    /* this uses current concentration of volatiles to compute
+       partial pressures */
+    /* updates W->X and C->X */
+    set_partialP( E );
 
-    t1 = get_total_mass( E );
-    t2 = get_liquid_mass( E );
-    t3 = get_solid_mass( E );
+    /* now solve mass balance of volatiles */
+    /* need mass fraction of melt and solid */
+    mass_liq = get_liquid_mass( E );
+    //mass_sol = get_solid_mass( E );
+    mass_tot = get_total_mass( E );
 
-    PetscFunctionReturn(0);
+    /* total mass will change with time.  Unphysical, but
+       hopefully won't change by much.  So for simplicitly, let's
+       just compute fraction of liquid and total to total mass.  Then
+       we can use the 'fixed' initial mass determined from the AW EOS
+       at the start since this is unchanging.  This essentially enforces
+       that the liquid and solid mass must total the total mass, and
+       this total mass cannot change with time */
+    frac_liq = mass_liq / mass_tot;
+    frac_sol = 1.0 - frac_liq;
+    M0 = W->M0; // same for all volatiles since initial/total mass of planet
+
+    /* water */
+    mass_atm = get_atmosphere_mass( W );
+    W->X = W->X0M0 - mass_atm;
+    W->X /= W->kdist*M0*frac_sol+M0*frac_liq;
+
+    /* carbon */
+    mass_atm = get_atmosphere_mass( C );
+    C->X = C->X0M0 - mass_atm;
+    C->X /= C->kdist*M0*frac_sol+M0*frac_liq;
+
+    /* optical depth */
+    tau = get_optical_depth( W );
+    tau += get_optical_depth( C );
+
+    /* emissivity */
+    emiss = 2.0 / (tau + 2.0);
+
+    return emiss;
 }
+
+static PetscScalar get_optical_depth( Volatile *V )
+{
+    PetscScalar tau, mass_atm;
+
+    mass_atm = get_atmosphere_mass( V );
+    tau = 3.0 * mass_atm / (8.0*PETSC_PI*PetscSqr(RADIUS));
+    // note negative gravity!
+    tau *= PetscSqrtScalar( V->kabs*-GRAVITY/(3.0*V->P0) );
+
+    return tau;
+}
+
+static PetscScalar get_atmosphere_mass( Volatile *V )
+{
+    PetscScalar mass;
+
+    mass = (4.0*PETSC_PI*PetscSqr(RADIUS))/GRAVITY;
+    mass *= V->P;
+    mass *= -1.0; // because GRAVITY is negative by definition
+
+    return mass;
+}
+
 
 PetscErrorCode set_initial_water( Ctx *E )
 {
@@ -33,6 +99,9 @@ PetscErrorCode set_initial_water( Ctx *E )
        to the density profile used to compute the reference
        pressure profile */
     W->M0 = M->mass0;
+    W->X0M0 = W->X0 * W->M0;
+    W->kabs = KABS_WATER;
+    W->P0 = P0;
 
     PetscFunctionReturn(0);
 }
@@ -51,21 +120,12 @@ PetscErrorCode set_initial_carbon( Ctx *E )
        to the density profile used to compute the reference
        pressure profile */
     C->M0 = M->mass0;
+    C->X0M0 = C->X0 * C->M0;
+    C->kabs = KABS_CARBON;
+    C->P0 = P0;
 
     PetscFunctionReturn(0);
 }
-
-PetscErrorCode set_H20( Ctx *E )
-{
-    PetscErrorCode ierr;
-    Volatile       *W = &E->vol_water;
-
-    PetscFunctionBeginUser;
-
-    PetscFunctionReturn(0);
-
-}
-
 
 /* TODO: since the masses of the liquid and solid parts of the mantle
    depend on the density structure, there is no guarantee that the
@@ -142,6 +202,7 @@ static PetscScalar get_liquid_mass( Ctx *E )
 
 }
 
+#if 0
 static PetscScalar get_solid_mass( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -185,13 +246,14 @@ static PetscScalar get_solid_mass( Ctx *E )
     return mass_solid;
 
 }
+#endif
 
 /* partial pressures of volatiles
    x_vol is mass fraction of volatiles "in the magma" (Lebrun)
    according to my derivation, "in the magma" is for melt
    fractions higher than the rheological transition */
 
-PetscErrorCode set_partialP( Ctx *E )
+static PetscErrorCode set_partialP( Ctx *E )
 {
     Volatile       *W = &E->vol_water;
     Volatile       *C = &E->vol_carbon;
