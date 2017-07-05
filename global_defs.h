@@ -139,18 +139,39 @@ static const PetscScalar TFAC_CORE_AVG = 1.147;
 /* width */
 static const PetscScalar SWIDTH = 1.0E-2;
 
+
 /* DJB testing some atmosphere parameters */
-static const PetscScalar KDIST_WATER = 1.0E-4; // ET08
-static const PetscScalar X0_WATER_WT_PERCENT = 4.3E-2; // L13
-// from Elkins-Tanton (2008)
+
+#if 1
+// Elkins-Tanton (2008) parameters
+static const PetscScalar P0 = 101325.0; // Pa
+
+static const PetscScalar KDIST_WATER = 1.0E-4;
+// water saturation limit is 10 ppm but how to include this?
+static const PetscScalar X0_WATER_WT_PERCENT = 5.0E-2;
 static const PetscScalar KABS_WATER = 0.01; // m^2/kg
 
-static const PetscScalar KDIST_CARBON = 5.0E-4; // ET08
-static const PetscScalar X0_CARBON_WT_PERCENT = 1.4E-2; // L13
-// from Elkins-Tanton (2008)
+static const PetscScalar KDIST_CARBON = 5.0E-4;
+// carbon saturation limit is 0.03 ppm but how to include this?
+static const PetscScalar X0_CARBON_WT_PERCENT = 1.0E-2;
 static const PetscScalar KABS_CARBON = 0.05; // m^2/kg
 //static const PetscScalar KABS_CARBON = 0.0001; // m^2/kg
+#endif
+
+#if 0
+// Salvador et al. (2017)
 static const PetscScalar P0 = 101325.0; // Pa
+
+static const PetscScalar KDIST_WATER = 1.0E-4; // (from ET08)
+static const PetscScalar X0_WATER_WT_PERCENT = 1.17E-3;
+//static const PetscScalar X0_WATER_WT_PERCENT = 4.67E-2;
+static const PetscScalar KABS_WATER = 0.01; // m^2/kg
+
+static const PetscScalar KDIST_CARBON = 5.0E-4; // (from ET08)
+static const PetscScalar X0_CARBON_WT_PERCENT = 1.0E-3;
+static const PetscScalar X0_CARBON_WT_PERCENT = 1.4E-1;
+static const PetscScalar KABS_CARBON = 0.0001; // m^2/kg
+#endif
 
 /* end of constants */
 
