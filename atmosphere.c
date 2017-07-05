@@ -5,8 +5,10 @@ static PetscScalar get_liquid_mass( Ctx * );
 #if 0
 static PetscScalar get_solid_mass( Ctx * );
 #endif
-static PetscScalar get_partialP_water( PetscScalar );
-static PetscScalar get_partialP_carbon( PetscScalar );
+//static PetscScalar get_partialP_water( PetscScalar );
+//static PetscScalar get_partialP_carbon( PetscScalar );
+static PetscScalar get_partialP_water_ET08( PetscScalar );
+static PetscScalar get_partialP_carbon_ET08( PetscScalar );
 static PetscErrorCode set_partialP( Ctx * );
 static PetscScalar get_atmosphere_mass( Volatile * );
 static PetscScalar get_optical_depth( Volatile * );
@@ -260,13 +262,47 @@ static PetscErrorCode set_partialP( Ctx *E )
 
     PetscFunctionBeginUser;
 
+    #if 0
     W->P = get_partialP_water( W->X );
     C->P = get_partialP_carbon( C->X );
+    #endif
+
+    /* Elkins-Tanton (2008) gives units */
+    #if 1
+    W->P = get_partialP_water_ET08( W->X );
+    C->P = get_partialP_carbon_ET08( C->X );
+    #endif
 
     PetscFunctionReturn(0);
-
 }
 
+static PetscScalar get_partialP_water_ET08( PetscScalar x_vol )
+{
+    PetscScalar p, wtp;
+
+    /* DJB TO CHECK BELOW */
+    wtp = x_vol; // need units of wt %
+
+    /* p in Pa */
+    p = PetscPowScalar( (wtp-0.3)/2.08E-4, 1.0/0.52 );
+
+    return p;
+}
+
+static PetscScalar get_partialP_carbon_ET08( PetscScalar x_vol )
+{
+    PetscScalar p, wtp;
+
+    /* DJB TO CHECK BELOW */
+    wtp = x_vol; // need units of wt %
+
+    /* p in Pa */
+    p = PetscPowScalar( (wtp-0.05)/2.08E-4, 1.0/0.45 );
+
+    return p;
+}
+
+#if 0
 static PetscScalar get_partialP_water( PetscScalar x_vol )
 {
     PetscScalar p;
@@ -298,3 +334,4 @@ static PetscScalar get_partialP_carbon( PetscScalar x_vol )
 
     return p;
 }
+#endif
