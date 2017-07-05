@@ -271,7 +271,14 @@ static PetscScalar get_partialP_water( PetscScalar x_vol )
 {
     PetscScalar p;
 
-    /* Lebrun et al. (2013) eqn, 16 */
+    /* what are the units?  mass fraction / weight percent? */
+    /* Massol et al says ``with xH2O and XCO2 being respectively
+       the mass fraction of water and CO2 dissolved in the melt
+       respectively expressed in wt% and ppm */
+
+    /* Lebrun et al. (2013) eqn. 16
+       Massol et al. (2016) eqn. 17
+       Salvador et al. (2017) eqn. C3 */
     p = x_vol / 6.8E-8;
     p = PetscPowScalar( p, 1.0/0.7 );
 
@@ -282,7 +289,11 @@ static PetscScalar get_partialP_carbon( PetscScalar x_vol )
 {
     PetscScalar p;
 
-    /* Lebrun et al. (2013) eqn. 17 */
+    /* what are the units?  mass fraction / weight percent? */
+
+    /* Lebrun et al. (2013) eqn. 17
+       Massol et al. (2016) eqn. 18
+       Salvador et al. (2017) eqn. C4 */
     p = x_vol / 4.4E-12;
 
     return p;
