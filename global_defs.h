@@ -26,8 +26,13 @@
    of them uncommented */
 //#define GREYBODY
 //#define HAMANO
-//#define HYBRID
 #define ZAHNLE
+
+/* if HYBRID is set, then the boundary condition will switch
+   to the upper mantle cooling rate once the rheological
+   transition is reached.  This prevents a lid from forming at
+   the top of the model. */
+#define HYBRID
 
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
