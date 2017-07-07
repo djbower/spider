@@ -5,10 +5,14 @@ static PetscScalar get_liquid_mass( Ctx * );
 #if 0
 static PetscScalar get_solid_mass( Ctx * );
 #endif
-//static PetscScalar get_partialP_water( PetscScalar );
-//static PetscScalar get_partialP_carbon( PetscScalar );
+#if 1
+static PetscScalar get_partialP_water( PetscScalar );
+static PetscScalar get_partialP_carbon( PetscScalar );
+#endif
+#if 0
 static PetscScalar get_partialP_water_ET08( PetscScalar );
 static PetscScalar get_partialP_carbon_ET08( PetscScalar );
+#endif
 static PetscErrorCode set_partialP( Ctx * );
 static PetscScalar get_atmosphere_mass( Volatile * );
 static PetscScalar get_optical_depth( Volatile * );
@@ -262,13 +266,13 @@ static PetscErrorCode set_partialP( Ctx *E )
 
     PetscFunctionBeginUser;
 
-    #if 0
+    #if 1
     W->P = get_partialP_water( W->X );
     C->P = get_partialP_carbon( C->X );
     #endif
 
     /* Elkins-Tanton (2008) gives units */
-    #if 1
+    #if 0
     W->P = get_partialP_water_ET08( W->X );
     C->P = get_partialP_carbon_ET08( C->X );
     #endif
@@ -276,6 +280,7 @@ static PetscErrorCode set_partialP( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+#if 0
 static PetscScalar get_partialP_water_ET08( PetscScalar x_vol )
 {
     /* Elkins-Tanton (2008).  Can reproduce Fig. 2 in her paper */
@@ -305,8 +310,9 @@ static PetscScalar get_partialP_carbon_ET08( PetscScalar x_vol )
 
     return p;
 }
+#endif
 
-#if 0
+#if 1
 static PetscScalar get_partialP_water( PetscScalar x_vol )
 {
     PetscScalar p;
@@ -329,11 +335,13 @@ static PetscScalar get_partialP_carbon( PetscScalar x_vol )
 {
     PetscScalar p;
 
-    /* what are the units?  mass fraction / weight percent? */
+    /* see magma_ocean_notes.tex */
 
     /* Lebrun et al. (2013) eqn. 17
        Massol et al. (2016) eqn. 18
        Salvador et al. (2017) eqn. C4 */
+
+    /* where x_vol is mass fraction */
     p = x_vol / 4.4E-12;
 
     return p;
