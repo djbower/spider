@@ -278,10 +278,12 @@ static PetscErrorCode set_partialP( Ctx *E )
 
 static PetscScalar get_partialP_water_ET08( PetscScalar x_vol )
 {
+    /* Elkins-Tanton (2008).  Can reproduce Fig. 2 in her paper */
+
     PetscScalar p, wtp;
 
     /* DJB TO CHECK BELOW */
-    wtp = x_vol; // need units of wt %
+    wtp = x_vol*100.0; // need units of wt %
 
     /* p in Pa */
     p = PetscPowScalar( (wtp-0.3)/2.08E-4, 1.0/0.52 );
@@ -291,10 +293,12 @@ static PetscScalar get_partialP_water_ET08( PetscScalar x_vol )
 
 static PetscScalar get_partialP_carbon_ET08( PetscScalar x_vol )
 {
+    /* Elkins-Tanton (2008).  Can reproduce Fig. 2 in her paper */
+
     PetscScalar p, wtp;
 
     /* DJB TO CHECK BELOW */
-    wtp = x_vol; // need units of wt %
+    wtp = x_vol*100.0; // need units of wt %
 
     /* p in Pa */
     p = PetscPowScalar( (wtp-0.05)/2.08E-4, 1.0/0.45 );
