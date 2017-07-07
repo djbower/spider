@@ -211,9 +211,7 @@ static PetscScalar tsurf_param( PetscScalar temp )
 
     return Ts;
 }
-#endif
 
-#if defined(GREYBODY)
 static PetscScalar greybody( PetscScalar Tsurf, PetscReal tyrs )
 {
     PetscScalar Fsurf;
@@ -223,9 +221,7 @@ static PetscScalar greybody( PetscScalar Tsurf, PetscReal tyrs )
 
     return Fsurf;
 }
-#endif
 
-#if defined(GREYBODY)
 static PetscScalar greybody_with_dT( PetscScalar Tsurf, PetscReal tyrs )
 {
     PetscScalar Ts, Fsurf;
