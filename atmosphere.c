@@ -48,9 +48,9 @@ PetscScalar get_emissivity( Ctx *E )
     M0 = W->M0; // same for all volatiles since initial/total mass of planet
 
     /* water */
-    mass_atm = get_atmosphere_mass( W );
-    W->X = W->X0M0 - mass_atm;
-    W->X /= W->kdist*M0*frac_sol+M0*frac_liq;
+    //mass_atm = get_atmosphere_mass( W );
+    //W->X = W->X0M0 - mass_atm;
+    //W->X /= W->kdist*M0*frac_sol+M0*frac_liq;
 
     /* carbon */
     mass_atm = get_atmosphere_mass( C );
@@ -58,8 +58,8 @@ PetscScalar get_emissivity( Ctx *E )
     C->X /= C->kdist*M0*frac_sol+M0*frac_liq;
 
     /* optical depth */
-    tau = get_optical_depth( W );
-    tau += get_optical_depth( C );
+    tau = get_optical_depth( C );
+    //tau += get_optical_depth( W );
 
     /* emissivity */
     emiss = 2.0 / (tau + 2.0);
