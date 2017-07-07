@@ -1,19 +1,17 @@
 #include "bc.h"
 #include "util.h"
 
-#if defined GREYBODY || defined HYBRID
+static PetscScalar hybrid( Ctx *, PetscScalar, PetscReal, PetscScalar );
+#if defined GREYBODY
 static PetscScalar greybody_with_dT( PetscScalar, PetscReal, PetscScalar );
 static PetscScalar greybody( PetscScalar, PetscReal, PetscScalar );
 static PetscScalar tsurf_param( PetscScalar );
 #endif
 #ifdef ZAHNLE
-static PetscScalar zahnle( PetscScalar, PetscReal );
+static PetscScalar zahnle( PetscScalar, PetscReal, PetscScalar );
 #endif
 #ifdef HAMANO
-static PetscScalar hamano( PetscScalar, PetscReal );
-#endif
-#ifdef HYBRID
-static PetscScalar hybrid( Ctx *, PetscScalar, PetscReal );
+static PetscScalar hamano( PetscScalar, PetscReal, PetscScalar );
 #endif
 
 PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs, PetscScalar emiss )
@@ -38,18 +36,7 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs, PetscScalar emiss )
       /* surface temperature */
       ierr = VecGetValues(S->temp,1,&ind,&temp0); CHKERRQ(ierr);
 
-#ifdef HAMANO
-      Qout = hamano( temp0, tyrs );
-#endif
-#ifdef ZAHNLE
-      Qout = zahnle( temp0, tyrs );
-#endif
-#ifdef GREYBODY
-      Qout = greybody_with_dT( temp0, tyrs, emiss );
-#endif
-#ifdef HYBRID
-      Qout = hybrid( E, temp0, tyrs );
-#endif
+      Qout = hybrid( E, temp0, tyrs, emiss );
 
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
       Qout *= PetscSqr( RADIUS );
@@ -66,24 +53,32 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs, PetscScalar emiss )
 
 }
 
-#ifdef HYBRID
-static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
+static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs, PetscScalar emiss )
 {
+    PetscScalar    Q1;
+#ifdef HYBRID
     PetscErrorCode ierr;
+    PetscScalar    G0, R0, R1, R2, E0, E1, E2, Q2, fwt, phi0;
     PetscInt       ind;
-    PetscScalar    phi0, Q1, Q2, Qout, fwt;
-    PetscScalar    G0, R0, R1, R2, E0, E1, E2;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
+#endif
 
+#ifdef HAMANO
+    Q1 = hamano( temp0, tyrs, emiss );
+#endif
+#ifdef ZAHNLE
+    Q1 = zahnle( temp0, tyrs, emiss );
+#endif
+#ifdef GREYBODY
+    Q1 = greybody_with_dT( temp0, tyrs, emiss );
+#endif
+#ifdef HYBRID
     /* for weight of different fluxes */
     ind = 0;
     ierr = VecGetValues(S->phi,1,&ind,&phi0); CHKERRQ(ierr);
     /* SWIDTH or PHI_WIDTH most appropriate choice here? */
     fwt = tanh_weight( phi0, PHI_CRITICAL, SWIDTH );
-
-    // grey body
-    Q1 = greybody_with_dT( temp0, tyrs );
 
     // energy flux from energy gradient
     ierr = VecGetValues(M->area_b,1,&ind,&G0); CHKERRQ(ierr);
@@ -96,16 +91,15 @@ static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
     ierr = VecGetValues(S->Etot,1,&ind,&E2); CHKERRQ(ierr);
     E0 = E1 - (E2-E1)*(R2-R1)/(R1-R0); // energy at surface
     Q2 = E0 / G0; // G0 should be 1.0 by definition
-
-    Qout = Q1 * fwt + Q2 * (1.0 - fwt);
-
-    return Qout;
-
-}
+    Q1 = Q1 * fwt + Q2 * (1.0 - fwt);
 #endif
 
+    return Q1;
+
+}
+
 #ifdef ZAHNLE
-static PetscScalar zahnle( PetscScalar Tsurf, PetscReal tyrs )
+static PetscScalar zahnle( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss )
 {
     PetscScalar       Fsurf;
 
@@ -120,7 +114,7 @@ static PetscScalar zahnle( PetscScalar Tsurf, PetscReal tyrs )
 #endif
 
 #ifdef HAMANO
-static PetscScalar hamano( PetscScalar Tsurf, PetscReal tyrs )
+static PetscScalar hamano( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss )
 {
     PetscScalar       Fsurf;
 
@@ -199,7 +193,7 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 
 }
 
-#if defined(GREYBODY) || defined(HYBRID)
+#if defined(GREYBODY)
 static PetscScalar tsurf_param( PetscScalar temp )
 {
     PetscScalar Ts, c, fac, num, den;
@@ -217,9 +211,7 @@ static PetscScalar tsurf_param( PetscScalar temp )
 
     return Ts;
 }
-#endif
 
-#if defined(GREYBODY) || defined(HYBRID)
 static PetscScalar greybody( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss )
 {
     PetscScalar Fsurf;
@@ -229,9 +221,7 @@ static PetscScalar greybody( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emis
 
     return Fsurf;
 }
-#endif
 
-#if defined(GREYBODY) || defined(HYBRID)
 static PetscScalar greybody_with_dT( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss )
 {
     PetscScalar Ts, Fsurf;
