@@ -46,6 +46,56 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
 
+  /* Dump several PETSc binary vectors to a file named for the timestep */
+  {
+    /* Set up a binary viewer */
+    PetscViewer viewer;
+    char filename[PETSC_MAX_PATH_LEN];
+    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/%d.petscbin",step);CHKERRQ(ierr);
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer);CHKERRQ(ierr);
+
+    /* Add a data vector */
+    {
+      Vec data;
+      PetscMPIInt rank;
+      char vecname[PETSC_MAX_PATH_LEN];
+      const int nData = 2;
+      ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
+      if (!rank) {
+        ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
+        ierr = VecSetType(data,VECSEQ);CHKERRQ(ierr);
+        ierr = VecSetSizes(data,nData,nData);CHKERRQ(ierr);
+        ierr = VecSetValue(data,0,(PetscScalar)step,INSERT_VALUES);CHKERRQ(ierr);
+        ierr = VecSetValue(data,1,(PetscScalar)dtmacro,INSERT_VALUES);CHKERRQ(ierr);
+        ierr = VecAssemblyBegin(data);CHKERRQ(ierr);
+        ierr = VecAssemblyEnd(data);CHKERRQ(ierr);
+        ierr = PetscObjectSetName((PetscObject)data,vecname);CHKERRQ(ierr);
+        ierr = VecView(data,viewer);CHKERRQ(ierr);
+        ierr = VecDestroy(&data);CHKERRQ(ierr);
+      }
+    }
+
+    /* Add the solution vector */
+    {
+      char vecname[PETSC_MAX_PATH_LEN];
+      ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug_%d",step);CHKERRQ(ierr);
+      ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
+      ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
+    }
+ 
+    /* Add another vector to the file */
+    {
+      Vec phi_s = ctx->solution.phi_s;
+      char vecname[PETSC_MAX_PATH_LEN];
+      ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"phi_s_%lld",step);CHKERRQ(ierr);
+      ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
+      ierr = VecView(phi_s,viewer);CHKERRQ(ierr);
+    }
+
+    /* Close the viewer */
+    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+  }
+
   if (test_view) {
     PetscViewer viewer;
     ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
@@ -56,15 +106,14 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
 
+#if 0
   /* Recompute the rhs to a file named for the timestep */
   {
-    Vec rhs_b_aug; 
+    Vec rhs_b_aug;
 
     ierr = VecDuplicate(x_aug,&rhs_b_aug);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)rhs_b_aug,"rhs_b_aug");CHKERRQ(ierr);
     ierr = RHSFunction(ts,time,x_aug,rhs_b_aug,ctx);CHKERRQ(ierr);
-  // NOTE: we turn off dumping of the RHS for now, but retain this code as it may become useful later
-#if 0
     {
       PetscViewer viewer;
       char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
@@ -77,8 +126,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       ierr = VecView(rhs_b,viewer);CHKERRQ(ierr);
       ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
     }
-#endif
-    
+
     if (test_view) {
       PetscViewer viewer;
 
@@ -90,6 +138,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
     }
   }
+#endif
 
   PetscFunctionReturn(0);
 }
