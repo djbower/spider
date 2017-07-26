@@ -3,8 +3,6 @@
 
 #include "ctx.h"
 
-PetscErrorCode set_initial_carbon( Ctx * );
-PetscErrorCode set_initial_water( Ctx * );
-PetscScalar get_emissivity( Ctx * );
+PetscScalar get_emissivity( Ctx *, PetscScalar, PetscScalar );
 
 #endif

@@ -74,13 +74,26 @@ int main(int argc, char ** argv)
   
   /* Set up the Jacobian function (omitted for now) */
 
-  /* Create a special vector with an extra point and transfer IC */
+  /* Create a special vector with extra points and transfer IC */
   ierr = CreateAug(dSdr_b,&dSdr_b_aug);CHKERRQ(ierr);
   ierr = ToAug(dSdr_b,dSdr_b_aug);CHKERRQ(ierr);
 
+  /* NOTE: DJB augmented vector organised as follows:
+         0.     CO2 wt. %
+         1.     H2O wt. %
+         2.     S0 (entropy at uppermost staggered node)
+         3-end  dS/dr at basic nodes
+  */
+
+  /* initial mass content of CO2 in the magma ocean */
+  ierr = VecSetValue(dSdr_b_aug,0,CO2_INITIAL,INSERT_VALUES);CHKERRQ(ierr);
+
+  /* initial mass content of H2O in the magma ocean */
+  ierr = VecSetValue(dSdr_b_aug,1,H2O_INITIAL,INSERT_VALUES);CHKERRQ(ierr);
+
   /* include initial entropy at staggered node */
   /* TODO: is this over-rideable from the command line? */
-  ierr = VecSetValue(dSdr_b_aug,0,SINIT_DEFAULT,INSERT_VALUES);CHKERRQ(ierr);
+  ierr = VecSetValue(dSdr_b_aug,2,SINIT_DEFAULT,INSERT_VALUES);CHKERRQ(ierr);
 
   /* Set up timestepper */
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);

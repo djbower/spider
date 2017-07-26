@@ -74,7 +74,7 @@
 
 /* number of additional equations for the augmented system */
 //#define AUG_NUM 1 // for no coupled atmosphere evolution
-#define AUG_NUM 2 // for coupled atmosphere evolution
+#define AUG_NUM 3 // for coupled atmosphere evolution
 
 /* number of staggered mesh points */
 #define NUMPTS_S_DEFAULT NUMPTS_B_DEFAULT-1 /* automagically determined */
@@ -155,15 +155,15 @@ static const PetscScalar SWIDTH = 1.0E-2;
 // Elkins-Tanton (2008) parameters
 static const PetscScalar P0 = 101325.0; // Pa
 
-static const PetscScalar KDIST_WATER = 1.0E-4;
+static const PetscScalar H2O_KDIST = 1.0E-4;
 // water saturation limit is 10 ppm but how to include this?
-static const PetscScalar X0_WATER_WT_PERCENT = 5.0E-2;
-static const PetscScalar KABS_WATER = 0.01; // m^2/kg
+static const PetscScalar H2O_INITIAL = 5.0E-2; // wt. %
+static const PetscScalar H2O_KABS = 0.01; // m^2/kg
 
-static const PetscScalar KDIST_CARBON = 5.0E-4;
+static const PetscScalar CO2_KDIST = 5.0E-4;
 // carbon saturation limit is 0.03 ppm but how to include this?
-static const PetscScalar X0_CARBON_WT_PERCENT = 1.0E-2;
-static const PetscScalar KABS_CARBON = 0.05; // m^2/kg
+static const PetscScalar CO2_INITIAL = 1.0E-2;
+static const PetscScalar CO2_KABS = 0.05; // m^2/kg
 //static const PetscScalar KABS_CARBON = 0.0001; // m^2/kg
 #endif
 
@@ -171,15 +171,15 @@ static const PetscScalar KABS_CARBON = 0.05; // m^2/kg
 // Salvador et al. (2017)
 static const PetscScalar P0 = 101325.0; // Pa
 
-static const PetscScalar KDIST_WATER = 1.0E-4; // (from ET08)
-static const PetscScalar X0_WATER_WT_PERCENT = 1.17E-3;
-//static const PetscScalar X0_WATER_WT_PERCENT = 4.67E-2;
-static const PetscScalar KABS_WATER = 0.01; // m^2/kg
+static const PetscScalar H2O_KDIST = 1.0E-4; // (from ET08)
+static const PetscScalar H2O_INITIAL = 1.17E-3; // wt. %
+//static const PetscScalar H2O_INITIAL = 4.67E-2;
+static const PetscScalar H2O_KABS = 0.01; // m^2/kg
 
-static const PetscScalar KDIST_CARBON = 5.0E-4; // (from ET08)
-static const PetscScalar X0_CARBON_WT_PERCENT = 1.0E-3;
-static const PetscScalar X0_CARBON_WT_PERCENT = 1.4E-1;
-static const PetscScalar KABS_CARBON = 0.0001; // m^2/kg
+static const PetscScalar CO2_KDIST = 5.0E-4; // (from ET08)
+static const PetscScalar CO2_INITIAL = 1.0E-3;
+static const PetscScalar CO2_INITIAL = 1.4E-1;
+static const PetscScalar CO2_KABS = 0.0001; // m^2/kg
 #endif
 
 /* end of constants */

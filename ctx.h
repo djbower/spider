@@ -34,6 +34,8 @@ typedef struct _Interp2d {
     PetscScalar dy;
 } Interp2d;
 
+/* probably not needed anymore */
+#if 0
 /* DJB for atmosphere */
 typedef struct _Volatile {
     PetscScalar M0; // initial mass of liquid
@@ -49,6 +51,7 @@ typedef struct _Volatile {
     PetscScalar kabs; // absorption coefficient
     PetscScalar P0; // pressure for absorption coefficient
 } Volatile;
+#endif
 
 /* lookup for a single phase */
 typedef struct _Lookup {
@@ -67,14 +70,14 @@ typedef struct _Lookup {
 } Lookup;
 
 #define NUMMESHVECS_B 5
-#define NUMMESHVECS_S 6
+#define NUMMESHVECS_S 7
 typedef struct _Mesh {
 
     Vec meshVecs_b[NUMMESHVECS_B];
     Vec area_b,dPdr_b,pressure_b,radius_b, mix_b;  
 
     Vec meshVecs_s[NUMMESHVECS_S];
-    Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,rho_s;
+    Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,rho_s,mass_s;
 
     /* DJB atmosphere.  For seeing what the 'pressure' estimate of the
        mass is */
@@ -104,9 +107,10 @@ typedef struct _Ctx {
   PetscScalar S_init; // initial entropy
   Mat      qty_at_b, ddr_at_b;
 
+  /* probably not needed anymore */
   /* DJB atmosphere testing */
-  Volatile vol_carbon;
-  Volatile vol_water;
+  //Volatile vol_carbon;
+  //Volatile vol_water;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

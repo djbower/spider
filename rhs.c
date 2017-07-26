@@ -23,6 +23,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   Vec               rhs_b;
   PetscInt          ind;
   PetscScalar       S0,dS0dt;
+  PetscScalar       X0, dX0dt, X1, dX1dt; // C02 and H2O content
   PetscScalar       emiss; // DJB atmosphere
 
   PetscFunctionBeginUser;
@@ -39,17 +40,24 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ihi_b = ilo_b + w_b;
 
   /* Transfer from the input vector to "S->dSdr", which is the same, minus the 
-     extra point */
-  /* TODO: check notation.  I think memory address is right for first line,
-     and pointer to vec for second? */
+     extra points */
   ierr = FromAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
 
   /* Create rhs vector of "normal" size (no extra point) */
   /* this is initialised with zeros (potential for bug?) */
   ierr = VecDuplicate(S->dSdr,&rhs_b);CHKERRQ(ierr);
 
-  /* Get first staggered node value (stored as S0) */
+  /* extract other necessary quantities from augmented array */
+  /* C02 content of magma ocean (solid and liquid phases) */
   ind = 0;
+  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&X0);CHKERRQ(ierr);
+
+  /* H20 content of magma ocean (solid and liquid phases) */
+  ind = 1;
+  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&X1);CHKERRQ(ierr);
+
+  /* Get first staggered node value (stored as S0) */
+  ind = 2;
   ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&S0);CHKERRQ(ierr);
 
   set_entropy( E, S0 ); CHKERRQ(ierr);
@@ -65,15 +73,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* note pass in current time in years here */
   set_Htot( E, t );
 
-  /* DJB atmosphere
-     the surface flux should match the flux at the top of the atmosphere
-     we know the partial pressure of H20 and C02
-     ic assumes no initial atmosphere
-     note pass in current time in years here */
-
-  /* DJB atmosphere */
-  emiss = get_emissivity( E );
-  /* end of atmosphere */
+  /* grey-body atmosphere */
+  emiss = get_emissivity( E, X0, X1 );
 
   set_surface_flux( E, t, emiss );
 
@@ -120,9 +121,20 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* Transfer back  */
   ierr = ToAug(rhs_b,rhs_b_aug);CHKERRQ(ierr);
 
-  /* Set zero in first position */
+  /* time-dependence of additional quantities at the top of the augmented array */
+
+  /* now that we have dS/dr, compute change in volatile concentrations */
+  /* CO2 */
+  ierr = VecSetValue(rhs_b_aug,0,dX0dt,INSERT_VALUES);CHKERRQ(ierr);
+
+  /* H20 */
+  ierr = VecSetValue(rhs_b_aug,1,dX1dt,INSERT_VALUES);CHKERRQ(ierr);
+
+  /* S0 */
   /* TODO: I think this breaks for parallel */
-  ierr = VecSetValue(rhs_b_aug,0,dS0dt,INSERT_VALUES);CHKERRQ(ierr);
+  ierr = VecSetValue(rhs_b_aug,2,dS0dt,INSERT_VALUES);CHKERRQ(ierr);
+
+  /* VecAssembly */
   ierr = VecAssemblyBegin(rhs_b_aug);CHKERRQ(ierr);
   ierr = VecAssemblyEnd(rhs_b_aug);CHKERRQ(ierr);
 

@@ -8,7 +8,7 @@ static PetscErrorCode mixing_length( DM, Vec, Vec );
 static PetscErrorCode aw_density( DM, Vec, Vec );
 static PetscErrorCode aw_pressure( DM, Vec, Vec );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec );
-static PetscErrorCode aw_total_mass( Ctx * );
+static PetscErrorCode aw_mass( Ctx * );
 
 PetscErrorCode set_mesh( Ctx *E)
 {
@@ -44,6 +44,7 @@ PetscErrorCode set_mesh( Ctx *E)
     M->dPdr_s     = M->meshVecs_s[3];
     M->area_s     = M->meshVecs_s[4];
     M->rho_s      = M->meshVecs_s[5];
+    M->mass_s     = M->meshVecs_s[6];
 
     /* for regular mesh, although without resolving the ultra-thin
        thermal boundary layer at the base of the mantle this likely
@@ -83,9 +84,8 @@ PetscErrorCode set_mesh( Ctx *E)
     /* density at staggered nodes */
     aw_density( da_s, M->radius_s, M->rho_s );
 
-    /* DJB atmosphere testing */
-    /* compute total mass */
-    aw_total_mass( E );
+    /* mass at staggered nodes */
+    aw_mass( E );
 
     PetscFunctionReturn(0);
 }
@@ -322,22 +322,18 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_total_mass( Ctx *E )
+static PetscErrorCode aw_mass( Ctx *E )
 {
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
-    Vec            mass_s;
  
     PetscFunctionBeginUser;
 
-    ierr = VecDuplicate( M->rho_s, &mass_s ); CHKERRQ(ierr);
-    ierr = VecCopy( M->rho_s, mass_s ); CHKERRQ(ierr);
+    ierr = VecCopy( M->rho_s, M->mass_s ); CHKERRQ(ierr);
 
-    ierr = VecPointwiseMult( mass_s, mass_s, M->volume_s );
-    ierr = VecSum( mass_s, &M->mass0 );
-    M->mass0 *= 4.0 * PETSC_PI;
-
-    VecDestroy( &mass_s );
+    ierr = VecPointwiseMult( M->mass_s, M->mass_s, M->volume_s );
+    ierr = VecScale( M->mass_s, 4.0 * PETSC_PI );
+    ierr = VecSum( M->mass_s, &M->mass0 );
 
     PetscFunctionReturn(0);
 
