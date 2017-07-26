@@ -72,6 +72,10 @@
 //#define NUMPTS_B_DEFAULT 22996
 //#define NUMPTS_B_DEFAULT 45928
 
+/* number of additional equations for the augmented system */
+//#define AUG_NUM 1 // for no coupled atmosphere evolution
+#define AUG_NUM 2 // for coupled atmosphere evolution
+
 /* number of staggered mesh points */
 #define NUMPTS_S_DEFAULT NUMPTS_B_DEFAULT-1 /* automagically determined */
 

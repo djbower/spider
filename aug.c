@@ -2,6 +2,7 @@
    "augmented" vectors */
 
 #include "aug.h"
+#include "global_defs.h"
 
 PetscErrorCode CreateAug(Vec in, Vec *out_aug){
   PetscErrorCode ierr;
@@ -17,10 +18,10 @@ PetscErrorCode CreateAug(Vec in, Vec *out_aug){
   ierr = VecGetLocalSize(in,&local_size);CHKERRQ(ierr);
   ierr = VecSetType(*out_aug,vectype);CHKERRQ(ierr);
   if (!rank) {
-    ierr = VecSetSizes(*out_aug,local_size+1,global_size+1);CHKERRQ(ierr);
+    ierr = VecSetSizes(*out_aug,local_size+AUG_NUM,global_size+AUG_NUM);CHKERRQ(ierr);
     //ierr = PetscPrintf(PETSC_COMM_WORLD,"Created aug vec %d %d\n",local_size+1,global_size+1);CHKERRQ(ierr);
   }else{
-    ierr = VecSetSizes(*out_aug,local_size,global_size+1);CHKERRQ(ierr);
+    ierr = VecSetSizes(*out_aug,local_size,global_size+AUG_NUM);CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
 }
@@ -40,10 +41,10 @@ PetscErrorCode CreateUnAug(Vec in_aug, Vec *out)
   ierr = VecGetType(in_aug,&vectype);CHKERRQ(ierr);
   ierr = VecSetType(*out,vectype);CHKERRQ(ierr);
   if (!rank) {
-    ierr = VecSetSizes(*out,local_size_aug-1,global_size_aug-1);CHKERRQ(ierr);
+    ierr = VecSetSizes(*out,local_size_aug-AUG_NUM,global_size_aug-AUG_NUM);CHKERRQ(ierr);
     //ierr = PetscPrintf(PETSC_COMM_WORLD,"Created unaug vec %d %d\n",local_size_aug-1,global_size_aug-1);CHKERRQ(ierr);
   } else {
-    ierr = VecSetSizes(*out,local_size_aug,global_size_aug-1);CHKERRQ(ierr);
+    ierr = VecSetSizes(*out,local_size_aug,global_size_aug-AUG_NUM);CHKERRQ(ierr);
   }
 
   PetscFunctionReturn(0);
@@ -65,7 +66,7 @@ PetscErrorCode ToAug(Vec in,Vec out_aug)
   ierr = VecGetArray(out_aug,&out_aug_arr);CHKERRQ(ierr);
   ierr = VecGetArrayRead(in,&in_arr);CHKERRQ(ierr);
   if(!rank){
-    for(i=1;i<local_size_aug;++i) out_aug_arr[i]=in_arr[i-1];
+    for(i=AUG_NUM;i<local_size_aug;++i) out_aug_arr[i]=in_arr[i-AUG_NUM];
   }else{
     for(i=0;i<local_size_aug;++i) out_aug_arr[i]=in_arr[i];
   }
@@ -90,7 +91,7 @@ PetscErrorCode FromAug(Vec in_aug,Vec out)
   ierr = VecGetArray(out,&out_arr);CHKERRQ(ierr);
   ierr = VecGetArrayRead(in_aug,&in_aug_arr);CHKERRQ(ierr);
   if(!rank){
-    for(i=0;i<local_size_aug-1;++i) out_arr[i]=in_aug_arr[i+1];
+    for(i=0;i<local_size_aug-AUG_NUM;++i) out_arr[i]=in_aug_arr[i+AUG_NUM];
   }else{
     for(i=0;i<local_size_aug;++i) out_arr[i]=in_aug_arr[i];
   }
