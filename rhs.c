@@ -25,6 +25,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   PetscScalar       S0,dS0dt;
   PetscScalar       X0, dX0dt, X1, dX1dt; // C02 and H2O content
   PetscScalar       emiss; // DJB atmosphere
+  Vec               dSdt_s; // DJB atmosphere
+  PetscScalar       *arr_dSdt_s; // DJB atmosphere
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -74,7 +76,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   set_Htot( E, t );
 
   /* grey-body atmosphere */
-  emiss = get_emissivity( E, X0, X1 );
+  //emiss = get_emissivity( E, X0, X1 );
+
+  emiss = 1.0;
 
   set_surface_flux( E, t, emiss );
 
@@ -104,11 +108,37 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
     arr_rhs_b[i] /= arr_radius_s[i] - arr_radius_s[i-1]; // note this is negative
   }
 
-  /* TODO: this will break in parallel*/
+  /* TODO: this will break in parallel */
   /* fluxes */
   dS0dt = ( arr_Etot[1] - arr_Etot[0] ) / arr_lhs_s[0];
   /* internal heat generation */
   dS0dt += arr_Htot_s[0] / arr_temp_s[0];
+
+  // DJB for testing
+  //dS0dt = ( arr_Etot[199] - arr_Etot[198] ) / arr_lhs_s[198];
+  //dS0dt += arr_Htot_s[198] / arr_temp_s[198];
+  // 3.07017e-08
+  // 1.8974e-10
+
+  /* ---------- for atmosphere ---------- */
+  /* DJB somewhat annoyingly, we now need dS/dt at the staggered nodes to be
+     able to update X0 and X1.  This can probably be merged in with the above loop,
+     but for ease and testing let's keep it separate for now */
+  ierr = VecDuplicate(S->lhs_s, &dSdt_s); CHKERRQ(ierr);
+  //ierr = VecCopy( S->lhs_s, dSdt_s); CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(da_s,dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
+
+  /* NOTE <= in this loop, which is different to above */
+  for(i=ilo_b+1; i<=ihi_b; ++i){
+    arr_dSdt_s[i-1] = ( arr_Etot[i] - arr_Etot[i-1] ) / arr_lhs_s[i-1];
+    arr_dSdt_s[i-1] += arr_Htot_s[i-1] / arr_temp_s[i-1];
+  }
+  ierr = DMDAVecRestoreArray(da_s,dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
+
+  dX0dt = get_dX0dt( E, X0, dSdt_s );
+
+  VecDestroy( &dSdt_s ); CHKERRQ(ierr);
+  /* ---------- -------------- ---------- */
 
   ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
@@ -123,11 +153,13 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* time-dependence of additional quantities at the top of the augmented array */
 
-  /* now that we have dS/dr, compute change in volatile concentrations */
+  /* now that we have dS/dt, compute change in volatile concentrations */
   /* CO2 */
   ierr = VecSetValue(rhs_b_aug,0,dX0dt,INSERT_VALUES);CHKERRQ(ierr);
 
   /* H20 */
+  /* TODO: H2O not implemented yet */
+  dX1dt = 0.0;
   ierr = VecSetValue(rhs_b_aug,1,dX1dt,INSERT_VALUES);CHKERRQ(ierr);
 
   /* S0 */

@@ -98,6 +98,36 @@ static PetscScalar get_solid_mass( Ctx *E )
 
 }
 
+PetscScalar get_dX0dt( Ctx *E, PetscScalar X0, Vec dSdt_s )
+{
+
+   /* update for CO2 content */
+
+    PetscErrorCode ierr;
+    Solution       *S = &E->solution;
+    Mesh           *M = &E->mesh;
+    PetscScalar    A, num, den, dX0dt, dphidtdm, mass_liq;
+    Vec            dphidm_s;
+
+    ierr = VecDuplicate( dSdt_s, &dphidm_s); CHKERRQ(ierr);
+    ierr = VecCopy( dSdt_s, dphidm_s ); CHKERRQ(ierr);
+    ierr = VecPointwiseDivide( dphidm_s, dphidm_s, S->fusion_s ); CHKERRQ(ierr);
+    ierr = VecPointwiseMult( dphidm_s, dphidm_s, M->mass_s ); CHKERRQ(ierr);
+
+    mass_liq = get_liquid_mass( E );
+    A = 4.4E-12;
+
+    ierr = VecSum( dphidm_s, &dphidtdm );
+
+    num = X0 * (CO2_KDIST-1.0) * dphidtdm;
+    den = CO2_KDIST*M->mass0 + (1.0-CO2_KDIST)*mass_liq;
+    den += 4.0*PETSC_PI*PetscSqr(RADIUS) * A / -GRAVITY;
+
+    dX0dt = num / den;
+
+    return dX0dt;
+}
+
 #if 0
 /* partial pressures of volatiles
    x_vol is mass fraction of volatiles "in the magma" (Lebrun)
