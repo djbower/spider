@@ -18,8 +18,10 @@ PetscScalar get_emissivity( Ctx *E, PetscScalar X0, PetscScalar X1 )
     tau0 = get_optical_depth( m0, CO2_KABS );
 
     /* H2O */
-    m1 = get_atmosphere_mass( E, H2O_INITIAL, X1, H2O_KDIST );
-    tau1 = get_optical_depth( m1, H2O_KABS );
+    //m1 = get_atmosphere_mass( E, H2O_INITIAL, X1, H2O_KDIST );
+    //tau1 = get_optical_depth( m1, H2O_KABS );
+    // FIXME: DJB ignore H2O for the time being
+    tau1 = 0.0;
 
     /* total */
     tau = tau0 + tau1;
@@ -46,6 +48,8 @@ static PetscScalar get_atmosphere_mass( Ctx *E, PetscScalar Xinit, PetscScalar X
 
     mass_sol = get_solid_mass( E );
     mass_liq = get_liquid_mass( E );
+
+    /* TODO: check units here.  Note that Xinit is in wt. % */
 
     mass_atm = Xinit*M.mass0; // initial total mass
     mass_atm -= Xvol*(Kdist*mass_sol+mass_liq); // minus content in magma ocean (solid and liquid)
@@ -115,7 +119,7 @@ PetscScalar get_dX0dt( Ctx *E, PetscScalar X0, Vec dSdt_s )
     ierr = VecPointwiseMult( dphidm_s, dphidm_s, M->mass_s ); CHKERRQ(ierr);
 
     mass_liq = get_liquid_mass( E );
-    A = 4.4E-12;
+    A = 4.4E-12; // TODO: assumes Xvol is mass fraction NOT wt. %
 
     ierr = VecSum( dphidm_s, &dphidtdm );
 
