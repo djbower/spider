@@ -54,6 +54,9 @@ static PetscScalar get_atmosphere_mass( Ctx *E, PetscScalar Xinit, PetscScalar X
     mass_atm = Xinit*M.mass0; // initial total mass
     mass_atm -= Xvol*(Kdist*mass_sol+mass_liq); // minus content in magma ocean (solid and liquid)
 
+    /* units of mass_atm are wt %.  Convert to actual mass */
+    mass_atm /= 100.0
+
     return mass_atm;
 
 }
