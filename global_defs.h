@@ -127,7 +127,8 @@ static const PetscScalar PHI_SKEW = 0.0;
 /* dT = CONSTBC * [Surface temperature]**3 */
 //static const PetscScalar CONSTBC = 0.0;
 // non-dim was CONSTBC = 1.6269986040244828; // 1.0E-7 in python
-static const PetscScalar CONSTBC = 1.0e-07; // 1.0E-7 in python
+//static const PetscScalar CONSTBC = 1.0e-07; // 1.0E-7 in python
+static const PetscScalar CONSTBC = 0.0; // no ultra-thin thermal boundary layer
 // non-dim was SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar SIGMA = 5.670367e-08; // Stefan-Boltzmann constant
 //static const PetscScalar EMISSIVITY = 1.0; // emissivity
@@ -164,6 +165,7 @@ static const PetscScalar CO2_KDIST = 5.0E-4; // distribution coefficient between
 // carbon saturation limit is 0.03 ppm but how to include this?
 static const PetscScalar CO2_INITIAL = 1.0E-2; // wt. %
 static const PetscScalar CO2_KABS = 0.05; // m^2/kg
+//static const PetscScalar CO2_KABS = 0.5;
 //static const PetscScalar KABS_CARBON = 0.0001; // m^2/kg
 #endif
 

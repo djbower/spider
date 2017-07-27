@@ -44,18 +44,22 @@ static PetscScalar get_optical_depth( PetscScalar mass_atm, PetscScalar kabs )
 static PetscScalar get_atmosphere_mass( Ctx *E, PetscScalar Xinit, PetscScalar Xvol, PetscScalar Kdist )
 {
     Mesh M = E->mesh;
-    PetscScalar mass_sol, mass_liq, mass_atm;
+    PetscScalar mass_sol, mass_liq, mass_atm, A;
 
     mass_sol = get_solid_mass( E );
     mass_liq = get_liquid_mass( E );
 
     /* TODO: check units here.  Note that Xinit is in wt. % */
 
-    mass_atm = Xinit*M.mass0; // initial total mass
-    mass_atm -= Xvol*(Kdist*mass_sol+mass_liq); // minus content in magma ocean (solid and liquid)
+    //mass_atm = Xinit*M.mass0; // initial total mass
+    //mass_atm -= Xvol*(Kdist*mass_sol+mass_liq); // minus content in magma ocean (solid and liquid)
 
     /* units of mass_atm are wt %.  Convert to actual mass */
-    mass_atm /= 100.0
+    //mass_atm /= 100.0;
+
+    // using partial pressure
+    A = 1.0/4.4E-10;
+    mass_atm = 4.0*PETSC_PI*PetscSqr(RADIUS) * A * Xvol / -GRAVITY;
 
     return mass_atm;
 
@@ -122,7 +126,7 @@ PetscScalar get_dX0dt( Ctx *E, PetscScalar X0, Vec dSdt_s )
     ierr = VecPointwiseMult( dphidm_s, dphidm_s, M->mass_s ); CHKERRQ(ierr);
 
     mass_liq = get_liquid_mass( E );
-    A = 4.4E-12; // TODO: assumes Xvol is mass fraction NOT wt. %
+    A = 1.0/4.4E-10; // units of wt. %
 
     ierr = VecSum( dphidm_s, &dphidtdm );
 

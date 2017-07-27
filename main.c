@@ -30,6 +30,9 @@ int main(int argc, char ** argv)
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
   PetscReal       nexttime;                  /* next time to integrate to */
 
+  /* atmosphere testing */
+  //PetscInt          nstepsmacro = 100;
+  //PetscReal         dtmacro = 1;
   /* early evolution to 10 kyr */
   PetscInt        nstepsmacro = 1000;  /* Max macros steps */
   PetscReal       dtmacro = 10;        /* Macro step size (years) */
