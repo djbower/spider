@@ -1,8 +1,10 @@
 #include "atmosphere.h"
 
 static PetscScalar get_liquid_mass( Ctx * );
+#if 0
 static PetscScalar get_solid_mass( Ctx * );
-static PetscScalar get_atmosphere_mass( Ctx *, PetscScalar, PetscScalar, PetscScalar );
+#endif
+static PetscScalar get_atmosphere_mass( Ctx *, PetscScalar );
 static PetscScalar get_optical_depth( PetscScalar, PetscScalar );
 #if 0
 static PetscScalar get_partialP_H2O( PetscScalar );
@@ -11,10 +13,11 @@ static PetscScalar get_partialP_CO2( PetscScalar );
 
 PetscScalar get_emissivity( Ctx *E, PetscScalar X0, PetscScalar X1 )
 {
-    PetscScalar m0, tau0, m1, tau1, tau, emissivity;
+    PetscScalar m0, tau0, tau1;
+    PetscScalar tau, emissivity;
 
     /* CO2 */
-    m0 = get_atmosphere_mass( E, CO2_INITIAL, X0, CO2_KDIST );
+    m0 = get_atmosphere_mass( E, X0 );
     tau0 = get_optical_depth( m0, CO2_KABS );
 
     /* H2O */
@@ -41,23 +44,10 @@ static PetscScalar get_optical_depth( PetscScalar mass_atm, PetscScalar kabs )
     return tau;
 }
 
-static PetscScalar get_atmosphere_mass( Ctx *E, PetscScalar Xinit, PetscScalar Xvol, PetscScalar Kdist )
+static PetscScalar get_atmosphere_mass( Ctx *E, PetscScalar Xvol )
 {
-    Mesh M = E->mesh;
-    PetscScalar mass_sol, mass_liq, mass_atm, A;
+    PetscScalar mass_atm, A;
 
-    mass_sol = get_solid_mass( E );
-    mass_liq = get_liquid_mass( E );
-
-    /* TODO: check units here.  Note that Xinit is in wt. % */
-
-    //mass_atm = Xinit*M.mass0; // initial total mass
-    //mass_atm -= Xvol*(Kdist*mass_sol+mass_liq); // minus content in magma ocean (solid and liquid)
-
-    /* units of mass_atm are wt %.  Convert to actual mass */
-    //mass_atm /= 100.0;
-
-    // using partial pressure
     A = 1.0/4.4E-10;
     mass_atm = 4.0*PETSC_PI*PetscSqr(RADIUS) * A * Xvol / -GRAVITY;
 
@@ -86,6 +76,7 @@ static PetscScalar get_liquid_mass( Ctx *E )
 
 }
 
+#if 0
 static PetscScalar get_solid_mass( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -108,6 +99,7 @@ static PetscScalar get_solid_mass( Ctx *E )
     return mass_solid;
 
 }
+#endif
 
 PetscScalar get_dX0dt( Ctx *E, PetscScalar X0, Vec dSdt_s )
 {
