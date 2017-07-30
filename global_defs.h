@@ -155,22 +155,26 @@ static const PetscScalar SWIDTH = 1.0E-2;
 #if 1
 // Elkins-Tanton (2008) parameters
 static const PetscScalar P0 = 101325.0; // Pa
-
+// distribution coefficients are given in supplementary information
 static const PetscScalar H2O_KDIST = 1.0E-4; // distribution coefficient between solid and melt
-// water saturation limit is 10 ppm but how to include this?
-static const PetscScalar H2O_INITIAL = 5.0E-2; // wt. %
+// TODO: water saturation limit is 10 ppm
+//static const PetscScalar H2O_INITIAL = 0.5; // wt. %
+static const PetscScalar H2O_INITIAL = 0.05; // wt. %
+//static const PetscScalar H2O_INITIAL = 0.0; // wt. %
 static const PetscScalar H2O_KABS = 0.01; // m^2/kg
 
 static const PetscScalar CO2_KDIST = 5.0E-4; // distribution coefficient between solid and melt
-// carbon saturation limit is 0.03 ppm but how to include this?
-static const PetscScalar CO2_INITIAL = 1.0E-2; // wt. %
+// TODO: carbon saturation limit is 0.03 ppm
+//static const PetscScalar CO2_INITIAL = 0.1; // wt. %
+static const PetscScalar CO2_INITIAL = 0.01; // wt. %
+//static const PetscScalar CO2_INITIAL = 0.6; // wt. %
 static const PetscScalar CO2_KABS = 0.05; // m^2/kg
-//static const PetscScalar CO2_KABS = 0.5;
-//static const PetscScalar KABS_CARBON = 0.0001; // m^2/kg
+//static const PetscScalar CO2_KABS = 0.0001; // m^2/kg
 #endif
 
 #if 0
 // Salvador et al. (2017)
+// TODO: check these parameters
 static const PetscScalar P0 = 101325.0; // Pa
 
 static const PetscScalar H2O_KDIST = 1.0E-4; // (from ET08)

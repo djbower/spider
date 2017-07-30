@@ -73,7 +73,6 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.fusion_curve_temp   = ctx->solution.solutionVecs_b[15];
   ctx->solution.fusion_rho          = ctx->solution.solutionVecs_b[16];
   ctx->solution.fusion_temp         = ctx->solution.solutionVecs_b[17];
-  /* can delete next two I think */
   ctx->solution.fwtl                = ctx->solution.solutionVecs_b[18]; // weight for liquid
   ctx->solution.fwts                = ctx->solution.solutionVecs_b[19]; // weight for solid
   ctx->solution.gphi                = ctx->solution.solutionVecs_b[20];
@@ -108,7 +107,6 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   ctx->solution.fusion_curve_s      = ctx->solution.solutionVecs_s[3];
   ctx->solution.fusion_curve_temp_s = ctx->solution.solutionVecs_s[4];
   ctx->solution.fusion_temp_s       = ctx->solution.solutionVecs_s[5];
-  /* can delete next two I think */
   ctx->solution.fwtl_s              = ctx->solution.solutionVecs_s[6]; // weight for liquid
   ctx->solution.fwts_s              = ctx->solution.solutionVecs_s[7]; // weight for solid
   ctx->solution.gphi_s              = ctx->solution.solutionVecs_s[8];
