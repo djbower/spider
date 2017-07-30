@@ -88,6 +88,10 @@ int main(int argc, char ** argv)
          3-end  dS/dr at basic nodes
   */
 
+  /* TODO: this should be updated.  Should be consistent with the
+     mass balance of volatiles, so the total initial volatile content
+     is actually partitioned betweem the (liquid) magma ocean and the
+     atmosphere. */
   /* initial mass content of CO2 in the magma ocean */
   ierr = VecSetValue(dSdr_b_aug,0,CO2_INITIAL,INSERT_VALUES);CHKERRQ(ierr);
 
