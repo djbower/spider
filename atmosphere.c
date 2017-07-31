@@ -25,9 +25,9 @@ PetscScalar get_emissivity( Ctx *E, PetscScalar x0, PetscScalar x1 )
     tau0 = get_optical_depth( m0, CO2_KABS );
 
     /* H2O */
+    // FIXME: DJB ignore H2O for the time being
     //m1 = get_atmosphere_mass( E, H2O_INITIAL, x1, H2O_KDIST );
     //tau1 = get_optical_depth( m1, H2O_KABS );
-    // FIXME: DJB ignore H2O for the time being
     tau1 = 0.0;
 
     /* total */

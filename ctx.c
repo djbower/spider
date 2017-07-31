@@ -103,27 +103,28 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   }
   ctx->solution.cp_s                = ctx->solution.solutionVecs_s[0];
   ctx->solution.cp_mix_s            = ctx->solution.solutionVecs_s[1];
-  ctx->solution.fusion_s            = ctx->solution.solutionVecs_s[2];
-  ctx->solution.fusion_curve_s      = ctx->solution.solutionVecs_s[3];
-  ctx->solution.fusion_curve_temp_s = ctx->solution.solutionVecs_s[4];
-  ctx->solution.fusion_temp_s       = ctx->solution.solutionVecs_s[5];
-  ctx->solution.fwtl_s              = ctx->solution.solutionVecs_s[6]; // weight for liquid
-  ctx->solution.fwts_s              = ctx->solution.solutionVecs_s[7]; // weight for solid
-  ctx->solution.gphi_s              = ctx->solution.solutionVecs_s[8];
-  ctx->solution.Hradio_s            = ctx->solution.solutionVecs_s[9];
-  ctx->solution.Htidal_s            = ctx->solution.solutionVecs_s[10];
-  ctx->solution.Htot_s              = ctx->solution.solutionVecs_s[11];
-  ctx->solution.lhs_s               = ctx->solution.solutionVecs_s[12];
-  ctx->solution.liquidus_rho_s      = ctx->solution.solutionVecs_s[13];
-  ctx->solution.liquidus_s          = ctx->solution.solutionVecs_s[14];
-  ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecs_s[15];
-  ctx->solution.phi_s               = ctx->solution.solutionVecs_s[16];
-  ctx->solution.rho_s               = ctx->solution.solutionVecs_s[17];
-  ctx->solution.S_s                 = ctx->solution.solutionVecs_s[18];
-  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[19];
-  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[20];
-  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[21];
-  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[22];
+  ctx->solution.dSdt_s              = ctx->solution.solutionVecs_s[2];
+  ctx->solution.fusion_s            = ctx->solution.solutionVecs_s[3];
+  ctx->solution.fusion_curve_s      = ctx->solution.solutionVecs_s[4];
+  ctx->solution.fusion_curve_temp_s = ctx->solution.solutionVecs_s[5];
+  ctx->solution.fusion_temp_s       = ctx->solution.solutionVecs_s[6];
+  ctx->solution.fwtl_s              = ctx->solution.solutionVecs_s[7]; // weight for liquid
+  ctx->solution.fwts_s              = ctx->solution.solutionVecs_s[8]; // weight for solid
+  ctx->solution.gphi_s              = ctx->solution.solutionVecs_s[9];
+  ctx->solution.Hradio_s            = ctx->solution.solutionVecs_s[10];
+  ctx->solution.Htidal_s            = ctx->solution.solutionVecs_s[11];
+  ctx->solution.Htot_s              = ctx->solution.solutionVecs_s[12];
+  ctx->solution.lhs_s               = ctx->solution.solutionVecs_s[13];
+  ctx->solution.liquidus_rho_s      = ctx->solution.solutionVecs_s[14];
+  ctx->solution.liquidus_s          = ctx->solution.solutionVecs_s[15];
+  ctx->solution.liquidus_temp_s     = ctx->solution.solutionVecs_s[16];
+  ctx->solution.phi_s               = ctx->solution.solutionVecs_s[17];
+  ctx->solution.rho_s               = ctx->solution.solutionVecs_s[18];
+  ctx->solution.S_s                 = ctx->solution.solutionVecs_s[19];
+  ctx->solution.solidus_s           = ctx->solution.solutionVecs_s[20];
+  ctx->solution.solidus_rho_s       = ctx->solution.solutionVecs_s[21];
+  ctx->solution.solidus_temp_s      = ctx->solution.solutionVecs_s[22];
+  ctx->solution.temp_s              = ctx->solution.solutionVecs_s[23];
 
   set_mesh(ctx);
 

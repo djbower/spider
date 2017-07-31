@@ -15,18 +15,14 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   Ctx               *E = (Ctx*) ptr;
   Mesh              *M = &E->mesh;
   Solution          *S = &E->solution;
-  PetscScalar       *arr_rhs_b, *arr_radius_s, *arr_radius_b;
-  const PetscScalar *arr_Etot, *arr_lhs_s, *arr_temp_s, *arr_Htot_s;
+  PetscScalar       *arr_dSdt_s, *arr_rhs_b;
+  const PetscScalar *arr_Etot, *arr_lhs_s, *arr_temp_s, *arr_Htot_s, *arr_radius_s, *arr_radius_b;
   PetscMPIInt       rank,size;
   PetscInt          i,ihi_b,ilo_b,w_b,numpts_b;
   DM                da_s = E->da_s, da_b=E->da_b;
   Vec               rhs_b;
   PetscInt          ind;
-  PetscScalar       S0,dS0dt;
-  PetscScalar       X0, dX0dt, X1, dX1dt; // C02 and H2O content
-  PetscScalar       emiss; // DJB atmosphere
-  Vec               dSdt_s; // DJB atmosphere
-  PetscScalar       *arr_dSdt_s; // DJB atmosphere
+  PetscScalar       S0, dS0dt, x0, dx0dt, x1, dx1dt, emiss;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -50,13 +46,13 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = VecDuplicate(S->dSdr,&rhs_b);CHKERRQ(ierr);
 
   /* extract other necessary quantities from augmented array */
-  /* C02 content of magma ocean (solid and liquid phases) */
+  /* C02 content of magma ocean (solid and liquid phase) */
   ind = 0;
-  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&X0);CHKERRQ(ierr);
+  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x0);CHKERRQ(ierr);
 
-  /* H20 content of magma ocean (solid and liquid phases) */
+  /* H20 content of magma ocean (solid and liquid phase) */
   ind = 1;
-  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&X1);CHKERRQ(ierr);
+  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x1);CHKERRQ(ierr);
 
   /* Get first staggered node value (stored as S0) */
   ind = 2;
@@ -76,10 +72,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   set_Htot( E, t );
 
   /* grey-body atmosphere */
-  emiss = get_emissivity( E, X0, X1 );
+  //emiss = get_emissivity( E, x0, x1 );
 
   // DJB for testing and debugging
-  //emiss = 1.0;
+  emiss = 1.0;
 
   set_surface_flux( E, t, emiss );
 
@@ -90,64 +86,37 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMGlobalToLocalBegin(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalEnd(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray    (da_s,S->dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->temp_s,&arr_temp_s); CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
-  /* note plus one for start of loop */
+  /* first staggered node */
+  arr_dSdt_s[0] = ( arr_Etot[1] - arr_Etot[0] ) / arr_lhs_s[0];
+  arr_dSdt_s[0] += arr_Htot_s[0] / arr_temp_s[0];
+  dS0dt = arr_dSdt_s[0];
+
   for(i=ilo_b+1; i<ihi_b; ++i){
-    /* fluxes */
-    arr_rhs_b[i] = arr_Etot[i+1] * ( 1.0 / arr_lhs_s[i] );
-    arr_rhs_b[i] += arr_Etot[i] * ( -1.0 / arr_lhs_s[i] - 1.0 / arr_lhs_s[i-1] );
-    arr_rhs_b[i] += arr_Etot[i-1] * ( 1.0 / arr_lhs_s[i-1] );
-    /* internal heat generation */
-    arr_rhs_b[i] += arr_Htot_s[i] / arr_temp_s[i];
-    arr_rhs_b[i] -= arr_Htot_s[i] / arr_temp_s[i-1];
-    /* d/dr term */
-    arr_rhs_b[i] /= arr_radius_s[i] - arr_radius_s[i-1]; // note this is negative
+    /* dSdt at staggered nodes */
+    arr_dSdt_s[i] = ( arr_Etot[i+1] - arr_Etot[i] ) / arr_lhs_s[i];
+    arr_dSdt_s[i] += arr_Htot_s[i] / arr_temp_s[i];
+    /* d/dt(dS/dr) at internal basic nodes */
+    arr_rhs_b[i] = arr_dSdt_s[i] - arr_dSdt_s[i-1];
+    arr_rhs_b[i] /= arr_radius_s[i] - arr_radius_s[i-1]; // note dr is negative
   }
-
-  /* TODO: this will break in parallel */
-  /* fluxes */
-  dS0dt = ( arr_Etot[1] - arr_Etot[0] ) / arr_lhs_s[0];
-  /* internal heat generation */
-  dS0dt += arr_Htot_s[0] / arr_temp_s[0];
-
-  // DJB for testing
-  //dS0dt = ( arr_Etot[199] - arr_Etot[198] ) / arr_lhs_s[198];
-  //dS0dt += arr_Htot_s[198] / arr_temp_s[198];
-  // 3.07017e-08
-  // 1.8974e-10
-
-  /* ---------- for atmosphere ---------- */
-  /* DJB somewhat annoyingly, we now need dS/dt at the staggered nodes to be
-     able to update X0 and X1.  This can probably be merged in with the above loop,
-     but for ease and testing let's keep it separate for now */
-  ierr = VecDuplicate(S->lhs_s, &dSdt_s); CHKERRQ(ierr);
-  //ierr = VecCopy( S->lhs_s, dSdt_s); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(da_s,dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
-
-  /* NOTE <= in this loop, which is different to above */
-  for(i=ilo_b+1; i<=ihi_b; ++i){
-    arr_dSdt_s[i-1] = ( arr_Etot[i] - arr_Etot[i-1] ) / arr_lhs_s[i-1];
-    arr_dSdt_s[i-1] += arr_Htot_s[i-1] / arr_temp_s[i-1];
-  }
-  ierr = DMDAVecRestoreArray(da_s,dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
-
-  dX0dt = get_dX0dt( E, X0, dSdt_s );
-
-  VecDestroy( &dSdt_s ); CHKERRQ(ierr);
-  /* ---------- -------------- ---------- */
 
   ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(da_s,S->dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
+
+  dx0dt = get_dX0dt( E, x0, S->dSdt_s );
 
   /* Transfer back  */
   ierr = ToAug(rhs_b,rhs_b_aug);CHKERRQ(ierr);
@@ -156,12 +125,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* now that we have dS/dt, compute change in volatile concentrations */
   /* CO2 */
-  ierr = VecSetValue(rhs_b_aug,0,dX0dt,INSERT_VALUES);CHKERRQ(ierr);
+  ierr = VecSetValue(rhs_b_aug,0,dx0dt,INSERT_VALUES);CHKERRQ(ierr);
 
   /* H20 */
   /* TODO: H2O not implemented yet */
-  dX1dt = 0.0;
-  ierr = VecSetValue(rhs_b_aug,1,dX1dt,INSERT_VALUES);CHKERRQ(ierr);
+  dx1dt = 0.0;
+  ierr = VecSetValue(rhs_b_aug,1,dx1dt,INSERT_VALUES);CHKERRQ(ierr);
 
   /* S0 */
   /* TODO: I think this breaks for parallel */
