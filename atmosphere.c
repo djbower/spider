@@ -1,9 +1,7 @@
 #include "atmosphere.h"
 
-static PetscScalar get_liquid_mass( Ctx * );
-#if 0
-static PetscScalar get_solid_mass( Ctx * );
-#endif
+static PetscScalar get_Mliq( Ctx * );
+static PetscScalar get_dMliqdt( Ctx * );
 static PetscScalar get_atmosphere_mass( Ctx *, PetscScalar );
 static PetscScalar get_optical_depth( PetscScalar, PetscScalar );
 #if 0
@@ -58,7 +56,7 @@ static PetscScalar get_atmosphere_mass( Ctx *E, PetscScalar p )
 
 }
 
-static PetscScalar get_liquid_mass( Ctx *E )
+static PetscScalar get_Mliq( Ctx *E )
 {
     PetscErrorCode ierr;
     Solution       *S = &E->solution;
@@ -79,34 +77,79 @@ static PetscScalar get_liquid_mass( Ctx *E )
 
 }
 
-PetscScalar get_dX0dt( Ctx *E, PetscScalar X0, Vec dSdt_s )
+static PetscScalar get_dMliqdt( Ctx *E )
 {
+    PetscErrorCode    ierr;
+    PetscInt          i,ilo_s,ihi_s,w_s;
+    DM                da_s = E->da_s;
+    Solution          *S = &E->solution;
+    Mesh              *M = &E->mesh;
+    Vec               result_s;
+    PetscScalar       *arr_result_s, result;
+    const PetscScalar *arr_dSdt_s, *arr_fusion_s, *arr_fwtl_s, *arr_fwts_s, *arr_phi_s, *arr_mass_s;
 
-   /* update for CO2 content */
+    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
 
-    PetscErrorCode ierr;
-    Solution       *S = &E->solution;
+    ierr = VecDuplicate( S->dSdt_s, &result_s); CHKERRQ(ierr);
+    ierr = VecCopy( S->dSdt_s, result_s ); CHKERRQ(ierr);
+
+    ierr = DMDAVecGetArrayRead(da_s,M->mass_s,&arr_mass_s); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->dSdt_s,&arr_dSdt_s); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->fusion_s,&arr_fusion_s); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->fwtl_s,&arr_fwtl_s); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->fwts_s,&arr_fwts_s); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,result_s,&arr_result_s); CHKERRQ(ierr);
+
+    for(i=ilo_s; i<ihi_s; ++i){
+
+        arr_result_s[i] = arr_dSdt_s[i] * arr_mass_s[i];
+        arr_result_s[i] /= arr_fusion_s[i];
+
+        if (arr_phi_s[i] > 0.5){
+            arr_result_s[i] *= ( 1.0 - arr_fwtl_s[i] );
+        }
+
+        else if (arr_phi_s[i] <=0.5){
+            arr_result_s[i] *= arr_fwts_s[i];
+        }
+    }
+
+    ierr = DMDAVecRestoreArrayRead(da_s,M->mass_s,&arr_mass_s); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,S->dSdt_s, &arr_dSdt_s); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->fusion_s,&arr_fusion_s); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->fwtl_s,&arr_fwtl_s); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->fwts_s,&arr_fwts_s); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,result_s, &arr_result_s); CHKERRQ(ierr);
+
+    ierr = VecSum( result_s, &result ); CHKERRQ(ierr);
+
+    VecDestroy( &result_s );
+
+    return result;
+}
+
+
+PetscScalar get_dx0dt( Ctx *E, PetscScalar x0, Vec dSdt_s )
+{
+   /* update for dissolved CO2 content in the magma ocean */
+
     Mesh           *M = &E->mesh;
-    PetscScalar    A, num, den, dX0dt, dphidtdm, mass_liq;
-    Vec            dphidm_s;
+    PetscScalar    num, den, dx0dt, Mliq, dMliqdt, dpCO2dx;
 
-    ierr = VecDuplicate( dSdt_s, &dphidm_s); CHKERRQ(ierr);
-    ierr = VecCopy( dSdt_s, dphidm_s ); CHKERRQ(ierr);
-    ierr = VecPointwiseDivide( dphidm_s, dphidm_s, S->fusion_s ); CHKERRQ(ierr);
-    ierr = VecPointwiseMult( dphidm_s, dphidm_s, M->mass_s ); CHKERRQ(ierr);
+    dpCO2dx = get_dpCO2dx( x0 );
+    Mliq = get_Mliq( E );
+    dMliqdt = get_dMliqdt( E );
 
-    mass_liq = get_liquid_mass( E );
-    A = 1.0/CO2_HENRY;
+    num = x0 * (CO2_KDIST-1.0) * dMliqdt;
+    den = CO2_KDIST * M->mass0 + (1.0-CO2_KDIST) * Mliq;
+    den += ( 4.0*PETSC_PI*PetscSqr(RADIUS) / -GRAVITY ) * dpCO2dx;
 
-    ierr = VecSum( dphidm_s, &dphidtdm );
+    dx0dt = num / den;
 
-    num = X0 * (CO2_KDIST-1.0) * dphidtdm;
-    den = CO2_KDIST*M->mass0 + (1.0-CO2_KDIST)*mass_liq;
-    den += 4.0*PETSC_PI*PetscSqr(RADIUS) * A / -GRAVITY;
-
-    dX0dt = num / den;
-
-    return dX0dt;
+    return dx0dt;
 }
 
 #if 0

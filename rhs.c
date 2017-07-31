@@ -72,10 +72,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   set_Htot( E, t );
 
   /* grey-body atmosphere */
-  //emiss = get_emissivity( E, x0, x1 );
+  emiss = get_emissivity( E, x0, x1 );
 
   // DJB for testing and debugging
-  emiss = 1.0;
+  //emiss = 1.0;
 
   set_surface_flux( E, t, emiss );
 
@@ -100,6 +100,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   for(i=ilo_b+1; i<ihi_b; ++i){
     /* dSdt at staggered nodes */
+    /* need this quantity for coupling to atmosphere evollution */
     arr_dSdt_s[i] = ( arr_Etot[i+1] - arr_Etot[i] ) / arr_lhs_s[i];
     arr_dSdt_s[i] += arr_Htot_s[i] / arr_temp_s[i];
     /* d/dt(dS/dr) at internal basic nodes */
@@ -116,7 +117,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
-  dx0dt = get_dX0dt( E, x0, S->dSdt_s );
+  dx0dt = get_dx0dt( E, x0, S->dSdt_s );
 
   /* Transfer back  */
   ierr = ToAug(rhs_b,rhs_b_aug);CHKERRQ(ierr);
