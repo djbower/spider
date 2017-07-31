@@ -1,11 +1,11 @@
 #include "ctx.h"
+#include "atmosphere.h"
 #include "aug.h"
 #include "bc.h"
 #include "energy.h"
 #include "matprop.h"
 #include "twophase.h"
 #include "util.h"
-#include "atmosphere.h"
 
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"

@@ -23,7 +23,7 @@ int main(int argc, char ** argv)
   PetscErrorCode  ierr;
   TS              ts;                        /* ODE solver object */
   Vec             dSdr_b;
-  Vec             dSdr_b_aug;                /* Solution Vector (basic points, plus an extra point) */
+  Vec             dSdr_b_aug;                /* Solution Vector (basic points, plus extra points) */
   Ctx             ctx;                       /* Solver context */
   PetscBool       monitor = PETSC_TRUE;      /* Macro step custom monitor (monitor.c) */
   const PetscReal t0 = 0;                    /* Initial time */
@@ -70,37 +70,25 @@ int main(int argc, char ** argv)
      Note that this checks for a command line option -n */
   ierr = setup_ctx(&ctx);CHKERRQ(ierr);
 
+  ///////////////////////
+  /* initial condition */
+  ///////////////////////
+  /* must call after setup_ctx */
+
   ierr = DMCreateGlobalVector( ctx.da_b, &dSdr_b );CHKERRQ(ierr);
 
-  /* must call this after setup_ctx */
-  set_initial_condition(&ctx,dSdr_b);CHKERRQ(ierr);
-  
-  /* Set up the Jacobian function (omitted for now) */
+  set_ic_dSdr( &ctx, dSdr_b ); CHKERRQ(ierr);
 
   /* Create a special vector with extra points and transfer IC */
   ierr = CreateAug(dSdr_b,&dSdr_b_aug);CHKERRQ(ierr);
   ierr = ToAug(dSdr_b,dSdr_b_aug);CHKERRQ(ierr);
 
-  /* NOTE: DJB augmented vector organised as follows:
-         0.     CO2 wt. %
-         1.     H2O wt. %
-         2.     S0 (entropy at uppermost staggered node)
-         3-end  dS/dr at basic nodes
-  */
+  /* add initial values of other quantities to the augmented vector */
+  set_ic_aug( &ctx, dSdr_b_aug ); CHKERRQ(ierr);
 
-  /* TODO: this should be updated.  Should be consistent with the
-     mass balance of volatiles, so the total initial volatile content
-     is actually partitioned betweem the (liquid) magma ocean and the
-     atmosphere. */
-  /* initial mass content of CO2 in the magma ocean */
-  ierr = VecSetValue(dSdr_b_aug,0,CO2_INITIAL,INSERT_VALUES);CHKERRQ(ierr);
-
-  /* initial mass content of H2O in the magma ocean */
-  ierr = VecSetValue(dSdr_b_aug,1,H2O_INITIAL,INSERT_VALUES);CHKERRQ(ierr);
-
-  /* include initial entropy at staggered node */
-  /* TODO: is this over-rideable from the command line? */
-  ierr = VecSetValue(dSdr_b_aug,2,SINIT_DEFAULT,INSERT_VALUES);CHKERRQ(ierr);
+  ///////////////////////////
+  /* end initial condition */
+  ///////////////////////////
 
   /* Set up timestepper */
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);

@@ -3,6 +3,7 @@
 
 #include "ctx.h"
 
-PetscErrorCode set_initial_condition( Ctx *, Vec );
+PetscErrorCode set_ic_aug( Ctx *, Vec );
+PetscErrorCode set_ic_dSdr( Ctx *, Vec );
 
 #endif

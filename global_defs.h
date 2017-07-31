@@ -154,7 +154,7 @@ static const PetscScalar SWIDTH = 1.0E-2;
 
 #if 1
 // Elkins-Tanton (2008) parameters
-static const PetscScalar P0 = 101325.0; // Pa
+static const PetscScalar P0 = 101325.0; // Pa (= 1 atm)
 // distribution coefficients are given in supplementary information
 static const PetscScalar H2O_KDIST = 1.0E-4; // distribution coefficient between solid and melt
 // TODO: water saturation limit is 10 ppm
@@ -170,6 +170,10 @@ static const PetscScalar CO2_INITIAL = 0.01; // wt. %
 //static const PetscScalar CO2_INITIAL = 0.6; // wt. %
 static const PetscScalar CO2_KABS = 0.05; // m^2/kg
 //static const PetscScalar CO2_KABS = 0.0001; // m^2/kg
+// CO2 dissolved in silicate melt obeys Henry's law to a good approximation
+// e.g. Pan et al., 1991
+// CO2_HENRY = concentration (wt %) / partial pressure (Pa)
+static const PetscScalar CO2_HENRY = 4.4E-10; // (wt %)/Pa
 #endif
 
 #if 0

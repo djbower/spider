@@ -8,20 +8,24 @@ static PetscScalar get_atmosphere_mass( Ctx *, PetscScalar );
 static PetscScalar get_optical_depth( PetscScalar, PetscScalar );
 #if 0
 static PetscScalar get_partialP_H2O( PetscScalar );
-static PetscScalar get_partialP_CO2( PetscScalar );
 #endif
+static PetscScalar get_pCO2( PetscScalar );
+static PetscScalar get_dpCO2dx( PetscScalar );
 
-PetscScalar get_emissivity( Ctx *E, PetscScalar X0, PetscScalar X1 )
+/* general functions */
+
+PetscScalar get_emissivity( Ctx *E, PetscScalar x0, PetscScalar x1 )
 {
-    PetscScalar m0, tau0, tau1;
+    PetscScalar m0, p0, tau0, tau1;
     PetscScalar tau, emissivity;
 
     /* CO2 */
-    m0 = get_atmosphere_mass( E, X0 );
+    p0 = get_pCO2( x0 );
+    m0 = get_atmosphere_mass( E, p0 );
     tau0 = get_optical_depth( m0, CO2_KABS );
 
     /* H2O */
-    //m1 = get_atmosphere_mass( E, H2O_INITIAL, X1, H2O_KDIST );
+    //m1 = get_atmosphere_mass( E, H2O_INITIAL, x1, H2O_KDIST );
     //tau1 = get_optical_depth( m1, H2O_KABS );
     // FIXME: DJB ignore H2O for the time being
     tau1 = 0.0;
@@ -44,12 +48,11 @@ static PetscScalar get_optical_depth( PetscScalar mass_atm, PetscScalar kabs )
     return tau;
 }
 
-static PetscScalar get_atmosphere_mass( Ctx *E, PetscScalar Xvol )
+static PetscScalar get_atmosphere_mass( Ctx *E, PetscScalar p )
 {
-    PetscScalar mass_atm, A;
+    PetscScalar mass_atm;
 
-    A = 1.0/4.4E-10;
-    mass_atm = 4.0*PETSC_PI*PetscSqr(RADIUS) * A * Xvol / -GRAVITY;
+    mass_atm = 4.0*PETSC_PI*PetscSqr(RADIUS) * p / -GRAVITY;
 
     return mass_atm;
 
@@ -76,31 +79,6 @@ static PetscScalar get_liquid_mass( Ctx *E )
 
 }
 
-#if 0
-static PetscScalar get_solid_mass( Ctx *E )
-{
-    PetscErrorCode ierr;
-    Solution       *S = &E->solution;
-    Mesh           *M = &E->mesh;
-    Vec            mass_s;
-    PetscScalar    mass_solid;
-
-    // Msol = sum[ (1-phi)*dm ]
-    ierr = VecDuplicate( S->phi_s, &mass_s ); CHKERRQ(ierr);
-    ierr = VecCopy( S->phi_s, mass_s ); CHKERRQ(ierr);
-    ierr = VecScale( mass_s, -1.0); CHKERRQ(ierr);
-    ierr = VecShift( mass_s, 1.0 ); CHKERRQ(ierr);
-
-    ierr = VecPointwiseMult( mass_s, mass_s, M->mass_s ); CHKERRQ(ierr);
-    ierr = VecSum( mass_s, &mass_solid );
-
-    VecDestroy( &mass_s );
-
-    return mass_solid;
-
-}
-#endif
-
 PetscScalar get_dX0dt( Ctx *E, PetscScalar X0, Vec dSdt_s )
 {
 
@@ -118,7 +96,7 @@ PetscScalar get_dX0dt( Ctx *E, PetscScalar X0, Vec dSdt_s )
     ierr = VecPointwiseMult( dphidm_s, dphidm_s, M->mass_s ); CHKERRQ(ierr);
 
     mass_liq = get_liquid_mass( E );
-    A = 1.0/4.4E-10; // units of wt. %
+    A = 1.0/CO2_HENRY;
 
     ierr = VecSum( dphidm_s, &dphidtdm );
 
@@ -154,20 +132,55 @@ static PetscScalar get_partialP_H2O( PetscScalar x_vol )
 
     return p;
 }
+#endif
 
-static PetscScalar get_partialP_CO2( PetscScalar x_vol )
+////////////////////////////
+/* CO2 specific functions */
+////////////////////////////
+
+PetscScalar get_initial_xCO2( Ctx *E )
 {
-    PetscScalar p;
 
+    /* solve mass balance to get initial volatile content of the
+       liquid */
+
+    Mesh        *M = &E->mesh;
+    PetscScalar result;
+
+    result = 4.0 * PETSC_PI * PetscSqr(RADIUS);
+    result /= -GRAVITY * M->mass0 * CO2_HENRY;
+    result += 1.0;
+    result = 1.0 / result;
+    result *= CO2_INITIAL;
+
+    return result;
+}
+
+
+static PetscScalar get_pCO2( PetscScalar x )
+{
+    /* partial pressure of CO2 */
     /* see magma_ocean_notes.tex */
-
     /* Lebrun et al. (2013) eqn. 17
        Massol et al. (2016) eqn. 18
        Salvador et al. (2017) eqn. C4 */
 
-    /* where x_vol is mass fraction */
-    p = x_vol / 4.4E-12;
+    PetscScalar p;
+
+    /* where x is the concentration in the liquid in wt % */
+    p = x / CO2_HENRY;
 
     return p;
 }
-#endif
+
+static PetscScalar get_dpCO2dx( PetscScalar x )
+{
+    /* dpCO2/dx. i.e., derivative of partial pressure (Pa) with respect
+       to concentration (wt %) */
+
+    PetscScalar dpdx;
+
+    dpdx = 1.0 / CO2_HENRY;
+
+    return dpdx;
+}

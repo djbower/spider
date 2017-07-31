@@ -1,83 +1,69 @@
+#include "atmosphere.h"
 #include "ic.h"
-static PetscErrorCode set_ic_from_perturbation( Ctx *, Vec );
-//static PetscErrorCode set_ic_from_melt_fraction( Ctx *, Vec );
-//static PetscErrorCode set_ic_from_file( Ctx *, Vec );
 
-PetscErrorCode set_initial_condition(Ctx *E, Vec dSdr_in) 
+static PetscErrorCode set_ic_dSdr_constant( Ctx *, Vec );
+
+PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
 {
+
+    PetscErrorCode ierr;
+    PetscScalar    xCO2;//, xH2O;
 
     PetscFunctionBeginUser;
 
-    /* ic from ic_dSdr */
-    set_ic_from_perturbation( E, dSdr_in );
+    /* augmented vector organised as follows:
+         0.     CO2 wt. % (dissolved content of CO2 in magma ocean)
+         1.     H2O wt. % (dissolved content of H2O in magma ocean)
+         2.     S0 (entropy at uppermost staggered node)
+         3-end  dS/dr at basic nodes (see set_ic_dSdr)
+    */
 
-    /* ic from melt fraction */
-    /*set_ic_from_melt_fraction( E, dSdr_in ); */
+    /* TODO: this should be updated.  Should be consistent with the
+      mass balance of volatiles, so the total initial volatile content
+      is actually partitioned betweem the (liquid) magma ocean and the
+      atmosphere. */
+    /* initial mass content of CO2 in the magma ocean */
+    xCO2 = get_initial_xCO2( E );
+    ierr = VecSetValue(dSdr_b_aug,0,xCO2,INSERT_VALUES);CHKERRQ(ierr);
+    
+    /* initial mass content of H2O in the magma ocean */
+    // TODO
+    //xH20 = get_initial_xH2O( E );
+    //ierr = VecSetValue(dSdr_b_aug,1,xH2O,INSERT_VALUES);CHKERRQ(ierr);
+   
+   /* include initial entropy at staggered node */
+   /* TODO: is this over-rideable from the command line? */
+    ierr = VecSetValue(dSdr_b_aug,2,SINIT_DEFAULT,INSERT_VALUES);CHKERRQ(ierr);
 
-    /* read ic from file */
-    //set_ic_from_file( E, dSdr_in );
+    VecAssemblyBegin( dSdr_b_aug );
+    VecAssemblyEnd( dSdr_b_aug );
 
     PetscFunctionReturn(0);
 }
 
-/* TODO: refresh for new approach with dSdr_b */
-/* possibly broken at present */
-//static PetscErrorCode set_ic_from_file( Ctx *E, Vec dSdr_in )
-//{
-//    PetscErrorCode    ierr;
-//    FILE              *fp;
-//    PetscInt          i=0;
-    /* initial condition file must be called this */
-//    char              filename[7] = "X_s.0";
-//    char              string[100];
-//#if (defined PETSC_USE_REAL___FLOAT128)
-//    char              xtemp[30], ytemp[30];
-//#endif
-//    PetscScalar       *arr;
-//    PetscScalar       x, y;
-    //PetscScalar       xa[NUMPTS_S_DEFAULT];//, ya[NUMPTS_S_DEFAULT];
 
-//    PetscFunctionBeginUser;
-
-//    ierr = VecGetArray( dSdr_in, &arr ); CHKERRQ(ierr);
-
-//    fp = fopen( filename, "r" );
-
-//    if(fp==NULL) {
-//        perror("Error opening file.\n");
-//        exit(-1);
-//    }
-
-    // fgets reads in string, sscanf processes it
-//    while(fgets(string, sizeof(string), fp) != NULL) {
-//#if (defined PETSC_USE_REAL___FLOAT128)
-//        sscanf( string, "%s %s", xtemp, ytemp );
-//        x = strtoflt128(xtemp, NULL);
-//        y = strtoflt128(ytemp, NULL);
-//#else
-//        sscanf(string, "%lf %lf", &x, &y );
-//#endif
-//        arr[i] = y;
-        //ya[i] = y;
-//        ++i;
-//    }
-
-//    fclose( fp );
-
- //   ierr = VecRestoreArray( dSdr_in, &arr ); CHKERRQ(ierr);
-
-//    PetscFunctionReturn(0);
-
-//}
-
-static PetscErrorCode set_ic_from_perturbation( Ctx *E, Vec dSdr_in )
+PetscErrorCode set_ic_dSdr( Ctx *E, Vec dSdr_in) 
 {
+    /* initial entropy gradient for basic nodes */
+
+    PetscFunctionBeginUser;
+
+    set_ic_dSdr_constant( E, dSdr_in );
+
+    /* add more initial condition options here if desired */
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode set_ic_dSdr_constant( Ctx *E, Vec dSdr_in )
+{
+    /* set initial entropy gradient to constant for basic nodes */
 
     PetscErrorCode     ierr;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_perturbation:\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_dSdr_constant:\n");CHKERRQ(ierr);
 #endif
 
     ierr = VecSet( dSdr_in, IC_DSDR ); CHKERRQ( ierr );
