@@ -14,9 +14,13 @@ clean ::
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
-# this is to ensure that the debugging commands work in LLDB
-# can presumably comment this out for optimised code
-CFLAGS+=-g -O0
+# This is to ensure that the debugging commands work in LLDB
+# Don't use for optimized code!
+# CFLAGS_EXTRA=-g -O0
+# You can specify this from the command line, e.g.
+#   make clean; make -j CFLAGS_EXTRA="-O0"
+CFLAGS_EXTRA=-g -O3
+CFLAGS+=${CFLAGS_EXTRA}
 
 ${EXNAME} : ${OBJ}
 	-${CLINKER}  -o $@ $^ ${PETSC_TS_LIB} 
