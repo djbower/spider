@@ -1,6 +1,7 @@
 /* Here, we define a monitor to produce output for debugging */
 
 #include "monitor.h"
+#include "output.h"
 #include "rhs.h"
 
 PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscReal time, PetscReal time0, PetscReal timeprev, Vec x_aug, void * ptr, double walltime0, double *walltimeprev)
@@ -82,7 +83,11 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
       ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
     }
- 
+
+    add_vector_to_binary_output( ctx->solution.phi_s, viewer ); CHKERRQ(ierr);
+
+
+#if 0 
     /* Add another vector to the file */
     {
       Vec phi_s = ctx->solution.phi_s;
@@ -91,6 +96,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
       ierr = VecView(phi_s,viewer);CHKERRQ(ierr);
     }
+#endif
 
     /* Close the viewer */
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
