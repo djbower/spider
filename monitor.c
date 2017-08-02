@@ -84,8 +84,30 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
     }
 
-    add_vector_to_binary_output( ctx->solution.phi_s, viewer ); CHKERRQ(ierr);
+    /* output all stored vecs for python plotting */
+    Mesh     M = ctx->mesh;
+    Solution S = ctx->solution;
+    PetscInt i;
 
+    /* write mesh information for basic node quantities */
+    for (i=0;i<NUMMESHVECS_B;++i){
+        add_vector_to_binary_output( M.meshVecs_b[i], viewer ); CHKERRQ(ierr);
+    }
+
+    /* write mesh information for staggered node quantities */
+    for (i=0;i<NUMMESHVECS_S;++i){
+        add_vector_to_binary_output( M.meshVecs_s[i], viewer ); CHKERRQ(ierr);
+    }
+
+    /* write all vectors associated with basic node quantities */
+    for (i=0;i<NUMSOLUTIONVECS_B;++i){
+        add_vector_to_binary_output( S.solutionVecs_b[i], viewer ); CHKERRQ(ierr);
+    }
+
+    /* write all vectors associated with staggered node quantities */
+    for (i=0;i<NUMSOLUTIONVECS_S;++i){
+        add_vector_to_binary_output( S.solutionVecs_s[i], viewer ); CHKERRQ(ierr);
+    }
 
 #if 0 
     /* Add another vector to the file */
