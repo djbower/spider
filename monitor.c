@@ -59,6 +59,9 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/petscbin.%lld",nstep);CHKERRQ(ierr);
     ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer);CHKERRQ(ierr);
 
+    /* the following order of export must match exactly the order of the fields in plot_figure.py
+       see get_vector_index in plot_figure.py */
+
     /* Add a data vector */
     {
       Vec data;
@@ -112,17 +115,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     for (i=0;i<NUMSOLUTIONVECS_S;++i){
         add_vector_to_binary_output( S.solutionVecs_s[i], viewer ); CHKERRQ(ierr);
     }
-
-#if 0 
-    /* Add another vector to the file */
-    {
-      Vec phi_s = ctx->solution.phi_s;
-      char vecname[PETSC_MAX_PATH_LEN];
-      ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"phi_s_%lld",step);CHKERRQ(ierr);
-      ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
-      ierr = VecView(phi_s,viewer);CHKERRQ(ierr);
-    }
-#endif
 
     /* Close the viewer */
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
