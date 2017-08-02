@@ -9,6 +9,14 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
   PetscBool      test_view = PETSC_FALSE;
+  /* it remains convenient to be able to plot both short and long times together
+     on the same plot, and since these are output by different settings in main.c,
+     it is easiest if the output files reference the actual time in years, rather
+     than timestep.  But the consequence of this approach is that small output
+     times (less than a year) will overwrite each other.  For debugging this could
+     be annoying, but in terms of plotting and analysis it is a non-issue since nothing
+     is happening at timescales less than a year */  
+  long long      nstep = (long long) dtmacro * (long long) step;
 
   PetscFunctionBeginUser;
 
@@ -33,11 +41,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   {
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
-    /* new from DJB.  Decided it was simplest to output time in years, 
-       which is dtmacro*step.  This makes it easier to restart models
-       and quickly analyse output */
-    long long nstep;
-    nstep = (long long) dtmacro * (long long) step;
     ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/dSdr_b_aug.%lld.m",nstep);CHKERRQ(ierr);
     ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug_%lld",nstep);CHKERRQ(ierr);
     ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
@@ -52,7 +55,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     /* Set up a binary viewer */
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN];
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/%d.petscbin",step);CHKERRQ(ierr);
+    /* for debugging, switch 'nstep' below to 'step' to over overwriting output data files */
+    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/petscbin.%lld",nstep);CHKERRQ(ierr);
     ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer);CHKERRQ(ierr);
 
     /* Add a data vector */
