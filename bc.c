@@ -1,7 +1,7 @@
 #include "bc.h"
 #include "util.h"
 
-static PetscScalar hybrid( Ctx *, PetscScalar, PetscReal, PetscScalar );
+static PetscScalar hybrid( Ctx *, PetscScalar, PetscReal );
 #if defined GREYBODY
 static PetscScalar greybody_with_dT( PetscScalar, PetscReal, PetscScalar );
 static PetscScalar greybody( PetscScalar, PetscReal, PetscScalar );
@@ -14,7 +14,7 @@ static PetscScalar zahnle( PetscScalar, PetscReal, PetscScalar );
 static PetscScalar hamano( PetscScalar, PetscReal, PetscScalar );
 #endif
 
-PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs, PetscScalar emiss )
+PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
 {
     PetscErrorCode    ierr;
     PetscMPIInt       rank;
@@ -36,7 +36,7 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs, PetscScalar emiss )
       /* surface temperature */
       ierr = VecGetValues(S->temp,1,&ind,&temp0); CHKERRQ(ierr);
 
-      Qout = hybrid( E, temp0, tyrs, emiss );
+      Qout = hybrid( E, temp0, tyrs );
 
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
       Qout *= PetscSqr( RADIUS );
@@ -53,25 +53,26 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs, PetscScalar emiss )
 
 }
 
-static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs, PetscScalar emiss )
+static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
 {
     PetscScalar    Q1;
 #ifdef HYBRID
     PetscErrorCode ierr;
     PetscScalar    G0, R0, R1, R2, E0, E1, E2, Q2, fwt, phi0;
     PetscInt       ind;
+    Atmosphere     *A = &E->atmosphere;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
 #endif
 
 #ifdef HAMANO
-    Q1 = hamano( temp0, tyrs, emiss );
+    Q1 = hamano( temp0, tyrs, A->emissivity );
 #endif
 #ifdef ZAHNLE
-    Q1 = zahnle( temp0, tyrs, emiss );
+    Q1 = zahnle( temp0, tyrs, A->emissivity );
 #endif
 #ifdef GREYBODY
-    Q1 = greybody_with_dT( temp0, tyrs, emiss );
+    Q1 = greybody_with_dT( temp0, tyrs, A->emissivity );
 #endif
 #ifdef HYBRID
     /* for weight of different fluxes */

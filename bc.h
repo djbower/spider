@@ -4,6 +4,6 @@
 #include "ctx.h"
 
 PetscErrorCode set_core_mantle_flux( Ctx * );
-PetscErrorCode set_surface_flux( Ctx *, PetscReal, PetscScalar );
+PetscErrorCode set_surface_flux( Ctx *, PetscReal );
 
 #endif

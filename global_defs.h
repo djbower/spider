@@ -160,7 +160,7 @@ static const PetscScalar CO2_INITIAL = 0.0; // wt. %
 //static const PetscScalar CO2_INITIAL = 0.1; // wt. %
 //static const PetscScalar CO2_INITIAL = 0.6; // wt. %
 // EMISSIVITY is not used if H20_INITIAL and/or CO2_INITIAL > 0.0
-static const PetscScalar EMISSIVITY = 0.5;
+static const PetscScalar EMISSIVITY = 1.0;
 
 // non-dim was SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar SIGMA = 5.670367e-08; // Stefan-Boltzmann constant

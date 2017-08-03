@@ -4,7 +4,7 @@
 #include "ctx.h"
 
 PetscScalar get_initial_xCO2( Ctx * );
-PetscScalar get_emissivity( Ctx *, PetscScalar, PetscScalar );
-PetscScalar get_dx0dt( Ctx *, PetscScalar, Vec );
+PetscErrorCode set_emissivity( Ctx * );
+PetscErrorCode set_dx0dt( Ctx * );
 
 #endif

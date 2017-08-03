@@ -55,6 +55,10 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     /* Set up a binary viewer */
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN];
+    Mesh     *M = &ctx->mesh;
+    Solution *S = &ctx->solution;
+    PetscInt i;
+
     /* for debugging, switch 'nstep' below to 'step' to over overwriting output data files */
     ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/petscbin.%lld",nstep);CHKERRQ(ierr);
     ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer);CHKERRQ(ierr);
@@ -91,29 +95,24 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
     }
 
-    /* output all stored vecs for python plotting */
-    Mesh     M = ctx->mesh;
-    Solution S = ctx->solution;
-    PetscInt i;
-
     /* write mesh information for basic node quantities */
     for (i=0;i<NUMMESHVECS_B;++i){
-        add_vector_to_binary_output( M.meshVecs_b[i], viewer ); CHKERRQ(ierr);
+        add_vector_to_binary_output( M->meshVecs_b[i], viewer ); CHKERRQ(ierr);
     }
 
     /* write mesh information for staggered node quantities */
     for (i=0;i<NUMMESHVECS_S;++i){
-        add_vector_to_binary_output( M.meshVecs_s[i], viewer ); CHKERRQ(ierr);
+        add_vector_to_binary_output( M->meshVecs_s[i], viewer ); CHKERRQ(ierr);
     }
 
     /* write all vectors associated with basic node quantities */
     for (i=0;i<NUMSOLUTIONVECS_B;++i){
-        add_vector_to_binary_output( S.solutionVecs_b[i], viewer ); CHKERRQ(ierr);
+        add_vector_to_binary_output( S->solutionVecs_b[i], viewer ); CHKERRQ(ierr);
     }
 
     /* write all vectors associated with staggered node quantities */
     for (i=0;i<NUMSOLUTIONVECS_S;++i){
-        add_vector_to_binary_output( S.solutionVecs_s[i], viewer ); CHKERRQ(ierr);
+        add_vector_to_binary_output( S->solutionVecs_s[i], viewer ); CHKERRQ(ierr);
     }
 
     /* Close the viewer */

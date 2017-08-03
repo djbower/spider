@@ -13,6 +13,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 {
   PetscErrorCode    ierr;
   Ctx               *E = (Ctx*) ptr;
+  Atmosphere        *A = &E->atmosphere;
   Mesh              *M = &E->mesh;
   Solution          *S = &E->solution;
   PetscScalar       *arr_dSdt_s, *arr_rhs_b;
@@ -22,7 +23,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   DM                da_s = E->da_s, da_b=E->da_b;
   Vec               rhs_b;
   PetscInt          ind;
-  PetscScalar       S0, dS0dt, x0, dx0dt, x1, dx1dt, emiss;
+  PetscScalar       S0, dS0dt, dx1dt;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -48,11 +49,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* extract other necessary quantities from augmented array */
   /* C02 content of magma ocean (solid and liquid phase) */
   ind = 0;
-  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x0);CHKERRQ(ierr);
+  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&A->x0);CHKERRQ(ierr);
 
   /* H20 content of magma ocean (solid and liquid phase) */
   ind = 1;
-  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x1);CHKERRQ(ierr);
+  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&A->x1);CHKERRQ(ierr);
 
   /* Get first staggered node value (stored as S0) */
   ind = 2;
@@ -72,12 +73,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   set_Htot( E, t );
 
   /* grey-body atmosphere */
-  emiss = get_emissivity( E, x0, x1 );
+  set_emissivity( E );
 
-  // DJB for testing and debugging
-  //emiss = 1.0;
-
-  set_surface_flux( E, t, emiss );
+  set_surface_flux( E, t );
 
   set_core_mantle_flux( E );
 
@@ -117,8 +115,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
-  dx0dt = get_dx0dt( E, x0, S->dSdt_s );
-
   /* Transfer back  */
   ierr = ToAug(rhs_b,rhs_b_aug);CHKERRQ(ierr);
 
@@ -126,7 +122,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* now that we have dS/dt, compute change in volatile concentrations */
   /* CO2 */
-  ierr = VecSetValue(rhs_b_aug,0,dx0dt,INSERT_VALUES);CHKERRQ(ierr);
+  set_dx0dt( E );
+  ierr = VecSetValue(rhs_b_aug,0,A->dx0dt,INSERT_VALUES);CHKERRQ(ierr);
 
   /* H20 */
   /* TODO: H2O not implemented yet */

@@ -1,36 +1,38 @@
 #include "atmosphere.h"
 
-static PetscScalar get_Mliq( Ctx * );
-static PetscScalar get_dMliqdt( Ctx * );
-static PetscScalar get_atmosphere_mass( Ctx *, PetscScalar );
+static PetscErrorCode set_Mliq( Ctx * );
+static PetscErrorCode set_dMliqdt( Ctx * );
+static PetscScalar get_atmosphere_mass( PetscScalar );
 static PetscScalar get_optical_depth( PetscScalar, PetscScalar );
 #if 0
 static PetscScalar get_partialP_H2O( PetscScalar );
 #endif
-static PetscScalar get_pCO2( PetscScalar );
-static PetscScalar get_dpCO2dx( PetscScalar );
+static PetscErrorCode set_pCO2( Atmosphere * );
+static PetscErrorCode set_dpCO2dx( Atmosphere * );
 
 /* general functions */
 
-PetscScalar get_emissivity( Ctx *E, PetscScalar x0, PetscScalar x1 )
+PetscErrorCode set_emissivity( Ctx *E )
 {
-    PetscScalar m0, p0, tau0, tau1;
-    PetscScalar tau, emissivity;
+    Atmosphere *A = &E->atmosphere;
+
+    PetscFunctionBeginUser;
 
     /* CO2 */
-    p0 = get_pCO2( x0 );
-    m0 = get_atmosphere_mass( E, p0 );
-    tau0 = get_optical_depth( m0, CO2_KABS );
+    set_pCO2( A );
+    A->m0 = get_atmosphere_mass( A->p0 );
+    A->tau0 = get_optical_depth( A->m0, CO2_KABS );
 
     /* H2O */
     // FIXME: DJB ignore H2O for the time being
-    //m1 = get_atmosphere_mass( E, H2O_INITIAL, x1, H2O_KDIST );
-    //tau1 = get_optical_depth( m1, H2O_KABS );
-    tau1 = 0.0;
+    //set_pH2O( A );
+    //A->m1 = get_atmosphere_mass( A->p1 );
+    //A->tau1 = get_optical_depth( A->m1, H2O_KABS );
+    A->tau1 = 0.0;
 
     /* total */
-    tau = tau0 + tau1;
-    emissivity = 2.0 / (tau + 2.0);
+    A->tau = A->tau0 + A->tau1;
+    A->emissivity = 2.0 / (A->tau + 2.0);
 
     /* for the case with no coupled atmospheric growth (H2O_INITIAL
        and CO2_INITIAL both zero), we can scale by the EMISSIVITY
@@ -44,10 +46,11 @@ PetscScalar get_emissivity( Ctx *E, PetscScalar x0, PetscScalar x1 )
        switch to a constant emissivity grey-body if the volatile
        content is either zero or negative */
     if (CO2_INITIAL <= 0.0 && H2O_INITIAL <= 0.0){
-        emissivity = EMISSIVITY;
+        A->emissivity = EMISSIVITY;
     }
 
-    return emissivity;
+    PetscFunctionReturn(0);
+
 }
 
 static PetscScalar get_optical_depth( PetscScalar mass_atm, PetscScalar kabs )
@@ -61,7 +64,7 @@ static PetscScalar get_optical_depth( PetscScalar mass_atm, PetscScalar kabs )
     return tau;
 }
 
-static PetscScalar get_atmosphere_mass( Ctx *E, PetscScalar p )
+static PetscScalar get_atmosphere_mass( PetscScalar p )
 {
     PetscScalar mass_atm;
 
@@ -71,37 +74,42 @@ static PetscScalar get_atmosphere_mass( Ctx *E, PetscScalar p )
 
 }
 
-static PetscScalar get_Mliq( Ctx *E )
+static PetscErrorCode set_Mliq( Ctx *E )
 {
     PetscErrorCode ierr;
+    Atmosphere     *A = &E->atmosphere;
     Solution       *S = &E->solution;
     Mesh           *M = &E->mesh;
     Vec            mass_s;
-    PetscScalar    mass_liquid;
+
+    PetscFunctionBeginUser;
 
     // Mliq = sum[ phi*dm ]
     ierr = VecDuplicate( S->phi_s, &mass_s ); CHKERRQ(ierr);
     ierr = VecCopy( S->phi_s, mass_s ); CHKERRQ(ierr);
 
     ierr = VecPointwiseMult( mass_s, mass_s, M->mass_s ); CHKERRQ(ierr);
-    ierr = VecSum( mass_s, &mass_liquid );
+    ierr = VecSum( mass_s, &A->Mliq );
 
     VecDestroy( &mass_s );
 
-    return mass_liquid;
+    PetscFunctionReturn(0);
 
 }
 
-static PetscScalar get_dMliqdt( Ctx *E )
+static PetscErrorCode set_dMliqdt( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s = E->da_s;
+    Atmosphere        *A = &E->atmosphere;
     Solution          *S = &E->solution;
     Mesh              *M = &E->mesh;
     Vec               result_s;
-    PetscScalar       *arr_result_s, result;
+    PetscScalar       *arr_result_s;
     const PetscScalar *arr_dSdt_s, *arr_fusion_s, *arr_fwtl_s, *arr_fwts_s, *arr_phi_s, *arr_mass_s;
+
+    PetscFunctionBeginUser;
 
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
@@ -139,32 +147,35 @@ static PetscScalar get_dMliqdt( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,result_s, &arr_result_s); CHKERRQ(ierr);
 
-    ierr = VecSum( result_s, &result ); CHKERRQ(ierr);
+    ierr = VecSum( result_s, &A->dMliqdt ); CHKERRQ(ierr);
 
     VecDestroy( &result_s );
 
-    return result;
+    PetscFunctionReturn(0);
+
 }
 
 
-PetscScalar get_dx0dt( Ctx *E, PetscScalar x0, Vec dSdt_s )
+PetscErrorCode set_dx0dt( Ctx *E )
 {
    /* update for dissolved CO2 content in the magma ocean */
-
+    Atmosphere     *A = &E->atmosphere;
     Mesh           *M = &E->mesh;
-    PetscScalar    num, den, dx0dt, Mliq, dMliqdt, dpCO2dx;
+    PetscScalar    num, den;
 
-    dpCO2dx = get_dpCO2dx( x0 );
-    Mliq = get_Mliq( E );
-    dMliqdt = get_dMliqdt( E );
+    PetscFunctionBeginUser;
 
-    num = x0 * (CO2_KDIST-1.0) * dMliqdt;
-    den = CO2_KDIST * M->mass0 + (1.0-CO2_KDIST) * Mliq;
-    den += ( 4.0*PETSC_PI*PetscSqr(RADIUS) / -GRAVITY ) * dpCO2dx;
+    set_dpCO2dx( A );
+    set_Mliq( E );
+    set_dMliqdt( E );
 
-    dx0dt = num / den;
+    num = A->x0 * (CO2_KDIST-1.0) * A->dMliqdt;
+    den = CO2_KDIST * M->mass0 + (1.0-CO2_KDIST) * A->Mliq;
+    den += ( 4.0*PETSC_PI*PetscSqr(RADIUS) / -GRAVITY ) * A->dp0dx;
 
-    return dx0dt;
+    A->dx0dt = num / den;
+
+    PetscFunctionReturn(0);
 }
 
 #if 0
@@ -201,21 +212,25 @@ PetscScalar get_initial_xCO2( Ctx *E )
 
     /* solve mass balance to get initial volatile content of the
        liquid */
-
+    Atmosphere  *A = &E->atmosphere;
     Mesh        *M = &E->mesh;
-    PetscScalar result;
 
-    result = 4.0 * PETSC_PI * PetscSqr(RADIUS);
-    result /= -GRAVITY * M->mass0 * CO2_HENRY;
-    result += 1.0;
-    result = 1.0 / result;
-    result *= CO2_INITIAL;
+    PetscScalar x0;
 
-    return result;
+    x0 = 4.0 * PETSC_PI * PetscSqr(RADIUS);
+    x0 /= -GRAVITY * M->mass0 * CO2_HENRY;
+    x0 += 1.0;
+    x0 = 1.0 / x0;
+    x0 *= CO2_INITIAL;
+
+    // update struct
+    A->x0 = x0;
+
+    // need to return to add to augmented vector
+    return x0;
 }
 
-
-static PetscScalar get_pCO2( PetscScalar x )
+static PetscErrorCode set_pCO2( Atmosphere *A )
 {
     /* partial pressure of CO2 */
     /* see magma_ocean_notes.tex */
@@ -223,22 +238,24 @@ static PetscScalar get_pCO2( PetscScalar x )
        Massol et al. (2016) eqn. 18
        Salvador et al. (2017) eqn. C4 */
 
-    PetscScalar p;
+    PetscFunctionBeginUser;
 
     /* where x is the concentration in the liquid in wt % */
-    p = x / CO2_HENRY;
+    A->p0 = A->x0 / CO2_HENRY;
 
-    return p;
+    PetscFunctionReturn(0);
+
 }
 
-static PetscScalar get_dpCO2dx( PetscScalar x )
+static PetscErrorCode set_dpCO2dx( Atmosphere *A )
 {
     /* dpCO2/dx. i.e., derivative of partial pressure (Pa) with respect
        to concentration (wt %) */
 
-    PetscScalar dpdx;
+    PetscFunctionBeginUser;
 
-    dpdx = 1.0 / CO2_HENRY;
+    A->dp0dx = 1.0 / CO2_HENRY;
 
-    return dpdx;
+    PetscFunctionReturn(0);
+
 }
