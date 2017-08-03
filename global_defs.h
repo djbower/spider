@@ -129,11 +129,6 @@ static const PetscScalar PHI_SKEW = 0.0;
 // non-dim was CONSTBC = 1.6269986040244828; // 1.0E-7 in python
 //static const PetscScalar CONSTBC = 1.0e-07; // 1.0E-7 in python
 static const PetscScalar CONSTBC = 0.0; // no ultra-thin thermal boundary layer
-// non-dim was SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
-static const PetscScalar SIGMA = 5.670367e-08; // Stefan-Boltzmann constant
-//static const PetscScalar EMISSIVITY = 1.0; // emissivity
-// non-dim was TEQM = 0.0676813568808283; // equilibrium temp of planet
-static const PetscScalar TEQM = 273.0; // equilibrium temp of planet
 
 /* for core-cooling boundary condition at the bottom surface */
 /* density of core */
@@ -149,8 +144,28 @@ static const PetscScalar TFAC_CORE_AVG = 1.147;
 /* width */
 static const PetscScalar SWIDTH = 1.0E-2;
 
+/* atmosphere parameters */
+/* NOTE: if both H2O_INITIAL and CO2_INITIAL are set to zero, then
+   the emissivity is constant with time (a grey-body, i.e.,
+   a black-body scaled by EMISSIVITY.  If either H2O_INITIAL and/or
+   CO2_INITIAL are positive then the emissivity is computed according
+   to the plane-parallel radiative equilibrium model of Abe and 
+   Matsui (1985)  */
+// Elkins_Tanton (2008) estimates of volatile content
+static const PetscScalar H2O_INITIAL = 0.0; // wt. %
+//static const PetscScalar H2O_INITIAL = 0.05; // wt. %
+//static const PetscScalar H2O_INITIAL = 0.5; // wt. %
+static const PetscScalar CO2_INITIAL = 0.0; // wt. %
+//static const PetscScalar CO2_INITIAL = 0.01; // wt. %
+//static const PetscScalar CO2_INITIAL = 0.1; // wt. %
+//static const PetscScalar CO2_INITIAL = 0.6; // wt. %
+// EMISSIVITY is not used if H20_INITIAL and/or CO2_INITIAL > 0.0
+static const PetscScalar EMISSIVITY = 0.5;
 
-/* DJB testing some atmosphere parameters */
+// non-dim was SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
+static const PetscScalar SIGMA = 5.670367e-08; // Stefan-Boltzmann constant
+// non-dim was TEQM = 0.0676813568808283; // equilibrium temp of planet
+static const PetscScalar TEQM = 273.0; // equilibrium temp of planet
 
 #if 1
 // Elkins-Tanton (2008) parameters
@@ -158,16 +173,9 @@ static const PetscScalar P0 = 101325.0; // Pa (= 1 atm)
 // distribution coefficients are given in supplementary information
 static const PetscScalar H2O_KDIST = 1.0E-4; // distribution coefficient between solid and melt
 // TODO: water saturation limit is 10 ppm
-//static const PetscScalar H2O_INITIAL = 0.5; // wt. %
-static const PetscScalar H2O_INITIAL = 0.05; // wt. %
-//static const PetscScalar H2O_INITIAL = 0.0; // wt. %
 static const PetscScalar H2O_KABS = 0.01; // m^2/kg
-
 static const PetscScalar CO2_KDIST = 5.0E-4; // distribution coefficient between solid and melt
 // TODO: carbon saturation limit is 0.03 ppm
-//static const PetscScalar CO2_INITIAL = 0.1; // wt. %
-static const PetscScalar CO2_INITIAL = 0.01; // wt. %
-//static const PetscScalar CO2_INITIAL = 0.6; // wt. %
 static const PetscScalar CO2_KABS = 0.05; // m^2/kg
 //static const PetscScalar CO2_KABS = 0.0001; // m^2/kg
 // CO2 dissolved in silicate melt obeys Henry's law to a good approximation

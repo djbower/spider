@@ -32,6 +32,21 @@ PetscScalar get_emissivity( Ctx *E, PetscScalar x0, PetscScalar x1 )
     tau = tau0 + tau1;
     emissivity = 2.0 / (tau + 2.0);
 
+    /* for the case with no coupled atmospheric growth (H2O_INITIAL
+       and CO2_INITIAL both zero), we can scale by the EMISSIVITY
+       to give a grey-body model with constant emissivity.  Since
+       above result will give emissivity=1.0 with no atmospheric
+       growth (but see below, now over-written to avoid negative
+       emissivity which could arise if the user enters a negative
+       initial volatile content, presumably in error!) */
+    /* this is really a check, since it makes no sense to have a
+       negative initial volatile content, and therefore always
+       switch to a constant emissivity grey-body if the volatile
+       content is either zero or negative */
+    if (CO2_INITIAL <= 0.0 && H2O_INITIAL <= 0.0){
+        emissivity = EMISSIVITY;
+    }
+
     return emissivity;
 }
 

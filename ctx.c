@@ -1,9 +1,9 @@
+#include "atmosphere.h"
 #include "ctx.h"
+#include "lookup.h"
 #include "mesh.h"
 #include "twophase.h"
-#include "lookup.h"
 #include "util.h"
-#include "atmosphere.h"
 
 /* Set up the Context */
 PetscErrorCode setup_ctx(Ctx* ctx)
