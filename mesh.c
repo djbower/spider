@@ -325,6 +325,7 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density )
 static PetscErrorCode aw_mass( Ctx *E )
 {
     PetscErrorCode ierr;
+    Atmosphere     *A = &E->atmosphere;
     Mesh           *M = &E->mesh;
  
     PetscFunctionBeginUser;
@@ -334,6 +335,7 @@ static PetscErrorCode aw_mass( Ctx *E )
     ierr = VecPointwiseMult( M->mass_s, M->mass_s, M->volume_s );
     ierr = VecScale( M->mass_s, 4.0 * PETSC_PI );
     ierr = VecSum( M->mass_s, &M->mass0 );
+    A->M0 = M->mass0; // for output with atmosphere
 
     PetscFunctionReturn(0);
 

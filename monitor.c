@@ -55,6 +55,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     /* Set up a binary viewer */
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN];
+    Atmosphere *A = &ctx->atmosphere;
     Mesh     *M = &ctx->mesh;
     Solution *S = &ctx->solution;
     PetscInt i;
@@ -82,6 +83,23 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
         ierr = VecAssemblyBegin(data);CHKERRQ(ierr);
         ierr = VecAssemblyEnd(data);CHKERRQ(ierr);
         ierr = PetscObjectSetName((PetscObject)data,vecname);CHKERRQ(ierr);
+        ierr = VecView(data,viewer);CHKERRQ(ierr);
+        ierr = VecDestroy(&data);CHKERRQ(ierr);
+      }
+    }
+
+    /* Add atmosphere */
+    {
+      Vec data;
+      PetscMPIInt rank;
+      //char vecname[PETSC_MAX_PATH_LEN];
+      const int nData = 17;
+      ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
+      if (!rank) {
+        ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
+        ierr = VecSetType(data,VECSEQ);CHKERRQ(ierr);
+        ierr = VecSetSizes(data,nData,nData);CHKERRQ(ierr);
+        ierr = atmosphere_struct_to_vec( A, data ); CHKERRQ(ierr);
         ierr = VecView(data,viewer);CHKERRQ(ierr);
         ierr = VecDestroy(&data);CHKERRQ(ierr);
       }
