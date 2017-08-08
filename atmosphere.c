@@ -1,6 +1,7 @@
 #include "atmosphere.h"
 
 static PetscErrorCode set_Mliq( Ctx * );
+//static PetscErrorCode set_Msol( Ctx * );
 static PetscErrorCode set_dMliqdt( Ctx * );
 static PetscScalar get_atmosphere_mass( PetscScalar );
 static PetscScalar get_optical_depth( PetscScalar, PetscScalar );
@@ -97,6 +98,33 @@ static PetscErrorCode set_Mliq( Ctx *E )
 
 }
 
+#if 0
+static PetscErrorCode set_Msol( Ctx *E )
+{
+    PetscErrorCode ierr;
+    Atmosphere     *A = &E->atmosphere;
+    Solution       *S = &E->solution;
+    Mesh           *M = &E->mesh;
+    Vec            mass_s;
+
+    PetscFunctionBeginUser;
+
+    // Msol = sum[ (1-phi)*dm ]
+    ierr = VecDuplicate( S->phi_s, &mass_s ); CHKERRQ(ierr);
+    ierr = VecCopy( S->phi_s, mass_s ); CHKERRQ(ierr);
+    ierr = VecScale( mass_s, -1.0 ); CHKERRQ(ierr);
+    ierr = VecShift( mass_s, 1.0 ); CHKERRQ(ierr);
+
+    ierr = VecPointwiseMult( mass_s, mass_s, M->mass_s ); CHKERRQ(ierr);
+    ierr = VecSum( mass_s, &A->Msol );
+
+    VecDestroy( &mass_s );
+
+    PetscFunctionReturn(0);
+
+}
+#endif
+
 static PetscErrorCode set_dMliqdt( Ctx *E )
 {
     PetscErrorCode    ierr;
@@ -167,6 +195,7 @@ PetscErrorCode set_dx0dt( Ctx *E )
 
     set_dpCO2dx( A );
     set_Mliq( E );
+    //set_Msol( E );
     set_dMliqdt( E );
 
     num = A->x0 * (CO2_KDIST-1.0) * A->dMliqdt;
