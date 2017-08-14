@@ -56,11 +56,11 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
 static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
 {
     PetscScalar    Q1;
+    Atmosphere     *A = &E->atmosphere;
 #ifdef HYBRID
     PetscErrorCode ierr;
     PetscScalar    G0, R0, R1, R2, E0, E1, E2, Q2, fwt, phi0;
     PetscInt       ind;
-    Atmosphere     *A = &E->atmosphere;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
 #endif
