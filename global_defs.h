@@ -32,7 +32,7 @@
    to the upper mantle cooling rate once the rheological
    transition is reached.  This prevents a lid from forming at
    the top of the model. */
-#define HYBRID
+//#define HYBRID
 
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
@@ -156,7 +156,7 @@ static const PetscScalar H2O_INITIAL = 0.0; // wt. %
 //static const PetscScalar H2O_INITIAL = 0.05; // wt. %
 //static const PetscScalar H2O_INITIAL = 0.5; // wt. %
 //static const PetscScalar CO2_INITIAL = 0.0; // wt. %
-static const PetscScalar CO2_INITIAL = 0.01; // wt. %
+static const PetscScalar CO2_INITIAL = 0.014; // wt. %
 //static const PetscScalar CO2_INITIAL = 0.1; // wt. %
 //static const PetscScalar CO2_INITIAL = 0.6; // wt. %
 // EMISSIVITY is not used if H20_INITIAL and/or CO2_INITIAL > 0.0
