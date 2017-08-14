@@ -39,15 +39,18 @@ typedef struct _Interp2d {
 typedef struct _Atmosphere {
     PetscScalar M0; // total mass of mantle (from EOS)
     PetscScalar Mliq; // mass of liquid
+    PetscScalar Msol; // mass of solid
     PetscScalar dMliqdt; // dMliq/dt
     PetscScalar tau; // aggregate optical depth
     PetscScalar emissivity; // aggregate emissivity
+    PetscScalar x0init; // initial total CO2 content
     PetscScalar x0; // CO2 content
     PetscScalar dx0dt; // dx0/dt
     PetscScalar p0; // CO2 partial pressure
     PetscScalar dp0dx; // dp0/dt
     PetscScalar m0; // CO2 mass in atmosphere
     PetscScalar tau0; // CO2 optical depth
+    PetscScalar x1init; // initial total H2O content
     PetscScalar x1; // H2O content
     PetscScalar dx1dt; // dx1/dt
     PetscScalar p1; // H2O partial pressure

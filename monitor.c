@@ -93,7 +93,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       Vec data;
       PetscMPIInt rank;
       //char vecname[PETSC_MAX_PATH_LEN];
-      const int nData = 17;
+      const int nData = 20;
       ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
       if (!rank) {
         ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
