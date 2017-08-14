@@ -1,7 +1,7 @@
 #include "atmosphere.h"
 
 static PetscErrorCode set_Mliq( Ctx * );
-//static PetscErrorCode set_Msol( Ctx * );
+static PetscErrorCode set_Msol( Ctx * );
 static PetscErrorCode set_dMliqdt( Ctx * );
 static PetscScalar get_atmosphere_mass( PetscScalar );
 static PetscScalar get_optical_depth( PetscScalar, PetscScalar );
@@ -98,7 +98,6 @@ static PetscErrorCode set_Mliq( Ctx *E )
 
 }
 
-#if 0
 static PetscErrorCode set_Msol( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -123,7 +122,6 @@ static PetscErrorCode set_Msol( Ctx *E )
     PetscFunctionReturn(0);
 
 }
-#endif
 
 static PetscErrorCode set_dMliqdt( Ctx *E )
 {
@@ -195,7 +193,7 @@ PetscErrorCode set_dx0dt( Ctx *E )
 
     set_dpCO2dx( A );
     set_Mliq( E );
-    //set_Msol( E );
+    set_Msol( E );
     set_dMliqdt( E );
 
     num = A->x0 * (CO2_KDIST-1.0) * A->dMliqdt;
@@ -254,6 +252,7 @@ PetscScalar get_initial_xCO2( Ctx *E )
 
     // update struct
     A->x0 = x0;
+    A->x0init = CO2_INITIAL;
 
     // need to return to add to augmented vector
     return x0;
