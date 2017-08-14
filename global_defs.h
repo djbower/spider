@@ -180,8 +180,8 @@ static const PetscScalar CO2_KABS = 0.05; // m^2/kg
 //static const PetscScalar CO2_KABS = 0.0001; // m^2/kg
 // CO2 dissolved in silicate melt obeys Henry's law to a good approximation
 // e.g. Pan et al., 1991
-// CO2_HENRY = concentration (wt %) / partial pressure (Pa)
-static const PetscScalar CO2_HENRY = 4.4E-10; // (wt %)/Pa
+// CO2_HENRY = concentration (mass fraction) / partial pressure (Pa)
+static const PetscScalar CO2_HENRY = 4.4E-12; // (mass fraction)/Pa
 #endif
 
 #if 0

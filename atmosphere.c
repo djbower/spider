@@ -267,10 +267,13 @@ static PetscErrorCode set_pCO2( Atmosphere *A )
        Massol et al. (2016) eqn. 18
        Salvador et al. (2017) eqn. C4 */
 
+    PetscScalar xmf = A->x0 / 100.0 // x as mass fraction
+
     PetscFunctionBeginUser;
 
-    /* where x is the concentration in the liquid in wt % */
-    A->p0 = A->x0 / CO2_HENRY;
+    /* x must be mass fraction here, otherwise the units of A are
+       not correct */
+    A->p0 = xmf / CO2_HENRY;
 
     PetscFunctionReturn(0);
 
