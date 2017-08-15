@@ -95,6 +95,15 @@ static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
     Q1 = Q1 * fwt + Q2 * (1.0 - fwt);
 #endif
 
+    /* it is of interest to know what the effective emissivity is,
+       particularly for the hybrid method */
+    /* FIXME: not correct for parameterised UTBL */
+    /* FIXME: this overwrites the previous version of emissivity calculated
+       from the grey-body model.  This could mess things up depending on the order
+       of function calls */
+    A->emissivity = Q1 / ( PetscPowScalar(temp0,4.0) - PetscPowScalar(TEQM,4.0) );
+    A->emissivity /= SIGMA;
+
     return Q1;
 
 }
