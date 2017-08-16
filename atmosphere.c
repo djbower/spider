@@ -18,6 +18,8 @@ static PetscErrorCode set_dx1dt( Atmosphere * );
 static PetscErrorCode set_pH2O( Atmosphere * );
 static PetscErrorCode set_dpH2Odx( Atmosphere * );
 
+/* to solve for the initial volatile content of the magma ocean (liquid)
+   we use Newton's method */
 static PetscScalar f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar newton( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
@@ -55,6 +57,8 @@ PetscErrorCode set_emissivity( Atmosphere *A )
        negative initial volatile content, and therefore always
        switch to a constant emissivity grey-body if the volatile
        content is either zero or negative */
+    /* FIXME: perhaps would be smart to denote negative values
+       to mean fixed content with time? */
     if (CO2_INITIAL <= 0.0 && H2O_INITIAL <= 0.0){
         A->emissivity = EMISSIVITY;
     }
@@ -71,7 +75,7 @@ static PetscScalar get_optical_depth( PetscScalar mass_atm, PetscScalar kabs )
     // note negative gravity!
     tau *= PetscSqrtScalar( kabs*-GRAVITY/(3.0*P0) );
 
-    return tau;
+    return tau; // dimensionless (by definition)
 }
 
 static PetscScalar get_atmosphere_mass( PetscScalar p )
