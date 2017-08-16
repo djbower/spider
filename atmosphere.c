@@ -5,31 +5,35 @@ static PetscErrorCode set_Msol( Ctx * );
 static PetscErrorCode set_dMliqdt( Ctx * );
 static PetscScalar get_atmosphere_mass( PetscScalar );
 static PetscScalar get_optical_depth( PetscScalar, PetscScalar );
-#if 0
-static PetscScalar get_partialP_H2O( PetscScalar );
-#endif
 static PetscErrorCode set_pCO2( Atmosphere * );
 static PetscErrorCode set_dpCO2dx( Atmosphere * );
+static PetscErrorCode set_pH2O( Atmosphere * );
+static PetscErrorCode set_dpH2Odx( Atmosphere * );
+static PetscScalar get_partial_pressure_volatile( PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar get_initial_volatile( Ctx *, PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar newton( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 
 /* general functions */
 
 PetscErrorCode set_emissivity( Ctx *E )
 {
-    Atmosphere *A = &E->atmosphere;
+    PetscErrorCode ierr;
+    Atmosphere     *A = &E->atmosphere;
 
     PetscFunctionBeginUser;
 
     /* CO2 */
-    set_pCO2( A );
+    ierr = set_pCO2( A ); CHKERRQ(ierr);
     A->m0 = get_atmosphere_mass( A->p0 );
     A->tau0 = get_optical_depth( A->m0, CO2_KABS );
 
     /* H2O */
-    // FIXME: DJB ignore H2O for the time being
-    //set_pH2O( A );
-    //A->m1 = get_atmosphere_mass( A->p1 );
-    //A->tau1 = get_optical_depth( A->m1, H2O_KABS );
-    A->tau1 = 0.0;
+    ierr = set_pH2O( A ); CHKERRQ(ierr);
+    A->m1 = get_atmosphere_mass( A->p1 );
+    A->tau1 = get_optical_depth( A->m1, H2O_KABS );
 
     /* total */
     A->tau = A->tau0 + A->tau1;
@@ -71,7 +75,7 @@ static PetscScalar get_atmosphere_mass( PetscScalar p )
 
     mass_atm = 4.0*PETSC_PI*PetscSqr(RADIUS) * p / -GRAVITY;
 
-    return mass_atm;
+    return mass_atm; // kg
 
 }
 
@@ -181,20 +185,20 @@ static PetscErrorCode set_dMliqdt( Ctx *E )
 
 }
 
-
 PetscErrorCode set_dx0dt( Ctx *E )
 {
    /* update for dissolved CO2 content in the magma ocean */
+    PetscErrorCode ierr;
     Atmosphere     *A = &E->atmosphere;
     Mesh           *M = &E->mesh;
     PetscScalar    num, den;
 
     PetscFunctionBeginUser;
 
-    set_dpCO2dx( A );
-    set_Mliq( E );
-    set_Msol( E );
-    set_dMliqdt( E );
+    ierr = set_dpCO2dx( A ); CHKERRQ(ierr);
+    ierr = set_Mliq( E ); CHKERRQ(ierr);
+    ierr = set_Msol( E ); CHKERRQ(ierr);
+    ierr = set_dMliqdt( E ); CHKERRQ(ierr);
 
     num = A->x0 * (CO2_KDIST-1.0) * A->dMliqdt;
     den = CO2_KDIST * M->mass0 + (1.0-CO2_KDIST) * A->Mliq;
@@ -205,30 +209,63 @@ PetscErrorCode set_dx0dt( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-#if 0
-/* partial pressures of volatiles
-   x_vol is mass fraction of volatiles "in the magma" (Lebrun)
-   according to my derivation, "in the magma" is for melt
-   fractions higher than the rheological transition */
+/////////////////////////////////////
+/* generic functions for volatiles */
+/////////////////////////////////////
 
-static PetscScalar get_partialP_H2O( PetscScalar x_vol )
+static PetscScalar get_partial_pressure_volatile( PetscScalar x, PetscScalar henry, PetscScalar henry_pow)
 {
+
+    /* partial pressure of volatile */
+
     PetscScalar p;
 
-    /* what are the units?  mass fraction / weight percent? */
-    /* Massol et al says ``with xH2O and XCO2 being respectively
-       the mass fraction of water and CO2 dissolved in the melt
-       respectively expressed in wt% and ppm */
+    // in x is wt %
+    p = (x / 100.0) / henry; // numerator must be mass fraction, not wt %
+    p = PetscPowScalar( p, henry_pow );
 
-    /* Lebrun et al. (2013) eqn. 16
-       Massol et al. (2016) eqn. 17
-       Salvador et al. (2017) eqn. C3 */
-    p = x_vol / 6.8E-8;
-    p = PetscPowScalar( p, 1.0/0.7 );
+    return p; // Pa
 
-    return p;
 }
-#endif
+
+static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, PetscScalar henry, PetscScalar henry_pow )
+{
+
+    /* derivative of partial pressure with respect to x */
+
+    PetscScalar dpdx;
+
+    // in x is wt %
+    dpdx = (x / 100.0) / henry;
+    dpdx = PetscPowScalar( dpdx, henry_pow-1.0 );
+    dpdx *= henry_pow / henry;
+
+    return dpdx; // Pa per mass fraction (NOT wt %)
+
+}
+
+
+static PetscScalar get_initial_volatile( Ctx *E, PetscScalar xinit, PetscScalar henry, PetscScalar henry_pow )
+{
+
+    /* initial wt. % of volatiles in the aqueous phase */
+
+    PetscScalar alpha, beta, gamma;
+    PetscScalar M0 = E->mesh.mass0;
+    PetscScalar x;
+
+    x = xinit; // initial guess (wt. %)
+    alpha = 4.0 * PETSC_PI * PetscSqr(RADIUS);
+    alpha /= -GRAVITY * PetscPowScalar( henry, henry_pow ) * M0;
+    beta = henry_pow;
+    gamma = xinit;
+
+    x = newton( x, alpha, beta, gamma );
+
+    return x; // wt %
+
+}
+
 
 ////////////////////////////
 /* CO2 specific functions */
@@ -236,26 +273,14 @@ static PetscScalar get_partialP_H2O( PetscScalar x_vol )
 
 PetscScalar get_initial_xCO2( Ctx *E )
 {
+    Atmosphere *A = &E->atmosphere;
 
-    /* solve mass balance to get initial volatile content of the
-       liquid */
-    Atmosphere  *A = &E->atmosphere;
-    Mesh        *M = &E->mesh;
-
-    PetscScalar x0;
-
-    x0 = 4.0 * PETSC_PI * PetscSqr(RADIUS);
-    x0 /= -GRAVITY * M->mass0 * CO2_HENRY;
-    x0 += 1.0;
-    x0 = 1.0 / x0;
-    x0 *= CO2_INITIAL;
-
-    // update struct
-    A->x0 = x0;
+    A->x0 = get_initial_volatile( E, CO2_INITIAL, CO2_HENRY, CO2_HENRY_POW );
     A->x0init = CO2_INITIAL;
 
-    // need to return to add to augmented vector
-    return x0;
+    // need to return ot add to augmented vector
+    return A->x0;
+
 }
 
 static PetscErrorCode set_pCO2( Atmosphere *A )
@@ -266,13 +291,9 @@ static PetscErrorCode set_pCO2( Atmosphere *A )
        Massol et al. (2016) eqn. 18
        Salvador et al. (2017) eqn. C4 */
 
-    PetscScalar xmf = A->x0 / 100.0 // x as mass fraction
-
     PetscFunctionBeginUser;
 
-    /* x must be mass fraction here, otherwise the units of A are
-       not correct */
-    A->p0 = xmf / CO2_HENRY;
+    A->p0 = get_partial_pressure_volatile( A->x0, CO2_HENRY, CO2_HENRY_POW );
 
     PetscFunctionReturn(0);
 
@@ -281,12 +302,95 @@ static PetscErrorCode set_pCO2( Atmosphere *A )
 static PetscErrorCode set_dpCO2dx( Atmosphere *A )
 {
     /* dpCO2/dx. i.e., derivative of partial pressure (Pa) with respect
-       to concentration (wt %) */
+       to concentration */
 
     PetscFunctionBeginUser;
 
-    A->dp0dx = 1.0 / CO2_HENRY;
+    A->dp0dx = get_partial_pressure_derivative_volatile( A->x0, CO2_HENRY, CO2_HENRY_POW );
 
     PetscFunctionReturn(0);
+
+}
+
+////////////////////////////
+/* H2O specific functions */
+////////////////////////////
+
+PetscScalar get_initial_xH2O( Ctx *E )
+{
+    Atmosphere *A = &E->atmosphere;
+
+    A->x1 = get_initial_volatile( E, H2O_INITIAL, H2O_HENRY, H2O_HENRY_POW );
+    A->x1init = H2O_INITIAL;
+
+    // need to return to add to augmented vector
+    return A->x1;
+}
+
+static PetscErrorCode set_pH2O( Atmosphere *A )
+{
+    /* partial pressure of H2O */
+    /* Lebrun et al. (2013) eqn. 16 */
+
+    PetscFunctionBeginUser;
+
+    A->p1 = get_partial_pressure_volatile( A->x1, H2O_HENRY, H2O_HENRY_POW );
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_dpH2Odx( Atmosphere *A )
+{
+    /* dpH2O/dx. i.e., derivative of partial pressure (Pa) with respect
+       to concentration */
+
+    PetscFunctionBeginUser;
+
+    A->dp1dx = get_partial_pressure_derivative_volatile( A->x1, H2O_HENRY, H2O_HENRY_POW );
+
+    PetscFunctionReturn(0);
+
+}
+
+/////////////////////
+/* Newton's method */
+/////////////////////
+
+/* for determining the initial mass fraction of volatiles in the
+   melt.  The initial condition can be expressed as:
+
+       x + alpha * x ** beta = gamma */
+
+static PetscScalar f( PetscScalar x, PetscScalar alpha, PetscScalar beta, PetscScalar gamma )
+{
+    PetscScalar result;
+
+    result = x + alpha * PetscPowScalar( x, beta ) - gamma;
+
+    return result;
+
+}
+
+static PetscScalar f_prim( PetscScalar x, PetscScalar alpha, PetscScalar beta, PetscScalar gamma )
+{
+    PetscScalar result;
+
+    result = 1.0 + alpha*beta*PetscPowScalar( x, beta-1.0 );
+
+    return result;
+
+}
+
+static PetscScalar newton( PetscScalar x0, PetscScalar alpha, PetscScalar beta, PetscScalar gamma )
+{
+    PetscInt i=0;
+    PetscScalar x;
+    x = x0; // initial guess
+    while(i < 10){
+        x = x - f( x, alpha, beta, gamma ) / f_prim( x, alpha, beta, gamma );
+        i++;
+    }
+    return x;
 
 }

@@ -32,7 +32,7 @@
    to the upper mantle cooling rate once the rheological
    transition is reached.  This prevents a lid from forming at
    the top of the model. */
-#define HYBRID
+//#define HYBRID
 
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
@@ -174,6 +174,9 @@ static const PetscScalar P0 = 101325.0; // Pa (= 1 atm)
 static const PetscScalar H2O_KDIST = 1.0E-4; // distribution coefficient between solid and melt
 // TODO: water saturation limit is 10 ppm
 static const PetscScalar H2O_KABS = 0.01; // m^2/kg
+static const PetscScalar H2O_HENRY = 6.8E-8; // (mass fraction)/Pa
+static const PetscScalar H2O_HENRY_POW = 1.4285714285714286; // (1.0/0.7)
+
 static const PetscScalar CO2_KDIST = 5.0E-4; // distribution coefficient between solid and melt
 // TODO: carbon saturation limit is 0.03 ppm
 static const PetscScalar CO2_KABS = 0.05; // m^2/kg
@@ -182,6 +185,7 @@ static const PetscScalar CO2_KABS = 0.05; // m^2/kg
 // e.g. Pan et al., 1991
 // CO2_HENRY = concentration (mass fraction) / partial pressure (Pa)
 static const PetscScalar CO2_HENRY = 4.4E-12; // (mass fraction)/Pa
+static const PetscScalar CO2_HENRY_POW = 1.0;
 #endif
 
 #if 0
