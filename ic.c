@@ -23,7 +23,7 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
       is actually partitioned betweem the (liquid) magma ocean and the
       atmosphere. */
     /* initial mass content of CO2 in the magma ocean */
-    xCO2 = get_initial_xCO2( E );
+    xCO2 = get_initial_xCO2( &E->atmosphere );
     ierr = VecSetValue(dSdr_b_aug,0,xCO2,INSERT_VALUES);CHKERRQ(ierr);
     
     /* initial mass content of H2O in the magma ocean */

@@ -3,8 +3,9 @@
 
 #include "ctx.h"
 
-PetscScalar get_initial_xCO2( Ctx * );
-PetscErrorCode set_emissivity( Ctx * );
-PetscErrorCode set_dx0dt( Ctx * );
+PetscScalar get_initial_xCO2( Atmosphere * );
+PetscScalar get_initial_xH2O( Atmosphere * );
+PetscErrorCode set_emissivity( Atmosphere * );
+PetscErrorCode set_dxdt( Ctx * );
 
 #endif

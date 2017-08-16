@@ -23,7 +23,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   DM                da_s = E->da_s, da_b=E->da_b;
   Vec               rhs_b;
   PetscInt          ind;
-  PetscScalar       S0, dS0dt, dx1dt;
+  PetscScalar       S0, dS0dt;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -73,7 +73,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   set_Htot( E, t );
 
   /* grey-body atmosphere */
-  set_emissivity( E );
+  set_emissivity( A );
 
   set_surface_flux( E, t );
 
@@ -121,14 +121,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* time-dependence of additional quantities at the top of the augmented array */
 
   /* now that we have dS/dt, compute change in volatile concentrations */
-  /* CO2 */
-  set_dx0dt( E );
+  set_dxdt( E );
   ierr = VecSetValue(rhs_b_aug,0,A->dx0dt,INSERT_VALUES);CHKERRQ(ierr);
-
-  /* H20 */
-  /* TODO: H2O not implemented yet */
-  dx1dt = 0.0;
-  ierr = VecSetValue(rhs_b_aug,1,dx1dt,INSERT_VALUES);CHKERRQ(ierr);
+  ierr = VecSetValue(rhs_b_aug,1,A->dx1dt,INSERT_VALUES);CHKERRQ(ierr);
 
   /* S0 */
   /* TODO: I think this breaks for parallel */

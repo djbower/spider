@@ -3,25 +3,30 @@
 static PetscErrorCode set_Mliq( Ctx * );
 static PetscErrorCode set_Msol( Ctx * );
 static PetscErrorCode set_dMliqdt( Ctx * );
+
 static PetscScalar get_atmosphere_mass( PetscScalar );
 static PetscScalar get_optical_depth( PetscScalar, PetscScalar );
-static PetscErrorCode set_pCO2( Atmosphere * );
-static PetscErrorCode set_dpCO2dx( Atmosphere * );
-static PetscErrorCode set_pH2O( Atmosphere * );
-static PetscErrorCode set_dpH2Odx( Atmosphere * );
+static PetscScalar get_dxdt( Atmosphere *, PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar get_initial_volatile( Atmosphere *, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_partial_pressure_volatile( PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar get_initial_volatile( Ctx *, PetscScalar, PetscScalar, PetscScalar );
+
+static PetscErrorCode set_dx0dt( Atmosphere * );
+static PetscErrorCode set_pCO2( Atmosphere * );
+static PetscErrorCode set_dpCO2dx( Atmosphere * );
+static PetscErrorCode set_dx1dt( Atmosphere * );
+static PetscErrorCode set_pH2O( Atmosphere * );
+static PetscErrorCode set_dpH2Odx( Atmosphere * );
+
 static PetscScalar f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar newton( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 
 /* general functions */
 
-PetscErrorCode set_emissivity( Ctx *E )
+PetscErrorCode set_emissivity( Atmosphere *A )
 {
     PetscErrorCode ierr;
-    Atmosphere     *A = &E->atmosphere;
 
     PetscFunctionBeginUser;
 
@@ -73,6 +78,7 @@ static PetscScalar get_atmosphere_mass( PetscScalar p )
 {
     PetscScalar mass_atm;
 
+    // p is partial pressure in Pa
     mass_atm = 4.0*PETSC_PI*PetscSqr(RADIUS) * p / -GRAVITY;
 
     return mass_atm; // kg
@@ -185,26 +191,22 @@ static PetscErrorCode set_dMliqdt( Ctx *E )
 
 }
 
-PetscErrorCode set_dx0dt( Ctx *E )
+PetscErrorCode set_dxdt( Ctx *E )
 {
-   /* update for dissolved CO2 content in the magma ocean */
     PetscErrorCode ierr;
-    Atmosphere     *A = &E->atmosphere;
-    Mesh           *M = &E->mesh;
-    PetscScalar    num, den;
 
     PetscFunctionBeginUser;
 
-    ierr = set_dpCO2dx( A ); CHKERRQ(ierr);
+    // current stage of cooling
     ierr = set_Mliq( E ); CHKERRQ(ierr);
     ierr = set_Msol( E ); CHKERRQ(ierr);
     ierr = set_dMliqdt( E ); CHKERRQ(ierr);
 
-    num = A->x0 * (CO2_KDIST-1.0) * A->dMliqdt;
-    den = CO2_KDIST * M->mass0 + (1.0-CO2_KDIST) * A->Mliq;
-    den += ( 4.0*PETSC_PI*PetscSqr(RADIUS) / -GRAVITY ) * A->dp0dx;
+    // CO2
+    ierr = set_dx0dt( &E->atmosphere ); CHKERRQ(ierr);
 
-    A->dx0dt = num / den;
+    // H20
+    ierr = set_dx1dt( &E->atmosphere ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -212,6 +214,21 @@ PetscErrorCode set_dx0dt( Ctx *E )
 /////////////////////////////////////
 /* generic functions for volatiles */
 /////////////////////////////////////
+static PetscScalar get_dxdt( Atmosphere *A, PetscScalar x, PetscScalar kdist, PetscScalar dpdx )
+{
+    PetscScalar dxdt;
+    PetscScalar num, den;
+    PetscScalar M0 = A->M0;
+
+    num = x * (kdist-1.0) * A->dMliqdt;
+    den = kdist * M0 + (1.0-kdist) * A->Mliq;
+    den += (4.0*PETSC_PI*PetscSqr(RADIUS) / -GRAVITY) * dpdx;
+
+    dxdt = num / den;
+
+    return dxdt;
+
+}
 
 static PetscScalar get_partial_pressure_volatile( PetscScalar x, PetscScalar henry, PetscScalar henry_pow)
 {
@@ -245,18 +262,17 @@ static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, Pets
 }
 
 
-static PetscScalar get_initial_volatile( Ctx *E, PetscScalar xinit, PetscScalar henry, PetscScalar henry_pow )
+static PetscScalar get_initial_volatile( Atmosphere *A, PetscScalar xinit, PetscScalar henry, PetscScalar henry_pow )
 {
 
     /* initial wt. % of volatiles in the aqueous phase */
 
     PetscScalar alpha, beta, gamma;
-    PetscScalar M0 = E->mesh.mass0;
     PetscScalar x;
 
     x = xinit; // initial guess (wt. %)
     alpha = 4.0 * PETSC_PI * PetscSqr(RADIUS);
-    alpha /= -GRAVITY * PetscPowScalar( henry, henry_pow ) * M0;
+    alpha /= -GRAVITY * PetscPowScalar( henry, henry_pow ) * A->M0;
     beta = henry_pow;
     gamma = xinit;
 
@@ -271,11 +287,23 @@ static PetscScalar get_initial_volatile( Ctx *E, PetscScalar xinit, PetscScalar 
 /* CO2 specific functions */
 ////////////////////////////
 
-PetscScalar get_initial_xCO2( Ctx *E )
+PetscErrorCode set_dx0dt( Atmosphere *A )
 {
-    Atmosphere *A = &E->atmosphere;
+   /* update for dissolved CO2 content in the magma ocean */
+    PetscErrorCode ierr;
 
-    A->x0 = get_initial_volatile( E, CO2_INITIAL, CO2_HENRY, CO2_HENRY_POW );
+    PetscFunctionBeginUser;
+
+    ierr = set_dpCO2dx( A ); CHKERRQ(ierr);
+    A->dx0dt = get_dxdt( A, A->x0, CO2_KDIST, A->dp0dx );
+
+    PetscFunctionReturn(0);
+}
+
+PetscScalar get_initial_xCO2( Atmosphere *A )
+{
+
+    A->x0 = get_initial_volatile( A, CO2_INITIAL, CO2_HENRY, CO2_HENRY_POW );
     A->x0init = CO2_INITIAL;
 
     // need to return ot add to augmented vector
@@ -316,11 +344,23 @@ static PetscErrorCode set_dpCO2dx( Atmosphere *A )
 /* H2O specific functions */
 ////////////////////////////
 
-PetscScalar get_initial_xH2O( Ctx *E )
+PetscErrorCode set_dx1dt( Atmosphere *A )
 {
-    Atmosphere *A = &E->atmosphere;
+   /* update for dissolved H2O content in the magma ocean */
+    PetscErrorCode ierr;
 
-    A->x1 = get_initial_volatile( E, H2O_INITIAL, H2O_HENRY, H2O_HENRY_POW );
+    PetscFunctionBeginUser;
+
+    ierr = set_dpH2Odx( A ); CHKERRQ(ierr);
+    A->dx1dt = get_dxdt( A, A->x1, H2O_KDIST, A->dp1dx );
+
+    PetscFunctionReturn(0);
+}
+
+PetscScalar get_initial_xH2O( Atmosphere *A )
+{
+
+    A->x1 = get_initial_volatile( A, H2O_INITIAL, H2O_HENRY, H2O_HENRY_POW );
     A->x1init = H2O_INITIAL;
 
     // need to return to add to augmented vector
@@ -387,7 +427,7 @@ static PetscScalar newton( PetscScalar x0, PetscScalar alpha, PetscScalar beta, 
     PetscInt i=0;
     PetscScalar x;
     x = x0; // initial guess
-    while(i < 10){
+    while(i < 50){
         x = x - f( x, alpha, beta, gamma ) / f_prim( x, alpha, beta, gamma );
         i++;
     }
