@@ -159,7 +159,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 #if (defined PETSC_USE_REAL___FLOAT128)
     char xtemp[30], ytemp[30];
 #endif
-    PetscScalar x, y, xscale, yscale, xa[n], ya[n];
+    PetscScalar x, y, xscale=0.0, yscale=0.0, xa[n], ya[n];
 
     PetscFunctionBeginUser;
 
