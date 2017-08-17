@@ -57,7 +57,9 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 #if (defined PETSC_USE_REAL___FLOAT128)
     char xtemp[30], ytemp[30], ztemp[30];
 #endif
-    PetscScalar xscale, yscale, zscale;
+   /* TODO: without assigning values below, the compiler warns about possible
+      uninitialised values for just the quadruple precision case */
+    PetscScalar xscale=0.0, yscale=0.0, zscale=0.0;
     PetscScalar x, y, z;
     PetscScalar xa[NX], ya[NY], za[NX*NY];
 
