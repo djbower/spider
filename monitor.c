@@ -37,6 +37,15 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     *walltimeprev = walltime;
   }
 
+  /* for PDS to check
+     I had not noticed until now, but I think we always should have been evaluating the
+     RHS again here before output.  Because otherwise, the output relates to the previous
+     augmented vector and not the currently?  Either way, this now outputs for zeroth
+     time */
+  Vec rhs_b_aug;
+  ierr = VecDuplicate(x_aug,&rhs_b_aug);CHKERRQ(ierr);
+  ierr = RHSFunction(ts,time,x_aug,rhs_b_aug,ctx);CHKERRQ(ierr);
+
   /* Dump the solution to a file named for the timestep */
   {
     PetscViewer viewer;
