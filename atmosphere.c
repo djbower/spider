@@ -171,7 +171,7 @@ static PetscErrorCode set_dMliqdt( Ctx *E )
         arr_result_s[i] /= arr_fusion_s[i];
 
         /* with smoothing */
-#if 1
+#if 0
         if (arr_phi_s[i] > 0.5){
             arr_result_s[i] *= ( 1.0 - arr_fwtl_s[i] );
         }
@@ -181,7 +181,7 @@ static PetscErrorCode set_dMliqdt( Ctx *E )
         }
 #endif
 
-#if 0
+#if 1
         /* no smoothing approach */
         if (arr_phi_s[i] <= 0.0){
             arr_result_s[i] = 0.0;
@@ -240,7 +240,7 @@ static PetscScalar get_dxdt( Atmosphere *A, PetscScalar x, PetscScalar kdist, Pe
 
     num = x * (kdist-1.0) * A->dMliqdt;
     den = kdist * M0 + (1.0-kdist) * A->Mliq;
-    den += (4.0*PETSC_PI*PetscSqr(RADIUS) / -GRAVITY) * dpdx;
+    den += (4.0*PETSC_PI*PetscSqr(RADIUS) / -GRAVITY) * 100.0 * dpdx;
 
     dxdt = num / den;
 
@@ -271,9 +271,9 @@ static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, Pets
     PetscScalar dpdx;
 
     // in x is wt %
-    dpdx = (x / 100.0) / henry;
-    dpdx = PetscPowScalar( dpdx, henry_pow-1.0 );
-    dpdx *= henry_pow / henry;
+    dpdx = 1.0 / PetscPowScalar( 100.0*henry, henry_pow );
+    dpdx *= henry_pow * PetscPowScalar( x, henry_pow-1.0);
+
 
     return dpdx; // Pa per mass fraction (NOT wt %)
 
@@ -290,7 +290,9 @@ static PetscScalar get_initial_volatile( Atmosphere *A, PetscScalar xinit, Petsc
 
     x = xinit; // initial guess (wt. %)
     alpha = 4.0 * PETSC_PI * PetscSqr(RADIUS);
-    alpha /= -GRAVITY * PetscPowScalar( henry, henry_pow ) * A->M0;
+    alpha /= -GRAVITY * A->M0;
+    alpha *= PetscPowScalar( 100.0, 1.0-henry_pow );
+    alpha /= PetscPowScalar( henry, henry_pow );
     beta = henry_pow;
     gamma = xinit;
 
@@ -446,7 +448,7 @@ static PetscScalar newton( PetscScalar x0, PetscScalar alpha, PetscScalar beta, 
     PetscInt i=0;
     PetscScalar x;
     x = x0; // initial guess
-    while(i < 500){
+    while(i < 50){
         x = x - f( x, alpha, beta, gamma ) / f_prim( x, alpha, beta, gamma );
         i++;
     }
