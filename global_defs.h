@@ -152,8 +152,8 @@ static const PetscScalar SWIDTH = 1.0E-2;
    to the plane-parallel radiative equilibrium model of Abe and 
    Matsui (1985)  */
 // Elkins_Tanton (2008) estimates of volatile content
-static const PetscScalar H2O_INITIAL = 0.0; // wt. %
-//static const PetscScalar H2O_INITIAL = 0.05; // wt. %
+//static const PetscScalar H2O_INITIAL = 0.0; // wt. %
+static const PetscScalar H2O_INITIAL = 0.05; // wt. %
 //static const PetscScalar H2O_INITIAL = 0.5; // wt. %
 //static const PetscScalar CO2_INITIAL = 0.0; // wt. %
 static const PetscScalar CO2_INITIAL = 0.014; // wt. %
