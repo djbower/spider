@@ -170,6 +170,8 @@ static PetscErrorCode set_dMliqdt( Ctx *E )
         arr_result_s[i] = arr_dSdt_s[i] * arr_mass_s[i];
         arr_result_s[i] /= arr_fusion_s[i];
 
+        /* with smoothing */
+#if 1
         if (arr_phi_s[i] > 0.5){
             arr_result_s[i] *= ( 1.0 - arr_fwtl_s[i] );
         }
@@ -177,6 +179,18 @@ static PetscErrorCode set_dMliqdt( Ctx *E )
         else if (arr_phi_s[i] <=0.5){
             arr_result_s[i] *= arr_fwts_s[i];
         }
+#endif
+
+#if 0
+        /* no smoothing approach */
+        if (arr_phi_s[i] <= 0.0){
+            arr_result_s[i] = 0.0;
+        }
+        else if (arr_phi_s[i] >=1.0){
+            arr_result_s[i] = 0.0;
+        }
+#endif
+
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s,M->mass_s,&arr_mass_s); CHKERRQ(ierr);
@@ -304,14 +318,14 @@ PetscErrorCode set_dx0dt( Atmosphere *A )
     PetscFunctionReturn(0);
 }
 
-PetscScalar get_initial_xCO2( Atmosphere *A )
+PetscErrorCode set_initial_xCO2( Atmosphere *A )
 {
+    PetscFunctionBeginUser;
 
     A->x0 = get_initial_volatile( A, CO2_INITIAL, CO2_HENRY, CO2_HENRY_POW );
     A->x0init = CO2_INITIAL;
 
-    // need to return ot add to augmented vector
-    return A->x0;
+    PetscFunctionReturn(0);
 
 }
 
@@ -361,14 +375,15 @@ PetscErrorCode set_dx1dt( Atmosphere *A )
     PetscFunctionReturn(0);
 }
 
-PetscScalar get_initial_xH2O( Atmosphere *A )
+PetscErrorCode set_initial_xH2O( Atmosphere *A )
 {
+    PetscFunctionBeginUser;
 
     A->x1 = get_initial_volatile( A, H2O_INITIAL, H2O_HENRY, H2O_HENRY_POW );
     A->x1init = H2O_INITIAL;
 
-    // need to return to add to augmented vector
-    return A->x1;
+    PetscFunctionReturn(0);
+
 }
 
 static PetscErrorCode set_pH2O( Atmosphere *A )

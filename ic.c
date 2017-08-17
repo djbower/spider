@@ -7,7 +7,7 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
 {
 
     PetscErrorCode ierr;
-    PetscScalar    xCO2, xH2O;
+    Atmosphere *A = &E->atmosphere;
 
     PetscFunctionBeginUser;
 
@@ -23,12 +23,12 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
       is actually partitioned betweem the (liquid) magma ocean and the
       atmosphere. */
     /* initial mass content of CO2 in the magma ocean */
-    xCO2 = get_initial_xCO2( &E->atmosphere );
-    ierr = VecSetValue(dSdr_b_aug,0,xCO2,INSERT_VALUES);CHKERRQ(ierr);
+    set_initial_xCO2( A );
+    ierr = VecSetValue(dSdr_b_aug,0,A->x0,INSERT_VALUES);CHKERRQ(ierr);
     
     /* initial mass content of H2O in the magma ocean */
-    xH2O = get_initial_xH2O( &E->atmosphere );
-    ierr = VecSetValue(dSdr_b_aug,1,xH2O,INSERT_VALUES);CHKERRQ(ierr);
+    set_initial_xH2O( A );
+    ierr = VecSetValue(dSdr_b_aug,1,A->x1,INSERT_VALUES);CHKERRQ(ierr);
    
    /* include initial entropy at staggered node */
    /* TODO: is this over-rideable from the command line? */
