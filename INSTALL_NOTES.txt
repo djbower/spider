@@ -114,10 +114,10 @@ cd petsc-quad-direct/
 3b.  [Aside] For a debug build, amend command above to use --with-debugging=1
 
 4. make (the following all assume an optimised build, i.e, 3a above):
-make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-darwin-c-opt all
+make PETSC_DIR=/Users/dan/Programs/petsc/petsc-quad-direct PETSC_ARCH=arch-darwin-c-opt all
 
 5. run tests:
-make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-darwin-c-opt test
+make PETSC_DIR=/Users/dan/Programs/petsc/petsc-quad-direct PETSC_ARCH=arch-darwin-c-opt test
 
 ------
 C CODE
