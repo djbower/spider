@@ -431,7 +431,7 @@ static PetscScalar newton( PetscScalar x0, PetscScalar alpha, PetscScalar beta, 
     PetscInt i=0;
     PetscScalar x;
     x = x0; // initial guess
-    while(i < 50){
+    while(i < 500){
         x = x - f( x, alpha, beta, gamma ) / f_prim( x, alpha, beta, gamma );
         i++;
     }
