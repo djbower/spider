@@ -22,7 +22,7 @@ static PetscErrorCode set_dpH2Odx( Atmosphere * );
    we use Newton's method */
 static PetscScalar f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar newton( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar newton( PetscScalar, PetscScalar, PetscScalar );
 
 /* general functions */
 
@@ -240,6 +240,8 @@ static PetscScalar get_dxdt( Atmosphere *A, PetscScalar x, PetscScalar kdist, Pe
 
     num = x * (kdist-1.0) * A->dMliqdt;
     den = kdist * M0 + (1.0-kdist) * A->Mliq;
+    /* factor of 100 arises because of mass fraction to wt % conversion
+       see notes */
     den += (4.0*PETSC_PI*PetscSqr(RADIUS) / -GRAVITY) * 100.0 * dpdx;
 
     dxdt = num / den;
@@ -251,12 +253,11 @@ static PetscScalar get_dxdt( Atmosphere *A, PetscScalar x, PetscScalar kdist, Pe
 static PetscScalar get_partial_pressure_volatile( PetscScalar x, PetscScalar henry, PetscScalar henry_pow)
 {
 
-    /* partial pressure of volatile */
+    /* partial pressure of volatile where x is wt % */
 
     PetscScalar p;
 
-    // in x is wt %
-    p = (x / 100.0) / henry; // numerator must be mass fraction, not wt %
+    p = (x / 100.0) / henry;
     p = PetscPowScalar( p, henry_pow );
 
     return p; // Pa
@@ -266,16 +267,14 @@ static PetscScalar get_partial_pressure_volatile( PetscScalar x, PetscScalar hen
 static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, PetscScalar henry, PetscScalar henry_pow )
 {
 
-    /* derivative of partial pressure with respect to x */
+    /* derivative of partial pressure wrt x where x is wt % */
 
     PetscScalar dpdx;
 
-    // in x is wt %
     dpdx = 1.0 / PetscPowScalar( 100.0*henry, henry_pow );
     dpdx *= henry_pow * PetscPowScalar( x, henry_pow-1.0);
 
-
-    return dpdx; // Pa per mass fraction (NOT wt %)
+    return dpdx; // Pa per wt %
 
 }
 
@@ -283,20 +282,18 @@ static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, Pets
 static PetscScalar get_initial_volatile( Atmosphere *A, PetscScalar xinit, PetscScalar henry, PetscScalar henry_pow )
 {
 
-    /* initial wt. % of volatiles in the aqueous phase */
+    /* initial wt. % of volatile in the aqueous phase */
 
-    PetscScalar alpha, beta, gamma;
+    PetscScalar beta, gamma;
     PetscScalar x;
 
-    x = xinit; // initial guess (wt. %)
-    alpha = 4.0 * PETSC_PI * PetscSqr(RADIUS);
-    alpha /= -GRAVITY * A->M0;
-    alpha *= PetscPowScalar( 100.0, 1.0-henry_pow );
-    alpha /= PetscPowScalar( henry, henry_pow );
+    gamma = 4.0 * PETSC_PI * PetscSqr(RADIUS);
+    gamma /= -GRAVITY * A->M0;
+    gamma *= PetscPowScalar( 100.0, 1.0-henry_pow );
+    gamma /= PetscPowScalar( henry, henry_pow );
     beta = henry_pow;
-    gamma = xinit;
 
-    x = newton( x, alpha, beta, gamma );
+    x = newton( gamma, beta, xinit );
 
     return x; // wt %
 
@@ -421,35 +418,35 @@ static PetscErrorCode set_dpH2Odx( Atmosphere *A )
 /* for determining the initial mass fraction of volatiles in the
    melt.  The initial condition can be expressed as:
 
-       x + alpha * x ** beta = gamma */
+       x + gamma * x ** beta = xinit */
 
-static PetscScalar f( PetscScalar x, PetscScalar alpha, PetscScalar beta, PetscScalar gamma )
+static PetscScalar f( PetscScalar x, PetscScalar A, PetscScalar B, PetscScalar C )
 {
     PetscScalar result;
 
-    result = x + alpha * PetscPowScalar( x, beta ) - gamma;
+    result = x + A * PetscPowScalar( x, B ) - C;
 
     return result;
 
 }
 
-static PetscScalar f_prim( PetscScalar x, PetscScalar alpha, PetscScalar beta, PetscScalar gamma )
+static PetscScalar f_prim( PetscScalar x, PetscScalar A, PetscScalar B, PetscScalar C )
 {
     PetscScalar result;
 
-    result = 1.0 + alpha*beta*PetscPowScalar( x, beta-1.0 );
+    result = 1.0 + A*B*PetscPowScalar( x, B-1.0 );
 
     return result;
 
 }
 
-static PetscScalar newton( PetscScalar x0, PetscScalar alpha, PetscScalar beta, PetscScalar gamma )
+static PetscScalar newton( PetscScalar A, PetscScalar B, PetscScalar xinit )
 {
     PetscInt i=0;
     PetscScalar x;
-    x = x0; // initial guess
+    x = xinit;
     while(i < 50){
-        x = x - f( x, alpha, beta, gamma ) / f_prim( x, alpha, beta, gamma );
+        x = x - f( x, A, B, xinit ) / f_prim( x, A, B, xinit );
         i++;
     }
     return x;
