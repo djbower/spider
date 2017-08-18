@@ -61,7 +61,7 @@
    nodes there are in a given mesh */
 
 /* for constant mesh spacing */
-#define NUMPTS_B_DEFAULT 200
+#define NUMPTS_B_DEFAULT 50
 
 //#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 372
@@ -148,14 +148,18 @@ static const PetscScalar SWIDTH = 1.0E-2;
    CO2_INITIAL are positive then the emissivity is computed according
    to the plane-parallel radiative equilibrium model of Abe and 
    Matsui (1985)  */
+// volatile scaling
+//static const PetscScalar VOLSCALE = 100.0 // for wt %.
+static const PetscScalar VOLSCALE = 1000000.0; // for ppm
+
 // Elkins_Tanton (2008) estimates of volatile content
-//static const PetscScalar H2O_INITIAL = 0.0; // wt. %
-static const PetscScalar H2O_INITIAL = 0.05; // wt. %
-//static const PetscScalar H2O_INITIAL = 0.5; // wt. %
-//static const PetscScalar CO2_INITIAL = 0.0; // wt. %
-static const PetscScalar CO2_INITIAL = 0.014; // wt. %
-//static const PetscScalar CO2_INITIAL = 0.1; // wt. %
-//static const PetscScalar CO2_INITIAL = 0.6; // wt. %
+//static const PetscScalar H2O_INITIAL = 0.0; // units according to VOLSCALR
+static const PetscScalar H2O_INITIAL = 500.0; //0.05;
+//static const PetscScalar H2O_INITIAL = 0.5;
+//static const PetscScalar CO2_INITIAL = 0.0;
+//static const PetscScalar CO2_INITIAL = 0.014;
+static const PetscScalar CO2_INITIAL = 2000.0; //0.2;
+//static const PetscScalar CO2_INITIAL = 0.6;
 // EMISSIVITY is not used if H20_INITIAL and/or CO2_INITIAL > 0.0
 static const PetscScalar EMISSIVITY = 1.0;
 
@@ -170,7 +174,7 @@ static const PetscScalar H2O_KDIST = 1.0E-4; // distribution coefficient between
 // TODO: water saturation limit is 10 ppm
 static const PetscScalar H2O_KABS = 0.01; // m^2/kg
 // next two from Lebrun et al. (2013)
-static const PetscScalar H2O_HENRY = 6.8E-8; // (mass fraction)/Pa
+static const PetscScalar H2O_HENRY = 6.8E-8; // must be mass fraction/Pa
 static const PetscScalar H2O_HENRY_POW = 1.4285714285714286; // (1.0/0.7)
 
 static const PetscScalar CO2_KDIST = 5.0E-4; // distribution coefficient between solid and melt
@@ -181,7 +185,7 @@ static const PetscScalar CO2_KABS = 0.05; // m^2/kg
 // e.g. Pan et al., 1991
 // CO2_HENRY = concentration (mass fraction) / partial pressure (Pa)
 // next two from Lebrun et al. (2013)
-static const PetscScalar CO2_HENRY = 4.4E-12; // (mass fraction)/Pa
+static const PetscScalar CO2_HENRY = 4.4E-12; // must be mass fraction/Pa
 static const PetscScalar CO2_HENRY_POW = 1.0;
 #endif
 

@@ -784,6 +784,9 @@ def figure6( args ):
 
     data = atmosphere_data_to_array( fig_o )
 
+    #VOLSCALE = 100.0 # for wt %
+    VOLSCALE = 1000000.0 # for ppm
+
     # bit clunky, but works for now
     time = data[:,0] * 1.0E-6 # in Myrs
     M0 = data[:,1]
@@ -854,7 +857,7 @@ def figure6( args ):
     CO2init = x0init * M0
     CO2liq = x0 * Mliq
     CO2liq /= CO2init # normalised
-    CO2atm = m0 * 100.0 / CO2init # normalised
+    CO2atm = m0 * VOLSCALE / CO2init # normalised
     # FIXME: kdist is hard-coded here
     CO2sol = 5.0E-4 * x0 * Msol
     CO2sol /= CO2init # normalised
@@ -879,7 +882,7 @@ def figure6( args ):
     H2Oinit = x1init * M0
     H2Oliq = x1 * Mliq
     H2Oliq /= H2Oinit # normalised
-    H2Oatm = m1 * 100.0 / H2Oinit # normalised
+    H2Oatm = m1 * VOLSCALE / H2Oinit # normalised
     # FIXME: kdist is hard-coded here
     H2Osol = 1.0E-4 * x1 * Msol
     H2Osol /= H2Oinit # normalised
@@ -890,7 +893,7 @@ def figure6( args ):
     print np.min(x0), np.max(x0)
     print np.min(x1), np.max(x1)
 
-    xticks = [1E-2,1E-1,1E0,1E1,1E2,1E3,4.55E3]
+    xticks = [1E-1,1E0,1E1,1E2]#,1E3,4.55E3]
     xlabel = 'Time (Myr)'
 
     # figure a
@@ -902,7 +905,7 @@ def figure6( args ):
     #ax0.semilogx( time, CO2tot, 'k-' )
     fig_o.set_myaxes( ax0, title=title, ylabel='$x$', xticks=xticks )
     handle_l = [h1,h3,h2,h4]
-    fig_o.set_mylegend( ax0, handle_l, loc='center right', ncol=1, TITLE=0 )
+    fig_o.set_mylegend( ax0, handle_l, loc='center left', ncol=1, TITLE=0 )
     ax0.yaxis.set_label_coords(-0.1,0.46)
 
     # solid mass fraction is now plotted on figures a and b along with
@@ -926,7 +929,7 @@ def figure6( args ):
     #ax1.semilogx( time, H2Otot, 'k-' )
     fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel='$x$', xticks=xticks )
     handle_l = [h1,h3,h2,h4]
-    fig_o.set_mylegend( ax2, handle_l, loc='center right', ncol=1, TITLE=0 )
+    fig_o.set_mylegend( ax2, handle_l, loc='center left', ncol=1, TITLE=0 )
     ax2.yaxis.set_label_coords(-0.1,0.46)
 
     # figure e
@@ -936,7 +939,7 @@ def figure6( args ):
     h2, = ax1.semilogx( time, p1*1.0E-5, 'b-', label='H$_2$O')
     handle_l = [h1,h2]
     fig_o.set_myaxes( ax1, title=title, ylabel=ylabel, xticks=xticks )
-    fig_o.set_mylegend( ax1, handle_l, loc='center right', ncol=1, TITLE=0 )
+    Fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1, TITLE=0 )
     ax1.yaxis.set_label_coords(-0.1,0.575)
 
     # figure f
