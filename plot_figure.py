@@ -887,6 +887,9 @@ def figure6( args ):
     #print np.min(H2Otot), np.max(H2Otot)
     #sys.exit(1)
 
+    print np.min(x0), np.max(x0)
+    print np.min(x1), np.max(x1)
+
     xticks = [1E-2,1E-1,1E0,1E1,1E2,1E3,4.55E3]
     xlabel = 'Time (Myr)'
 
