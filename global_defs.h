@@ -110,7 +110,6 @@ static const PetscScalar CORESIZE = 0.55; // radius fraction
 // non-dim was RHOS = 0.8842085571948184;
 static const PetscScalar RHOS = 4078.95095544;
 /* parameter for Adams-Williamson EOS for pressure */
-// non-dim was BETA = 0.7081588803940101;
 static const PetscScalar BETA = 1.1115348931000002e-07; // m^{-1}
 /* grain size */
 static const PetscScalar GRAIN = 1.0e-3;
@@ -132,10 +131,8 @@ static const PetscScalar CONSTBC = 0.0; // no ultra-thin thermal boundary layer
 
 /* for core-cooling boundary condition at the bottom surface */
 /* density of core */
-// non-dim was RHO_CORE = 2.3277861514910865;
 static const PetscScalar RHO_CORE = 10738.332568062382;
 /* heat capacity of core */
-// non-dim was CP_CORE = 0.2940169128482149;
 static const PetscScalar CP_CORE = 880.0;
 /* mass-weighted average core temperature as a fraction of CMB temp */
 static const PetscScalar TFAC_CORE_AVG = 1.147;
@@ -162,9 +159,7 @@ static const PetscScalar CO2_INITIAL = 0.014; // wt. %
 // EMISSIVITY is not used if H20_INITIAL and/or CO2_INITIAL > 0.0
 static const PetscScalar EMISSIVITY = 1.0;
 
-// non-dim was SIGMA = 7.75685789946723e-08; // Stefan-Boltzmann constant
 static const PetscScalar SIGMA = 5.670367e-08; // Stefan-Boltzmann constant
-// non-dim was TEQM = 0.0676813568808283; // equilibrium temp of planet
 static const PetscScalar TEQM = 273.0; // equilibrium temp of planet
 
 #if 1
@@ -174,6 +169,7 @@ static const PetscScalar P0 = 101325.0; // Pa (= 1 atm)
 static const PetscScalar H2O_KDIST = 1.0E-4; // distribution coefficient between solid and melt
 // TODO: water saturation limit is 10 ppm
 static const PetscScalar H2O_KABS = 0.01; // m^2/kg
+// next two from Lebrun et al. (2013)
 static const PetscScalar H2O_HENRY = 6.8E-8; // (mass fraction)/Pa
 static const PetscScalar H2O_HENRY_POW = 1.4285714285714286; // (1.0/0.7)
 
@@ -184,6 +180,7 @@ static const PetscScalar CO2_KABS = 0.05; // m^2/kg
 // CO2 dissolved in silicate melt obeys Henry's law to a good approximation
 // e.g. Pan et al., 1991
 // CO2_HENRY = concentration (mass fraction) / partial pressure (Pa)
+// next two from Lebrun et al. (2013)
 static const PetscScalar CO2_HENRY = 4.4E-12; // (mass fraction)/Pa
 static const PetscScalar CO2_HENRY_POW = 1.0;
 #endif
