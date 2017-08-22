@@ -83,7 +83,7 @@ class FigureData( object ):
     def get_data( self, field, time ):
 
         infile = self.petsc_bin_filename( time )
-        io = PetscBinaryIO.PetscBinaryIO()
+        io = PetscBinaryIO.PetscBinaryIO(precision='double')
         objects_l = io.readBinaryFile( infile )
         index = get_vector_index( field )
         yy = objects_l[index]

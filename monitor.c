@@ -22,6 +22,9 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
 
   ierr = PetscOptionsGetBool(NULL,NULL,"-test_view",&test_view,NULL);CHKERRQ(ierr);
 
+  /* Globally, output double, if we are computing with quad precision */
+  PetscOptionsSetValue(NULL,"-binary_write_double","");CHKERRQ(ierr);
+
   {
     PetscReal minval,maxval;
     ierr = VecMin(x_aug,NULL,&minval);CHKERRQ(ierr); /* Note that this includes the extra point now, so might not be as meaningful! */
