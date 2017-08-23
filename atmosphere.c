@@ -181,6 +181,7 @@ static PetscErrorCode set_dMliqdt( Ctx *E )
         }
 #endif
 
+// generally had more luck without smoothing
 #if 1
         /* no smoothing approach */
         if (arr_phi_s[i] <= 0.0){
