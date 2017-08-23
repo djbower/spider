@@ -893,7 +893,7 @@ def figure6( args ):
     print np.min(x0), np.max(x0)
     print np.min(x1), np.max(x1)
 
-    xticks = [1E-1,1E0,1E1,1E2]#,1E3,4.55E3]
+    xticks = [1E-2,1E-1,1E0,1E1,1E2,1E3]#,1E3,4.55E3]
     xlabel = 'Time (Myr)'
 
     # figure a
@@ -905,7 +905,7 @@ def figure6( args ):
     #ax0.semilogx( time, CO2tot, 'k-' )
     fig_o.set_myaxes( ax0, title=title, ylabel='$x$', xticks=xticks )
     handle_l = [h1,h3,h2,h4]
-    fig_o.set_mylegend( ax0, handle_l, loc='center left', ncol=1, TITLE=0 )
+    fig_o.set_mylegend( ax0, handle_l, loc='center right', ncol=1, TITLE=0 )
     ax0.yaxis.set_label_coords(-0.1,0.46)
 
     # solid mass fraction is now plotted on figures a and b along with
@@ -939,15 +939,15 @@ def figure6( args ):
     h2, = ax1.semilogx( time, p1*1.0E-5, 'b-', label='H$_2$O')
     handle_l = [h1,h2]
     fig_o.set_myaxes( ax1, title=title, ylabel=ylabel, xticks=xticks )
-    Fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1, TITLE=0 )
+    fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1, TITLE=0 )
     ax1.yaxis.set_label_coords(-0.1,0.575)
 
     # figure f
     title = '(d) Emissivity'
     ylabel = '$\epsilon$'
-    ax3.semilogx( time, emissivity )
+    ax3.semilogx( time, emissivity, 'k-' )
     fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks )
-    ax3.yaxis.set_label_coords(-0.1,0.575)
+    ax3.yaxis.set_label_coords(-0.1,0.54)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
     fig_o.savefig(6)
@@ -1148,9 +1148,9 @@ def get_vector_index( instring ):
 #====================================================================
 def main( args ):
 
-    #figure1( args )
-    #figure2( args )
-    #figure3( args )
+    figure1( args )
+    figure2( args )
+    figure3( args )
     #figure4( args )
     #figure5( args )
     figure6( args )
