@@ -66,7 +66,7 @@
    nodes there are in a given mesh */
 
 /* for constant mesh spacing */
-#define NUMPTS_B_DEFAULT 50
+#define NUMPTS_B_DEFAULT 100
 
 //#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 372
@@ -125,9 +125,9 @@ static const PetscScalar PHI_CRITICAL = 0.4;
    due to a rigid crust forming at the top of the model.  Reducing the value
    to 0.2 helps to alleviate this problem.  So evidently the viscosity contrast
    across nodes matters. */
-//static const PetscScalar PHI_WIDTH = 0.15;
+static const PetscScalar PHI_WIDTH = 0.15;
 // testing atmosphere evolution and boundary layer formation
-static const PetscScalar PHI_WIDTH = 0.2;
+//static const PetscScalar PHI_WIDTH = 0.2;
 /* melt fraction shape transition for skew */
 static const PetscScalar PHI_SKEW = 0.0;
 
