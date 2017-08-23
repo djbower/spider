@@ -893,7 +893,7 @@ def figure6( args ):
     print np.min(x0), np.max(x0)
     print np.min(x1), np.max(x1)
 
-    xticks = [1E-2,1E-1,1E0,1E1,1E2,1E3]#,1E3,4.55E3]
+    xticks = [1E-2,1E-1,1E0,1E1,1E2]#,1E3]#,1E3,4.55E3]
     xlabel = 'Time (Myr)'
 
     # figure a
@@ -947,7 +947,7 @@ def figure6( args ):
     ylabel = '$\epsilon$'
     ax3.semilogx( time, emissivity, 'k-' )
     fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks )
-    ax3.yaxis.set_label_coords(-0.1,0.54)
+    ax3.yaxis.set_label_coords(-0.1,0.58)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
     fig_o.savefig(6)
