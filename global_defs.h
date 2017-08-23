@@ -31,7 +31,12 @@
 /* if HYBRID is set, then the boundary condition will switch
    to the upper mantle cooling rate once the rheological
    transition is reached.  This prevents a lid from forming at
-   the top of the model. */
+   the top of the model.
+
+   TODO: this implies that the emissivity is around 1.0E-7,
+   which is unphysical unless you are appealing to a massive
+   massive atmosphere */
+
 //#define HYBRID
 
 /* 2-D datafiles containing melt and solid properties
@@ -74,6 +79,7 @@
 
 /* number of additional equations for the augmented system */
 //#define AUG_NUM 1 // for no coupled atmosphere evolution
+// FIXME: this must always be set to 3
 #define AUG_NUM 3 // for coupled atmosphere evolution
 
 /* number of staggered mesh points */
@@ -82,7 +88,6 @@
 /* initial condition: set entropy of adiabat */
 /* set at reference entropy */
 /* to compare with python test1 */
-// non-dim was 1.02;
 static const PetscScalar SINIT_DEFAULT = 3052.885602072091;
 
 /* to compare with python test2 */
@@ -93,7 +98,6 @@ static const PetscScalar SINIT_DEFAULT = 3052.885602072091;
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial entropy gradient */
-// non-dim was IC_DSDR = -1.0E-3;
 static const PetscScalar IC_DSDR = -4.6978890285209187e-07;
 
 /* planetary radius */
@@ -107,7 +111,6 @@ static const PetscScalar SECSINYR = 31557600.0; // s
 static const PetscScalar CORESIZE = 0.55; // radius fraction
 
 /* surface density for Adams-Williamson EOS for pressure */
-// non-dim was RHOS = 0.8842085571948184;
 static const PetscScalar RHOS = 4078.95095544;
 /* parameter for Adams-Williamson EOS for pressure */
 static const PetscScalar BETA = 1.1115348931000002e-07; // m^{-1}
@@ -118,14 +121,18 @@ static const PetscScalar GRAVITY = -10.0;
 /* melt fraction threshold for rheology */
 static const PetscScalar PHI_CRITICAL = 0.4;
 /* melt fraction transition width for rheology */
-static const PetscScalar PHI_WIDTH = 0.15;
+/* when PHI_WIDTH = 0.15, oscillations appear in the volatile contents
+   due to a rigid crust forming at the top of the model.  Reducing the value
+   to 0.2 helps to alleviate this problem.  So evidently the viscosity contrast
+   across nodes matters. */
+//static const PetscScalar PHI_WIDTH = 0.15;
+// testing atmosphere evolution and boundary layer formation
+static const PetscScalar PHI_WIDTH = 0.2;
 /* melt fraction shape transition for skew */
 static const PetscScalar PHI_SKEW = 0.0;
 
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Surface temperature]**3 */
-//static const PetscScalar CONSTBC = 0.0;
-// non-dim was CONSTBC = 1.6269986040244828; // 1.0E-7 in python
 //static const PetscScalar CONSTBC = 1.0e-07; // 1.0E-7 in python
 static const PetscScalar CONSTBC = 0.0; // no ultra-thin thermal boundary layer
 
@@ -149,16 +156,20 @@ static const PetscScalar SWIDTH = 1.0E-2;
    to the plane-parallel radiative equilibrium model of Abe and 
    Matsui (1985)  */
 // volatile scaling
+/* VOLSCALE enables us to scale the volatile equations to the same
+   order of magnitude as entropy, and thus ensure that the residual
+   based on the solution vector is not biased. */
 //static const PetscScalar VOLSCALE = 100.0 // for wt %.
 static const PetscScalar VOLSCALE = 1000000.0; // for ppm
 
 // Elkins_Tanton (2008) estimates of volatile content
-//static const PetscScalar H2O_INITIAL = 0.0; // units according to VOLSCALR
+//static const PetscScalar H2O_INITIAL = 0.0; // units according to VOLSCALE
 static const PetscScalar H2O_INITIAL = 500.0; //0.05;
 //static const PetscScalar H2O_INITIAL = 0.5;
 //static const PetscScalar CO2_INITIAL = 0.0;
 //static const PetscScalar CO2_INITIAL = 0.014;
-static const PetscScalar CO2_INITIAL = 2000.0; //0.2;
+static const PetscScalar CO2_INITIAL = 100; //
+//static const PetscScalar CO2_INITIAL = 2000.0; //0.2;
 //static const PetscScalar CO2_INITIAL = 0.6;
 // EMISSIVITY is not used if H20_INITIAL and/or CO2_INITIAL > 0.0
 static const PetscScalar EMISSIVITY = 1.0;
