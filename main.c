@@ -30,9 +30,8 @@ int main(int argc, char ** argv)
   const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
   PetscReal       nexttime;                  /* next time to integrate to */
 
-  /* even earlier evolution for initial atmospheric growth */
-  //PetscInt        nstepsmacro = 10000;
-  //PetscReal       dtmacro = 1;
+  /* FIXME: at the moment we uncomment two lines below to switch between
+     early, middle, and late evolution */
   /* early evolution to 10 kyr */
   //PetscInt        nstepsmacro = 1000;  /* Max macros steps */
   //PetscReal       dtmacro = 10;        /* Macro step size (years) */
@@ -107,7 +106,7 @@ int main(int argc, char ** argv)
 #if (defined PETSC_USE_REAL___FLOAT128)
   ierr = TSSundialsSetTolerance(ts, 1.0e-18, 1.0e-18 );CHKERRQ(ierr);
 #else
-  ierr = TSSundialsSetTolerance(ts, 1.0e-11, 1.0e-11 );CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts, 1.0e-10, 1.0e-10 );CHKERRQ(ierr);
 #endif
 
   /* Set up the RHS Function */
