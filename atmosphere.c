@@ -32,35 +32,23 @@ PetscErrorCode set_emissivity( Atmosphere *A )
 
     PetscFunctionBeginUser;
 
-    /* CO2 */
-    ierr = set_pCO2( A ); CHKERRQ(ierr);
-    A->m0 = get_atmosphere_mass( A->p0 );
-    A->tau0 = get_optical_depth( A->m0, CO2_KABS );
-
-    /* H2O */
-    ierr = set_pH2O( A ); CHKERRQ(ierr);
-    A->m1 = get_atmosphere_mass( A->p1 );
-    A->tau1 = get_optical_depth( A->m1, H2O_KABS );
-
-    /* total */
-    A->tau = A->tau0 + A->tau1;
-    A->emissivity = 2.0 / (A->tau + 2.0);
-
-    /* for the case with no coupled atmospheric growth (H2O_INITIAL
-       and CO2_INITIAL both zero), we can scale by the EMISSIVITY
-       to give a grey-body model with constant emissivity.  Since
-       above result will give emissivity=1.0 with no atmospheric
-       growth (but see below, now over-written to avoid negative
-       emissivity which could arise if the user enters a negative
-       initial volatile content, presumably in error!) */
-    /* this is really a check, since it makes no sense to have a
-       negative initial volatile content, and therefore always
-       switch to a constant emissivity grey-body if the volatile
-       content is either zero or negative */
-    /* FIXME: perhaps would be smart to denote negative values
-       to mean fixed content with time? */
     if (CO2_INITIAL <= 0.0 && H2O_INITIAL <= 0.0){
-        A->emissivity = EMISSIVITY;
+      A->emissivity = EMISSIVITY;
+    }
+    else{
+      /* CO2 */
+      ierr = set_pCO2( A ); CHKERRQ(ierr);
+      A->m0 = get_atmosphere_mass( A->p0 );
+      A->tau0 = get_optical_depth( A->m0, CO2_KABS );
+
+      /* H2O */
+      ierr = set_pH2O( A ); CHKERRQ(ierr);
+      A->m1 = get_atmosphere_mass( A->p1 );
+      A->tau1 = get_optical_depth( A->m1, H2O_KABS );
+
+      /* total */
+      A->tau = A->tau0 + A->tau1;
+      A->emissivity = 2.0 / (A->tau + 2.0);
     }
 
     PetscFunctionReturn(0);
