@@ -101,8 +101,8 @@ static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
     /* FIXME: this overwrites the previous version of emissivity calculated
        from the grey-body model.  This could mess things up depending on the order
        of function calls */
-    A->emissivity = Q1 / ( PetscPowScalar(temp0,4.0) - PetscPowScalar(TEQM,4.0) );
-    A->emissivity /= SIGMA;
+    //A->emissivity = Q1 / ( PetscPowScalar(temp0,4.0) - PetscPowScalar(TEQM,4.0) );
+    //A->emissivity /= SIGMA;
 
     return Q1;
 
