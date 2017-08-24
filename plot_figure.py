@@ -135,13 +135,13 @@ class FigureData( object ):
         cmap = plt.get_cmap('jet')
         colors_l = [cmap(i) for i in np.linspace(0, 1, num)]
         # color scheme from Tim.  Nice reds and blues
-        #colors = ['#2364A4',
-        #          '#1695F9',
-        #          '#95D5FD',
-        #          '#8B0000',
-        #          '#CD5C5C',
-        #          '#FA141B',
-        #          '#FFA07A']
+        #colors_l = ['#2364A4',
+        #            '#1695F9',
+        #            '#95D5FD',
+        #            '#8B0000',
+        #            '#CD5C5C',
+        #            '#FA141B',
+        #            '#FFA07A']
         dd['colors_l'] = colors_l
 
     def set_properties( self, nrows, ncols, width, height ):
