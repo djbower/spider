@@ -16,10 +16,10 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 
 # This is to ensure that the debugging commands work in LLDB
 # Don't use for optimized code!
-#CFLAGS_EXTRA=-g -O0
+CFLAGS_EXTRA=-g -O0
 # You can specify this from the command line, e.g.
 #   make clean; make -j CFLAGS_EXTRA="-O0"
-CFLAGS_EXTRA=-g -O3
+#CFLAGS_EXTRA=-g -O3
 CFLAGS+=${CFLAGS_EXTRA}
 
 ${EXNAME} : ${OBJ}
