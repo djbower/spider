@@ -37,7 +37,7 @@
    which is unphysical unless you are appealing to a massive
    massive atmosphere */
 
-//#define HYBRID
+#define HYBRID
 
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
@@ -66,7 +66,7 @@
    nodes there are in a given mesh */
 
 /* for constant mesh spacing */
-#define NUMPTS_B_DEFAULT 100
+#define NUMPTS_B_DEFAULT 200
 
 //#define NUMPTS_B_DEFAULT 278
 //#define NUMPTS_B_DEFAULT 372
@@ -133,8 +133,8 @@ static const PetscScalar PHI_SKEW = 0.0;
 
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Surface temperature]**3 */
-//static const PetscScalar CONSTBC = 1.0e-07; // 1.0E-7 in python
-static const PetscScalar CONSTBC = 0.0; // no ultra-thin thermal boundary layer
+static const PetscScalar CONSTBC = 1.0e-07; // 1.0E-7 in python
+//static const PetscScalar CONSTBC = 0.0; // no ultra-thin thermal boundary layer
 
 /* for core-cooling boundary condition at the bottom surface */
 /* density of core */
@@ -227,12 +227,12 @@ static const PetscScalar CO2_KABS = 0.0001; // m^2/kg
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/liquidus.dat";
-static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/liquidus.dat";
+static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/liquidus.dat";
+//static const char LIQUIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/liquidus.dat";
 
 /* solidus data file */
-//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/solidus.dat";
-static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/solidus.dat";
+static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/solidus.dat";
+//static const char SOLIDUS[] = "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/solidus.dat";
 
 /* solid data files */
 static const char ALPHA_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_solid.dat";

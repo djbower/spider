@@ -271,7 +271,7 @@ static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix )
     ierr = DMDAVecGetArray(da,mix,&arr_m);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
 /* TODO: conventional mixing length below -- distance from nearest boundary */
-#if 0
+#if 1
         rad1 = arr_r[i] - RADIUS*CORESIZE;
         rad2 = RADIUS - arr_r[i];
         arr_m[i] = PetscMin( rad1, rad2 );
@@ -279,7 +279,7 @@ static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix )
 /* TODO: constant mixing length -- for testing rigid crust formation
    hopefully this mitigates some of the problem? This uses the average
    mixing length from convention theory, i.e. 1/4*mantle thickness */
-#if 1
+#if 0
         arr_m[i] = RADIUS * (1.0-CORESIZE); // mantle thickness
         arr_m[i] /= 4.0; // to give average of conventional theory
 #endif

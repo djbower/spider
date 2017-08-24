@@ -33,11 +33,11 @@ int main(int argc, char ** argv)
   /* FIXME: at the moment we uncomment two lines below to switch between
      early, middle, and late evolution */
   /* early evolution to 10 kyr */
-  //PetscInt        nstepsmacro = 1000;  /* Max macros steps */
-  //PetscReal       dtmacro = 10;        /* Macro step size (years) */
+  PetscInt        nstepsmacro = 1000;  /* Max macros steps */
+  PetscReal       dtmacro = 10;        /* Macro step size (years) */
   /* middle evolution to 100 Myr */
-  PetscInt        nstepsmacro = 10000;  /* Max macros steps */
-  PetscReal       dtmacro = 10000; /* Macro step size (years) */
+  //PetscInt        nstepsmacro = 10000;  /* Max macros steps */
+  //PetscReal       dtmacro = 10000; /* Macro step size (years) */
   /* late evolution to 4.55 Byr */
   //PetscInt        nstepsmacro = 455;  /* Max macros steps */
   //PetscReal       dtmacro = 10000000; /* Macro step size (years) */
