@@ -164,6 +164,9 @@ static const PetscScalar VOLSCALE = 1000000.0; // for ppm
 
 // Elkins_Tanton (2008) estimates of volatile content
 //static const PetscScalar H2O_INITIAL = 0.0; // units according to VOLSCALE
+// Turn off atmosphere
+static const PetscScalar H2O_INITIAL = 0.0;
+static const PetscScalar CO2_INITIAL = 0.0;
 // ET08 Case 1
 //static const PetscScalar H2O_INITIAL = 500.0;
 //static const PetscScalar CO2_INITIAL = 100.0;
@@ -171,8 +174,8 @@ static const PetscScalar VOLSCALE = 1000000.0; // for ppm
 //static const PetscScalar H2O_INITIAL = 5000.0;
 //static const PetscScalar CO2_INITIAL = 1000.0;
 // ET08 Case 3
-static const PetscScalar H2O_INITIAL = 0.0;
-static const PetscScalar CO2_INITIAL = 6000.0;
+//static const PetscScalar H2O_INITIAL = 0.0;
+//static const PetscScalar CO2_INITIAL = 6000.0;
 
 // EMISSIVITY is not used if H20_INITIAL and/or CO2_INITIAL > 0.0
 static const PetscScalar EMISSIVITY = 1.0;
