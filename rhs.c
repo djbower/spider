@@ -121,9 +121,18 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* time-dependence of additional quantities at the top of the augmented array */
 
   /* now that we have dS/dt, compute change in volatile concentrations */
-  set_dxdt( E );
-  ierr = VecSetValue(rhs_b_aug,0,A->dx0dt,INSERT_VALUES);CHKERRQ(ierr);
-  ierr = VecSetValue(rhs_b_aug,1,A->dx1dt,INSERT_VALUES);CHKERRQ(ierr);
+  /* FIXME.  Not sure if values are still getting pushed into the array
+     due to the atmosphere, even if the atmosphere should not be solved for.
+     This should stop that */
+  if (CO2_INITIAL <= 0.0 && H2O_INITIAL <= 0.0){
+    ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
+  }
+  else{
+    set_dxdt( E );
+    ierr = VecSetValue(rhs_b_aug,0,A->dx0dt,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(rhs_b_aug,1,A->dx1dt,INSERT_VALUES);CHKERRQ(ierr);
+  }
 
   /* S0 */
   /* TODO: I think this breaks for parallel */
