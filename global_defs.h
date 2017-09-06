@@ -85,10 +85,22 @@
 /* number of staggered mesh points */
 #define NUMPTS_S_DEFAULT NUMPTS_B_DEFAULT-1 /* automagically determined */
 
+/* dimensional constants */
+/* FIXME: these constants must have been used to non-dimensionalise
+   the data tables that are read in, since the header line is ignored
+   for non-dimensional runs */
+// must turn on LOOKUPDIM if you are using dimensional quantities
+//#define LOOKUPDIM 1
+static const PetscScalar RADIUS0 = 6371000.0; // m
+static const PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
+static const PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
+static const PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
+
 /* initial condition: set entropy of adiabat */
 /* set at reference entropy */
 /* to compare with python test1 */
-static const PetscScalar SINIT_DEFAULT = 3052.885602072091;
+//static const PetscScalar SINIT_DEFAULT = 3052.885602072091;
+static const PetscScalar SINIT_DEFAULT = 1.02;
 
 /* to compare with python test2 */
 /* TODO: refresh these tests */
@@ -98,26 +110,33 @@ static const PetscScalar SINIT_DEFAULT = 3052.885602072091;
 //static const PetscScalar SINIT_DEFAULT = 0.5;
 
 /* initial entropy gradient */
-static const PetscScalar IC_DSDR = -4.6978890285209187e-07;
+//static const PetscScalar IC_DSDR = -4.6978890285209187e-07;
+static const PetscScalar IC_DSDR = -1.0E-3;
 
 /* planetary radius */
-static const PetscScalar RADIUS = 6371000.0; // m (outer radius of planet)
+//static const PetscScalar RADIUS = 6371000.0; // m (outer radius of planet)
 //static const PetscScalar RADIUS = 3185500.0; // m (outer radius of planet)
+static const PetscScalar RADIUS = 1.0;
 
 /* seconds in 1 year */
-static const PetscScalar SECSINYR = 31557600.0; // s
+/* FIXME: scaling the rhs by this value could blow up noise */
+//static const PetscScalar SECSINYR = 31557600.0; // s
 
 /* core-mantle boundary radius */
 static const PetscScalar CORESIZE = 0.55; // radius fraction
 
 /* surface density for Adams-Williamson EOS for pressure */
-static const PetscScalar RHOS = 4078.95095544;
+//static const PetscScalar RHOS = 4078.95095544;
+static const PetscScalar RHOS = 0.8842085571948184;
 /* parameter for Adams-Williamson EOS for pressure */
-static const PetscScalar BETA = 1.1115348931000002e-07; // m^{-1}
+//static const PetscScalar BETA = 1.1115348931000002e-07; // m^{-1}
+static const PetscScalar BETA = 0.7081588803940101;
 /* grain size */
-static const PetscScalar GRAIN = 1.0e-3;
+//static const PetscScalar GRAIN = 1.0e-3;
+static const PetscScalar GRAIN = 1.56961230576e-10;
 /* gravity.  Always constant and must be negative */
-static const PetscScalar GRAVITY = -10.0;
+//static const PetscScalar GRAVITY = -10.0;
+static const PetscScalar GRAVITY = -5.2772012422265826;
 /* melt fraction threshold for rheology */
 static const PetscScalar PHI_CRITICAL = 0.4;
 /* melt fraction transition width for rheology */
@@ -133,14 +152,19 @@ static const PetscScalar PHI_SKEW = 0.0;
 
 /* for radiative thermal boundary condition at the top surface */
 /* dT = CONSTBC * [Surface temperature]**3 */
-static const PetscScalar CONSTBC = 1.0e-07; // 1.0E-7 in python
+/* FIXME: I think in this form you have to rescale by TEMPERATURE0
+   in the code.  To check */
+//static const PetscScalar CONSTBC = 1.0e-07; // 1.0E-7 in python
+static const PetscScalar CONSTBC = 1.6269986040244828; // 1.0E-7 in python
 //static const PetscScalar CONSTBC = 0.0; // no ultra-thin thermal boundary layer
 
 /* for core-cooling boundary condition at the bottom surface */
 /* density of core */
-static const PetscScalar RHO_CORE = 10738.332568062382;
+//static const PetscScalar RHO_CORE = 10738.332568062382;
+static const PetscScalar RHO_CORE = 2.3277861514910865;
 /* heat capacity of core */
-static const PetscScalar CP_CORE = 880.0;
+//static const PetscScalar CP_CORE = 880.0;
+static const PetscScalar CP_CORE = 0.2940169128482149;
 /* mass-weighted average core temperature as a fraction of CMB temp */
 static const PetscScalar TFAC_CORE_AVG = 1.147;
 
@@ -180,8 +204,11 @@ static const PetscScalar CO2_INITIAL = 0.0;
 // EMISSIVITY is not used if H20_INITIAL and/or CO2_INITIAL > 0.0
 static const PetscScalar EMISSIVITY = 1.0;
 
-static const PetscScalar SIGMA = 5.670367e-08; // Stefan-Boltzmann constant
-static const PetscScalar TEQM = 273.0; // equilibrium temp of planet
+//static const PetscScalar SIGMA = 5.670367e-08; // Stefan-Boltzmann constant
+static const PetscScalar SIGMA = 7.75685789946723e-08;
+
+//static const PetscScalar TEQM = 273.0; // equilibrium temp of planet
+static const PetscScalar TEQM = 0.0676813568808283;
 
 #if 1
 // Elkins-Tanton (2008) parameters
@@ -245,9 +272,11 @@ static const char RHO_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/dens
 
 static const char TEMP_SOL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_solid.dat";
 
-static const PetscScalar LOG10VISC_SOL = 21.0;
+//static const PetscScalar LOG10VISC_SOL = 21.0;
+static const PetscScalar LOG10VISC_SOL = 6.99089665051;
 
-static const PetscScalar COND_SOL = 4.0;
+//static const PetscScalar COND_SOL = 4.0;
+static const PetscScalar COND_SOL = 1.30871862439e-17;
 
 /* melt data files */
 static const char ALPHA_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_melt.dat";
@@ -260,8 +289,10 @@ static const char RHO_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/dens
 
 static const char TEMP_MEL[] = "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_melt.dat";
 
-static const PetscScalar LOG10VISC_MEL = 2.0;
+//static const PetscScalar LOG10VISC_MEL = 2.0;
+static const PetscScalar LOG10VISC_MEL = -12.0091033495;
 
-static const PetscScalar COND_MEL = 4.0;
+//static const PetscScalar COND_MEL = 4.0;
+static const PetscScalar COND_MEL = 1.30871862439e-17;
 
 #endif

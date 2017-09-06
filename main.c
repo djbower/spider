@@ -32,15 +32,15 @@ int main(int argc, char ** argv)
 
   /* FIXME: at the moment we uncomment two lines below to switch between
      early, middle, and late evolution */
-  /* early evolution to 10 kyr */
+  /* early evolution to about 10 kyr */
   PetscInt        nstepsmacro = 1000;  /* Max macros steps */
-  PetscReal       dtmacro = 10;        /* Macro step size (years) */
-  /* middle evolution to 100 Myr */
+  PetscReal       dtmacro = 1000000;        /* Macro step size (about a year) */
+  /* middle evolution to about 100 Myr */
   //PetscInt        nstepsmacro = 10000;  /* Max macros steps */
-  //PetscReal       dtmacro = 10000; /* Macro step size (years) */
+  //PetscReal       dtmacro = 1000000000; /* Macro step size (roughly years) */
   /* late evolution to 4.55 Byr */
   //PetscInt        nstepsmacro = 455;  /* Max macros steps */
-  //PetscReal       dtmacro = 10000000; /* Macro step size (years) */
+  //PetscReal       dtmacro = 1000000000000; /* Macro step size (roughly years) */
 
   PetscMPIInt     size;
 
@@ -104,22 +104,24 @@ int main(int argc, char ** argv)
 
   /* can tighten tolerances for quad */
 #if (defined PETSC_USE_REAL___FLOAT128)
-  ierr = TSSundialsSetTolerance(ts, 1.0e-18, 1.0e-18 );CHKERRQ(ierr);
+  // 1.0E-12 crashes at time step 5
+  ierr = TSSundialsSetTolerance(ts, 1.0e-14, 1.0e-14 );CHKERRQ(ierr);
 #else
-  ierr = TSSundialsSetTolerance(ts, 1.0e-10, 1.0e-10 );CHKERRQ(ierr);
+  // TODO: 1.0E-4 works for simple bottom up case
+  ierr = TSSundialsSetTolerance(ts, 1.0e-4, 1.0e-4 );CHKERRQ(ierr);
 #endif
 
   /* Set up the RHS Function */
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
 
   /* Set up the integration period for first macro step */
-  nexttime = dtmacro; // years
+  nexttime = dtmacro; // non-dim time
   ierr = TSSetDuration(ts,maxsteps,nexttime);CHKERRQ(ierr);
 
   /* Set a very small initial timestep to prevent problems with 
      challenging initial conditions and adaptive steppers */
   /* DJB with revised code this probably is not necessary anymore */
-  //ierr = TSSetInitialTimeStep(ts,0.0,1e-10);CHKERRQ(ierr);
+  ierr = TSSetInitialTimeStep(ts,0.0,1e-10);CHKERRQ(ierr);
 
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
@@ -141,7 +143,7 @@ int main(int argc, char ** argv)
       if (monitor) {
         ierr = TSCustomMonitor(ts,dtmacro,stepmacro,time,t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
       }
-      nexttime = (stepmacro + 1) * dtmacro; // years
+      nexttime = (stepmacro + 1) * dtmacro; // non-dim
       ierr = TSSetDuration(ts,maxsteps,nexttime);CHKERRQ(ierr); 
     }
   }

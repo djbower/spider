@@ -103,15 +103,25 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
             sscanf(string, "%lf %lf %lf", &x, &y, &z );
 #endif
             /* lookup value */
-            za[i-HEAD] = z * zscale;
+            za[i-HEAD] = z;
+#if (defined LOOKUPDIM)
+            za[i-HEAD] *= zscale;
+#endif
+
             /* x coordinate */
             if( i<HEAD+NX ){
-                xa[j] = x * xscale;
+                xa[j] = x;
+#if (defined LOOKUPDIM)
+                xa[j] *= xscale;
+#endif
                 ++j;
             }
             /* y coordinate */
             if( (i-HEAD) % NX ==0 ){
-                ya[k] = y * yscale;
+                ya[k] = y;
+#if (defined LOOKUPDIM)
+                ya[k] *= yscale;
+#endif
                 ++k;
             }
 
@@ -197,8 +207,12 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 #else
             sscanf(string, "%lf %lf", &x, &y );
 #endif
-            xa[i-HEAD] = x * xscale;
-            ya[i-HEAD] = y * yscale;
+            xa[i-HEAD] = x;
+            ya[i-HEAD] = y;
+#if (defined LOOKUPDIM)
+            xa[i-HEAD] *= xscale;
+            ya[i-HEAD] *= yscale;
+#endif
             }
         ++i;
     }
