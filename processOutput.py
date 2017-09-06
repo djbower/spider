@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# This is a test/demonstration of reading PETSc binary files
+
 # Import PETSc's python reader 
 import os
 import sys
@@ -10,7 +12,7 @@ if not PETSC_DIR :
 sys.path.append(os.path.join(PETSC_DIR,'bin'))
 import PetscBinaryIO as pio
 
-io = pio.PetscBinaryIO();
+io = pio.PetscBinaryIO('double'); # We expect *double* binary output from our quadruple-precision build (achieved with a flag in PETSc)
 
 # Pick a set of steps to import
 stepsToImport = [0,3,7]
@@ -21,7 +23,7 @@ nVecs = 3
 # Attempt to read from step files
 for step in stepsToImport :
     print('#### STEP ' + str(step) + ' ########')
-    fh = open(os.path.join('output',str(step) + '.petscbin'))
+    fh = open(os.path.join('output','petscbin.') + str(step))
     for i in range(1,nVecs+1) :
         objecttype = io.readObjectType(fh)
         if objecttype == 'Vec':
