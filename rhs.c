@@ -142,8 +142,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = VecAssemblyBegin(rhs_b_aug);CHKERRQ(ierr);
   ierr = VecAssemblyEnd(rhs_b_aug);CHKERRQ(ierr);
 
+  /* FIXME: this must blow up noise so get rid of this */
   /* convert time from per second to per year */
-  ierr = VecScale( rhs_b_aug, SECSINYR );
+  //ierr = VecScale( rhs_b_aug, SECSINYR );
 
   ierr = VecDestroy(&rhs_b);CHKERRQ(ierr);
 

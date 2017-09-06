@@ -95,6 +95,17 @@ class FigureData( object ):
         # next index (4) should correlate to pressure_b
         xx_b = self.get_data( 'pressure_b', time ) * 1.0E-9 # to GPa
         xx_b = xx_b[1:-1] # basic internal nodes only
+
+        # FIXME: hack to plot data
+        xx_b *= 5.569E10
+        if field == 'S' or field == 'solidus' or field == 'liquidus':
+            yy_b *= 2993.025100070677
+        elif field == 'temp' or field == 'solidus_temp' or field == 'liquidus_temp':
+            yy_b *= 4033.6070755893948
+        elif field == 'visc':
+            yy_b *= 1.021E14
+        # FIXME end of hack
+
         # DJB HACKY
         # want to flip the sign of the entropy gradient to make it
         # cleaner to plot
@@ -1047,6 +1058,113 @@ def sci_notation(num, decimal_digits=1, precision=None, exponent=None):
     #return r"${0:.{2}f}\cdot10^{{{1:d}}}$".format(coeff, exponent, precision)
 
 #====================================================================
+def get_dimensional_scaling( field ):
+
+    dd = {} # empty dictionary to store dimensional scalings
+
+    # FIXME: these should be read in from somewhere since they must
+    # be the same as the dimensional constants used in the c programme
+    dd['entropy0'] = 2993.025100070677 # J/kg K
+    dd['temperature0'] = 4033.6070755893948 # K
+    dd['density0'] = 4613.109568155063 # kg/m^3
+    dd['radius0'] = 6371000.0 # m
+
+    sqrtS0T0 = np.sqrt( dd['entropy0']*dd['temperature0'] )
+    # for non-dim, 4*pi that enters through spherical areas
+    # on the RHS cancels with the 4*pi on the LHS associated 
+    # with the volume of the cell.  So for non-dimensionalising
+    # the system, we ignore 4*pi factors for simplicity.  But
+    # to return dimensional output we typically want to include
+    # the geometric factors as well.  This is because the size
+    # of our system is most naturally defined as a sphere, so
+    # volume and mass, for example, should reflect that.
+    # m^2 (area)
+    dd['area0'] = dd['radius0']**2.0
+    dd['area0g'] = 4.0 * np.pi * dd['area0'] # geom scaled
+
+    # m^3 (volume)
+    # N.B. non-dim volume contains the additional 1/3 scaling
+    dd['volume0'] = dd['area0'] * dd['radius0']
+    dd['volume0g'] = 4.0 * np.pi * dd['volume0'] # geom scaled
+
+    # kg (mass)
+    dd['mass0'] = dd['density0'] * dd['volume0']
+    dd['mass0g'] = 4.0 * np.pi * dd['mass0'] # geom scaled
+
+    # s (time)
+    dd['time0'] = dd['radius0'] / sqrtS0T0 # seconds
+    dd['time0years'] = dd['time0'] / (60*60*24*365.25) # years
+
+    # J/kg (specific energy)
+    dd['senergy0'] = dd['entropy0'] * dd['temperature0']
+
+    # J (energy)
+    dd['energy0'] = dd['senergy0'] * dd['mass0']
+    dd['energy0g'] = 4.0 * np.pi * dd['energy0'] # geom scaled
+
+    # N/m^2 (pressure)
+    dd['pressure0'] = dd['entropy0']*dd['temperature0']*dd['density0']
+
+    # W (power)
+    dd['power0'] = dd['energy0'] / dd['time0']
+    dd['power0g'] = 4.0 * np.pi * dd['power0'] # geom scaled
+
+    # W/m^2 (flux)
+    dd['flux0'] = dd['power0'] / dd['area0']
+
+    # these scalings for material properties
+
+    # Pa / m
+    dd['dPdr0'] = dd['pressure0'] / dd['radius0']
+
+    # 1/K
+    dd['alpha0'] = 1.0 / dd['temperature0']
+
+    # m/s^2
+    dd['gravity0'] = (dd['entropy0']*dd['temperature0'])/dd['radius0']
+
+    # m^2/s
+    dd['kappa0'] = dd['radius0'] * sqrtS0T0
+
+    # K / N/m^2 = K/Pa
+    dd['dTdP0'] = 1.0 / (dd['density0'] * dd['entropy0'])
+
+    # J / kgKm
+    dd['dSdr0'] = dd['entropy0'] / dd['radius0']
+
+    # K / m
+    dd['dTdr0'] = dd['temperature0'] / dd['radius0']
+
+    # K / s^2 (gravity*super adiabatic temperature gradient)
+    dd['gsuper0'] = dd['gravity0'] * dd['dTdr0']
+
+    # Pa.s
+    dd['eta0'] = dd['density0'] * dd['kappa0']
+    dd['log10eta0'] = m.log10( dd['eta0'] )
+
+    # Pa.s / kg/m^3
+    dd['nu0'] = dd['kappa0']
+
+    # W/mK
+    dd['cond0'] = dd['entropy0'] * dd['density0'] * dd['kappa0']
+
+    # Stefan-Boltzmann constant
+    dd['sigma0'] = dd['flux0'] * 1.0 / (dd['temperature0']**4.0)
+
+    # LHS of the equation excludes dS/dt.  It is just
+    # volume * density * temperature, which has units of kg K.
+    # LHS has non-dim volume, which excludes the 4.0*pi factor
+    dd['lhs0'] = dd['density0'] * dd['volume0'] * dd['temperature0']
+    dd['lhs0g'] = 4.0 * m.pi * dd['lhs0'] # geom scaled
+
+    # this quantity is returned by the rhs function (dS/dt).
+    # Note that this is defined as: deltaE / LHS.  So the LHS is
+    # included in this expression.
+    dd['rhs0'] = dd['entropy0'] / dd['time0']
+
+    return dd
+
+#====================================================================
 def get_vector_index( instring ):
     """
     the order of fields in data_l must match exactly the order in
@@ -1149,11 +1267,11 @@ def get_vector_index( instring ):
 def main( args ):
 
     figure1( args )
-    figure2( args )
-    figure3( args )
+    #figure2( args )
+    #figure3( args )
     #figure4( args )
     #figure5( args )
-    figure6( args )
+    #figure6( args )
     plt.show()
 
 #====================================================================

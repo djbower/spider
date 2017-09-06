@@ -214,6 +214,8 @@ static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
     const PetscScalar *arr_radius;
     PetscInt          i,ilo,ihi,w;
 
+    /* excludes 4*pi prefactor */
+
     PetscFunctionBeginUser;
     ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w; 
@@ -236,6 +238,8 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
     PetscInt          i,ilo_s,ihi_s,w_s,ilo,ihi;
     DM                da_b=E->da_b,da_s=E->da_s;
     Vec               radius_local=E->work_local_b;
+
+    /* excludes 4*pi prefactor */
 
     PetscFunctionBeginUser;
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
@@ -343,6 +347,7 @@ static PetscErrorCode aw_mass( Ctx *E )
     ierr = VecCopy( M->rho_s, M->mass_s ); CHKERRQ(ierr);
 
     ierr = VecPointwiseMult( M->mass_s, M->mass_s, M->volume_s );
+    /* note scale by 4*pi below */
     ierr = VecScale( M->mass_s, 4.0 * PETSC_PI );
     ierr = VecSum( M->mass_s, &M->mass0 );
 

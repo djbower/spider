@@ -116,6 +116,9 @@ static PetscScalar zahnle( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss 
     /* fit to Zahnle et al. (1988) from Solomatov and Stevenson (1993)
        Eqn. 40 */
 
+    /* FIXME: will break for non-dimensional
+       see commit 780b1dd to reverse this */
+
     Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf);
 
     return Fsurf;
