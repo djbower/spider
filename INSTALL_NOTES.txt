@@ -2,9 +2,34 @@
 GENERAL INSTALLATION NOTES
 --------------------------
 
-----------------
-DOUBLE PRECISION
-----------------
+----------
+C COMPILER
+----------
+
+First, ensure that you have a suitable, working C compiler.
+
+A simple way to proceed is install gcc compilers to the default location from:
+         http://hpc.sourceforge.net
+
+This will install everything into /usr/local
+
+If you use MacPorts, Homebrew, or APT, these can also be used to easily install gcc.
+
+You can test that you have a working "gcc" C by running the following from the command line
+
+    echo '#include<stdio.h>' > t.c && echo 'int main(){printf("It seems to work!\n");}' >> t.c && gcc t.c && ./a.out && rm -f t.c a.out
+
+If you plan to use quadruple precision, you need to ensure that you have an actual version
+of gcc installed. This is harder than it should be, because Apple irresponsibly installs
+something called "gcc" which actually a wrapper for their own compiler. You can check by running
+
+    gcc --version
+
+If you see a message about "Apple LLVM", then you have the wrong compiler!
+
+------------------------
+PETSC (DOUBLE PRECISION)
+------------------------
 
 To install with double precision.  This reproduces the behaviour of the
 python prototype code.  In this case you must use Patrick's hacked version of
@@ -12,50 +37,42 @@ PETSc because this version uses the dense direct solver that is required. But
 you can allow PETSc to automatically download and install SUNDIALS
 (with double support) so there is no need to install SUNDIALS separately.
 
-0.1 [Optional] Install gcc compilers to the default location from:
-       http://hpc.sourceforge.net
+0. Comment out any existing references to PETSC_DIR and PETSC_ARCH in your
+profile, bash_profile, bashrc, etc. (clear these variables)
 
-   This will install everything into /usr/local
-
-   This step is optional because I think the default CC compiler that
-   comes with Mac is OK also.  You only need a C compiler.
-
-0.2 comment out any existing references to PETSC_DIR and PETSC_ARCH in your
-profile or bash_profile and resource (clear these variables)
 
 1. get the hacked version of PETSc (Patrick must give you read access to his
-bitbucket):
+bitbucket - email patrick.sanan@gmail.com with your bitbucket username):
 
-git clone https://bitbucket.org/psanan/petscfork -b psanan/ts-sundials-quad-hack petsc-double-direct
+    cd /somewhere/to/install
+    git clone https://bitbucket.org/psanan/petscfork -b psanan/ts-sundials-quad-hack petsc-double-direct
 
 2. change directories
-cd petsc-double-direct/
+
+    cd petsc-double-direct/
 
 3a. configure PETSc using the following command:
-./configure --with-debugging=0 --with-fc=0 --download-sundials --download-mpich --with-cc=gcc --with-cxx=g++ --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+
+    ./configure --with-debugging=0 --with-fc=0 --download-sundials --download-mpich --with-cc=gcc --with-cxx=g++ --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 3b.  [Aside] For a debug build, amend command above to use --with-debugging=1
 
 4. make (the following all assume an optimised build, i.e, 3a above).
-PETSc's configure process, if successful, will end by printing out this command, which you can copy and paste:
-make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-darwin-c-opt all
+PETSc's configure process, if successful, will end by printing out a command which you can copy and paste, e.g.
 
-5. run tests (PETSc's make process will print this out for you to copy and paste):
-make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-darwin-c-opt test
+    make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-darwin-c-opt all
+
+5. run tests. PETSc's make process will print this out for you to copy and paste e.g.:
+
+    make PETSC_DIR=/Users/dan/Programs/petsc/petsc-double-direct PETSC_ARCH=arch-darwin-c-opt test
+
+6. Note the value of PETSC_ARCH (will look something like arch-xxx-yyy) for later
 
 -------------------
 QUADRUPLE PRECISION
 -------------------
 
-0.1 [Optional] Install gcc compilers to the default location from:
-       http://hpc.sourceforge.net
-
-   This will install everything into /usr/local
-
-   This step is optional because I think the default CC compiler that
-   comes with Mac is OK also.  You only need a C compiler.
-
-0.2 comment out any existing references to PETSC_DIR and PETSC_ARCH in your
+0. comment out any existing references to PETSC_DIR and PETSC_ARCH in your
 profile or bash_profile and resource (clear these variables)
 
 ---- A. Install SUNDIALS with quadruple precision ----
@@ -64,35 +81,44 @@ profile or bash_profile and resource (clear these variables)
    the quad-supported version of SUNDIALS
 
 2. Clone from git repository:
+   cd /somewhere/to/install
    git clone https://bitbucket.org/psanan/sundials-quad.git sundials-quad
- 
-3. Install Sundials:
-   Notes:
-       a. see installation instructions in Sundials manual
-       b. use srcdir, builddir, and instdir to create a local build
-       c. easiest to use ccmake
-          Something like:
-              /opt/local/bin/ccmake ../srcdir
-       d. can change compilers if desired, e.g., change c compiler to
-              /usr/local/bin/gcc
-       e. my commands look something like the following, here, the 
-          source code is in srcdir, the build is occuring in builddir,
-          and the library is installed into instdir.
-              ccmake ../srcdir
-              BUILD_SHARED_LIBS: ON
-              BUILD_STATIC_LIBS: ON
-              CMAKE_C_COMPILER: /usr/local/bin/gcc
-              CMAKE_AR (‘toggle to advanced mode’):
-                  /usr/local/bin/gcc-ar
-              ??? CMAKE_C_FLAGS: -g -O2 -fPIC
-              probably best to use same as PETSc below
-              CMAKE_C_FLAGS: -g -O3
-              CMAKE_INSTALL_PREFIX: ../instdir
-              EXAMPLES_INSTALL_PATH: ../instdir/examples
-              SUNDIALS_PRECISION: quadruple
-       f. make
-       g. make install
 
+3. Make sure that you have cmake available
+
+    cmake --version
+
+If this fails, then install cmake from your package manager (homebrew, macports, apt,..) or by following the instructions at cmake.org/download
+
+    sudo port install cmake           # MacPorts
+    brew install cmake                # Homebrew
+    sudo apt-get install cmake        # apt
+
+4. Configure, build, and install SUNDIALS
+
+    cd sundials-quad
+    mkdir install
+    mkdir build
+    cd build
+    cmake ..
+    ccmake .                          # with apt you may need to install these separately
+
+Use the ccmake interface to set these values:
+
+    CMAKE_C_COMPILER: /usr/local/bin/gcc
+    CMAKE_C_FLAGS: -O3
+    CMAKE_INSTALL_PREFIX: ../install
+    EXAMPLES_INSTALL_PATH: ../install/examples
+    SUNDIALS_PRECISION: quadruple
+
+Make sure you type "c" to configure once you have entered these values, then [q]uit.
+
+Note: specify the same C compiler you used to install PETSc (probably "gcc")
+Note: you may also directly edit CMakeCache.txt to edit these values, followed by "cmake .." again
+
+Make and install:
+
+    make && make install
 
 ---- B: Install PETSc with quadruple precision ----
 
@@ -102,29 +128,50 @@ profile or bash_profile and resource (clear these variables)
 1. get the hacked version of PETSc (Patrick must give you read access to his
 bitbucket):
 
-git clone https://bitbucket.org/psanan/petscfork -b psanan/ts-sundials-quad-hack petsc-quad-direct
+    cd /somewhere/to/install
+    git clone https://bitbucket.org/psanan/petscfork -b psanan/ts-sundials-quad-hack petsc-quad-direct
 
 2. change directories
-cd petsc-quad-direct/
 
-3a. configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created:
+    cd petsc-quad-direct
 
-./configure --with-debugging=0 --with-fc=0 --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/Users/dan/Programs/sundials-quad/instdir --download-mpich --download-f2cblaslapack --with-cc=gcc --with-cxx=g++ --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+3a. configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change /somewhere/to/install to the place that you installed SUNDIALS) :
+
+    ./configure --with-debugging=0 --with-fc=0 --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/somewhere/to/install/sundials-quad/install --download-mpich --download-f2cblaslapack --with-cc=gcc --with-cxx=g++ --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 3b.  [Aside] For a debug build, amend command above to use --with-debugging=1
 
-4. make (the following all assume an optimised build, i.e, 3a above):
-make PETSC_DIR=/Users/dan/Programs/petsc/petsc-quad-direct PETSC_ARCH=arch-darwin-c-opt all
+4. make by copying the line (the following all assume an optimised build, i.e, 3a above) e.g.
 
-5. run tests:
-make PETSC_DIR=/Users/dan/Programs/petsc/petsc-quad-direct PETSC_ARCH=arch-darwin-c-opt test
+    make PETSC_DIR=/Users/dan/Programs/petsc/petsc-quad-direct PETSC_ARCH=arch-darwin-c-opt all
+
+5. run tests by copying the provided line e.g.
+
+    make PETSC_DIR=/Users/dan/Programs/petsc/petsc-quad-direct PETSC_ARCH=arch-darwin-c-opt test
+
+6. Note the value of PETSC_ARCH (will look something like arch-xxx-yyy) for later
 
 ------
 C CODE
 ------
 
-1. set PETSC_DIR and PETSC_ARCH to the PETSc installation that you wish to use (either the quad or double precision, as above)
-2. make
+1. In your environment, set PETSC_DIR and PETSC_ARCH to the PETSc installation that you wish to use (either the quad or double precision, as above)
+
+    export PETSC_DIR=/somewhere/to/install/petsc-double-direct # or /somewhere/to/install/petsc-quad-direct
+    export PETSC_ARCH=arch-xxx-yyy
+
+2. make (from this directory)
+
+    make clean
+    make -j
+
+3. test (TODO WIP)
+
+   make test
+
+You should now be ready to use the code!
+
+
 
 
 ------------------------------------------------
@@ -156,7 +203,7 @@ The connection here is glacial so I haven't directly tested the above
 If you want master, repeat the above but without the "-b maint" in the
 "git clone" command, and with petsc-master as the directory name. You
 can then have parallel builds of the two versions of the library.
-Better to use maint until we need something specific from master 
+Better to use maint until we need something specific from master
 
 for configuring petsc with double precision:
 
