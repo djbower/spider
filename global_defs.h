@@ -254,45 +254,47 @@ static const PetscScalar CO2_KABS = 0.0001; // m^2/kg
 /* datafile locations and material-specific constants */
 
 /* liquidus data file */
-#define LIQUIDUS "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/liquidus.dat"
-//#define LIQUIDUS "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/liquidus.dat"
+#define LIQUIDUS_STIXRUDE2009 "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/liquidus.dat"
+#define LIQUIDUS_ANDRAULT2011 "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/liquidus.dat"
+#define LIQUIDUS_DEFAULT LIQUIDUS_STIXRUDE2009
 
 /* solidus data file */
-#define SOLIDUS "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/solidus.dat"
-//#define SOLIDUS "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/solidus.dat"
+#define SOLIDUS_STIXRUDE2009 "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/solidus.dat"
+#define SOLIDUS_ANDRAULT2011 "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/solidus.dat"
+#define SOLIDUS_DEFAULT SOLIDUS_STIXRUDE2009
 
 /* solid data files */
-#define ALPHA_SOL "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_solid.dat"
+#define ALPHA_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_solid.dat"
 
-#define CP_SOL "../../../data/lookup/lookup-hires-RTmelt/evo/heat_capacity_solid.dat"
+#define CP_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/heat_capacity_solid.dat"
 
-#define DTDPS_SOL "../../../data/lookup/lookup-hires-RTmelt/evo/adiabat_temp_grad_solid.dat"
+#define DTDPS_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/adiabat_temp_grad_solid.dat"
 
-#define RHO_SOL "../../../data/lookup/lookup-hires-RTmelt/evo/density_solid.dat"
+#define RHO_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/density_solid.dat"
 
-#define TEMP_SOL "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_solid.dat"
+#define TEMP_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_solid.dat"
 
-//static const PetscScalar LOG10VISC_SOL = 21.0;
-static const PetscScalar LOG10VISC_SOL = 6.99089665051;
+//#define LOG10VISC_SOL 21.0
+#define LOG10VISC_SOL 6.99089665051
 
-//static const PetscScalar COND_SOL = 4.0;
-static const PetscScalar COND_SOL = 1.30871862439e-17;
+//#define COND_SOL 4.0
+#define COND_SOL 1.30871862439e-17
 
 /* melt data files */
-#define ALPHA_MEL "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_melt.dat"
+#define ALPHA_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_melt.dat"
 
-#define CP_MEL "../../../data/lookup/lookup-hires-RTmelt/evo/heat_capacity_melt.dat"
+#define CP_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/heat_capacity_melt.dat"
 
-#define DTDPS_MEL "../../../data/lookup/lookup-hires-RTmelt/evo/adiabat_temp_grad_melt.dat"
+#define DTDPS_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/adiabat_temp_grad_melt.dat"
 
-#define RHO_MEL "../../../data/lookup/lookup-hires-RTmelt/evo/density_melt.dat"
+#define RHO_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/density_melt.dat"
 
-#define TEMP_MEL "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_melt.dat"
+#define TEMP_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_melt.dat"
 
-//static const PetscScalar LOG10VISC_MEL = 2.0;
-static const PetscScalar LOG10VISC_MEL = -12.0091033495;
+//#define LOG10VISC_MEL 2.0
+#define LOG10VISC_MEL -12.0091033495
 
-//static const PetscScalar COND_MEL = 4.0;
-static const PetscScalar COND_MEL = 1.30871862439e-17;
+//static const PetscScalar COND_MEL 4.0
+#define COND_MEL 1.30871862439e-17
 
 #endif

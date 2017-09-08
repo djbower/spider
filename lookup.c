@@ -3,51 +3,74 @@
 static PetscErrorCode set_interp2d( const char *, Interp2d * );
 static PetscErrorCode set_interp1d( const char *, Interp1d *, PetscInt );
 
-PetscErrorCode set_lookups( Ctx *E ) 
+PetscErrorCode set_lookups( Ctx *E )
 {
+    PetscErrorCode ierr;
+    char liquidusFilename[PETSC_MAX_PATH_LEN],solidusFilename[PETSC_MAX_PATH_LEN];
+
     /* set all 1-D and 2-D lookups */
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
     {
-      PetscErrorCode ierr;
       ierr = PetscPrintf(PETSC_COMM_WORLD,"set_lookup:\n" );CHKERRQ(ierr);
     }
 #endif
 
     /* Based on a user-supplied flag, determine which files to load.
        See global_defs.h for the paths */
+    {
+      char lscTypeString[PETSC_MAX_PATH_LEN] = "default";
+      PetscBool isDefault=PETSC_FALSE,isStixrude2009=PETSC_FALSE,isAndrault2011=PETSC_FALSE;
+      ierr = PetscOptionsGetString(NULL,NULL,"-curves",lscTypeString,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
+      ierr = PetscStrcmp(lscTypeString,"default",&isDefault);CHKERRQ(ierr);
+      ierr = PetscStrcmp(lscTypeString,"stixrude2009",&isStixrude2009);CHKERRQ(ierr);
+      ierr = PetscStrcmp(lscTypeString,"andrault2011",&isAndrault2011);CHKERRQ(ierr);
+      if (!(isDefault || isStixrude2009 || isAndrault2011)){
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"Unrecognized -curves choice %s provided. Using defaults\n",lscTypeString);CHKERRQ(ierr);
+      }
+      if (isStixrude2009) {
+        ierr = PetscStrcpy(liquidusFilename,LIQUIDUS_STIXRUDE2009);CHKERRQ(ierr);
+        ierr = PetscStrcpy(solidusFilename,SOLIDUS_STIXRUDE2009);CHKERRQ(ierr);
+      } else if (isAndrault2011) {
+        ierr = PetscStrcpy(liquidusFilename,LIQUIDUS_ANDRAULT2011);CHKERRQ(ierr);
+        ierr = PetscStrcpy(solidusFilename,SOLIDUS_ANDRAULT2011);CHKERRQ(ierr);
+      } else {
+        ierr = PetscStrcpy(liquidusFilename,LIQUIDUS_DEFAULT);CHKERRQ(ierr);
+        ierr = PetscStrcpy(solidusFilename,SOLIDUS_DEFAULT);CHKERRQ(ierr);
+      }
+    }
 
     /* solid lookups */
     /* 2d */
-    set_interp2d( ALPHA_SOL, &E->solid_prop.alpha );
-    set_interp2d( CP_SOL, &E->solid_prop.cp );
-    set_interp2d( DTDPS_SOL, &E->solid_prop.dTdPs );
-    set_interp2d( RHO_SOL, &E->solid_prop.rho );
-    set_interp2d( TEMP_SOL, &E->solid_prop.temp );
+    set_interp2d( ALPHA_SOL_DEFAULT, &E->solid_prop.alpha );
+    set_interp2d( CP_SOL_DEFAULT, &E->solid_prop.cp );
+    set_interp2d( DTDPS_SOL_DEFAULT, &E->solid_prop.dTdPs );
+    set_interp2d( RHO_SOL_DEFAULT, &E->solid_prop.rho );
+    set_interp2d( TEMP_SOL_DEFAULT, &E->solid_prop.temp );
     /* const */
     E->solid_prop.cond = COND_SOL;
     E->solid_prop.log10visc = LOG10VISC_SOL;
 
     /* melt lookups */
     /* 2d */
-    set_interp2d( ALPHA_MEL, &E->melt_prop.alpha );
-    set_interp2d( CP_MEL, &E->melt_prop.cp );
-    set_interp2d( DTDPS_MEL, &E->melt_prop.dTdPs );
-    set_interp2d( RHO_MEL, &E->melt_prop.rho );
-    set_interp2d( TEMP_MEL, &E->melt_prop.temp );
+    set_interp2d( ALPHA_MEL_DEFAULT, &E->melt_prop.alpha );
+    set_interp2d( CP_MEL_DEFAULT, &E->melt_prop.cp );
+    set_interp2d( DTDPS_MEL_DEFAULT, &E->melt_prop.dTdPs );
+    set_interp2d( RHO_MEL_DEFAULT, &E->melt_prop.rho );
+    set_interp2d( TEMP_MEL_DEFAULT, &E->melt_prop.temp );
     /* const */
     E->melt_prop.cond = COND_MEL;
     E->melt_prop.log10visc = LOG10VISC_MEL;
 
     /* liquidus and solidus */
     /* 1d */
-    set_interp1d( LIQUIDUS, &E->solid_prop.liquidus, NLS );
-    set_interp1d( LIQUIDUS, &E->melt_prop.liquidus, NLS );
+    set_interp1d( liquidusFilename, &E->solid_prop.liquidus, NLS );
+    set_interp1d( liquidusFilename, &E->melt_prop.liquidus, NLS );
     /* duplication here, but want to remain flexible for future
        approaches for a multicomponent system */
-    set_interp1d( SOLIDUS, &E->solid_prop.solidus, NLS );
-    set_interp1d( SOLIDUS, &E->melt_prop.solidus, NLS );
+    set_interp1d( solidusFilename, &E->solid_prop.solidus, NLS );
+    set_interp1d( solidusFilename, &E->melt_prop.solidus, NLS );
 
     PetscFunctionReturn(0);
 }
@@ -56,7 +79,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 {
     FILE *fp;
     PetscInt i=0, j=0, k=0;
-    char string[100];
+    char string[PETSC_MAX_PATH_LEN];
 #if (defined PETSC_USE_REAL___FLOAT128)
     char xtemp[30], ytemp[30], ztemp[30];
 #endif
@@ -168,7 +191,7 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
 {
     FILE *fp;
     PetscInt i=0;
-    char string[100];
+    char string[PETSC_MAX_PATH_LEN];
 #if (defined PETSC_USE_REAL___FLOAT128)
     char xtemp[30], ytemp[30];
 #endif
@@ -295,7 +318,7 @@ PetscScalar get_val1d( Interp1d *I, PetscScalar x )
 
 PetscScalar get_val2d( Interp2d *I, PetscScalar x, PetscScalar y )
 {
-    /* wrapper for evaluating a 2-D lookup using bilinear 
+    /* wrapper for evaluating a 2-D lookup using bilinear
        interpolation.
 
        Note that this assumes that x data (pressure) is evenly
