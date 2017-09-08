@@ -15,6 +15,9 @@ PetscErrorCode set_lookups( Ctx *E )
     }
 #endif
 
+    /* Based on a user-supplied flag, determine which files to load.
+       See global_defs.h for the paths */
+
     /* solid lookups */
     /* 2d */
     set_interp2d( ALPHA_SOL, &E->solid_prop.alpha );
