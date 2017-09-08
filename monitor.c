@@ -53,8 +53,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   {
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/dSdr_b_aug.%lld.m",nstep);CHKERRQ(ierr);
-    ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug_%lld",nstep);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/dSdr_b_aug_%lld.m",nstep);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug",nstep);CHKERRQ(ierr);
     ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr); //Annoyingly, PETSc wants you to use binary output so badly that this is the easiest way to get full-precision ASCII..
     ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
