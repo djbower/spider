@@ -49,8 +49,8 @@ class FigureData( object ):
         filename = 'petscbin.{0}'.format( time )
         tname = os.path.join( out, filename )
         if not os.path.isfile( tname ):
-            print 'petsc_bin_filename: ERROR', tname, 'does not exist'
-            print '    please specify times for which data exists in output/'
+            print('petsc_bin_filename: ERROR'+tname+'does not exist')
+            print('    please specify times for which data exists in output/')
             sys.exit(1)
         return tname
 
@@ -1265,6 +1265,9 @@ def get_vector_index( instring ):
 
 #====================================================================
 def main( args ):
+
+    if len(args) < 2 :
+        raise Exception('You must provide an argument consisting of comma-separated times.')
 
     figure1( args )
     #figure2( args )
