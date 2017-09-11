@@ -901,8 +901,10 @@ def figure6( args ):
     #print np.min(H2Otot), np.max(H2Otot)
     #sys.exit(1)
 
-    print np.min(x0), np.max(x0)
-    print np.min(x1), np.max(x1)
+    print(np.min(x0))
+    print(np.max(x0))
+    print(np.min(x1))
+    print(np.max(x1))
 
     xticks = [1E-2,1E-1,1E0,1E1,1E2]#,1E3]#,1E3,4.55E3]
     xlabel = 'Time (Myr)'
@@ -970,7 +972,7 @@ def atmosphere_data_to_array( fig_o ):
     odir = 'output'
     file_l = [f for f in os.listdir(odir) if os.path.isfile(os.path.join(odir,f))]
     if not file_l:
-        print 'ERROR: output directory contains no files'
+        print('ERROR: output directory contains no files')
         sys.exit(1)
 
     time_l = [fname.split('.')[-1] for fname in file_l]
@@ -988,7 +990,7 @@ def atmosphere_data_to_array( fig_o ):
 
     # must be some data to process
     if data is None:
-        print 'atmosphere_data_to_array: no data'
+        print('atmosphere_data_to_array: no data')
         sys.exit(0)
 
     ncols = np.size( data ) + 1
