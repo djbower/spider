@@ -32,11 +32,9 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     double walltime = MPI_Wtime();
     double walltimetotal = walltime - walltime0;
     double walltimestep = walltime - *walltimeprev;
-    double time_per_walltime_hour_total = 3600.0 * (time-time0) / walltimetotal;
-    double time_per_walltime_hour_step = 3600.0 * (time-timeprev) / walltimestep;
     ierr = PetscPrintf(PETSC_COMM_WORLD,
-        "***  Writing output at macro Step %D, t=%f. Min/Max %f/%f [%.2f s : %.2f time units / hour (%.2f total)]\n",
-        step,(double)time,(double)minval,(double)maxval,walltime-walltime0,time_per_walltime_hour_step,time_per_walltime_hour_total);CHKERRQ(ierr);
+        "***  Writing output at macro Step %D, t=%f. Min/Max %f/%f [%.2f s]\n",
+        step,(double)time,(double)minval,(double)maxval,walltime-walltime0);CHKERRQ(ierr);
     *walltimeprev = walltime;
   }
 
