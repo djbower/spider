@@ -27,9 +27,9 @@ something called "gcc" which actually a wrapper for their own compiler. You can 
 
 If you see a message about "Apple LLVM", then you have the wrong compiler!
 
-------------------------
-PETSC (DOUBLE PRECISION)
-------------------------
+----------------
+DOUBLE PRECISION
+----------------
 
 To install with double precision.  This reproduces the behaviour of the
 python prototype code.  In this case you must use Patrick's hacked version of
@@ -39,7 +39,6 @@ you can allow PETSc to automatically download and install SUNDIALS
 
 0. Comment out any existing references to PETSC_DIR and PETSC_ARCH in your
 profile, bash_profile, bashrc, etc. (clear these variables)
-
 
 1. get the hacked version of PETSc (Patrick must give you read access to his
 bitbucket - email patrick.sanan@gmail.com with your bitbucket username):
