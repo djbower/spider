@@ -31,10 +31,9 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     ierr = VecMax(x_aug,NULL,&maxval);CHKERRQ(ierr);
     double walltime = MPI_Wtime();
     double walltimetotal = walltime - walltime0;
-    double walltimestep = walltime - *walltimeprev;
     ierr = PetscPrintf(PETSC_COMM_WORLD,
         "***  Writing output at macro Step %D, t=%f. Min/Max %f/%f [%.2f s]\n",
-        step,(double)time,(double)minval,(double)maxval,walltime-walltime0);CHKERRQ(ierr);
+        step,(double)time,(double)minval,(double)maxval,walltimetotal);CHKERRQ(ierr);
     *walltimeprev = walltime;
   }
 
