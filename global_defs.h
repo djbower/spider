@@ -253,15 +253,17 @@ static const PetscScalar CO2_KABS = 0.0001; // m^2/kg
 
 /* datafile locations and material-specific constants */
 
-/* liquidus data file */
+/* A Root Directory */
+/* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
+#define STRINGIFY(x) STRINGIFY2(x)
+#define STRINGIFY2(x) #x
+#define MAGMA_ROOT_DIR_STR STRINGIFY(MAGMA_ROOT_DIR)
+
+/* liquidus/solidus data files */
 #define LIQUIDUS_STIXRUDE2009 "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/liquidus.dat"
 #define LIQUIDUS_ANDRAULT2011 "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/liquidus.dat"
-#define LIQUIDUS_DEFAULT LIQUIDUS_STIXRUDE2009
-
-/* solidus data file */
 #define SOLIDUS_STIXRUDE2009 "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/solidus.dat"
 #define SOLIDUS_ANDRAULT2011 "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/solidus.dat"
-#define SOLIDUS_DEFAULT SOLIDUS_STIXRUDE2009
 
 /* solid data files */
 #define ALPHA_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_solid.dat"
