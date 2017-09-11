@@ -11,6 +11,7 @@
 
 /* common structures */
 
+/* TODO: one should never use leading underscores in your own functions or variables (though many people do). These are actually reserved in several situations and it's simpler to completely avoid them. */
 /* this structure has an x and y array size equal to NLS */
 typedef struct _Interp1d {
     PetscScalar xa[NLS];
