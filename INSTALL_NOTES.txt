@@ -96,8 +96,7 @@ If this fails, then install cmake from your package manager (homebrew, macports,
 4. Configure, build, and install SUNDIALS
 
     cd sundials-quad
-    mkdir install
-    mkdir build
+    mkdir install build
     cd build
     cmake ..
     ccmake .                          # with apt you may need to install this separately
