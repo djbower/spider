@@ -1,0 +1,4 @@
+-curves andrault2011
+-sinit 1.02
+-nstepsmacro 5
+-dtmacro 1000000
