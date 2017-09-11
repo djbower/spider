@@ -13,7 +13,7 @@ A simple way to proceed is install gcc compilers to the default location from:
 
 This will install everything into /usr/local
 
-If you use MacPorts, Homebrew, or APT, these can also be used to easily install gcc.
+If you use MacPorts, Homebrew, or apt, these can also be used to easily install gcc.
 
 You can test that you have a working "gcc" C by running the following from the command line
 
@@ -100,7 +100,7 @@ If this fails, then install cmake from your package manager (homebrew, macports,
     mkdir build
     cd build
     cmake ..
-    ccmake .                          # with apt you may need to install these separately
+    ccmake .                          # with apt you may need to install this separately
 
 Use the ccmake interface to set these values:
 
