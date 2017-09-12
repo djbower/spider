@@ -16,12 +16,16 @@ def bottomUpLiquid(rootDir) :
   expectedFile = os.path.join(thisDir,'expected')
 
   def comparefunc(t) :
-      # TODO
-      pass
+      t.compareFloatingPoint('',1e-5) # match everything
 
   # Create Test Object
   t = pthtest.Test(testName,ranks,launch,expectedFile)
+  t.setComparisonFile('output/dSdr_b_aug_1000000.m')
   t.setVerifyMethod(comparefunc)
+  t.appendKeywords('%')
+  t.appendKeywords('[')
+  t.appendKeywords(']')
+  t.appendKeywords('dSdr_b_aug')
   t.setUseSandbox()
 
   return(t)

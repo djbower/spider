@@ -1,6 +1,6 @@
 -curves stixrude2009
 -sinit 1.02
--nstepsmacro 2
--dtmacro 1000000
+-nstepsmacro 20
+-dtmacro 100000
 -ts_sundials_rtol 1e-18
 -ts_sundials_atol 1e-18
