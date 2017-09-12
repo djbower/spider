@@ -96,6 +96,9 @@ static const PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
 static const PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
 static const PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
 
+/* FIXME: this is just a placeholder - currently wrong! */
+#define TIME0 ((PetscReal) 1e-5) // !!!! WRONG !!!!
+
 /* initial condition: set entropy of adiabat */
 /* set at reference entropy */
 /* to compare with python test1 */

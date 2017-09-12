@@ -34,7 +34,7 @@ int main(int argc, char ** argv)
      early, middle, and late evolution */
   /* early evolution to about 10 kyr */
   PetscInt        nstepsmacro = 1000;  /* Max macros steps */
-  PetscReal       dtmacro = 1000000;        /* Macro step size (about a year) */
+  PetscReal       dtmacro = 1000000;        /* Macro step size (in nondimensional units. About a year) */
   /* middle evolution to about 100 Myr */
   //PetscInt        nstepsmacro = 10000;  /* Max macros steps */
   //PetscReal       dtmacro = 1000000000; /* Macro step size (roughly years) */
@@ -51,16 +51,29 @@ int main(int argc, char ** argv)
   ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
   if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
 
-  /* Obtain a command-line argument for testing */
-  ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&monitor,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&nstepsmacro,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&dtmacro,NULL);CHKERRQ(ierr);
+  /* Obtain command-line options for simulation time frame and monitoring */
+  {
+    PetscReal dtmacro_years = dtmacro * TIME0;
+    PetscBool dtmacro_set = PETSC_FALSE, dtmacro_years_set = PETSC_FALSE;
+    ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&monitor,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&nstepsmacro,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&dtmacro,&dtmacro_set);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
+    if (dtmacro_set) {
+        if (dtmacro_years_set) {
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: both -dtmacro and -dtmacro_years provided. Using -dtmacro\n");CHKERRQ(ierr);
+        }
+        dtmacro_years = dtmacro * TIME0; /* FIXME : TIME0 currently wrong */
+    } else if (dtmacro_years_set) {
+        dtmacro = dtmacro_years / TIME0; /* FIXME : TIME0 currently wrong */
+    }
 
-  /* This code proceeds by performing multiple solves with a TS object,
-     pausing to optionally produce output before updating the "final" time
-     and proceeding again */
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f\n",
-      nstepsmacro,(double) dtmacro);CHKERRQ(ierr);
+    /* This code proceeds by performing multiple solves with a TS object,
+       pausing to optionally produce output before updating the "final" time
+       and proceeding again */
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f = %f years\n",
+        nstepsmacro,(double) dtmacro, (double) dtmacro_years);CHKERRQ(ierr);
+  }
 
   /* Note: it might make for a less-confusing code if all command-line 
            processing was here, instead of hidden in the ctx setup */
