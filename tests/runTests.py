@@ -50,12 +50,12 @@ def main() :
     # The set of tests to run
     rootDir = os.path.join(thisDir,'..')
     allTests = [
-        bottomUpLiquid(rootDir), \
-        bottomUpMixed(rootDir),  \
         bottomUpSolid(rootDir),  \
-        middleOutLiquid(rootDir),\
-        middleOutMixed(rootDir), \
+        bottomUpMixed(rootDir),  \
+        bottomUpLiquid(rootDir), \
         middleOutSolid(rootDir), \
+        middleOutMixed(rootDir), \
+        middleOutLiquid(rootDir),\
     ]
 
     # Run tests
