@@ -124,7 +124,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* FIXME.  Not sure if values are still getting pushed into the array
      due to the atmosphere, even if the atmosphere should not be solved for.
      This should stop that */
-  if (CO2_INITIAL <= 0.0 && H2O_INITIAL <= 0.0){
+  if (A->CO2_INITIAL <= 0.0 && A->H2O_INITIAL <= 0.0){
     ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
   }
