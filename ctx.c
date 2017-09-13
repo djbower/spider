@@ -15,7 +15,6 @@ PetscErrorCode setup_ctx(Ctx* ctx)
 
   PetscFunctionBeginUser;
 
-  // DJB WORKING HERE
   set_constants(ctx);
 
   set_parameters(ctx);
@@ -139,7 +138,7 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   set_twophase(ctx);
 
   /* Obtain a command-line argument for S_init */
-  ctx->S_init = SINIT_DEFAULT;
+  ctx->S_init = ctx->parameters.sinit;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&ctx->S_init,NULL);CHKERRQ(ierr);
 
   /* initial condition is set in main.c */
