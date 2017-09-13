@@ -60,6 +60,45 @@ typedef struct _Atmosphere {
     PetscScalar tau1; // H20 optical depth (dimensionless)
 } Atmosphere;
 
+/* dimensionalising constants */
+typedef struct _Constants {
+    PetscScalar RADIUS;
+    PetscScalar TEMP;
+    PetscScalar ENTROPY;
+    PetscScalar DENSITY;
+    PetscScalar AREA;
+    PetscScalar AREAG; // with 4*pi geometry
+    PetscScalar VOLUME;
+    PetscScalar VOLUMEG; // with 4*pi geometry
+    PetscScalar MASS;
+    PetscScalar MASSG; // with 4*pi geometry
+    PetscScalar TIME;
+    PetscScalar TIMEYRS;
+    PetscScalar SENERGY;
+    PetscScalar ENERGY;
+    PetscScalar ENERGYG; // with 4*pi geometry
+    PetscScalar PRESSURE;
+    PetscScalar POWER;
+    PetscScalar POWERG; // with 4*pi geometry
+    PetscScalar FLUX;
+    PetscScalar DPDR;
+    PetscScalar ALPHA;
+    PetscScalar GRAVITY;
+    PetscScalar KAPPA;
+    PetscScalar DTDP;
+    PetscScalar DSDR;
+    PetscScalar DTDR;
+    PetscScalar GSUPER;
+    PetscScalar ETA;
+    PetscScalar LOG10ETA;
+    PetscScalar NU;
+    PetscScalar COND;
+    PetscScalar SIGMA;
+    PetscScalar LHS;
+    PetscScalar LHSG; // with 4*pi geometry
+    PetscScalar RHS;
+} Constants;
+
 /* lookup for a single phase */
 typedef struct _Lookup {
     Interp2d rho; /* density, kg / m^3 */
@@ -114,11 +153,7 @@ typedef struct _Ctx {
   PetscScalar S_init; // initial entropy
   Mat      qty_at_b, ddr_at_b;
   Atmosphere atmosphere;
-
-  /* probably not needed anymore */
-  /* DJB atmosphere testing */
-  //Volatile vol_carbon;
-  //Volatile vol_water;
+  Constants constants;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

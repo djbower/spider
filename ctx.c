@@ -1,4 +1,5 @@
 #include "atmosphere.h"
+#include "constants.h"
 #include "ctx.h"
 #include "lookup.h"
 #include "mesh.h"
@@ -13,6 +14,9 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   PetscBool      set;
 
   PetscFunctionBeginUser;
+
+  // DJB WORKING HERE
+  set_constants(ctx);
 
   /* Initialize context with parameters (most parameters are constants in global_defs.h, though) */
   set_lookups(ctx);
