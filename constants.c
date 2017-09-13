@@ -4,6 +4,7 @@ static PetscErrorCode set_non_dimensional_parameters( Ctx * );
 
 PetscErrorCode set_parameters( Ctx *E )
 {
+    Atmosphere *A = &E->atmosphere;
     Parameters *P = &E->parameters;
 
     PetscFunctionBeginUser;
@@ -12,7 +13,7 @@ PetscErrorCode set_parameters( Ctx *E )
     // all SI units unless non-dimensional
 
     // initial entropy at top of adiabat, J/ K kg
-    P->sinit_default = 3052.885602072091;
+    P->sinit = 3052.885602072091;
     // initial entropy gradient, J / K kg m
     P->ic_dsdr = -4.6978890285209187e-07;
     // radius of planet, m
@@ -70,45 +71,48 @@ PetscErrorCode set_parameters( Ctx *E )
     /* VOLSCALE enables us to scale the volatile equations to the same
        order of magnitude as entropy, and thus ensure that the residual
        based on the solution vector is not biased. */
-    P->volscale = 1.0E2; // wt %
-    P->volscale = 1.0E6; // ppm
+    // FIXME: for convenience at the moment, duplicate these values */
+    A->RADIUS = P->radius;
+    A->GRAVITY = P->gravity;
+    //A->VOLSCALE = 1.0E2; // wt %
+    A->VOLSCALE = 1.0E6; // ppm
     // initial volatile contents in the liquid magma ocean
     // turn off atmosphere
-    P->h2o_initial = 0.0;
-    P->co2_initial = 0.0;
+    A->H2O_INITIAL = 0.0;
+    A->CO2_INITIAL = 0.0;
     // Elkins-Tanton (2008) case 1
-    P->h2o_initial = 500.0;
-    P->co2_initial = 100.0;
+    //P->h2o_initial = 500.0;
+    //P->co2_initial = 100.0;
     // Elkins-Tanton (2008) case 2
-    P->h2o_initial = 5000.0;
-    P->co2_initial = 1000.0;
+    //P->h2o_initial = 5000.0;
+    //P->co2_initial = 1000.0;
     // Elkins-Tanton (2008) case 3
-    P->h2o_initial = 0.0;
-    P->co2_initial = 6000.0;
+    //P->h2o_initial = 0.0;
+    //P->co2_initial = 6000.0;
     // emissivity is used if h2o_initial or co2_initial <= 0
-    P->emissivity = 1.0; // non-dimensional
+    A->EMISSIVITY = 1.0; // non-dimensional
     // Stefan-Boltzmann constant
-    P->sigma = 5.670367e-08;
+    A->SIGMA = 5.670367e-08;
     // equilibrium temperature of the planet
-    P->teqm = 273.0;
-    P->p0 = 101325.0; // Pa (= 1 atm)
+    A->TEQM = 273.0;
+    A->P0 = 101325.0; // Pa (= 1 atm)
     // distribution coefficients are given in supplementary material of ET08
     // distribution coefficient between solid and melt
-    P->h2o_kdist = 1.0E-4; // non-dimensional
+    A->H2O_KDIST = 1.0E-4; // non-dimensional
     // TODO: water saturation limit of 10 ppm?
     // absorption in m^2/kg
-    P->h2o_kabs = 0.01;
+    A->H2O_KABS = 0.01;
     // next two from Lebrun et al. (2013)
-    P->h2o_henry = 6.8E-8; // must be mass fraction/Pa
-    P->h2o_henry_pow = 1.4285714285714286; // (1.0/0.7)
+    A->H2O_HENRY = 6.8E-8; // must be mass fraction/Pa
+    A->H2O_HENRY_POW = 1.4285714285714286; // (1.0/0.7)
     // distribution coefficient between solid and melt
-    P->co2_kdist = 5.0E-4; // non-dimensional
+    A->CO2_KDIST = 5.0E-4; // non-dimensional
     // TODO: water saturation limit of 0.03 ppm
     // absorption in m^2/kg
-    P->co2_kabs = 0.05;
+    A->CO2_KABS = 0.05;
     // next two from Lebrun et al. (2013)
-    P->co2_henry = 4.4E-12; // must be mass fraction/Pa
-    P->co2_henry_pow = 1.0;
+    A->CO2_HENRY = 4.4E-12; // must be mass fraction/Pa
+    A->CO2_HENRY_POW = 1.0;
 
     /* FIXME: perhaps move this call elsewhere eventually */
     set_non_dimensional_parameters( E );
@@ -124,7 +128,7 @@ PetscErrorCode set_non_dimensional_parameters( Ctx *E )
 
     PetscFunctionBeginUser;
 
-    P->sinit_default /= C->ENTROPY;
+    P->sinit /= C->ENTROPY;
     P->ic_dsdr /= C->DSDR;
     P->radius /= C->RADIUS;
     P->rhos /= C->DENSITY;  
