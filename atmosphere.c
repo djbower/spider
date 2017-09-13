@@ -4,12 +4,12 @@ static PetscErrorCode set_Mliq( Ctx * );
 static PetscErrorCode set_Msol( Ctx * );
 static PetscErrorCode set_dMliqdt( Ctx * );
 
-static PetscScalar get_atmosphere_mass( PetscScalar );
-static PetscScalar get_optical_depth( PetscScalar, PetscScalar );
+static PetscScalar get_atmosphere_mass( Atmosphere *, PetscScalar );
+static PetscScalar get_optical_depth( Atmosphere *, PetscScalar, PetscScalar );
 static PetscScalar get_dxdt( Atmosphere *, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_initial_volatile( Atmosphere *, PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar get_partial_pressure_volatile( PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar get_partial_pressure_volatile( Atmosphere *, PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar get_partial_pressure_derivative_volatile( Atmosphere *, PetscScalar, PetscScalar, PetscScalar );
 
 static PetscErrorCode set_dx0dt( Atmosphere * );
 static PetscErrorCode set_pCO2( Atmosphere * );
@@ -32,19 +32,19 @@ PetscErrorCode set_emissivity( Atmosphere *A )
 
     PetscFunctionBeginUser;
 
-    if (CO2_INITIAL <= 0.0 && H2O_INITIAL <= 0.0){
-      A->emissivity = EMISSIVITY;
+    if (A->CO2_INITIAL <= 0.0 && A->H2O_INITIAL <= 0.0){
+      A->emissivity = A->EMISSIVITY;
     }
     else{
       /* CO2 */
       ierr = set_pCO2( A ); CHKERRQ(ierr);
-      A->m0 = get_atmosphere_mass( A->p0 );
-      A->tau0 = get_optical_depth( A->m0, CO2_KABS );
+      A->m0 = get_atmosphere_mass( A, A->p0 );
+      A->tau0 = get_optical_depth( A, A->m0, A->CO2_KABS );
 
       /* H2O */
       ierr = set_pH2O( A ); CHKERRQ(ierr);
-      A->m1 = get_atmosphere_mass( A->p1 );
-      A->tau1 = get_optical_depth( A->m1, H2O_KABS );
+      A->m1 = get_atmosphere_mass( A, A->p1 );
+      A->tau1 = get_optical_depth( A, A->m1, A->H2O_KABS );
 
       /* total */
       A->tau = A->tau0 + A->tau1;
@@ -55,23 +55,23 @@ PetscErrorCode set_emissivity( Atmosphere *A )
 
 }
 
-static PetscScalar get_optical_depth( PetscScalar mass_atm, PetscScalar kabs )
+static PetscScalar get_optical_depth( Atmosphere *A, PetscScalar mass_atm, PetscScalar kabs )
 {
     PetscScalar tau;
 
-    tau = 3.0 * mass_atm / (8.0*PETSC_PI*PetscSqr(RADIUS));
+    tau = 3.0 * mass_atm / (8.0*PETSC_PI*PetscSqr(A->RADIUS));
     // note negative gravity!
-    tau *= PetscSqrtScalar( kabs*-GRAVITY/(3.0*P0) );
+    tau *= PetscSqrtScalar( kabs*-A->GRAVITY/(3.0*A->P0) );
 
     return tau; // dimensionless (by definition)
 }
 
-static PetscScalar get_atmosphere_mass( PetscScalar p )
+static PetscScalar get_atmosphere_mass( Atmosphere *A, PetscScalar p )
 {
     PetscScalar mass_atm;
 
     // p is partial pressure in Pa
-    mass_atm = 4.0*PETSC_PI*PetscSqr(RADIUS) * p / -GRAVITY;
+    mass_atm = 4.0*PETSC_PI*PetscSqr(A->RADIUS) * p / -A->GRAVITY;
 
     return mass_atm; // kg
 
@@ -229,7 +229,7 @@ static PetscScalar get_dxdt( Atmosphere *A, PetscScalar x, PetscScalar kdist, Pe
 
     num = x * (kdist-1.0) * A->dMliqdt;
     den = kdist * M0 + (1.0-kdist) * A->Mliq;
-    den += (4.0*PETSC_PI*PetscSqr(RADIUS) / -GRAVITY) * VOLSCALE * dpdx;
+    den += (4.0*PETSC_PI*PetscSqr(A->RADIUS) / -A->GRAVITY) * A->VOLSCALE * dpdx;
 
     dxdt = num / den;
 
@@ -237,28 +237,28 @@ static PetscScalar get_dxdt( Atmosphere *A, PetscScalar x, PetscScalar kdist, Pe
 
 }
 
-static PetscScalar get_partial_pressure_volatile( PetscScalar x, PetscScalar henry, PetscScalar henry_pow)
+static PetscScalar get_partial_pressure_volatile( Atmosphere *A, PetscScalar x, PetscScalar henry, PetscScalar henry_pow)
 {
 
     /* partial pressure of volatile where x is wt % */
 
     PetscScalar p;
 
-    p = (x / VOLSCALE) / henry;
+    p = (x / A->VOLSCALE) / henry;
     p = PetscPowScalar( p, henry_pow );
 
     return p; // Pa
 
 }
 
-static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, PetscScalar henry, PetscScalar henry_pow )
+static PetscScalar get_partial_pressure_derivative_volatile( Atmosphere *A, PetscScalar x, PetscScalar henry, PetscScalar henry_pow )
 {
 
     /* derivative of partial pressure wrt x where x is wt % */
 
     PetscScalar dpdx;
 
-    dpdx = 1.0 / PetscPowScalar( VOLSCALE*henry, henry_pow );
+    dpdx = 1.0 / PetscPowScalar( A->VOLSCALE*henry, henry_pow );
     dpdx *= henry_pow * PetscPowScalar( x, henry_pow-1.0);
 
     return dpdx; // Pa per wt %
@@ -274,9 +274,9 @@ static PetscScalar get_initial_volatile( Atmosphere *A, PetscScalar xinit, Petsc
     PetscScalar beta, gamma;
     PetscScalar x;
 
-    gamma = 4.0 * PETSC_PI * PetscSqr(RADIUS);
-    gamma /= -GRAVITY * A->M0;
-    gamma *= PetscPowScalar( VOLSCALE, 1.0-henry_pow );
+    gamma = 4.0 * PETSC_PI * PetscSqr(A->RADIUS);
+    gamma /= -A->GRAVITY * A->M0;
+    gamma *= PetscPowScalar( A->VOLSCALE, 1.0-henry_pow );
     gamma /= PetscPowScalar( henry, henry_pow );
     beta = henry_pow;
 
@@ -299,7 +299,7 @@ PetscErrorCode set_dx0dt( Atmosphere *A )
     PetscFunctionBeginUser;
 
     ierr = set_dpCO2dx( A ); CHKERRQ(ierr);
-    A->dx0dt = get_dxdt( A, A->x0, CO2_KDIST, A->dp0dx );
+    A->dx0dt = get_dxdt( A, A->x0, A->CO2_KDIST, A->dp0dx );
 
     PetscFunctionReturn(0);
 }
@@ -308,8 +308,7 @@ PetscErrorCode set_initial_xCO2( Atmosphere *A )
 {
     PetscFunctionBeginUser;
 
-    A->x0 = get_initial_volatile( A, CO2_INITIAL, CO2_HENRY, CO2_HENRY_POW );
-    A->x0init = CO2_INITIAL;
+    A->x0 = get_initial_volatile( A, A->CO2_INITIAL, A->CO2_HENRY, A->CO2_HENRY_POW );
 
     PetscFunctionReturn(0);
 
@@ -325,7 +324,7 @@ static PetscErrorCode set_pCO2( Atmosphere *A )
 
     PetscFunctionBeginUser;
 
-    A->p0 = get_partial_pressure_volatile( A->x0, CO2_HENRY, CO2_HENRY_POW );
+    A->p0 = get_partial_pressure_volatile( A, A->x0, A->CO2_HENRY, A->CO2_HENRY_POW );
 
     PetscFunctionReturn(0);
 
@@ -338,7 +337,7 @@ static PetscErrorCode set_dpCO2dx( Atmosphere *A )
 
     PetscFunctionBeginUser;
 
-    A->dp0dx = get_partial_pressure_derivative_volatile( A->x0, CO2_HENRY, CO2_HENRY_POW );
+    A->dp0dx = get_partial_pressure_derivative_volatile( A, A->x0, A->CO2_HENRY, A->CO2_HENRY_POW );
 
     PetscFunctionReturn(0);
 
@@ -356,7 +355,7 @@ PetscErrorCode set_dx1dt( Atmosphere *A )
     PetscFunctionBeginUser;
 
     ierr = set_dpH2Odx( A ); CHKERRQ(ierr);
-    A->dx1dt = get_dxdt( A, A->x1, H2O_KDIST, A->dp1dx );
+    A->dx1dt = get_dxdt( A, A->x1, A->H2O_KDIST, A->dp1dx );
 
     PetscFunctionReturn(0);
 }
@@ -365,8 +364,7 @@ PetscErrorCode set_initial_xH2O( Atmosphere *A )
 {
     PetscFunctionBeginUser;
 
-    A->x1 = get_initial_volatile( A, H2O_INITIAL, H2O_HENRY, H2O_HENRY_POW );
-    A->x1init = H2O_INITIAL;
+    A->x1 = get_initial_volatile( A, A->H2O_INITIAL, A->H2O_HENRY, A->H2O_HENRY_POW );
 
     PetscFunctionReturn(0);
 
@@ -379,7 +377,7 @@ static PetscErrorCode set_pH2O( Atmosphere *A )
 
     PetscFunctionBeginUser;
 
-    A->p1 = get_partial_pressure_volatile( A->x1, H2O_HENRY, H2O_HENRY_POW );
+    A->p1 = get_partial_pressure_volatile( A, A->x1, A->H2O_HENRY, A->H2O_HENRY_POW );
 
     PetscFunctionReturn(0);
 
@@ -392,7 +390,7 @@ static PetscErrorCode set_dpH2Odx( Atmosphere *A )
 
     PetscFunctionBeginUser;
 
-    A->dp1dx = get_partial_pressure_derivative_volatile( A->x1, H2O_HENRY, H2O_HENRY_POW );
+    A->dp1dx = get_partial_pressure_derivative_volatile( A, A->x1, A->H2O_HENRY, A->H2O_HENRY_POW );
 
     PetscFunctionReturn(0);
 
