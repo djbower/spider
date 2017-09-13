@@ -30,11 +30,10 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
 
     PetscErrorCode ierr;
     DM             da_s=E->da_s, da_b=E->da_b;
-    Solution       *S;
+    Parameters     *P = &E->parameters;
+    Solution       *S = &E->solution;
     PetscInt       i, ilo_s, ihi_s, w_s, ilo, ihi, w;
     PetscScalar    *arr_gphi_s, *arr_fwtl_s, *arr_fwts_s, *arr_gphi, *arr_fwtl, *arr_fwts;
-
-    S = &E->solution;
 
     PetscFunctionBeginUser;
 
@@ -51,10 +50,10 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
     for(i=ilo; i<ihi; ++i){
         /* fwtl -> 1.0 for gphi > 1.0 */
         /* fwtl -> 0.0 for gphi < 1.0 */
-        arr_fwtl[i] = tanh_weight( arr_gphi[i], 1.0, SWIDTH );
+        arr_fwtl[i] = tanh_weight( arr_gphi[i], 1.0, P->swidth );
         /* fwts -> 1.0 for gphi > 0.0 */
         /* fwts -> 0.0 for gphi < 0.0 */
-        arr_fwts[i] = tanh_weight( arr_gphi[i], 0.0, SWIDTH );
+        arr_fwts[i] = tanh_weight( arr_gphi[i], 0.0, P->swidth );
     }
 
     ierr = DMDAVecRestoreArray(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
@@ -72,8 +71,8 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_s,S->gphi_s,&arr_gphi_s);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
-        arr_fwtl_s[i] = tanh_weight( arr_gphi_s[i], 1.0, SWIDTH );
-        arr_fwts_s[i] = tanh_weight( arr_gphi_s[i], 0.0, SWIDTH );
+        arr_fwtl_s[i] = tanh_weight( arr_gphi_s[i], 1.0, P->swidth );
+        arr_fwts_s[i] = tanh_weight( arr_gphi_s[i], 0.0, P->swidth );
     }
 
     ierr = DMDAVecRestoreArray(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
