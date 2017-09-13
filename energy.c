@@ -276,6 +276,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     Vec rho = S->rho;
     Vec rhol = S->liquidus_rho;
     Vec rhos = S->solidus_rho;
+    Parameters *P = &E->parameters;
 
 //rho, rhol, rhos, F;
     PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
@@ -361,11 +362,11 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     // arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
     ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, S->fusion );CHKERRQ(ierr);
     ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, S->temp );CHKERRQ(ierr);
-    ierr = VecScale( S->Jgrav, PetscPowScalar(GRAIN,2) );CHKERRQ(ierr);
-    ierr = VecScale( S->Jgrav, GRAVITY );CHKERRQ(ierr);
+    ierr = VecScale( S->Jgrav, PetscPowScalar(P->grain,2) );CHKERRQ(ierr);
+    ierr = VecScale( S->Jgrav, P->gravity );CHKERRQ(ierr);
     ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, F );CHKERRQ(ierr);
     // arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
-    ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, LOG10VISC_MEL));CHKERRQ(ierr);
+    ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, P->log10visc_mel));CHKERRQ(ierr);
 
     ierr = VecDestroy(&cond1);CHKERRQ(ierr);
     ierr = VecDestroy(&cond2);CHKERRQ(ierr);
