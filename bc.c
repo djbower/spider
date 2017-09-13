@@ -3,9 +3,9 @@
 
 static PetscScalar hybrid( Ctx *, PetscScalar, PetscReal );
 #if defined GREYBODY
-static PetscScalar greybody_with_dT( PetscScalar, PetscReal, PetscScalar );
-static PetscScalar greybody( PetscScalar, PetscReal, PetscScalar );
-static PetscScalar tsurf_param( PetscScalar );
+static PetscScalar greybody_with_dT( PetscScalar, PetscReal, PetscScalar, Parameters * );
+static PetscScalar greybody( PetscScalar, PetscReal, PetscScalar, Parameters * );
+static PetscScalar tsurf_param( PetscScalar, Parameters * );
 #endif
 #ifdef ZAHNLE
 static PetscScalar zahnle( PetscScalar, PetscReal, PetscScalar );
@@ -20,6 +20,7 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
     PetscMPIInt       rank;
     PetscScalar       temp0, Qout;
     PetscInt          ind;
+    Parameters        *P = &E->parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -39,7 +40,7 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
       Qout = hybrid( E, temp0, tyrs );
 
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
-      Qout *= PetscSqr( RADIUS );
+      Qout *= PetscSqr( P->radius );
       ierr = VecSetValue(S->Etot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
 
     }
@@ -62,6 +63,7 @@ static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
     PetscScalar    G0, R0, R1, R2, E0, E1, E2, Q2, fwt, phi0;
     PetscInt       ind;
     Mesh           *M = &E->mesh;
+    Parameters     *P = &E->parameters;
     Solution       *S = &E->solution;
 #endif
 
@@ -72,14 +74,14 @@ static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
     Q1 = zahnle( temp0, tyrs, A->emissivity );
 #endif
 #ifdef GREYBODY
-    Q1 = greybody_with_dT( temp0, tyrs, A->emissivity );
+    Q1 = greybody_with_dT( temp0, tyrs, A->emissivity, P );
 #endif
 #ifdef HYBRID
     /* for weight of different fluxes */
     ind = 0;
     ierr = VecGetValues(S->phi,1,&ind,&phi0); CHKERRQ(ierr);
     /* SWIDTH or PHI_WIDTH most appropriate choice here? */
-    fwt = tanh_weight( phi0, PHI_CRITICAL, SWIDTH );
+    fwt = tanh_weight( phi0, P->phi_critical, P->swidth );
 
     // energy flux from energy gradient
     ierr = VecGetValues(M->area_b,1,&ind,&G0); CHKERRQ(ierr);
@@ -151,15 +153,14 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
     PetscScalar       val;
     PetscMPIInt       rank, size;
 
-    Mesh              *M; 
-    Solution          *S;
+    Mesh              *M = &E->mesh;
+    Parameters        *P = &E->parameters;
+    Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_core_mantle_flux:\n");CHKERRQ(ierr);
 #endif
-    M = &E->mesh;
-    S = &E->solution;
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ix  = numpts_b-1;
     ix2 = numpts_b-2;
@@ -175,11 +176,11 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
         ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
         ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
         fac = 4.0 * M_PI * vol;
-        vol_core = 1.0/3.0 * PetscPowScalar(CORESIZE,3.0) * PetscPowScalar(RADIUS,3.0);
+        vol_core = 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
         fac = vol / vol_core;
-        fac *= rho_cmb / RHO_CORE;
-        fac *= cp_cmb / CP_CORE;
-        fac /= TFAC_CORE_AVG;
+        fac *= rho_cmb / P->rho_core;
+        fac *= cp_cmb / P->cp_core;
+        fac /= P->tfac_core_avg;
 
         fac = 1.0 / (1.0 + fac);
         fac *= area2 / area1;
@@ -207,10 +208,10 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 }
 
 #if defined(GREYBODY)
-static PetscScalar tsurf_param( PetscScalar temp )
+static PetscScalar tsurf_param( PetscScalar temp, Parameters *P )
 {
     PetscScalar Ts, c, fac, num, den;
-    c = CONSTBC;
+    c = P->constbc;
 
     fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
     fac = PetscPowScalar( fac, 1.0/2.0 );
@@ -225,29 +226,29 @@ static PetscScalar tsurf_param( PetscScalar temp )
     return Ts;
 }
 
-static PetscScalar greybody( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss )
+static PetscScalar greybody( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss, Parameters *P )
 {
     PetscScalar Fsurf;
 
-    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(TEQM,4.0);
-    Fsurf *= SIGMA * emiss;
+    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(P->teqm,4.0);
+    Fsurf *= P->sigma * emiss;
 
     return Fsurf;
 }
 
-static PetscScalar greybody_with_dT( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss )
+static PetscScalar greybody_with_dT( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss, Parameters *P )
 {
     PetscScalar Ts, Fsurf;
 
     /* no parameterised ultra-thin thermal boundary layer */
-    if( CONSTBC == 0.0 ){
+    if( P->constbc == 0.0 ){
         Ts = Tsurf;
     }
     /* parameterised ultra-thin thermal boundary layer */
     else{
-        Ts = tsurf_param( Tsurf );
+        Ts = tsurf_param( Tsurf, P );
     }
-    Fsurf = greybody( Ts, tyrs, emiss );
+    Fsurf = greybody( Ts, tyrs, emiss, P );
 
     return Fsurf;
 }
