@@ -58,13 +58,14 @@ static PetscErrorCode set_ic_dSdr_constant( Ctx *E, Vec dSdr_in )
     /* set initial entropy gradient to constant for basic nodes */
 
     PetscErrorCode     ierr;
+    Parameters *P = &E->parameters;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_dSdr_constant:\n");CHKERRQ(ierr);
 #endif
 
-    ierr = VecSet( dSdr_in, IC_DSDR ); CHKERRQ( ierr );
+    ierr = VecSet( dSdr_in, P->ic_dsdr ); CHKERRQ( ierr );
 
     /* these next two lines are simply convenient reminders that the
        first and last values are meaningless because the fluxes here
