@@ -38,20 +38,38 @@ typedef struct _Interp2d {
 /* for storing atmosphere outputs for eventual writing to Petsc
    binary file */
 typedef struct _Atmosphere {
+    // 35 parameters in total
+    // input parameters (17)
+    PetscScalar VOLSCALE;
+    PetscScalar H2O_INITIAL;
+    PetscScalar CO2_INITIAL;
+    PetscScalar EMISSIVITY;
+    PetscScalar SIGMA;
+    PetscScalar TEQM;
+    PetscScalar P0;
+    PetscScalar H2O_KDIST;
+    PetscScalar H2O_KABS;
+    PetscScalar H2O_HENRY;
+    PetscScalar H2O_HENRY_POW;
+    PetscScalar CO2_KDIST;
+    PetscScalar CO2_KABS;
+    PetscScalar CO2_HENRY;
+    PetscScalar CO2_HENRY_POW;
+    PetscScalar RADIUS; // duplicate
+    PetscScalar GRAVITY; // duplicate
+    // calculated quantites (18)
     PetscScalar M0; // total mass of mantle from EOS (kg)
     PetscScalar Mliq; // mass of liquid (kg)
     PetscScalar Msol; // mass of solid (kg)
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tau; // aggregate optical depth (dimensionless)
     PetscScalar emissivity; // aggregate emissivity (dimensionless)
-    PetscScalar x0init; // initial total CO2 content (wt %)
     PetscScalar x0; // CO2 content (wt %)
     PetscScalar dx0dt; // dx0/dt (wt % / yr)
     PetscScalar p0; // CO2 partial pressure (Pa)
     PetscScalar dp0dx; // dp0/dx (Pa/mass fraction)
     PetscScalar m0; // CO2 mass in atmosphere (kg)
     PetscScalar tau0; // CO2 optical depth (dimensionless)
-    PetscScalar x1init; // initial total H2O content (wt %)
     PetscScalar x1; // H2O content (wt %)
     PetscScalar dx1dt; // dx1/dt (wt % / yr)
     PetscScalar p1; // H2O partial pressure (Pa)
@@ -100,7 +118,7 @@ typedef struct _Constants {
 } Constants;
 
 typedef struct _Parameters {
-    PetscScalar sinit_default;
+    PetscScalar sinit;
     PetscScalar ic_dsdr;
     PetscScalar radius;
     PetscScalar coresize;
