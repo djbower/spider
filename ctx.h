@@ -99,6 +99,46 @@ typedef struct _Constants {
     PetscScalar RHS;
 } Constants;
 
+typedef struct _Parameters {
+    PetscScalar sinit_default;
+    PetscScalar ic_dsdr;
+    PetscScalar radius;
+    PetscScalar coresize;
+    PetscScalar rhos;
+    PetscScalar beta;
+    PetscScalar grain;
+    PetscScalar gravity;
+    PetscScalar phi_critical;
+    PetscScalar phi_width;
+    PetscScalar phi_skew;
+    PetscScalar constbc;
+    PetscScalar rho_core;
+    PetscScalar cp_core;
+    PetscScalar tfac_core_avg;
+    PetscScalar swidth;
+    PetscScalar log10visc_sol;
+    PetscScalar cond_sol;
+    PetscScalar log10visc_mel;
+    PetscScalar cond_mel;
+    // atmosphere below here
+    PetscScalar volscale;
+    PetscScalar h2o_initial;
+    PetscScalar co2_initial;
+    PetscScalar emissivity;
+    PetscScalar sigma;
+    PetscScalar teqm;
+    PetscScalar p0;
+    PetscScalar h2o_kdist;
+    PetscScalar h2o_kabs;
+    PetscScalar h2o_henry;
+    PetscScalar h2o_henry_pow;
+    PetscScalar co2_kdist;
+    PetscScalar co2_kabs;
+    PetscScalar co2_henry;
+    PetscScalar co2_henry_pow;
+} Parameters;
+
+
 /* lookup for a single phase */
 typedef struct _Lookup {
     Interp2d rho; /* density, kg / m^3 */
@@ -154,6 +194,7 @@ typedef struct _Ctx {
   Mat      qty_at_b, ddr_at_b;
   Atmosphere atmosphere;
   Constants constants;
+  Parameters parameters;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

@@ -4,5 +4,6 @@
 #include "ctx.h"
 
 PetscErrorCode set_constants( Ctx * );
+PetscErrorCode set_parameters( Ctx * );
 
 #endif

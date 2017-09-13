@@ -1,5 +1,151 @@
 #include "constants.h"
 
+static PetscErrorCode set_non_dimensional_parameters( Ctx * );
+
+PetscErrorCode set_parameters( Ctx *E )
+{
+    Parameters *P = &E->parameters;
+
+    PetscFunctionBeginUser;
+
+    // 35 parameters to set
+    // all SI units unless non-dimensional
+
+    // initial entropy at top of adiabat, J/ K kg
+    P->sinit_default = 3052.885602072091;
+    // initial entropy gradient, J / K kg m
+    P->ic_dsdr = -4.6978890285209187e-07;
+    // radius of planet, m
+    P->radius = 6371000.0;
+    // core size
+    P->coresize = 0.55; // non-dimensional
+    // surface density for Adams-Williamson EOS for pressure
+    P->rhos = 4078.95095544; // kg / m^3
+    // parameter for Adams-Williamson EOS for pressure
+    P->beta = 1.1115348931000002e-07; // 1/m
+    // grain size, m
+    P->grain = 1.0E-3;
+    // gravity. m/s^2
+    P->gravity = -10.0;
+    // melt fraction threshold for rheology
+    P->phi_critical = 0.4; // non dimensional
+    // melt fraction transition width for rheology
+    /* when PHI_WIDTH = 0.15, oscillations appear in the volatile contents
+   due to a rigid crust forming at the top of the model.  Reducing the value
+   to 0.2 helps to alleviate this problem.  So evidently the viscosity contrast
+   across nodes matters. */
+    P->phi_width = 0.15; // non dimensional
+    // melt fraction shape transition for skew
+    P->phi_skew = 0.0; // non dimensional
+    // for radiative boundary condition at the top surface
+    // dT = constbc * [Surface temperature]**3
+    // FIXME: need to non-dimensionalise below!
+    //P->constbc = 1.0e-07; // FIXME check units
+    P->constbc = 0.0;
+    // core density, kg/m^3
+    P->rho_core = 10738.332568062382;
+    // heat capacity of core, J/ K kg
+    P->cp_core = 880.0;
+    // mass-weighted average core temperature as a fraction
+    // of CMB temperature
+    P->tfac_core_avg = 1.147; // non-dimensional
+    // smoothing width
+    P->swidth = 1.0E-2;
+    // solid viscosity, Pa.s
+    P->log10visc_sol = 21.0;
+    // solid conductivity, W / m K
+    P->cond_sol = 4.0;
+    // melt viscosity, Pa.s
+    P->log10visc_mel = 2.0;
+    // melt conductivity, W / m K
+    P->cond_mel = 4.0;
+
+    /* atmosphere parameters */
+    /* NOTE: if both H2O_INITIAL and CO2_INITIAL are set to zero, then
+       the emissivity is constant with time (a grey-body, i.e.,
+       a black-body scaled by EMISSIVITY.  If either H2O_INITIAL and/or
+       CO2_INITIAL are positive then the emissivity is computed according
+       to the plane-parallel radiative equilibrium model of Abe and 
+       Matsui (1985)  */
+    /* VOLSCALE enables us to scale the volatile equations to the same
+       order of magnitude as entropy, and thus ensure that the residual
+       based on the solution vector is not biased. */
+    P->volscale = 1.0E2; // wt %
+    P->volscale = 1.0E6; // ppm
+    // initial volatile contents in the liquid magma ocean
+    // turn off atmosphere
+    P->h2o_initial = 0.0;
+    P->co2_initial = 0.0;
+    // Elkins-Tanton (2008) case 1
+    P->h2o_initial = 500.0;
+    P->co2_initial = 100.0;
+    // Elkins-Tanton (2008) case 2
+    P->h2o_initial = 5000.0;
+    P->co2_initial = 1000.0;
+    // Elkins-Tanton (2008) case 3
+    P->h2o_initial = 0.0;
+    P->co2_initial = 6000.0;
+    // emissivity is used if h2o_initial or co2_initial <= 0
+    P->emissivity = 1.0; // non-dimensional
+    // Stefan-Boltzmann constant
+    P->sigma = 5.670367e-08;
+    // equilibrium temperature of the planet
+    P->teqm = 273.0;
+    P->p0 = 101325.0; // Pa (= 1 atm)
+    // distribution coefficients are given in supplementary material of ET08
+    // distribution coefficient between solid and melt
+    P->h2o_kdist = 1.0E-4; // non-dimensional
+    // TODO: water saturation limit of 10 ppm?
+    // absorption in m^2/kg
+    P->h2o_kabs = 0.01;
+    // next two from Lebrun et al. (2013)
+    P->h2o_henry = 6.8E-8; // must be mass fraction/Pa
+    P->h2o_henry_pow = 1.4285714285714286; // (1.0/0.7)
+    // distribution coefficient between solid and melt
+    P->co2_kdist = 5.0E-4; // non-dimensional
+    // TODO: water saturation limit of 0.03 ppm
+    // absorption in m^2/kg
+    P->co2_kabs = 0.05;
+    // next two from Lebrun et al. (2013)
+    P->co2_henry = 4.4E-12; // must be mass fraction/Pa
+    P->co2_henry_pow = 1.0;
+
+    /* FIXME: perhaps move this call elsewhere eventually */
+    set_non_dimensional_parameters( E );
+
+    PetscFunctionReturn(0);
+
+}
+
+PetscErrorCode set_non_dimensional_parameters( Ctx *E )
+{
+    Constants *C = &E->constants;
+    Parameters *P = &E->parameters;
+
+    PetscFunctionBeginUser;
+
+    P->sinit_default /= C->ENTROPY;
+    P->ic_dsdr /= C->DSDR;
+    P->radius /= C->RADIUS;
+    P->rhos /= C->DENSITY;  
+    P->beta *= C->RADIUS;
+    P->grain /= C->RADIUS;
+    P->gravity /= C->GRAVITY;
+    P->constbc /= 1.0; // FIXME
+    P->rho_core /= C->DENSITY;
+    P->cp_core /= C->ENTROPY;
+    P->log10visc_sol -= C->LOG10ETA;
+    P->cond_sol /= C->COND;
+    P->log10visc_mel -= C->LOG10ETA;
+    P->cond_mel /= C->COND;
+    /* FIXME: non-dimensionalise other atmosphere parameters */
+    P->sigma /= C->SIGMA;
+    P->teqm /= C->TEMP;
+
+    PetscFunctionReturn(0);
+
+}
+
 PetscErrorCode set_constants( Ctx *E )
 {
     Constants *C = &E->constants;

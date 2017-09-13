@@ -18,6 +18,8 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   // DJB WORKING HERE
   set_constants(ctx);
 
+  set_parameters(ctx);
+
   /* Initialize context with parameters (most parameters are constants in global_defs.h, though) */
   set_lookups(ctx);
 
