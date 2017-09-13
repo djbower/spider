@@ -3,8 +3,8 @@
 #include "lookup.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
-static PetscScalar log_viscosity_mix( PetscScalar );
-static PetscScalar viscosity_mix_no_skew( PetscScalar );
+static PetscScalar log_viscosity_mix( PetscScalar, Parameters * );
+static PetscScalar viscosity_mix_no_skew( PetscScalar, Parameters * );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -164,6 +164,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscScalar       fwtl, fwts;
     Lookup            *L; 
     Mesh              *M = &E->mesh;
+    Parameters        *P = &E->parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -249,9 +250,9 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       /* thermal expansion coefficient */
       arr_alpha[i] = -arr_fusion_rho[i] / arr_fusion_temp[i] / arr_rho[i];
       /* thermal conductivity */
-      arr_cond[i] = combine_matprop( arr_phi[i], COND_MEL, COND_SOL );
+      arr_cond[i] = combine_matprop( arr_phi[i], P->cond_mel, P->cond_sol );
       /* log viscosity */
-      arr_visc[i] = log_viscosity_mix( arr_phi[i] );
+      arr_visc[i] = log_viscosity_mix( arr_phi[i], P );
 
       ////////////////
       /* melt phase */
@@ -277,10 +278,10 @@ PetscErrorCode set_matprop_basic( Ctx *E )
         arr_alpha[i] += fwtl * get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
         /* thermal conductivity */
         arr_cond[i] *= 1.0 - fwtl;
-        arr_cond[i] += fwtl * COND_MEL;
+        arr_cond[i] += fwtl * P->cond_mel;
         /* viscosity */
         arr_visc[i] *= 1.0 - fwtl;
-        arr_visc[i] += fwtl * LOG10VISC_MEL;
+        arr_visc[i] += fwtl * P->log10visc_mel;
       }
 
       else if (arr_phi[i] <= 0.5){
@@ -304,10 +305,10 @@ PetscErrorCode set_matprop_basic( Ctx *E )
         arr_alpha[i] += (1.0-fwts) * get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
         /* thermal conductivity */
         arr_cond[i] *= fwts;
-        arr_cond[i] += (1.0-fwts) * COND_SOL;
+        arr_cond[i] += (1.0-fwts) * P->cond_sol;
         /* viscosity */
         arr_visc[i] *= fwts;
-        arr_visc[i] += (1.0-fwts) * LOG10VISC_SOL;
+        arr_visc[i] += (1.0-fwts) * P->log10visc_sol;
       }
 
       /* compute viscosity */
@@ -318,7 +319,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       arr_nu[i] = arr_visc[i] / arr_rho[i];
 
       /* gravity * super-adiabatic temperature gradient */
-      arr_gsuper[i] = GRAVITY * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
+      arr_gsuper[i] = P->gravity * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
 
       /* eddy diffusivity */
       PetscScalar kh, crit;
@@ -376,7 +377,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar log_viscosity_mix( PetscScalar meltf )
+static PetscScalar log_viscosity_mix( PetscScalar meltf, Parameters *P )
 {
     PetscScalar fwt, lvisc;
 
@@ -384,19 +385,19 @@ static PetscScalar log_viscosity_mix( PetscScalar meltf )
        critical solid fraction */
     //fwt = viscosity_mix_skew( meltf );
 
-    fwt = viscosity_mix_no_skew( meltf );
-    lvisc = fwt * LOG10VISC_MEL + (1.0 - fwt) * LOG10VISC_SOL;
+    fwt = viscosity_mix_no_skew( meltf, P );
+    lvisc = fwt * P->log10visc_mel + (1.0 - fwt) * P->log10visc_sol;
 
     return lvisc;
 }
 
-static PetscScalar viscosity_mix_no_skew( PetscScalar meltf )
+static PetscScalar viscosity_mix_no_skew( PetscScalar meltf, Parameters *P )
 {
     /* viscosity in mixed phase region with no skew */
 
     PetscScalar fwt;
 
-    fwt = tanh_weight( meltf, PHI_CRITICAL, PHI_WIDTH );
+    fwt = tanh_weight( meltf, P->phi_critical, P->phi_width );
 
     return fwt;
 
