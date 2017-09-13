@@ -1,7 +1,7 @@
 #include "lookup.h"
 
-static PetscErrorCode set_interp2d( const char *, Interp2d * );
-static PetscErrorCode set_interp1d( const char *, Interp1d *, PetscInt );
+static PetscErrorCode set_interp2d( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
+static PetscErrorCode set_interp1d( const char *, Interp1d *, PetscInt, PetscScalar, PetscScalar );
 
 /* Helper routine to prepend the root directory to a relative path */
 static PetscErrorCode MakeRelativePathAbsolute(char* path) {
@@ -31,6 +31,9 @@ PetscErrorCode set_lookups( Ctx *E )
     char rhoMelFilename[PETSC_MAX_PATH_LEN];
     char tempSolFilename[PETSC_MAX_PATH_LEN];
     char tempMelFilename[PETSC_MAX_PATH_LEN];
+
+    Constants *C = &E->constants;
+    Parameters *P = &E->parameters;
 
     /* set all 1-D and 2-D lookups */
 
@@ -96,40 +99,40 @@ PetscErrorCode set_lookups( Ctx *E )
 
     /* solid lookups */
     /* 2d */
-    set_interp2d( alphaSolFilename, &E->solid_prop.alpha );
-    set_interp2d( cpSolFilename, &E->solid_prop.cp );
-    set_interp2d( dtdpsSolFilename, &E->solid_prop.dTdPs );
-    set_interp2d( rhoSolFilename, &E->solid_prop.rho );
-    set_interp2d( tempSolFilename, &E->solid_prop.temp );
+    set_interp2d( alphaSolFilename, &E->solid_prop.alpha, C->PRESSURE, C->ENTROPY, C->ALPHA );
+    set_interp2d( cpSolFilename, &E->solid_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );
+    set_interp2d( dtdpsSolFilename, &E->solid_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );
+    set_interp2d( rhoSolFilename, &E->solid_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );
+    set_interp2d( tempSolFilename, &E->solid_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );
     /* const */
-    E->solid_prop.cond = COND_SOL;
-    E->solid_prop.log10visc = LOG10VISC_SOL;
+    E->solid_prop.cond = P->cond_sol;
+    E->solid_prop.log10visc = P->log10visc_sol;
 
     /* melt lookups */
     /* 2d */
-    set_interp2d( alphaMelFilename, &E->melt_prop.alpha );
-    set_interp2d( cpMelFilename, &E->melt_prop.cp );
-    set_interp2d( dtdpsMelFilename, &E->melt_prop.dTdPs );
-    set_interp2d( rhoMelFilename, &E->melt_prop.rho );
-    set_interp2d( tempMelFilename, &E->melt_prop.temp );
+    set_interp2d( alphaMelFilename, &E->melt_prop.alpha, C->PRESSURE, C->ENTROPY, C->ALPHA );
+    set_interp2d( cpMelFilename, &E->melt_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );
+    set_interp2d( dtdpsMelFilename, &E->melt_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );
+    set_interp2d( rhoMelFilename, &E->melt_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );
+    set_interp2d( tempMelFilename, &E->melt_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );
     /* const */
-    E->melt_prop.cond = COND_MEL;
-    E->melt_prop.log10visc = LOG10VISC_MEL;
+    E->melt_prop.cond = P->cond_mel;
+    E->melt_prop.log10visc = P->log10visc_mel;
 
     /* liquidus and solidus */
     /* 1d */
 
-    set_interp1d( liquidusFilename, &E->solid_prop.liquidus, NLS );
-    set_interp1d( liquidusFilename, &E->melt_prop.liquidus, NLS );
+    set_interp1d( liquidusFilename, &E->solid_prop.liquidus, NLS, C->PRESSURE, C->ENTROPY );
+    set_interp1d( liquidusFilename, &E->melt_prop.liquidus, NLS, C->PRESSURE, C->ENTROPY );
     /* duplication here, but want to remain flexible for future
        approaches for a multicomponent system */
-    set_interp1d( solidusFilename, &E->solid_prop.solidus, NLS );
-    set_interp1d( solidusFilename, &E->melt_prop.solidus, NLS );
+    set_interp1d( solidusFilename, &E->solid_prop.solidus, NLS, C->PRESSURE, C->ENTROPY );
+    set_interp1d( solidusFilename, &E->melt_prop.solidus, NLS, C->PRESSURE, C->ENTROPY );
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
+static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp, PetscScalar xconst, PetscScalar yconst, PetscScalar zconst )
 {
     FILE *fp;
     PetscInt i=0, j=0, k=0;
@@ -184,24 +187,21 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
 #endif
             /* lookup value */
             za[i-HEAD] = z;
-#if (defined LOOKUPDIM)
             za[i-HEAD] *= zscale;
-#endif
+            za[i-HEAD] /= zconst;
 
             /* x coordinate */
             if( i<HEAD+NX ){
                 xa[j] = x;
-#if (defined LOOKUPDIM)
                 xa[j] *= xscale;
-#endif
+                xa[j] /= xconst;
                 ++j;
             }
             /* y coordinate */
             if( (i-HEAD) % NX ==0 ){
                 ya[k] = y;
-#if (defined LOOKUPDIM)
                 ya[k] *= yscale;
-#endif
+                ya[k] /= yconst;
                 ++k;
             }
 
@@ -241,7 +241,7 @@ static PetscErrorCode set_interp2d( const char * filename, Interp2d *interp )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n )
+static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n, PetscScalar xconst, PetscScalar yconst )
 {
     FILE *fp;
     PetscInt i=0;
@@ -288,11 +288,11 @@ static PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, Pet
             sscanf(string, "%lf %lf", &x, &y );
 #endif
             xa[i-HEAD] = x;
-            ya[i-HEAD] = y;
-#if (defined LOOKUPDIM)
             xa[i-HEAD] *= xscale;
+            xa[i-HEAD] /= xconst;
+            ya[i-HEAD] = y;
             ya[i-HEAD] *= yscale;
-#endif
+            ya[i-HEAD] /= yconst;
             }
         ++i;
     }
