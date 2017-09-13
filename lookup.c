@@ -57,12 +57,12 @@ PetscErrorCode set_lookups( Ctx *E )
         ierr = PetscPrintf(PETSC_COMM_WORLD,"Unrecognized -curves choice %s provided. Using defaults.\nCurrent options include:\n -curves stixrude2009\n -curves andrault2011\n",lscTypeString);CHKERRQ(ierr);
         ierr = PetscPrintf(PETSC_COMM_WORLD,"***************************************\n");CHKERRQ(ierr);
       }
-      if (isStixrude2009 || isDefault) { /* Default */
+      if (isStixrude2009) { 
         ierr = PetscStrcpy(liquidusFilename,LIQUIDUS_STIXRUDE2009);CHKERRQ(ierr);
         ierr = MakeRelativePathAbsolute(liquidusFilename);CHKERRQ(ierr);
         ierr = PetscStrcpy(solidusFilename,SOLIDUS_STIXRUDE2009);CHKERRQ(ierr);
         ierr = MakeRelativePathAbsolute(solidusFilename);CHKERRQ(ierr);
-      } else if (isAndrault2011) {
+      } else if (isAndrault2011 || isDefault) { /* Default */
         ierr = PetscStrcpy(liquidusFilename,LIQUIDUS_ANDRAULT2011);CHKERRQ(ierr);
         ierr = MakeRelativePathAbsolute(liquidusFilename);CHKERRQ(ierr);
         ierr = PetscStrcpy(solidusFilename,SOLIDUS_ANDRAULT2011);CHKERRQ(ierr);
