@@ -4,10 +4,10 @@ static PetscErrorCode regular_mesh( Ctx * );
 //static PetscErrorCode geometric_mesh( Ctx * );
 static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
-static PetscErrorCode mixing_length( DM, Vec, Vec );
-static PetscErrorCode aw_density( DM, Vec, Vec );
-static PetscErrorCode aw_pressure( DM, Vec, Vec );
-static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec );
+static PetscErrorCode mixing_length( DM, Vec, Vec, Parameters * );
+static PetscErrorCode aw_density( DM, Vec, Vec, Parameters * );
+static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters * );
+static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters * );
 static PetscErrorCode aw_mass( Ctx * );
 
 PetscErrorCode set_mesh( Ctx *E)
@@ -17,6 +17,7 @@ PetscErrorCode set_mesh( Ctx *E)
     PetscInt       i;
     Mesh           *M = &E->mesh;
     DM             da_b=E->da_b, da_s=E->da_s;
+    Parameters     *P = &E->parameters;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -58,16 +59,16 @@ PetscErrorCode set_mesh( Ctx *E)
     /* Adams-Williamson EOS */
 
     /* pressure at basic nodes */
-    aw_pressure( da_b, M->radius_b, M->pressure_b);
+    aw_pressure( da_b, M->radius_b, M->pressure_b, P);
 
     /* dP/dr at basic nodes */
-    aw_pressure_gradient( da_b, M->radius_b, M->dPdr_b);
+    aw_pressure_gradient( da_b, M->radius_b, M->dPdr_b, P);
 
     /* pressure at staggered nodes */
-    aw_pressure( da_s, M->radius_s, M->pressure_s);
+    aw_pressure( da_s, M->radius_s, M->pressure_s, P);
 
     /* dP/dr at staggered nodes */
-    aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s );
+    aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s, P );
 
     /* surface area at basic nodes, without 4*pi term */
     spherical_area( da_b, M->radius_b, M->area_b);
@@ -79,10 +80,10 @@ PetscErrorCode set_mesh( Ctx *E)
     spherical_volume( E, M->radius_b, M->volume_s);
 
     /* mixing length is minimum distance from boundary */
-    mixing_length( da_b, M->radius_b, M->mix_b);
+    mixing_length( da_b, M->radius_b, M->mix_b, P);
 
     /* density at staggered nodes */
-    aw_density( da_s, M->radius_s, M->rho_s );
+    aw_density( da_s, M->radius_s, M->rho_s, P );
 
     /* mass at staggered nodes */
     aw_mass( E );
@@ -97,6 +98,7 @@ static PetscErrorCode regular_mesh( Ctx *E )
     PetscScalar    *arr;
     PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_b,w_s,numpts_b,numpts_s;
     Mesh           *M = &E->mesh;
+    Parameters     *P = &E->parameters;
     DM             da_b=E->da_b, da_s=E->da_s;
     PetscScalar    dx_b;
 
@@ -106,14 +108,14 @@ static PetscErrorCode regular_mesh( Ctx *E )
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* basic node spacing (negative) */
-    dx_b = -RADIUS*(1.0-CORESIZE) / (numpts_b-1);
+    dx_b = -P->radius*(1.0-P->coresize) / (numpts_b-1);
 
     /* radius at basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
     ierr = DMDAVecGetArray(da_b,M->radius_b,&arr);CHKERRQ(ierr);
     for (i=ilo_b; i<ihi_b; ++i){
-        arr[i] = RADIUS*CORESIZE - (numpts_b-1-i)*dx_b;
+        arr[i] = P->radius*P->coresize - (numpts_b-1-i)*dx_b;
     }
     ierr = DMDAVecRestoreArray(da_b,M->radius_b,&arr);CHKERRQ(ierr);
 
@@ -122,7 +124,7 @@ static PetscErrorCode regular_mesh( Ctx *E )
     ihi_s = ilo_s + w_s;
     ierr = DMDAVecGetArray(da_s,M->radius_s,&arr);CHKERRQ(ierr);
     for (i=ilo_s;i<ihi_s;++i){
-        arr[i] = RADIUS*CORESIZE - 0.5*dx_b - (numpts_s-1-i)*dx_b;
+        arr[i] = P->radius*P->coresize - 0.5*dx_b - (numpts_s-1-i)*dx_b;
     }
     ierr = DMDAVecRestoreArray(da_s,M->radius_s,&arr);CHKERRQ(ierr);
 
@@ -260,7 +262,7 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix )
+static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix, Parameters *P )
 {
     PetscErrorCode    ierr;
     PetscScalar       *arr_m;
@@ -276,15 +278,15 @@ static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix )
     for(i=ilo; i<ihi; ++i){
 /* TODO: conventional mixing length below -- distance from nearest boundary */
 #if 1
-        rad1 = arr_r[i] - RADIUS*CORESIZE;
-        rad2 = RADIUS - arr_r[i];
+        rad1 = arr_r[i] - P->radius*P->coresize;
+        rad2 = P->radius - arr_r[i];
         arr_m[i] = PetscMin( rad1, rad2 );
 #endif
 /* TODO: constant mixing length -- for testing rigid crust formation
    hopefully this mitigates some of the problem? This uses the average
    mixing length from convention theory, i.e. 1/4*mantle thickness */
 #if 0
-        arr_m[i] = RADIUS * (1.0-CORESIZE); // mantle thickness
+        arr_m[i] = P->radius * (1.0-P->coresize); // mantle thickness
         arr_m[i] /= 4.0; // to give average of conventional theory
 #endif
     }
@@ -293,7 +295,7 @@ static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure )
+static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, Parameters *P )
 {
     PetscErrorCode    ierr;
     PetscScalar       dep,*arr_p;
@@ -306,16 +308,16 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure )
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da,pressure,&arr_p);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        dep = RADIUS - arr_r[i];
-        arr_p[i] = RHOS * -GRAVITY / BETA;
-        arr_p[i] *= PetscExpScalar( BETA * dep ) - 1.0;
+        dep = P->radius - arr_r[i];
+        arr_p[i] = P->rhos * -P->gravity / -P->beta;
+        arr_p[i] *= PetscExpScalar( P->beta * dep ) - 1.0;
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,pressure,&arr_p);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_density( DM da, Vec radius, Vec density )
+static PetscErrorCode aw_density( DM da, Vec radius, Vec density, Parameters *P )
 {
     PetscErrorCode    ierr;
     PetscScalar       dep, *arr_density;
@@ -328,8 +330,8 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density )
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da,density,&arr_density);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        dep = RADIUS - arr_r[i];
-        arr_density[i] = RHOS * PetscExpScalar( BETA * dep );
+        dep = P->radius - arr_r[i];
+        arr_density[i] = P->rhos * PetscExpScalar( P->beta * dep );
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,density,&arr_density);CHKERRQ(ierr);
@@ -357,7 +359,7 @@ static PetscErrorCode aw_mass( Ctx *E )
 
 }
 
-static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad )
+static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad, Parameters *P )
 {
     PetscErrorCode    ierr;
     PetscScalar       dep,*arr_g;
@@ -370,8 +372,8 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad )
     ierr = DMDAVecGetArray(da,grad,&arr_g);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        dep = RADIUS - arr_r[i];
-        arr_g[i] = RHOS * GRAVITY * PetscExpScalar( BETA * dep );
+        dep = P->radius - arr_r[i];
+        arr_g[i] = P->rhos * P->gravity * PetscExpScalar( P->beta * dep );
     }
     ierr = DMDAVecRestoreArray(da,grad,&arr_g);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
