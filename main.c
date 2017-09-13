@@ -5,7 +5,9 @@ static char help[] =
 -monitor : use custom monitor to dump output\n\
 -test_view : with -monitor, also print out solution and rhs for testing\n\
 -nstepsmacro : specify the number of macro (output dump) steps\n\
--dtmacro : specify the macro (output dump) time step (will not be exact!)\n\
+-dtmacro : specify the macro (output dump) time step, in nondimensionalised time (will not be exact!)\n\
+-dtmacro_years : specify the macro (output dump) time step, in years\n\
+-curves : specify a set of data files to load. Currently accepts 'andrault2011' (default) and 'stixrude2009'\n\
 ";
 
 /* Note: if you would like more verbose output, see the preprocessor defines
