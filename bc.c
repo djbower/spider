@@ -1,25 +1,18 @@
 #include "bc.h"
 #include "util.h"
 
-static PetscScalar hybrid( Ctx *, PetscScalar, PetscReal );
-#if defined GREYBODY
-static PetscScalar greybody_with_dT( PetscScalar, PetscReal, PetscScalar, Parameters * );
-static PetscScalar greybody( PetscScalar, PetscReal, PetscScalar, Parameters * );
-static PetscScalar tsurf_param( PetscScalar, Parameters * );
-#endif
-#ifdef ZAHNLE
-static PetscScalar zahnle( PetscScalar, PetscReal, PetscScalar );
-#endif
-#ifdef HAMANO
-static PetscScalar hamano( PetscScalar, PetscReal, PetscScalar );
-#endif
+static PetscScalar grey_body( PetscScalar, Atmosphere * );
+static PetscScalar zahnle( PetscScalar,  Atmosphere * );
+static PetscScalar tsurf_param( PetscScalar, Atmosphere * );
+static PetscScalar hybrid( Ctx *, PetscScalar );
 
-PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
+PetscErrorCode set_surface_flux( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscMPIInt       rank;
-    PetscScalar       temp0, Qout;
+    PetscScalar       temp0, Tsurf, Qout;
     PetscInt          ind;
+    Atmosphere        *A = &E->atmosphere;
     Parameters        *P = &E->parameters;
     Solution          *S = &E->solution;
 
@@ -34,12 +27,39 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
          function that is chosen by user */
       ind = 0;
 
-      /* surface temperature */
+      /* temperature (potential temperature if coarse mesh is used)
+         this is taken from the top staggered node */
       ierr = VecGetValues(S->temp,1,&ind,&temp0); CHKERRQ(ierr);
 
-      Qout = hybrid( E, temp0, tyrs );
+      /* correct for ultra-thin thermal boundary layer at the surface */
+      if( A->CONSTBC == 0.0 ){
+        Tsurf = temp0; // surface temperature is potential temperature
+      }
+      else{
+        Tsurf = tsurf_param( temp0, A); // parameterised boundary layer
+      }
+
+      /* determine flux */
+      switch( A->MODEL ){
+        case 1:
+          // grey-body
+          Qout = grey_body( Tsurf, A );
+          break;
+        case 2:
+          // zahnle
+          Qout = zahnle( Tsurf, A );
+          break;
+      }
+
+      /* TODO: for legacy purposes, perhaps to remove at some point */
+      if( A->HYBRID ){
+          Qout = hybrid( E, Qout );
+      }
 
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
+      /* TODO: probably OK, but remember this has a scaling dictated
+         by the dS/dr non-dimensionalisation scheme, and not the
+         atmosphere scheme */
       Qout *= PetscSqr( P->radius );
       ierr = VecSetValue(S->Etot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
 
@@ -54,29 +74,51 @@ PetscErrorCode set_surface_flux( Ctx *E, PetscReal tyrs )
 
 }
 
-static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
+///////////////////////
+/* atmosphere models */
+///////////////////////
+
+static PetscScalar grey_body( PetscScalar Tsurf, Atmosphere *A )
 {
-    PetscScalar    Q1;
-    Atmosphere     *A = &E->atmosphere;
-#ifdef HYBRID
+    PetscScalar Fsurf;
+
+    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(A->TEQM,4.0);
+    Fsurf *= A->SIGMA * A->EMISSIVITY;
+
+    return Fsurf;
+}
+
+static PetscScalar zahnle( PetscScalar Tsurf, Atmosphere *A )
+{
+    PetscScalar       Fsurf;
+
+    /* fit to Zahnle et al. (1988) from Solomatov and Stevenson (1993)
+       Eqn. 40 */
+
+    /* FIXME: will break for non-dimensional
+       see commit 780b1dd to reverse this */
+
+    Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf);
+
+    return Fsurf;
+
+}
+
+static PetscScalar hybrid( Ctx *E, PetscScalar Qin )
+{
     PetscErrorCode ierr;
+    PetscScalar    Qout;
     PetscScalar    G0, R0, R1, R2, E0, E1, E2, Q2, fwt, phi0;
     PetscInt       ind;
     Mesh           *M = &E->mesh;
     Parameters     *P = &E->parameters;
     Solution       *S = &E->solution;
-#endif
 
-#ifdef HAMANO
-    Q1 = hamano( temp0, tyrs, A->emissivity );
-#endif
-#ifdef ZAHNLE
-    Q1 = zahnle( temp0, tyrs, A->emissivity );
-#endif
-#ifdef GREYBODY
-    Q1 = greybody_with_dT( temp0, tyrs, A->emissivity, P );
-#endif
-#ifdef HYBRID
+    /* for legacy purposes, enable the ability for the magma ocean
+       to cool at a rate dictated by the upper mantle cooling rate,
+       This was originally a hack to prevent a viscous lid from
+       forming at the top */
+
     /* for weight of different fluxes */
     ind = 0;
     ierr = VecGetValues(S->phi,1,&ind,&phi0); CHKERRQ(ierr);
@@ -93,55 +135,22 @@ static PetscScalar hybrid( Ctx *E, PetscScalar temp0, PetscReal tyrs )
     ierr = VecGetValues(M->radius_b,1,&ind,&R2); CHKERRQ(ierr);
     ierr = VecGetValues(S->Etot,1,&ind,&E2); CHKERRQ(ierr);
     E0 = E1 - (E2-E1)*(R2-R1)/(R1-R0); // energy at surface
-    Q2 = E0 / G0; // G0 should be 1.0 by definition
-    Q1 = Q1 * fwt + Q2 * (1.0 - fwt);
-#endif
+    Q2 = E0 / G0;
+    // weight Q1 and Q2 to give total flux
+    Qout = Qin * fwt + Q2 * (1.0 - fwt);
 
     /* it is of interest to know what the effective emissivity is,
        particularly for the hybrid method */
-    /* FIXME: not correct for parameterised UTBL */
-    /* FIXME: this overwrites the previous version of emissivity calculated
+    /* TODO: not correct for parameterised UTBL */
+    /* TODO: this overwrites the previous version of emissivity calculated
        from the grey-body model.  This could mess things up depending on the order
        of function calls */
     //A->emissivity = Q1 / ( PetscPowScalar(temp0,4.0) - PetscPowScalar(TEQM,4.0) );
     //A->emissivity /= SIGMA;
 
-    return Q1;
+    return Qout;
 
 }
-
-#ifdef ZAHNLE
-static PetscScalar zahnle( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss )
-{
-    PetscScalar       Fsurf;
-
-    /* fit to Zahnle et al. (1988) from Solomatov and Stevenson (1993)
-       Eqn. 40 */
-
-    /* FIXME: will break for non-dimensional
-       see commit 780b1dd to reverse this */
-
-    Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf);
-
-    return Fsurf;
-
-}
-#endif
-
-#ifdef HAMANO
-static PetscScalar hamano( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss )
-{
-    PetscScalar       Fsurf;
-
-    /* add code here */
-    /* build your own function of surface temperature (Tsurf) and
-       time in years (tyrs) */
-    Fsurf = 0.0;
-
-    return Fsurf;
-
-}
-#endif
 
 PetscErrorCode set_core_mantle_flux( Ctx *E )
 {
@@ -207,11 +216,10 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 
 }
 
-#if defined(GREYBODY)
-static PetscScalar tsurf_param( PetscScalar temp, Parameters *P )
+static PetscScalar tsurf_param( PetscScalar temp, Atmosphere *A )
 {
     PetscScalar Ts, c, fac, num, den;
-    c = P->constbc;
+    c = A->CONSTBC;
 
     fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
     fac = PetscPowScalar( fac, 1.0/2.0 );
@@ -225,31 +233,3 @@ static PetscScalar tsurf_param( PetscScalar temp, Parameters *P )
 
     return Ts;
 }
-
-static PetscScalar greybody( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss, Parameters *P )
-{
-    PetscScalar Fsurf;
-
-    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(P->teqm,4.0);
-    Fsurf *= P->sigma * emiss;
-
-    return Fsurf;
-}
-
-static PetscScalar greybody_with_dT( PetscScalar Tsurf, PetscReal tyrs, PetscScalar emiss, Parameters *P )
-{
-    PetscScalar Ts, Fsurf;
-
-    /* no parameterised ultra-thin thermal boundary layer */
-    if( P->constbc == 0.0 ){
-        Ts = Tsurf;
-    }
-    /* parameterised ultra-thin thermal boundary layer */
-    else{
-        Ts = tsurf_param( Tsurf, P );
-    }
-    Fsurf = greybody( Ts, tyrs, emiss, P );
-
-    return Fsurf;
-}
-#endif

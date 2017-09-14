@@ -21,24 +21,6 @@
 //#define HRADIO
 //#define HTIDAL
 
-/* select which surface boundary condition to use */
-/* these are mutually exclusive, so only leave one
-   of them uncommented */
-#define GREYBODY
-//#define HAMANO
-//#define ZAHNLE
-
-/* if HYBRID is set, then the boundary condition will switch
-   to the upper mantle cooling rate once the rheological
-   transition is reached.  This prevents a lid from forming at
-   the top of the model.
-
-   TODO: this implies that the emissivity is around 1.0E-7,
-   which is unphysical unless you are appealing to a massive
-   massive atmosphere */
-
-#define HYBRID
-
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
 #define HEAD 4 /* number of header lines in datafile */
