@@ -28,14 +28,7 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   // TODO : print out all params with scaled value / dim value / scaling  formula and value
   InitializeParameters(&ctx->parameters);
   SetParametersFromOptions(&ctx->parameters);
-  PrintParameters(&ctx->parameters,stdout);
-  {
-    const char *paramFilename = "output/parameters.txt";
-    FILE *paramFile = fopen(paramFilename,"w");
-    if (!paramFile) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open %s for writing.\n",paramFilename);
-    PrintParameters(&ctx->parameters,paramFile);
-    fclose(paramFile);
-  }
+  PrintParameters(&ctx->parameters);
 
   // TODO initialize ctx->atmosphere?? (valgrind will tell us..)
 

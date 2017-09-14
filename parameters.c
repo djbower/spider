@@ -308,7 +308,7 @@ PetscErrorCode SetParametersFromOptions(Parameters *P)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode PrintParameters(Parameters const *P,FILE *file)
+PetscErrorCode PrintParameters(Parameters const *P)
 {
   PetscErrorCode ierr;
   Constants const *C = &P->constants;

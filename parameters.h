@@ -118,6 +118,6 @@ typedef struct _Parameters {
 
 PetscErrorCode InitializeParameters(Parameters *parameters);
 PetscErrorCode SetParametersFromOptions(Parameters *parameters);
-PetscErrorCode PrintParameters(Parameters const *parameters,FILE *file);
+PetscErrorCode PrintParameters(Parameters const *parameters);
 
 #endif
