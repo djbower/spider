@@ -40,21 +40,29 @@ typedef struct _Interp2d {
 typedef struct _Atmosphere {
     // 35 parameters in total
     // input parameters (17)
-    PetscScalar VOLSCALE;
-    PetscScalar H2O_INITIAL;
-    PetscScalar CO2_INITIAL;
+    // below are standard, also used for grey-body atmosphere
     PetscScalar EMISSIVITY;
     PetscScalar SIGMA;
     PetscScalar TEQM;
+    // for volatile ODE
+    PetscScalar VOLSCALE;
     PetscScalar P0;
+    // H2O (TODO: move to a 'Volatile' struct)
+    PetscScalar H2O_INITIAL;
     PetscScalar H2O_KDIST;
     PetscScalar H2O_KABS;
     PetscScalar H2O_HENRY;
     PetscScalar H2O_HENRY_POW;
+    // CO2 (TODO: move to a 'Volatile' struct)
+    PetscScalar CO2_INITIAL;
     PetscScalar CO2_KDIST;
     PetscScalar CO2_KABS;
     PetscScalar CO2_HENRY;
     PetscScalar CO2_HENRY_POW;
+    /* although RADIUS and GRAVITY are duplicated, they may have
+       different non-dimensional values depending on the volatile
+       non-dimenisonalisation scheme, which will be different to
+       the dS/dr scheme to ensure comparable magnitude residuals */
     PetscScalar RADIUS; // duplicate
     PetscScalar GRAVITY; // duplicate
     // calculated quantites (18)
@@ -138,22 +146,6 @@ typedef struct _Parameters {
     PetscScalar cond_sol;
     PetscScalar log10visc_mel;
     PetscScalar cond_mel;
-    // atmosphere below here
-    PetscScalar volscale;
-    PetscScalar h2o_initial;
-    PetscScalar co2_initial;
-    PetscScalar emissivity;
-    PetscScalar sigma;
-    PetscScalar teqm;
-    PetscScalar p0;
-    PetscScalar h2o_kdist;
-    PetscScalar h2o_kabs;
-    PetscScalar h2o_henry;
-    PetscScalar h2o_henry_pow;
-    PetscScalar co2_kdist;
-    PetscScalar co2_kabs;
-    PetscScalar co2_henry;
-    PetscScalar co2_henry_pow;
 } Parameters;
 
 

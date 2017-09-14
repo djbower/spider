@@ -4,7 +4,9 @@ static PetscErrorCode set_non_dimensional_parameters( Ctx * );
 
 PetscErrorCode set_parameters( Ctx *E )
 {
+    // store atmosphere parameters in atmosphere struct
     Atmosphere *A = &E->atmosphere;
+    // store everything else in parameters struct
     Parameters *P = &E->parameters;
 
     PetscFunctionBeginUser;
@@ -12,21 +14,21 @@ PetscErrorCode set_parameters( Ctx *E )
     // 35 parameters to set
     // all SI units unless non-dimensional
 
-    // initial entropy at top of adiabat, J/ K kg
+    // initial entropy at top of adiabat (J/kgK)
     P->sinit = 3052.885602072091;
-    // initial entropy gradient, J / K kg m
+    // initial entropy gradient (J/kgKm)
     P->ic_dsdr = -4.6978890285209187e-07;
-    // radius of planet, m
+    // radius of planet (m)
     P->radius = 6371000.0;
-    // core size
-    P->coresize = 0.55; // non-dimensional
-    // surface density for Adams-Williamson EOS for pressure
-    P->rhos = 4078.95095544; // kg / m^3
-    // parameter for Adams-Williamson EOS for pressure
-    P->beta = 1.1115348931000002e-07; // 1/m
-    // grain size, m
+    // core size (non-dimenisonal)
+    P->coresize = 0.55;
+    // surface density (kg/m^3) for Adams-Williamson EOS for pressure
+    P->rhos = 4078.95095544;
+    // parameter (1/m) for Adams-Williamson EOS for pressure
+    P->beta = 1.1115348931000002e-07;
+    // grain size (m)
     P->grain = 1.0E-3;
-    // gravity. m/s^2
+    // gravity (m/s^2), must be negative
     P->gravity = -10.0;
     // melt fraction threshold for rheology
     P->phi_critical = 0.4; // non dimensional
@@ -43,22 +45,22 @@ PetscErrorCode set_parameters( Ctx *E )
     // FIXME: need to non-dimensionalise below!
     //P->constbc = 1.0e-07; // FIXME check units
     P->constbc = 0.0;
-    // core density, kg/m^3
+    // core density (kg/m^3)
     P->rho_core = 10738.332568062382;
-    // heat capacity of core, J/ K kg
+    // heat capacity of core (J/kgK)
     P->cp_core = 880.0;
     // mass-weighted average core temperature as a fraction
-    // of CMB temperature
-    P->tfac_core_avg = 1.147; // non-dimensional
+    // of CMB temperature (non-dimensional)
+    P->tfac_core_avg = 1.147;
     // smoothing width
     P->swidth = 1.0E-2;
-    // solid viscosity, Pa.s
+    // solid viscosity (Pa.s)
     P->log10visc_sol = 21.0;
-    // solid conductivity, W / m K
+    // solid conductivity (W/mK)
     P->cond_sol = 4.0;
-    // melt viscosity, Pa.s
+    // melt viscosity (Pa.s)
     P->log10visc_mel = 2.0;
-    // melt conductivity, W / m K
+    // melt conductivity (W/mK)
     P->cond_mel = 4.0;
 
     /* atmosphere parameters */
@@ -89,26 +91,27 @@ PetscErrorCode set_parameters( Ctx *E )
     // Elkins-Tanton (2008) case 3
     //P->h2o_initial = 0.0;
     //P->co2_initial = 6000.0;
-    // emissivity is used if h2o_initial or co2_initial <= 0
-    A->EMISSIVITY = 1.0; // non-dimensional
-    // Stefan-Boltzmann constant
+    // emissivity is used if h2o_initial or co2_initial <= 0 (non-dimensional)
+    A->EMISSIVITY = 1.0;
+    // Stefan-Boltzmann constant (W/m^2K^4)
     A->SIGMA = 5.670367e-08;
-    // equilibrium temperature of the planet
+    // equilibrium temperature of the planet (K)
     A->TEQM = 273.0;
+    // atmosphere reference pressure (Pa)
     A->P0 = 101325.0; // Pa (= 1 atm)
     // distribution coefficients are given in supplementary material of ET08
-    // distribution coefficient between solid and melt
-    A->H2O_KDIST = 1.0E-4; // non-dimensional
+    // distribution coefficient between solid and melt (non-dimensional)
+    A->H2O_KDIST = 1.0E-4;
     // TODO: water saturation limit of 10 ppm?
-    // absorption in m^2/kg
+    // absorption (m^2/kg)
     A->H2O_KABS = 0.01;
     // next two from Lebrun et al. (2013)
     A->H2O_HENRY = 6.8E-8; // must be mass fraction/Pa
     A->H2O_HENRY_POW = 1.4285714285714286; // (1.0/0.7)
-    // distribution coefficient between solid and melt
-    A->CO2_KDIST = 5.0E-4; // non-dimensional
+    // distribution coefficient between solid and melt (non-dimensional)
+    A->CO2_KDIST = 5.0E-4;
     // TODO: water saturation limit of 0.03 ppm
-    // absorption in m^2/kg
+    // absorption (m^2/kg)
     A->CO2_KABS = 0.05;
     // next two from Lebrun et al. (2013)
     A->CO2_HENRY = 4.4E-12; // must be mass fraction/Pa
@@ -123,8 +126,9 @@ PetscErrorCode set_parameters( Ctx *E )
 
 PetscErrorCode set_non_dimensional_parameters( Ctx *E )
 {
-    Constants *C = &E->constants;
-    Parameters *P = &E->parameters;
+    Atmosphere *A  = &E->atmosphere;
+    Constants *C   = &E->constants;
+    Parameters *P  = &E->parameters;
 
     PetscFunctionBeginUser;
 
@@ -142,9 +146,12 @@ PetscErrorCode set_non_dimensional_parameters( Ctx *E )
     P->cond_sol /= C->COND;
     P->log10visc_mel -= C->LOG10ETA;
     P->cond_mel /= C->COND;
-    /* FIXME: non-dimensionalise other atmosphere parameters */
-    P->sigma /= C->SIGMA;
-    P->teqm /= C->TEMP;
+
+    /* TODO: non-dimensionalise other atmosphere parameters */
+    /* SIGMA and TEQM should get us up and running for the standard
+       grey-body case */
+    A->SIGMA /= C->SIGMA;
+    A->TEQM /= C->TEMP;
 
     PetscFunctionReturn(0);
 
