@@ -53,6 +53,19 @@ int main(int argc, char ** argv)
   ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
   if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
 
+  /* 
+   **All** parameters/settings should be inside ctx->parameters . Here, we
+     1. Initialize these to default values
+     2. Obtain any inputs from the user at the command line and update
+     3. Print out all paramters
+     After this point, **no** command line options should be processed,
+     and ctx->paramters should **never** change 
+    */
+  // TODO : move everything into Parameters
+  // TODO: initialize Parameters here
+  // TODO: move all commadn line processing into a function to update parameters
+  // TODO : print out all params with scaled value / dim value / scaling  formula and value
+
   /* Obtain command-line options for simulation time frame and monitoring */
   {
     PetscReal dtmacro_years = dtmacro * TIME0;
