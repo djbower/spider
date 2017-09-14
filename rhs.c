@@ -47,13 +47,16 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = VecDuplicate(S->dSdr,&rhs_b);CHKERRQ(ierr);
 
   /* extract other necessary quantities from augmented array */
-  /* C02 content of magma ocean (solid and liquid phase) */
-  ind = 0;
-  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&A->x0);CHKERRQ(ierr);
+  /* FIXME: clean up */
+  if( A->MODEL == 3){
+    /* C02 content of magma ocean (solid and liquid phase) */
+    ind = 0;
+    ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&A->x0);CHKERRQ(ierr);
 
-  /* H20 content of magma ocean (solid and liquid phase) */
-  ind = 1;
-  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&A->x1);CHKERRQ(ierr);
+    /* H20 content of magma ocean (solid and liquid phase) */
+    ind = 1;
+    ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&A->x1);CHKERRQ(ierr);
+  }
 
   /* Get first staggered node value (stored as S0) */
   ind = 2;
@@ -123,14 +126,14 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* FIXME.  Not sure if values are still getting pushed into the array
      due to the atmosphere, even if the atmosphere should not be solved for.
      This should stop that */
-  if (A->CO2_INITIAL <= 0.0 && A->H2O_INITIAL <= 0.0){
-    ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
-  }
-  else{
+  if (A->MODEL == 3){
     set_dxdt( E );
     ierr = VecSetValue(rhs_b_aug,0,A->dx0dt,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(rhs_b_aug,1,A->dx1dt,INSERT_VALUES);CHKERRQ(ierr);
+  }
+  else{
+    ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
   }
 
   /* S0 */
