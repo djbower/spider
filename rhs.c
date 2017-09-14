@@ -133,7 +133,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   }
   else{
     ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(rhs_b_aug,1,0.0,INSERT_VALUES);CHKERRQ(ierr);
   }
 
   /* S0 */
