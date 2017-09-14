@@ -23,14 +23,10 @@ PetscErrorCode setup_ctx(Ctx* ctx)
      and ctx->parameters should never change 
     */
   // TODO : move everything into Parameters
-  // TODO: initialize Parameters here
-  // TODO: move ALL command line processing into a function to update parameters
-  // TODO : print out all params with scaled value / dim value / scaling  formula and value
   InitializeParameters(&ctx->parameters);
   SetParametersFromOptions(&ctx->parameters);
   PrintParameters(&ctx->parameters);
 
-  // TODO initialize ctx->atmosphere?? (valgrind will tell us..)
 
   // TODO incorporate this into the unified parameter processing
   /* Initialize context with parameters (most parameters are constants in global_defs.h, though) */
@@ -41,7 +37,7 @@ PetscErrorCode setup_ctx(Ctx* ctx)
      DMDAs are used to create vectors which hold various properties
      living on the same primal and staggered nodes.
   */
-  const PetscInt stencilWidth = 1; //TODO: check that this is appropriate
+  const PetscInt stencilWidth = 1;
   const PetscInt dof = 1;
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,dof,stencilWidth,NULL,&ctx->da_b);CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,dof,stencilWidth,NULL,&ctx->da_s);CHKERRQ(ierr);

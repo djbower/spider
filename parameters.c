@@ -277,20 +277,7 @@ PetscErrorCode SetParametersFromOptions(Parameters *P)
         P->dtmacro = dtmacro_years / C->TIMEYRS;
     }
   }
-
-  /* Store previous scalings */
-  ENTROPY_prev = C->ENTROPY;
-  // TODO
-
-  /*  Update Scalings */
-  // TODO
-
-  /* For each entry in parameters, we set a default value and immediately re-scale it */
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);
-  if(ENTROPY_prev != C->ENTROPY) P->sinit *= ENTROPY_prev/C->ENTROPY;
-  // TODO complete ..
-
-  // TODO special flags for this: 
+  // TODO special command line flags for this: 
 #if 0
   /* FIXME: at the moment we uncomment two lines below to switch between
      early, middle, and late evolution */
@@ -306,6 +293,19 @@ PetscErrorCode SetParametersFromOptions(Parameters *P)
   //PetscReal       dtmacro = 1000000000000; /* Macro step size (roughly years) */
 #endif
 
+  /* Store previous scalings */
+  ENTROPY_prev = C->ENTROPY;
+  // TODO
+  // TODO consider doing this with an actual Constants object!
+
+  /*  Update Scalings from command line */
+  // TODO 
+  // TODO consider for now just having a single option to set them all to "1"
+
+  /* For each entry in parameters, we set a default value and immediately re-scale it */
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);
+  if(ENTROPY_prev != C->ENTROPY) P->sinit *= ENTROPY_prev/C->ENTROPY;
+  // TODO complete ..
 
   /* Additional Parameters for Atmosphere */
   // TODO
