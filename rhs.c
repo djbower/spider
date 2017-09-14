@@ -38,7 +38,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMDAGetCorners(da_s,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
   ihi_b = ilo_b + w_b;
 
-  /* Transfer from the input vector to "S->dSdr", which is the same, minus the 
+  /* Transfer from the input vector to "S->dSdr", which is the same, minus the
      extra points */
   ierr = FromAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
 
@@ -48,7 +48,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* extract other necessary quantities from augmented array */
   /* FIXME: clean up */
-  if( A->MODEL == 3){
+  if( A->MODEL == MO_ATMOSPHERE_TYPE_VOLATILES){
     /* C02 content of magma ocean (solid and liquid phase) */
     ind = 0;
     ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&A->x0);CHKERRQ(ierr);
@@ -123,10 +123,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* time-dependence of additional quantities at the top of the augmented array */
 
   /* now that we have dS/dt, compute change in volatile concentrations */
-  /* FIXME.  Not sure if values are still getting pushed into the array
-     due to the atmosphere, even if the atmosphere should not be solved for.
-     This should stop that */
-  if (A->MODEL == 3){
+  if (A->MODEL == MO_ATMOSPHERE_TYPE_VOLATILES){
     set_dxdt( E );
     ierr = VecSetValue(rhs_b_aug,0,A->dx0dt,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(rhs_b_aug,1,A->dx1dt,INSERT_VALUES);CHKERRQ(ierr);

@@ -37,10 +37,11 @@ typedef struct _Interp2d {
 
 /* for storing atmosphere outputs for eventual writing to Petsc
    binary file */
+typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES} MagmaOceanAtmosphereType;
 typedef struct _Atmosphere {
     // 37 parameters in total
     // input parameters (20)
-    PetscInt MODEL;
+    MagmaOceanAtmosphereType MODEL;
     PetscInt HYBRID;
     // below are standard, also used for grey-body atmosphere
     PetscScalar EMISSIVITY;
