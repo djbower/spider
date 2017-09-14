@@ -11,7 +11,6 @@ PetscErrorCode set_parameters( Ctx *E )
 
     PetscFunctionBeginUser;
 
-    // 35 parameters to set
     // all SI units unless non-dimensional
 
     // initial entropy at top of adiabat (J/kgK)
@@ -40,11 +39,6 @@ PetscErrorCode set_parameters( Ctx *E )
     P->phi_width = 0.15; // non dimensional
     // melt fraction shape transition for skew
     P->phi_skew = 0.0; // non dimensional
-    // for radiative boundary condition at the top surface
-    // dT = constbc * [Surface temperature]**3
-    // FIXME: need to non-dimensionalise below!
-    //P->constbc = 1.0e-07; // FIXME check units
-    P->constbc = 0.0;
     // core density (kg/m^3)
     P->rho_core = 10738.332568062382;
     // heat capacity of core (J/kgK)
@@ -63,21 +57,45 @@ PetscErrorCode set_parameters( Ctx *E )
     // melt conductivity (W/mK)
     P->cond_mel = 4.0;
 
-    /* atmosphere parameters */
+    /* atmosphere parameters
+           MODEL=1: grey-body
+           MODEL=2: zahnle
+    */
+    A->MODEL=1;
+    /* for legacy purposes
+       if HYBRID is set, then the boundary condition will switch
+       to the upper mantle cooling rate once the rheological
+       transition is reached.  This prevents a lid from forming at
+       the top of the model.
+       TODO: this implies that the emissivity is around 1.0E-7,
+       which is unphysical unless you are appealing to a massive
+       massive atmosphere */
+    A->HYBRID=0;
+    // emissivity is used if h2o_initial or co2_initial <= 0 (non-dimensional)
+    A->EMISSIVITY = 1.0;
+    // Stefan-Boltzmann constant (W/m^2K^4)
+    A->SIGMA = 5.670367e-08;
+    // equilibrium temperature of the planet (K)
+    A->TEQM = 273.0;
+    /* for radiative boundary condition at the top surface
+       dT = constbc * [Surface temperature]**3
+       FIXME: need to non-dimensionalise below! */
+    //A->CONSTBC = 1.0e-07; // FIXME check units
+    A->CONSTBC = 0;
+    // FIXME: for convenience at the moment, duplicate these values */
+    A->RADIUS = P->radius;
+    A->GRAVITY = P->gravity;
+    /* VOLSCALE enables us to scale the volatile equations to the same
+       order of magnitude as entropy, and thus ensure that the residual
+       based on the solution vector is not biased. */
+    //A->VOLSCALE = 1.0E2; // wt %
+    A->VOLSCALE = 1.0E6; // ppm
     /* NOTE: if both H2O_INITIAL and CO2_INITIAL are set to zero, then
        the emissivity is constant with time (a grey-body, i.e.,
        a black-body scaled by EMISSIVITY.  If either H2O_INITIAL and/or
        CO2_INITIAL are positive then the emissivity is computed according
        to the plane-parallel radiative equilibrium model of Abe and 
        Matsui (1985)  */
-    /* VOLSCALE enables us to scale the volatile equations to the same
-       order of magnitude as entropy, and thus ensure that the residual
-       based on the solution vector is not biased. */
-    // FIXME: for convenience at the moment, duplicate these values */
-    A->RADIUS = P->radius;
-    A->GRAVITY = P->gravity;
-    //A->VOLSCALE = 1.0E2; // wt %
-    A->VOLSCALE = 1.0E6; // ppm
     // initial volatile contents in the liquid magma ocean
     // turn off atmosphere
     A->H2O_INITIAL = 0.0;
@@ -91,12 +109,6 @@ PetscErrorCode set_parameters( Ctx *E )
     // Elkins-Tanton (2008) case 3
     //P->h2o_initial = 0.0;
     //P->co2_initial = 6000.0;
-    // emissivity is used if h2o_initial or co2_initial <= 0 (non-dimensional)
-    A->EMISSIVITY = 1.0;
-    // Stefan-Boltzmann constant (W/m^2K^4)
-    A->SIGMA = 5.670367e-08;
-    // equilibrium temperature of the planet (K)
-    A->TEQM = 273.0;
     // atmosphere reference pressure (Pa)
     A->P0 = 101325.0; // Pa (= 1 atm)
     // distribution coefficients are given in supplementary material of ET08
@@ -139,7 +151,6 @@ PetscErrorCode set_non_dimensional_parameters( Ctx *E )
     P->beta *= C->RADIUS;
     P->grain /= C->RADIUS;
     P->gravity /= C->GRAVITY;
-    P->constbc /= 1.0; // FIXME
     P->rho_core /= C->DENSITY;
     P->cp_core /= C->ENTROPY;
     P->log10visc_sol -= C->LOG10ETA;
@@ -152,6 +163,7 @@ PetscErrorCode set_non_dimensional_parameters( Ctx *E )
        grey-body case */
     A->SIGMA /= C->SIGMA;
     A->TEQM /= C->TEMP;
+    A->CONSTBC /= 1.0; // FIXME to UPDATE!
 
     PetscFunctionReturn(0);
 
