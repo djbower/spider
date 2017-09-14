@@ -58,8 +58,8 @@ static PetscErrorCode set_ic_dSdr_constant( Ctx *E, Vec dSdr_in )
 {
     /* set initial entropy gradient to constant for basic nodes */
 
-    PetscErrorCode     ierr;
-    Parameters *P = &E->parameters;
+    PetscErrorCode   ierr;
+    Parameters const *P = &E->parameters;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -74,8 +74,7 @@ static PetscErrorCode set_ic_dSdr_constant( Ctx *E, Vec dSdr_in )
        clarity it is convenient to explicitly set these values to
        zero */
     ierr = VecSetValue( dSdr_in, 0, 0.0, INSERT_VALUES); CHKERRQ(ierr);
-    // TODO: is next line compatible with command line input? */
-    ierr = VecSetValue( dSdr_in, NUMPTS_B_DEFAULT-1, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+    ierr = VecSetValue( dSdr_in, P->numpts_b-1, 0.0, INSERT_VALUES); CHKERRQ(ierr);
 
     VecAssemblyBegin( dSdr_in );
     VecAssemblyEnd( dSdr_in );

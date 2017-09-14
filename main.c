@@ -14,7 +14,7 @@ static char help[] =
          in global_defs.h */
 
 #include "petsc.h"
-#include "ic.h" 
+#include "ic.h"
 #include "ctx.h"
 #include "monitor.h"
 #include "rhs.h"
@@ -22,28 +22,13 @@ static char help[] =
 
 int main(int argc, char ** argv)
 {
-  PetscErrorCode  ierr;
-  TS              ts;                        /* ODE solver object */
-  Vec             dSdr_b;
-  Vec             dSdr_b_aug;                /* Solution Vector (basic points, plus extra points) */
-  Ctx             ctx;                       /* Solver context */
-  PetscBool       monitor = PETSC_TRUE;      /* Macro step custom monitor (monitor.c) */
-  const PetscReal t0 = 0;                    /* Initial time */
-  const PetscInt  maxsteps =    1000000000;  /* Unlimited Max internal steps */ /* TODO: figure out if PETSc actually has a way to specify unlimited steps */
-  PetscReal       nexttime;                  /* next time to integrate to */
-
-  /* FIXME: at the moment we uncomment two lines below to switch between
-     early, middle, and late evolution */
-  // TODO provide convenience flags for this in SetParametersFromOptions
-  /* early evolution to about 10 kyr */
-  PetscInt        nstepsmacro = 1000;  /* Max macros steps */
-  PetscReal       dtmacro = 1000000;        /* Macro step size (in nondimensional units. About a year) */
-  /* middle evolution to about 100 Myr */
-  //PetscInt        nstepsmacro = 10000;  /* Max macros steps */
-  //PetscReal       dtmacro = 1000000000; /* Macro step size (roughly years) */
-  /* late evolution to 4.55 Byr */
-  //PetscInt        nstepsmacro = 455;  /* Max macros steps */
-  //PetscReal       dtmacro = 1000000000000; /* Macro step size (roughly years) */
+  PetscErrorCode   ierr;
+  TS               ts;                        /* ODE solver object */
+  Vec              dSdr_b;
+  Vec              dSdr_b_aug;                /* Solution Vector (basic points, plus extra points) */
+  Ctx              ctx;                       /* Solver context */
+  Parameters const *P;
+  Constants const  *C;
 
   PetscMPIInt     size;
 
@@ -54,28 +39,12 @@ int main(int argc, char ** argv)
   ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
   if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
 
-  // TODO move into parameters
-  /* Obtain command-line options for simulation time frame and monitoring */
-  {
-    PetscReal dtmacro_years = dtmacro * TIME0; // TODO : update to use E->P->C->TIMEYEARS
-    PetscBool dtmacro_set = PETSC_FALSE, dtmacro_years_set = PETSC_FALSE;
-    ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&monitor,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&nstepsmacro,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&dtmacro,&dtmacro_set);CHKERRQ(ierr);
-    ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
-    if (dtmacro_set) {
-        if (dtmacro_years_set) {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: both -dtmacro and -dtmacro_years provided. Using -dtmacro\n");CHKERRQ(ierr);
-        }
-        dtmacro_years = dtmacro * TIME0; /* FIXME : TIME0 currently wrong */
-    } else if (dtmacro_years_set) {
-        dtmacro = dtmacro_years / TIME0; /* FIXME : TIME0 currently wrong */
-    }
-  }
 
-  /* Perform all initialization for our problem, allocating data 
+  /* Perform all initialization for our problem, allocating data
      Note that this checks all command-line options. */
   ierr = setup_ctx(&ctx);CHKERRQ(ierr);
+  P = &ctx.parameters;
+  C = &P->constants;
 
   ///////////////////////
   /* initial condition */
@@ -122,11 +91,8 @@ int main(int argc, char ** argv)
   /* Set up the RHS Function */
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
 
-  /* Set up the integration period for first macro step */
-  nexttime = dtmacro; // non-dim time
-  ierr = TSSetDuration(ts,maxsteps,nexttime);CHKERRQ(ierr);
 
-  /* Set a very small initial timestep to prevent problems with 
+  /* Set a very small initial timestep to prevent problems with
      challenging initial conditions and adaptive steppers */
   /* DJB with revised code this probably is not necessary anymore */
   ierr = TSSetInitialTimeStep(ts,0.0,1e-10);CHKERRQ(ierr);
@@ -136,28 +102,33 @@ int main(int argc, char ** argv)
 
   /* Solve macro steps (could also use a monitor which keeps some state) */
   {
-    PetscReal time = t0,timeprev;
-    double walltime0 = MPI_Wtime(),walltimeprev;
-    timeprev = t0;
+    PetscReal time,nexttime,timeprev;
+    double    walltime0,walltimeprev;
+
+    time = P->t0;
+    timeprev = P->t0;
+    walltime0 = MPI_Wtime();
     walltimeprev = walltime0;
     PetscInt stepmacro=0;
     /* This code proceeds by performing multiple solves with a TS object,
        pausing to optionally produce output before updating the "final" time
        and proceeding again */
     ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f = %f years\n",
-        nstepsmacro,(double) dtmacro, (double) (dtmacro * TIME0));CHKERRQ(ierr);
-    if (monitor) {
-      ierr = TSCustomMonitor(ts,dtmacro,stepmacro,time,t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
+        P->nstepsmacro,(double) P->dtmacro, (double) (P->dtmacro * C->TIMEYRS));CHKERRQ(ierr);
+    nexttime = P->dtmacro; // non-dim time
+    ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
+    if (P->monitor) {
+      ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,P->t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
     }
-    for (stepmacro=1;stepmacro<=nstepsmacro;++stepmacro){
+    for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
       ierr = TSSolve(ts,dSdr_b_aug);CHKERRQ(ierr);
       timeprev = time;
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
-      if (monitor) {
-        ierr = TSCustomMonitor(ts,dtmacro,stepmacro,time,t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
+      if (P->monitor) {
+        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,P->t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
       }
-      nexttime = (stepmacro + 1) * dtmacro; // non-dim
-      ierr = TSSetDuration(ts,maxsteps,nexttime);CHKERRQ(ierr); 
+      nexttime = (stepmacro + 1) * P->dtmacro; // non-dim
+      ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     }
   }
 

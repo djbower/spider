@@ -1,6 +1,5 @@
 #include "ctx.h"
 #include "atmosphere.h"
-#include "constants.h"
 #include "lookup.h"
 #include "mesh.h"
 #include "twophase.h"
@@ -9,9 +8,9 @@
 /* Set up the Context */
 PetscErrorCode setup_ctx(Ctx* ctx)
 {
-  PetscErrorCode ierr;
-  PetscInt       i,numpts_b,numpts_s; 
-  PetscBool      set;
+  PetscErrorCode   ierr;
+  PetscInt         i;
+  Parameters const *P = &ctx->parameters;
 
   PetscFunctionBeginUser;
 
@@ -44,15 +43,6 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   /* Initialize context with parameters (most parameters are constants in global_defs.h, though) */
   set_lookups(ctx);
 
-  /* Check for a command line option -n to set the number of *staggered* points */
-  ierr = PetscOptionsGetInt(NULL,NULL,"-n",&numpts_s,&set);CHKERRQ(ierr);
-  if (set){
-    numpts_b = numpts_s + 1;
-  } else {
-    numpts_b = NUMPTS_B_DEFAULT;
-    numpts_s = NUMPTS_S_DEFAULT;
-  }
-
   /* Set up a parallel structured grid as DMComposite with two included DMDAs
      This is used to define vectors which hold the solution. The included 
      DMDAs are used to create vectors which hold various properties
@@ -60,8 +50,8 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   */
   const PetscInt stencilWidth = 1; //TODO: check that this is appropriate
   const PetscInt dof = 1;
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,numpts_b,dof,stencilWidth,NULL,&ctx->da_b);CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,numpts_s,dof,stencilWidth,NULL,&ctx->da_s);CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,dof,stencilWidth,NULL,&ctx->da_b);CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,dof,stencilWidth,NULL,&ctx->da_s);CHKERRQ(ierr);
 
 #if (defined DEBUGOUTPUT)
   {

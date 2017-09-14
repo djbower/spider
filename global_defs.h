@@ -49,34 +49,16 @@
 /* you have to use the python script to a priori determine how many
    nodes there are in a given mesh */
 
-/* for constant mesh spacing */
-#define NUMPTS_B_DEFAULT 200
-
-//#define NUMPTS_B_DEFAULT 278
-//#define NUMPTS_B_DEFAULT 372
-//#define NUMPTS_B_DEFAULT 656
-//#define NUMPTS_B_DEFAULT 2939
-//#define NUMPTS_B_DEFAULT 5802
-//#define NUMPTS_B_DEFAULT 11532
-//#define NUMPTS_B_DEFAULT 22996
-//#define NUMPTS_B_DEFAULT 45928
-
 /* number of additional equations for the augmented system */
 //#define AUG_NUM 1 // for no coupled atmosphere evolution
 // FIXME: this must always be set to 3
 #define AUG_NUM 3 // for coupled atmosphere evolution
-
-/* number of staggered mesh points */
-#define NUMPTS_S_DEFAULT NUMPTS_B_DEFAULT-1 /* automagically determined */
 
 /* scaling constants */
 static const PetscScalar RADIUS0 = 6371000.0; // m
 static const PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
 static const PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
 static const PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
-
-/* FIXME: this is just a placeholder - currently wrong! */
-#define TIME0 ((PetscReal) 1e-5) // !!!! WRONG !!!!
 
 /* datafile locations and material-specific constants */
 

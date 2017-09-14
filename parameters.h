@@ -78,6 +78,15 @@ typedef struct _Constants {
 } Constants;
 
 typedef struct _Parameters {
+
+    // Discretization parameters
+    PetscInt    nstepsmacro,maxsteps;
+    PetscReal   dtmacro;
+    PetscReal   t0; /* Initial time */
+    PetscInt    numpts_b,numpts_s;
+
+    PetscBool monitor;
+
     //  "Standard" parameters
     // 19
     PetscScalar sinit;
