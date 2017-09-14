@@ -75,7 +75,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* grey-body atmosphere */
   set_emissivity( A );
 
-  set_surface_flux( E, t );
+  set_surface_flux( E );
 
   set_core_mantle_flux( E );
 
