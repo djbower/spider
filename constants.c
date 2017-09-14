@@ -58,8 +58,12 @@ PetscErrorCode set_parameters( Ctx *E )
     P->cond_mel = 4.0;
 
     /* atmosphere parameters
-           MODEL=1: grey-body
-           MODEL=2: zahnle
+         MODEL=1: grey-body
+         MODEL=2: zahnle FIXME: currently broken
+         MODEL=3: self-consistent atmosphere evolution
+                  with CO2 and H2O volatiles
+                  uses plane-parallel radiative eqm model
+                  of Abe and Matsui (1985)
     */
     A->MODEL=1;
     /* for legacy purposes
@@ -71,7 +75,7 @@ PetscErrorCode set_parameters( Ctx *E )
        which is unphysical unless you are appealing to a massive
        massive atmosphere */
     A->HYBRID=0;
-    // emissivity is used if h2o_initial or co2_initial <= 0 (non-dimensional)
+    // emissivity is constant for MODEL != 3
     A->EMISSIVITY = 1.0;
     // Stefan-Boltzmann constant (W/m^2K^4)
     A->SIGMA = 5.670367e-08;
@@ -82,22 +86,18 @@ PetscErrorCode set_parameters( Ctx *E )
        FIXME: need to non-dimensionalise below! */
     //A->CONSTBC = 1.0e-07; // FIXME check units
     A->CONSTBC = 0;
+
+    /* below here are only used for MODEL = 3 */
     // FIXME: for convenience at the moment, duplicate these values */
     A->RADIUS = P->radius;
     A->GRAVITY = P->gravity;
     /* VOLSCALE enables us to scale the volatile equations to the same
        order of magnitude as entropy, and thus ensure that the residual
        based on the solution vector is not biased. */
+    // FIXME: need to figure out scalings of this ODE
     //A->VOLSCALE = 1.0E2; // wt %
     A->VOLSCALE = 1.0E6; // ppm
-    /* NOTE: if both H2O_INITIAL and CO2_INITIAL are set to zero, then
-       the emissivity is constant with time (a grey-body, i.e.,
-       a black-body scaled by EMISSIVITY.  If either H2O_INITIAL and/or
-       CO2_INITIAL are positive then the emissivity is computed according
-       to the plane-parallel radiative equilibrium model of Abe and 
-       Matsui (1985)  */
     // initial volatile contents in the liquid magma ocean
-    // turn off atmosphere
     A->H2O_INITIAL = 0.0;
     A->CO2_INITIAL = 0.0;
     // Elkins-Tanton (2008) case 1
