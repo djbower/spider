@@ -309,7 +309,7 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, Parameters *
     ierr = DMDAVecGetArray(da,pressure,&arr_p);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
         dep = P->radius - arr_r[i];
-        arr_p[i] = P->rhos * -P->gravity / -P->beta;
+        arr_p[i] = P->rhos * -P->gravity / P->beta;
         arr_p[i] *= PetscExpScalar( P->beta * dep ) - 1.0;
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
