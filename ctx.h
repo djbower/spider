@@ -38,12 +38,15 @@ typedef struct _Interp2d {
 /* for storing atmosphere outputs for eventual writing to Petsc
    binary file */
 typedef struct _Atmosphere {
-    // 35 parameters in total
-    // input parameters (17)
+    // 38 parameters in total
+    // input parameters (20)
+    PetscInt MODEL;
+    PetscInt HYBRID;
     // below are standard, also used for grey-body atmosphere
     PetscScalar EMISSIVITY;
     PetscScalar SIGMA;
     PetscScalar TEQM;
+    PetscScalar CONSTBC;
     // for volatile ODE
     PetscScalar VOLSCALE;
     PetscScalar P0;
@@ -137,7 +140,6 @@ typedef struct _Parameters {
     PetscScalar phi_critical;
     PetscScalar phi_width;
     PetscScalar phi_skew;
-    PetscScalar constbc;
     PetscScalar rho_core;
     PetscScalar cp_core;
     PetscScalar tfac_core_avg;
