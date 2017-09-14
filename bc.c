@@ -1,22 +1,22 @@
-#include "atmosphere.h"
 #include "bc.h"
 #include "util.h"
 
-static PetscScalar grey_body( PetscScalar, Atmosphere * );
-static PetscScalar zahnle( PetscScalar,  Atmosphere * );
-static PetscScalar tsurf_param( PetscScalar, Atmosphere * );
+static PetscScalar grey_body( PetscScalar, Atmosphere *, AtmosphereParameters * );
+static PetscScalar zahnle( PetscScalar,  AtmosphereParameters * );
+static PetscScalar tsurf_param( PetscScalar, AtmosphereParameters * );
 static PetscScalar hybrid( Ctx *, PetscScalar );
 
 PetscErrorCode set_surface_flux( Ctx *E )
 {
-    PetscErrorCode    ierr;
-    PetscMPIInt       rank;
-    // initialise Qout to avoid compiler warning
-    PetscScalar       temp0, Tsurf, Qout=0.0;
-    PetscInt          ind;
-    Atmosphere        *A = &E->atmosphere;
-    Parameters        *P = &E->parameters;
-    Solution          *S = &E->solution;
+    PetscErrorCode       ierr;
+    PetscMPIInt          rank;
+    // initialise Qout    to avoid compiler warning
+    PetscScalar          temp0, Tsurf, Qout=0.0;
+    PetscInt             ind;
+    Atmosphere           *A  = &E->atmosphere;
+    Parameters           *P  = &E->parameters;
+    AtmosphereParameters *Ap = &P->atmosphere_parameters;
+    Solution             *S  = &E->solution;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -34,32 +34,33 @@ PetscErrorCode set_surface_flux( Ctx *E )
       ierr = VecGetValues(S->temp,1,&ind,&temp0); CHKERRQ(ierr);
 
       /* correct for ultra-thin thermal boundary layer at the surface */
-      if( A->CONSTBC == 0.0 ){
+      if( Ap->CONSTBC == 0.0 ){
         Tsurf = temp0; // surface temperature is potential temperature
       }
       else{
-        Tsurf = tsurf_param( temp0, A); // parameterised boundary layer
+        Tsurf = tsurf_param( temp0, Ap); // parameterised boundary layer
       }
 
       /* determine flux */
-      switch( A->MODEL ){
+      switch( Ap->MODEL ){
         case 1:
           // grey-body
-          Qout = grey_body( Tsurf, A );
+          A->emissivity = Ap->EMISSIVITY0;
+          Qout = grey_body( Tsurf, A, Ap );
           break;
         case 2:
           // zahnle
-          Qout = zahnle( Tsurf, A );
+          Qout = zahnle( Tsurf, Ap );
           break;
         case 3:
           // atmosphere evolution
-          set_emissivity_abe_matsui( A ); // updates A->EMISSIVITY
-          Qout = grey_body( Tsurf, A );
+          set_emissivity_abe_matsui( A, Ap ); // updates A->emissivity
+          Qout = grey_body( Tsurf, A, Ap );
           break;
       }
 
       /* TODO: for legacy purposes, perhaps to remove at some point */
-      if( A->HYBRID ){
+      if( Ap->HYBRID ){
           Qout = hybrid( E, Qout );
       }
 
@@ -85,17 +86,17 @@ PetscErrorCode set_surface_flux( Ctx *E )
 /* atmosphere models */
 ///////////////////////
 
-static PetscScalar grey_body( PetscScalar Tsurf, Atmosphere *A )
+static PetscScalar grey_body( PetscScalar Tsurf, Atmosphere *A, AtmosphereParameters *Ap )
 {
     PetscScalar Fsurf;
 
-    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(A->TEQM,4.0);
-    Fsurf *= A->SIGMA * A->EMISSIVITY;
+    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(Ap->TEQM,4.0);
+    Fsurf *= Ap->SIGMA * A->emissivity; /* Note emissivity may vary */
 
     return Fsurf;
 }
 
-static PetscScalar zahnle( PetscScalar Tsurf, Atmosphere *A )
+static PetscScalar zahnle( PetscScalar Tsurf, AtmosphereParameters *Ap )
 {
     PetscScalar       Fsurf;
 
@@ -223,10 +224,10 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 
 }
 
-static PetscScalar tsurf_param( PetscScalar temp, Atmosphere *A )
+static PetscScalar tsurf_param( PetscScalar temp, AtmosphereParameters *Ap )
 {
     PetscScalar Ts, c, fac, num, den;
-    c = A->CONSTBC;
+    c = Ap->CONSTBC;
 
     fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
     fac = PetscPowScalar( fac, 1.0/2.0 );

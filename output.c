@@ -16,33 +16,33 @@ PetscErrorCode add_vector_to_binary_output( Vec vec, PetscViewer viewer)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode atmosphere_struct_to_vec( Atmosphere *A, Vec vec )
+PetscErrorCode atmosphere_structs_to_vec( Atmosphere const *A, AtmosphereParameters const * Ap, Vec vec )
 {
 
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
 
-    ierr = VecSetValue(vec,0,A->MODEL,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,1,A->HYBRID,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,2,A->EMISSIVITY,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,3,A->SIGMA,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,4,A->TEQM,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,5,A->CONSTBC,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,6,A->VOLSCALE,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,7,A->P0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,8,A->H2O_INITIAL,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,9,A->H2O_KDIST,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,10,A->H2O_KABS,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,11,A->H2O_HENRY,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,12,A->H2O_HENRY_POW,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,13,A->CO2_INITIAL,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,14,A->CO2_KDIST,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,15,A->CO2_KABS,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,16,A->CO2_HENRY,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,17,A->CO2_HENRY_POW,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,18,A->RADIUS,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,19,A->GRAVITY,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,0,Ap->MODEL,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,1,Ap->HYBRID,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,2,Ap->EMISSIVITY0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,3,Ap->SIGMA,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,4,Ap->TEQM,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,5,Ap->CONSTBC,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,6,Ap->VOLSCALE,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,7,Ap->P0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,8,Ap->H2O_INITIAL,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,9,Ap->H2O_KDIST,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,10,Ap->H2O_KABS,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,11,Ap->H2O_HENRY,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,12,Ap->H2O_HENRY_POW,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,13,Ap->CO2_INITIAL,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,14,Ap->CO2_KDIST,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,15,Ap->CO2_KABS,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,16,Ap->CO2_HENRY,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,17,Ap->CO2_HENRY_POW,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,18,Ap->RADIUS,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,19,Ap->GRAVITY,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,20,A->M0,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,21,A->Mliq,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,22,A->Msol,INSERT_VALUES);CHKERRQ(ierr);
@@ -60,6 +60,7 @@ PetscErrorCode atmosphere_struct_to_vec( Atmosphere *A, Vec vec )
     ierr = VecSetValue(vec,34,A->dp1dx,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,35,A->m1,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,36,A->tau1,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,37,A->emissivity,INSERT_VALUES);CHKERRQ(ierr);
 
     ierr = VecAssemblyBegin(vec);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(vec);CHKERRQ(ierr);

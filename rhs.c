@@ -1,5 +1,6 @@
 #include "ctx.h"
 #include "atmosphere.h"
+#include "set_dxdt.h"
 #include "aug.h"
 #include "bc.h"
 #include "energy.h"
@@ -12,18 +13,20 @@
 PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,void *ptr)
 {
   PetscErrorCode    ierr;
-  Ctx               *E = (Ctx*) ptr;
-  Atmosphere        *A = &E->atmosphere;
-  Mesh              *M = &E->mesh;
-  Solution          *S = &E->solution;
-  PetscScalar       *arr_dSdt_s, *arr_rhs_b;
-  const PetscScalar *arr_Etot, *arr_lhs_s, *arr_temp_s, *arr_Htot_s, *arr_radius_s, *arr_radius_b;
-  PetscMPIInt       rank,size;
-  PetscInt          i,ihi_b,ilo_b,w_b,numpts_b;
-  DM                da_s = E->da_s, da_b=E->da_b;
-  Vec               rhs_b;
-  PetscInt          ind;
-  PetscScalar       S0, dS0dt;
+  Ctx                  *E = (Ctx*) ptr;
+  Parameters           *P = &E->parameters;
+  Atmosphere           *A = &E->atmosphere;
+  AtmosphereParameters *Ap = &P->atmosphere_parameters;
+  Mesh                 *M = &E->mesh;
+  Solution             *S = &E->solution;
+  PetscScalar          *arr_dSdt_s, *arr_rhs_b;
+  const PetscScalar    *arr_Etot, *arr_lhs_s, *arr_temp_s, *arr_Htot_s, *arr_radius_s, *arr_radius_b;
+  PetscMPIInt          rank,size;
+  PetscInt             i,ihi_b,ilo_b,w_b,numpts_b;
+  DM                   da_s = E->da_s, da_b=E->da_b;
+  Vec                  rhs_b;
+  PetscInt             ind;
+  PetscScalar          S0, dS0dt;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -48,7 +51,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* extract other necessary quantities from augmented array */
   /* FIXME: clean up */
-  if( A->MODEL == MO_ATMOSPHERE_TYPE_VOLATILES){
+  if( Ap->MODEL == MO_ATMOSPHERE_TYPE_VOLATILES){
     /* C02 content of magma ocean (solid and liquid phase) */
     ind = 0;
     ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&A->x0);CHKERRQ(ierr);
@@ -123,7 +126,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* time-dependence of additional quantities at the top of the augmented array */
 
   /* now that we have dS/dt, compute change in volatile concentrations */
-  if (A->MODEL == MO_ATMOSPHERE_TYPE_VOLATILES){
+  if (Ap->MODEL == MO_ATMOSPHERE_TYPE_VOLATILES){
     set_dxdt( E );
     ierr = VecSetValue(rhs_b_aug,0,A->dx0dt,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(rhs_b_aug,1,A->dx1dt,INSERT_VALUES);CHKERRQ(ierr);

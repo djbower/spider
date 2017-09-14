@@ -32,8 +32,8 @@ PetscErrorCode set_lookups( Ctx *E )
     char tempSolFilename[PETSC_MAX_PATH_LEN];
     char tempMelFilename[PETSC_MAX_PATH_LEN];
 
-    Constants *C = &E->constants;
     Parameters *P = &E->parameters;
+    Constants *C = &P->constants;
 
     /* set all 1-D and 2-D lookups */
 

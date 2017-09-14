@@ -1,4 +1,3 @@
-#include "atmosphere.h"
 #include "ic.h"
 
 static PetscErrorCode set_ic_dSdr_constant( Ctx *, Vec );
@@ -7,7 +6,9 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
 {
 
     PetscErrorCode ierr;
-    Atmosphere *A = &E->atmosphere;
+    Atmosphere           *A  = &E->atmosphere;
+    Parameters           *P  = &E->parameters;
+    AtmosphereParameters *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
 
@@ -23,11 +24,11 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
       is actually partitioned betweem the (liquid) magma ocean and the
       atmosphere. */
     /* initial mass content of CO2 in the magma ocean */
-    set_initial_xCO2( A );
+    set_initial_xCO2( A, Ap );
     ierr = VecSetValue(dSdr_b_aug,0,A->x0,INSERT_VALUES);CHKERRQ(ierr);
     
     /* initial mass content of H2O in the magma ocean */
-    set_initial_xH2O( A );
+    set_initial_xH2O( A, Ap );
     ierr = VecSetValue(dSdr_b_aug,1,A->x1,INSERT_VALUES);CHKERRQ(ierr);
    
    /* include initial entropy at staggered node */

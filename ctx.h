@@ -8,8 +8,12 @@
 #undef I
 
 #include "global_defs.h"
+#include "parameters.h"
+#include "atmosphere.h"
 
 /* common structures */
+
+// TODO move to lookup.h
 
 /* this structure has an x and y array size equal to NLS */
 typedef struct _Interp1d {
@@ -33,123 +37,6 @@ typedef struct _Interp2d {
     PetscScalar dx;
     PetscScalar dy;
 } Interp2d;
-
-/* for storing atmosphere outputs for eventual writing to Petsc
-   binary file */
-typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES} MagmaOceanAtmosphereType;
-typedef struct _Atmosphere {
-    // 37 parameters in total
-    // input parameters (20)
-    MagmaOceanAtmosphereType MODEL;
-    PetscInt HYBRID;
-    // below are standard, also used for grey-body atmosphere
-    PetscScalar EMISSIVITY;
-    PetscScalar SIGMA;
-    PetscScalar TEQM;
-    PetscScalar CONSTBC;
-    // for volatile ODE
-    PetscScalar VOLSCALE;
-    PetscScalar P0;
-    // H2O (TODO: move to a 'Volatile' struct)
-    PetscScalar H2O_INITIAL;
-    PetscScalar H2O_KDIST;
-    PetscScalar H2O_KABS;
-    PetscScalar H2O_HENRY;
-    PetscScalar H2O_HENRY_POW;
-    // CO2 (TODO: move to a 'Volatile' struct)
-    PetscScalar CO2_INITIAL;
-    PetscScalar CO2_KDIST;
-    PetscScalar CO2_KABS;
-    PetscScalar CO2_HENRY;
-    PetscScalar CO2_HENRY_POW;
-    /* although RADIUS and GRAVITY are duplicated, they may have
-       different non-dimensional values depending on the volatile
-       non-dimenisonalisation scheme, which will be different to
-       the dS/dr scheme to ensure comparable magnitude residuals */
-    PetscScalar RADIUS; // duplicate
-    PetscScalar GRAVITY; // duplicate
-    // calculated quantites (17)
-    PetscScalar M0; // total mass of mantle from EOS (kg)
-    PetscScalar Mliq; // mass of liquid (kg)
-    PetscScalar Msol; // mass of solid (kg)
-    PetscScalar dMliqdt; // dMliq/dt (kg/yr)
-    PetscScalar tau; // aggregate optical depth (dimensionless)
-    PetscScalar x0; // CO2 content (wt %)
-    PetscScalar dx0dt; // dx0/dt (wt % / yr)
-    PetscScalar p0; // CO2 partial pressure (Pa)
-    PetscScalar dp0dx; // dp0/dx (Pa/mass fraction)
-    PetscScalar m0; // CO2 mass in atmosphere (kg)
-    PetscScalar tau0; // CO2 optical depth (dimensionless)
-    PetscScalar x1; // H2O content (wt %)
-    PetscScalar dx1dt; // dx1/dt (wt % / yr)
-    PetscScalar p1; // H2O partial pressure (Pa)
-    PetscScalar dp1dx; // dp1dx (Pa / mass fraction)
-    PetscScalar m1; // H2O mass in atmosphere (kg)
-    PetscScalar tau1; // H20 optical depth (dimensionless)
-} Atmosphere;
-
-/* dimensionalising constants */
-typedef struct _Constants {
-    PetscScalar RADIUS;
-    PetscScalar TEMP;
-    PetscScalar ENTROPY;
-    PetscScalar DENSITY;
-    PetscScalar AREA;
-    PetscScalar AREAG; // with 4*pi geometry
-    PetscScalar VOLUME;
-    PetscScalar VOLUMEG; // with 4*pi geometry
-    PetscScalar MASS;
-    PetscScalar MASSG; // with 4*pi geometry
-    PetscScalar TIME;
-    PetscScalar TIMEYRS;
-    PetscScalar SENERGY;
-    PetscScalar ENERGY;
-    PetscScalar ENERGYG; // with 4*pi geometry
-    PetscScalar PRESSURE;
-    PetscScalar POWER;
-    PetscScalar POWERG; // with 4*pi geometry
-    PetscScalar FLUX;
-    PetscScalar DPDR;
-    PetscScalar ALPHA;
-    PetscScalar GRAVITY;
-    PetscScalar KAPPA;
-    PetscScalar DTDP;
-    PetscScalar DSDR;
-    PetscScalar DTDR;
-    PetscScalar GSUPER;
-    PetscScalar ETA;
-    PetscScalar LOG10ETA;
-    PetscScalar NU;
-    PetscScalar COND;
-    PetscScalar SIGMA;
-    PetscScalar LHS;
-    PetscScalar LHSG; // with 4*pi geometry
-    PetscScalar RHS;
-} Constants;
-
-typedef struct _Parameters {
-    // 19
-    PetscScalar sinit;
-    PetscScalar ic_dsdr;
-    PetscScalar radius;
-    PetscScalar coresize;
-    PetscScalar rhos;
-    PetscScalar beta;
-    PetscScalar grain;
-    PetscScalar gravity;
-    PetscScalar phi_critical;
-    PetscScalar phi_width;
-    PetscScalar phi_skew;
-    PetscScalar rho_core;
-    PetscScalar cp_core;
-    PetscScalar tfac_core_avg;
-    PetscScalar swidth;
-    PetscScalar log10visc_sol;
-    PetscScalar cond_sol;
-    PetscScalar log10visc_mel;
-    PetscScalar cond_mel;
-} Parameters;
-
 
 /* lookup for a single phase */
 typedef struct _Lookup {
@@ -197,15 +84,14 @@ typedef struct _Solution {
 
 /* A Context for the Solver */
 typedef struct _Ctx {
-  Lookup   melt_prop;
-  Lookup   solid_prop;
-  Mesh     mesh;
-  Solution solution;
-  DM       da_b,da_s;
-  PetscScalar S_init; // initial entropy
-  Mat      qty_at_b, ddr_at_b;
+  Lookup     melt_prop;
+  Lookup     solid_prop;
+  Mesh       mesh;
+  Solution   solution;
+  DM         da_b,da_s;
+  PetscScalar S_init; // initial entropy // TODO remove this
   Atmosphere atmosphere;
-  Constants constants;
+  Mat        qty_at_b, ddr_at_b;
   Parameters parameters;
 
   /* "local" work vectors */

@@ -34,6 +34,7 @@ int main(int argc, char ** argv)
 
   /* FIXME: at the moment we uncomment two lines below to switch between
      early, middle, and late evolution */
+  // TODO provide convnience flags for this in SetParametersFromOptions
   /* early evolution to about 10 kyr */
   PetscInt        nstepsmacro = 1000;  /* Max macros steps */
   PetscReal       dtmacro = 1000000;        /* Macro step size (in nondimensional units. About a year) */
@@ -53,19 +54,7 @@ int main(int argc, char ** argv)
   ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
   if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
 
-  /* 
-   **All** parameters/settings should be inside ctx->parameters . Here, we
-     1. Initialize these to default values
-     2. Obtain any inputs from the user at the command line and update
-     3. Print out all paramters
-     After this point, **no** command line options should be processed,
-     and ctx->paramters should **never** change 
-    */
-  // TODO : move everything into Parameters
-  // TODO: initialize Parameters here
-  // TODO: move all commadn line processing into a function to update parameters
-  // TODO : print out all params with scaled value / dim value / scaling  formula and value
-
+  // TODO move into parameters
   /* Obtain command-line options for simulation time frame and monitoring */
   {
     PetscReal dtmacro_years = dtmacro * TIME0;
@@ -82,19 +71,10 @@ int main(int argc, char ** argv)
     } else if (dtmacro_years_set) {
         dtmacro = dtmacro_years / TIME0; /* FIXME : TIME0 currently wrong */
     }
-
-    /* This code proceeds by performing multiple solves with a TS object,
-       pausing to optionally produce output before updating the "final" time
-       and proceeding again */
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f = %f years\n",
-        nstepsmacro,(double) dtmacro, (double) dtmacro_years);CHKERRQ(ierr);
   }
 
-  /* Note: it might make for a less-confusing code if all command-line 
-           processing was here, instead of hidden in the ctx setup */
-
   /* Perform all initialization for our problem, allocating data 
-     Note that this checks for a command line option -n */
+     Note that this checks all command-line options. */
   ierr = setup_ctx(&ctx);CHKERRQ(ierr);
 
   ///////////////////////
@@ -161,6 +141,11 @@ int main(int argc, char ** argv)
     timeprev = t0;
     walltimeprev = walltime0;
     PetscInt stepmacro=0;
+    /* This code proceeds by performing multiple solves with a TS object,
+       pausing to optionally produce output before updating the "final" time
+       and proceeding again */
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f = %f years\n",
+        nstepsmacro,(double) dtmacro, (double) (dtmacro * TIME0));CHKERRQ(ierr);
     if (monitor) {
       ierr = TSCustomMonitor(ts,dtmacro,stepmacro,time,t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
     }

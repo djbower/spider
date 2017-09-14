@@ -1,16 +1,81 @@
-#include "constants.h"
+/*
+Parameter Management
 
-static PetscErrorCode set_non_dimensional_parameters( Ctx * );
+Parameters should only ever be set by the functions in this file. That is, everywhere else they should be considered read-only.
 
-PetscErrorCode set_parameters( Ctx *E )
+Custom PETSc command line options should only ever be parsed here.
+
+ */
+
+#include "parameters.h"
+#include "ctx.h"
+
+PetscErrorCode set_constants( Constants *C )
 {
-    // store atmosphere parameters in atmosphere struct
-    Atmosphere *A = &E->atmosphere;
-    // store everything else in parameters struct
-    Parameters *P = &E->parameters;
+    PetscScalar SQRTST;
 
     PetscFunctionBeginUser;
 
+    // 35 constants to set
+    SQRTST = PetscSqrtScalar( ENTROPY0 * TEMPERATURE0 );
+
+    C->RADIUS   = RADIUS0;
+    C->TEMP     = TEMPERATURE0;
+    C->ENTROPY  = ENTROPY0;
+    C->DENSITY  = DENSITY0;
+    C->AREA     = PetscSqr( C->RADIUS );
+    C->AREAG    = C->AREA * 4.0 * PETSC_PI;
+    C->VOLUME   = C->AREA * C->RADIUS;
+    C->VOLUMEG  = C->VOLUME * 4.0 * PETSC_PI;
+    C->MASS     = C->DENSITY * C->VOLUME;
+    C->MASSG    = C->MASS * 4.0 * PETSC_PI;
+    C->TIME     = C->RADIUS / SQRTST;
+    C->TIMEYRS  = C->TIME / (60.0*60.0*24.0*365.25);
+    C->SENERGY  = C->ENTROPY * C->TEMP;
+    C->ENERGY   = C->SENERGY * C->MASS;
+    C->ENERGYG  = C->ENERGY * 4.0 * PETSC_PI;
+    C->PRESSURE = C->ENTROPY * C->TEMP * C->DENSITY;
+    C->POWER    = C->ENERGY / C->TIME;
+    C->POWERG   = C->POWER * 4.0 * PETSC_PI;
+    C->FLUX     = C->POWER / C->AREA;
+    C->DPDR     = C->PRESSURE / C->RADIUS;
+    C->ALPHA    = 1.0 / C->TEMP;
+    C->GRAVITY  = (C->ENTROPY * C->TEMP) / C->RADIUS;
+    C->KAPPA    = C->RADIUS * SQRTST;
+    C->DTDP     = 1.0 / (C->DENSITY * C->ENTROPY);
+    C->DSDR     = C->ENTROPY / C->RADIUS;
+    C->DTDR     = C->TEMP / C->RADIUS;
+    C->GSUPER   = C->GRAVITY * C->DTDR;
+    C->ETA      = C->DENSITY * C->KAPPA;
+    C->LOG10ETA = PetscLog10Real( C->ETA );
+    C->NU       = C->KAPPA;
+    C->COND     = C->ENTROPY * C->DENSITY * C->KAPPA;
+    C->SIGMA    = C->FLUX * 1.0 / PetscPowScalar( C->TEMP, 4.0 );
+    C->LHS      = C->DENSITY * C->VOLUME * C->TEMP;
+    C->LHSG     = C->LHS * 4.0 * PETSC_PI;
+    C->RHS      = C->ENTROPY / C->TIME;
+
+    PetscFunctionReturn(0);
+}
+// TODO - paste end ...
+
+PetscErrorCode InitializeParameters(Parameters *P) 
+{
+  AtmosphereParameters *Ap = &P->atmosphere_parameters;
+  Constants            *C  = &P->constants;
+
+  PetscFunctionBeginUser;
+
+  /* Set default scalings */
+  // TODO
+  // TODO paste begin ..
+  set_constants(&P->constants);
+  // TODO paste end ..
+
+  /* For each entry in parameters, we set a default value and immediately scale it. Dimensional/unscaled quantities are not explicitly stored. */
+  // TODO
+
+  // TODO -- pasted begin
     // all SI units unless non-dimensional
 
     // initial entropy at top of adiabat (J/kgK)
@@ -65,7 +130,7 @@ PetscErrorCode set_parameters( Ctx *E )
                   uses plane-parallel radiative eqm model
                   of Abe and Matsui (1985)
     */
-    A->MODEL=MO_ATMOSPHERE_TYPE_GREY_BODY;
+    Ap->MODEL=MO_ATMOSPHERE_TYPE_GREY_BODY;
     /* for legacy purposes
        if HYBRID is set, then the boundary condition will switch
        to the upper mantle cooling rate once the rheological
@@ -74,32 +139,32 @@ PetscErrorCode set_parameters( Ctx *E )
        TODO: this implies that the emissivity is around 1.0E-7,
        which is unphysical unless you are appealing to a massive
        massive atmosphere */
-    A->HYBRID=0;
+    Ap->HYBRID=0;
     // emissivity is constant for MODEL != MO_ATMOSPHERE_TYPE_VOLATILES
-    A->EMISSIVITY = 1.0;
+    Ap->EMISSIVITY0 = 1.0;
     // Stefan-Boltzmann constant (W/m^2K^4)
-    A->SIGMA = 5.670367e-08;
+    Ap->SIGMA = 5.670367e-08;
     // equilibrium temperature of the planet (K)
-    A->TEQM = 273.0;
+    Ap->TEQM = 273.0;
     /* for radiative boundary condition at the top surface
        dT = constbc * [Surface temperature]**3
        FIXME: need to non-dimensionalise below! */
-    //A->CONSTBC = 1.0e-07; // FIXME check units
-    A->CONSTBC = 0;
+    //Ap->CONSTBC = 1.0e-07; // FIXME check units
+    Ap->CONSTBC = 0;
 
     /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
     // FIXME: for convenience at the moment, duplicate these values */
-    A->RADIUS = P->radius; // FIXME: dimensional
-    A->GRAVITY = P->gravity; // FIXME: dimensional
+    Ap->RADIUS = P->radius; // FIXME: dimensional
+    Ap->GRAVITY = P->gravity; // FIXME: dimensional
     /* VOLSCALE enables us to scale the volatile equations to the same
        order of magnitude as entropy, and thus ensure that the residual
        based on the solution vector is not biased. */
     // FIXME: need to figure out scalings of this ODE
-    //A->VOLSCALE = 1.0E2; // wt %
-    A->VOLSCALE = 1.0E6; // ppm
+    //Ap->VOLSCALE = 1.0E2; // wt %
+    Ap->VOLSCALE = 1.0E6; // ppm
     // initial volatile contents in the liquid magma ocean
-    A->H2O_INITIAL = 0.0;
-    A->CO2_INITIAL = 0.0;
+    Ap->H2O_INITIAL = 0.0;
+    Ap->CO2_INITIAL = 0.0;
     // Elkins-Tanton (2008) case 1
     //P->h2o_initial = 500.0;
     //P->co2_initial = 100.0;
@@ -110,40 +175,29 @@ PetscErrorCode set_parameters( Ctx *E )
     //P->h2o_initial = 0.0;
     //P->co2_initial = 6000.0;
     // atmosphere reference pressure (Pa)
-    A->P0 = 101325.0; // Pa (= 1 atm)
+    Ap->P0 = 101325.0; // Pa (= 1 atm)
     // distribution coefficients are given in supplementary material of ET08
     // distribution coefficient between solid and melt (non-dimensional)
-    A->H2O_KDIST = 1.0E-4;
+    Ap->H2O_KDIST = 1.0E-4;
     // TODO: water saturation limit of 10 ppm?
     // absorption (m^2/kg)
-    A->H2O_KABS = 0.01;
+    Ap->H2O_KABS = 0.01;
     // next two from Lebrun et al. (2013)
-    A->H2O_HENRY = 6.8E-8; // must be mass fraction/Pa
-    A->H2O_HENRY_POW = 1.4285714285714286; // (1.0/0.7)
+    Ap->H2O_HENRY = 6.8E-8; // must be mass fraction/Pa
+    Ap->H2O_HENRY_POW = 1.4285714285714286; // (1.0/0.7)
     // distribution coefficient between solid and melt (non-dimensional)
-    A->CO2_KDIST = 5.0E-4;
+    Ap->CO2_KDIST = 5.0E-4;
     // TODO: water saturation limit of 0.03 ppm
     // absorption (m^2/kg)
-    A->CO2_KABS = 0.05;
+    Ap->CO2_KABS = 0.05;
     // next two from Lebrun et al. (2013)
-    A->CO2_HENRY = 4.4E-12; // must be mass fraction/Pa
-    A->CO2_HENRY_POW = 1.0;
+    Ap->CO2_HENRY = 4.4E-12; // must be mass fraction/Pa
+    Ap->CO2_HENRY_POW = 1.0;
 
-    /* FIXME: perhaps move this call elsewhere eventually */
-    set_non_dimensional_parameters( E );
+  // TODO -- pasted end
 
-    PetscFunctionReturn(0);
-
-}
-
-PetscErrorCode set_non_dimensional_parameters( Ctx *E )
-{
-    Atmosphere *A  = &E->atmosphere;
-    Constants *C   = &E->constants;
-    Parameters *P  = &E->parameters;
-
-    PetscFunctionBeginUser;
-
+    // TODO - pasted these in..
+    // We want to have in-place application of these..
     P->sinit /= C->ENTROPY;
     P->ic_dsdr /= C->DSDR;
     P->radius /= C->RADIUS;
@@ -161,59 +215,54 @@ PetscErrorCode set_non_dimensional_parameters( Ctx *E )
     /* TODO: non-dimensionalise other atmosphere parameters */
     /* SIGMA and TEQM should get us up and running for the standard
        grey-body case */
-    A->SIGMA /= C->SIGMA;
-    A->TEQM /= C->TEMP;
-    A->CONSTBC /= 1.0; // FIXME to UPDATE!
+    Ap->SIGMA /= C->SIGMA;
+    Ap->TEQM /= C->TEMP;
+    Ap->CONSTBC /= 1.0; // FIXME to UPDATE!
 
-    PetscFunctionReturn(0);
+  /* Additional Parameters for Atmosphere */
+  // TODO
 
+  PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_constants( Ctx *E )
+PetscErrorCode SetParametersFromOptions(Parameters *parameters)
 {
-    Constants *C = &E->constants;
-    PetscScalar SQRTST;
+  PetscErrorCode ierr;
 
-    PetscFunctionBeginUser;
+  PetscFunctionBeginUser;
+  /* Store previous scalings */
+  // TODO
 
-    // 35 constants to set
-    SQRTST = PetscSqrtScalar( ENTROPY0 * TEMPERATURE0 );
+  /*  Update Scalings */
+  // TODO
 
-    C->RADIUS   = RADIUS0;
-    C->TEMP     = TEMPERATURE0;
-    C->ENTROPY  = ENTROPY0;
-    C->DENSITY  = DENSITY0;
-    C->AREA     = PetscSqr( C->RADIUS );
-    C->AREAG    = C->AREA * 4.0 * PETSC_PI;
-    C->VOLUME   = C->AREA * C->RADIUS;
-    C->VOLUMEG  = C->VOLUME * 4.0 * PETSC_PI;
-    C->MASS     = C->DENSITY * C->VOLUME;
-    C->MASSG    = C->MASS * 4.0 * PETSC_PI;
-    C->TIME     = C->RADIUS / SQRTST;
-    C->TIMEYRS  = C->TIME / (60.0*60.0*24.0*365.25);
-    C->SENERGY  = C->ENTROPY * C->TEMP;
-    C->ENERGY   = C->SENERGY * C->MASS;
-    C->ENERGYG  = C->ENERGY * 4.0 * PETSC_PI;
-    C->PRESSURE = C->ENTROPY * C->TEMP * C->DENSITY;
-    C->POWER    = C->ENERGY / C->TIME;
-    C->POWERG   = C->POWER * 4.0 * PETSC_PI;
-    C->FLUX     = C->POWER / C->AREA;
-    C->DPDR     = C->PRESSURE / C->RADIUS;
-    C->ALPHA    = 1.0 / C->TEMP;
-    C->GRAVITY  = (C->ENTROPY * C->TEMP) / C->RADIUS;
-    C->KAPPA    = C->RADIUS * SQRTST;
-    C->DTDP     = 1.0 / (C->DENSITY * C->ENTROPY);
-    C->DSDR     = C->ENTROPY / C->RADIUS;
-    C->DTDR     = C->TEMP / C->RADIUS;
-    C->GSUPER   = C->GRAVITY * C->DTDR;
-    C->ETA      = C->DENSITY * C->KAPPA;
-    C->LOG10ETA = PetscLog10Real( C->ETA );
-    C->NU       = C->KAPPA;
-    C->COND     = C->ENTROPY * C->DENSITY * C->KAPPA;
-    C->SIGMA    = C->FLUX * 1.0 / PetscPowScalar( C->TEMP, 4.0 );
-    C->LHS      = C->DENSITY * C->VOLUME * C->TEMP;
-    C->LHSG     = C->LHS * 4.0 * PETSC_PI;
-    C->RHS      = C->ENTROPY / C->TIME;
+  /* For each entry in parameters, we set a default value and immediately re-scale it */
+  // TODO
 
-    PetscFunctionReturn(0);
+  /* Additional Parameters for Atmosphere */
+  // TODO
+
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode PrintParameters(Parameters const *P,FILE *file)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+
+  ierr = PetscPrintf(PETSC_COMM_WORLD," ******** Magma Ocean | Parameters ********\n");CHKERRQ(ierr);
+
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"Fundamental Scalings:\n");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\n");CHKERRQ(ierr);
+  // TODO
+
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"Parameter     Non-dim. Value   Dim Value [Units]\n");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%10s  %12.6f  %12.6f [??]\n","S_init",P->sinit,P->sinit*P->constants.ENTROPY);CHKERRQ(ierr);
+
+  // TODO
+
+
+  ierr = PetscPrintf(PETSC_COMM_WORLD," ******************************************\n");CHKERRQ(ierr);
+  PetscFunctionReturn(0);
 }

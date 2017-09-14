@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+// TODO : remove as much as possible from file, preferring to set things in parameters.c
+
 /* PETSc (for data types) */
 #include "petsc.h"
 

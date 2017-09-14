@@ -62,12 +62,14 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   /* Dump several PETSc binary vectors to a file named for the timestep */
   {
     /* Set up a binary viewer */
-    PetscViewer viewer;
-    char filename[PETSC_MAX_PATH_LEN];
-    Atmosphere *A = &ctx->atmosphere;
-    Mesh     *M = &ctx->mesh;
-    Solution *S = &ctx->solution;
-    PetscInt i;
+    PetscViewer          viewer;
+    char                 filename[PETSC_MAX_PATH_LEN];
+    Atmosphere           *A = &ctx->atmosphere;
+    Parameters           *P = &ctx->parameters;
+    AtmosphereParameters *Ap = &P->atmosphere_parameters;
+    Mesh                 *M = &ctx->mesh;
+    Solution             *S = &ctx->solution;
+    PetscInt             i;
 
     /* for debugging, switch 'nstep' below to 'step' to over overwriting output data files */
     ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/petscbin.%lld",nstep);CHKERRQ(ierr);
@@ -104,13 +106,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       //char vecname[PETSC_MAX_PATH_LEN];
       /* FIXME: it's really easy to update output.c and forget to change the size
          of the array in the next line */
-      const int nData = 37;
+      const int nData = 38;
       ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
       if (!rank) {
         ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
         ierr = VecSetType(data,VECSEQ);CHKERRQ(ierr);
         ierr = VecSetSizes(data,nData,nData);CHKERRQ(ierr);
-        ierr = atmosphere_struct_to_vec( A, data ); CHKERRQ(ierr);
+        ierr = atmosphere_structs_to_vec( A, Ap, data ); CHKERRQ(ierr);
         //ierr = PetscObjectSetName((PetscObject)data,vecname);CHKERRQ(ierr);
         ierr = VecView(data,viewer);CHKERRQ(ierr);
         ierr = VecDestroy(&data);CHKERRQ(ierr);

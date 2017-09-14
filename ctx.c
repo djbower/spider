@@ -1,6 +1,6 @@
+#include "ctx.h"
 #include "atmosphere.h"
 #include "constants.h"
-#include "ctx.h"
 #include "lookup.h"
 #include "mesh.h"
 #include "twophase.h"
@@ -15,10 +15,32 @@ PetscErrorCode setup_ctx(Ctx* ctx)
 
   PetscFunctionBeginUser;
 
-  set_constants(ctx);
+  /* 
+   **All** parameters/settings should be inside ctx->parameters . Here, we
+     1. Initialize these to default values
+     2. Obtain any inputs from the user at the command line and update
+     3. Print out all parameters
+     After this point, no custom command line options should be processed,
+     and ctx->parameters should never change 
+    */
+  // TODO : move everything into Parameters
+  // TODO: initialize Parameters here
+  // TODO: move ALL command line processing into a function to update parameters
+  // TODO : print out all params with scaled value / dim value / scaling  formula and value
+  InitializeParameters(&ctx->parameters);
+  SetParametersFromOptions(&ctx->parameters);
+  PrintParameters(&ctx->parameters,stdout);
+  {
+    const char *paramFilename = "output/parameters.txt";
+    FILE *paramFile = fopen(paramFilename,"w");
+    if (!paramFile) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open %s for writing.\n",paramFilename);
+    PrintParameters(&ctx->parameters,paramFile);
+    fclose(paramFile);
+  }
 
-  set_parameters(ctx);
+  // TODO initialize ctx->atmosphere?? (valgrind will tell us..)
 
+  // TODO incorporate this into the unified parameter processing
   /* Initialize context with parameters (most parameters are constants in global_defs.h, though) */
   set_lookups(ctx);
 
@@ -137,6 +159,7 @@ PetscErrorCode setup_ctx(Ctx* ctx)
 
   set_twophase(ctx);
 
+  // TODO move
   /* Obtain a command-line argument for S_init */
   ctx->S_init = ctx->parameters.sinit;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&ctx->S_init,NULL);CHKERRQ(ierr);
