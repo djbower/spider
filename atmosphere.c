@@ -26,30 +26,25 @@ static PetscScalar newton( PetscScalar, PetscScalar, PetscScalar );
 
 /* general functions */
 
-PetscErrorCode set_emissivity( Atmosphere *A )
+PetscErrorCode set_emissivity_abe_matsui( Atmosphere *A )
 {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
 
-    if (A->CO2_INITIAL <= 0.0 && A->H2O_INITIAL <= 0.0){
-      A->emissivity = A->EMISSIVITY;
-    }
-    else{
-      /* CO2 */
-      ierr = set_pCO2( A ); CHKERRQ(ierr);
-      A->m0 = get_atmosphere_mass( A, A->p0 );
-      A->tau0 = get_optical_depth( A, A->m0, A->CO2_KABS );
+    /* CO2 */
+    ierr = set_pCO2( A ); CHKERRQ(ierr);
+    A->m0 = get_atmosphere_mass( A, A->p0 );
+    A->tau0 = get_optical_depth( A, A->m0, A->CO2_KABS );
 
-      /* H2O */
-      ierr = set_pH2O( A ); CHKERRQ(ierr);
-      A->m1 = get_atmosphere_mass( A, A->p1 );
-      A->tau1 = get_optical_depth( A, A->m1, A->H2O_KABS );
+    /* H2O */
+    ierr = set_pH2O( A ); CHKERRQ(ierr);
+    A->m1 = get_atmosphere_mass( A, A->p1 );
+    A->tau1 = get_optical_depth( A, A->m1, A->H2O_KABS );
 
-      /* total */
-      A->tau = A->tau0 + A->tau1;
-      A->emissivity = 2.0 / (A->tau + 2.0);
-    }
+    /* total */
+    A->tau = A->tau0 + A->tau1;
+    A->EMISSIVITY = 2.0 / (A->tau + 2.0);
 
     PetscFunctionReturn(0);
 

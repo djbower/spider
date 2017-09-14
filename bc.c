@@ -1,3 +1,4 @@
+#include "atmosphere.h"
 #include "bc.h"
 #include "util.h"
 
@@ -10,7 +11,8 @@ PetscErrorCode set_surface_flux( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscMPIInt       rank;
-    PetscScalar       temp0, Tsurf, Qout;
+    // initialise Qout to avoid compiler warning
+    PetscScalar       temp0, Tsurf, Qout=0.0;
     PetscInt          ind;
     Atmosphere        *A = &E->atmosphere;
     Parameters        *P = &E->parameters;
@@ -48,6 +50,11 @@ PetscErrorCode set_surface_flux( Ctx *E )
         case 2:
           // zahnle
           Qout = zahnle( Tsurf, A );
+          break;
+        case 3:
+          // atmosphere evolution
+          set_emissivity_abe_matsui( A ); // updates A->EMISSIVITY
+          Qout = grey_body( Tsurf, A );
           break;
       }
 

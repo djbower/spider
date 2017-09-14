@@ -69,11 +69,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   set_Etot( E );
 
+  /* FIXME: make sure time is correct in years depending on
+     non dimensionalisation scheme */
   /* note pass in current time in years here */
   set_Htot( E, t );
-
-  /* grey-body atmosphere */
-  set_emissivity( A );
 
   set_surface_flux( E );
 
