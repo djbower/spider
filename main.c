@@ -3,7 +3,6 @@ static char help[] =
 -n : specify the number of staggered points\n\
 -sinit : specify an entropy value to base the initial condition upon\n\
 -monitor : use custom monitor to dump output\n\
--test_view : with -monitor, also print out solution and rhs for testing\n\
 -nstepsmacro : specify the number of macro (output dump) steps\n\
 -dtmacro : specify the macro (output dump) time step, in nondimensionalised time (will not be exact!)\n\
 -dtmacro_years : specify the macro (output dump) time step, in years\n\
@@ -102,11 +101,10 @@ int main(int argc, char ** argv)
 
   /* Solve macro steps (could also use a monitor which keeps some state) */
   {
-    PetscReal time,nexttime,timeprev;
+    PetscReal time,nexttime;
     double    walltime0,walltimeprev;
 
     time = P->t0;
-    timeprev = P->t0;
     walltime0 = MPI_Wtime();
     walltimeprev = walltime0;
     PetscInt stepmacro=0;
@@ -118,14 +116,13 @@ int main(int argc, char ** argv)
     nexttime = P->dtmacro; // non-dim time
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     if (P->monitor) {
-      ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,P->t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
+      ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
     }
     for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
       ierr = TSSolve(ts,dSdr_b_aug);CHKERRQ(ierr);
-      timeprev = time;
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (P->monitor) {
-        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,P->t0,timeprev,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,dSdr_b_aug,&ctx,walltime0,&walltimeprev);CHKERRQ(ierr);
       }
       nexttime = (stepmacro + 1) * P->dtmacro; // non-dim
       ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);

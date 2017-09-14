@@ -4,11 +4,10 @@
 #include "output.h"
 #include "rhs.h"
 
-PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscReal time, PetscReal time0, PetscReal timeprev, Vec x_aug, void * ptr, double walltime0, double *walltimeprev)
+PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscReal time, Vec x_aug, void * ptr, double walltime0, double *walltimeprev)
 {
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
-  PetscBool      test_view = PETSC_FALSE;
   /* it remains convenient to be able to plot both short and long times together
      on the same plot, and since these are output by different settings in main.c,
      it is easiest if the output files reference the actual time in years, rather
@@ -20,10 +19,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
 
   PetscFunctionBeginUser;
 
-  ierr = PetscOptionsGetBool(NULL,NULL,"-test_view",&test_view,NULL);CHKERRQ(ierr);
-
   /* Globally, output double, if we are computing with quad precision */
-  PetscOptionsSetValue(NULL,"-binary_write_double","");CHKERRQ(ierr);
+  ierr = PetscOptionsSetValue(NULL,"-binary_write_double","");CHKERRQ(ierr);
 
   {
     PetscReal minval,maxval;
@@ -151,16 +148,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
 
-  if (test_view) {
-    PetscViewer viewer;
-    ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
-    ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
-    ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing dSdr_b_aug for testing ---\n",time);CHKERRQ(ierr);
-    ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
-    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
-  }
-
 #if 0
   /* Recompute the rhs to a file named for the timestep */
   {
@@ -182,7 +169,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
     }
 
-    if (test_view) {
+    {
       PetscViewer viewer;
 
       ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
