@@ -89,8 +89,8 @@ PetscErrorCode set_parameters( Ctx *E )
 
     /* below here are only used for MODEL = 3 */
     // FIXME: for convenience at the moment, duplicate these values */
-    A->RADIUS = P->radius;
-    A->GRAVITY = P->gravity;
+    A->RADIUS = P->radius; // FIXME: dimensional
+    A->GRAVITY = P->gravity; // FIXME: dimensional
     /* VOLSCALE enables us to scale the volatile equations to the same
        order of magnitude as entropy, and thus ensure that the residual
        based on the solution vector is not biased. */
