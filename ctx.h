@@ -38,7 +38,7 @@ typedef struct _Interp2d {
 /* for storing atmosphere outputs for eventual writing to Petsc
    binary file */
 typedef struct _Atmosphere {
-    // 38 parameters in total
+    // 37 parameters in total
     // input parameters (20)
     PetscInt MODEL;
     PetscInt HYBRID;
@@ -68,13 +68,12 @@ typedef struct _Atmosphere {
        the dS/dr scheme to ensure comparable magnitude residuals */
     PetscScalar RADIUS; // duplicate
     PetscScalar GRAVITY; // duplicate
-    // calculated quantites (18)
+    // calculated quantites (17)
     PetscScalar M0; // total mass of mantle from EOS (kg)
     PetscScalar Mliq; // mass of liquid (kg)
     PetscScalar Msol; // mass of solid (kg)
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tau; // aggregate optical depth (dimensionless)
-    PetscScalar emissivity; // aggregate emissivity (dimensionless)
     PetscScalar x0; // CO2 content (wt %)
     PetscScalar dx0dt; // dx0/dt (wt % / yr)
     PetscScalar p0; // CO2 partial pressure (Pa)
