@@ -248,19 +248,20 @@ PetscErrorCode SetParametersFromOptions(Parameters *parameters)
 PetscErrorCode PrintParameters(Parameters const *P,FILE *file)
 {
   PetscErrorCode ierr;
+  Constants const *C = &P->constants;
 
   PetscFunctionBeginUser;
 
   ierr = PetscPrintf(PETSC_COMM_WORLD," ******** Magma Ocean | Parameters ********\n");CHKERRQ(ierr);
 
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"Fundamental Scalings:\n");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"Scalings:\n");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"Radius:   %f m (%f km)\n",C->RADIUS,C->RADIUS/1000.0);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"Time:     %f s (%f years)\n",C->TIME,C->TIMEYRS);CHKERRQ(ierr);
+  // TODO add the rest..
   ierr = PetscPrintf(PETSC_COMM_WORLD,"\n");CHKERRQ(ierr);
-  // TODO
-
   ierr = PetscPrintf(PETSC_COMM_WORLD,"Parameter     Non-dim. Value   Dim Value [Units]\n");CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%10s  %12.6f  %12.6f [??]\n","S_init",P->sinit,P->sinit*P->constants.ENTROPY);CHKERRQ(ierr);
-
-  // TODO
+  // TODO add the rest..
 
 
   ierr = PetscPrintf(PETSC_COMM_WORLD," ******************************************\n");CHKERRQ(ierr);

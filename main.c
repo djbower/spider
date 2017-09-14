@@ -34,7 +34,7 @@ int main(int argc, char ** argv)
 
   /* FIXME: at the moment we uncomment two lines below to switch between
      early, middle, and late evolution */
-  // TODO provide convnience flags for this in SetParametersFromOptions
+  // TODO provide convenience flags for this in SetParametersFromOptions
   /* early evolution to about 10 kyr */
   PetscInt        nstepsmacro = 1000;  /* Max macros steps */
   PetscReal       dtmacro = 1000000;        /* Macro step size (in nondimensional units. About a year) */
@@ -57,7 +57,7 @@ int main(int argc, char ** argv)
   // TODO move into parameters
   /* Obtain command-line options for simulation time frame and monitoring */
   {
-    PetscReal dtmacro_years = dtmacro * TIME0;
+    PetscReal dtmacro_years = dtmacro * TIME0; // TODO : update to use E->P->C->TIMEYEARS
     PetscBool dtmacro_set = PETSC_FALSE, dtmacro_years_set = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&monitor,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&nstepsmacro,NULL);CHKERRQ(ierr);
