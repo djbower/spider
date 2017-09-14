@@ -89,7 +89,6 @@ typedef struct _Ctx {
   Mesh       mesh;
   Solution   solution;
   DM         da_b,da_s;
-  PetscScalar S_init; // initial entropy // TODO remove this
   Atmosphere atmosphere;
   Mat        qty_at_b, ddr_at_b;
   Parameters parameters;

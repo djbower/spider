@@ -32,7 +32,7 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
     ierr = VecSetValue(dSdr_b_aug,1,A->x1,INSERT_VALUES);CHKERRQ(ierr);
    
    /* include initial entropy at staggered node */
-    ierr = VecSetValue(dSdr_b_aug,2,E->S_init,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(dSdr_b_aug,2,P->sinit,INSERT_VALUES);CHKERRQ(ierr);
 
     VecAssemblyBegin( dSdr_b_aug );
     VecAssemblyEnd( dSdr_b_aug );

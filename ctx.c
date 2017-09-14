@@ -142,11 +142,6 @@ PetscErrorCode setup_ctx(Ctx* ctx)
 
   set_twophase(ctx);
 
-  // TODO move
-  /* Obtain a command-line argument for S_init */
-  ctx->S_init = ctx->parameters.sinit;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&ctx->S_init,NULL);CHKERRQ(ierr);
-
   /* initial condition is set in main.c */
 
   PetscFunctionReturn(0);

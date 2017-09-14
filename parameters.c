@@ -253,6 +253,8 @@ PetscErrorCode SetParametersFromOptions(Parameters *P)
   PetscBool      set;
   Constants      *C = &P->constants;
 
+  PetscReal      ENTROPY_prev;
+
   PetscFunctionBeginUser;
 
   /* Get grid parameters */
@@ -277,15 +279,18 @@ PetscErrorCode SetParametersFromOptions(Parameters *P)
   }
 
   /* Store previous scalings */
+  ENTROPY_prev = C->ENTROPY;
   // TODO
 
   /*  Update Scalings */
   // TODO
 
   /* For each entry in parameters, we set a default value and immediately re-scale it */
-  // TODO
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);
+  if(ENTROPY_prev != C->ENTROPY) P->sinit *= ENTROPY_prev/C->ENTROPY;
+  // TODO complete ..
 
-  // TODO special flags for this
+  // TODO special flags for this: 
 #if 0
   /* FIXME: at the moment we uncomment two lines below to switch between
      early, middle, and late evolution */
