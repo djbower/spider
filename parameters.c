@@ -4,8 +4,7 @@ Parameter Management
 Parameters should only ever be set by the functions in this file. That is, everywhere else they should be considered read-only.
 
 Custom PETSc command line options should only ever be parsed here.
-
- */
+*/
 
 #include "parameters.h"
 #include "ctx.h"
@@ -15,7 +14,6 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     PetscScalar SQRTST;
 
     PetscFunctionBeginUser;
-
     // 35 constants to set
     SQRTST = PetscSqrtScalar( ENTROPY * TEMPERATURE );
 
@@ -57,7 +55,6 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
 
     PetscFunctionReturn(0);
 }
-// TODO - paste end ...
 
 /* Initialize Constants, checking for command line arguments.
    For now we only allow a single flag to set all scaling to 1 (hence running
@@ -69,7 +66,7 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
 
   PetscFunctionBeginUser;
   ierr = PetscOptionsGetBool(NULL,NULL,"-dimensional",&dimensionalMode,NULL);CHKERRQ(ierr);
-  if(dimensionalMode) {
+  if (dimensionalMode) {
     ierr = SetConstants(C,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
   } else {
     ierr = SetConstants(C,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0);CHKERRQ(ierr); /* see global_defs.h */
@@ -78,17 +75,18 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
 }
 
 /*
-This function (and subfunctions) should be the only places that
+This function (and subfunctions) should be the only place that
 custom command-line parameters (those not defined by PETSc) should be accessed.
 
-All parameters should be specified by the user in dimensional (unscaled) form.
+Parameters are specified by the user in dimensional (unscaled) form,
+but they are all stored in non-dimensional (scaled) form.
 
  */
 PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
-  Constants            *C  = &P->constants;
+  Constants const      *C  = &P->constants;
 
   PetscFunctionBegin;
   ierr = InitializeConstantsAndSetFromOptions(&P->constants);CHKERRQ(ierr);
