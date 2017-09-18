@@ -3,8 +3,8 @@
 #include "lookup.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
-static PetscScalar log_viscosity_mix( PetscScalar, Parameters * );
-static PetscScalar viscosity_mix_no_skew( PetscScalar, Parameters * );
+static PetscScalar log_viscosity_mix( PetscScalar, Parameters const * );
+static PetscScalar viscosity_mix_no_skew( PetscScalar, Parameters const * );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -27,9 +27,9 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s=E->da_s;
-    Lookup            *L; 
-    Mesh              *M = &E->mesh; 
-    Solution          *S = &E->solution; 
+    Lookup const      *L;
+    Mesh              *M = &E->mesh;
+    Solution          *S = &E->solution;
     Vec               pres_s = M->pressure_s;
     // material properties that are updated here
     PetscScalar       *arr_phi_s, *arr_rho_s, *arr_temp_s, *arr_cp_s;
@@ -38,6 +38,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_fwtl_s, *arr_fwts_s;
     PetscScalar       fwtl, fwts;
+    Parameters const   *P = &E->parameters;
 
     PetscFunctionBeginUser;
 
@@ -97,7 +98,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
       if (arr_phi_s[i] > 0.5){
 
           /* get melt properties */
-          L = &E->melt_prop;
+          L = &P->melt_prop;
           /* density */
           arr_rho_s[i]   *= 1.0 - fwtl;
           arr_rho_s[i]   += fwtl * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
@@ -115,7 +116,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
       else if (arr_phi_s[i]<=0.5){
 
           /* get solid properties */
-          L = &E->solid_prop;
+          L = &P->solid_prop;
           /* density */
           arr_rho_s[i]   *= fwts;
           arr_rho_s[i]   += ( 1.0 - fwts ) * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
@@ -128,7 +129,6 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
       }
 
     }
-
 
     ierr = DMDAVecRestoreArrayRead(da_s,S->cp_mix_s,&arr_cp_mix_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->fusion_s,&arr_fusion_s);CHKERRQ(ierr);
@@ -162,9 +162,9 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_fwtl, *arr_fwts;
     PetscScalar       fwtl, fwts;
-    Lookup            *L; 
+    Lookup const      *L;
     Mesh              *M = &E->mesh;
-    Parameters        *P = &E->parameters;
+    Parameters const  *P = &E->parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -260,7 +260,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       if (arr_phi[i] > 0.5){
 
         /* get melt properties */
-        L = &E->melt_prop;
+        L = &P->melt_prop;
         /* density */
         arr_rho[i] *= 1.0 - fwtl;
         arr_rho[i] += fwtl * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
@@ -287,7 +287,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       else if (arr_phi[i] <= 0.5){
 
         /* get solid properties */
-        L = &E->solid_prop;
+        L = &P->solid_prop;
         /* density */
         arr_rho[i] *= fwts;
         arr_rho[i] += (1.0-fwts) * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
@@ -377,7 +377,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar log_viscosity_mix( PetscScalar meltf, Parameters *P )
+static PetscScalar log_viscosity_mix( PetscScalar meltf, Parameters const *P )
 {
     PetscScalar fwt, lvisc;
 
@@ -391,7 +391,7 @@ static PetscScalar log_viscosity_mix( PetscScalar meltf, Parameters *P )
     return lvisc;
 }
 
-static PetscScalar viscosity_mix_no_skew( PetscScalar meltf, Parameters *P )
+static PetscScalar viscosity_mix_no_skew( PetscScalar meltf, Parameters const *P )
 {
     /* viscosity in mixed phase region with no skew */
 

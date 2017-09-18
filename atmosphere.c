@@ -1,5 +1,5 @@
-#include "atmosphere.h"
 #include "ctx.h"
+#include "atmosphere.h"
 
 static PetscScalar get_atmosphere_mass( AtmosphereParameters const *, PetscScalar );
 static PetscScalar get_optical_depth( AtmosphereParameters const *, PetscScalar, PetscScalar );

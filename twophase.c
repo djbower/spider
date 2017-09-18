@@ -87,14 +87,15 @@ static PetscErrorCode set_liquidus( Ctx *E )
     /* liquidus */
 
     PetscErrorCode ierr;
-    PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_s,w_b;
-    DM             da_s=E->da_s, da_b=E->da_b;
-    Vec            pres_b,pres_s;
-    PetscScalar    z,*arr_liquidus,*arr_liquidus_rho,*arr_liquidus_temp,*arr_liquidus_s,*arr_liquidus_rho_s,*arr_liquidus_temp_s;
+    PetscInt          i,ilo_b,ihi_b,ilo_s,ihi_s,w_s,w_b;
+    DM                da_s=E->da_s, da_b=E->da_b;
+    Vec               pres_b,pres_s;
+    PetscScalar       z,*arr_liquidus,*arr_liquidus_rho,*arr_liquidus_temp,*arr_liquidus_s,*arr_liquidus_rho_s,*arr_liquidus_temp_s;
     const PetscScalar *arr_pres_b,*arr_pres_s;
-    Interp1d       *I; 
-    Solution       *S; 
-    Interp2d       *IR, *IT;
+    Interp1d const    *interp;
+    Interp2d const    *interpR, *interpT;
+    Solution          *S;
+    Parameters const  *P = &E->parameters;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -102,9 +103,9 @@ static PetscErrorCode set_liquidus( Ctx *E )
 #endif
 
     S = &E->solution;
-    I = &E->melt_prop.liquidus;
-    IR = &E->melt_prop.rho;
-    IT = &E->melt_prop.temp;
+    interp = &P->melt_prop.liquidus;
+    interpR = &P->melt_prop.rho;
+    interpT = &P->melt_prop.temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
@@ -121,11 +122,11 @@ static PetscErrorCode set_liquidus( Ctx *E )
     ierr = DMDAVecGetArray(da_b,S->liquidus_rho,&arr_liquidus_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->liquidus_temp,&arr_liquidus_temp);CHKERRQ(ierr);
     for(i=ilo_b;i<ihi_b;++i){
-        z = get_val1d( I, arr_pres_b[i] );
+        z = get_val1d( interp, arr_pres_b[i] );
         arr_liquidus[i] = z;
-        arr_liquidus_rho[i] = get_val2d( IR, arr_pres_b[i], z );
-        arr_liquidus_temp[i] = get_val2d( IT, arr_pres_b[i], z );
-    }   
+        arr_liquidus_rho[i] = get_val2d( interpR, arr_pres_b[i], z );
+        arr_liquidus_temp[i] = get_val2d( interpT, arr_pres_b[i], z );
+    }
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->liquidus,&arr_liquidus);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->liquidus_rho,&arr_liquidus_rho);CHKERRQ(ierr);
@@ -133,16 +134,16 @@ static PetscErrorCode set_liquidus( Ctx *E )
 
 
     /* staggered nodes */
-    /* need in order to compute dfus/dr at basic internal nodes */ 
+    /* need in order to compute dfus/dr at basic internal nodes */
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->liquidus_s,&arr_liquidus_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
-        z = get_val1d( I, arr_pres_s[i] );
+        z = get_val1d( interp, arr_pres_s[i] );
         arr_liquidus_s[i] = z;
-        arr_liquidus_rho_s[i] = get_val2d( IR, arr_pres_s[i], z );
-        arr_liquidus_temp_s[i] = get_val2d( IT, arr_pres_s[i], z );
+        arr_liquidus_rho_s[i] = get_val2d( interpR, arr_pres_s[i], z );
+        arr_liquidus_temp_s[i] = get_val2d( interpT, arr_pres_s[i], z );
     }
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->liquidus_s,&arr_liquidus_s);CHKERRQ(ierr);
@@ -157,23 +158,24 @@ static PetscErrorCode set_solidus( Ctx *E )
     /* solidus */
 
     PetscErrorCode ierr;
-    PetscInt       i,ilo_b,ihi_b,w_b,ilo_s,ihi_s,w_s;
-    DM             da_s=E->da_s,da_b=E->da_b;
-    Vec            pres_b,pres_s;
-    PetscScalar    z,*arr_solidus,*arr_solidus_rho,*arr_solidus_temp,*arr_solidus_s,*arr_solidus_rho_s,*arr_solidus_temp_s;
+    PetscInt          i,ilo_b,ihi_b,w_b,ilo_s,ihi_s,w_s;
+    DM                da_s=E->da_s,da_b=E->da_b;
+    Vec               pres_b,pres_s;
+    PetscScalar       z,*arr_solidus,*arr_solidus_rho,*arr_solidus_temp,*arr_solidus_s,*arr_solidus_rho_s,*arr_solidus_temp_s;
     const PetscScalar *arr_pres_b,*arr_pres_s;
-    Interp1d       *I;
-    Solution       *S;
-    Interp2d       *IR, *IT;
+    Interp1d const    *interp;
+    Interp2d const    *interpR, *interpT;
+    Solution          *S;
+    Parameters const  *P = &E->parameters;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_solidus:\n");CHKERRQ(ierr);
 #endif
     S = &E->solution;
-    I = &E->solid_prop.solidus;
-    IR = &E->solid_prop.rho;
-    IT = &E->solid_prop.temp;
+    interp = &P->solid_prop.solidus;
+    interpR = &P->solid_prop.rho;
+    interpT = &P->solid_prop.temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
@@ -189,10 +191,10 @@ static PetscErrorCode set_solidus( Ctx *E )
     ierr = DMDAVecGetArray(da_b,S->solidus_rho,&arr_solidus_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
     for(i=ilo_b;i<ihi_b;++i){
-        z = get_val1d( I, arr_pres_b[i] );
+        z = get_val1d( interp, arr_pres_b[i] );
         arr_solidus[i] = z;
-        arr_solidus_rho[i] = get_val2d( IR, arr_pres_b[i], z );
-        arr_solidus_temp[i] = get_val2d( IT, arr_pres_b[i], z );
+        arr_solidus_rho[i] = get_val2d( interpR, arr_pres_b[i], z );
+        arr_solidus_temp[i] = get_val2d( interpT, arr_pres_b[i], z );
     }
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
@@ -206,10 +208,10 @@ static PetscErrorCode set_solidus( Ctx *E )
     ierr = DMDAVecGetArray(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
-        z = get_val1d( I, arr_pres_s[i] );
+        z = get_val1d( interp, arr_pres_s[i] );
         arr_solidus_s[i] = z;
-        arr_solidus_rho_s[i] = get_val2d( IR, arr_pres_s[i], z );
-        arr_solidus_temp_s[i] = get_val2d( IT, arr_pres_s[i], z );
+        arr_solidus_rho_s[i] = get_val2d( interpR, arr_pres_s[i], z );
+        arr_solidus_temp_s[i] = get_val2d( interpT, arr_pres_s[i], z );
     }
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->solidus_s,&arr_solidus_s);CHKERRQ(ierr);

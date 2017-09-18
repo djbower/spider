@@ -2,41 +2,9 @@
 #define PARAMETERS_H_
 
 #include <petsc.h>
+#include "lookup.h"
+#include "atmosphere.h"
 
-/* for storing atmosphere outputs for eventual writing to Petsc
-   binary file */
-typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES} MagmaOceanAtmosphereType;
-typedef struct AtmosphereParameters_ {
-    // input parameters (20)
-    MagmaOceanAtmosphereType MODEL;
-    PetscInt HYBRID;
-    // below are standard, also used for grey-body atmosphere
-    PetscScalar EMISSIVITY0;
-    PetscScalar SIGMA;
-    PetscScalar TEQM;
-    PetscScalar CONSTBC;
-    // for volatile ODE
-    PetscScalar VOLSCALE;
-    PetscScalar P0;
-    // H2O (TODO: move to a 'Volatile' struct)
-    PetscScalar H2O_INITIAL;
-    PetscScalar H2O_KDIST;
-    PetscScalar H2O_KABS;
-    PetscScalar H2O_HENRY;
-    PetscScalar H2O_HENRY_POW;
-    // CO2 (TODO: move to a 'Volatile' struct)
-    PetscScalar CO2_INITIAL;
-    PetscScalar CO2_KDIST;
-    PetscScalar CO2_KABS;
-    PetscScalar CO2_HENRY;
-    PetscScalar CO2_HENRY_POW;
-    /* although RADIUS and GRAVITY are duplicated, they may have
-       different non-dimensional values depending on the volatile
-       non-dimensionalisation scheme, which will be different to
-       the dS/dr scheme to ensure comparable magnitude residuals */
-    PetscScalar RADIUS; // duplicate
-    PetscScalar GRAVITY; // duplicate
-} AtmosphereParameters;
 
 /* dimensionalising constants */
 typedef struct _Constants {
@@ -108,6 +76,10 @@ typedef struct _Parameters {
     PetscScalar cond_sol;
     PetscScalar log10visc_mel;
     PetscScalar cond_mel;
+
+    // Lookup tables
+    Lookup      melt_prop;
+    Lookup      solid_prop;
 
     // Additional Atmosphere Parameters
     AtmosphereParameters atmosphere_parameters;

@@ -244,6 +244,9 @@ PetscErrorCode InitializeParameters(Parameters *P)
   /* Additional Parameters for Atmosphere */
   // TODO
 
+    /* Note: lookup tables are not initialized yet - we instead delay until
+       calling SetParametersFromOptions() */
+
   PetscFunctionReturn(0);
 }
 
@@ -256,6 +259,9 @@ PetscErrorCode SetParametersFromOptions(Parameters *P)
   PetscReal      ENTROPY_prev;
 
   PetscFunctionBeginUser;
+
+  /* Get lookup tables */
+  set_lookups(P);
 
   /* Get grid parameters */
   ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_s,&set);CHKERRQ(ierr);

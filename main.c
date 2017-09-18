@@ -13,8 +13,8 @@ static char help[] =
          in global_defs.h */
 
 #include "petsc.h"
-#include "ic.h"
 #include "ctx.h"
+#include "ic.h"
 #include "monitor.h"
 #include "rhs.h"
 #include "aug.h"
