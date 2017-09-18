@@ -10,19 +10,19 @@ Custom PETSc command line options should only ever be parsed here.
 #include "parameters.h"
 #include "ctx.h"
 
-PetscErrorCode set_constants( Constants *C )
+PetscErrorCode set_constants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY )
 {
     PetscScalar SQRTST;
 
     PetscFunctionBeginUser;
 
     // 35 constants to set
-    SQRTST = PetscSqrtScalar( ENTROPY0 * TEMPERATURE0 );
+    SQRTST = PetscSqrtScalar( ENTROPY * TEMPERATURE );
 
-    C->RADIUS   = RADIUS0;
-    C->TEMP     = TEMPERATURE0;
-    C->ENTROPY  = ENTROPY0;
-    C->DENSITY  = DENSITY0;
+    C->RADIUS   = RADIUS;
+    C->TEMP     = TEMPERATURE;
+    C->ENTROPY  = ENTROPY;
+    C->DENSITY  = DENSITY;
     C->AREA     = PetscSqr( C->RADIUS );
     C->AREAG    = C->AREA * 4.0 * PETSC_PI;
     C->VOLUME   = C->AREA * C->RADIUS;
@@ -91,7 +91,7 @@ PetscErrorCode InitializeParameters(Parameters *P)
   /* Set default scalings */
   // TODO
   // TODO paste begin ..
-  set_constants(&P->constants);
+  set_constants(&P->constants,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0); /* see global_defs.h */
   // TODO paste end ..
 
   /* For each entry in parameters, we set a default value and immediately scale it. Dimensional/unscaled quantities are not explicitly stored. */
