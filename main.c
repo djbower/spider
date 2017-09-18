@@ -42,7 +42,7 @@ int main(int argc, char ** argv)
 
   /* Perform all initialization for our problem, allocating data
      Note that this checks all command-line options. */
-  ierr = setup_ctx(&ctx);CHKERRQ(ierr);
+  ierr = SetupCtx(&ctx);CHKERRQ(ierr);
   P = &ctx.parameters;
   C = &P->constants;
 
@@ -131,7 +131,7 @@ int main(int argc, char ** argv)
   }
 
   /* Free allocated data in the context */
-  ierr = destroy_ctx(&ctx);CHKERRQ(ierr);
+  ierr = DestroyCtx(&ctx);CHKERRQ(ierr);
 
   /* Destroy solution vector */
   ierr = VecDestroy(&dSdr_b);CHKERRQ(ierr);

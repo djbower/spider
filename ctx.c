@@ -6,7 +6,7 @@
 #include "util.h"
 
 /* Set up the Context */
-PetscErrorCode setup_ctx(Ctx* ctx)
+PetscErrorCode SetupCtx(Ctx* ctx)
 {
   PetscErrorCode   ierr;
   PetscInt         i;
@@ -137,7 +137,7 @@ PetscErrorCode setup_ctx(Ctx* ctx)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode destroy_ctx(Ctx* ctx)
+PetscErrorCode DestroyCtx(Ctx* ctx)
 {
   PetscErrorCode ierr;
   PetscInt       i;
@@ -180,7 +180,7 @@ static PetscErrorCode MakeRelativePathAbsolute(char* path) {
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_lookups( Parameters *P )
+PetscErrorCode SetLookups( Parameters *P )
 {
     PetscErrorCode ierr;
     char liquidusFilename[PETSC_MAX_PATH_LEN];

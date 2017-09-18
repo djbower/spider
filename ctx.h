@@ -52,8 +52,8 @@ typedef struct _Ctx {
   //       it could all be flattened out (and probably would be in a re-implementation)
 } Ctx;
 
-PetscErrorCode setup_ctx(Ctx *);
-PetscErrorCode destroy_ctx(Ctx *);
-PetscErrorCode set_lookups( Parameters * );
+PetscErrorCode SetupCtx(Ctx *);
+PetscErrorCode DestroyCtx(Ctx *);
+PetscErrorCode SetLookups( Parameters * );
 
 #endif
