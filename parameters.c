@@ -62,7 +62,7 @@ PetscErrorCode set_constants( Constants *C )
 /*
 Initialize parameters (note that these are always stored in scaled/nondimensional form)
 */
-PetscErrorCode InitializeParameters(Parameters *P) 
+PetscErrorCode InitializeParameters(Parameters *P)
 {
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
   Constants            *C  = &P->constants;
@@ -272,32 +272,43 @@ PetscErrorCode SetParametersFromOptions(Parameters *P)
   /* Obtain command-line options for simulation time frame and monitoring */
   {
     PetscReal dtmacro_years;
-    PetscBool dtmacro_set = PETSC_FALSE, dtmacro_years_set = PETSC_FALSE;
+    PetscBool dtmacro_set = PETSC_FALSE, dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
+              early = PETSC_FALSE, middle=PETSC_FALSE, late = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&P->monitor,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,&nstepsmacro_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&P->dtmacro,&dtmacro_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
-    if (dtmacro_set && dtmacro_years_set) {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: both -dtmacro and -dtmacro_years provided. Using -dtmacro\n");CHKERRQ(ierr);
-    } else if (dtmacro_years_set) {
+    ierr = PetscOptionsGetBool(NULL,NULL,"-early",&early,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetBool(NULL,NULL,"-middle",&middle,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetBool(NULL,NULL,"-late",&late,NULL);CHKERRQ(ierr);
+    if (early || middle || late ){
+      if(dtmacro_set || dtmacro_years_set || nstepsmacro_set){
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -early, -middle, or -late provided. Ignoring -nstepsmacro, -nstepmacro_years, and/or -nstepsmacro\n");CHKERRQ(ierr);
+      }
+      if ((int)early + (int)middle + (int)late > 1) {
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"only one of -early, -middle, or -late may be provided");
+      }
+      if (early) {
+        /* early evolution to about 10 kyr */
+        P->nstepsmacro = 1000;
+        P->dtmacro = 1000000;
+      } else if (middle) {
+        /* middle evolution to about 100 Myr */
+        P->nstepsmacro = 10000;
+        P->dtmacro = 1000000000;
+      } else if (late) {
+        /* late evolution to 4.55 Byr */
+        P->nstepsmacro = 455;
+        P->dtmacro = 1000000000000;
+      }
+    } else {
+      if (dtmacro_set && dtmacro_years_set) {
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: both -dtmacro and -dtmacro_years provided. Using -dtmacro\n");CHKERRQ(ierr);
+      } else if (dtmacro_years_set) {
         P->dtmacro = dtmacro_years / C->TIMEYRS;
+      }
     }
   }
-  // TODO special command line flags for this: 
-#if 0
-  /* FIXME: at the moment we uncomment two lines below to switch between
-     early, middle, and late evolution */
-  // TODO provide convenience flags for this in SetParametersFromOptions
-  /* early evolution to about 10 kyr */
-  PetscInt        nstepsmacro = 1000;  /* Max macros steps */
-  PetscReal       dtmacro = 1000000;        /* Macro step size (in nondimensional units. About a year) */
-  /* middle evolution to about 100 Myr */
-  //PetscInt        nstepsmacro = 10000;  /* Max macros steps */
-  //PetscReal       dtmacro = 1000000000; /* Macro step size (roughly years) */
-  /* late evolution to 4.55 Byr */
-  //PetscInt        nstepsmacro = 455;  /* Max macros steps */
-  //PetscReal       dtmacro = 1000000000000; /* Macro step size (roughly years) */
-#endif
 
   /* Store previous scalings */
   ENTROPY_prev = C->ENTROPY;
@@ -305,10 +316,11 @@ PetscErrorCode SetParametersFromOptions(Parameters *P)
   // TODO consider doing this with an actual Constants object!
 
   /*  Update Scalings from command line */
-  // TODO 
-  // TODO consider for now just having a single option to set them all to "1"
+  // TODO
+  // TODO consider for now just having a single option to set them all to "1" (do this after printout, so we can debug)
 
   /* For each entry in parameters, we set a default value and immediately re-scale it */
+  // TODO : change sinit input to be dimensional?
   ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);
   if(ENTROPY_prev != C->ENTROPY) P->sinit *= ENTROPY_prev/C->ENTROPY;
   // TODO complete ..

@@ -23,9 +23,9 @@ PetscErrorCode setup_ctx(Ctx* ctx)
      and ctx->parameters should never change (meaning that we can and should use
      pointers-to-constants to refer to ctx->parameters).
     */
-  InitializeParameters(&ctx->parameters); /* Note we use ctx->parameters, not P! */
-  SetParametersFromOptions(&ctx->parameters);
-  PrintParameters(&ctx->parameters);
+  ierr = InitializeParameters(&ctx->parameters);CHKERRQ(ierr); /* Note we use ctx->parameters, not P! */
+  ierr = SetParametersFromOptions(&ctx->parameters);CHKERRQ(ierr);
+  ierr = PrintParameters(&ctx->parameters);CHKERRQ(ierr);
 
   /* Set up a parallel structured grid as DMComposite with two included DMDAs
      This is used to define vectors which hold the solution. The included

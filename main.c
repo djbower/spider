@@ -7,6 +7,7 @@ static char help[] =
 -dtmacro : specify the macro (output dump) time step, in nondimensionalised time (will not be exact!)\n\
 -dtmacro_years : specify the macro (output dump) time step, in years\n\
 -curves : specify a set of data files to load. Currently accepts 'andrault2011' (default) and 'stixrude2009'\n\
+-early, -middle, -late: shortcuts to set -dtmacro and -nstepsmacro (overrides these)\n\
 ";
 
 /* Note: if you would like more verbose output, see the preprocessor defines
