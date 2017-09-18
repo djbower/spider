@@ -88,8 +88,7 @@ typedef struct _Parameters {
     Constants constants;
 } Parameters;
 
-PetscErrorCode InitializeParameters(Parameters *parameters);
-PetscErrorCode SetParametersFromOptions(Parameters *parameters);
+PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *parameters);
 PetscErrorCode PrintParameters(Parameters const *parameters);
 
 #endif
