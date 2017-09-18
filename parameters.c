@@ -250,13 +250,17 @@ PetscErrorCode InitializeParameters(Parameters *P)
   PetscFunctionReturn(0);
 }
 
+/*
+This function should be the only place that custom command-line parameters
+(those not defined by PETSc) should be accessed.
+
+All parameters should be specified by the user in dimensional (unscaled) form.
+ */
 PetscErrorCode SetParametersFromOptions(Parameters *P)
 {
   PetscErrorCode ierr;
   PetscBool      set;
   Constants      *C = &P->constants;
-
-  PetscReal      ENTROPY_prev;
 
   PetscFunctionBeginUser;
 
@@ -310,19 +314,16 @@ PetscErrorCode SetParametersFromOptions(Parameters *P)
     }
   }
 
-  /* Store previous scalings */
-  ENTROPY_prev = C->ENTROPY;
-  // TODO
-  // TODO consider doing this with an actual Constants object!
-
   /*  Update Scalings from command line */
   // TODO
   // TODO consider for now just having a single option to set them all to "1" (do this after printout, so we can debug)
 
-  /* For each entry in parameters, we set a default value and immediately re-scale it */
-  // TODO : change sinit input to be dimensional?
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);
-  if(ENTROPY_prev != C->ENTROPY) P->sinit *= ENTROPY_prev/C->ENTROPY;
+  /* For each entry in parameters, we check for a value and immediately re-scale it */
+  {
+    PetscBool set;
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,&set);CHKERRQ(ierr);
+    if(set) P->sinit /= C->ENTROPY;
+  }
   // TODO complete ..
 
   /* Additional Parameters for Atmosphere */
@@ -337,19 +338,23 @@ PetscErrorCode PrintParameters(Parameters const *P)
   Constants const *C = &P->constants;
 
   PetscFunctionBeginUser;
-
-  ierr = PetscPrintf(PETSC_COMM_WORLD," ******** Magma Ocean | Parameters ********\n");CHKERRQ(ierr);
-
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"Scalings:\n");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"Radius:   %f m (%f km)\n",C->RADIUS,C->RADIUS/1000.0);CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"Time:     %f s (%f years)\n",C->TIME,C->TIMEYRS);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"**************** Magma Ocean | Parameters **************\n\n");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15s %s\n"                 ,"[Scaling]"  ,"","Value"  ,"Units"           );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                           );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Radius"     ,"",C->RADIUS,"m"               );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Temperature","",C->TEMP  ,"K"               );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s (%.6g years)\n","Time"       ,"",C->TIME  ,"s",C->TIMEYRS    );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Entropy"    ,"",C->ENTROPY,"J/kg-K"            );CHKERRQ(ierr);
   // TODO add the rest..
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"\n");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"Parameter     Non-dim. Value   Dim Value [Units]\n");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%10s  %12.6f  %12.6f [??]\n","S_init",P->sinit,P->sinit*P->constants.ENTROPY);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                           );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"                                                                                   );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15s %s\n"    ,"[Parameter]","Non-dim. Value","Dim. Value"       ,"Units");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                           );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","dtmacro"    ,P->dtmacro      ,P->dtmacro*C->TIME ,"s"    );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"nstepsmacro",P->nstepsmacro                              );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","S_init"     ,P->sinit        ,P->sinit*C->ENTROPY,"J/kg-K"  );CHKERRQ(ierr);
   // TODO add the rest..
-
-
-  ierr = PetscPrintf(PETSC_COMM_WORLD," ******************************************\n");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                           );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\n********************************************************\n");CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
