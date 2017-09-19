@@ -13,14 +13,6 @@
 //#define VERBOSE 1
 //#define DEBUGOUTPUT 1
 
-/* select which energy terms to include */
-#define CONDUCTION
-#define CONVECTION
-#define MIXING
-#define SEPARATION
-//#define HRADIO
-//#define HTIDAL
-
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
 #define HEAD 4 /* number of header lines in datafile */

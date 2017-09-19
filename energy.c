@@ -1,5 +1,14 @@
 #include "energy.h"
 
+/* select which energy terms to include */
+#define CONDUCTION
+#define CONVECTION
+#define MIXING
+#define SEPARATION
+//#define HRADIO
+//#define HTIDAL
+
+
 static PetscErrorCode set_Jtot( Ctx * );
 #ifdef CONDUCTION
 static PetscErrorCode append_Jcond( Ctx * );
