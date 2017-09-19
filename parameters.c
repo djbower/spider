@@ -269,7 +269,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
     // TODO move this up so it's all done at the same time..
   /* Get lookup tables */
-  set_lookups(P);
+  ierr = SetLookups(P);CHKERRQ(ierr);
 
   /* Get grid parameters */
   {
@@ -377,8 +377,8 @@ PetscErrorCode PrintParameters(Parameters const *P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Lhs"        ,"",C->LHS,"");CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Lhs_G"      ,"",C->LHSG,"");CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Rhs"        ,"",C->RHS,"");CHKERRQ(ierr);
+  // TODO finish adding units, do other cleanup
 
-  // TODO add the rest..
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"                                                                                    );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15s %s\n"    ,"[Parameter]","Non-dim. Value","Dim. Value"       ,"Units" );CHKERRQ(ierr);
