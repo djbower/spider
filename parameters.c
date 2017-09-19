@@ -277,8 +277,8 @@ FIXME: need to non-dimensionalise below! */
 
   /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
   // FIXME: for convenience at the moment, duplicate these values */
-  Ap->RADIUS = P->radius; // FIXME: dimensional
-  Ap->GRAVITY = P->gravity; // FIXME: dimensional
+  Ap->RADIUS = P->radius;
+  Ap->GRAVITY = P->gravity;
   /* VOLSCALE enables us to scale the volatile equations to the same
      order of magnitude as entropy, and thus ensure that the residual
      based on the solution vector is not biased. */
