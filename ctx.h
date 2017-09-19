@@ -2,7 +2,6 @@
 #define CTX_H_
 
 #include "petsc.h"
-#include "global_defs.h"
 #include "parameters.h"
 #include "atmosphere.h"
 

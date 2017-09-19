@@ -174,7 +174,7 @@ static PetscErrorCode MakeRelativePathAbsolute(char* path) {
 
   PetscFunctionBeginUser;
   ierr = PetscStrcpy(tmp,path);CHKERRQ(ierr);
-  ierr = PetscStrcpy(path,MAGMA_ROOT_DIR_STR);CHKERRQ(ierr); /* global_defs.h */
+  ierr = PetscStrcpy(path,MAGMA_ROOT_DIR_STR);CHKERRQ(ierr); /* lookup.h */
   ierr = PetscStrcat(path,"/");CHKERRQ(ierr); /* not portable */
   ierr = PetscStrcat(path,tmp);CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -210,7 +210,7 @@ PetscErrorCode SetLookups( Parameters *P )
     /* Based on a user-supplied flag, determine which files to load.
        Note that we prepend a string, MAGMA_ROOT_DIR_STR, and /, to make the
        paths absolute, so the code can be run (tested) from anywhere.
-       See global_defs.h for the paths */
+       See lookup.h for the paths */
     {
       char lscTypeString[PETSC_MAX_PATH_LEN] = "default";
       PetscBool isDefault=PETSC_FALSE,isStixrude2009=PETSC_FALSE,isAndrault2011=PETSC_FALSE;

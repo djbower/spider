@@ -2,7 +2,6 @@
 #define LOOKUP_H_
 
 #include <petsc.h>
-#include "global_defs.h"
 
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
@@ -53,7 +52,7 @@
 #define RHO_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/density_melt.dat"
 #define TEMP_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_melt.dat"
 
-/* this structure has an x and y array size equal to NLS (see global_defs.h) */
+/* this structure has an x and y array size equal to NLS  */
 typedef struct _Interp1d {
     PetscScalar xa[NLS];
     PetscScalar xmin;

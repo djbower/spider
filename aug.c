@@ -1,13 +1,12 @@
 /* Helper functions to convert back and forth between standard and
    "augmented" vectors */
 
+#include "aug.h"
+
 /* number of additional equations for the augmented system */
 //#define AUG_NUM 1 // for no coupled atmosphere evolution
 // FIXME: this must always be set to 3
 #define AUG_NUM 3 // for coupled atmosphere evolution
-
-#include "aug.h"
-#include "global_defs.h"
 
 PetscErrorCode CreateAug(Vec in, Vec *out_aug){
   PetscErrorCode ierr;

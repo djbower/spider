@@ -10,9 +10,6 @@ static char help[] =
 -early, -middle, -late: shortcuts to set -dtmacro and -nstepsmacro (overrides these)\n\
 ";
 
-/* Note: if you would like more verbose output, see the preprocessor defines
-         in global_defs.h */
-
 #include "petsc.h"
 #include "ctx.h"
 #include "ic.h"

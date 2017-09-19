@@ -31,7 +31,7 @@ ${EXNAME} : ${OBJ}
 	-${CLINKER}  -o $@ $^ ${PETSC_TS_LIB}
 	#${RM} $^
 
-${OBJ} : global_defs.h
+#TODO: proper header dependencies
 
 ### Output ####################################################################
 
