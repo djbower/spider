@@ -112,12 +112,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   P->monitor = PETSC_TRUE;
 
-  /* Set default scalings */
-  // TODO
-  // TODO paste begin ..
-  // TODO paste end ..
-
-  /* For each entry in parameters, we set a default value and immediately scale it. Dimensional/unscaled quantities are not explicitly stored. */
+  /* For each entry in parameters, we set a default value and immediately scale it.
+     Dimensional/unscaled quantities are not explicitly stored. */
   // TODO
 
   // TODO -- pasted begin
@@ -125,20 +121,27 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
     // initial entropy at top of adiabat (J/kgK)
     P->sinit = 3052.885602072091;
+    P->sinit /= C->ENTROPY;
     // initial entropy gradient (J/kgKm)
     P->ic_dsdr = -4.6978890285209187e-07;
+    P->ic_dsdr /= C->DSDR;
     // radius of planet (m)
     P->radius = 6371000.0;
+    P->radius /= C->RADIUS;
     // core size (non-dimenisonal)
     P->coresize = 0.55;
     // surface density (kg/m^3) for Adams-Williamson EOS for pressure
     P->rhos = 4078.95095544;
+    P->rhos /= C->DENSITY;
     // parameter (1/m) for Adams-Williamson EOS for pressure
     P->beta = 1.1115348931000002e-07;
+    P->beta *= C->RADIUS;
     // grain size (m)
     P->grain = 1.0E-3;
+    P->grain /= C->RADIUS;
     // gravity (m/s^2), must be negative
     P->gravity = -10.0;
+    P->gravity /= C->GRAVITY;
     // melt fraction threshold for rheology
     P->phi_critical = 0.4; // non dimensional
     // melt fraction transition width for rheology
@@ -151,8 +154,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     P->phi_skew = 0.0; // non dimensional
     // core density (kg/m^3)
     P->rho_core = 10738.332568062382;
+    P->rho_core /= C->DENSITY;
     // heat capacity of core (J/kgK)
     P->cp_core = 880.0;
+    P->cp_core /= C->ENTROPY;
     // mass-weighted average core temperature as a fraction
     // of CMB temperature (non-dimensional)
     P->tfac_core_avg = 1.147;
@@ -160,12 +165,16 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     P->swidth = 1.0E-2;
     // solid viscosity (Pa.s)
     P->log10visc_sol = 21.0;
+    P->log10visc_sol -= C->LOG10ETA;
     // solid conductivity (W/mK)
     P->cond_sol = 4.0;
+    P->cond_sol /= C->COND;
     // melt viscosity (Pa.s)
     P->log10visc_mel = 2.0;
+    P->log10visc_mel -= C->LOG10ETA;
     // melt conductivity (W/mK)
     P->cond_mel = 4.0;
+    P->cond_mel /= C->COND;
 
     /* atmosphere parameters
          MODEL = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body
@@ -240,22 +249,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     Ap->CO2_HENRY_POW = 1.0;
 
   // TODO -- pasted end
-
-    // TODO - pasted these in..
-    // We want to have in-place application of these..
-    P->sinit /= C->ENTROPY;
-    P->ic_dsdr /= C->DSDR;
-    P->radius /= C->RADIUS;
-    P->rhos /= C->DENSITY;
-    P->beta *= C->RADIUS;
-    P->grain /= C->RADIUS;
-    P->gravity /= C->GRAVITY;
-    P->rho_core /= C->DENSITY;
-    P->cp_core /= C->ENTROPY;
-    P->log10visc_sol -= C->LOG10ETA;
-    P->cond_sol /= C->COND;
-    P->log10visc_mel -= C->LOG10ETA;
-    P->cond_mel /= C->COND;
 
     /* TODO: non-dimensionalise other atmosphere parameters */
     /* SIGMA and TEQM should get us up and running for the standard
