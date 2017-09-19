@@ -151,7 +151,14 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 //P->numpts_b= 22996
 //P->numpts_b= 45928
   P->numpts_s = P->numpts_b + 1;
+  /* Get grid parameters */
+  {
+    PetscBool set = PETSC_FALSE;
+    ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_s,&set);CHKERRQ(ierr);
+    if (set) P->numpts_b = P->numpts_s + 1;
+  }
 
+  //TODO move command line stuff down here
   P->monitor = PETSC_TRUE;
 
   /* For each entry in parameters, we set a default value and immediately scale it.
@@ -304,20 +311,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* Additional Parameters for Atmosphere */
   // TODO
 
-    // TODO move this up so it's all done at the same time..
   /* Get lookup tables */
   ierr = SetLookups(P);CHKERRQ(ierr);
 
-  /* Get grid parameters */
-  {
-    PetscBool set = PETSC_FALSE;
-    ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_s,&set);CHKERRQ(ierr);
-    if (set) P->numpts_b = P->numpts_s + 1;
-  }
-
-
-  /* Additional Parameters for Atmosphere */
-  // TODO
 
   PetscFunctionReturn(0);
 }
