@@ -19,10 +19,6 @@
 /* you have to use the python script to a priori determine how many
    nodes there are in a given mesh */
 
-/* number of additional equations for the augmented system */
-//#define AUG_NUM 1 // for no coupled atmosphere evolution
-// FIXME: this must always be set to 3
-#define AUG_NUM 3 // for coupled atmosphere evolution
 
 /* scaling constants */
 
