@@ -91,21 +91,17 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   PetscFunctionBegin;
   ierr = InitializeConstantsAndSetFromOptions(&P->constants);CHKERRQ(ierr);
 
-  //TODO cleanup on this function
-
-  /* Default discretization parameters */
-  P->nstepsmacro = 1000;
+  /* Time frame parameters */
   P->maxsteps    = 100000000; /* Effectively infinite */
-  P->dtmacro     = 1000000.0;
   P->t0          = 0.0;
-
-  /* Obtain command-line options for simulation time frame and monitoring */
   // TODO -dtmacro, contrary to the pattern, are still input in nondim units..
   {
     PetscReal dtmacro_years;
     PetscBool dtmacro_set = PETSC_FALSE, dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
               early = PETSC_FALSE, middle=PETSC_FALSE, late = PETSC_FALSE;
+    P->nstepsmacro = 1000;
     ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,&nstepsmacro_set);CHKERRQ(ierr);
+    P->dtmacro = 1000000.0;
     ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&P->dtmacro,&dtmacro_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetBool(NULL,NULL,"-early",&early,NULL);CHKERRQ(ierr);
@@ -140,179 +136,203 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     }
   }
 
+  /* Grid parameters */
   P->numpts_b = 200;
-//P->numpts_b= 278
-//P->numpts_b= 372
-//P->numpts_b= 656
-//P->numpts_b= 2939
-//P->numpts_b= 5802
-//P->numpts_b= 11532
-//P->numpts_b= 22996
-//P->numpts_b= 45928
+  //P->numpts_b= 278
+  //P->numpts_b= 372
+  //P->numpts_b= 656
+  //P->numpts_b= 2939
+  //P->numpts_b= 5802
+  //P->numpts_b= 11532
+  //P->numpts_b= 22996
+  //P->numpts_b= 45928
   P->numpts_s = P->numpts_b + 1;
-  /* Get grid parameters */
+
   {
     PetscBool set = PETSC_FALSE;
     ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_s,&set);CHKERRQ(ierr);
-    if (set) P->numpts_b = P->numpts_s + 1;
+    if (set) P->numpts_b = P->numpts_s + 1; // FIXME: should this be -1?
   }
 
   P->monitor = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&P->monitor,NULL);CHKERRQ(ierr);
 
   /* For each entry in parameters, we set a default value and immediately scale it.
-     Dimensional/unscaled quantities are not explicitly stored. */
-  // TODO
+     Dimensional/unscaled quantities are not explicitly stored.
+     All SI units unless non-dimensional.
+     */
 
-  // TODO -- pasted begin
-    // all SI units unless non-dimensional
+  /* initial entropy at top of adiabat (J/kgK) */
+  P->sinit = 3052.885602072091;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);
+  P->sinit /= C->ENTROPY;
 
-    // initial entropy at top of adiabat (J/kgK)
-    P->sinit = 3052.885602072091;
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);
-    P->sinit /= C->ENTROPY;
+  /* initial entropy gradient (J/kgKm) */
+  P->ic_dsdr = -4.6978890285209187e-07;
+  P->ic_dsdr /= C->DSDR;
 
-    // initial entropy gradient (J/kgKm)
-    P->ic_dsdr = -4.6978890285209187e-07;
-    P->ic_dsdr /= C->DSDR;
-    // radius of planet (m)
-    P->radius = 6371000.0;
-    P->radius /= C->RADIUS;
-    // core size (non-dimenisonal)
-    P->coresize = 0.55;
-    // surface density (kg/m^3) for Adams-Williamson EOS for pressure
-    P->rhos = 4078.95095544;
-    P->rhos /= C->DENSITY;
-    // parameter (1/m) for Adams-Williamson EOS for pressure
-    P->beta = 1.1115348931000002e-07;
-    P->beta *= C->RADIUS;
-    // grain size (m)
-    P->grain = 1.0E-3;
-    P->grain /= C->RADIUS;
-    // gravity (m/s^2), must be negative
-    P->gravity = -10.0;
-    P->gravity /= C->GRAVITY;
-    // melt fraction threshold for rheology
-    P->phi_critical = 0.4; // non dimensional
-    // melt fraction transition width for rheology
-    /* when PHI_WIDTH = 0.15, oscillations appear in the volatile contents
-   due to a rigid crust forming at the top of the model.  Reducing the value
-   to 0.2 helps to alleviate this problem.  So evidently the viscosity contrast
-   across nodes matters. */
-    P->phi_width = 0.15; // non dimensional
-    // melt fraction shape transition for skew
-    P->phi_skew = 0.0; // non dimensional
-    // core density (kg/m^3)
-    P->rho_core = 10738.332568062382;
-    P->rho_core /= C->DENSITY;
-    // heat capacity of core (J/kgK)
-    P->cp_core = 880.0;
-    P->cp_core /= C->ENTROPY;
-    // mass-weighted average core temperature as a fraction
-    // of CMB temperature (non-dimensional)
-    P->tfac_core_avg = 1.147;
-    // smoothing width
-    P->swidth = 1.0E-2;
-    // solid viscosity (Pa.s)
-    P->log10visc_sol = 21.0;
-    P->log10visc_sol -= C->LOG10ETA;
-    // solid conductivity (W/mK)
-    P->cond_sol = 4.0;
-    P->cond_sol /= C->COND;
-    // melt viscosity (Pa.s)
-    P->log10visc_mel = 2.0;
-    P->log10visc_mel -= C->LOG10ETA;
-    // melt conductivity (W/mK)
-    P->cond_mel = 4.0;
-    P->cond_mel /= C->COND;
+  /* radius of planet (m) */
+  P->radius = 6371000.0;
+  P->radius /= C->RADIUS;
 
-    /* atmosphere parameters
-         MODEL = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body
-         MODEL = MO_ATMOSPHERE_TYPE_ZAHNLE: FIXME: currently broken
-         MODEL = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
-                  with CO2 and H2O volatiles
-                  uses plane-parallel radiative eqm model
-                  of Abe and Matsui (1985)
-    */
-    Ap->MODEL=MO_ATMOSPHERE_TYPE_GREY_BODY;
-    /* for legacy purposes
-       if HYBRID is set, then the boundary condition will switch
-       to the upper mantle cooling rate once the rheological
-       transition is reached.  This prevents a lid from forming at
-       the top of the model.
-       TODO: this implies that the emissivity is around 1.0E-7,
-       which is unphysical unless you are appealing to a massive
-       massive atmosphere */
-    Ap->HYBRID=0;
-    // emissivity is constant for MODEL != MO_ATMOSPHERE_TYPE_VOLATILES
-    Ap->EMISSIVITY0 = 1.0;
-    // Stefan-Boltzmann constant (W/m^2K^4)
-    Ap->SIGMA = 5.670367e-08;
-    // equilibrium temperature of the planet (K)
-    Ap->TEQM = 273.0;
-    /* for radiative boundary condition at the top surface
-       dT = constbc * [Surface temperature]**3
-       FIXME: need to non-dimensionalise below! */
-    //Ap->CONSTBC = 1.0e-07; // FIXME check units
-    Ap->CONSTBC = 0;
+  /* core size (non-dimensional) */
+  P->coresize = 0.55;
 
-    /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
-    // FIXME: for convenience at the moment, duplicate these values */
-    Ap->RADIUS = P->radius; // FIXME: dimensional
-    Ap->GRAVITY = P->gravity; // FIXME: dimensional
-    /* VOLSCALE enables us to scale the volatile equations to the same
-       order of magnitude as entropy, and thus ensure that the residual
-       based on the solution vector is not biased. */
-    // FIXME: need to figure out scalings of this ODE
-    //Ap->VOLSCALE = 1.0E2; // wt %
-    Ap->VOLSCALE = 1.0E6; // ppm
-    // initial volatile contents in the liquid magma ocean
-    Ap->H2O_INITIAL = 0.0;
-    Ap->CO2_INITIAL = 0.0;
-    // Elkins-Tanton (2008) case 1
-    //P->h2o_initial = 500.0;
-    //P->co2_initial = 100.0;
-    // Elkins-Tanton (2008) case 2
-    //P->h2o_initial = 5000.0;
-    //P->co2_initial = 1000.0;
-    // Elkins-Tanton (2008) case 3
-    //P->h2o_initial = 0.0;
-    //P->co2_initial = 6000.0;
-    // atmosphere reference pressure (Pa)
-    Ap->P0 = 101325.0; // Pa (= 1 atm)
-    // distribution coefficients are given in supplementary material of ET08
-    // distribution coefficient between solid and melt (non-dimensional)
-    Ap->H2O_KDIST = 1.0E-4;
-    // TODO: water saturation limit of 10 ppm?
-    // absorption (m^2/kg)
-    Ap->H2O_KABS = 0.01;
-    // next two from Lebrun et al. (2013)
-    Ap->H2O_HENRY = 6.8E-8; // must be mass fraction/Pa
-    Ap->H2O_HENRY_POW = 1.4285714285714286; // (1.0/0.7)
-    // distribution coefficient between solid and melt (non-dimensional)
-    Ap->CO2_KDIST = 5.0E-4;
-    // TODO: water saturation limit of 0.03 ppm
-    // absorption (m^2/kg)
-    Ap->CO2_KABS = 0.05;
-    // next two from Lebrun et al. (2013)
-    Ap->CO2_HENRY = 4.4E-12; // must be mass fraction/Pa
-    Ap->CO2_HENRY_POW = 1.0;
+  /* surface density (kg/m^3) for Adams-Williamson EOS for pressure */
+  P->rhos = 4078.95095544;
+  P->rhos /= C->DENSITY;
 
-  // TODO -- pasted end
+  /* parameter (1/m) for Adams-Williamson EOS for pressure */
+  P->beta = 1.1115348931000002e-07;
+  P->beta *= C->RADIUS;
 
-    /* TODO: non-dimensionalise other atmosphere parameters */
-    /* SIGMA and TEQM should get us up and running for the standard
-       grey-body case */
-    Ap->SIGMA /= C->SIGMA;
-    Ap->TEQM /= C->TEMP;
-    Ap->CONSTBC /= 1.0; // FIXME to UPDATE!
+  /* grain size (m) */
+  P->grain = 1.0E-3;
+  P->grain /= C->RADIUS;
+
+  /* gravity (m/s^2), must be negative */
+  P->gravity = -10.0;
+  P->gravity /= C->GRAVITY;
+
+  /* melt fraction threshold for rheology */
+  P->phi_critical = 0.4; // non dimensional
+  /* melt fraction transition width for rheology */
+  /* when PHI_WIDTH = 0.15, oscillations appear in the volatile contents
+     due to a rigid crust forming at the top of the model.  Reducing the value
+     to 0.2 helps to alleviate this problem.  So evidently the viscosity contrast
+     across nodes matters. */
+  P->phi_width = 0.15; // non dimensional
+
+  /* melt fraction shape transition for skew */
+  P->phi_skew = 0.0; /* non dimensional */
+
+  /* core density (kg/m^3) */
+  P->rho_core = 10738.332568062382;
+  P->rho_core /= C->DENSITY;
+
+  /* heat capacity of core (J/kgK) */
+  P->cp_core = 880.0;
+  P->cp_core /= C->ENTROPY;
+
+  /* mass-weighted average core temperature as a fraction */
+  /* of CMB temperature (non-dimensional) */
+  P->tfac_core_avg = 1.147;
+
+  /* smoothing width */
+  P->swidth = 1.0E-2;
+
+  /* solid viscosity (Pa.s) */
+  P->log10visc_sol = 21.0;
+  P->log10visc_sol -= C->LOG10ETA;
+
+  /* solid conductivity (W/mK) */
+  P->cond_sol = 4.0;
+  P->cond_sol /= C->COND;
+
+  /* melt viscosity (Pa.s) */
+  P->log10visc_mel = 2.0;
+  P->log10visc_mel -= C->LOG10ETA;
+
+  /* melt conductivity (W/mK) */
+  P->cond_mel = 4.0;
+  P->cond_mel /= C->COND;
+
+  /* atmosphere parameters
+     MODEL = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body
+     MODEL = MO_ATMOSPHERE_TYPE_ZAHNLE: FIXME: currently broken
+     MODEL = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
+     with CO2 and H2O volatiles
+     uses plane-parallel radiative eqm model
+     of Abe and Matsui (1985)
+     */
+  Ap->MODEL=MO_ATMOSPHERE_TYPE_GREY_BODY;
+  /* for legacy purposes
+     if HYBRID is set, then the boundary condition will switch
+     to the upper mantle cooling rate once the rheological
+     transition is reached.  This prevents a lid from forming at
+     the top of the model.
+TODO: this implies that the emissivity is around 1.0E-7,
+which is unphysical unless you are appealing to a massive
+massive atmosphere */
+  Ap->HYBRID=0;
+
+  /* emissivity is constant for MODEL != MO_ATMOSPHERE_TYPE_VOLATILES */
+  Ap->EMISSIVITY0 = 1.0;
+
+  /* Stefan-Boltzmann constant (W/m^2K^4) */
+  Ap->SIGMA = 5.670367e-08;
+
+  /* equilibrium temperature of the planet (K) */
+  Ap->TEQM = 273.0;
+
+  /* for radiative boundary condition at the top surface
+     dT = constbc * [Surface temperature]**3
+FIXME: need to non-dimensionalise below! */
+  //Ap->CONSTBC = 1.0e-07; // FIXME check units
+  Ap->CONSTBC = 0;
+
+  /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
+  // FIXME: for convenience at the moment, duplicate these values */
+  Ap->RADIUS = P->radius; // FIXME: dimensional
+  Ap->GRAVITY = P->gravity; // FIXME: dimensional
+  /* VOLSCALE enables us to scale the volatile equations to the same
+     order of magnitude as entropy, and thus ensure that the residual
+     based on the solution vector is not biased. */
+  // FIXME: need to figure out scalings of this ODE
+  //Ap->VOLSCALE = 1.0E2; // wt %
+  Ap->VOLSCALE = 1.0E6; // ppm
+
+  /* initial volatile contents in the liquid magma ocean */
+  Ap->H2O_INITIAL = 0.0;
+  Ap->CO2_INITIAL = 0.0;
+
+  /* Elkins-Tanton (2008) case 1 */
+  //P->h2o_initial = 500.0;
+  //P->co2_initial = 100.0;
+  /* Elkins-Tanton (2008) case 2 */
+  //P->h2o_initial = 5000.0;
+  //P->co2_initial = 1000.0;
+  /* Elkins-Tanton (2008) case 3 */
+  //P->h2o_initial = 0.0;
+  //P->co2_initial = 6000.0;
+  /* atmosphere reference pressure (Pa) */
+  Ap->P0 = 101325.0; // Pa (= 1 atm)
+
+  /* distribution coefficients are given in supplementary material of ET08 */
+  /* distribution coefficient between solid and melt (non-dimensional) */
+  Ap->H2O_KDIST = 1.0E-4;
+
+  // TODO: water saturation limit of 10 ppm?
+
+  /* absorption (m^2/kg) */
+  Ap->H2O_KABS = 0.01;
+
+  /* next two from Lebrun et al. (2013) */
+  Ap->H2O_HENRY = 6.8E-8; // must be mass fraction/Pa
+  Ap->H2O_HENRY_POW = 1.4285714285714286; // (1.0/0.7)
+
+  /* distribution coefficient between solid and melt (non-dimensional) */
+  Ap->CO2_KDIST = 5.0E-4;
+
+  // TODO: water saturation limit of 0.03 ppm
+  /* absorption (m^2/kg) */
+  Ap->CO2_KABS = 0.05;
+
+  /* next two from Lebrun et al. (2013) */
+  Ap->CO2_HENRY = 4.4E-12; // must be mass fraction/Pa
+  Ap->CO2_HENRY_POW = 1.0;
+
+  /* TODO: non-dimensionalise other atmosphere parameters */
+  /* SIGMA and TEQM should get us up and running for the standard
+     grey-body case */
+  Ap->SIGMA /= C->SIGMA;
+  Ap->TEQM /= C->TEMP;
+  Ap->CONSTBC /= 1.0; // FIXME to UPDATE!
 
   /* Additional Parameters for Atmosphere */
-  // TODO
 
   /* Get lookup tables */
   ierr = SetLookups(P);CHKERRQ(ierr);
-
 
   PetscFunctionReturn(0);
 }
