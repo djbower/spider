@@ -89,7 +89,15 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Constants const      *C  = &P->constants;
 
   PetscFunctionBegin;
+
+  /* Constants (scalings) must be set first, as they are used to scale
+     other paramters */
   ierr = InitializeConstantsAndSetFromOptions(&P->constants);CHKERRQ(ierr);
+
+  /* For each entry in parameters, we set a default value and immediately scale it.
+     Dimensional/unscaled quantities are not explicitly stored.
+     All SI units unless non-dimensional.
+     */
 
   /* Time frame parameters */
   P->maxsteps    = 100000000; /* Effectively infinite */
@@ -147,20 +155,16 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   //P->numpts_b= 22996
   //P->numpts_b= 45928
   P->numpts_s = P->numpts_b + 1;
-
   {
     PetscBool set = PETSC_FALSE;
     ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_s,&set);CHKERRQ(ierr);
-    if (set) P->numpts_b = P->numpts_s + 1; // FIXME: should this be -1?
+    if (set) P->numpts_b = P->numpts_s - 1;
   }
 
+  /* Monitor */
   P->monitor = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&P->monitor,NULL);CHKERRQ(ierr);
 
-  /* For each entry in parameters, we set a default value and immediately scale it.
-     Dimensional/unscaled quantities are not explicitly stored.
-     All SI units unless non-dimensional.
-     */
 
   /* initial entropy at top of adiabat (J/kgK) */
   P->sinit = 3052.885602072091;
@@ -389,6 +393,7 @@ PetscErrorCode PrintParameters(Parameters const *P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","dtmacro"    ,P->dtmacro      ,P->dtmacro*C->TIME ,"s"     );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"nstepsmacro",P->nstepsmacro                               );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"numpts_b"   ,P->numpts_b                                  );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"numpts_s"   ,P->numpts_s                                  );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","S_init"     ,P->sinit        ,P->sinit*C->ENTROPY,"J/kg-K");CHKERRQ(ierr);
   // TODO add the rest..
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                            );CHKERRQ(ierr);
