@@ -91,7 +91,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   PetscFunctionBegin;
   ierr = InitializeConstantsAndSetFromOptions(&P->constants);CHKERRQ(ierr);
 
-  //TODO these should really happen at the same time, and be included here.
+  //TODO cleanup on this function
 
   /* Default discretization parameters */
   P->nstepsmacro = 1000;
@@ -105,7 +105,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     PetscReal dtmacro_years;
     PetscBool dtmacro_set = PETSC_FALSE, dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
               early = PETSC_FALSE, middle=PETSC_FALSE, late = PETSC_FALSE;
-    ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&P->monitor,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,&nstepsmacro_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&P->dtmacro,&dtmacro_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
@@ -158,8 +157,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     if (set) P->numpts_b = P->numpts_s + 1;
   }
 
-  //TODO move command line stuff down here
   P->monitor = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&P->monitor,NULL);CHKERRQ(ierr);
 
   /* For each entry in parameters, we set a default value and immediately scale it.
      Dimensional/unscaled quantities are not explicitly stored. */
