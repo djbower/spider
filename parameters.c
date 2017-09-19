@@ -121,7 +121,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
     // initial entropy at top of adiabat (J/kgK)
     P->sinit = 3052.885602072091;
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);
     P->sinit /= C->ENTROPY;
+
     // initial entropy gradient (J/kgKm)
     P->ic_dsdr = -4.6978890285209187e-07;
     P->ic_dsdr /= C->DSDR;
@@ -311,15 +313,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       }
     }
   }
-
-
-  /* For each entry in parameters, we check for a value and immediately re-scale it */
-  {
-    PetscBool set;
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,&set);CHKERRQ(ierr);
-    if(set) P->sinit /= C->ENTROPY;
-  }
-  // TODO complete ..
 
   /* Additional Parameters for Atmosphere */
   // TODO
