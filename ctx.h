@@ -53,6 +53,5 @@ typedef struct _Ctx {
 
 PetscErrorCode SetupCtx(Ctx *);
 PetscErrorCode DestroyCtx(Ctx *);
-PetscErrorCode SetLookups( Parameters * );
 
 #endif

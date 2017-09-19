@@ -90,5 +90,6 @@ typedef struct _Parameters {
 
 PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *parameters);
 PetscErrorCode PrintParameters(Parameters const *parameters);
+PetscErrorCode SetLookups( Parameters * );
 
 #endif
