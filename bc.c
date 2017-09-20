@@ -1,9 +1,6 @@
 #include "bc.h"
 #include "util.h"
 
-static PetscScalar grey_body( PetscScalar, Atmosphere *, AtmosphereParameters * );
-static PetscScalar zahnle( PetscScalar,  AtmosphereParameters * );
-static PetscScalar tsurf_param( PetscScalar, AtmosphereParameters * );
 static PetscScalar hybrid( Ctx *, PetscScalar );
 
 PetscErrorCode set_surface_flux( Ctx *E )
@@ -50,7 +47,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
         case 2:
           // zahnle
-          Qout = zahnle( Tsurf, Ap );
+          Qout = steam_atmosphere_zahnle_1988( Tsurf, Ap );
           break;
         case 3:
           // atmosphere evolution
@@ -79,36 +76,6 @@ PetscErrorCode set_surface_flux( Ctx *E )
     ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
-}
-
-///////////////////////
-/* atmosphere models */
-///////////////////////
-
-static PetscScalar grey_body( PetscScalar Tsurf, Atmosphere *A, AtmosphereParameters *Ap )
-{
-    PetscScalar Fsurf;
-
-    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(Ap->teqm,4.0);
-    Fsurf *= Ap->sigma * A->emissivity; /* Note emissivity may vary */
-
-    return Fsurf;
-}
-
-static PetscScalar zahnle( PetscScalar Tsurf, AtmosphereParameters *Ap )
-{
-    PetscScalar       Fsurf;
-
-    /* fit to Zahnle et al. (1988) from Solomatov and Stevenson (1993)
-       Eqn. 40 */
-
-    /* FIXME: will break for non-dimensional
-       see commit 780b1dd to reverse this */
-
-    Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf);
-
-    return Fsurf;
 
 }
 
@@ -222,22 +189,4 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 
     PetscFunctionReturn(0);
 
-}
-
-static PetscScalar tsurf_param( PetscScalar temp, AtmosphereParameters *Ap )
-{
-    PetscScalar Ts, c, fac, num, den;
-    c = Ap->param_utbl_const;
-
-    fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
-    fac = PetscPowScalar( fac, 1.0/2.0 );
-    fac += 9.0*temp*PetscPowScalar(c,2.0);
-    // numerator
-    num = PetscPowScalar(2.0,1.0/3)*PetscPowScalar(fac,2.0/3)-2.0*PetscPowScalar(3.0,1.0/3)*c;
-    // denominator
-    den = PetscPowScalar(6.0,2.0/3)*c*PetscPowScalar(fac,1.0/3);
-    // surface temperature
-    Ts = num / den;
-
-    return Ts;
 }

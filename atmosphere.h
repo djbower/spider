@@ -65,4 +65,8 @@ PetscErrorCode set_emissivity_abe_matsui( Atmosphere *, AtmosphereParameters con
 PetscErrorCode set_dx0dt( Atmosphere *, AtmosphereParameters const *);
 PetscErrorCode set_dx1dt( Atmosphere *, AtmosphereParameters const *);
 
+PetscScalar tsurf_param( PetscScalar, AtmosphereParameters const * );
+PetscScalar grey_body( PetscScalar, Atmosphere *A, AtmosphereParameters const * );
+PetscScalar steam_atmosphere_zahnle_1988( PetscScalar, AtmosphereParameters const * );
+
 #endif

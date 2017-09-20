@@ -13,7 +13,53 @@ static PetscScalar f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar newton( PetscScalar, PetscScalar, PetscScalar );
 
+///////////////////////
 /* general functions */
+///////////////////////
+
+PetscScalar tsurf_param( PetscScalar temp, AtmosphereParameters const *Ap )
+{
+    PetscScalar Ts, c, fac, num, den;
+    c = Ap->param_utbl_const;
+
+    fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
+    fac = PetscPowScalar( fac, 1.0/2.0 );
+    fac += 9.0*temp*PetscPowScalar(c,2.0);
+    // numerator
+    num = PetscPowScalar(2.0,1.0/3)*PetscPowScalar(fac,2.0/3)-2.0*PetscPowScalar(3.0,1.0/3)*c;
+    // denominator
+    den = PetscPowScalar(6.0,2.0/3)*c*PetscPowScalar(fac,1.0/3);
+    // surface temperature
+    Ts = num / den;
+
+    return Ts; 
+}
+
+PetscScalar grey_body( PetscScalar Tsurf, Atmosphere *A, AtmosphereParameters const *Ap )
+{
+    PetscScalar Fsurf;
+
+    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(Ap->teqm,4.0);
+    Fsurf *= Ap->sigma * A->emissivity; /* Note emissivity may vary */
+
+    return Fsurf;
+}
+
+PetscScalar steam_atmosphere_zahnle_1988( PetscScalar Tsurf, AtmosphereParameters const *Ap )
+{
+    PetscScalar       Fsurf;
+
+    /* fit to Zahnle et al. (1988) from Solomatov and Stevenson (1993)
+       Eqn. 40 */
+
+    /* FIXME: will break for non-dimensional
+       see commit 780b1dd to reverse this */
+
+    Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf);
+
+    return Fsurf;
+
+}
 
 PetscErrorCode set_emissivity_abe_matsui( Atmosphere *A, AtmosphereParameters const *Ap )
 {
