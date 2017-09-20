@@ -407,6 +407,19 @@ PetscErrorCode PrintParameters(Parameters const *P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","S_init"     ,P->sinit        ,P->sinit*C->ENTROPY,"J/kg-K");CHKERRQ(ierr);
   // TODO add the rest..
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                            );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"liquidus data file"          ,P->liquidusFilename         );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"solidus data file"           ,P->solidusFilename          );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaSol data file"          ,P->alphaSolFilename         );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaMel data file"          ,P->alphaMelFilename         );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpSol data file"             ,P->cpSolFilename            );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpMel data file"             ,P->cpMelFilename            );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsSol data file"          ,P->dtdpsSolFilename         );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsMel data file"          ,P->dtdpsMelFilename         );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoSol data file"            ,P->rhoSolFilename           );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"            ,P->rhoMelFilename           );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"           ,P->tempSolFilename          );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"           ,P->tempMelFilename          );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"\n********************************************************\n");CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -427,25 +440,10 @@ static PetscErrorCode MakeRelativePathAbsolute(char* path) {
 PetscErrorCode SetLookups( Parameters *P )
 {
     PetscErrorCode ierr;
-    // TODO move these into the Parameters struct and print them out with the other parameters
-    char liquidusFilename[PETSC_MAX_PATH_LEN];
-    char solidusFilename[PETSC_MAX_PATH_LEN];
-    char alphaSolFilename[PETSC_MAX_PATH_LEN];
-    char alphaMelFilename[PETSC_MAX_PATH_LEN];
-    char cpSolFilename[PETSC_MAX_PATH_LEN];
-    char cpMelFilename[PETSC_MAX_PATH_LEN];
-    char dtdpsSolFilename[PETSC_MAX_PATH_LEN];
-    char dtdpsMelFilename[PETSC_MAX_PATH_LEN];
-    char rhoSolFilename[PETSC_MAX_PATH_LEN];
-    char rhoMelFilename[PETSC_MAX_PATH_LEN];
-    char tempSolFilename[PETSC_MAX_PATH_LEN];
-    char tempMelFilename[PETSC_MAX_PATH_LEN];
-
     Constants *C = &P->constants;
 
-    /* set all 1-D and 2-D lookups */
-
     PetscFunctionBeginUser;
+    /* set all 1-D and 2-D lookups */
 #if (defined VERBOSE)
     {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"set_lookup:\n" );CHKERRQ(ierr);
@@ -469,49 +467,49 @@ PetscErrorCode SetLookups( Parameters *P )
         ierr = PetscPrintf(PETSC_COMM_WORLD,"***************************************\n");CHKERRQ(ierr);
       }
       if (isStixrude2009) {
-        ierr = PetscStrcpy(liquidusFilename,LIQUIDUS_STIXRUDE2009);CHKERRQ(ierr);
-        ierr = MakeRelativePathAbsolute(liquidusFilename);CHKERRQ(ierr);
-        ierr = PetscStrcpy(solidusFilename,SOLIDUS_STIXRUDE2009);CHKERRQ(ierr);
-        ierr = MakeRelativePathAbsolute(solidusFilename);CHKERRQ(ierr);
+        ierr = PetscStrcpy(P->liquidusFilename,LIQUIDUS_STIXRUDE2009);CHKERRQ(ierr);
+        ierr = MakeRelativePathAbsolute(P->liquidusFilename);CHKERRQ(ierr);
+        ierr = PetscStrcpy(P->solidusFilename,SOLIDUS_STIXRUDE2009);CHKERRQ(ierr);
+        ierr = MakeRelativePathAbsolute(P->solidusFilename);CHKERRQ(ierr);
       } else if (isAndrault2011 || isDefault) { /* Default */
-        ierr = PetscStrcpy(liquidusFilename,LIQUIDUS_ANDRAULT2011);CHKERRQ(ierr);
-        ierr = MakeRelativePathAbsolute(liquidusFilename);CHKERRQ(ierr);
-        ierr = PetscStrcpy(solidusFilename,SOLIDUS_ANDRAULT2011);CHKERRQ(ierr);
-        ierr = MakeRelativePathAbsolute(solidusFilename);CHKERRQ(ierr);
+        ierr = PetscStrcpy(P->liquidusFilename,LIQUIDUS_ANDRAULT2011);CHKERRQ(ierr);
+        ierr = MakeRelativePathAbsolute(P->liquidusFilename);CHKERRQ(ierr);
+        ierr = PetscStrcpy(P->solidusFilename,SOLIDUS_ANDRAULT2011);CHKERRQ(ierr);
+        ierr = MakeRelativePathAbsolute(P->solidusFilename);CHKERRQ(ierr);
       } else {
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"-curves logic processing failed");
       }
 
-      ierr = PetscStrcpy(alphaSolFilename,ALPHA_SOL_DEFAULT);CHKERRQ(ierr);
-      ierr = MakeRelativePathAbsolute(alphaSolFilename);CHKERRQ(ierr);
-      ierr = PetscStrcpy(cpSolFilename,CP_SOL_DEFAULT);CHKERRQ(ierr);
-      ierr = MakeRelativePathAbsolute(cpSolFilename);CHKERRQ(ierr);
-      ierr = PetscStrcpy(dtdpsSolFilename,DTDPS_SOL_DEFAULT);CHKERRQ(ierr);
-      ierr = MakeRelativePathAbsolute(dtdpsSolFilename);CHKERRQ(ierr);
-      ierr = PetscStrcpy(rhoSolFilename,RHO_SOL_DEFAULT);CHKERRQ(ierr);
-      ierr = MakeRelativePathAbsolute(rhoSolFilename);CHKERRQ(ierr);
-      ierr = PetscStrcpy(tempSolFilename,TEMP_SOL_DEFAULT);CHKERRQ(ierr);
-      ierr = MakeRelativePathAbsolute(tempSolFilename);CHKERRQ(ierr);
+      ierr = PetscStrcpy(P->alphaSolFilename,ALPHA_SOL_DEFAULT);CHKERRQ(ierr);
+      ierr = MakeRelativePathAbsolute(P->alphaSolFilename);CHKERRQ(ierr);
+      ierr = PetscStrcpy(P->cpSolFilename,CP_SOL_DEFAULT);CHKERRQ(ierr);
+      ierr = MakeRelativePathAbsolute(P->cpSolFilename);CHKERRQ(ierr);
+      ierr = PetscStrcpy(P->dtdpsSolFilename,DTDPS_SOL_DEFAULT);CHKERRQ(ierr);
+      ierr = MakeRelativePathAbsolute(P->dtdpsSolFilename);CHKERRQ(ierr);
+      ierr = PetscStrcpy(P->rhoSolFilename,RHO_SOL_DEFAULT);CHKERRQ(ierr);
+      ierr = MakeRelativePathAbsolute(P->rhoSolFilename);CHKERRQ(ierr);
+      ierr = PetscStrcpy(P->tempSolFilename,TEMP_SOL_DEFAULT);CHKERRQ(ierr);
+      ierr = MakeRelativePathAbsolute(P->tempSolFilename);CHKERRQ(ierr);
 
-      ierr = PetscStrcpy(alphaMelFilename,ALPHA_MEL_DEFAULT);CHKERRQ(ierr);
-      ierr = MakeRelativePathAbsolute(alphaMelFilename);CHKERRQ(ierr);
-      ierr = PetscStrcpy(cpMelFilename,CP_MEL_DEFAULT);CHKERRQ(ierr);
-      ierr = MakeRelativePathAbsolute(cpMelFilename);CHKERRQ(ierr);
-      ierr = PetscStrcpy(dtdpsMelFilename,DTDPS_MEL_DEFAULT);CHKERRQ(ierr);
-      ierr = MakeRelativePathAbsolute(dtdpsMelFilename);CHKERRQ(ierr);
-      ierr = PetscStrcpy(rhoMelFilename,RHO_MEL_DEFAULT);CHKERRQ(ierr);
-      ierr = MakeRelativePathAbsolute(rhoMelFilename);CHKERRQ(ierr);
-      ierr = PetscStrcpy(tempMelFilename,TEMP_MEL_DEFAULT);CHKERRQ(ierr);
-      ierr = MakeRelativePathAbsolute(tempMelFilename);CHKERRQ(ierr);
+      ierr = PetscStrcpy(P->alphaMelFilename,ALPHA_MEL_DEFAULT);CHKERRQ(ierr);
+      ierr = MakeRelativePathAbsolute(P->alphaMelFilename);CHKERRQ(ierr);
+      ierr = PetscStrcpy(P->cpMelFilename,CP_MEL_DEFAULT);CHKERRQ(ierr);
+      ierr = MakeRelativePathAbsolute(P->cpMelFilename);CHKERRQ(ierr);
+      ierr = PetscStrcpy(P->dtdpsMelFilename,DTDPS_MEL_DEFAULT);CHKERRQ(ierr);
+      ierr = MakeRelativePathAbsolute(P->dtdpsMelFilename);CHKERRQ(ierr);
+      ierr = PetscStrcpy(P->rhoMelFilename,RHO_MEL_DEFAULT);CHKERRQ(ierr);
+      ierr = MakeRelativePathAbsolute(P->rhoMelFilename);CHKERRQ(ierr);
+      ierr = PetscStrcpy(P->tempMelFilename,TEMP_MEL_DEFAULT);CHKERRQ(ierr);
+      ierr = MakeRelativePathAbsolute(P->tempMelFilename);CHKERRQ(ierr);
     }
 
     /* solid lookups */
     /* 2d */
-    set_interp2d( alphaSolFilename, &P->solid_prop.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );
-    set_interp2d( cpSolFilename, &P->solid_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );
-    set_interp2d( dtdpsSolFilename, &P->solid_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );
-    set_interp2d( rhoSolFilename, &P->solid_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );
-    set_interp2d( tempSolFilename, &P->solid_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );
+    set_interp2d( P->alphaSolFilename, &P->solid_prop.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );
+    set_interp2d( P->cpSolFilename, &P->solid_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );
+    set_interp2d( P->dtdpsSolFilename, &P->solid_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );
+    set_interp2d( P->rhoSolFilename, &P->solid_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );
+    set_interp2d( P->tempSolFilename, &P->solid_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );
     /* const */
     // FIXME: remove this redundancy
     P->solid_prop.cond = P->cond_sol;
@@ -519,11 +517,11 @@ PetscErrorCode SetLookups( Parameters *P )
 
     /* melt lookups */
     /* 2d */
-    set_interp2d( alphaMelFilename, &P->melt_prop.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );
-    set_interp2d( cpMelFilename, &P->melt_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );
-    set_interp2d( dtdpsMelFilename, &P->melt_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );
-    set_interp2d( rhoMelFilename, &P->melt_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );
-    set_interp2d( tempMelFilename, &P->melt_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );
+    set_interp2d( P->alphaMelFilename, &P->melt_prop.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );
+    set_interp2d( P->cpMelFilename, &P->melt_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );
+    set_interp2d( P->dtdpsMelFilename, &P->melt_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );
+    set_interp2d( P->rhoMelFilename, &P->melt_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );
+    set_interp2d( P->tempMelFilename, &P->melt_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );
     /* const */
     // FIXME remove this redundancy
     P->melt_prop.cond = P->cond_mel;
@@ -532,12 +530,12 @@ PetscErrorCode SetLookups( Parameters *P )
     /* liquidus and solidus */
     /* 1d */
 
-    set_interp1d( liquidusFilename, &P->solid_prop.liquidus, NLS, C->PRESSURE, C->ENTROPY );
-    set_interp1d( liquidusFilename, &P->melt_prop.liquidus, NLS, C->PRESSURE, C->ENTROPY );
+    set_interp1d( P->liquidusFilename, &P->solid_prop.liquidus, NLS, C->PRESSURE, C->ENTROPY );
+    set_interp1d( P->liquidusFilename, &P->melt_prop.liquidus, NLS, C->PRESSURE, C->ENTROPY );
     /* duplication here, but want to remain flexible for future
        approaches for a multicomponent system */
-    set_interp1d( solidusFilename, &P->solid_prop.solidus, NLS, C->PRESSURE, C->ENTROPY );
-    set_interp1d( solidusFilename, &P->melt_prop.solidus, NLS, C->PRESSURE, C->ENTROPY );
+    set_interp1d( P->solidusFilename, &P->solid_prop.solidus, NLS, C->PRESSURE, C->ENTROPY );
+    set_interp1d( P->solidusFilename, &P->melt_prop.solidus, NLS, C->PRESSURE, C->ENTROPY );
 
     PetscFunctionReturn(0);
 }
