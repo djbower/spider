@@ -177,49 +177,60 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* initial entropy gradient (J/kgKm) */
   P->ic_dsdr = -4.6978890285209187e-07;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_dsdr",&P->ic_dsdr,NULL);CHKERRQ(ierr);
   P->ic_dsdr /= C->DSDR;
 
   /* radius of planet (m) */
   P->radius = 6371000.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-radius",&P->radius,NULL);CHKERRQ(ierr);
   P->radius /= C->RADIUS;
 
   /* core size (non-dimensional) */
   P->coresize = 0.55;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-coresize",&P->coresize,NULL);CHKERRQ(ierr);
 
   /* surface density (kg/m^3) for Adams-Williamson EOS for pressure */
   P->rhos = 4078.95095544;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-rhos",&P->rhos,NULL);CHKERRQ(ierr);
   P->rhos /= C->DENSITY;
 
   /* parameter (1/m) for Adams-Williamson EOS for pressure */
   P->beta = 1.1115348931000002e-07;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-beta",&P->beta,NULL);CHKERRQ(ierr);
   P->beta *= C->RADIUS;
 
   /* grain size (m) */
   P->grain = 1.0E-3;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-grain",&P->grain,NULL);CHKERRQ(ierr);
   P->grain /= C->RADIUS;
 
   /* gravity (m/s^2), must be negative */
   P->gravity = -10.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-gravity",&P->gravity,NULL);CHKERRQ(ierr);
   P->gravity /= C->GRAVITY;
 
   /* melt fraction threshold for rheology */
   P->phi_critical = 0.4; // non dimensional
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_critical",&P->phi_critical,NULL);CHKERRQ(ierr);
   /* melt fraction transition width for rheology */
   /* when PHI_WIDTH = 0.15, oscillations appear in the volatile contents
      due to a rigid crust forming at the top of the model.  Reducing the value
      to 0.2 helps to alleviate this problem.  So evidently the viscosity contrast
      across nodes matters. */
   P->phi_width = 0.15; // non dimensional
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_width",&P->phi_width,NULL);CHKERRQ(ierr);
 
   /* melt fraction shape transition for skew */
   P->phi_skew = 0.0; /* non dimensional */
 
   /* core density (kg/m^3) */
   P->rho_core = 10738.332568062382;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-rho_core",&P->rho_core,NULL);CHKERRQ(ierr);
   P->rho_core /= C->DENSITY;
 
   /* heat capacity of core (J/kgK) */
   P->cp_core = 880.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-cp_core",&P->cp_core,NULL);CHKERRQ(ierr);
   P->cp_core /= C->ENTROPY;
 
   /* mass-weighted average core temperature as a fraction */
@@ -228,21 +239,26 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* smoothing width */
   P->swidth = 1.0E-2;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-swidth",&P->swidth,NULL);CHKERRQ(ierr);
 
   /* solid viscosity (Pa.s) */
   P->log10visc_sol = 21.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_sol",&P->log10visc_sol,NULL);CHKERRQ(ierr);
   P->log10visc_sol -= C->LOG10ETA;
 
   /* solid conductivity (W/mK) */
   P->cond_sol = 4.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_sol",&P->cond_sol,NULL);CHKERRQ(ierr);
   P->cond_sol /= C->COND;
 
   /* melt viscosity (Pa.s) */
   P->log10visc_mel = 2.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_mel",&P->log10visc_mel,NULL);CHKERRQ(ierr);
   P->log10visc_mel -= C->LOG10ETA;
 
   /* melt conductivity (W/mK) */
   P->cond_mel = 4.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_mel",&P->cond_mel,NULL);CHKERRQ(ierr);
   P->cond_mel /= C->COND;
 
   /* atmosphere parameters
