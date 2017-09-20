@@ -64,13 +64,14 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
   if (dimensionalMode) {
     ierr = SetConstants(C,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
   } else {
-    /* FIXME: these scalings are based on the location of
-       the maximum of the liquidus in Stixrude et al. (2009),
-       and the radius of the Earth */
-    const PetscScalar RADIUS0 = 6371000.0; // m
-    const PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
-    const PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
-    const PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
+    PetscScalar RADIUS0 = 6371000.0; // m
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-radius0",&RADIUS0,NULL);CHKERRQ(ierr);  
+    PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-entropy0",&ENTROPY0,NULL);CHKERRQ(ierr);  
+    PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-temperature0",&TEMPERATURE0,NULL);CHKERRQ(ierr);
+    PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-density0",&DENSITY0,NULL);CHKERRQ(ierr);
     ierr = SetConstants(C,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0);CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
