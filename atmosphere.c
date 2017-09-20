@@ -108,7 +108,7 @@ static PetscScalar get_atmosphere_mass( AtmosphereParameters const *Ap, PetscSca
 }
 
 /////////////////////////////////////
-/* generic functions for volatiles */
+/* general functions for volatiles */
 /////////////////////////////////////
 static PetscScalar get_dxdt( Atmosphere const *A, AtmosphereParameters const *Ap, PetscScalar x, PetscScalar kdist, PetscScalar dpdx )
 {
