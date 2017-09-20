@@ -241,8 +241,6 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
     DM                da_b=E->da_b,da_s=E->da_s;
     Vec               radius_local=E->work_local_b;
 
-    /* excludes 4*pi prefactor */
-
     PetscFunctionBeginUser;
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
@@ -254,6 +252,7 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
     ierr = DMDAVecGetArray(da_s,volume,&arr_volume);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
         arr_volume[i] = PetscPowScalar(arr_radius[i],3.0) - PetscPowScalar(arr_radius[i+1],3.0);
+        /* note excludes 4*pi prefactor */
         arr_volume[i] *= 1.0 / 3.0;
     }
     // TODO: here and elsewhere, it's very dangerous to use the same indice to refer to two DAs without checking that the local ranges are valid. 
@@ -350,6 +349,7 @@ static PetscErrorCode aw_mass( Ctx *E )
 
     ierr = VecPointwiseMult( M->mass_s, M->mass_s, M->volume_s );
     /* note scale by 4*pi below */
+    /* FIXME: for consistency, can we remove the 4*pi below? */
     ierr = VecScale( M->mass_s, 4.0 * PETSC_PI );
     ierr = VecSum( M->mass_s, &M->mass0 );
 

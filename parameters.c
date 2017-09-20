@@ -271,7 +271,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
      of Abe and Matsui (1985)
      */
   Ap->MODEL=MO_ATMOSPHERE_TYPE_GREY_BODY;
-  ierr = PetscOptionsGetInt(NULL,NULL,"-MODEL",&Ap->MODEL,NULL);CHKERRQ(ierr);
+  PetscInt MODEL;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-MODEL",&MODEL,NULL);CHKERRQ(ierr);
+  Ap->MODEL = MODEL;
   /* TODO: non-dimensionalise other atmosphere parameters */
   /* SIGMA and TEQM should get us up and running for the standard
      grey-body case */

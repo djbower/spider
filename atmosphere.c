@@ -45,17 +45,17 @@ PetscScalar grey_body( PetscScalar Tsurf, Atmosphere *A, AtmosphereParameters co
     return Fsurf;
 }
 
-PetscScalar steam_atmosphere_zahnle_1988( PetscScalar Tsurf, AtmosphereParameters const *Ap )
+PetscScalar steam_atmosphere_zahnle_1988( PetscScalar Tsurf, PetscScalar TEMP, PetscScalar FLUX )
 {
     PetscScalar       Fsurf;
 
     /* fit to Zahnle et al. (1988) from Solomatov and Stevenson (1993)
-       Eqn. 40 */
+       Eqn. 40.  Expressed dimensionally so must convert here using
+       TEMP and FLUX scalings */
 
-    /* FIXME: will break for non-dimensional
-       see commit 780b1dd to reverse this */
-
+    Tsurf *= TEMP;
     Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf);
+    Fsurf /= FLUX;
 
     return Fsurf;
 

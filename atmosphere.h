@@ -37,7 +37,7 @@ typedef struct VolatileParameters_ {
    binary file */
 typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES} MagmaOceanAtmosphereType;
 typedef struct AtmosphereParameters_ {
-    // input parameters (21)
+    // input parameters
     MagmaOceanAtmosphereType MODEL;
     PetscBool HYBRID;
     // below are standard, also used for grey-body atmosphere
@@ -66,7 +66,7 @@ PetscErrorCode set_dx0dt( Atmosphere *, AtmosphereParameters const *);
 PetscErrorCode set_dx1dt( Atmosphere *, AtmosphereParameters const *);
 
 PetscScalar tsurf_param( PetscScalar, AtmosphereParameters const * );
-PetscScalar grey_body( PetscScalar, Atmosphere *A, AtmosphereParameters const * );
-PetscScalar steam_atmosphere_zahnle_1988( PetscScalar, AtmosphereParameters const * );
+PetscScalar grey_body( PetscScalar, Atmosphere *, AtmosphereParameters const * );
+PetscScalar steam_atmosphere_zahnle_1988( PetscScalar, PetscScalar, PetscScalar );
 
 #endif

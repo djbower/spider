@@ -11,8 +11,9 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscScalar          temp0, Tsurf, Qout=0.0;
     PetscInt             ind;
     Atmosphere           *A  = &E->atmosphere;
-    Parameters           *P  = &E->parameters;
-    AtmosphereParameters *Ap = &P->atmosphere_parameters;
+    Parameters           const *P  = &E->parameters;
+    Constants            const *C  = &P->constants;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     Solution             *S  = &E->solution;
 
     PetscFunctionBeginUser;
@@ -47,7 +48,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
         case 2:
           // zahnle
-          Qout = steam_atmosphere_zahnle_1988( Tsurf, Ap );
+          Qout = steam_atmosphere_zahnle_1988( Tsurf, C->TEMP, C->FLUX );
           break;
         case 3:
           // atmosphere evolution
