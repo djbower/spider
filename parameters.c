@@ -89,6 +89,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
+  VolatileParameters   *H2O = &Ap->H2O_volatile_parameters;
+  VolatileParameters   *CO2 = &Ap->CO2_volatile_parameters;
   Constants const      *C  = &P->constants;
 
   PetscFunctionBegin;
@@ -321,45 +323,37 @@ massive atmosphere */
   //Ap->VOLSCALE = 1.0E2; // wt %
   Ap->VOLSCALE = 1.0E6; // ppm
 
-  /* initial volatile contents in the liquid magma ocean */
-  Ap->H2O_INITIAL = 0.0;
-  Ap->CO2_INITIAL = 0.0;
-
-  /* Elkins-Tanton (2008) case 1 */
-  //P->h2o_initial = 500.0;
-  //P->co2_initial = 100.0;
-  /* Elkins-Tanton (2008) case 2 */
-  //P->h2o_initial = 5000.0;
-  //P->co2_initial = 1000.0;
-  /* Elkins-Tanton (2008) case 3 */
-  //P->h2o_initial = 0.0;
-  //P->co2_initial = 6000.0;
   /* atmosphere reference pressure (Pa) */
   Ap->P0 = 101325.0; // Pa (= 1 atm)
 
+  /* H2O volatile */
+  H2O->initial = 0.0;
+  //H2O->initial = 500.0; // Elkins-Tanton (2008) case 1 
+  //H2O->initial = 5000.0; // Elkins-Tanton (2008) case 2 
+  //H2O->initial = 0.0; // Elkins-Tanton (2008) case 3
   /* distribution coefficients are given in supplementary material of ET08 */
   /* distribution coefficient between solid and melt (non-dimensional) */
-  Ap->H2O_KDIST = 1.0E-4;
-
+  H2O->kdist = 1.0E-4;
   // TODO: water saturation limit of 10 ppm?
-
   /* absorption (m^2/kg) */
-  Ap->H2O_KABS = 0.01;
-
+  H2O->kabs = 0.01;
   /* next two from Lebrun et al. (2013) */
-  Ap->H2O_HENRY = 6.8E-8; // must be mass fraction/Pa
-  Ap->H2O_HENRY_POW = 1.4285714285714286; // (1.0/0.7)
+  H2O->henry = 6.8E-8; // must be mass fraction/Pa
+  H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
 
+  /* CO2 volatile */
+  CO2->initial = 0.0;
+  //CO2->initial = 100.0; // Elkins-Tanton (2008) case 1 
+  //CO2->initial = 1000.0; // Elkins-Tanton (2008) case 2 
+  //CO2->initial = 6000.0; // Elkins-Tanton (2008) case 3
   /* distribution coefficient between solid and melt (non-dimensional) */
-  Ap->CO2_KDIST = 5.0E-4;
-
+  CO2->kdist = 5.0E-4;
   // TODO: water saturation limit of 0.03 ppm
   /* absorption (m^2/kg) */
-  Ap->CO2_KABS = 0.05;
-
+  CO2->kabs = 0.05;
   /* next two from Lebrun et al. (2013) */
-  Ap->CO2_HENRY = 4.4E-12; // must be mass fraction/Pa
-  Ap->CO2_HENRY_POW = 1.0;
+  CO2->henry = 4.4E-12; // must be mass fraction/Pa
+  CO2->henry_pow = 1.0;
 
   /* Additional Parameters for Atmosphere */
 

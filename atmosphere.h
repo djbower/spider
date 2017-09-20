@@ -25,6 +25,14 @@ typedef struct Atmosphere_ {
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
 } Atmosphere;
 
+typedef struct VolatileParameters_ {
+    PetscScalar initial;
+    PetscScalar kdist;
+    PetscScalar kabs;
+    PetscScalar henry;
+    PetscScalar henry_pow;
+} VolatileParameters;
+
 /* for storing atmosphere outputs for eventual writing to Petsc
    binary file */
 typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES} MagmaOceanAtmosphereType;
@@ -41,18 +49,8 @@ typedef struct AtmosphereParameters_ {
     // for volatile ODE
     PetscScalar VOLSCALE;
     PetscScalar P0;
-    // H2O (TODO: move to a 'Volatile' struct)
-    PetscScalar H2O_INITIAL;
-    PetscScalar H2O_KDIST;
-    PetscScalar H2O_KABS;
-    PetscScalar H2O_HENRY;
-    PetscScalar H2O_HENRY_POW;
-    // CO2 (TODO: move to a 'Volatile' struct)
-    PetscScalar CO2_INITIAL;
-    PetscScalar CO2_KDIST;
-    PetscScalar CO2_KABS;
-    PetscScalar CO2_HENRY;
-    PetscScalar CO2_HENRY_POW;
+    VolatileParameters H2O_volatile_parameters;
+    VolatileParameters CO2_volatile_parameters;
     /* although RADIUS and GRAVITY are duplicated, they may have
        different non-dimensional values depending on the volatile
        non-dimensionalisation scheme, which will be different to

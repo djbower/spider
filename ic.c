@@ -13,16 +13,12 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
     PetscFunctionBeginUser;
 
     /* augmented vector organised as follows:
-         0.     CO2 wt. % (dissolved content of CO2 in magma ocean)
-         1.     H2O wt. % (dissolved content of H2O in magma ocean)
+         0.     CO2 (dissolved content of CO2 in magma ocean)
+         1.     H2O (dissolved content of H2O in magma ocean)
          2.     S0 (entropy at uppermost staggered node)
          3-end  dS/dr at basic nodes (see set_ic_dSdr)
     */
 
-    /* TODO: this should be updated.  Should be consistent with the
-      mass balance of volatiles, so the total initial volatile content
-      is actually partitioned betweem the (liquid) magma ocean and the
-      atmosphere. */
     /* initial mass content of CO2 in the magma ocean */
     set_initial_xCO2( A, Ap );
     ierr = VecSetValue(dSdr_b_aug,0,A->x0,INSERT_VALUES);CHKERRQ(ierr);

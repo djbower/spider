@@ -6,10 +6,6 @@ static PetscScalar get_optical_depth( AtmosphereParameters const *, PetscScalar,
 static PetscScalar get_dxdt( Atmosphere const *, AtmosphereParameters const *,PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_partial_pressure_derivative_volatile( AtmosphereParameters const *, PetscScalar, PetscScalar, PetscScalar );
-static PetscErrorCode set_pCO2( Atmosphere *, AtmosphereParameters const * );
-static PetscErrorCode set_dpCO2dx( Atmosphere *, AtmosphereParameters const *  );
-static PetscErrorCode set_pH2O( Atmosphere *, AtmosphereParameters const * );
-static PetscErrorCode set_dpH2Odx( Atmosphere *, AtmosphereParameters const *  );
 
 /* to solve for the initial volatile content of the magma ocean (liquid)
    we use Newton's method */
@@ -21,19 +17,20 @@ static PetscScalar newton( PetscScalar, PetscScalar, PetscScalar );
 
 PetscErrorCode set_emissivity_abe_matsui( Atmosphere *A, AtmosphereParameters const *Ap )
 {
-    PetscErrorCode ierr;
+    VolatileParameters const *H2O = &Ap->H2O_volatile_parameters;
+    VolatileParameters const *CO2 = &Ap->CO2_volatile_parameters;
 
     PetscFunctionBeginUser;
 
     /* CO2 */
-    ierr = set_pCO2( A, Ap ); CHKERRQ(ierr);
+    A->p0 = get_partial_pressure_volatile( Ap, A->x0, CO2->henry, CO2->henry_pow );
     A->m0 = get_atmosphere_mass( Ap, A->p0 );
-    A->tau0 = get_optical_depth( Ap, A->m0, Ap->CO2_KABS );
+    A->tau0 = get_optical_depth( Ap, A->m0, CO2->kabs );
 
     /* H2O */
-    ierr = set_pH2O( A, Ap ); CHKERRQ(ierr);
+    A->p1 = get_partial_pressure_volatile( Ap, A->x1, H2O->henry, H2O->henry_pow );
     A->m1 = get_atmosphere_mass( Ap, A->p1 );
-    A->tau1 = get_optical_depth( Ap, A->m1, Ap->H2O_KABS );
+    A->tau1 = get_optical_depth( Ap, A->m1, H2O->kabs );
 
     /* total */
     A->tau = A->tau0 + A->tau1;
@@ -58,10 +55,9 @@ static PetscScalar get_atmosphere_mass( AtmosphereParameters const *Ap, PetscSca
 {
     PetscScalar mass_atm;
 
-    // p is partial pressure in Pa
     mass_atm = 4.0*PETSC_PI*PetscSqr(Ap->RADIUS) * p / -Ap->GRAVITY;
 
-    return mass_atm; // kg
+    return mass_atm;
 
 }
 
@@ -87,14 +83,14 @@ static PetscScalar get_dxdt( Atmosphere const *A, AtmosphereParameters const *Ap
 static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *Ap, PetscScalar x, PetscScalar henry, PetscScalar henry_pow)
 {
 
-    /* partial pressure of volatile where x is wt % */
+    /* partial pressure of volatile */
 
     PetscScalar p;
 
     p = (x / Ap->VOLSCALE) / henry;
     p = PetscPowScalar( p, henry_pow );
 
-    return p; // Pa
+    return p;
 
 }
 
@@ -140,51 +136,24 @@ static PetscScalar get_initial_volatile( Atmosphere const *A, AtmosphereParamete
 
 PetscErrorCode set_dx0dt( Atmosphere *A, AtmosphereParameters const * Ap )
 {
-   /* update for dissolved CO2 content in the magma ocean */
-    PetscErrorCode ierr;
+    /* update for dissolved CO2 content in the magma ocean */
+    VolatileParameters const *CO2 = &Ap->CO2_volatile_parameters;
 
     PetscFunctionBeginUser;
 
-    ierr = set_dpCO2dx( A, Ap ); CHKERRQ(ierr);
-    A->dx0dt = get_dxdt( A, Ap, A->x0, Ap->CO2_KDIST, A->dp0dx );
+    A->dp0dx = get_partial_pressure_derivative_volatile( Ap, A->x0, CO2->henry, CO2->henry_pow );
+    A->dx0dt = get_dxdt( A, Ap, A->x0, CO2->kdist, A->dp0dx );
 
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode set_initial_xCO2( Atmosphere *A, AtmosphereParameters const * Ap )
 {
-    PetscFunctionBeginUser;
-
-    A->x0 = get_initial_volatile( A, Ap, Ap->CO2_INITIAL, Ap->CO2_HENRY, Ap->CO2_HENRY_POW );
-
-    PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode set_pCO2( Atmosphere *A, AtmosphereParameters const *Ap )
-{
-    /* partial pressure of CO2 */
-    /* see magma_ocean_notes.tex */
-    /* Lebrun et al. (2013) eqn. 17
-       Massol et al. (2016) eqn. 18
-       Salvador et al. (2017) eqn. C4 */
+    VolatileParameters const *CO2 = &Ap->CO2_volatile_parameters;
 
     PetscFunctionBeginUser;
 
-    A->p0 = get_partial_pressure_volatile( Ap, A->x0, Ap->CO2_HENRY, Ap->CO2_HENRY_POW );
-
-    PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode set_dpCO2dx( Atmosphere *A, AtmosphereParameters const * Ap )
-{
-    /* dpCO2/dx. i.e., derivative of partial pressure (Pa) with respect
-       to concentration */
-
-    PetscFunctionBeginUser;
-
-    A->dp0dx = get_partial_pressure_derivative_volatile( Ap, A->x0, Ap->CO2_HENRY, Ap->CO2_HENRY_POW );
+    A->x0 = get_initial_volatile( A, Ap, CO2->initial, CO2->henry, CO2->henry_pow );
 
     PetscFunctionReturn(0);
 
@@ -196,49 +165,27 @@ static PetscErrorCode set_dpCO2dx( Atmosphere *A, AtmosphereParameters const * A
 
 PetscErrorCode set_dx1dt( Atmosphere *A, AtmosphereParameters const *Ap )
 {
-   /* update for dissolved H2O content in the magma ocean */
-    PetscErrorCode ierr;
+    /* update for dissolved H2O content in the magma ocean */
+    VolatileParameters const *H2O = &Ap->H2O_volatile_parameters;
 
     PetscFunctionBeginUser;
 
-    ierr = set_dpH2Odx( A, Ap ); CHKERRQ(ierr);
-    A->dx1dt = get_dxdt( A, Ap, A->x1, Ap->H2O_KDIST, A->dp1dx );
+    A->dp0dx = get_partial_pressure_derivative_volatile( Ap, A->x0, H2O->henry, H2O->henry_pow );
+    A->dx1dt = get_dxdt( A, Ap, A->x1, H2O->kdist, A->dp1dx );
 
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode set_initial_xH2O( Atmosphere *A, AtmosphereParameters const *Ap )
 {
-    PetscFunctionBeginUser;
-
-    A->x1 = get_initial_volatile( A, Ap, Ap->H2O_INITIAL, Ap->H2O_HENRY, Ap->H2O_HENRY_POW );
-
-    PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode set_pH2O( Atmosphere *A, AtmosphereParameters const *Ap )
-{
-    /* partial pressure of H2O */
-    /* Lebrun et al. (2013) eqn. 16 */
+    VolatileParameters const *H2O = &Ap->H2O_volatile_parameters;
 
     PetscFunctionBeginUser;
 
-    A->p1 = get_partial_pressure_volatile( Ap, A->x1, Ap->H2O_HENRY, Ap->H2O_HENRY_POW );
+    A->x1 = get_initial_volatile( A, Ap, H2O->initial, H2O->henry, H2O->henry_pow );
 
     PetscFunctionReturn(0);
-}
 
-static PetscErrorCode set_dpH2Odx( Atmosphere *A, AtmosphereParameters const * Ap)
-{
-    /* dpH2O/dx. i.e., derivative of partial pressure (Pa) with respect
-       to concentration */
-
-    PetscFunctionBeginUser;
-
-    A->dp1dx = get_partial_pressure_derivative_volatile( Ap, A->x1, Ap->H2O_HENRY, Ap->H2O_HENRY_POW );
-
-    PetscFunctionReturn(0);
 }
 
 /////////////////////
