@@ -427,6 +427,7 @@ static PetscErrorCode MakeRelativePathAbsolute(char* path) {
 PetscErrorCode SetLookups( Parameters *P )
 {
     PetscErrorCode ierr;
+    // TODO move these into the Parameters struct and print them out with the other parameters
     char liquidusFilename[PETSC_MAX_PATH_LEN];
     char solidusFilename[PETSC_MAX_PATH_LEN];
     char alphaSolFilename[PETSC_MAX_PATH_LEN];
