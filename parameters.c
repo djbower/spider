@@ -64,13 +64,14 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
   if (dimensionalMode) {
     ierr = SetConstants(C,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
   } else {
-    /* FIXME: these scalings are based on the location of
-       the maximum of the liquidus in Stixrude et al. (2009),
-       and the radius of the Earth */
-    const PetscScalar RADIUS0 = 6371000.0; // m
-    const PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
-    const PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
-    const PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
+    PetscScalar RADIUS0 = 6371000.0; // m
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-radius0",&RADIUS0,NULL);CHKERRQ(ierr);  
+    PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-entropy0",&ENTROPY0,NULL);CHKERRQ(ierr);  
+    PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-temperature0",&TEMPERATURE0,NULL);CHKERRQ(ierr);
+    PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-density0",&DENSITY0,NULL);CHKERRQ(ierr);
     ierr = SetConstants(C,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0);CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
@@ -168,12 +169,12 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&P->monitor,NULL);CHKERRQ(ierr);
 
 
-  /* initial entropy at top of adiabat (J/kgK) */
+  /* initial entropy at top of adiabat (J/kg-K) */
   P->sinit = 3052.885602072091;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);
   P->sinit /= C->ENTROPY;
 
-  /* initial entropy gradient (J/kgKm) */
+  /* initial entropy gradient (J/kg-K-m) */
   P->ic_dsdr = -4.6978890285209187e-07;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_dsdr",&P->ic_dsdr,NULL);CHKERRQ(ierr);
   P->ic_dsdr /= C->DSDR;
@@ -219,14 +220,14 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_width",&P->phi_width,NULL);CHKERRQ(ierr);
 
   /* melt fraction shape transition for skew */
-  P->phi_skew = 0.0; /* non dimensional */
+  P->phi_skew = 0.0; // non dimensional
 
   /* core density (kg/m^3) */
   P->rho_core = 10738.332568062382;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-rho_core",&P->rho_core,NULL);CHKERRQ(ierr);
   P->rho_core /= C->DENSITY;
 
-  /* heat capacity of core (J/kgK) */
+  /* heat capacity of core (J/kg-K) */
   P->cp_core = 880.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-cp_core",&P->cp_core,NULL);CHKERRQ(ierr);
   P->cp_core /= C->ENTROPY;
@@ -244,7 +245,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_sol",&P->log10visc_sol,NULL);CHKERRQ(ierr);
   P->log10visc_sol -= C->LOG10VISC;
 
-  /* solid conductivity (W/mK) */
+  /* solid conductivity (W/m-K) */
   P->cond_sol = 4.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_sol",&P->cond_sol,NULL);CHKERRQ(ierr);
   P->cond_sol /= C->COND;
@@ -254,7 +255,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_mel",&P->log10visc_mel,NULL);CHKERRQ(ierr);
   P->log10visc_mel -= C->LOG10VISC;
 
-  /* melt conductivity (W/mK) */
+  /* melt conductivity (W/m-K) */
   P->cond_mel = 4.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_mel",&P->cond_mel,NULL);CHKERRQ(ierr);
   P->cond_mel /= C->COND;
@@ -280,25 +281,34 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 TODO: this implies that the emissivity is around 1.0E-7,
 which is unphysical unless you are appealing to a massive
 massive atmosphere */
-  Ap->HYBRID=0;
+  Ap->HYBRID = 0;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-HYBRID",&Ap->HYBRID,NULL);CHKERRQ(ierr);
 
   /* emissivity is constant for MODEL != MO_ATMOSPHERE_TYPE_VOLATILES */
-  Ap->EMISSIVITY0 = 1.0;
+  Ap->emissivity0 = 1.0; // non-dimensional
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-emissivity0",&Ap->emissivity0,NULL);CHKERRQ(ierr);
 
   /* Stefan-Boltzmann constant (W/m^2K^4) */
-  Ap->SIGMA = 5.670367e-08;
-  Ap->SIGMA /= C->SIGMA;
+  Ap->sigma = 5.670367e-08;
+  Ap->sigma /= C->SIGMA;
 
   /* equilibrium temperature of the planet (K) */
-  Ap->TEQM = 273.0;
-  Ap->TEQM /= C->TEMP;
+  Ap->teqm = 273.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-teqm",&Ap->teqm,NULL);CHKERRQ(ierr);
+  Ap->teqm /= C->TEMP;
 
   /* for radiative boundary condition at the top surface
-     dT = constbc * [Surface temperature]**3
-FIXME: need to non-dimensionalise below! */
-  //Ap->CONSTBC = 1.0e-07; // FIXME check units
-  Ap->CONSTBC = 0;
-  Ap->CONSTBC /= 1.0; // FIXME to UPDATE!
+     dT = param_utbl_const * [Surface temperature]**3 */
+  Ap->PARAM_UTBL = 0;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-PARAM_UTBL",&Ap->PARAM_UTBL,NULL);CHKERRQ(ierr);
+  if (Ap->PARAM_UTBL){
+      Ap->param_utbl_const = 1.0E-7;
+      ierr = PetscOptionsGetScalar(NULL,NULL,"-param_utbl_const",&Ap->param_utbl_const,NULL);CHKERRQ(ierr);
+      Ap->param_utbl_const *= PetscSqr(C->TEMP);
+  }
+  else{
+      Ap->param_utbl_const = 0.0;
+  }
 
   /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
   // FIXME: for convenience at the moment, duplicate these values */

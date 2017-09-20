@@ -29,14 +29,15 @@ typedef struct Atmosphere_ {
    binary file */
 typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES} MagmaOceanAtmosphereType;
 typedef struct AtmosphereParameters_ {
-    // input parameters (20)
+    // input parameters (21)
     MagmaOceanAtmosphereType MODEL;
-    PetscInt HYBRID;
+    PetscBool HYBRID;
     // below are standard, also used for grey-body atmosphere
-    PetscScalar EMISSIVITY0;
-    PetscScalar SIGMA;
-    PetscScalar TEQM;
-    PetscScalar CONSTBC;
+    PetscScalar emissivity0;
+    PetscScalar sigma;
+    PetscScalar teqm;
+    PetscBool   PARAM_UTBL;
+    PetscScalar param_utbl_const;
     // for volatile ODE
     PetscScalar VOLSCALE;
     PetscScalar P0;

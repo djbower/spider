@@ -1,0 +1,36 @@
+# primary scalings
+# these are used to non-dimensionalise the problem
+-radius0 6371000.0 
+-entropy0 2993.025100070677
+-temperature0 4033.6070755893948
+-density0 4613.109568155063
+
+# parameters
+-radius 6371000.0
+-sinit 3052.885602072091
+-ic_dsdr -4.6978890285209187e-07
+-coresize 0.55
+-rhos 4078.95095544
+-beta 1.1115348931000002e-07
+-grain 1.0E-3
+-gravity -10.0
+-phi_critical 0.4
+-phi_width 0.15
+-phi_skew 0.0
+-rho_core 10738.332568062382
+-cp_core 880.0
+-swidth 1.0E-2
+-log10visc_sol 21.0
+-cond_sol 4.0
+-log10visc_mel 2.0
+-cond_mel 4.0
+
+# atmosphere parameters
+#-MODEL MO_ATMOSPHERE_TYPE_GREY_BODY
+-MODEL 1 #MO_ATMOSPHERE_TYPE_ZAHNLE
+#-MODEL MO_ATMOSPHERE_TYPE_VOLATILES
+-HYBRID 0
+-emissivity0 1.0
+-teqm 273.0
+-PARAM_UTBL 0
+-param_utbl_const 1.0E-7

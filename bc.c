@@ -34,18 +34,18 @@ PetscErrorCode set_surface_flux( Ctx *E )
       ierr = VecGetValues(S->temp,1,&ind,&temp0); CHKERRQ(ierr);
 
       /* correct for ultra-thin thermal boundary layer at the surface */
-      if( Ap->CONSTBC == 0.0 ){
-        Tsurf = temp0; // surface temperature is potential temperature
+      if( Ap->PARAM_UTBL ){
+        Tsurf = tsurf_param( temp0, Ap); // parameterised boundary layer
       }
       else{
-        Tsurf = tsurf_param( temp0, Ap); // parameterised boundary layer
+        Tsurf = temp0; // surface temperature is potential temperature
       }
 
       /* determine flux */
       switch( Ap->MODEL ){
         case 1:
           // grey-body
-          A->emissivity = Ap->EMISSIVITY0;
+          A->emissivity = Ap->emissivity0;
           Qout = grey_body( Tsurf, A, Ap );
           break;
         case 2:
@@ -90,8 +90,8 @@ static PetscScalar grey_body( PetscScalar Tsurf, Atmosphere *A, AtmosphereParame
 {
     PetscScalar Fsurf;
 
-    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(Ap->TEQM,4.0);
-    Fsurf *= Ap->SIGMA * A->emissivity; /* Note emissivity may vary */
+    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(Ap->teqm,4.0);
+    Fsurf *= Ap->sigma * A->emissivity; /* Note emissivity may vary */
 
     return Fsurf;
 }
@@ -227,7 +227,7 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 static PetscScalar tsurf_param( PetscScalar temp, AtmosphereParameters *Ap )
 {
     PetscScalar Ts, c, fac, num, den;
-    c = Ap->CONSTBC;
+    c = Ap->param_utbl_const;
 
     fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
     fac = PetscPowScalar( fac, 1.0/2.0 );
