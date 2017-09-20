@@ -8,40 +8,34 @@
 
 /* dimensionalising constants */
 typedef struct _Constants {
+    // primary
     PetscScalar RADIUS;
     PetscScalar TEMP;
     PetscScalar ENTROPY;
     PetscScalar DENSITY;
+    // derived from primary
     PetscScalar AREA;
-    PetscScalar AREAG; // with 4*pi geometry
     PetscScalar VOLUME;
-    PetscScalar VOLUMEG; // with 4*pi geometry
     PetscScalar MASS;
-    PetscScalar MASSG; // with 4*pi geometry
     PetscScalar TIME;
     PetscScalar TIMEYRS;
     PetscScalar SENERGY;
     PetscScalar ENERGY;
-    PetscScalar ENERGYG; // with 4*pi geometry
     PetscScalar PRESSURE;
     PetscScalar POWER;
-    PetscScalar POWERG; // with 4*pi geometry
     PetscScalar FLUX;
     PetscScalar DPDR;
-    PetscScalar ALPHA;
     PetscScalar GRAVITY;
     PetscScalar KAPPA;
     PetscScalar DTDP;
     PetscScalar DSDR;
     PetscScalar DTDR;
     PetscScalar GSUPER;
-    PetscScalar ETA;
-    PetscScalar LOG10ETA;
-    PetscScalar NU;
+    PetscScalar VISC;
+    PetscScalar LOG10VISC;
     PetscScalar COND;
     PetscScalar SIGMA;
     PetscScalar LHS;
-    PetscScalar LHSG; // with 4*pi geometry
     PetscScalar RHS;
 } Constants;
 

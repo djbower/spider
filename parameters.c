@@ -14,44 +14,39 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     PetscScalar SQRTST;
 
     PetscFunctionBeginUser;
-    // 35 constants to set
+    /* 27 constants to set (excluding SQRTST which is a convenience
+       parameter) */
     SQRTST = PetscSqrtScalar( ENTROPY * TEMPERATURE );
-
-    C->RADIUS   = RADIUS;
-    C->TEMP     = TEMPERATURE;
-    C->ENTROPY  = ENTROPY;
-    C->DENSITY  = DENSITY;
-    C->AREA     = PetscSqr( C->RADIUS );
-    C->AREAG    = C->AREA * 4.0 * PETSC_PI;
-    C->VOLUME   = C->AREA * C->RADIUS;
-    C->VOLUMEG  = C->VOLUME * 4.0 * PETSC_PI;
-    C->MASS     = C->DENSITY * C->VOLUME;
-    C->MASSG    = C->MASS * 4.0 * PETSC_PI;
-    C->TIME     = C->RADIUS / SQRTST;
-    C->TIMEYRS  = C->TIME / (60.0*60.0*24.0*365.25);
-    C->SENERGY  = C->ENTROPY * C->TEMP;
-    C->ENERGY   = C->SENERGY * C->MASS;
-    C->ENERGYG  = C->ENERGY * 4.0 * PETSC_PI;
-    C->PRESSURE = C->ENTROPY * C->TEMP * C->DENSITY;
-    C->POWER    = C->ENERGY / C->TIME;
-    C->POWERG   = C->POWER * 4.0 * PETSC_PI;
-    C->FLUX     = C->POWER / C->AREA;
-    C->DPDR     = C->PRESSURE / C->RADIUS;
-    C->ALPHA    = 1.0 / C->TEMP;
-    C->GRAVITY  = (C->ENTROPY * C->TEMP) / C->RADIUS;
-    C->KAPPA    = C->RADIUS * SQRTST;
-    C->DTDP     = 1.0 / (C->DENSITY * C->ENTROPY);
-    C->DSDR     = C->ENTROPY / C->RADIUS;
-    C->DTDR     = C->TEMP / C->RADIUS;
-    C->GSUPER   = C->GRAVITY * C->DTDR;
-    C->ETA      = C->DENSITY * C->KAPPA;
-    C->LOG10ETA = PetscLog10Real( C->ETA );
-    C->NU       = C->KAPPA;
-    C->COND     = C->ENTROPY * C->DENSITY * C->KAPPA;
-    C->SIGMA    = C->FLUX * 1.0 / PetscPowScalar( C->TEMP, 4.0 );
-    C->LHS      = C->DENSITY * C->VOLUME * C->TEMP;
-    C->LHSG     = C->LHS * 4.0 * PETSC_PI;
-    C->RHS      = C->ENTROPY / C->TIME;
+    /* 4.0*pi geometry is excluded since it cancels in the equations,
+       but you should include it in post-processing if you want your
+       output to have physically correct interpretation */
+    C->RADIUS    = RADIUS;
+    C->TEMP      = TEMPERATURE;
+    C->ENTROPY   = ENTROPY;
+    C->DENSITY   = DENSITY;
+    C->AREA      = PetscSqr( C->RADIUS );
+    C->VOLUME    = C->AREA * C->RADIUS;
+    C->MASS      = C->DENSITY * C->VOLUME;
+    C->TIME      = C->RADIUS / SQRTST;
+    C->TIMEYRS   = C->TIME / (60.0*60.0*24.0*365.25);
+    C->SENERGY   = C->ENTROPY * C->TEMP;
+    C->ENERGY    = C->SENERGY * C->MASS;
+    C->PRESSURE  = C->ENTROPY * C->TEMP * C->DENSITY;
+    C->POWER     = C->ENERGY / C->TIME;
+    C->FLUX      = C->POWER / C->AREA;
+    C->DPDR      = C->PRESSURE / C->RADIUS;
+    C->GRAVITY   = (C->ENTROPY * C->TEMP) / C->RADIUS;
+    C->KAPPA     = C->RADIUS * SQRTST;
+    C->DTDP      = 1.0 / (C->DENSITY * C->ENTROPY);
+    C->DSDR      = C->ENTROPY / C->RADIUS;
+    C->DTDR      = C->TEMP / C->RADIUS;
+    C->GSUPER    = C->GRAVITY * C->DTDR;
+    C->VISC      = C->DENSITY * C->KAPPA;
+    C->LOG10VISC = PetscLog10Real( C->VISC );
+    C->COND      = C->ENTROPY * C->DENSITY * C->KAPPA;
+    C->SIGMA     = C->FLUX * 1.0 / PetscPowScalar( C->TEMP, 4.0 );
+    C->LHS       = C->DENSITY * C->VOLUME * C->TEMP;
+    C->RHS       = C->ENTROPY / C->TIME;
 
     PetscFunctionReturn(0);
 }
@@ -69,6 +64,9 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
   if (dimensionalMode) {
     ierr = SetConstants(C,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
   } else {
+    /* FIXME: these scalings are based on the location of
+       the maximum of the liquidus in Stixrude et al. (2009),
+       and the radius of the Earth */
     const PetscScalar RADIUS0 = 6371000.0; // m
     const PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
     const PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
@@ -244,7 +242,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* solid viscosity (Pa.s) */
   P->log10visc_sol = 21.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_sol",&P->log10visc_sol,NULL);CHKERRQ(ierr);
-  P->log10visc_sol -= C->LOG10ETA;
+  P->log10visc_sol -= C->LOG10VISC;
 
   /* solid conductivity (W/mK) */
   P->cond_sol = 4.0;
@@ -254,7 +252,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* melt viscosity (Pa.s) */
   P->log10visc_mel = 2.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_mel",&P->log10visc_mel,NULL);CHKERRQ(ierr);
-  P->log10visc_mel -= C->LOG10ETA;
+  P->log10visc_mel -= C->LOG10VISC;
 
   /* melt conductivity (W/mK) */
   P->cond_mel = 4.0;
@@ -270,6 +268,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
      of Abe and Matsui (1985)
      */
   Ap->MODEL=MO_ATMOSPHERE_TYPE_GREY_BODY;
+  /* TODO: non-dimensionalise other atmosphere parameters */
+  /* SIGMA and TEQM should get us up and running for the standard
+     grey-body case */
+
   /* for legacy purposes
      if HYBRID is set, then the boundary condition will switch
      to the upper mantle cooling rate once the rheological
@@ -285,15 +287,18 @@ massive atmosphere */
 
   /* Stefan-Boltzmann constant (W/m^2K^4) */
   Ap->SIGMA = 5.670367e-08;
+  Ap->SIGMA /= C->SIGMA;
 
   /* equilibrium temperature of the planet (K) */
   Ap->TEQM = 273.0;
+  Ap->TEQM /= C->TEMP;
 
   /* for radiative boundary condition at the top surface
      dT = constbc * [Surface temperature]**3
 FIXME: need to non-dimensionalise below! */
   //Ap->CONSTBC = 1.0e-07; // FIXME check units
   Ap->CONSTBC = 0;
+  Ap->CONSTBC /= 1.0; // FIXME to UPDATE!
 
   /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
   // FIXME: for convenience at the moment, duplicate these values */
@@ -346,13 +351,6 @@ FIXME: need to non-dimensionalise below! */
   Ap->CO2_HENRY = 4.4E-12; // must be mass fraction/Pa
   Ap->CO2_HENRY_POW = 1.0;
 
-  /* TODO: non-dimensionalise other atmosphere parameters */
-  /* SIGMA and TEQM should get us up and running for the standard
-     grey-body case */
-  Ap->SIGMA /= C->SIGMA;
-  Ap->TEQM /= C->TEMP;
-  Ap->CONSTBC /= 1.0; // FIXME to UPDATE!
-
   /* Additional Parameters for Atmosphere */
 
   /* Get lookup tables */
@@ -376,34 +374,26 @@ PetscErrorCode PrintParameters(Parameters const *P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Density"    ,"",C->DENSITY,"kg/m^3"          );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s (%.6g years)\n","Time"       ,"",C->TIME  ,"s",C->TIMEYRS     );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Area"       ,"",C->AREA  ,"m^2"              );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Area_G"     ,"",C->AREAG,"");CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Volume"     ,"",C->VOLUME,"m^3");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Volume_G"   ,"",C->VOLUMEG,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Mass"       ,"",C->MASS,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Mass_G"     ,"",C->MASSG,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"SEnergy"    ,"",C->SENERGY,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Energy"     ,"",C->ENERGY,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Energy_G"   ,"",C->ENERGYG,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Pressure"   ,"",C->PRESSURE,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Power"      ,"",C->POWER,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Power_G"    ,"",C->POWERG,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Flux"       ,"",C->FLUX,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dPdR"       ,"",C->DPDR,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Alpha"      ,"",C->ALPHA,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Gravity"    ,"",C->GRAVITY,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Kappa"      ,"",C->KAPPA,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dTdP"       ,"",C->DTDP,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dSdR"       ,"",C->DSDR,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dTdR"       ,"",C->DTDR,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"GSuper"     ,"",C->GSUPER,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Eta"        ,"",C->ETA,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Log10 Eta"  ,"",C->LOG10ETA,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"NU"         ,"",C->NU,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Cond"       ,"",C->COND,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Sigma"      ,"",C->SIGMA,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Lhs"        ,"",C->LHS,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Lhs_G"      ,"",C->LHSG,"");CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Rhs"        ,"",C->RHS,"");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Mass"       ,"",C->MASS,"kg");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"SEnergy"    ,"",C->SENERGY,"J/kg");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Energy"     ,"",C->ENERGY,"J");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Pressure"   ,"",C->PRESSURE,"Pa");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Power"      ,"",C->POWER,"W");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Flux"       ,"",C->FLUX,"W/m^2");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dP/dR"      ,"",C->DPDR,"Pa/m");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Gravity"    ,"",C->GRAVITY,"m/s^2");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Kappa"      ,"",C->KAPPA,"m^2/s");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dT/dP"      ,"",C->DTDP,"K/Pa");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dS/dR"      ,"",C->DSDR,"J/kg-K-m");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dT/dR"      ,"",C->DTDR,"K/m");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"GSuper"     ,"",C->GSUPER,"K/s^2");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Visc"       ,"",C->VISC,"Pa-s");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Log10 Visc" ,"",C->LOG10VISC,"log10(Pa-s)");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Cond"       ,"",C->COND,"W/m-K");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Sigma"      ,"",C->SIGMA,"W/m^2-K^4");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Lhs"        ,"",C->LHS,"kg-K");CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Rhs"        ,"",C->RHS,"W/kg-K");CHKERRQ(ierr);
   // TODO finish adding units, do other cleanup
 
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                            );CHKERRQ(ierr);
@@ -516,7 +506,7 @@ PetscErrorCode SetLookups( Parameters *P )
 
     /* solid lookups */
     /* 2d */
-    set_interp2d( alphaSolFilename, &P->solid_prop.alpha, C->PRESSURE, C->ENTROPY, C->ALPHA );
+    set_interp2d( alphaSolFilename, &P->solid_prop.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );
     set_interp2d( cpSolFilename, &P->solid_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );
     set_interp2d( dtdpsSolFilename, &P->solid_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );
     set_interp2d( rhoSolFilename, &P->solid_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );
@@ -528,7 +518,7 @@ PetscErrorCode SetLookups( Parameters *P )
 
     /* melt lookups */
     /* 2d */
-    set_interp2d( alphaMelFilename, &P->melt_prop.alpha, C->PRESSURE, C->ENTROPY, C->ALPHA );
+    set_interp2d( alphaMelFilename, &P->melt_prop.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );
     set_interp2d( cpMelFilename, &P->melt_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );
     set_interp2d( dtdpsMelFilename, &P->melt_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );
     set_interp2d( rhoMelFilename, &P->melt_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );
