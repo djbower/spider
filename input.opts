@@ -32,4 +32,5 @@
 -HYBRID 0
 -emissivity0 1.0
 -teqm 273.0
--CONSTBC 0.0
+-PARAM_UTBL 0
+-param_utbl_const 1.0E-7

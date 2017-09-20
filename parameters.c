@@ -298,12 +298,17 @@ massive atmosphere */
   Ap->teqm /= C->TEMP;
 
   /* for radiative boundary condition at the top surface
-     dT = constbc * [Surface temperature]**3
-FIXME: need to non-dimensionalise below! */
-  //Ap->CONSTBC = 1.0e-07; // FIXME check units
-  Ap->CONSTBC = 0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CONSTBC",&Ap->CONSTBC,NULL);CHKERRQ(ierr);
-  Ap->CONSTBC /= 1.0; // FIXME to UPDATE!
+     dT = param_utbl_const * [Surface temperature]**3 */
+  Ap->PARAM_UTBL = 0;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-PARAM_UTBL",&Ap->PARAM_UTBL,NULL);CHKERRQ(ierr);
+  if (Ap->PARAM_UTBL){
+      Ap->param_utbl_const = 1.0E-7;
+      ierr = PetscOptionsGetScalar(NULL,NULL,"-param_utbl_const",&Ap->param_utbl_const,NULL);CHKERRQ(ierr);
+      Ap->param_utbl_const *= PetscSqr(C->TEMP);
+  }
+  else{
+      Ap->param_utbl_const = 0.0;
+  }
 
   /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
   // FIXME: for convenience at the moment, duplicate these values */
