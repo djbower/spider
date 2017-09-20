@@ -25,9 +25,9 @@ PetscErrorCode atmosphere_structs_to_vec( Atmosphere const *A, AtmosphereParamet
 
     ierr = VecSetValue(vec,0,Ap->MODEL,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,1,Ap->HYBRID,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,2,Ap->EMISSIVITY0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,3,Ap->SIGMA,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,4,Ap->TEQM,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,2,Ap->emissivity0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,3,Ap->sigma,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,4,Ap->teqm,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,5,Ap->CONSTBC,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,6,Ap->VOLSCALE,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,7,Ap->P0,INSERT_VALUES);CHKERRQ(ierr);

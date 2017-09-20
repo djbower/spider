@@ -45,7 +45,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
       switch( Ap->MODEL ){
         case 1:
           // grey-body
-          A->emissivity = Ap->EMISSIVITY0;
+          A->emissivity = Ap->emissivity0;
           Qout = grey_body( Tsurf, A, Ap );
           break;
         case 2:
@@ -90,8 +90,8 @@ static PetscScalar grey_body( PetscScalar Tsurf, Atmosphere *A, AtmosphereParame
 {
     PetscScalar Fsurf;
 
-    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(Ap->TEQM,4.0);
-    Fsurf *= Ap->SIGMA * A->emissivity; /* Note emissivity may vary */
+    Fsurf = PetscPowScalar(Tsurf,4.0)-PetscPowScalar(Ap->teqm,4.0);
+    Fsurf *= Ap->sigma * A->emissivity; /* Note emissivity may vary */
 
     return Fsurf;
 }
