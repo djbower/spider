@@ -155,20 +155,19 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 
     /* Assume that the last rank contains the last two points */
     if (rank == size-1 ){
-        ierr = VecGetValues( M->area_b,1,&ix,&area1);CHKERRQ(ierr);
-        ierr = VecGetValues( M->area_b,1,&ix2,&area2);CHKERRQ(ierr);
-        ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr);
+        ierr = VecGetValues( M->area_b,1,&ix,&area1);CHKERRQ(ierr); // without 4*pi
+        ierr = VecGetValues( M->area_b,1,&ix2,&area2);CHKERRQ(ierr); // without 4*pi
+        ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr); // without 4*pi
         ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
         ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
-        fac = 4.0 * M_PI * vol;
-        vol_core = 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
-        fac = vol / vol_core;
+        vol_core = 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0); // without 4*pi
+        fac = vol / vol_core; // excluding 4*pi is OK since here we take the ratio of two volumes
         fac *= rho_cmb / P->rho_core;
         fac *= cp_cmb / P->cp_core;
         fac /= P->tfac_core_avg;
 
         fac = 1.0 / (1.0 + fac);
-        fac *= area2 / area1;
+        fac *= area2 / area1; // excluding 4*pi is OK since here we take the ratio of two areas
 
         /* energy flux (Jtot) */
         ierr = VecGetValues(S->Jtot,1,&ix2,&val);CHKERRQ(ierr);
@@ -176,7 +175,7 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
         ierr = VecSetValue(S->Jtot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
 
         /* energy flow (Etot) */
-        val *= area1;
+        val *= area1; // without 4*pi is correct
         ierr = VecSetValue(S->Etot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
 
     }
