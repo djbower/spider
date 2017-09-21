@@ -27,7 +27,7 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
     set_initial_xH2O( A, Ap );
     ierr = VecSetValue(dSdr_b_aug,1,A->x1,INSERT_VALUES);CHKERRQ(ierr);
    
-   /* include initial entropy at staggered node */
+    /* include initial entropy at staggered node */
     ierr = VecSetValue(dSdr_b_aug,2,P->sinit,INSERT_VALUES);CHKERRQ(ierr);
 
     VecAssemblyBegin( dSdr_b_aug );

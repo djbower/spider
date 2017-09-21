@@ -48,6 +48,9 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
         case 2:
           // zahnle
+          /* trying to pass the Constants struct resulted in a circular
+             dependency, which was easiest to address by just passing
+             in the two required constants instead */
           Qout = steam_atmosphere_zahnle_1988( Tsurf, C->TEMP, C->FLUX );
           break;
         case 3:
