@@ -271,12 +271,16 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
      uses plane-parallel radiative eqm model
      of Abe and Matsui (1985)
      */
-  /* FIXME: this break for int input.  Explains Patricks most
-     recent question about a test breaking */
   Ap->MODEL=MO_ATMOSPHERE_TYPE_GREY_BODY;
-  //PetscInt MODEL;
-  //ierr = PetscOptionsGetInt(NULL,NULL,"-MODEL",&MODEL,NULL);CHKERRQ(ierr);
-  //Ap->MODEL = MODEL;
+  PetscInt MODEL = 0;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-MODEL",&MODEL,NULL);CHKERRQ(ierr);
+  /* without this switch, Ap->MODEL gets set to zero if an options file
+     is not specified (presumably this is what MODEL is initialised as
+     above).  This then breaks the atmosphere model since MODEL = 0 is
+     not a permitted option */
+  if( MODEL ){
+    Ap->MODEL = MODEL;
+  }
   /* TODO: non-dimensionalise other atmosphere parameters */
   /* SIGMA and TEQM should get us up and running for the standard
      grey-body case */
