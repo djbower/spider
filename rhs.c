@@ -1,6 +1,5 @@
 #include "ctx.h"
 #include "atmosphere.h"
-#include "set_dxdt.h"
 #include "aug.h"
 #include "bc.h"
 #include "energy.h"
@@ -27,6 +26,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   Vec                  rhs_b;
   PetscInt             ind;
   PetscScalar          S0, dS0dt;
+  PetscScalar          x0, x1;
 
   PetscFunctionBeginUser;
 #if (defined VERBOSE)
@@ -54,35 +54,44 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   if( Ap->MODEL == MO_ATMOSPHERE_TYPE_VOLATILES){
     /* C02 content of magma ocean (solid and liquid phase) */
     ind = 0;
-    ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&A->x0);CHKERRQ(ierr);
+    ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x0);CHKERRQ(ierr);
 
     /* H20 content of magma ocean (solid and liquid phase) */
     ind = 1;
-    ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&A->x1);CHKERRQ(ierr);
+    ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x1);CHKERRQ(ierr);
   }
 
   /* Get first staggered node value (stored as S0) */
   ind = 2;
   ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&S0);CHKERRQ(ierr);
 
-  set_entropy( E, S0 ); CHKERRQ(ierr);
+  ierr = set_entropy( E, S0 );CHKERRQ(ierr);
 
-  set_gphi_smooth( E );
+  ierr = set_gphi_smooth( E );CHKERRQ(ierr);
 
-  set_capacitance_staggered( E );
+  ierr = set_capacitance_staggered( E );CHKERRQ(ierr);
 
-  set_matprop_basic( E );
+  ierr = set_matprop_basic( E );CHKERRQ(ierr);
 
-  set_Etot( E );
+  /* updates A->Mliq, A->Msol, A->dMliqdt */
+  ierr = set_Mliq( E );CHKERRQ(ierr);
+  ierr = set_Msol( E );CHKERRQ(ierr);
+  ierr = set_dMliqdt( E );CHKERRQ(ierr);
+
+  /* FIXME: add switch depending on atmosphere model and
+     passive atmosphere tracking */
+  ierr = set_atmosphere_volatile_content( A, Ap, x0, x1 );
+
+  ierr = set_Etot( E );CHKERRQ(ierr);
 
   /* FIXME: make sure time is correct in years depending on
      non dimensionalisation scheme */
   /* note pass in current time in years here */
-  set_Htot( E, t );
+  ierr = set_Htot( E, t );CHKERRQ(ierr);
 
-  set_surface_flux( E );
+  ierr = set_surface_flux( E );CHKERRQ(ierr);
 
-  set_core_mantle_flux( E );
+  ierr = set_core_mantle_flux( E );CHKERRQ(ierr);
 
   /* loop over basic nodes except last node */
   ierr = DMDAVecGetArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
@@ -127,9 +136,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* now that we have dS/dt, compute change in volatile concentrations */
   if (Ap->MODEL == MO_ATMOSPHERE_TYPE_VOLATILES){
-    set_dxdt( E );
-    ierr = VecSetValue(rhs_b_aug,0,A->dx0dt,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(rhs_b_aug,1,A->dx1dt,INSERT_VALUES);CHKERRQ(ierr);
+    PetscScalar dx0dt, dx1dt;
+    dx0dt = get_dx0dt( A, Ap, x0, M->mantle_mass );
+    dx1dt = get_dx1dt( A, Ap, x1, M->mantle_mass );
+    ierr = VecSetValue(rhs_b_aug,0,dx0dt,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(rhs_b_aug,1,dx1dt,INSERT_VALUES);CHKERRQ(ierr);
   }
   else{
     ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);

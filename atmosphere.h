@@ -4,20 +4,16 @@
 #include "parameters.h"
 
 typedef struct Atmosphere_ {
-    // calculated quantities (18)
-    PetscScalar M0; // total mass of mantle from EOS (kg)
+    // calculated quantities (14)
     PetscScalar Mliq; // mass of liquid (kg)
     PetscScalar Msol; // mass of solid (kg)
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
+    PetscScalar tsurf; // surface temperature
     PetscScalar tau; // aggregate optical depth (dimensionless)
-    PetscScalar x0; // CO2 content (wt %)
-    PetscScalar dx0dt; // dx0/dt (wt % / yr)
     PetscScalar p0; // CO2 partial pressure (Pa)
     PetscScalar dp0dx; // dp0/dx (Pa/mass fraction)
     PetscScalar m0; // CO2 mass in atmosphere (kg)
     PetscScalar tau0; // CO2 optical depth (dimensionless)
-    PetscScalar x1; // H2O content (wt %)
-    PetscScalar dx1dt; // dx1/dt (wt % / yr)
     PetscScalar p1; // H2O partial pressure (Pa)
     PetscScalar dp1dx; // dp1dx (Pa / mass fraction)
     PetscScalar m1; // H2O mass in atmosphere (kg)
@@ -59,13 +55,15 @@ typedef struct AtmosphereParameters_ {
     PetscScalar GRAVITY; // duplicate
 } AtmosphereParameters;
 
-PetscScalar get_initial_volatile( Atmosphere *, AtmosphereParameters const *, VolatileParameters const * );
-PetscErrorCode set_emissivity_abe_matsui( Atmosphere *, AtmosphereParameters const * );
-PetscErrorCode set_dx0dt( Atmosphere *, AtmosphereParameters const *);
-PetscErrorCode set_dx1dt( Atmosphere *, AtmosphereParameters const *);
+PetscScalar get_initial_volatile( AtmosphereParameters const *, VolatileParameters const *, PetscScalar );
+PetscScalar get_emissivity_abe_matsui( Atmosphere *, AtmosphereParameters const * );
+
+PetscScalar get_dx0dt( Atmosphere *, AtmosphereParameters const *, PetscScalar, PetscScalar );
+PetscScalar get_dx1dt( Atmosphere *, AtmosphereParameters const *, PetscScalar, PetscScalar );
 
 PetscScalar tsurf_param( PetscScalar, AtmosphereParameters const * );
-PetscScalar grey_body( PetscScalar, Atmosphere *, AtmosphereParameters const * );
-PetscScalar steam_atmosphere_zahnle_1988( PetscScalar, PetscScalar, PetscScalar );
+PetscScalar grey_body( Atmosphere const *, AtmosphereParameters const * );
+PetscScalar steam_atmosphere_zahnle_1988( Atmosphere const *, PetscScalar, PetscScalar );
+PetscErrorCode set_atmosphere_volatile_content( Atmosphere *, AtmosphereParameters const *, PetscScalar, PetscScalar );
 
 #endif

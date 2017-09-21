@@ -4,11 +4,11 @@ static PetscErrorCode regular_mesh( Ctx * );
 //static PetscErrorCode geometric_mesh( Ctx * );
 static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
-static PetscErrorCode mixing_length( DM, Vec, Vec, Parameters * );
-static PetscErrorCode aw_density( DM, Vec, Vec, Parameters * );
-static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters * );
-static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters * );
-static PetscErrorCode aw_mass( Ctx * );
+static PetscErrorCode mixing_length( DM, Vec, Vec, Parameters const * );
+static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const * );
+static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const * );
+static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const * );
+static PetscErrorCode aw_mass( Mesh * );
 
 PetscErrorCode set_mesh( Ctx *E)
 {
@@ -86,7 +86,7 @@ PetscErrorCode set_mesh( Ctx *E)
     aw_density( da_s, M->radius_s, M->rho_s, P );
 
     /* mass at staggered nodes */
-    aw_mass( E );
+    aw_mass( M );
 
     PetscFunctionReturn(0);
 }
@@ -216,14 +216,13 @@ static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
     const PetscScalar *arr_radius;
     PetscInt          i,ilo,ihi,w;
 
-    /* excludes 4*pi prefactor */
-
     PetscFunctionBeginUser;
     ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w; 
     ierr = DMDAVecGetArrayRead(da,radius,&arr_radius);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da,area,&arr_area);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
+        /* excludes 4*pi prefactor */
         arr_area[i] = PetscPowScalar( arr_radius[i], 2.0 );
     }    
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_radius);CHKERRQ(ierr);
@@ -261,7 +260,7 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix, Parameters *P )
+static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix, const Parameters *P )
 {
     PetscErrorCode    ierr;
     PetscScalar       *arr_m;
@@ -294,7 +293,7 @@ static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix, Parameters *P )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, Parameters *P )
+static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parameters *P )
 {
     PetscErrorCode    ierr;
     PetscScalar       dep,*arr_p;
@@ -316,7 +315,7 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, Parameters *
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_density( DM da, Vec radius, Vec density, Parameters *P )
+static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Parameters *P )
 {
     PetscErrorCode    ierr;
     PetscScalar       dep, *arr_density;
@@ -337,11 +336,9 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density, Parameters *P 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_mass( Ctx *E )
+static PetscErrorCode aw_mass( Mesh *M )
 {
     PetscErrorCode ierr;
-    Atmosphere     *A = &E->atmosphere;
-    Mesh           *M = &E->mesh;
  
     PetscFunctionBeginUser;
 
@@ -351,15 +348,13 @@ static PetscErrorCode aw_mass( Ctx *E )
     /* note scale by 4*pi below */
     /* FIXME: for consistency, can we remove the 4*pi below? */
     ierr = VecScale( M->mass_s, 4.0 * PETSC_PI );
-    ierr = VecSum( M->mass_s, &M->mass0 );
-
-    A->M0 = M->mass0; // for output with atmosphere
+    ierr = VecSum( M->mass_s, &M->mantle_mass );
 
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad, Parameters *P )
+static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad, Parameters const *P )
 {
     PetscErrorCode    ierr;
     PetscScalar       dep,*arr_g;

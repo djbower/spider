@@ -7,8 +7,8 @@ PetscErrorCode set_surface_flux( Ctx *E )
 {
     PetscErrorCode       ierr;
     PetscMPIInt          rank;
-    // initialise Qout    to avoid compiler warning
-    PetscScalar          temp0, Tsurf, Qout=0.0;
+    // initialise Qout to avoid compiler warning
+    PetscScalar          temp0, Qout=0.0;
     PetscInt             ind;
     Atmosphere           *A  = &E->atmosphere;
     Parameters           const *P  = &E->parameters;
@@ -33,30 +33,29 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       /* correct for ultra-thin thermal boundary layer at the surface */
       if( Ap->PARAM_UTBL ){
-        Tsurf = tsurf_param( temp0, Ap); // parameterised boundary layer
+        A->tsurf = tsurf_param( temp0, Ap); // parameterised boundary layer
       }
       else{
-        Tsurf = temp0; // surface temperature is potential temperature
+        A->tsurf = temp0; // surface temperature is potential temperature
       }
 
       /* determine flux */
       switch( Ap->MODEL ){
         case 1:
-          // grey-body
+          // grey-body with constant emissivity
           A->emissivity = Ap->emissivity0;
-          Qout = grey_body( Tsurf, A, Ap );
+          Qout = grey_body( A, Ap );
           break;
         case 2:
-          // zahnle
           /* trying to pass the Constants struct resulted in a circular
              dependency, which was easiest to address by just passing
              in the two required constants instead */
-          Qout = steam_atmosphere_zahnle_1988( Tsurf, C->TEMP, C->FLUX );
+          Qout = steam_atmosphere_zahnle_1988( A, C->TEMP, C->FLUX );
           break;
         case 3:
           // atmosphere evolution
-          set_emissivity_abe_matsui( A, Ap ); // updates A->emissivity
-          Qout = grey_body( Tsurf, A, Ap );
+          A->emissivity = get_emissivity_abe_matsui( A, Ap );
+          Qout = grey_body( A, Ap );
           break;
       }
 

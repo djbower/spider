@@ -103,7 +103,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       //char vecname[PETSC_MAX_PATH_LEN];
       /* FIXME: it's really easy to update output.c and forget to change the size
          of the array in the next line */
-      const int nData = 39;
+      const int nData = 35;
       ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
       if (!rank) {
         ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
