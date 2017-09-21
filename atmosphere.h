@@ -59,8 +59,7 @@ typedef struct AtmosphereParameters_ {
     PetscScalar GRAVITY; // duplicate
 } AtmosphereParameters;
 
-PetscErrorCode set_initial_xCO2( Atmosphere *, AtmosphereParameters const * );
-PetscErrorCode set_initial_xH2O( Atmosphere *, AtmosphereParameters const * );
+PetscScalar get_initial_volatile( Atmosphere *, AtmosphereParameters const *, VolatileParameters const * );
 PetscErrorCode set_emissivity_abe_matsui( Atmosphere *, AtmosphereParameters const * );
 PetscErrorCode set_dx0dt( Atmosphere *, AtmosphereParameters const *);
 PetscErrorCode set_dx1dt( Atmosphere *, AtmosphereParameters const *);

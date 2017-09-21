@@ -2,9 +2,9 @@
 #include "atmosphere.h"
 
 static PetscScalar get_atmosphere_mass( AtmosphereParameters const *, PetscScalar );
-static PetscScalar get_optical_depth( AtmosphereParameters const *, PetscScalar, PetscScalar );
+static PetscScalar get_optical_depth( AtmosphereParameters const *, PetscScalar, VolatileParameters const * );
 static PetscScalar get_dxdt( Atmosphere const *, AtmosphereParameters const *,PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *, PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *, PetscScalar, VolatileParameters const * );
 static PetscScalar get_partial_pressure_derivative_volatile( AtmosphereParameters const *, PetscScalar, PetscScalar, PetscScalar );
 
 /* to solve for the initial volatile content of the magma ocean (liquid)
@@ -63,20 +63,17 @@ PetscScalar steam_atmosphere_zahnle_1988( PetscScalar Tsurf, PetscScalar TEMP, P
 
 PetscErrorCode set_emissivity_abe_matsui( Atmosphere *A, AtmosphereParameters const *Ap )
 {
-    VolatileParameters const *H2O = &Ap->H2O_volatile_parameters;
-    VolatileParameters const *CO2 = &Ap->CO2_volatile_parameters;
-
     PetscFunctionBeginUser;
 
     /* CO2 */
-    A->p0 = get_partial_pressure_volatile( Ap, A->x0, CO2->henry, CO2->henry_pow );
+    A->p0 = get_partial_pressure_volatile( Ap, A->x0, &Ap->CO2_volatile_parameters );
     A->m0 = get_atmosphere_mass( Ap, A->p0 );
-    A->tau0 = get_optical_depth( Ap, A->m0, CO2->kabs );
+    A->tau0 = get_optical_depth( Ap, A->m0, &Ap->CO2_volatile_parameters );
 
     /* H2O */
-    A->p1 = get_partial_pressure_volatile( Ap, A->x1, H2O->henry, H2O->henry_pow );
+    A->p1 = get_partial_pressure_volatile( Ap, A->x1, &Ap->H2O_volatile_parameters );
     A->m1 = get_atmosphere_mass( Ap, A->p1 );
-    A->tau1 = get_optical_depth( Ap, A->m1, H2O->kabs );
+    A->tau1 = get_optical_depth( Ap, A->m1, &Ap->H2O_volatile_parameters );
 
     /* total */
     A->tau = A->tau0 + A->tau1;
@@ -86,13 +83,13 @@ PetscErrorCode set_emissivity_abe_matsui( Atmosphere *A, AtmosphereParameters co
 
 }
 
-static PetscScalar get_optical_depth( AtmosphereParameters const *Ap, PetscScalar mass_atm, PetscScalar kabs )
+static PetscScalar get_optical_depth( AtmosphereParameters const *Ap, PetscScalar mass_atm, VolatileParameters const *V )
 {
     PetscScalar tau;
 
     tau = 3.0 * mass_atm / (8.0*PETSC_PI*PetscSqr(Ap->RADIUS));
     // note negative gravity!
-    tau *= PetscSqrtScalar( kabs*-Ap->GRAVITY/(3.0*Ap->P0) );
+    tau *= PetscSqrtScalar( V->kabs*-Ap->GRAVITY/(3.0*Ap->P0) );
 
     return tau; // dimensionless (by definition)
 }
@@ -126,15 +123,15 @@ static PetscScalar get_dxdt( Atmosphere const *A, AtmosphereParameters const *Ap
 
 }
 
-static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *Ap, PetscScalar x, PetscScalar henry, PetscScalar henry_pow)
+static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *Ap, PetscScalar x, VolatileParameters const *V)
 {
 
     /* partial pressure of volatile */
 
     PetscScalar p;
 
-    p = (x / Ap->volscale) / henry;
-    p = PetscPowScalar( p, henry_pow );
+    p = (x / Ap->volscale) / V->henry;
+    p = PetscPowScalar( p, V->henry_pow );
 
     return p;
 
@@ -155,30 +152,25 @@ static PetscScalar get_partial_pressure_derivative_volatile( AtmosphereParameter
 }
 
 
-static PetscScalar get_initial_volatile( Atmosphere const *A, AtmosphereParameters const *Ap, PetscScalar xinit, PetscScalar henry, PetscScalar henry_pow )
+PetscScalar get_initial_volatile( Atmosphere *A, AtmosphereParameters const *Ap, VolatileParameters const *V )
 {
 
-    /* initial wt. % of volatile in the aqueous phase */
+    /* initial volatile in the aqueous phase */
 
     PetscScalar beta, gamma;
     PetscScalar x;
 
     gamma = 4.0 * PETSC_PI * PetscSqr(Ap->RADIUS);
     gamma /= -Ap->GRAVITY * A->M0;
-    gamma *= PetscPowScalar( Ap->volscale, 1.0-henry_pow );
-    gamma /= PetscPowScalar( henry, henry_pow );
-    beta = henry_pow;
+    gamma *= PetscPowScalar( Ap->volscale, 1.0-V->henry_pow );
+    gamma /= PetscPowScalar( V->henry, V->henry_pow );
+    beta = V->henry_pow;
 
-    x = newton( gamma, beta, xinit );
+    x = newton( gamma, beta, V->initial );
 
-    return x; // wt %
+    return x;
 
 }
-
-
-////////////////////////////
-/* CO2 specific functions */
-////////////////////////////
 
 PetscErrorCode set_dx0dt( Atmosphere *A, AtmosphereParameters const * Ap )
 {
@@ -193,22 +185,6 @@ PetscErrorCode set_dx0dt( Atmosphere *A, AtmosphereParameters const * Ap )
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_initial_xCO2( Atmosphere *A, AtmosphereParameters const * Ap )
-{
-    VolatileParameters const *CO2 = &Ap->CO2_volatile_parameters;
-
-    PetscFunctionBeginUser;
-
-    A->x0 = get_initial_volatile( A, Ap, CO2->initial, CO2->henry, CO2->henry_pow );
-
-    PetscFunctionReturn(0);
-
-}
-
-////////////////////////////
-/* H2O specific functions */
-////////////////////////////
-
 PetscErrorCode set_dx1dt( Atmosphere *A, AtmosphereParameters const *Ap )
 {
     /* update for dissolved H2O content in the magma ocean */
@@ -220,18 +196,6 @@ PetscErrorCode set_dx1dt( Atmosphere *A, AtmosphereParameters const *Ap )
     A->dx1dt = get_dxdt( A, Ap, A->x1, H2O->kdist, A->dp1dx );
 
     PetscFunctionReturn(0);
-}
-
-PetscErrorCode set_initial_xH2O( Atmosphere *A, AtmosphereParameters const *Ap )
-{
-    VolatileParameters const *H2O = &Ap->H2O_volatile_parameters;
-
-    PetscFunctionBeginUser;
-
-    A->x1 = get_initial_volatile( A, Ap, H2O->initial, H2O->henry, H2O->henry_pow );
-
-    PetscFunctionReturn(0);
-
 }
 
 /////////////////////

@@ -20,11 +20,11 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
     */
 
     /* initial mass content of CO2 in the magma ocean */
-    set_initial_xCO2( A, Ap );
+    A->x0 = get_initial_volatile( A, Ap, &Ap->CO2_volatile_parameters );
     ierr = VecSetValue(dSdr_b_aug,0,A->x0,INSERT_VALUES);CHKERRQ(ierr);
     
     /* initial mass content of H2O in the magma ocean */
-    set_initial_xH2O( A, Ap );
+    A->x1 = get_initial_volatile( A, Ap, &Ap->H2O_volatile_parameters );
     ierr = VecSetValue(dSdr_b_aug,1,A->x1,INSERT_VALUES);CHKERRQ(ierr);
    
     /* include initial entropy at staggered node */
