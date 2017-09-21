@@ -40,6 +40,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
       }
 
       /* determine flux */
+      /* TODO: return error if user specifies a case that does not exist */
       switch( Ap->MODEL ){
         case 1:
           // grey-body with constant emissivity
