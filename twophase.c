@@ -384,7 +384,7 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     ierr = DMDAVecGetArray(da_s,result_s,&arr_result_s); CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
-        /* arr_mass_s contains 4*pi prefactor */
+        /* arr_mass_s (M->mass_s) contains 4*pi prefactor */
         arr_result_s[i] = arr_dSdt_s[i] * arr_mass_s[i];
         arr_result_s[i] /= arr_fusion_s[i];
 
