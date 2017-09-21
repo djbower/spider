@@ -5,7 +5,7 @@ static PetscScalar get_atmosphere_mass( AtmosphereParameters const *, PetscScala
 static PetscScalar get_optical_depth( AtmosphereParameters const *, PetscScalar, VolatileParameters const * );
 static PetscScalar get_dxdt( Atmosphere const *, AtmosphereParameters const *,PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *, PetscScalar, VolatileParameters const * );
-static PetscScalar get_partial_pressure_derivative_volatile( AtmosphereParameters const *, PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar get_partial_pressure_derivative_volatile( AtmosphereParameters const *, PetscScalar, VolatileParameters const * );
 
 /* to solve for the initial volatile content of the magma ocean (liquid)
    we use Newton's method */
@@ -137,15 +137,15 @@ static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *Ap
 
 }
 
-static PetscScalar get_partial_pressure_derivative_volatile( AtmosphereParameters const *Ap, PetscScalar x, PetscScalar henry, PetscScalar henry_pow )
+static PetscScalar get_partial_pressure_derivative_volatile( AtmosphereParameters const *Ap, PetscScalar x, VolatileParameters const *V )
 {
 
     /* derivative of partial pressure wrt x where x is wt % */
 
     PetscScalar dpdx;
 
-    dpdx = 1.0 / PetscPowScalar( Ap->volscale*henry, henry_pow );
-    dpdx *= henry_pow * PetscPowScalar( x, henry_pow-1.0);
+    dpdx = 1.0 / PetscPowScalar( Ap->volscale*V->henry, V->henry_pow );
+    dpdx *= V->henry_pow * PetscPowScalar( x, V->henry_pow-1.0);
 
     return dpdx; // Pa per wt %
 
@@ -179,7 +179,7 @@ PetscErrorCode set_dx0dt( Atmosphere *A, AtmosphereParameters const * Ap )
 
     PetscFunctionBeginUser;
 
-    A->dp0dx = get_partial_pressure_derivative_volatile( Ap, A->x0, CO2->henry, CO2->henry_pow );
+    A->dp0dx = get_partial_pressure_derivative_volatile( Ap, A->x0, CO2 );
     A->dx0dt = get_dxdt( A, Ap, A->x0, CO2->kdist, A->dp0dx );
 
     PetscFunctionReturn(0);
@@ -192,7 +192,7 @@ PetscErrorCode set_dx1dt( Atmosphere *A, AtmosphereParameters const *Ap )
 
     PetscFunctionBeginUser;
 
-    A->dp0dx = get_partial_pressure_derivative_volatile( Ap, A->x0, H2O->henry, H2O->henry_pow );
+    A->dp0dx = get_partial_pressure_derivative_volatile( Ap, A->x0, H2O );
     A->dx1dt = get_dxdt( A, Ap, A->x1, H2O->kdist, A->dp1dx );
 
     PetscFunctionReturn(0);
