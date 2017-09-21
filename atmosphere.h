@@ -57,7 +57,7 @@ typedef struct AtmosphereParameters_ {
 
 PetscScalar get_initial_volatile( AtmosphereParameters const *, VolatileParameters const *, PetscScalar );
 PetscScalar get_emissivity_abe_matsui( Atmosphere *, AtmosphereParameters const * );
-
+PetscScalar get_emissivity_from_flux( Atmosphere const *, AtmosphereParameters const *, PetscScalar );
 PetscScalar get_dx0dt( Atmosphere *, AtmosphereParameters const *, PetscScalar, PetscScalar );
 PetscScalar get_dx1dt( Atmosphere *, AtmosphereParameters const *, PetscScalar, PetscScalar );
 

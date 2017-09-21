@@ -83,6 +83,17 @@ PetscScalar steam_atmosphere_zahnle_1988( Atmosphere const *A, PetscScalar TEMP,
 
 }
 
+PetscScalar get_emissivity_from_flux( Atmosphere const *A, AtmosphereParameters const *Ap, PetscScalar flux )
+{
+    PetscScalar emissivity;
+
+    emissivity = flux / Ap->sigma;
+    emissivity /= PetscPowScalar(A->tsurf,4.0)-PetscPowScalar(Ap->teqm,4.0);
+
+    return emissivity;
+
+}
+
 PetscScalar get_emissivity_abe_matsui( Atmosphere *A, AtmosphereParameters const *Ap )
 {
 

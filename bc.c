@@ -59,10 +59,18 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
       }
 
-      /* TODO: for legacy purposes, perhaps to remove at some point */
+      /* for legacy purposes */
       if( Ap->HYBRID ){
           Qout = hybrid( E, Qout );
       }
+
+      /* some atmosphere models do not explicitly set an emissivity,
+         so we should back-compute it here to always ensure that the
+         emissivity is consistent with our chosen atmosphere scenario
+         For cases where the emissivity is set, this should yield the
+         same answer of course, and adds little computational overhead
+         in those cases */
+      A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
 
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
       /* TODO: probably OK, but remember this has a scaling dictated
