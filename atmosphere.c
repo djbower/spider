@@ -118,7 +118,7 @@ static PetscScalar get_dxdt( Atmosphere const *A, AtmosphereParameters const *Ap
 
     num = x * (kdist-1.0) * A->dMliqdt;
     den = kdist * M0 + (1.0-kdist) * A->Mliq;
-    den += (4.0*PETSC_PI*PetscSqr(Ap->RADIUS) / -Ap->GRAVITY) * Ap->VOLSCALE * dpdx;
+    den += (4.0*PETSC_PI*PetscSqr(Ap->RADIUS) / -Ap->GRAVITY) * Ap->volscale * dpdx;
 
     dxdt = num / den;
 
@@ -133,7 +133,7 @@ static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *Ap
 
     PetscScalar p;
 
-    p = (x / Ap->VOLSCALE) / henry;
+    p = (x / Ap->volscale) / henry;
     p = PetscPowScalar( p, henry_pow );
 
     return p;
@@ -147,7 +147,7 @@ static PetscScalar get_partial_pressure_derivative_volatile( AtmosphereParameter
 
     PetscScalar dpdx;
 
-    dpdx = 1.0 / PetscPowScalar( Ap->VOLSCALE*henry, henry_pow );
+    dpdx = 1.0 / PetscPowScalar( Ap->volscale*henry, henry_pow );
     dpdx *= henry_pow * PetscPowScalar( x, henry_pow-1.0);
 
     return dpdx; // Pa per wt %
@@ -165,7 +165,7 @@ static PetscScalar get_initial_volatile( Atmosphere const *A, AtmosphereParamete
 
     gamma = 4.0 * PETSC_PI * PetscSqr(Ap->RADIUS);
     gamma /= -Ap->GRAVITY * A->M0;
-    gamma *= PetscPowScalar( Ap->VOLSCALE, 1.0-henry_pow );
+    gamma *= PetscPowScalar( Ap->volscale, 1.0-henry_pow );
     gamma /= PetscPowScalar( henry, henry_pow );
     beta = henry_pow;
 

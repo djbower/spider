@@ -222,6 +222,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_width",&P->phi_width,NULL);CHKERRQ(ierr);
 
   /* melt fraction shape transition for skew */
+  // FIXME: I think this is broken at present
   P->phi_skew = 0.0; // non dimensional
 
   /* core density (kg/m^3) */
@@ -319,44 +320,40 @@ massive atmosphere */
   // FIXME: for convenience at the moment, duplicate these values */
   Ap->RADIUS = P->radius;
   Ap->GRAVITY = P->gravity;
-  /* VOLSCALE enables us to scale the volatile equations to the same
-     order of magnitude as entropy, and thus ensure that the residual
-     based on the solution vector is not biased. */
-  // FIXME: need to figure out scalings of this ODE
-  //Ap->VOLSCALE = 1.0E2; // wt %
-  Ap->VOLSCALE = 1.0E6; // ppm
+
+  /* volatile scaling */
+  Ap->volscale = 1.0E2; // wt %
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-volscale",&Ap->volscale,NULL);CHKERRQ(ierr);
 
   /* atmosphere reference pressure (Pa) */
   Ap->P0 = 101325.0; // Pa (= 1 atm)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-P0",&Ap->P0,NULL);CHKERRQ(ierr);
 
   /* H2O volatile */
   H2O->initial = 0.0;
-  //H2O->initial = 500.0; // Elkins-Tanton (2008) case 1 
-  //H2O->initial = 5000.0; // Elkins-Tanton (2008) case 2 
-  //H2O->initial = 0.0; // Elkins-Tanton (2008) case 3
-  /* distribution coefficients are given in supplementary material of ET08 */
-  /* distribution coefficient between solid and melt (non-dimensional) */
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_initial",&H2O->initial,NULL);CHKERRQ(ierr);
   H2O->kdist = 1.0E-4;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kdist",&H2O->kdist,NULL);CHKERRQ(ierr);
   // TODO: water saturation limit of 10 ppm?
-  /* absorption (m^2/kg) */
   H2O->kabs = 0.01;
-  /* next two from Lebrun et al. (2013) */
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kabs",&H2O->kabs,NULL);CHKERRQ(ierr);
   H2O->henry = 6.8E-8; // must be mass fraction/Pa
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
   H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry_pow",&H2O->henry_pow,NULL);CHKERRQ(ierr);
 
   /* CO2 volatile */
   CO2->initial = 0.0;
-  //CO2->initial = 100.0; // Elkins-Tanton (2008) case 1 
-  //CO2->initial = 1000.0; // Elkins-Tanton (2008) case 2 
-  //CO2->initial = 6000.0; // Elkins-Tanton (2008) case 3
-  /* distribution coefficient between solid and melt (non-dimensional) */
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_initial",&CO2->initial,NULL);CHKERRQ(ierr);
   CO2->kdist = 5.0E-4;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kdist",&CO2->kdist,NULL);CHKERRQ(ierr);
   // TODO: water saturation limit of 0.03 ppm
-  /* absorption (m^2/kg) */
   CO2->kabs = 0.05;
-  /* next two from Lebrun et al. (2013) */
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kabs",&CO2->kabs,NULL);CHKERRQ(ierr);
   CO2->henry = 4.4E-12; // must be mass fraction/Pa
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
   CO2->henry_pow = 1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
 
   /* Additional Parameters for Atmosphere */
 

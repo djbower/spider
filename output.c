@@ -30,7 +30,7 @@ PetscErrorCode atmosphere_structs_to_vec( Atmosphere const *A, AtmosphereParamet
     ierr = VecSetValue(vec,4,Ap->teqm,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,5,Ap->PARAM_UTBL,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,6,Ap->param_utbl_const,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,7,Ap->VOLSCALE,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,7,Ap->volscale,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,8,Ap->P0,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,9,Ap->H2O_volatile_parameters.initial,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,10,Ap->H2O_volatile_parameters.kdist,INSERT_VALUES);CHKERRQ(ierr);
