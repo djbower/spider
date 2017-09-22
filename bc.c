@@ -40,7 +40,6 @@ PetscErrorCode set_surface_flux( Ctx *E )
       }
 
       /* determine flux */
-      /* TODO: return error if user specifies a case that does not exist */
       switch( Ap->MODEL ){
         case 1:
           // grey-body with constant emissivity
@@ -58,6 +57,8 @@ PetscErrorCode set_surface_flux( Ctx *E )
           A->emissivity = get_emissivity_abe_matsui( A, Ap );
           Qout = grey_body( A, Ap );
           break;
+        default:
+          SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported model value %d provided",Ap->MODEL);
       }
 
       /* for legacy purposes */
