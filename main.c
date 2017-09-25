@@ -81,8 +81,10 @@ int main(int argc, char ** argv)
   // 1.0E-12 crashes at time step 5
   ierr = TSSundialsSetTolerance(ts, 1.0e-14, 1.0e-14 );CHKERRQ(ierr);
 #else
-  // TODO: 1.0E-4 works for simple bottom up case
-  ierr = TSSundialsSetTolerance(ts, 1.0e-4, 1.0e-4 );CHKERRQ(ierr);
+  /* TODO: 1.0E-4 works for simple bottom up case with grey-body atmosphere
+         with constant emissivity */
+  /* TODO: 1.0E-8 crashes at time step 8 for self-consistent atmosphere evolution */
+  ierr = TSSundialsSetTolerance(ts, 1.0e-6, 1.0e-6 );CHKERRQ(ierr);
 #endif
 
   /* Set up the RHS Function */
@@ -92,7 +94,7 @@ int main(int argc, char ** argv)
   /* Set a very small initial timestep to prevent problems with
      challenging initial conditions and adaptive steppers */
   /* DJB with revised code this probably is not necessary anymore */
-  ierr = TSSetInitialTimeStep(ts,0.0,1e-10);CHKERRQ(ierr);
+  //ierr = TSSetInitialTimeStep(ts,0.0,1e-10);CHKERRQ(ierr);
 
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
