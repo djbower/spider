@@ -344,6 +344,8 @@ massive atmosphere */
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
   H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry_pow",&H2O->henry_pow,NULL);CHKERRQ(ierr);
+  /* effective henry constant used in code */
+  H2O->henry = PetscPowScalar( H2O->henry*Ap->volscale, H2O->henry_pow );
 
   /* CO2 volatile */
   CO2->initial = 0.0;
@@ -357,6 +359,8 @@ massive atmosphere */
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
   CO2->henry_pow = 1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
+  /* effective henry constant used in code */
+  CO2->henry = PetscPowScalar( CO2->henry*Ap->volscale, CO2->henry_pow );
 
   /* Additional Parameters for Atmosphere */
 

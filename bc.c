@@ -12,8 +12,8 @@ static PetscScalar get_emissivity_from_flux( Atmosphere const *, AtmosphereParam
 static PetscScalar get_atmosphere_mass( AtmosphereParameters const *, PetscScalar );
 static PetscScalar get_optical_depth( AtmosphereParameters const *, PetscScalar, VolatileParameters const * );
 static PetscScalar get_dxdt( Atmosphere const *, AtmosphereParameters const *,PetscScalar, PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *, PetscScalar, VolatileParameters const * );
-static PetscScalar get_partial_pressure_derivative_volatile( AtmosphereParameters const *, PetscScalar, VolatileParameters const * );
+static PetscScalar get_partial_pressure_volatile( PetscScalar, VolatileParameters const *, Constants const * );
+static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar, VolatileParameters const *, Constants const * );
 
 /* to solve for the initial volatile content of the magma ocean (liquid)
    we use Newton's method */
@@ -229,7 +229,7 @@ PetscErrorCode set_atmosphere_volatile_content( Ctx *E , PetscScalar x0, PetscSc
 
     Atmosphere           *A  = &E->atmosphere;
     Parameters           const *P  = &E->parameters;
-    //Constants            const *C  = &P->constants;
+    Constants            const *C  = &P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     VolatileParameters   const *CO2 = &Ap->CO2_volatile_parameters;
     VolatileParameters   const *H2O = &Ap->H2O_volatile_parameters;
@@ -237,13 +237,13 @@ PetscErrorCode set_atmosphere_volatile_content( Ctx *E , PetscScalar x0, PetscSc
     PetscFunctionBeginUser;
 
     /* CO2 */
-    A->p0 = get_partial_pressure_volatile( Ap, x0, CO2 );
-    A->dp0dx = get_partial_pressure_derivative_volatile( Ap, x0, CO2 );
+    A->p0 = get_partial_pressure_volatile( x0, CO2, C );
+    A->dp0dx = get_partial_pressure_derivative_volatile( x0, CO2, C );
     A->m0 = get_atmosphere_mass( Ap, A->p0 );
 
     /* H2O */
-    A->p1 = get_partial_pressure_volatile( Ap, x1, H2O );
-    A->dp1dx = get_partial_pressure_derivative_volatile( Ap, x1, H2O );
+    A->p1 = get_partial_pressure_volatile( x1, H2O, C );
+    A->dp1dx = get_partial_pressure_derivative_volatile( x1, H2O, C );
     A->m1 = get_atmosphere_mass( Ap, A->p1 );
 
     PetscFunctionReturn(0);
@@ -363,31 +363,31 @@ static PetscScalar get_dxdt( Atmosphere const *A, AtmosphereParameters const *Ap
 
 }
 
-static PetscScalar get_partial_pressure_volatile( AtmosphereParameters const *Ap, PetscScalar x, VolatileParameters const *V)
+static PetscScalar get_partial_pressure_volatile( PetscScalar x, VolatileParameters const *V, Constants const *C)
 {
 
     /* partial pressure of volatile */
 
     PetscScalar p;
 
-    p = (x / Ap->volscale) / V->henry;
-    p = PetscPowScalar( p, V->henry_pow );
+    p = ( 1.0 / V->henry ) * PetscPowScalar( x, V->henry_pow );
+    p /= C->PRESSURE; // non-dimensionalise
 
     return p;
 
 }
 
-static PetscScalar get_partial_pressure_derivative_volatile( AtmosphereParameters const *Ap, PetscScalar x, VolatileParameters const *V )
+static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, VolatileParameters const *V, Constants const *C )
 {
 
-    /* derivative of partial pressure wrt x where x is wt % */
+    /* derivative of partial pressure of volatile */
 
     PetscScalar dpdx;
 
-    dpdx = 1.0 / PetscPowScalar( Ap->volscale*V->henry, V->henry_pow );
-    dpdx *= V->henry_pow * PetscPowScalar( x, V->henry_pow-1.0);
+    dpdx = ( V->henry_pow / V->henry ) * PetscPowScalar( x, V->henry_pow-1.0);
+    dpdx /= C->PRESSURE; // non-dimensionalise
 
-    return dpdx; // Pa per wt %
+    return dpdx;
 
 }
 
