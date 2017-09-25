@@ -1,5 +1,4 @@
 #include "ctx.h"
-#include "atmosphere.h"
 #include "lookup.h"
 #include "mesh.h"
 #include "twophase.h"

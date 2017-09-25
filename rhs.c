@@ -1,5 +1,4 @@
 #include "ctx.h"
-#include "atmosphere.h"
 #include "aug.h"
 #include "bc.h"
 #include "energy.h"
@@ -80,7 +79,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* FIXME: add switch depending on atmosphere model and
      passive atmosphere tracking */
-  ierr = set_atmosphere_volatile_content( A, Ap, x0, x1 );
+  ierr = set_atmosphere_volatile_content( E, x0, x1 );
 
   ierr = set_Etot( E );CHKERRQ(ierr);
 

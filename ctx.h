@@ -3,7 +3,6 @@
 
 #include "petsc.h"
 #include "parameters.h"
-#include "atmosphere.h"
 
 /* common structures */
 

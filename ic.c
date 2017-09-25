@@ -1,4 +1,5 @@
 #include "ic.h"
+#include "bc.h"
 
 static PetscErrorCode set_ic_dSdr_constant( Ctx *, Vec );
 
