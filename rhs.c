@@ -87,6 +87,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* note pass in current time in years here */
   ierr = set_Htot( E, t );CHKERRQ(ierr);
 
+  /* this next function determines if we couple to the
+     volatile evolution of the interior, or apply a simpler model
+     such as a grey-body with constant emissivity, or a
+     parameterised model such as Zahnle et al. (1988) */
   ierr = set_surface_flux( E );CHKERRQ(ierr);
 
   ierr = set_core_mantle_flux( E );CHKERRQ(ierr);
@@ -152,10 +156,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* VecAssembly */
   ierr = VecAssemblyBegin(rhs_b_aug);CHKERRQ(ierr);
   ierr = VecAssemblyEnd(rhs_b_aug);CHKERRQ(ierr);
-
-  /* FIXME: this must blow up noise so get rid of this */
-  /* convert time from per second to per year */
-  //ierr = VecScale( rhs_b_aug, SECSINYR );
 
   ierr = VecDestroy(&rhs_b);CHKERRQ(ierr);
 
