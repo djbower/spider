@@ -321,7 +321,6 @@ PetscErrorCode set_Mliq( Ctx *E )
     // Mliq = sum[ phi*dm ]
     ierr = VecDuplicate( S->phi_s, &mass_s ); CHKERRQ(ierr);
     ierr = VecCopy( S->phi_s, mass_s ); CHKERRQ(ierr);
-    /* M->mass_s contains 4*pi prefactor */
     ierr = VecPointwiseMult( mass_s, mass_s, M->mass_s ); CHKERRQ(ierr);
     ierr = VecSum( mass_s, &A->Mliq );
 
@@ -345,7 +344,6 @@ PetscErrorCode set_Msol( Ctx *E )
     ierr = VecCopy( S->phi_s, mass_s ); CHKERRQ(ierr);
     ierr = VecScale( mass_s, -1.0 ); CHKERRQ(ierr);
     ierr = VecShift( mass_s, 1.0 ); CHKERRQ(ierr);
-    /* M->mass_s contains 4*pi prefactor */
     ierr = VecPointwiseMult( mass_s, mass_s, M->mass_s ); CHKERRQ(ierr);
     ierr = VecSum( mass_s, &A->Msol );
 
@@ -384,7 +382,6 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     ierr = DMDAVecGetArray(da_s,result_s,&arr_result_s); CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
-        /* arr_mass_s (M->mass_s) contains 4*pi prefactor */
         arr_result_s[i] = arr_dSdt_s[i] * arr_mass_s[i];
         arr_result_s[i] /= arr_fusion_s[i];
 

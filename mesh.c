@@ -345,9 +345,7 @@ static PetscErrorCode aw_mass( Mesh *M )
     ierr = VecCopy( M->rho_s, M->mass_s ); CHKERRQ(ierr);
 
     ierr = VecPointwiseMult( M->mass_s, M->mass_s, M->volume_s );
-    /* note scale by 4*pi below */
-    /* FIXME: for consistency, can we remove the 4*pi below? */
-    ierr = VecScale( M->mass_s, 4.0 * PETSC_PI );
+    /* excludes 4*pi prefactor */
     ierr = VecSum( M->mass_s, &M->mantle_mass );
 
     PetscFunctionReturn(0);
