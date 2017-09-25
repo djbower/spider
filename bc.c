@@ -1,12 +1,10 @@
-#include "parameters.h"
 #include "bc.h"
 #include "util.h"
 
 static PetscScalar hybrid( Ctx *, PetscScalar );
-
 static PetscScalar tsurf_param( PetscScalar, AtmosphereParameters const * );
 static PetscScalar grey_body( Atmosphere const *, AtmosphereParameters const * );
-static PetscScalar steam_atmosphere_zahnle_1988( Atmosphere const *, PetscScalar, PetscScalar );
+static PetscScalar steam_atmosphere_zahnle_1988( Atmosphere const *, Constants const *C );
 static PetscScalar get_emissivity_abe_matsui( Atmosphere *, AtmosphereParameters const * );
 static PetscScalar get_emissivity_from_flux( Atmosphere const *, AtmosphereParameters const *, PetscScalar );
 
@@ -69,7 +67,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
           /* trying to pass the Constants struct resulted in a circular
              dependency, which was easiest to address by just passing
              in the two required constants instead */
-          Qout = steam_atmosphere_zahnle_1988( A, C->TEMP, C->FLUX );
+          Qout = steam_atmosphere_zahnle_1988( A, C );
           break;
         case 3:
           // atmosphere evolution
@@ -280,7 +278,7 @@ PetscScalar grey_body( Atmosphere const *A, AtmosphereParameters const *Ap )
     return Fsurf;
 }
 
-PetscScalar steam_atmosphere_zahnle_1988( Atmosphere const *A, PetscScalar TEMP, PetscScalar FLUX )
+PetscScalar steam_atmosphere_zahnle_1988( Atmosphere const *A, Constants const *C )
 {
     PetscScalar       Tsurf, Fsurf;
 
@@ -288,9 +286,9 @@ PetscScalar steam_atmosphere_zahnle_1988( Atmosphere const *A, PetscScalar TEMP,
        Eqn. 40.  Expressed dimensionally so must convert here using
        TEMP and FLUX scalings */
 
-    Tsurf = A->tsurf * TEMP;
+    Tsurf = A->tsurf * C->TEMP;
     Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf);
-    Fsurf /= FLUX;
+    Fsurf /= C->FLUX;
 
     return Fsurf;
 
