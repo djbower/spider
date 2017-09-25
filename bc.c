@@ -7,8 +7,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 {
     PetscErrorCode       ierr;
     PetscMPIInt          rank;
-    // initialise Qout to avoid compiler warning
-    PetscScalar          temp0, Qout=0.0;
+    PetscScalar          temp0, Qout;
     PetscInt             ind;
     Atmosphere           *A  = &E->atmosphere;
     Parameters           const *P  = &E->parameters;
