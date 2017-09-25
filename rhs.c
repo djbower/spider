@@ -13,7 +13,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   PetscErrorCode    ierr;
   Ctx                  *E = (Ctx*) ptr;
   Parameters           *P = &E->parameters;
-  Atmosphere           *A = &E->atmosphere;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
@@ -50,7 +49,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /* extract other necessary quantities from augmented array */
   /* FIXME: clean up */
-  if( Ap->MODEL == MO_ATMOSPHERE_TYPE_VOLATILES){
+  if( Ap->MODEL == 3 ){ //MO_ATMOSPHERE_TYPE_VOLATILES){
     /* C02 content of magma ocean (solid and liquid phase) */
     ind = 0;
     ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x0);CHKERRQ(ierr);
@@ -134,10 +133,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* time-dependence of additional quantities at the top of the augmented array */
 
   /* now that we have dS/dt, compute change in volatile concentrations */
-  if (Ap->MODEL == MO_ATMOSPHERE_TYPE_VOLATILES){
+  if (Ap->MODEL == 3){//MO_ATMOSPHERE_TYPE_VOLATILES){
     PetscScalar dx0dt, dx1dt;
-    dx0dt = get_dx0dt( A, Ap, x0, M->mantle_mass );
-    dx1dt = get_dx1dt( A, Ap, x1, M->mantle_mass );
+    dx0dt = get_dx0dt( E, x0 );
+    dx1dt = get_dx1dt( E, x1 );
     ierr = VecSetValue(rhs_b_aug,0,dx0dt,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(rhs_b_aug,1,dx1dt,INSERT_VALUES);CHKERRQ(ierr);
   }

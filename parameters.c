@@ -14,7 +14,7 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     PetscScalar SQRTST;
 
     PetscFunctionBeginUser;
-    /* 27 constants to set (excluding SQRTST which is a convenience
+    /* 28 constants to set (excluding SQRTST which is a convenience
        parameter) */
     SQRTST = PetscSqrtScalar( ENTROPY * TEMPERATURE );
     /* 4.0*pi geometry is excluded since it cancels in the equations,
@@ -47,6 +47,10 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     C->SIGMA     = C->FLUX * 1.0 / PetscPowScalar( C->TEMP, 4.0 );
     C->LHS       = C->DENSITY * C->VOLUME * C->TEMP;
     C->RHS       = C->ENTROPY / C->TIME;
+    /* TODO: allow user-specification?  For units of wt % this must
+       be 1E2 and for units of ppm this must be 1E6 */
+    C->VOLSCALE  = 1.0E2; // wt %
+    //C->VOLSCALE  = 1.0E6; // ppm
 
     PetscFunctionReturn(0);
 }
@@ -265,7 +269,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* atmosphere parameters
      MODEL = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body
-     MODEL = MO_ATMOSPHERE_TYPE_ZAHNLE: FIXME: currently broken
+     MODEL = MO_ATMOSPHERE_TYPE_ZAHNLE: steam atmosphere
      MODEL = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
      with CO2 and H2O volatiles
      uses plane-parallel radiative eqm model
@@ -278,18 +282,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     ierr = PetscOptionsGetInt(NULL,NULL,"-MODEL",&MODEL,&MODELset);CHKERRQ(ierr);
     if( MODELset ) Ap->MODEL = MODEL;
   }
-  /* TODO: non-dimensionalise other atmosphere parameters */
-  /* SIGMA and TEQM should get us up and running for the standard
-     grey-body case */
 
-  /* for legacy purposes
-     if HYBRID is set, then the boundary condition will switch
-     to the upper mantle cooling rate once the rheological
-     transition is reached.  This prevents a lid from forming at
-     the top of the model.
-TODO: this implies that the emissivity is around 1.0E-7,
-which is unphysical unless you are appealing to a massive
-massive atmosphere */
   Ap->HYBRID = 0;
   ierr = PetscOptionsGetBool(NULL,NULL,"-HYBRID",&Ap->HYBRID,NULL);CHKERRQ(ierr);
 
@@ -320,49 +313,43 @@ massive atmosphere */
   }
 
   /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
-  // FIXME: for convenience at the moment, duplicate these values */
-  Ap->RADIUS = P->radius;
-  Ap->GRAVITY = P->gravity;
-
-  /* volatile scaling */
-  Ap->volscale = 1.0E2; // wt %
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-volscale",&Ap->volscale,NULL);CHKERRQ(ierr);
 
   /* atmosphere reference pressure (Pa) */
   Ap->P0 = 101325.0; // Pa (= 1 atm)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-P0",&Ap->P0,NULL);CHKERRQ(ierr);
+  Ap->P0 /= C->PRESSURE;
 
   /* H2O volatile */
-  H2O->initial = 0.0;
+  H2O->initial = 0.0; // units according to VOLSCALE (typically wt % or ppm)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_initial",&H2O->initial,NULL);CHKERRQ(ierr);
-  H2O->kdist = 1.0E-4;
+  H2O->kdist = 1.0E-4; // non-dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kdist",&H2O->kdist,NULL);CHKERRQ(ierr);
   // TODO: water saturation limit of 10 ppm?
-  H2O->kabs = 0.01;
+  H2O->kabs = 0.01; // m^2/kg
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kabs",&H2O->kabs,NULL);CHKERRQ(ierr);
+  H2O->kabs *= C->DENSITY * C->RADIUS;
   H2O->henry = 6.8E-8; // must be mass fraction/Pa
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
   H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry_pow",&H2O->henry_pow,NULL);CHKERRQ(ierr);
   /* effective henry constant used in code */
-  H2O->henry = PetscPowScalar( H2O->henry*Ap->volscale, H2O->henry_pow );
+  H2O->henry = PetscPowScalar( H2O->henry*C->VOLSCALE, H2O->henry_pow );
 
   /* CO2 volatile */
-  CO2->initial = 0.0;
+  CO2->initial = 0.0; // units according to VOLSCALE
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_initial",&CO2->initial,NULL);CHKERRQ(ierr);
-  CO2->kdist = 5.0E-4;
+  CO2->kdist = 5.0E-4; // non-dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kdist",&CO2->kdist,NULL);CHKERRQ(ierr);
   // TODO: water saturation limit of 0.03 ppm
-  CO2->kabs = 0.05;
+  CO2->kabs = 0.05; // m^2/kg
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kabs",&CO2->kabs,NULL);CHKERRQ(ierr);
+  CO2->kabs *= C->DENSITY * C->RADIUS;
   CO2->henry = 4.4E-12; // must be mass fraction/Pa
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
   CO2->henry_pow = 1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
   /* effective henry constant used in code */
-  CO2->henry = PetscPowScalar( CO2->henry*Ap->volscale, CO2->henry_pow );
-
-  /* Additional Parameters for Atmosphere */
+  CO2->henry = PetscPowScalar( CO2->henry*C->VOLSCALE, CO2->henry_pow );
 
   /* Get lookup tables */
   ierr = SetLookups(P);CHKERRQ(ierr);

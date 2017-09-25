@@ -35,6 +35,7 @@ typedef struct _Constants {
     PetscScalar SIGMA;
     PetscScalar LHS;
     PetscScalar RHS;
+    PetscScalar VOLSCALE;
 } Constants;
 
 /* atmosphere */
@@ -78,16 +79,9 @@ typedef struct AtmosphereParameters_ {
     PetscBool   PARAM_UTBL;
     PetscScalar param_utbl_const;
     // for volatile ODE
-    PetscScalar volscale;
     PetscScalar P0; 
     VolatileParameters H2O_volatile_parameters;
     VolatileParameters CO2_volatile_parameters;
-    /* although RADIUS and GRAVITY are duplicated, they may have
-       different non-dimensional values depending on the volatile
-       non-dimensionalisation scheme, which will be different to
-       the dS/dr scheme to ensure comparable magnitude residuals */
-    PetscScalar RADIUS; // duplicate
-    PetscScalar GRAVITY; // duplicate
 } AtmosphereParameters;
 
 typedef struct _Parameters {
@@ -141,7 +135,7 @@ typedef struct _Parameters {
     // Additional Atmosphere Parameters
     AtmosphereParameters atmosphere_parameters;
 
-    // Scaling factors / dimensionalizing constants
+    // Scaling factors / dimensionalising constants
     Constants constants;
 } Parameters;
 

@@ -7,7 +7,6 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
 {
 
     PetscErrorCode ierr;
-    Mesh                 *M  = &E->mesh;
     Parameters           *P  = &E->parameters;
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
 
@@ -23,11 +22,11 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
     */
 
     /* initial mass content of CO2 in the magma ocean */
-    x0 = get_initial_volatile( Ap, &Ap->CO2_volatile_parameters, M->mantle_mass );
+    x0 = get_initial_volatile( E, &Ap->CO2_volatile_parameters );
     ierr = VecSetValue(dSdr_b_aug,0,x0,INSERT_VALUES);CHKERRQ(ierr);
     
     /* initial mass content of H2O in the magma ocean */
-    x1 = get_initial_volatile( Ap, &Ap->H2O_volatile_parameters, M->mantle_mass );
+    x1 = get_initial_volatile( E, &Ap->H2O_volatile_parameters );
     ierr = VecSetValue(dSdr_b_aug,1,x1,INSERT_VALUES);CHKERRQ(ierr);
    
     /* include initial entropy at staggered node */
