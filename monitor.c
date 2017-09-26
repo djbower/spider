@@ -61,9 +61,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     /* Set up a binary viewer */
     PetscViewer          viewer;
     char                 filename[PETSC_MAX_PATH_LEN];
-    Atmosphere           *A = &ctx->atmosphere;
     Parameters           *P = &ctx->parameters;
-    AtmosphereParameters *Ap = &P->atmosphere_parameters;
+    Constants            *C = &P->constants;
     Mesh                 *M = &ctx->mesh;
     Solution             *S = &ctx->solution;
     PetscInt             i;
@@ -96,6 +95,26 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       }
     }
 
+    /* Add constants */
+    {
+      Vec data;
+      PetscMPIInt rank;
+      //char vecname[PETSC_MAX_PATH_LEN];
+      /* FIXME: it's really easy to update output.c and forget to change the size
+         of the array in the next line */
+      const int nData = 28;
+      ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
+      if (!rank) {
+        ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
+        ierr = VecSetType(data,VECSEQ);CHKERRQ(ierr);
+        ierr = VecSetSizes(data,nData,nData);CHKERRQ(ierr);
+        ierr = constants_struct_to_vec( C, data ); CHKERRQ(ierr);
+        //ierr = PetscObjectSetName((PetscObject)data,vecname);CHKERRQ(ierr);
+        ierr = VecView(data,viewer);CHKERRQ(ierr);
+        ierr = VecDestroy(&data);CHKERRQ(ierr);
+      }
+    }
+
     /* Add atmosphere */
     {
       Vec data;
@@ -103,13 +122,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       //char vecname[PETSC_MAX_PATH_LEN];
       /* FIXME: it's really easy to update output.c and forget to change the size
          of the array in the next line */
-      const int nData = 33;
+      const int nData = 34;
       ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
       if (!rank) {
         ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
         ierr = VecSetType(data,VECSEQ);CHKERRQ(ierr);
         ierr = VecSetSizes(data,nData,nData);CHKERRQ(ierr);
-        ierr = atmosphere_structs_to_vec( A, Ap, data ); CHKERRQ(ierr);
+        ierr = atmosphere_structs_to_vec( ctx, data ); CHKERRQ(ierr);
         //ierr = PetscObjectSetName((PetscObject)data,vecname);CHKERRQ(ierr);
         ierr = VecView(data,viewer);CHKERRQ(ierr);
         ierr = VecDestroy(&data);CHKERRQ(ierr);

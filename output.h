@@ -4,6 +4,6 @@
 #include "ctx.h"
 
 PetscErrorCode add_vector_to_binary_output( Vec, PetscViewer );
-PetscErrorCode atmosphere_structs_to_vec( Atmosphere const *,AtmosphereParameters const *, Vec );
-
+PetscErrorCode atmosphere_structs_to_vec( Ctx *, Vec );
+PetscErrorCode constants_struct_to_vec( Constants const *, Vec );
 #endif

@@ -16,13 +16,17 @@ PetscErrorCode add_vector_to_binary_output( Vec vec, PetscViewer viewer)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode atmosphere_structs_to_vec( Atmosphere const *A, AtmosphereParameters const * Ap, Vec vec )
+PetscErrorCode atmosphere_structs_to_vec( Ctx *E, Vec vec )
 {
 
     PetscErrorCode ierr;
 
+    Atmosphere const *A = &E->atmosphere;
+    Parameters const *P = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     VolatileParameters const *CO2 = &Ap->CO2_volatile_parameters;
     VolatileParameters const *H2O = &Ap->H2O_volatile_parameters;
+    Mesh const *M = &E->mesh;
 
     PetscFunctionBeginUser;
 
@@ -45,20 +49,63 @@ PetscErrorCode atmosphere_structs_to_vec( Atmosphere const *A, AtmosphereParamet
     ierr = VecSetValue(vec,16,H2O->kabs,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,17,H2O->henry,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,18,H2O->henry_pow,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,19,A->Mliq,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,20,A->Msol,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,21,A->dMliqdt,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,22,A->tsurf,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,23,A->tau,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,24,A->p0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,25,A->dp0dx,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,26,A->m0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,27,A->tau0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,28,A->p1,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,29,A->dp1dx,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,30,A->m1,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,31,A->tau1,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,32,A->emissivity,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,19,M->mantle_mass,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,20,A->Mliq,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,21,A->Msol,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,22,A->dMliqdt,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,23,A->tsurf,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,24,A->tau,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,25,A->p0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,26,A->dp0dx,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,27,A->m0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,28,A->tau0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,29,A->p1,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,30,A->dp1dx,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,31,A->m1,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,32,A->tau1,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,33,A->emissivity,INSERT_VALUES);CHKERRQ(ierr);
+
+    ierr = VecAssemblyBegin(vec);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(vec);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode constants_struct_to_vec( Constants const *C, Vec vec )
+{
+
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = VecSetValue(vec,0,C->RADIUS,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,1,C->TEMP,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,2,C->ENTROPY,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,3,C->DENSITY,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,4,C->AREA,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,5,C->VOLUME,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,6,C->MASS,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,7,C->TIME,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,8,C->TIMEYRS,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,9,C->SENERGY,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,10,C->ENERGY,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,11,C->PRESSURE,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,12,C->POWER,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,13,C->FLUX,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,14,C->DPDR,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,15,C->GRAVITY,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,16,C->KAPPA,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,17,C->DTDP,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,18,C->DSDR,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,19,C->DTDR,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,20,C->GSUPER,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,21,C->VISC,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,22,C->LOG10VISC,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,23,C->COND,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,24,C->SIGMA,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,25,C->LHS,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,26,C->RHS,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,27,C->VOLSCALE,INSERT_VALUES);CHKERRQ(ierr);
 
     ierr = VecAssemblyBegin(vec);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(vec);CHKERRQ(ierr);
