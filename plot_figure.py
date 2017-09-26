@@ -795,31 +795,34 @@ def figure6( args ):
 
     data = atmosphere_data_to_array( fig_o )
 
-    #VOLSCALE = 100.0 # for wt %
-    VOLSCALE = 1000000.0 # for ppm
+    PRESSURE = fig_o.get_data( 'constant_data', 0 )[11]
+    VOLSCALE = fig_o.get_data( 'constant_data', 0 )[27]
+    TIMEYRS = fig_o.get_data( 'constant_data', 0 )[8]
+    dtmacro = fig_o.get_data( 'time_data', 0 )[1]
 
     # bit clunky, but works for now
-    time = data[:,0] * 1.0E-6 # in Myrs
-    M0 = data[:,1]
-    Mliq = data[:,2]
-    Msol = data[:,3]
-    dMliqdt = data[:,4]
-    tau = data[:,5]
-    emissivity = data[:,6]
-    x0init = data[:,7]
-    x0 = data[:,8]
-    dx0dt = data[:,9]
-    p0 = data[:,10]
-    dp0dx = data[:,11]
-    m0 = data[:,12]
-    tau0 = data[:,13]
-    x1init = data[:,14]
-    x1 = data[:,15]
-    dx1dt = data[:,16]
-    p1 = data[:,17]
-    dp1dx = data[:,18]
-    m1 = data[:,19]
-    tau1 = data[:,20]
+    time = data[:,0] * TIMEYRS * 1.0E-6 # in Myrs
+    M0 = data[:,20]
+    Mliq = data[:,21]
+    Msol = data[:,22]
+    dMliqdt = data[:,23]
+    tsurf = data[:,24]
+    tau = data[:,25]
+    emissivity = data[:,34]
+    x0init = 0.01 # data[:,7]
+    x0 = data[:,-2] # TODO: FROM RHS
+    #dx0dt = data[:,9] # TODO: FROM RHS
+    p0 = data[:,26]
+    dp0dx = data[:,27]
+    m0 = data[:,28]
+    tau0 = data[:,29]
+    x1init = 0.05 # data[:,14]
+    x1 = data[:,-1]
+    #dx1dt = data[:,16]
+    p1 = data[:,30]
+    dp1dx = data[:,31]
+    m1 = data[:,32]
+    tau1 = data[:,33]
 
     # THIS PROVES THAT THE INITIAL CONDITION IS APPLIED
     # CORRECTLY BOTH CO2 AND H2O
@@ -916,7 +919,7 @@ def figure6( args ):
     h2, = ax0.semilogx( time, CO2sol, 'b-', label='Solid' )
     h3, = ax0.semilogx( time, CO2atm, 'g-', label='Atmos' )
     #ax0.semilogx( time, CO2tot, 'k-' )
-    fig_o.set_myaxes( ax0, title=title, ylabel='$x$', xticks=xticks )
+    fig_o.set_myaxes( ax0, title=title, ylabel='$x$')#, xticks=xticks )
     handle_l = [h1,h3,h2,h4]
     fig_o.set_mylegend( ax0, handle_l, loc='center right', ncol=1, TITLE=0 )
     ax0.yaxis.set_label_coords(-0.1,0.46)
@@ -940,7 +943,7 @@ def figure6( args ):
     h2, = ax2.semilogx( time, H2Osol, 'b-', label='Solid' )
     h3, = ax2.semilogx( time, H2Oatm, 'g-', label='Atmos' )
     #ax1.semilogx( time, H2Otot, 'k-' )
-    fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel='$x$', xticks=xticks )
+    fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel='$x$')#, xticks=xticks )
     handle_l = [h1,h3,h2,h4]
     fig_o.set_mylegend( ax2, handle_l, loc='center left', ncol=1, TITLE=0 )
     ax2.yaxis.set_label_coords(-0.1,0.46)
@@ -948,10 +951,10 @@ def figure6( args ):
     # figure e
     title = '(b) Partial pressure (bar)'
     ylabel = '$p$'
-    h1, = ax1.semilogx( time, p0*1.0E-5, 'r-', label='CO$_2$')
-    h2, = ax1.semilogx( time, p1*1.0E-5, 'b-', label='H$_2$O')
+    h1, = ax1.semilogx( time, p0*PRESSURE*1.0E-5, 'r-', label='CO$_2$')
+    h2, = ax1.semilogx( time, p1*PRESSURE*1.0E-5, 'b-', label='H$_2$O')
     handle_l = [h1,h2]
-    fig_o.set_myaxes( ax1, title=title, ylabel=ylabel, xticks=xticks )
+    fig_o.set_myaxes( ax1, title=title, ylabel=ylabel)#, xticks=xticks )
     fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1, TITLE=0 )
     ax1.yaxis.set_label_coords(-0.1,0.575)
 
@@ -959,7 +962,7 @@ def figure6( args ):
     title = '(d) Emissivity'
     ylabel = '$\epsilon$'
     ax3.semilogx( time, emissivity, 'k-' )
-    fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks )
+    fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel)#, xticks=xticks )
     ax3.yaxis.set_label_coords(-0.1,0.58)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
@@ -981,6 +984,8 @@ def atmosphere_data_to_array( fig_o ):
     time_l = list(filter(lambda a: a !='info', time_l))
     # remove '.m' suffix
     time_l = list(filter(lambda a: a !='m', time_l))
+    # remove gitignore
+    time_l = list(filter(lambda a: a !='gitignore', time_l))
     # convert to int
     time_l = [int(val) for val in time_l]
     # ascending order
@@ -996,13 +1001,17 @@ def atmosphere_data_to_array( fig_o ):
     ncols = np.size( data ) + 1
     nrows = len( time_l )
 
-    data_a = np.zeros( (nrows, ncols) )
+    data_a = np.zeros( (nrows, ncols+2) )
 
     for nn, time in enumerate( time_l ):
 
         data = fig_o.get_data( 'atmosphere_data', time )
         data_a[nn,0] = time
-        data_a[nn,1:] = data
+        data_a[nn,1:-2] = data
+
+        dSdr_b_aug = fig_o.get_data( 'dSdr_b_aug', 0 )
+        data_a[nn,-2] = dSdr_b_aug[0] # x0
+        data_a[nn,-1] = dSdr_b_aug[1] # x1
 
     return data_a
 
@@ -1177,6 +1186,7 @@ def get_vector_index( instring ):
     data_l = [
         # extraneous
         'time_data',
+        'constant_data',
         'atmosphere_data',
         'dSdr_b_aug',
         # stored in M->meshVecs_b
@@ -1276,7 +1286,7 @@ def main( args ):
     #figure3( args )
     #figure4( args )
     #figure5( args )
-    #figure6( args )
+    figure6( args )
     plt.show()
 
 #====================================================================
