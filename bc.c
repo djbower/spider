@@ -349,7 +349,7 @@ static PetscScalar get_optical_depth( Parameters const *P, PetscScalar mass_atm,
     PetscScalar tau;
 
     // note negative gravity
-    tau = 0.5 * mass_atm * PetscSqrtScalar( -3.0 * V->kabs * P->gravity / Ap->P0 );
+    tau = 0.5 * mass_atm * PetscSqrtScalar( 3.0 * V->kabs * -P->gravity / Ap->P0 );
 
     return tau; // dimensionless (by definition)
 }
