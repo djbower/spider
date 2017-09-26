@@ -219,6 +219,9 @@ PetscErrorCode set_atmosphere_volatile_content( Ctx *E , PetscScalar x0, PetscSc
 
     PetscFunctionBeginUser;
 
+    /* if x0 and/or x1 are zero, the quantities below will also all
+       be set to zero */
+
     /* CO2 */
     A->p0 = get_partial_pressure_volatile( x0, CO2, C );
     A->dp0dx = get_partial_pressure_derivative_volatile( x0, CO2, C );

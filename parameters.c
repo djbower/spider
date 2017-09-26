@@ -312,6 +312,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       Ap->param_utbl_const = 0.0;
   }
 
+  Ap->SOLVE_FOR_VOLATILES = 0;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-SOLVE_FOR_VOLATILES",&Ap->SOLVE_FOR_VOLATILES,NULL);CHKERRQ(ierr);
+
   /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
 
   /* atmosphere reference pressure (Pa) */

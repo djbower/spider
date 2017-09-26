@@ -40,7 +40,7 @@
 # MODEL 1 is grey-body
 # MODEL 2 is steam atmosphere parameterisation of Zahnle et al. (1988)
 # MODEL 3 is self-consistent volatile evolution
--MODEL 3
+-MODEL 1
 # HYBRID is a hack to prevent a rigid lid from forming at the surface
 # and should only be used with caution
 -HYBRID 0
@@ -52,6 +52,9 @@
 # dT = param_utbl_const * [Surface temperature]**3.0
 -PARAM_UTBL 0
 -param_utbl_const 1.0E-7
+
+# track time-dependence of volatile content
+-SOLVE_FOR_VOLATILES 1
 
 # atmosphere reference pressure (Pa)
 -P0 101325.0 # Pa (= 1 atm)

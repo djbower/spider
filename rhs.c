@@ -43,25 +43,24 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
      extra points */
   ierr = FromAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
 
-  /* Create rhs vector of "normal" size (no extra point) */
-  /* this is initialised with zeros (potential for bug?) */
+  /* Create rhs vector of "normal" size (no extra point)
+     this is initialised with zeros (potential for bug?) */
   ierr = VecDuplicate(S->dSdr,&rhs_b);CHKERRQ(ierr);
 
+  /////////////////////////////////////////////////////////////
   /* extract other necessary quantities from augmented array */
-  /* FIXME: clean up */
-  if( Ap->MODEL == 3 ){ //MO_ATMOSPHERE_TYPE_VOLATILES){
-    /* C02 content of magma ocean (solid and liquid phase) */
-    ind = 0;
-    ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x0);CHKERRQ(ierr);
+  /* C02 content of magma ocean (liquid phase) */
+  ind = 0;
+  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x0);CHKERRQ(ierr);
 
-    /* H20 content of magma ocean (solid and liquid phase) */
-    ind = 1;
-    ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x1);CHKERRQ(ierr);
-  }
+  /* H20 content of magma ocean (liquid phase) */
+  ind = 1;
+  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x1);CHKERRQ(ierr);
 
   /* Get first staggered node value (stored as S0) */
   ind = 2;
   ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&S0);CHKERRQ(ierr);
+  ////////////////////////////////////////////////////////////
 
   ierr = set_entropy( E, S0 );CHKERRQ(ierr);
 
@@ -71,13 +70,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   ierr = set_matprop_basic( E );CHKERRQ(ierr);
 
-  /* updates A->Mliq, A->Msol, A->dMliqdt */
+  /* these update A->Mliq, A->Msol, and A->dMliqdt */
   ierr = set_Mliq( E );CHKERRQ(ierr);
   ierr = set_Msol( E );CHKERRQ(ierr);
   ierr = set_dMliqdt( E );CHKERRQ(ierr);
 
-  /* FIXME: add switch depending on atmosphere model and
-     passive atmosphere tracking */
   ierr = set_atmosphere_volatile_content( E, x0, x1 );
 
   ierr = set_Etot( E );CHKERRQ(ierr);
@@ -87,10 +84,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* note pass in current time in years here */
   ierr = set_Htot( E, t );CHKERRQ(ierr);
 
-  /* this next function determines if we couple to the
-     volatile evolution of the interior, or apply a simpler model
-     such as a grey-body with constant emissivity, or a
-     parameterised model such as Zahnle et al. (1988) */
   ierr = set_surface_flux( E );CHKERRQ(ierr);
 
   ierr = set_core_mantle_flux( E );CHKERRQ(ierr);
@@ -137,7 +130,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* time-dependence of additional quantities at the top of the augmented array */
 
   /* now that we have dS/dt, compute change in volatile concentrations */
-  if (Ap->MODEL == 3){//MO_ATMOSPHERE_TYPE_VOLATILES){
+  if (Ap->SOLVE_FOR_VOLATILES || Ap->MODEL == 3){//MO_ATMOSPHERE_TYPE_VOLATILES){
     PetscScalar dx0dt, dx1dt;
     dx0dt = get_dx0dt( E, x0 );
     dx1dt = get_dx1dt( E, x1 );

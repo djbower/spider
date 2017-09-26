@@ -79,6 +79,7 @@ typedef struct AtmosphereParameters_ {
     PetscBool   PARAM_UTBL;
     PetscScalar param_utbl_const;
     // for volatile ODE
+    PetscBool SOLVE_FOR_VOLATILES;
     PetscScalar P0; 
     VolatileParameters H2O_volatile_parameters;
     VolatileParameters CO2_volatile_parameters;
