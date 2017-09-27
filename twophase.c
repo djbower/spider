@@ -312,8 +312,8 @@ PetscErrorCode set_Mliq( Ctx *E )
 {
     PetscErrorCode ierr;
     Atmosphere     *A = &E->atmosphere;
-    Solution       *S = &E->solution;
-    Mesh           *M = &E->mesh;
+    Solution       const *S = &E->solution;
+    Mesh           const *M = &E->mesh;
     Vec            mass_s;
 
     PetscFunctionBeginUser;
@@ -333,8 +333,8 @@ PetscErrorCode set_Msol( Ctx *E )
 {
     PetscErrorCode ierr;
     Atmosphere     *A = &E->atmosphere;
-    Solution       *S = &E->solution;
-    Mesh           *M = &E->mesh;
+    Solution       const *S = &E->solution;
+    Mesh           const *M = &E->mesh;
     Vec            mass_s;
 
     PetscFunctionBeginUser;
