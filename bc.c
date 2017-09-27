@@ -240,7 +240,8 @@ static PetscScalar get_partial_pressure_volatile( PetscScalar x, VolatileParamet
     /* partial pressure of volatile */
     PetscScalar p;
 
-    p = ( 1.0 / V->henry ) * PetscPowScalar( x, V->henry_pow );
+    p = ( x / V->henry );
+    p = PetscPowScalar( p, V->henry_pow );
     p /= C->PRESSURE; // non-dimensionalise
 
     return p;
@@ -251,7 +252,8 @@ static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, Vola
     /* partial pressure derivative of volatile */
     PetscScalar dpdx;
 
-    dpdx = ( V->henry_pow / V->henry ) * PetscPowScalar( x, V->henry_pow-1.0);
+    dpdx = 1.0 / PetscPowScalar( V->henry, V->henry_pow );
+    dpdx *= V->henry_pow * PetscPowScalar( x, V->henry_pow-1.0 );
     dpdx /= C->PRESSURE; // non-dimensionalise
 
     return dpdx;
