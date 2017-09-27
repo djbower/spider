@@ -415,6 +415,7 @@ PetscScalar get_initial_volatile( Ctx const *E, VolatileParameters const *V )
 
     PetscScalar fac, x;
 
+    /* remember that V->henry contains another factor of VOLSCALE */
     fac = C->VOLSCALE / (M->mantle_mass * -P->gravity * PetscPowScalar(V->henry,V->henry_pow) * C->PRESSURE );
 
     x = newton( fac, V->henry_pow, V->initial );
