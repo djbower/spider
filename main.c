@@ -83,7 +83,6 @@ int main(int argc, char ** argv)
 #else
   /* TODO: 1.0E-4 works for simple bottom up case with grey-body atmosphere
          with constant emissivity */
-  /* TODO: 1.0E-8 crashes at time step 8 for self-consistent atmosphere evolution */
   ierr = TSSundialsSetTolerance(ts, 1.0e-6, 1.0e-6 );CHKERRQ(ierr);
 #endif
 
