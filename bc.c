@@ -264,7 +264,7 @@ static PetscScalar get_atmosphere_mass( Parameters const *P, PetscScalar p )
     /* mass of atmosphere */ 
     PetscScalar mass_atm;
 
-    mass_atm = p / -P->gravity;
+    mass_atm = PetscSqr(P->radius) * p / -P->gravity;
 
     return mass_atm;
 }
@@ -351,7 +351,8 @@ static PetscScalar get_optical_depth( Parameters const *P, PetscScalar mass_atm,
     PetscScalar tau;
 
     // note negative gravity
-    tau = 0.5 * mass_atm * PetscSqrtScalar( 3.0 * V->kabs * -P->gravity / Ap->P0 );
+    tau = 0.5 * mass_atm / PetscSqr( P->radius );
+    tau *= PetscSqrtScalar( 3.0 * V->kabs * -P->gravity / Ap->P0 );
 
     return tau; // dimensionless (by definition)
 }
@@ -371,7 +372,7 @@ static PetscScalar get_dxdt( Ctx const *E, PetscScalar x, PetscScalar dpdx, Pets
 
     num = x * (kdist-1.0) * A->dMliqdt;
     den = kdist * M->mantle_mass + (1.0-kdist) * A->Mliq;
-    den += C->VOLSCALE * dpdx / -P->gravity;
+    den += C->VOLSCALE * PetscSqr(P->radius) * dpdx / -P->gravity;
 
     dxdt = num / den;
 
