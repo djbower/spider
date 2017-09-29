@@ -49,8 +49,10 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     C->RHS       = C->ENTROPY / C->TIME;
     /* TODO: allow user-specification?  For units of wt % this must
        be 1E2 and for units of ppm this must be 1E6 */
-    C->VOLSCALE  = 1.0E2; // wt %
+    //C->VOLSCALE = 1.0; // mass fraction
+    //C->VOLSCALE  = 1.0E2; // wt %
     //C->VOLSCALE  = 1.0E6; // ppm
+    C->VOLSCALE = 1.0E3; // DJB NEW TESTING
 
     PetscFunctionReturn(0);
 }
@@ -333,10 +335,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   H2O->kabs *= C->DENSITY * C->RADIUS;
   H2O->henry = 6.8E-8; // must be mass fraction/Pa
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
+  /* scaled henry constant used in code */
+  H2O->henry *= C->VOLSCALE;
   H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry_pow",&H2O->henry_pow,NULL);CHKERRQ(ierr);
-  /* effective henry constant used in code */
-  H2O->henry = PetscPowScalar( H2O->henry*C->VOLSCALE, H2O->henry_pow );
 
   /* CO2 volatile */
   CO2->initial = 0.0; // units according to VOLSCALE
@@ -349,10 +351,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->kabs *= C->DENSITY * C->RADIUS;
   CO2->henry = 4.4E-12; // must be mass fraction/Pa
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
+  /* scaled henry constant used in code */
+  CO2->henry *= C->VOLSCALE;
   CO2->henry_pow = 1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
-  /* effective henry constant used in code */
-  CO2->henry = PetscPowScalar( CO2->henry*C->VOLSCALE, CO2->henry_pow );
 
   /* Get lookup tables */
   ierr = SetLookups(P);CHKERRQ(ierr);

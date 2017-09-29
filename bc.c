@@ -26,6 +26,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscScalar          temp0, Qout;
     PetscInt             ind;
     Atmosphere           *A  = &E->atmosphere;
+    Mesh                 const *M  = &E->mesh;
     Parameters           const *P  = &E->parameters;
     Constants            const *C  = &P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -90,10 +91,11 @@ PetscErrorCode set_surface_flux( Ctx *E )
       A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
 
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
-      /* TODO: probably OK, but remember this has a scaling dictated
-         by the dS/dr non-dimensionalisation scheme, and not the
-         atmosphere scheme */
-      Qout *= PetscSqr( P->radius );
+
+      PetscScalar area0;
+      PetscInt ind = 0; // perhaps redundant because set above, but just to be safe
+      ierr = VecGetValues(M->area_b,1,&ind,&area0);CHKERRQ(ierr);
+      Qout *= area0 ;
       ierr = VecSetValue(S->Etot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
     }
 
@@ -240,7 +242,8 @@ static PetscScalar get_partial_pressure_volatile( PetscScalar x, VolatileParamet
     /* partial pressure of volatile */
     PetscScalar p;
 
-    p = ( 1.0 / V->henry ) * PetscPowScalar( x, V->henry_pow );
+    p = 1.0 / PetscPowScalar( V->henry, V->henry_pow );
+    p *= PetscPowScalar( x, V->henry_pow );
     p /= C->PRESSURE; // non-dimensionalise
 
     return p;
@@ -251,7 +254,8 @@ static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, Vola
     /* partial pressure derivative of volatile */
     PetscScalar dpdx;
 
-    dpdx = ( V->henry_pow / V->henry ) * PetscPowScalar( x, V->henry_pow-1.0);
+    dpdx = 1.0 / PetscPowScalar( V->henry, V->henry_pow );
+    dpdx *= V->henry_pow * PetscPowScalar( x, V->henry_pow-1.0 );
     dpdx /= C->PRESSURE; // non-dimensionalise
 
     return dpdx;
@@ -262,7 +266,7 @@ static PetscScalar get_atmosphere_mass( Parameters const *P, PetscScalar p )
     /* mass of atmosphere */ 
     PetscScalar mass_atm;
 
-    mass_atm = p / -P->gravity;
+    mass_atm = PetscSqr(P->radius) * p / -P->gravity;
 
     return mass_atm;
 }
@@ -349,7 +353,8 @@ static PetscScalar get_optical_depth( Parameters const *P, PetscScalar mass_atm,
     PetscScalar tau;
 
     // note negative gravity
-    tau = 0.5 * mass_atm * PetscSqrtScalar( 3.0 * V->kabs * -P->gravity / Ap->P0 );
+    tau = 0.5 * mass_atm / PetscSqr( P->radius );
+    tau *= PetscSqrtScalar( 3.0 * V->kabs * -P->gravity / Ap->P0 );
 
     return tau; // dimensionless (by definition)
 }
@@ -369,7 +374,7 @@ static PetscScalar get_dxdt( Ctx const *E, PetscScalar x, PetscScalar dpdx, Pets
 
     num = x * (kdist-1.0) * A->dMliqdt;
     den = kdist * M->mantle_mass + (1.0-kdist) * A->Mliq;
-    den += C->VOLSCALE * dpdx / -P->gravity;
+    den += C->VOLSCALE * PetscSqr(P->radius) * dpdx / -P->gravity;
 
     dxdt = num / den;
 
@@ -413,7 +418,14 @@ PetscScalar get_initial_volatile( Ctx const *E, VolatileParameters const *V )
 
     PetscScalar fac, x;
 
-    fac = C->VOLSCALE / (M->mantle_mass * -P->gravity * V->henry * C->PRESSURE );
+    /* remember that V->henry contains another factor of VOLSCALE */
+
+    fac = PetscSqr( P->radius );
+    fac /= -P->gravity * M->mantle_mass;
+    fac /= C->PRESSURE;
+
+    fac *= C->VOLSCALE;
+    fac /= PetscPowScalar(V->henry,V->henry_pow);
 
     x = newton( fac, V->henry_pow, V->initial );
 

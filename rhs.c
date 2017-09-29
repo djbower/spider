@@ -70,11 +70,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   ierr = set_matprop_basic( E );CHKERRQ(ierr);
 
-  /* these update A->Mliq, A->Msol, and A->dMliqdt */
-  ierr = set_Mliq( E );CHKERRQ(ierr);
-  ierr = set_Msol( E );CHKERRQ(ierr);
-  ierr = set_dMliqdt( E );CHKERRQ(ierr);
-
   ierr = set_atmosphere_volatile_content( E, x0, x1 );
 
   ierr = set_Etot( E );CHKERRQ(ierr);
@@ -127,10 +122,13 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   /* Transfer back  */
   ierr = ToAug(rhs_b,rhs_b_aug);CHKERRQ(ierr);
 
-  /* time-dependence of additional quantities at the top of the augmented array */
+  /* these update A->Mliq, A->Msol, and A->dMliqdt */
+  ierr = set_Mliq( E );CHKERRQ(ierr);
+  ierr = set_Msol( E );CHKERRQ(ierr);
+  ierr = set_dMliqdt( E );CHKERRQ(ierr); /* must be after dS/dt computation */
 
-  /* now that we have dS/dt, compute change in volatile concentrations */
-  if (Ap->SOLVE_FOR_VOLATILES || Ap->MODEL == 3){//MO_ATMOSPHERE_TYPE_VOLATILES){
+  /* time-dependence of additional quantities at the top of the augmented array */
+  if (Ap->SOLVE_FOR_VOLATILES || Ap->MODEL == 3){
     PetscScalar dx0dt, dx1dt;
     dx0dt = get_dx0dt( E, x0 );
     dx1dt = get_dx1dt( E, x1 );

@@ -271,6 +271,8 @@ def figure1( args ):
     time = fig_o.time[0] # first timestep since liquidus and solidus
                           # are time-independent
 
+    TIMEYRS = fig_o.get_data( 'constant_data', 0 )[8]
+
     # shade grey between liquidus and solidus
     xx_liq, yy_liq = fig_o.get_xy_data( 'liquidus', time )
     xx_sol, yy_sol = fig_o.get_xy_data( 'solidus', time )
@@ -303,7 +305,7 @@ def figure1( args ):
         xx, yy = fig_o.get_xy_data( 'phi', time )
         MIX = get_mix( yy )
 
-        label = fig_o.get_legend_label( time )
+        label = fig_o.get_legend_label( time*TIMEYRS )
 
         # entropy
         xx, yy = fig_o.get_xy_data( 'S', time )
@@ -809,14 +811,14 @@ def figure6( args ):
     tsurf = data[:,24]
     tau = data[:,25]
     emissivity = data[:,34]
-    x0init = 0.01 # data[:,7]
-    x0 = data[:,-2] # TODO: FROM RHS
+    x0init = 0.1 # data[:,7]
+    x0 = data[:,-2]
     #dx0dt = data[:,9] # TODO: FROM RHS
     p0 = data[:,26]
     dp0dx = data[:,27]
     m0 = data[:,28]
     tau0 = data[:,29]
-    x1init = 0.05 # data[:,14]
+    x1init = 0.5 # data[:,14]
     x1 = data[:,-1]
     #dx1dt = data[:,16]
     p1 = data[:,30]
@@ -919,7 +921,7 @@ def figure6( args ):
     h2, = ax0.semilogx( time, CO2sol, 'b-', label='Solid' )
     h3, = ax0.semilogx( time, CO2atm, 'g-', label='Atmos' )
     #ax0.semilogx( time, CO2tot, 'k-' )
-    fig_o.set_myaxes( ax0, title=title, ylabel='$x$')#, xticks=xticks )
+    fig_o.set_myaxes( ax0, title=title, ylabel='$x$', xticks=xticks )
     handle_l = [h1,h3,h2,h4]
     fig_o.set_mylegend( ax0, handle_l, loc='center right', ncol=1, TITLE=0 )
     ax0.yaxis.set_label_coords(-0.1,0.46)
@@ -943,7 +945,7 @@ def figure6( args ):
     h2, = ax2.semilogx( time, H2Osol, 'b-', label='Solid' )
     h3, = ax2.semilogx( time, H2Oatm, 'g-', label='Atmos' )
     #ax1.semilogx( time, H2Otot, 'k-' )
-    fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel='$x$')#, xticks=xticks )
+    fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel='$x$', xticks=xticks )
     handle_l = [h1,h3,h2,h4]
     fig_o.set_mylegend( ax2, handle_l, loc='center left', ncol=1, TITLE=0 )
     ax2.yaxis.set_label_coords(-0.1,0.46)
@@ -954,7 +956,7 @@ def figure6( args ):
     h1, = ax1.semilogx( time, p0*PRESSURE*1.0E-5, 'r-', label='CO$_2$')
     h2, = ax1.semilogx( time, p1*PRESSURE*1.0E-5, 'b-', label='H$_2$O')
     handle_l = [h1,h2]
-    fig_o.set_myaxes( ax1, title=title, ylabel=ylabel)#, xticks=xticks )
+    fig_o.set_myaxes( ax1, title=title, ylabel=ylabel, xticks=xticks )
     fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1, TITLE=0 )
     ax1.yaxis.set_label_coords(-0.1,0.575)
 
@@ -962,7 +964,7 @@ def figure6( args ):
     title = '(d) Emissivity'
     ylabel = '$\epsilon$'
     ax3.semilogx( time, emissivity, 'k-' )
-    fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel)#, xticks=xticks )
+    fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks )
     ax3.yaxis.set_label_coords(-0.1,0.58)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
@@ -1067,113 +1069,6 @@ def sci_notation(num, decimal_digits=1, precision=None, exponent=None):
 
     return fmt
     #return r"${0:.{2}f}\cdot10^{{{1:d}}}$".format(coeff, exponent, precision)
-
-#====================================================================
-def get_dimensional_scaling( field ):
-
-    dd = {} # empty dictionary to store dimensional scalings
-
-    # FIXME: these should be read in from somewhere since they must
-    # be the same as the dimensional constants used in the c programme
-    dd['entropy0'] = 2993.025100070677 # J/kg K
-    dd['temperature0'] = 4033.6070755893948 # K
-    dd['density0'] = 4613.109568155063 # kg/m^3
-    dd['radius0'] = 6371000.0 # m
-
-    sqrtS0T0 = np.sqrt( dd['entropy0']*dd['temperature0'] )
-    # for non-dim, 4*pi that enters through spherical areas
-    # on the RHS cancels with the 4*pi on the LHS associated 
-    # with the volume of the cell.  So for non-dimensionalising
-    # the system, we ignore 4*pi factors for simplicity.  But
-    # to return dimensional output we typically want to include
-    # the geometric factors as well.  This is because the size
-    # of our system is most naturally defined as a sphere, so
-    # volume and mass, for example, should reflect that.
-    # m^2 (area)
-    dd['area0'] = dd['radius0']**2.0
-    dd['area0g'] = 4.0 * np.pi * dd['area0'] # geom scaled
-
-    # m^3 (volume)
-    # N.B. non-dim volume contains the additional 1/3 scaling
-    dd['volume0'] = dd['area0'] * dd['radius0']
-    dd['volume0g'] = 4.0 * np.pi * dd['volume0'] # geom scaled
-
-    # kg (mass)
-    dd['mass0'] = dd['density0'] * dd['volume0']
-    dd['mass0g'] = 4.0 * np.pi * dd['mass0'] # geom scaled
-
-    # s (time)
-    dd['time0'] = dd['radius0'] / sqrtS0T0 # seconds
-    dd['time0years'] = dd['time0'] / (60*60*24*365.25) # years
-
-    # J/kg (specific energy)
-    dd['senergy0'] = dd['entropy0'] * dd['temperature0']
-
-    # J (energy)
-    dd['energy0'] = dd['senergy0'] * dd['mass0']
-    dd['energy0g'] = 4.0 * np.pi * dd['energy0'] # geom scaled
-
-    # N/m^2 (pressure)
-    dd['pressure0'] = dd['entropy0']*dd['temperature0']*dd['density0']
-
-    # W (power)
-    dd['power0'] = dd['energy0'] / dd['time0']
-    dd['power0g'] = 4.0 * np.pi * dd['power0'] # geom scaled
-
-    # W/m^2 (flux)
-    dd['flux0'] = dd['power0'] / dd['area0']
-
-    # these scalings for material properties
-
-    # Pa / m
-    dd['dPdr0'] = dd['pressure0'] / dd['radius0']
-
-    # 1/K
-    dd['alpha0'] = 1.0 / dd['temperature0']
-
-    # m/s^2
-    dd['gravity0'] = (dd['entropy0']*dd['temperature0'])/dd['radius0']
-
-    # m^2/s
-    dd['kappa0'] = dd['radius0'] * sqrtS0T0
-
-    # K / N/m^2 = K/Pa
-    dd['dTdP0'] = 1.0 / (dd['density0'] * dd['entropy0'])
-
-    # J / kgKm
-    dd['dSdr0'] = dd['entropy0'] / dd['radius0']
-
-    # K / m
-    dd['dTdr0'] = dd['temperature0'] / dd['radius0']
-
-    # K / s^2 (gravity*super adiabatic temperature gradient)
-    dd['gsuper0'] = dd['gravity0'] * dd['dTdr0']
-
-    # Pa.s
-    dd['eta0'] = dd['density0'] * dd['kappa0']
-    dd['log10eta0'] = m.log10( dd['eta0'] )
-
-    # Pa.s / kg/m^3
-    dd['nu0'] = dd['kappa0']
-
-    # W/mK
-    dd['cond0'] = dd['entropy0'] * dd['density0'] * dd['kappa0']
-
-    # Stefan-Boltzmann constant
-    dd['sigma0'] = dd['flux0'] * 1.0 / (dd['temperature0']**4.0)
-
-    # LHS of the equation excludes dS/dt.  It is just
-    # volume * density * temperature, which has units of kg K.
-    # LHS has non-dim volume, which excludes the 4.0*pi factor
-    dd['lhs0'] = dd['density0'] * dd['volume0'] * dd['temperature0']
-    dd['lhs0g'] = 4.0 * m.pi * dd['lhs0'] # geom scaled
-
-    # this quantity is returned by the rhs function (dS/dt).
-    # Note that this is defined as: deltaE / LHS.  So the LHS is
-    # included in this expression.
-    dd['rhs0'] = dd['entropy0'] / dd['time0']
-
-    return dd
 
 #====================================================================
 def get_vector_index( instring ):

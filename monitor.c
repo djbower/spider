@@ -8,6 +8,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
 {
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
+  PetscBool      test_view = PETSC_FALSE;
   /* it remains convenient to be able to plot both short and long times together
      on the same plot, and since these are output by different settings in main.c,
      it is easiest if the output files reference the actual time in years, rather
@@ -18,6 +19,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   long long      nstep = (long long) dtmacro * (long long) step;
 
   PetscFunctionBeginUser;
+
+  ierr = PetscOptionsGetBool(NULL,NULL,"-test_view",&test_view,NULL);CHKERRQ(ierr);
 
   /* Globally, output double, if we are computing with quad precision */
 #if (defined PETSC_USE_REAL___FLOAT128)
@@ -166,6 +169,18 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     }
 
     /* Close the viewer */
+    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+  }
+
+  if (test_view) {
+    PetscViewer viewer;
+    ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
+    ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
+    ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing dSdr_b_aug for testing ---\n",time);CHKERRQ(ierr);
+    ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing rhs_b_aug for testing ---\n",time);CHKERRQ(ierr);
+    ierr = VecView(rhs_b_aug,viewer);CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
 
