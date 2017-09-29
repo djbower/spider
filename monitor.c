@@ -20,7 +20,9 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   PetscFunctionBeginUser;
 
   /* Globally, output double, if we are computing with quad precision */
+#if (defined PETSC_USE_REAL___FLOAT128)
   ierr = PetscOptionsSetValue(NULL,"-binary_write_double","");CHKERRQ(ierr);
+#endif
 
   {
     PetscReal minval,maxval;
