@@ -26,6 +26,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscScalar          temp0, Qout;
     PetscInt             ind;
     Atmosphere           *A  = &E->atmosphere;
+    Mesh                 const *M  = &E->mesh;
     Parameters           const *P  = &E->parameters;
     Constants            const *C  = &P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -90,10 +91,11 @@ PetscErrorCode set_surface_flux( Ctx *E )
       A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
 
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
-      /* TODO: probably OK, but remember this has a scaling dictated
-         by the dS/dr non-dimensionalisation scheme, and not the
-         atmosphere scheme */
-      Qout *= PetscSqr( P->radius );
+
+      PetscScalar area0;
+      PetscInt ind = 0; // perhaps redundant because set above, but just to be safe
+      ierr = VecGetValues(M->area_b,1,&ind,&area0);CHKERRQ(ierr);
+      Qout *= area0 ;
       ierr = VecSetValue(S->Etot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
     }
 
