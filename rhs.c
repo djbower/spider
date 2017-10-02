@@ -49,11 +49,15 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   /////////////////////////////////////////////////////////////
   /* extract other necessary quantities from augmented array */
-  /* C02 content of magma ocean (liquid phase) */
+  /* volatiles have already been initialised to zero in the 
+     initial condition, so reading them here is fine even if
+     we are not explicitly using volatiles in a model run */
+
+  /* CO2 content of magma ocean (liquid phase) */
   ind = 0;
   ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x0);CHKERRQ(ierr);
 
-  /* H20 content of magma ocean (liquid phase) */
+  /* H2O content of magma ocean (liquid phase) */
   ind = 1;
   ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x1);CHKERRQ(ierr);
 
@@ -70,14 +74,16 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
 
   ierr = set_matprop_basic( E );CHKERRQ(ierr);
 
-  ierr = set_atmosphere_volatile_content( E, x0, x1 );
-
   ierr = set_Etot( E );CHKERRQ(ierr);
 
   /* FIXME: make sure time is correct in years depending on
      non dimensionalisation scheme */
   /* note pass in current time in years here */
   ierr = set_Htot( E, t );CHKERRQ(ierr);
+
+  /* will populate A->p?, A->dp?dx, and A->m? with zeros if
+     x0 and x1 and/or are zero */
+  ierr = set_atmosphere_volatile_content( E, x0, x1 );CHKERRQ(ierr);
 
   ierr = set_surface_flux( E );CHKERRQ(ierr);
 
@@ -128,7 +134,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = set_dMliqdt( E );CHKERRQ(ierr); /* must be after dS/dt computation */
 
   /* time-dependence of additional quantities at the top of the augmented array */
-  if (Ap->SOLVE_FOR_VOLATILES || Ap->MODEL == 3){
+  if (Ap->SOLVE_FOR_VOLATILES || Ap->MODEL==3){
     PetscScalar dx0dt, dx1dt;
     dx0dt = get_dx0dt( E, x0 );
     dx1dt = get_dx1dt( E, x1 );

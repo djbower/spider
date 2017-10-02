@@ -39,6 +39,15 @@ PetscErrorCode set_surface_flux( Ctx *E )
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
 
     if (!rank){
+
+      /* TODO: these quantities might not get set, so to ensure they
+         are initialised and set to zero here.  This should be moved to
+         an initialisation module and performed once outside of the
+         time loop */
+      A->tau0 = 0.0;
+      A->tau1 = 0.0;
+      A->tau = 0.0;
+
       /* get surface values to pass to flux boundary condition
          function that is chosen by user */
       ind = 0;

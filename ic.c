@@ -7,8 +7,10 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
 {
 
     PetscErrorCode ierr;
-    Parameters           *P  = &E->parameters;
-    AtmosphereParameters *Ap = &P->atmosphere_parameters;
+    Parameters           const *P  = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    VolatileParameters const *CO2 = &Ap->CO2_volatile_parameters;
+    VolatileParameters const *H2O = &Ap->H2O_volatile_parameters;
 
     PetscScalar x0, x1;
 
@@ -21,12 +23,29 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
          3-end  dS/dr at basic nodes (see set_ic_dSdr)
     */
 
-    /* initial mass content of CO2 in the magma ocean */
-    x0 = get_initial_volatile( E, &Ap->CO2_volatile_parameters );
+    /* initial volatile content */
+    x0 = 0.0;
+    x1 = 0.0;
+
+    /* turn on volatiles for these conditions */
+    if(Ap->SOLVE_FOR_VOLATILES || Ap->MODEL==3){
+      /* CO2 */
+      if( CO2->initial > 0.0 ){
+        x0 = get_initial_volatile( E, CO2 );
+      }
+      /* H2O */
+      if( H2O->initial > 0.0 ){
+        x1 = get_initial_volatile( E, H2O );
+      }
+    }
+
+    x0 = -1.0;
+
+    if( x0 < 0.0 || x1 < 0 ){
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Initial volatile content cannot be negative: %d",x0);
+    }
+
     ierr = VecSetValue(dSdr_b_aug,0,x0,INSERT_VALUES);CHKERRQ(ierr);
-    
-    /* initial mass content of H2O in the magma ocean */
-    x1 = get_initial_volatile( E, &Ap->H2O_volatile_parameters );
     ierr = VecSetValue(dSdr_b_aug,1,x1,INSERT_VALUES);CHKERRQ(ierr);
    
     /* include initial entropy at staggered node */
