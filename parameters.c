@@ -139,7 +139,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       } else if (middle) {
         /* middle evolution to about 100 Myr */
         P->nstepsmacro = 10000;
-        P->dtmacro = 1000000000;
+        P->dtmacro = 10000; // DJB HACK FOR YEAR SCALING 1000000000;
       } else if (late) {
         /* late evolution to 4.55 Byr */
         P->nstepsmacro = 455;

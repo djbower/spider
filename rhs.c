@@ -154,6 +154,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = VecAssemblyBegin(rhs_b_aug);CHKERRQ(ierr);
   ierr = VecAssemblyEnd(rhs_b_aug);CHKERRQ(ierr);
 
+  // FIXME: DJB HACK TO STEP IN YEARS
+  // MUST REMOVE THIS EVENTUALLY AFTER TESTING
+  //ierr = VecScale( rhs_b_aug, 31557600.0 );
+
   ierr = VecDestroy(&rhs_b);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
