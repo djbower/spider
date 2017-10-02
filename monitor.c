@@ -9,6 +9,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
   PetscBool      test_view = PETSC_FALSE;
+  Vec rhs_b_aug;
   /* it remains convenient to be able to plot both short and long times together
      on the same plot, and since these are output by different settings in main.c,
      it is easiest if the output files reference the actual time in years, rather
@@ -44,7 +45,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
      RHS again here before output.  Because otherwise, the output relates to the previous
      augmented vector and not the currently?  Either way, this now outputs for zeroth
      time */
-  Vec rhs_b_aug;
   ierr = VecDuplicate(x_aug,&rhs_b_aug);CHKERRQ(ierr);
   ierr = RHSFunction(ts,time,x_aug,rhs_b_aug,ctx);CHKERRQ(ierr);
 
@@ -183,6 +183,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     ierr = VecView(rhs_b_aug,viewer);CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
+
+  ierr = VecDestroy(&rhs_b_aug);CHKERRQ(ierr);
 
 #if 0
   /* Recompute the rhs to a file named for the timestep */
