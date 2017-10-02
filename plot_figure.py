@@ -1011,7 +1011,7 @@ def atmosphere_data_to_array( fig_o ):
         data_a[nn,0] = time
         data_a[nn,1:-2] = data
 
-        dSdr_b_aug = fig_o.get_data( 'dSdr_b_aug', 0 )
+        dSdr_b_aug = fig_o.get_data( 'dSdr_b_aug', time )
         data_a[nn,-2] = dSdr_b_aug[0] # x0
         data_a[nn,-1] = dSdr_b_aug[1] # x1
 
