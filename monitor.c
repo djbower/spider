@@ -28,6 +28,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   ierr = PetscOptionsSetValue(NULL,"-binary_write_double","");CHKERRQ(ierr);
 #endif
 
+
   {
     PetscReal minval,maxval;
     ierr = VecMin(x_aug,NULL,&minval);CHKERRQ(ierr); /* Note that this includes the extra point now, so might not be as meaningful! */
@@ -219,6 +220,10 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     }
   }
 #endif
+
+  /* At this point, we should have processed all command line options, so we
+     check to see if any are stray (this usually would indicate a typo) */
+  ierr = PetscOptionsLeft(NULL);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
