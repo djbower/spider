@@ -57,7 +57,7 @@ int main(int argc, char ** argv)
   ierr = ToAug(dSdr_b,dSdr_b_aug);CHKERRQ(ierr);
 
   /* add initial values of other quantities to the augmented vector */
-  set_ic_aug( &ctx, dSdr_b_aug ); CHKERRQ(ierr);
+  ierr = set_ic_aug( &ctx, dSdr_b_aug ); CHKERRQ(ierr);
 
   ///////////////////////////
   /* end initial condition */
