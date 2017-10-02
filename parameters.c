@@ -51,7 +51,8 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
        be 1E2 and for units of ppm this must be 1E6 */
     //C->VOLSCALE = 1.0; // mass fraction
     //C->VOLSCALE  = 1.0E2; // wt %
-    C->VOLSCALE  = 1.0E6; // ppm
+    //C->VOLSCALE  = 1.0E6; // ppm
+    C->VOLSCALE = 1.0E3;
 
     PetscFunctionReturn(0);
 }
