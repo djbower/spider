@@ -113,6 +113,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->maxsteps    = 100000000; /* Effectively infinite */
   P->t0          = 0.0;
   // TODO -dtmacro, contrary to the pattern, are still input in nondim units..
+  // TODO: consider *only* accepting -dtmacro_years
   {
     PetscReal dtmacro_years;
     PetscBool dtmacro_set = PETSC_FALSE, dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
