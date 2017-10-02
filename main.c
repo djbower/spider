@@ -83,7 +83,7 @@ int main(int argc, char ** argv)
 #else
   /* TODO: 1.0E-4 works for simple bottom up case with grey-body atmosphere
          with constant emissivity */
-  ierr = TSSundialsSetTolerance(ts, 1.0e-10, 1.0e-10 );CHKERRQ(ierr);
+  ierr = TSSundialsSetTolerance(ts, 1.0e-3, 1.0e-3 );CHKERRQ(ierr);
 #endif
 
   /* Set up the RHS Function */
