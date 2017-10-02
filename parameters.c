@@ -155,7 +155,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   }
 
   /* Grid parameters */
-  P->numpts_b = 200;
+  P->numpts_b = 100;
   //P->numpts_b= 278
   //P->numpts_b= 372
   //P->numpts_b= 656
