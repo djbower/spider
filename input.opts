@@ -1,6 +1,6 @@
 # primary scalings
 # these are used to non-dimensionalise the problem
--radius0 6371000000.0 
+-radius0 6371000.0 
 -entropy0 2993.025100070677
 -temperature0 4033.6070755893948
 -density0 4613.109568155063
@@ -11,7 +11,7 @@
 # initial condition
 -sinit 3052.885602072091
 #-sinit 2137.0199214504637
--ic_dsdr -4.6978890285209187e-07 # 1.0E-3 non-dimensional
+-ic_dsdr -4.6978890285209187e-04 # 1.0E-3 non-dimensional
 
 # (static) pressure profile
 -rhos 4078.95095544
