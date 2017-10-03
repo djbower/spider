@@ -16,8 +16,11 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
      than timestep.  But the consequence of this approach is that small output
      times (less than a year) will overwrite each other.  For debugging this could
      be annoying, but in terms of plotting and analysis it is a non-issue since nothing
-     is happening at timescales less than a year */  
-  long long      nstep = (long long) dtmacro * (long long) step;
+     is happening at timescales less than a year */
+  Constants const *C = &ctx->parameters.constants;
+  PetscReal dtmacro_years;
+  dtmacro_years = PetscCeilReal(dtmacro * C->TIMEYRS);
+  long long nstep = (long long) dtmacro_years * step;
 
   PetscFunctionBeginUser;
 
