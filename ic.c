@@ -39,8 +39,6 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
       }
     }
 
-    x0 = -1.0;
-
     if( x0 < 0.0 || x1 < 0 ){
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Initial volatile content cannot be negative: %d",x0);
     }
