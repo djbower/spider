@@ -20,7 +20,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   Constants const *C = &ctx->parameters.constants;
   PetscReal dtmacro_years;
   dtmacro_years = PetscCeilReal(dtmacro * C->TIMEYRS);
-  long long nstep = (long long) dtmacro_years * step;
+  long long nstep = (long long) dtmacro_years * (long long )step;
 
   PetscFunctionBeginUser;
 
