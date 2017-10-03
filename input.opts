@@ -52,7 +52,7 @@
 # parameterise the upper thermal boundary layer, where
 # dT = param_utbl_const * [Surface temperature]**3.0
 -PARAM_UTBL 0
--param_utbl_const 1.0E-7
+#-param_utbl_const 1.0E-7
 
 # track time-dependence of volatile content
 -SOLVE_FOR_VOLATILES 1
