@@ -11,7 +11,7 @@
 # initial condition
 -sinit 3052.885602072091
 #-sinit 2137.0199214504637
--ic_dsdr -4.6978890285209187e-04 # 1.0E-3 non-dimensional
+-ic_dsdr -4.6978890285209187e-07 # 1.0E-3 non-dimensional
 
 # (static) pressure profile
 -rhos 4078.95095544
