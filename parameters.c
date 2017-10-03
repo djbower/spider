@@ -134,25 +134,29 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       if ((int)early + (int)middle + (int)late > 1) {
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"only one of -early, -middle, or -late may be provided");
       }
+      /* all these use dtmacro_years, so must turn on flag to activate
+         scaling below */
+      dtmacro_years_set = PETSC_TRUE;
       if (early) {
-        /* early evolution to about 10 kyr */
+        /* early evolution to 10 kyr */
         P->nstepsmacro = 1000;
-        P->dtmacro = 1000000;
+        dtmacro_years = 10; // years
       } else if (middle) {
-        /* middle evolution to about 100 Myr */
+        /* middle evolution to 100 Myr */
         P->nstepsmacro = 10000;
-        P->dtmacro = 10000; // DJB HACK FOR YEAR SCALING 1000000000;
+        dtmacro_years = 10000; //years
       } else if (late) {
         /* late evolution to 4.55 Byr */
         P->nstepsmacro = 455;
-        P->dtmacro = 1000000000000;
+        dtmacro_years = 1000000000000; // years
       }
-    } else {
-      if (dtmacro_set && dtmacro_years_set) {
-        ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: both -dtmacro and -dtmacro_years provided. Using -dtmacro\n");CHKERRQ(ierr);
-      } else if (dtmacro_years_set) {
+    }
+
+    if (dtmacro_set && dtmacro_years_set) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: both -dtmacro and -dtmacro_years provided. Using -dtmacro\n");CHKERRQ(ierr);
+    /* this is also now called for -early, -middle, and -late */
+    } else if (dtmacro_years_set) {
         P->dtmacro = dtmacro_years / C->TIMEYRS;
-      }
     }
   }
 
