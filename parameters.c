@@ -290,7 +290,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     if( MODELset ) Ap->MODEL = MODEL;
   }
 
-  Ap->HYBRID = 0;
+  Ap->HYBRID = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-HYBRID",&Ap->HYBRID,NULL);CHKERRQ(ierr);
 
   /* emissivity is constant for MODEL != MO_ATMOSPHERE_TYPE_VOLATILES */
@@ -308,7 +308,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* for radiative boundary condition at the top surface
      dT = param_utbl_const * [Surface temperature]**3 */
-  Ap->PARAM_UTBL = 0;
+  Ap->PARAM_UTBL = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-PARAM_UTBL",&Ap->PARAM_UTBL,NULL);CHKERRQ(ierr);
   if (Ap->PARAM_UTBL){
       Ap->param_utbl_const = 1.0E-7;
@@ -319,7 +319,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       Ap->param_utbl_const = 0.0;
   }
 
-  Ap->SOLVE_FOR_VOLATILES = 0;
+  Ap->SOLVE_FOR_VOLATILES = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-SOLVE_FOR_VOLATILES",&Ap->SOLVE_FOR_VOLATILES,NULL);CHKERRQ(ierr);
 
   /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
