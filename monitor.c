@@ -17,6 +17,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
      times (less than a year) will overwrite each other.  For debugging this could
      be annoying, but in terms of plotting and analysis it is a non-issue since nothing
      is happening at timescales less than a year */
+  /* FIXME: I think this is still breaking in some cases.  To investigate:
+     (run with input.opts and -early)
   Constants const *C = &ctx->parameters.constants;
   PetscReal dtmacro_years;
   dtmacro_years = PetscCeilReal(dtmacro * C->TIMEYRS);
@@ -74,7 +76,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     Constants            *C = &P->constants;
     Mesh                 *M = &ctx->mesh;
     Solution             *S = &ctx->solution;
-    PetscInt             i;
 
     /* for debugging, switch 'nstep' below to 'step' to over overwriting output data files */
     ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/petscbin.%lld",nstep);CHKERRQ(ierr);
@@ -153,24 +154,16 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     }
 
     /* write mesh information for basic node quantities */
-    for (i=0;i<NUMMESHVECS_B;++i){
-        add_vector_to_binary_output( M->meshVecs_b[i], viewer ); CHKERRQ(ierr);
-    }
+    ierr = scale_vectors_and_output( M->meshVecs_b, M->meshScalings_b, NUMMESHVECS_B, viewer );CHKERRQ(ierr);
 
     /* write mesh information for staggered node quantities */
-    for (i=0;i<NUMMESHVECS_S;++i){
-        add_vector_to_binary_output( M->meshVecs_s[i], viewer ); CHKERRQ(ierr);
-    }
+    ierr = scale_vectors_and_output( M->meshVecs_s, M->meshScalings_s, NUMMESHVECS_S, viewer );CHKERRQ(ierr);
 
     /* write all vectors associated with basic node quantities */
-    for (i=0;i<NUMSOLUTIONVECS_B;++i){
-        add_vector_to_binary_output( S->solutionVecs_b[i], viewer ); CHKERRQ(ierr);
-    }
+    ierr = scale_vectors_and_output( S->solutionVecs_b, S->solutionScalings_b, NUMSOLUTIONVECS_B, viewer );CHKERRQ(ierr);
 
     /* write all vectors associated with staggered node quantities */
-    for (i=0;i<NUMSOLUTIONVECS_S;++i){
-        add_vector_to_binary_output( S->solutionVecs_s[i], viewer ); CHKERRQ(ierr);
-    }
+    ierr = scale_vectors_and_output( S->solutionVecs_s, S->solutionScalings_s, NUMSOLUTIONVECS_S, viewer );CHKERRQ(ierr);
 
     /* Close the viewer */
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);

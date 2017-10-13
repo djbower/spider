@@ -11,9 +11,11 @@
 typedef struct _Mesh {
 
     Vec meshVecs_b[NUMMESHVECS_B];
+    PetscScalar meshScalings_b[NUMMESHVECS_B];
     Vec area_b,dPdr_b,pressure_b,radius_b, mix_b;
 
     Vec meshVecs_s[NUMMESHVECS_S];
+    PetscScalar meshScalings_s[NUMMESHVECS_B];
     Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,rho_s,mass_s;
 
     /* DJB atmosphere.  For seeing what the 'pressure' estimate of the
@@ -27,9 +29,11 @@ typedef struct _Mesh {
 typedef struct _Solution {
 
     Vec solutionVecs_b[NUMSOLUTIONVECS_B];
+    PetscScalar solutionScalings_b[NUMSOLUTIONVECS_B]; // contains scalings
     Vec alpha, alpha_mix, cond, cp, cp_mix, dfusdr, dfusdr_temp, dSdr, dSliqdr, dSsoldr, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, fwtl, fwts, gphi, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, rho, S, solidus, solidus_rho, solidus_temp, temp, visc;
 
     Vec solutionVecs_s[NUMSOLUTIONVECS_S];
+    PetscScalar solutionScalings_s[NUMSOLUTIONVECS_S]; // contains scalings
     Vec cp_s, cp_mix_s, dSdt_s, fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, fwtl_s, fwts_s, gphi_s, Hradio_s, Htidal_s, Htot_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
 
 } Solution;

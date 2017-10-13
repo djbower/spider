@@ -46,7 +46,12 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     C->COND      = C->ENTROPY * C->DENSITY * C->KAPPA;
     C->SIGMA     = C->FLUX * 1.0 / PetscPowScalar( C->TEMP, 4.0 );
     C->LHS       = C->DENSITY * C->VOLUME * C->TEMP;
-    C->RHS       = C->ENTROPY / C->TIME;
+    /* TODO: add scaling for internal heat generation since this might
+       be required in the internal heat generation functions */
+    /* TODO: the augmented rhs vector contains various quantities
+       with different units, so we cannot scale simply by multiplying
+       by a constant value */
+    C->RHS       = 1.0; // C->ENTROPY / C->TIME;
     /* TODO: allow user-specification?  For units of wt % this must
        be 1E2 and for units of ppm this must be 1E6 */
     //C->VOLSCALE = 1.0; // mass fraction
@@ -102,7 +107,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   PetscFunctionBegin;
 
   /* Constants (scalings) must be set first, as they are used to scale
-     other paramters */
+     other parameters */
   ierr = InitializeConstantsAndSetFromOptions(&P->constants);CHKERRQ(ierr);
 
   /* For each entry in parameters, we set a default value and immediately scale it.

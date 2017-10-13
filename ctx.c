@@ -3,6 +3,7 @@
 #include "mesh.h"
 #include "twophase.h"
 #include "util.h"
+#include "output.h"
 
 /* Set up the Context */
 PetscErrorCode SetupCtx(Ctx* ctx)
@@ -24,6 +25,9 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     */
   ierr = InitializeParametersAndSetFromOptions(&ctx->parameters);CHKERRQ(ierr); /* Note we use ctx->parameters, not P! */
   ierr = PrintParameters(P);CHKERRQ(ierr);
+
+  // DJB NEW */
+  ierr = SetScalingsForOutput(ctx);
 
   /* Set up a parallel structured grid as DMComposite with two included DMDAs
      This is used to define vectors which hold the solution. The included
