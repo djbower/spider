@@ -17,41 +17,39 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     /* 28 constants to set (excluding SQRTST which is a convenience
        parameter) */
     SQRTST = PetscSqrtScalar( ENTROPY * TEMPERATURE );
-    /* 4.0*pi geometry is excluded since it cancels in the equations,
-       but you should include it in post-processing if you want your
-       output to have physically correct interpretation */
-    C->RADIUS    = RADIUS;
-    C->TEMP      = TEMPERATURE;
-    C->ENTROPY   = ENTROPY;
-    C->DENSITY   = DENSITY;
-    C->AREA      = PetscSqr( C->RADIUS );
-    C->VOLUME    = C->AREA * C->RADIUS;
-    C->MASS      = C->DENSITY * C->VOLUME;
-    C->TIME      = C->RADIUS / SQRTST;
-    C->TIMEYRS   = C->TIME / (60.0*60.0*24.0*365.25);
-    C->SENERGY   = C->ENTROPY * C->TEMP;
-    C->ENERGY    = C->SENERGY * C->MASS;
-    C->PRESSURE  = C->ENTROPY * C->TEMP * C->DENSITY;
-    C->POWER     = C->ENERGY / C->TIME;
-    C->FLUX      = C->POWER / C->AREA;
-    C->DPDR      = C->PRESSURE / C->RADIUS;
-    C->GRAVITY   = (C->ENTROPY * C->TEMP) / C->RADIUS;
-    C->KAPPA     = C->RADIUS * SQRTST;
-    C->DTDP      = 1.0 / (C->DENSITY * C->ENTROPY);
-    C->DSDR      = C->ENTROPY / C->RADIUS;
-    C->DTDR      = C->TEMP / C->RADIUS;
+
+    C->RADIUS    = RADIUS; // m
+    C->TEMP      = TEMPERATURE; // K
+    C->ENTROPY   = ENTROPY; // (specific) J/kg.K
+    C->DENSITY   = DENSITY; // kg/m^3
+    C->AREA      = PetscSqr( C->RADIUS ); // m^2
+    C->VOLUME    = C->AREA * C->RADIUS; // m^3
+    C->MASS      = C->DENSITY * C->VOLUME; // kg
+    C->TIME      = C->RADIUS / SQRTST; // s
+    C->TIMEYRS   = C->TIME / (60.0*60.0*24.0*365.25); // years
+    C->SENERGY   = C->ENTROPY * C->TEMP; // J/kg
+    C->ENERGY    = C->SENERGY * C->MASS; // J
+    C->PRESSURE  = C->ENTROPY * C->TEMP * C->DENSITY; // Pa
+    C->POWER     = C->ENERGY / C->TIME; // W
+    C->FLUX      = C->POWER / C->AREA; // W/m^2
+    C->DPDR      = C->PRESSURE / C->RADIUS; // Pa/m
+    C->GRAVITY   = (C->ENTROPY * C->TEMP) / C->RADIUS; // m/s^2
+    C->KAPPA     = C->RADIUS * SQRTST; // m^2/s
+    C->DTDP      = 1.0 / (C->DENSITY * C->ENTROPY); // K/Pa
+    C->DSDR      = C->ENTROPY / C->RADIUS; // J/kg.K.m
+    C->DTDR      = C->TEMP / C->RADIUS; // K/m
     C->GSUPER    = C->GRAVITY * C->DTDR;
-    C->VISC      = C->DENSITY * C->KAPPA;
-    C->LOG10VISC = PetscLog10Real( C->VISC );
-    C->COND      = C->ENTROPY * C->DENSITY * C->KAPPA;
-    C->SIGMA     = C->FLUX * 1.0 / PetscPowScalar( C->TEMP, 4.0 );
-    C->LHS       = C->DENSITY * C->VOLUME * C->TEMP;
+    C->VISC      = C->DENSITY * C->KAPPA; // Pa.s
+    C->LOG10VISC = PetscLog10Real( C->VISC ); // log10(Pa.s)
+    C->COND      = C->ENTROPY * C->DENSITY * C->KAPPA; // W/m.K
+    C->SIGMA     = C->FLUX * 1.0 / PetscPowScalar( C->TEMP, 4.0 ); // W/m^2.K^4
+    C->LHS       = C->MASS * C->TEMP; // kg.K
     /* TODO: add scaling for internal heat generation since this might
        be required in the internal heat generation functions */
-    /* TODO: the augmented rhs vector contains various quantities
+    /* the augmented rhs vector contains various quantities
        with different units, so we cannot scale simply by multiplying
        by a constant value */
-    C->RHS       = 1.0; // C->ENTROPY / C->TIME;
+    C->RHS       = 1.0; // no scaling, as per comment above
     /* TODO: allow user-specification?  For units of wt % this must
        be 1E2 and for units of ppm this must be 1E6 */
     //C->VOLSCALE = 1.0; // mass fraction
