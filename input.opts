@@ -1,75 +1,87 @@
-# primary scalings
-# these are used to non-dimensionalise the problem
--radius0 63710000.0 
--entropy0 2993.025100070677
--temperature0 4033.6070755893948
--density0 4613.109568155063
+# primary scaling parameters
+# - these are used to non-dimensionalise (scale) the numerical problem
+#   and do not represent the physical quantities that are actually
+#   used (physical parameters are listed below)
+-radius0 63710000.0 # 10 x Earth radius
+-entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
+-temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
+-density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 
-# energy sources to include
--CONDUCTION 1
--CONVECTION 1
--MIXING 1
--SEPARATION 1
--HRADIO 0
--HTIDAL 0
+# energy fluxes and sources to include
+-CONDUCTION 1 # conduction
+-CONVECTION 1 # convection
+-MIXING 1 # mixing (latent heat transport)
+-SEPARATION 1 # gravitational separation of solid and melt phase
+-HRADIO 0 # radioactive heating (TODO: not currently implemented)
+-HTIDAL 0 # tidal heating (TODO: not currently implemented)
 
-# mixing length (1 conventional, 2 constant )
+# mixing length
+# [1] is conventional, i.e. distance from the nearest boundary
+# [2] is constant, i.e. 1/4 x mantle depth
 -mixing_length 2
 
-# parameters
--radius 6371000.0
+# physical parameters
+
+# radius of the planet
+-radius 6371000.0 # Earth radius
 
 # initial condition
--sinit 3052.885602072091
+-sinit 3052.885602072091 # initial entropy at top of domain
 #-sinit 2137.0199214504637
--ic_dsdr -4.6978890285209187e-07 # 1.0E-3 non-dimensional
+-ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere (1.0E-3 non-dimensional)
 
-# (static) pressure profile
--rhos 4078.95095544
--beta 1.1115348931000002e-07
--gravity -10.0
+# (static) pressure profile from Adams-Williamson equation of state
+-rhos 4078.95095544 # surface density
+-beta 1.1115348931000002e-07 # beta parameter
+-gravity -10.0 # gravity
 
 # material properties
--cond_sol 4.0
--cond_mel 4.0
--grain 1.0E-3
+-cond_sol 4.0 # conductivity of solid
+-cond_mel 4.0 # conductivity of melt
+-grain 1.0E-3 # grain size
 
-# smoothing of material properties
+# smoothing of material properties across liquidus and solidus
 -swidth 1.0E-2
 
 # viscosity
--log10visc_sol 21.0
--log10visc_mel 2.0
--phi_critical 0.4
--phi_width 0.15
+-log10visc_sol 21.0 # solid viscosity (log10)
+-log10visc_mel 2.0 # melt viscosity (log10)
+-phi_critical 0.4 # transition melt fraction (non-dimensional)
+-phi_width 0.15 # transition width (non-dimensional)
 
 # core
--coresize 0.55
--rho_core 10738.332568062382
--cp_core 880.0
+-coresize 0.55 # fractional radius of core-mantle boundary
+-rho_core 10738.332568062382 # core density
+-cp_core 880.0 # core heat capacity
 
 # atmosphere parameters
-# MODEL 1 is grey-body
-# MODEL 2 is steam atmosphere parameterisation of Zahnle et al. (1988)
-# MODEL 3 is self-consistent volatile evolution
+# [1] grey-body, i.e. sigma*emiss*(T^4-Teqm^4), with constant emissivity
+# [2] steam atmosphere parameterisation (Zahnle et al., 1988)
+# [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
 -MODEL 1
 # HYBRID is a hack to prevent a rigid lid from forming at the surface
-# and should only be used with caution
+# and should only be used with caution (talk to Dan)
 -HYBRID 0
-# if MODEL = 1 or 2, this emissivity is used
+# if MODEL = 1 or 2, this (constant) emissivity is used
 -emissivity0 1.0
 # equilibrium temperature of the planet
 -teqm 273.0
 # parameterise the upper thermal boundary layer, where
 # dT = param_utbl_const * [Surface temperature]**3.0
--PARAM_UTBL 0
-#-param_utbl_const 1.0E-7
+-PARAM_UTBL 0 # flag to turn on parameterisation
+#-param_utbl_const 1.0E-7 # value of parameterisation
 
-# track time-dependence of volatile content
+# track time-dependence of volatile content in atmosphere and magma ocean
+# can be done passively (with MODEL=1 or 2 above), or self-consistently
+# with MODEL=3 above
 -SOLVE_FOR_VOLATILES 0
 
 # atmosphere reference pressure (Pa)
 -P0 101325.0 # Pa (= 1 atm)
+
+# FIXME: currently the initial values of the volatiles is tied to the
+# choice of VOLSCALE which is hard-coded.  This is very bad and needs
+# to be addressed next!
 
 # CO2
 #-CO2_initial 0.0
@@ -81,7 +93,7 @@
 -CO2_kdist 5.0E-4 # distribution coefficient between solid and melt (non-dimensional)
 -CO2_kabs 0.05 # absorption (m^2/kg)
 -CO2_henry 4.4E-12; # must be mass fraction/Pa (Lebrun et al., 2013)
--CO2_henry_pow 1.0;
+-CO2_henry_pow 1.0; # power for Henry's law
 
 # H2O
 #-H2O_initial 0.0;
@@ -93,4 +105,4 @@
 -H2O_kdist 1.0E-4 # distribution coefficients are given in supplementary material of ET08
 -H2O_kabs 0.01 # absorption (m^2/kg)
 -H2O_henry 6.8E-8; # must be mass fraction/Pa (Lebrun et al., 2013)
--H2O_henry_pow 1.4285714285714286 # (1.0/0.7)
+-H2O_henry_pow 1.4285714285714286 # Power for Henry's law (1.0/0.7)
