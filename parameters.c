@@ -186,6 +186,19 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->monitor = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-monitor",&P->monitor,NULL);CHKERRQ(ierr);
 
+  /* Energy terms to include */
+  P->CONDUCTION = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-CONDUCTION",&P->CONDUCTION,NULL);CHKERRQ(ierr);
+  P->CONVECTION = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-CONVECTION",&P->CONVECTION,NULL);CHKERRQ(ierr);
+  P->MIXING = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-MIXING",&P->MIXING,NULL);CHKERRQ(ierr);
+  P->SEPARATION = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
+  P->HRADIO = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-HRADIO",&P->HRADIO,NULL);CHKERRQ(ierr);
+  P->HTIDAL = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-HTIDAL",&P->HTIDAL,NULL);CHKERRQ(ierr);
 
   /* initial entropy at top of adiabat (J/kg-K) */
   P->sinit = 3052.885602072091;

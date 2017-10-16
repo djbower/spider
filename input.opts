@@ -5,6 +5,14 @@
 -temperature0 4033.6070755893948
 -density0 4613.109568155063
 
+# energy sources to include
+-CONDUCTION 1
+-CONVECTION 1
+-MIXING 1
+-SEPARATION 1
+-HRADIO 0
+-HTIDAL 0
+
 # parameters
 -radius 6371000.0
 

@@ -96,7 +96,13 @@ typedef struct _Parameters {
     PetscBool monitor;
 
     //  "Standard" parameters
-    // 19
+    // 25
+    PetscBool CONDUCTION;
+    PetscBool CONVECTION;
+    PetscBool MIXING;
+    PetscBool SEPARATION;
+    PetscBool HRADIO;
+    PetscBool HTIDAL;
     PetscScalar sinit;
     PetscScalar ic_dsdr;
     PetscScalar radius;

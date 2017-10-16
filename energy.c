@@ -1,33 +1,12 @@
 #include "energy.h"
 
-/* select which energy terms to include */
-#define CONDUCTION
-#define CONVECTION
-#define MIXING
-#define SEPARATION
-//#define HRADIO
-//#define HTIDAL
-
-
 static PetscErrorCode set_Jtot( Ctx * );
-#ifdef CONDUCTION
 static PetscErrorCode append_Jcond( Ctx * );
-#endif
-#ifdef CONVECTION
 static PetscErrorCode append_Jconv( Ctx * );
-#endif
-#ifdef MIXING
 static PetscErrorCode append_Jmix( Ctx * );
-#endif
-#ifdef SEPARATION
 static PetscErrorCode append_Jgrav( Ctx * );
-#endif
-#ifdef HRADIO
 static PetscErrorCode append_Hradio( Ctx *, PetscReal tyrs );
-#endif
-#ifdef HTIDAL
 static PetscErrorCode append_Htidal( Ctx *, PetscReal tyrs );
-#endif
 
 ///////////////////////////
 /* internal heat sources */
@@ -36,6 +15,7 @@ static PetscErrorCode append_Htidal( Ctx *, PetscReal tyrs );
 PetscErrorCode set_Htot( Ctx *E, PetscReal tyrs )
 {
     PetscErrorCode ierr;
+    Parameters     const *P = &E->parameters;
     Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -46,17 +26,16 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal tyrs )
     ierr = VecSet( S->Htot_s, 0.0 ); CHKERRQ(ierr);
 
     /* total internal heat generation by summing terms */
-#ifdef HRADIO
-    ierr = append_Hradio( E, tyrs ); CHKERRQ(ierr);
-#endif
-#ifdef HTIDAL
-    ierr = append_Htidal( E, tyrs ); CHKERRQ(ierr);
-#endif
+    if (P->HRADIO){
+      ierr = append_Hradio( E, tyrs ); CHKERRQ(ierr);
+    }
+    if (P->HTIDAL){
+      ierr = append_Htidal( E, tyrs ); CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
 
-#ifdef HRADIO
 /* radiogenic heat generation */
 static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
 {
@@ -94,9 +73,7 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
 
     PetscFunctionReturn(0);
 }
-#endif
 
-#ifdef HTIDAL
 /* tidal heat generation */
 static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
 {
@@ -112,7 +89,6 @@ static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
 
     PetscFunctionReturn(0);
 }
-#endif
 
 
 ///////////////////
@@ -139,6 +115,7 @@ PetscErrorCode set_Etot( Ctx *E )
 static PetscErrorCode set_Jtot( Ctx *E )
 {
     PetscErrorCode ierr;
+    Parameters     const *P = &E->parameters;
     Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -147,24 +124,23 @@ static PetscErrorCode set_Jtot( Ctx *E )
     ierr = VecSet( S->Jtot, 0.0 ); CHKERRQ(ierr);
 
     /* total heat flux by summing terms */
-#ifdef CONDUCTION
-    ierr = append_Jcond( E );
-#endif
-#ifdef CONVECTION
-    ierr = append_Jconv( E );
-#endif
-#ifdef MIXING
-    ierr = append_Jmix( E );
-#endif
-#ifdef SEPARATION
-    ierr = append_Jgrav( E );
-#endif
+    if (P->CONDUCTION){
+      ierr = append_Jcond( E );
+    }
+    if (P->CONVECTION){
+      ierr = append_Jconv( E );
+    }
+    if (P->MIXING){
+      ierr = append_Jmix( E );
+    }
+    if (P->SEPARATION){
+      ierr = append_Jgrav( E );
+    }
 
     PetscFunctionReturn(0);
 
 }
 
-#ifdef CONVECTION
 /* convective heat flux at basic nodes */
 static PetscErrorCode append_Jconv( Ctx *E )
 {
@@ -186,9 +162,7 @@ static PetscErrorCode append_Jconv( Ctx *E )
     PetscFunctionReturn(0);
 
 }
-#endif
 
-#ifdef MIXING
 /* mixing heat flux (latent heat transport) at basic nodes */
 static PetscErrorCode append_Jmix( Ctx *E )
 {
@@ -243,9 +217,7 @@ static PetscErrorCode append_Jmix( Ctx *E )
     PetscFunctionReturn(0);
 
 }
-#endif
 
-#ifdef CONDUCTION
 /* conductive heat flux at basic nodes */
 static PetscErrorCode append_Jcond( Ctx *E )
 {
@@ -273,9 +245,7 @@ static PetscErrorCode append_Jcond( Ctx *E )
     PetscFunctionReturn(0);
 
 }
-#endif
 
-#ifdef SEPARATION
 /* gravitational separation heat flux at basic nodes */
 static PetscErrorCode append_Jgrav( Ctx *E )
 {
@@ -386,4 +356,3 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     PetscFunctionReturn(0);
 
 }
-#endif
