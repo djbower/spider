@@ -200,6 +200,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->HTIDAL = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-HTIDAL",&P->HTIDAL,NULL);CHKERRQ(ierr);
 
+  P->mixing_length = 1;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-mixing_length",&P->mixing_length,NULL);CHKERRQ(ierr);
+
   /* initial entropy at top of adiabat (J/kg-K) */
   P->sinit = 3052.885602072091;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);

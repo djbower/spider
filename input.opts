@@ -13,6 +13,9 @@
 -HRADIO 0
 -HTIDAL 0
 
+# mixing length (1 conventional, 2 constant )
+-mixing_length 2
+
 # parameters
 -radius 6371000.0
 
