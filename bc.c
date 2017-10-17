@@ -383,7 +383,7 @@ static PetscScalar get_dxdt( Ctx const *E, PetscScalar x, PetscScalar dpdx, Pets
 
     num = x * (kdist-1.0) * A->dMliqdt;
     den = kdist * M->mantle_mass + (1.0-kdist) * A->Mliq;
-    den += C->VOLSCALE * PetscSqr(P->radius) * dpdx / -P->gravity;
+    den += C->VOLATILE * PetscSqr(P->radius) * dpdx / -P->gravity;
 
     dxdt = num / den;
 
@@ -427,13 +427,13 @@ PetscScalar get_initial_volatile( Ctx const *E, VolatileParameters const *V )
 
     PetscScalar fac, x;
 
-    /* remember that V->henry contains another factor of VOLSCALE */
+    /* remember that V->henry contains another factor of VOLATILE */
 
     fac = PetscSqr( P->radius );
     fac /= -P->gravity * M->mantle_mass;
     fac /= C->PRESSURE;
 
-    fac *= C->VOLSCALE;
+    fac *= C->VOLATILE;
     fac /= PetscPowScalar(V->henry,V->henry_pow);
 
     x = newton( fac, V->henry_pow, V->initial );

@@ -237,7 +237,7 @@ PetscErrorCode constants_struct_to_vec( Constants const *C, Vec vec )
     ierr = VecSetValue(vec,24,C->SIGMA,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,25,C->LHS,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(vec,26,C->RHS,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,27,C->VOLSCALE,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(vec,27,C->VOLATILE,INSERT_VALUES);CHKERRQ(ierr);
 
     ierr = VecAssemblyBegin(vec);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(vec);CHKERRQ(ierr);

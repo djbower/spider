@@ -8,6 +8,8 @@
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
+# volatile0 is only used if SOLVE_FOR_VOLATILES=1 or MODEL=3
+-volatile0 1.0E6 # ppm
 
 # energy fluxes and sources to include
 # [0] is off
@@ -68,7 +70,7 @@
 # [1] grey-body, i.e. sigma*emiss*(T^4-Teqm^4), with constant emissivity
 # [2] steam atmosphere parameterisation (Zahnle et al., 1988)
 # [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
--MODEL 1
+-MODEL 3
 # HYBRID is a hack to prevent a rigid lid from forming at the surface
 # and should only be used with caution (talk to Dan before using)
 -HYBRID 0
@@ -87,35 +89,33 @@
 # can be done passively (with MODEL=1 or 2 above), or self-consistently
 # with MODEL=3 above (where the volatile content feeds back into determining
 # the emissivity of the atmosphere)
+# [0] off
+# [1] on
 -SOLVE_FOR_VOLATILES 0
+
+# below is for MODEL=3, see Abe and Matsui (1986) and Elkins-Tanton (2008)
+# for the grey-body atmosphere formulation.  The expressions for the partial
+# pressure of each component (H2O and CO2) are taken from Lebrun et al. (2013)
 
 # atmosphere reference pressure (Pa)
 -P0 101325.0 # Pa (= 1 atm)
 
-# FIXME: currently the initial values of the volatiles is tied to the
-# choice of VOLSCALE which is hard-coded.  This is very bad and needs
-# to be addressed next!
-
-# CO2
+# parameters relating to CO2 volatile
 #-CO2_initial 0.0
--CO2_initial 0.1; #0.01 # Elkins-Tanton (2008) case 1 
-# old scalings below
-#-CO2_initial 1000.0
-#-CO2_initial 0.1 # Elkins-Tanton (2008) case 2 
-#-CO2_initial 0.6 # Elkins-Tanton (2008) case 3
+-CO2_initial 1000.0; # Elkins-Tanton (2008) case 1 
+#-CO2_initial 100.0; # Elkins-Tanton (2008) case 2 
+#-CO2_initial 6000.0 # Elkins-Tanton (2008) case 3
 -CO2_kdist 5.0E-4 # distribution coefficient between solid and melt (non-dimensional)
 -CO2_kabs 0.05 # absorption (m^2/kg)
 -CO2_henry 4.4E-12; # must be mass fraction/Pa (Lebrun et al., 2013)
--CO2_henry_pow 1.0; # power for Henry's law
+-CO2_henry_pow 1.0; # power for Henry's law (Lebrun et al., 2013)
 
-# H2O
+# parameters relating to H2O volatile
 #-H2O_initial 0.0;
--H2O_initial 0.5 #0.05 # Elkins-Tanton (2008) case 1
-# old scalings below
-#-H2O_initial 5000.0
-#-H2O_initial 0.5 # Elkins-Tanton (2008) case 2
+-H2O_initial 5000.0  # Elkins-Tanton (2008) case 1
+#-H2O_initial 500.0 # Elkins-Tanton (2008) case 2
 #-H2O_initial 0.0 # Elkins-Tanton (2008) case 3
 -H2O_kdist 1.0E-4 # distribution coefficients are given in supplementary material of ET08
 -H2O_kabs 0.01 # absorption (m^2/kg)
 -H2O_henry 6.8E-8; # must be mass fraction/Pa (Lebrun et al., 2013)
--H2O_henry_pow 1.4285714285714286 # Power for Henry's law (1.0/0.7)
+-H2O_henry_pow 1.4285714285714286 # Power for Henry's law (1.0/0.7) (Lebrun et al., 2013)

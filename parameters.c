@@ -9,7 +9,7 @@ Custom PETSc command line options should only ever be parsed here.
 #include "parameters.h"
 #include "ctx.h"
 
-static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY )
+static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
     PetscScalar SQRTST;
 
@@ -22,6 +22,7 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     C->TEMP      = TEMPERATURE; // K
     C->ENTROPY   = ENTROPY; // (specific) J/kg.K
     C->DENSITY   = DENSITY; // kg/m^3
+    C->VOLATILE  = VOLATILE; // ppm
     C->AREA      = PetscSqr( C->RADIUS ); // m^2
     C->VOLUME    = C->AREA * C->RADIUS; // m^3
     C->MASS      = C->DENSITY * C->VOLUME; // kg
@@ -52,10 +53,10 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     C->RHS       = 1.0; // no scaling, as per comment above
     /* TODO: allow user-specification?  For units of wt % this must
        be 1E2 and for units of ppm this must be 1E6 */
-    //C->VOLSCALE = 1.0; // mass fraction
-    //C->VOLSCALE  = 1.0E2; // wt %
-    //C->VOLSCALE  = 1.0E6; // ppm
-    C->VOLSCALE = 1.0E3;
+    //C->VOLATILE = 1.0; // mass fraction
+    //C->VOLATILE  = 1.0E2; // wt %
+    //C->VOLATILE  = 1.0E6; // ppm
+    //C->VOLATILE = 1.0E3;
 
     PetscFunctionReturn(0);
 }
@@ -71,7 +72,7 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
   PetscFunctionBeginUser;
   ierr = PetscOptionsGetBool(NULL,NULL,"-dimensional",&dimensionalMode,NULL);CHKERRQ(ierr);
   if (dimensionalMode) {
-    ierr = SetConstants(C,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
+    ierr = SetConstants(C,1.0,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
   } else {
     PetscScalar RADIUS0 = 6371000.0; // m
     ierr = PetscOptionsGetScalar(NULL,NULL,"-radius0",&RADIUS0,NULL);CHKERRQ(ierr);  
@@ -81,7 +82,9 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-temperature0",&TEMPERATURE0,NULL);CHKERRQ(ierr);
     PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
     ierr = PetscOptionsGetScalar(NULL,NULL,"-density0",&DENSITY0,NULL);CHKERRQ(ierr);
-    ierr = SetConstants(C,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0);CHKERRQ(ierr);
+    PetscScalar VOLATILE0 = 1.0E6; // ppm
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-volatile0",&VOLATILE0,NULL);CHKERRQ(ierr);
+    ierr = SetConstants(C,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
 }
@@ -349,7 +352,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->P0 /= C->PRESSURE;
 
   /* H2O volatile */
-  H2O->initial = 0.0; // units according to VOLSCALE (typically wt % or ppm)
+  H2O->initial = 0.0; // units according to VOLATILE (typically wt % or ppm)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_initial",&H2O->initial,NULL);CHKERRQ(ierr);
   H2O->kdist = 1.0E-4; // non-dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kdist",&H2O->kdist,NULL);CHKERRQ(ierr);
@@ -360,12 +363,12 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   H2O->henry = 6.8E-8; // must be mass fraction/Pa
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
   /* scaled henry constant used in code */
-  H2O->henry *= C->VOLSCALE;
+  H2O->henry *= C->VOLATILE;
   H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry_pow",&H2O->henry_pow,NULL);CHKERRQ(ierr);
 
   /* CO2 volatile */
-  CO2->initial = 0.0; // units according to VOLSCALE
+  CO2->initial = 0.0; // units according to VOLATILE
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_initial",&CO2->initial,NULL);CHKERRQ(ierr);
   CO2->kdist = 5.0E-4; // non-dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kdist",&CO2->kdist,NULL);CHKERRQ(ierr);
@@ -376,7 +379,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->henry = 4.4E-12; // must be mass fraction/Pa
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
   /* scaled henry constant used in code */
-  CO2->henry *= C->VOLSCALE;
+  CO2->henry *= C->VOLATILE;
   CO2->henry_pow = 1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
 

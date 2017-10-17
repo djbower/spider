@@ -35,7 +35,7 @@ typedef struct _Constants {
     PetscScalar SIGMA;
     PetscScalar LHS;
     PetscScalar RHS;
-    PetscScalar VOLSCALE;
+    PetscScalar VOLATILE;
 } Constants;
 
 /* atmosphere */
