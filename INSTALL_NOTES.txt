@@ -118,6 +118,8 @@ Make and install:
 
     make && make install
 
+(Note: you will see many warnings. TODO fix this)
+
 ---- B: Install PETSc with quadruple precision ----
 
 0. comment out any existing references to PETSC_DIR and PETSC_ARCH in your
