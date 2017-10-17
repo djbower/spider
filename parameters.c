@@ -328,9 +328,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* for radiative boundary condition at the top surface
      dT = param_utbl_const * [Surface temperature]**3 */
   Ap->PARAM_UTBL = PETSC_FALSE;
+  Ap->param_utbl_const = 0.0;
   ierr = PetscOptionsGetBool(NULL,NULL,"-PARAM_UTBL",&Ap->PARAM_UTBL,NULL);CHKERRQ(ierr);
   if (Ap->PARAM_UTBL){
-      Ap->param_utbl_const = 1.0E-7;
       ierr = PetscOptionsGetScalar(NULL,NULL,"-param_utbl_const",&Ap->param_utbl_const,NULL);CHKERRQ(ierr);
       Ap->param_utbl_const *= PetscSqr(C->TEMP);
   }

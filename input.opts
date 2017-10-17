@@ -1,3 +1,5 @@
+# all units are SI unless indicated otherwise
+
 # primary scaling parameters
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
@@ -8,6 +10,8 @@
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 
 # energy fluxes and sources to include
+# [0] is off
+# [1] is on
 -CONDUCTION 1 # conduction
 -CONVECTION 1 # convection
 -MIXING 1 # mixing (latent heat transport)
@@ -17,7 +21,10 @@
 
 # mixing length
 # [1] is conventional, i.e. distance from the nearest boundary
-# [2] is constant, i.e. 1/4 x mantle depth
+#     which is either the surface or core-mantle boundary
+# [2] is constant, i.e. 1/4 x mantle depth, which is the mean
+#     of conventional theory.  This can help to prevent a rigid
+#     lid from forming at the surface
 -mixing_length 2
 
 # physical parameters
@@ -26,11 +33,13 @@
 -radius 6371000.0 # Earth radius
 
 # initial condition
--sinit 3052.885602072091 # initial entropy at top of domain
+-sinit 3052.885602072091 # initial specific entropy at top of domain (top cell)
 #-sinit 2137.0199214504637
--ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere (1.0E-3 non-dimensional)
+-ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
+# for Earth scalings, above is -1.0E-3 in non-dimensional units
 
-# (static) pressure profile from Adams-Williamson equation of state
+# static pressure profile derived from Adams-Williamson equation of state
+# these parameters are from fitting PREM in the lower mantle (for Earth)
 -rhos 4078.95095544 # surface density
 -beta 1.1115348931000002e-07 # beta parameter
 -gravity -10.0 # gravity
@@ -38,9 +47,10 @@
 # material properties
 -cond_sol 4.0 # conductivity of solid
 -cond_mel 4.0 # conductivity of melt
--grain 1.0E-3 # grain size
+-grain 1.0E-3 # grain size (m)
 
 # smoothing of material properties across liquidus and solidus
+# units of melt fraction (non-dimensional)
 -swidth 1.0E-2
 
 # viscosity
@@ -60,20 +70,23 @@
 # [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
 -MODEL 1
 # HYBRID is a hack to prevent a rigid lid from forming at the surface
-# and should only be used with caution (talk to Dan)
+# and should only be used with caution (talk to Dan before using)
 -HYBRID 0
-# if MODEL = 1 or 2, this (constant) emissivity is used
+# if MODEL = 1 or 2, the following constant emissivity is used
 -emissivity0 1.0
 # equilibrium temperature of the planet
 -teqm 273.0
 # parameterise the upper thermal boundary layer, where
 # dT = param_utbl_const * [Surface temperature]**3.0
+# this is useful for high melt fraction dynamics where the ultra-thin thermal boundary layer
+# (often only a few cms thick) cannot be resolved by the choice of mesh
 -PARAM_UTBL 0 # flag to turn on parameterisation
-#-param_utbl_const 1.0E-7 # value of parameterisation
+-param_utbl_const 1.0E-7 # value of parameterisation
 
 # track time-dependence of volatile content in atmosphere and magma ocean
 # can be done passively (with MODEL=1 or 2 above), or self-consistently
-# with MODEL=3 above
+# with MODEL=3 above (where the volatile content feeds back into determining
+# the emissivity of the atmosphere)
 -SOLVE_FOR_VOLATILES 0
 
 # atmosphere reference pressure (Pa)
