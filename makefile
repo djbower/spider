@@ -43,6 +43,7 @@ clear_output :
 .PHONY : clear_output
 
 ### Tests #####################################################################
+PYTHON=python
 test :
-	cd tests && ./runTests.py && cd ..
+	cd tests && ${PYTHON} ./runTests.py && cd ..
 .PHONY : test
