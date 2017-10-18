@@ -263,8 +263,8 @@ static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, Vola
     /* partial pressure derivative of volatile */
     PetscScalar dpdx;
 
-    dpdx = 1.0 / PetscPowScalar( V->henry, V->henry_pow );
-    dpdx *= V->henry_pow * PetscPowScalar( x, V->henry_pow-1.0 );
+    dpdx = V->henry_pow / V->henry;
+    dpdx *= PetscPowScalar( x / V->henry, V->henry_pow-1.0 );
     dpdx /= C->PRESSURE; // non-dimensionalise
 
     return dpdx;
@@ -383,7 +383,7 @@ static PetscScalar get_dxdt( Ctx const *E, PetscScalar x, PetscScalar dpdx, Pets
 
     num = x * (kdist-1.0) * A->dMliqdt;
     den = kdist * M->mantle_mass + (1.0-kdist) * A->Mliq;
-    den += C->VOLATILE * PetscSqr(P->radius) * dpdx / -P->gravity;
+    den += (1.0E6 / C->VOLATILE) * PetscSqr(P->radius) * dpdx / -P->gravity;
 
     dxdt = num / den;
 
@@ -427,14 +427,12 @@ PetscScalar get_initial_volatile( Ctx const *E, VolatileParameters const *V )
 
     PetscScalar fac, x;
 
-    /* remember that V->henry contains another factor of VOLATILE */
-
     fac = PetscSqr( P->radius );
     fac /= -P->gravity * M->mantle_mass;
     fac /= C->PRESSURE;
 
-    fac *= C->VOLATILE;
     fac /= PetscPowScalar(V->henry,V->henry_pow);
+    fac *= 1.0E6 / C->VOLATILE;
 
     x = newton( fac, V->henry_pow, V->initial );
 

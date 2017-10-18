@@ -51,12 +51,6 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
        with different units, so we cannot scale simply by multiplying
        by a constant value */
     C->RHS       = 1.0; // no scaling, as per comment above
-    /* TODO: allow user-specification?  For units of wt % this must
-       be 1E2 and for units of ppm this must be 1E6 */
-    //C->VOLATILE = 1.0; // mass fraction
-    //C->VOLATILE  = 1.0E2; // wt %
-    //C->VOLATILE  = 1.0E6; // ppm
-    //C->VOLATILE = 1.0E3;
 
     PetscFunctionReturn(0);
 }
@@ -82,7 +76,7 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-temperature0",&TEMPERATURE0,NULL);CHKERRQ(ierr);
     PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
     ierr = PetscOptionsGetScalar(NULL,NULL,"-density0",&DENSITY0,NULL);CHKERRQ(ierr);
-    PetscScalar VOLATILE0 = 1.0E6; // ppm
+    PetscScalar VOLATILE0 = 1.0E4;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-volatile0",&VOLATILE0,NULL);CHKERRQ(ierr);
     ierr = SetConstants(C,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
   }
@@ -352,34 +346,34 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->P0 /= C->PRESSURE;
 
   /* H2O volatile */
-  H2O->initial = 0.0; // units according to VOLATILE (typically wt % or ppm)
+  H2O->initial = 0.0; // ppm
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_initial",&H2O->initial,NULL);CHKERRQ(ierr);
+  H2O->initial /= C->VOLATILE;
   H2O->kdist = 1.0E-4; // non-dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kdist",&H2O->kdist,NULL);CHKERRQ(ierr);
   // TODO: water saturation limit of 10 ppm?
   H2O->kabs = 0.01; // m^2/kg
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kabs",&H2O->kabs,NULL);CHKERRQ(ierr);
   H2O->kabs *= C->DENSITY * C->RADIUS;
-  H2O->henry = 6.8E-8; // must be mass fraction/Pa
+  H2O->henry = 6.8E-2; // ppm/Pa
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
-  /* scaled henry constant used in code */
-  H2O->henry *= C->VOLATILE;
+  H2O->henry /= C->VOLATILE;
   H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry_pow",&H2O->henry_pow,NULL);CHKERRQ(ierr);
 
   /* CO2 volatile */
-  CO2->initial = 0.0; // units according to VOLATILE
+  CO2->initial = 0.0; // ppm
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_initial",&CO2->initial,NULL);CHKERRQ(ierr);
+  CO2->initial /= C->VOLATILE;
   CO2->kdist = 5.0E-4; // non-dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kdist",&CO2->kdist,NULL);CHKERRQ(ierr);
   // TODO: water saturation limit of 0.03 ppm
   CO2->kabs = 0.05; // m^2/kg
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kabs",&CO2->kabs,NULL);CHKERRQ(ierr);
   CO2->kabs *= C->DENSITY * C->RADIUS;
-  CO2->henry = 4.4E-12; // must be mass fraction/Pa
+  CO2->henry = 4.4E-6; // ppm/Pa
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
-  /* scaled henry constant used in code */
-  CO2->henry *= C->VOLATILE;
+  CO2->henry /= C->VOLATILE;
   CO2->henry_pow = 1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
 
