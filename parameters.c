@@ -327,11 +327,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->PARAM_UTBL = PETSC_FALSE;
   Ap->param_utbl_const = 0.0;
   ierr = PetscOptionsGetBool(NULL,NULL,"-PARAM_UTBL",&Ap->PARAM_UTBL,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-param_utbl_const",&Ap->param_utbl_const,NULL);CHKERRQ(ierr);
   if (Ap->PARAM_UTBL){
-      ierr = PetscOptionsGetScalar(NULL,NULL,"-param_utbl_const",&Ap->param_utbl_const,NULL);CHKERRQ(ierr);
       Ap->param_utbl_const *= PetscSqr(C->TEMP);
-  }
-  else{
+  } else {
       Ap->param_utbl_const = 0.0;
   }
 
