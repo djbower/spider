@@ -34,7 +34,7 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     C->POWER     = C->ENERGY / C->TIME; // W
     C->FLUX      = C->POWER / C->AREA; // W/m^2
     C->DPDR      = C->PRESSURE / C->RADIUS; // Pa/m
-    C->GRAVITY   = (C->ENTROPY * C->TEMP) / C->RADIUS; // m/s^2
+    C->GRAVITY   = C->ENTROPY * C->TEMP / C->RADIUS; // m/s^2
     C->KAPPA     = C->RADIUS * SQRTST; // m^2/s
     C->DTDP      = 1.0 / (C->DENSITY * C->ENTROPY); // K/Pa
     C->DSDR      = C->ENTROPY / C->RADIUS; // J/kg.K.m
