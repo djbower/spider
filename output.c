@@ -148,54 +148,96 @@ static PetscErrorCode add_vector_to_viewer( Vec vec, PetscViewer viewer)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode atmosphere_structs_to_vec( Ctx *E, Vec vec )
+PetscErrorCode atmosphere_structs_to_vec( Vec x_aug, Ctx *E, Vec vec )
 {
 
     PetscErrorCode ierr;
 
-    Atmosphere const *A = &E->atmosphere;
-    Parameters const *P = &E->parameters;
+    Atmosphere           const *A = &E->atmosphere;
+    Parameters           const *P = &E->parameters;
+    Constants            const *C  = &P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    VolatileParameters const *CO2 = &Ap->CO2_volatile_parameters;
-    VolatileParameters const *H2O = &Ap->H2O_volatile_parameters;
+    VolatileParameters   const *CO2 = &Ap->CO2_volatile_parameters;
+    VolatileParameters   const *H2O = &Ap->H2O_volatile_parameters;
     Mesh const *M = &E->mesh;
+    PetscInt ind;
+    PetscScalar Msol,Mliq;
+    PetscScalar sol0,liq0,atm0,tot0,sol1,liq1,atm1,tot1;
+    PetscScalar x0,x1;
+
+    PetscScalar FAC, MASS;
 
     PetscFunctionBeginUser;
 
-    ierr = VecSetValue(vec,0,Ap->MODEL,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,1,Ap->HYBRID,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,2,Ap->emissivity0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,3,Ap->sigma,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,4,Ap->teqm,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,5,Ap->PARAM_UTBL,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,6,Ap->param_utbl_const,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,7,Ap->SOLVE_FOR_VOLATILES,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,8,Ap->P0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,9,CO2->initial,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,10,CO2->kdist,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,11,CO2->kabs,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,12,CO2->henry,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,13,CO2->henry_pow,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,14,H2O->initial,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,15,H2O->kdist,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,16,H2O->kabs,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,17,H2O->henry,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,18,H2O->henry_pow,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,19,M->mantle_mass,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,20,A->Mliq,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,21,A->Msol,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,22,A->dMliqdt,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,23,A->tsurf,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,24,A->tau,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,25,A->p0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,26,A->dp0dx,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,27,A->m0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,28,A->tau0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,29,A->p1,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,30,A->dp1dx,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,31,A->m1,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,32,A->tau1,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(vec,33,A->emissivity,INSERT_VALUES);CHKERRQ(ierr);
+    /* CO2 content of magma ocean (liquid phase) */
+    ind = 0;
+    ierr = VecGetValues(x_aug,1,&ind,&x0);CHKERRQ(ierr);
+
+    /* H2O content of magma ocean (liquid phase) */
+    ind = 1;
+    ierr = VecGetValues(x_aug,1,&ind,&x1);CHKERRQ(ierr);
+
+    /* scalings */
+    MASS = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
+    FAC = C->VOLATILE / 1.0E6;
+
+    Msol = A->Msol * MASS;
+    Mliq = A->Mliq * MASS;
+
+    // CO2
+    sol0 = FAC * x0 * CO2->kdist * Msol; // solid
+    liq0 = FAC * x0 * Mliq; // liquid
+    atm0 = A->m0 * MASS; // atmosphere
+    tot0 = FAC * CO2->initial * M->mantle_mass * MASS; // total
+
+    // H2O
+    sol1 = FAC * x1 * H2O->kdist * Msol; // solid
+    liq1 = FAC * x1 * Mliq; // liquid
+    atm1 = A->m1 * MASS; // atmosphere
+    tot1 = FAC * H2O->initial * M->mantle_mass * MASS; // total
+
+    // total liquid mass of mantle, kg
+    ierr = VecSetValue(vec,0,Mliq,INSERT_VALUES);CHKERRQ(ierr);
+    // total solid mass of mantle, kg
+    ierr = VecSetValue(vec,1,Msol,INSERT_VALUES);CHKERRQ(ierr);
+    // total mass of mantle, kg (for sanity check)
+    ierr = VecSetValue(vec,2,M->mantle_mass*MASS,INSERT_VALUES);CHKERRQ(ierr);
+    // surface temperature, K
+    ierr = VecSetValue(vec,3,A->tsurf*C->TEMP,INSERT_VALUES);CHKERRQ(ierr);
+    // optical depth, non-dimensional
+    ierr = VecSetValue(vec,4,A->tau,INSERT_VALUES);CHKERRQ(ierr);
+    // (effective) emissivity, non-dimensional
+    ierr = VecSetValue(vec,5,A->emissivity,INSERT_VALUES);CHKERRQ(ierr);
+    // CO2 related
+      // volatile mass in liquid mantle, kg
+    ierr = VecSetValue(vec,6,liq0,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile mass in solid mantle, kg
+    ierr = VecSetValue(vec,7,sol0,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile mass in atmosphere, kg
+    ierr = VecSetValue(vec,8,atm0,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile mass in all reservoirs (for sanity check)
+    ierr = VecSetValue(vec,9,tot0,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile partial pressure, Pa
+    ierr = VecSetValue(vec,10,A->p0*C->PRESSURE,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile derivative, Pa/ppm
+    ierr = VecSetValue(vec,11,A->dp0dx*C->PRESSURE/C->VOLATILE,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile optical depth, non-dimensional
+    ierr = VecSetValue(vec,12,A->tau0,INSERT_VALUES);CHKERRQ(ierr);
+    // H2O related
+      // volatile mass in liquid mantle, kg
+    ierr = VecSetValue(vec,13,liq1,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile mass in solid mantle, kg
+    ierr = VecSetValue(vec,14,sol1,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile mass in atmosphere, kg
+    ierr = VecSetValue(vec,15,atm1,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile mass in all reservoirs (for sanity check)
+    ierr = VecSetValue(vec,16,tot1,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile partial pressure, Pa
+    ierr = VecSetValue(vec,17,A->p1*C->PRESSURE,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile derivative, Pa/ppm
+    ierr = VecSetValue(vec,18,A->dp1dx*C->PRESSURE/C->VOLATILE,INSERT_VALUES);CHKERRQ(ierr);
+      // volatile optical depth, non-dimensional
+    ierr = VecSetValue(vec,19,A->tau1,INSERT_VALUES);CHKERRQ(ierr);
 
     ierr = VecAssemblyBegin(vec);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(vec);CHKERRQ(ierr);
