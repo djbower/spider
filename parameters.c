@@ -76,7 +76,7 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-temperature0",&TEMPERATURE0,NULL);CHKERRQ(ierr);
     PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
     ierr = PetscOptionsGetScalar(NULL,NULL,"-density0",&DENSITY0,NULL);CHKERRQ(ierr);
-    PetscScalar VOLATILE0 = 1.0E4;
+    PetscScalar VOLATILE0 = 1.0E2;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-volatile0",&VOLATILE0,NULL);CHKERRQ(ierr);
     ierr = SetConstants(C,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
   }
@@ -345,7 +345,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->P0 /= C->PRESSURE;
 
   /* H2O volatile */
-  H2O->initial = 0.0; // ppm
+  H2O->initial = 500.0; // ppm
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_initial",&H2O->initial,NULL);CHKERRQ(ierr);
   H2O->initial /= C->VOLATILE;
   H2O->kdist = 1.0E-4; // non-dimensional
@@ -361,7 +361,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry_pow",&H2O->henry_pow,NULL);CHKERRQ(ierr);
 
   /* CO2 volatile */
-  CO2->initial = 0.0; // ppm
+  CO2->initial = 100.0; // ppm
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_initial",&CO2->initial,NULL);CHKERRQ(ierr);
   CO2->initial /= C->VOLATILE;
   CO2->kdist = 5.0E-4; // non-dimensional
