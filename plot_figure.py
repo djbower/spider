@@ -96,17 +96,7 @@ class FigureData( object ):
         xx_b = self.get_data( 'pressure_b', time ) * 1.0E-9 # to GPa
         xx_b = xx_b[1:-1] # basic internal nodes only
 
-        # FIXME: hack to plot data
-        xx_b *= 5.569E10
-        if field == 'S' or field == 'solidus' or field == 'liquidus':
-            yy_b *= 2993.025100070677
-        elif field == 'temp' or field == 'solidus_temp' or field == 'liquidus_temp':
-            yy_b *= 4033.6070755893948
-        elif field == 'visc':
-            yy_b *= 1.021E14
-        # FIXME end of hack
-
-        # DJB HACKY
+        # FIXME: this is hacky at the moment
         # want to flip the sign of the entropy gradient to make it
         # cleaner to plot
         if field == 'dSdr':
@@ -305,7 +295,7 @@ def figure1( args ):
         xx, yy = fig_o.get_xy_data( 'phi', time )
         MIX = get_mix( yy )
 
-        label = fig_o.get_legend_label( time*TIMEYRS )
+        label = fig_o.get_legend_label( time )
 
         # entropy
         xx, yy = fig_o.get_xy_data( 'S', time )
@@ -797,164 +787,75 @@ def figure6( args ):
 
     data = atmosphere_data_to_array( fig_o )
 
-    PRESSURE = fig_o.get_data( 'constant_data', 0 )[11]
-    VOLSCALE = fig_o.get_data( 'constant_data', 0 )[27]
-    TIMEYRS = fig_o.get_data( 'constant_data', 0 )[8]
-    dtmacro = fig_o.get_data( 'time_data', 0 )[1]
-
     # bit clunky, but works for now
-    time = data[:,0] * TIMEYRS * 1.0E-6 # in Myrs
-    M0 = data[:,20]
-    Mliq = data[:,21]
-    Msol = data[:,22]
-    dMliqdt = data[:,23]
-    tsurf = data[:,24]
-    tau = data[:,25]
-    emissivity = data[:,34]
-    x0init = 0.1 # data[:,7]
-    x0 = data[:,-2]
-    #dx0dt = data[:,9] # TODO: FROM RHS
-    p0 = data[:,26]
-    dp0dx = data[:,27]
-    m0 = data[:,28]
-    tau0 = data[:,29]
-    x1init = 0.5 # data[:,14]
-    x1 = data[:,-1]
-    #dx1dt = data[:,16]
-    p1 = data[:,30]
-    dp1dx = data[:,31]
-    m1 = data[:,32]
-    tau1 = data[:,33]
+    time = data[:,0] * 1.0E-6 # in Myrs
 
-    # THIS PROVES THAT THE INITIAL CONDITION IS APPLIED
-    # CORRECTLY BOTH CO2 AND H2O
-    #HENRY = 4.4E-12
-    #HENRY_POW = 1.0
-    #alpha = 4.0*np.pi*6371000.0**2.0
-    #alpha /= 10.0 * M0
-    #alpha *= 100.0**(1.0-HENRY_POW)
-    #alpha /= HENRY**HENRY_POW
-    #result = x0 + alpha*x0**HENRY_POW - x0init
-    #print result
-    # GOOD TO HERE
-    #sys.exit(1)
-
-    # based on above, what should partial pressure of the atmosphere be?
-    #p = ((x0/100.0)/HENRY)**HENRY_POW
-    #print p, p0
-    # GOOD TO HERE
-    #sys.exit(1)
-
-    # what about mass of the atmosphere?
-    #Matm = 4.0*np.pi*6371000.0**2.0 / 10.0 * p
-    #print Matm, m0
-    # GOOD TO HERE
-    #sys.exit(1)
-
-    # what about mass of the volatiles in the liquid?
-    #Mvolliq = (x0/100.0) * M0
-    #print Mvolliq
-    #sys.exit(1)
-
-    #Minit = (x0init/100.0) * M0
-    #print Minit
-    #print Mvolliq + Matm
-    #sys.exit(1)
-
-
-    #Minit = (x0init/100.0) * M0
-    #Mliq = (x0/100.0) * M0
-    #Matm = m0
-    #Matm2 = 4.0*np.pi*6371000.0**2.0 * p0 / 10.0
-    #print Minit, Mvolliq, Matm, Matm2
-    #sys.exit(1)
+    Mliq = data[:,1]
+    Msol = data[:,2]
+    Mtot = data[:,3]
+    tsurf = data[:,4]
+    tau = data[:,5]
+    emissivity = data[:,6]
+    CO2liq = data[:,7]
+    CO2sol = data[:,8]
+    CO2atm = data[:,9]
+    CO2tot = data[:,10]
+    CO2p = data[:,11]
+    CO2dpdx = data[:,12]
+    CO2tau = data[:,13]
+    H2Oliq = data[:,14]
+    H2Osol = data[:,15]
+    H2Oatm = data[:,16]
+    H2Otot = data[:,17]
+    H2Op = data[:,18]
+    H2Odpdx = data[:,19]
+    H2Otau = data[:,20]
 
     # mass fractions
-    CO2init = x0init * M0
-    CO2liq = x0 * Mliq
-    CO2liq /= CO2init # normalised
-    CO2atm = m0 * VOLSCALE / CO2init # normalised
-    # FIXME: kdist is hard-coded here
-    CO2sol = 5.0E-4 * x0 * Msol
-    CO2sol /= CO2init # normalised
-    CO2tot = CO2liq + CO2atm + CO2sol # normalised
-    #CO2atm2 = 4.0*np.pi*6371000.0**2.0 / 10.0 * p0
-    #CO2atm2 /= CO2init
-    #print CO2atm2
-    #print np.min(CO2tot), np.max(CO2tot)
-    #print 'CO2init=', CO2init
-    #print 'CO2sol=', CO2sol
-    #print 'CO2liq=', CO2liq
-    #print 'CO2atm=', CO2atm
-    #print 'CO2tot=', CO2tot
-
-    # more testing
-    #Matm = 4.0*np.pi*6371000.0**2 / 10.0 * p0
-    #print 'Matm=', Matm
-    #print 'Mtot2=', Mliq2 + Matm
-    #print 'Mtotinit=', (x0init/100.0) * M0
+    CO2liq /= CO2tot
+    CO2sol /= CO2tot
+    CO2atm /= CO2tot
 
     # mass fractions
-    H2Oinit = x1init * M0
-    H2Oliq = x1 * Mliq
-    H2Oliq /= H2Oinit # normalised
-    H2Oatm = m1 * VOLSCALE / H2Oinit # normalised
-    # FIXME: kdist is hard-coded here
-    H2Osol = 1.0E-4 * x1 * Msol
-    H2Osol /= H2Oinit # normalised
-    H2Otot = H2Oliq + H2Oatm + H2Osol # normalised
-    #print np.min(H2Otot), np.max(H2Otot)
-    #sys.exit(1)
+    H2Oliq /= H2Otot
+    H2Osol /= H2Otot
+    H2Oatm /= H2Otot
 
-    print(np.min(x0))
-    print(np.max(x0))
-    print(np.min(x1))
-    print(np.max(x1))
-
-    xticks = [1E-2,1E-1,1E0,1E1,1E2]#,1E3]#,1E3,4.55E3]
+    xticks = [1E-2,1E-1,1E0,1E1,1E2]
     xlabel = 'Time (Myr)'
 
     # figure a
-    title = '(a) CO$_2$ reservoirs'
-    h4, = ax0.semilogx( time, Msol/M0, 'k--', label='Mantle' )
-    h1, = ax0.semilogx( time, CO2liq, 'r-', label='Liquid' )
-    h2, = ax0.semilogx( time, CO2sol, 'b-', label='Solid' )
-    h3, = ax0.semilogx( time, CO2atm, 'g-', label='Atmos' )
-    #ax0.semilogx( time, CO2tot, 'k-' )
+    title = '(a) Volatile reservoirs'
+    h5, = ax0.semilogx( time, Mliq/Mtot, 'k--', label='Melt frac' )
+    h1, = ax0.semilogx( time, CO2liq, 'r-', label='CO2 liq' )
+    #h2, = ax0.semilogx( time, CO2sol, 'b-', label='CO2 sol' )
+    h2, = ax0.semilogx( time, CO2atm, 'g-', label='CO2 atm' )
+    h3, = ax0.semilogx( time, H2Oliq, 'r--', label='H2O liq' )
+    #h5, = ax0.semilogx( time, H2Osol, 'b--', label='H2O sol' )
+    h4, = ax0.semilogx( time, H2Oatm, 'g--', label='H2O atm' )
+    #ax0.semilogx( time, CO2liq+CO2sol+CO2atm, 'k-' )
     fig_o.set_myaxes( ax0, title=title, ylabel='$x$', xticks=xticks )
-    handle_l = [h1,h3,h2,h4]
+    handle_l = [h1,h2,h3,h4,h5]
     fig_o.set_mylegend( ax0, handle_l, loc='center right', ncol=1, TITLE=0 )
     ax0.yaxis.set_label_coords(-0.1,0.46)
 
-    # solid mass fraction is now plotted on figures a and b along with
-    # the mass fraction of the volatile in each reservoir (liq, sol, atm)
-    # figure b
-    #title = '(b) Mass fraction'
-    #h1, = ax1.semilogx( time, Mliq/M0, label='Liquid' )
-    #h2, = ax1.semilogx( time, Msol/M0, label='Solid' )
-    #h3, = ax1.semilogx( time, (Mliq+Msol)/M0 )
-    #fig_o.set_myaxes( ax1, title=title, ylabel='Frac', xticks=xticks )
-    #handle_l = [h1,h2]#,h3]
-    #fig_o.set_mylegend( ax1, handle_l, loc='center right', ncol=1, TITLE=0 )
-    #ax1.yaxis.set_label_coords(-0.1,0.46)
-
     # figure c
-    title = '(c) H$_2$O reservoirs'
-    h4, = ax2.semilogx( time, Msol/M0, 'k--', label='Mantle' )
-    h1, = ax2.semilogx( time, H2Oliq, 'r-', label='Liquid' )
-    h2, = ax2.semilogx( time, H2Osol, 'b-', label='Solid' )
-    h3, = ax2.semilogx( time, H2Oatm, 'g-', label='Atmos' )
-    #ax1.semilogx( time, H2Otot, 'k-' )
-    fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel='$x$', xticks=xticks )
-    handle_l = [h1,h3,h2,h4]
-    fig_o.set_mylegend( ax2, handle_l, loc='center left', ncol=1, TITLE=0 )
-    ax2.yaxis.set_label_coords(-0.1,0.46)
+    #title = '(c) H$_2$O reservoirs'
+    #h4, = ax2.semilogx( time, Mliq/Mtot, 'k--', label='Melt frac' )
+    #h1, = ax2.semilogx( time, H2Oliq, 'r-', label='Liquid' )
+    #h2, = ax2.semilogx( time, H2Osol, 'b-', label='Solid' )
+    #h3, = ax2.semilogx( time, H2Oatm, 'g-', label='Atmos' )
+    #ax2.semilogx( time, H2Oliq+H2Osol+H2Oatm, 'k-' )
+    #fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel='$x$', xticks=xticks )
+    #handle_l = [h1,h3,h2,h4]
+    #fig_o.set_mylegend( ax2, handle_l, loc='center left', ncol=1, TITLE=0 )
+    #ax2.yaxis.set_label_coords(-0.1,0.46)
 
     # figure e
     title = '(b) Partial pressure (bar)'
     ylabel = '$p$'
-    h1, = ax1.semilogx( time, p0*PRESSURE*1.0E-5, 'r-', label='CO$_2$')
-    h2, = ax1.semilogx( time, p1*PRESSURE*1.0E-5, 'b-', label='H$_2$O')
+    h1, = ax1.semilogx( time, CO2p*1.0E-5, 'r-', label='CO$_2$')
+    h2, = ax1.semilogx( time, H2Op*1.0E-5, 'b-', label='H$_2$O')
     handle_l = [h1,h2]
     fig_o.set_myaxes( ax1, title=title, ylabel=ylabel, xticks=xticks )
     fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1, TITLE=0 )
