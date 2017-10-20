@@ -1,3 +1,19 @@
+# time stepping
+-nstepsmacro
+-dtmacro
+-dtmacro_years
+
+# for default time ranges
+# if one of these is set, then the above time stepping
+# parameters are ignored
+# 0 -- 10 kyr
+#-early
+# 0 -- 100 Myr
+#-middle
+# 0 - 4.55 Byr
+#-late
+
+
 # all units are SI unless indicated otherwise
 
 # primary scaling parameters
@@ -20,6 +36,12 @@
 -SEPARATION 1 # gravitational separation of solid and melt phase
 -HRADIO 0 # radioactive heating (TODO: not currently implemented)
 -HTIDAL 0 # tidal heating (TODO: not currently implemented)
+
+# melting curves
+# for bottom-up crystallisation (double precision OK)
+-curves andrault2011
+# for middle-out crystallisation (quadruple precision required)
+#-curves stixrude2009
 
 # mixing length
 # [1] is conventional, i.e. distance from the nearest boundary
