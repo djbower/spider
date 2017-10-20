@@ -12,3 +12,6 @@ main
 
 # OS X garbage
 *.DS_Store
+
+# output
+output/

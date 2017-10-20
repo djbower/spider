@@ -33,24 +33,24 @@
 #define MAGMA_ROOT_DIR_STR STRINGIFY(MAGMA_ROOT_DIR)
 
 /* liquidus/solidus data files */
-#define LIQUIDUS_STIXRUDE2009 "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/liquidus.dat"
-#define LIQUIDUS_ANDRAULT2011 "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/liquidus.dat"
-#define SOLIDUS_STIXRUDE2009 "../../../data/lookup/lookup-fusion/2009_stixrude/RTmelt/solidus.dat"
-#define SOLIDUS_ANDRAULT2011 "../../../data/lookup/lookup-fusion/2011_andrault/RTmelt/solidus.dat"
+#define LIQUIDUS_STIXRUDE2009 "lookup_data/RTmelt/liquidus_stixrude2009.dat"
+#define LIQUIDUS_ANDRAULT2011 "lookup_data/RTmelt/liquidus_andrault2011.dat"
+#define SOLIDUS_STIXRUDE2009 "lookup_data/RTmelt/solidus_stixrude2009.dat"
+#define SOLIDUS_ANDRAULT2011 "lookup_data/RTmelt/solidus_andrault2011.dat"
 
 /* solid data files */
-#define ALPHA_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_solid.dat"
-#define CP_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/heat_capacity_solid.dat"
-#define DTDPS_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/adiabat_temp_grad_solid.dat"
-#define RHO_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/density_solid.dat"
-#define TEMP_SOL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_solid.dat"
+#define ALPHA_SOL_DEFAULT "lookup_data/RTmelt/thermal_exp_solid.dat"
+#define CP_SOL_DEFAULT "lookup_data/RTmelt/heat_capacity_solid.dat"
+#define DTDPS_SOL_DEFAULT "lookup_data/RTmelt/adiabat_temp_grad_solid.dat"
+#define RHO_SOL_DEFAULT "lookup_data/RTmelt/density_solid.dat"
+#define TEMP_SOL_DEFAULT "lookup_data/RTmelt/temperature_solid.dat"
 
 /* melt data files */
-#define ALPHA_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/thermal_exp_melt.dat"
-#define CP_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/heat_capacity_melt.dat"
-#define DTDPS_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/adiabat_temp_grad_melt.dat"
-#define RHO_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/density_melt.dat"
-#define TEMP_MEL_DEFAULT "../../../data/lookup/lookup-hires-RTmelt/evo/temperature_melt.dat"
+#define ALPHA_MEL_DEFAULT "lookup_data/RTmelt/thermal_exp_melt.dat"
+#define CP_MEL_DEFAULT "lookup_data/RTmelt/heat_capacity_melt.dat"
+#define DTDPS_MEL_DEFAULT "lookup_data/RTmelt/adiabat_temp_grad_melt.dat"
+#define RHO_MEL_DEFAULT "lookup_data/RTmelt/density_melt.dat"
+#define TEMP_MEL_DEFAULT "lookup_data/RTmelt/temperature_melt.dat"
 
 /* this structure has an x and y array size equal to NLS  */
 typedef struct _Interp1d {
