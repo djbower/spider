@@ -78,11 +78,8 @@ int main(int argc, char ** argv)
 
   /* can tighten tolerances for quad */
 #if (defined PETSC_USE_REAL___FLOAT128)
-  // 1.0E-12 crashes at time step 5
   ierr = TSSundialsSetTolerance(ts, 1.0e-14, 1.0e-14 );CHKERRQ(ierr);
 #else
-  /* TODO: 1.0E-4 works for simple bottom up case with grey-body atmosphere
-         with constant emissivity */
   ierr = TSSundialsSetTolerance(ts, 1.0e-6, 1.0e-6 );CHKERRQ(ierr);
 #endif
 
