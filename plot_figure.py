@@ -700,7 +700,7 @@ def figure5( args ):
     #fig_o.set_mylegend( ax0, handle_l, ncol=2 )
     title = 'Flux solution space'# for negative fluxes'
     xlabel = '$\\frac{dS_{\\rm liq}}{dr}$'
-    ylabel = '$-\\frac{dS}{dr}$'
+    ylabel = '$-\\frac{\partial S}{\partial r}$'
     fig_o.set_myaxes( ax0, title=title, xlabel=xlabel, ylabel=ylabel,
         yticks=yticks, fmt=dSdr_fmt, xticks=xticks, xfmt=dSliqdr_fmt )
     ax0.yaxis.set_label_coords(-0.1,0.565)
@@ -734,7 +734,7 @@ def figure5( args ):
         ax0.plot( xx2, yy2, color='0.25', linestyle=':' )
 
     # positive heat fluxes
-    for nn in [6,9,12]:
+    for cc, nn in enumerate([12,9,6]):
         filein = prefix + 'dSdr_10p%(nn)d_processed.dat' % vars()
         xx, yy = np.loadtxt( filein, unpack=True )
         xx *= const
@@ -744,10 +744,10 @@ def figure5( args ):
         # offset y for visual clarity
         xx += 0.4
         yy += 0.4
-        ax0.plot( xx, yy, '-' ) #, 'k-' )
+        ax0.plot( xx, yy, '-', color=fig_o.get_color(cc) ) #, 'k-' )
 
     # negative heat fluxes
-    for nn in [6,9,12]:
+    for cc, nn in enumerate([12,9,6]):
         filein = prefix + 'dSdr_n10p%(nn)d_processed.dat' % vars()
         xx, yy = np.loadtxt( filein, unpack=True )
         xx *= const
@@ -757,7 +757,7 @@ def figure5( args ):
         # offset y for visual clarity
         xx -= 0.4
         yy -= 0.4
-        ax0.plot( xx, yy, '-' )
+        ax0.plot( xx, yy, '-', color=fig_o.get_color(7-cc) )
 
     # domains of F>0 and F<0
     if 1:
@@ -1093,7 +1093,7 @@ def main( args ):
     #figure2( args )
     #figure3( args )
     figure4( args )
-    #figure5( args )
+    figure5( args )
     #figure6( args )
     plt.show()
 
