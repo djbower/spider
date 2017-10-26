@@ -37,7 +37,7 @@ class FigureData( object ):
         dd = {}
         self.data_d = dd
         dd['time_l'] = args[1]
-        dd['time_units'] = 'Myr' # hard-coded
+        dd['time_units'] = 'kyr' # hard-coded
         dd['time_decimal_places'] = 2 # hard-coded
         self.process_time_list()
         self.set_properties( nrows, ncols, width, height )
@@ -143,6 +143,18 @@ class FigureData( object ):
         #            '#CD5C5C',
         #            '#FA141B',
         #            '#FFA07A']
+        # color scheme 'bkr8' for light background from Crameri
+        # see f_Colours.m at http://www.fabiocrameri.ch/visualisation.php
+        # this is actually very similar (same?) as Tim's scheme above
+        colors_l = [(0.0,0.0,0.3),
+                    (0.1,0.1,0.5),
+                    (0.2,0.2,0.7),
+                    (0.4,0.4,0.8),
+                    (0.8,0.4,0.4),
+                    (0.7,0.2,0.2),
+                    (0.5,0.1,0.1),
+                    (0.3,0.0,0.0)]
+        colors_l.reverse()
         dd['colors_l'] = colors_l
 
     def set_properties( self, nrows, ncols, width, height ):
@@ -271,6 +283,11 @@ def figure1( args ):
     xx_solt, yy_solt = fig_o.get_xy_data( 'solidus_temp', time )
     ax1.fill_between( xx_liqt, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
 
+    #print xx_sol
+    #print np.mean(yy_liq[20:]-yy_sol[20:])
+    #sys.exit(1)
+
+
     # dotted lines of constant melt fraction
     for xx in range( 0, 11, 2 ):
         yy_b = xx/10.0 * (yy_liq - yy_sol) + yy_sol
@@ -372,8 +389,8 @@ def figure2( args ):
 
     for nn, time in enumerate( fig_o.time ):
         # uncomment below to plot every other line
-        #if (nn-1) % 2:
-        #    continue
+        if (nn-1) % 2:
+            continue
 
         color = fig_o.get_color( nn )
         # use melt fraction to determine mixed region
@@ -448,8 +465,8 @@ def figure3( args ):
 
     for nn, time in enumerate( fig_o.time ):
         # uncomment below to plot every other line
-        #if (nn-1) % 2:
-        #    continue
+        if (nn-1) % 2:
+            continue
         color = fig_o.get_color( nn )
         # use melt fraction to determine mixed region
         xx, yy = fig_o.get_xy_data( 'phi', time )
@@ -516,7 +533,7 @@ def figure3( args ):
     yticks = [-3E-3, -2E-3, -1E-3, 0]
     fig_o.set_myaxes( ax5, title=title, xlabel='$P$ (GPa)',
         yticks=yticks, xticks=xticks,
-        ylabel='$\\left(\\frac{dT}{dr}\\right)_S$')
+        ylabel='$\\left(\\frac{\partial T}{\partial r}\\right)_S$')
     ax5.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.0e'))
     ax5.yaxis.set_label_coords(-0.15,0.43)
 
@@ -525,7 +542,7 @@ def figure3( args ):
     yticks = [1E-15, 1E-12, 1E-9, 1E-6, 1E-3]
     fig_o.set_myaxes( ax2, title=title,
         yticks=yticks, xticks=xticks,
-        ylabel='$-\\frac{dS}{dr}$', fmt=dSdr_fmt)
+        ylabel='$-\\frac{\partial S}{\partial r}$', fmt=dSdr_fmt)
     ax2.yaxis.set_label_coords(-0.1,0.565)
 
     fig_o.savefig(3)
@@ -1078,11 +1095,11 @@ def main( args ):
         raise Exception('You must provide an argument consisting of comma-separated times.')
 
     figure1( args )
-    #figure2( args )
-    #figure3( args )
+    figure2( args )
+    figure3( args )
     #figure4( args )
     #figure5( args )
-    figure6( args )
+    #figure6( args )
     plt.show()
 
 #====================================================================
