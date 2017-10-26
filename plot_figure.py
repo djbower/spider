@@ -548,6 +548,15 @@ def figure3( args ):
     fig_o.savefig(3)
 
 #====================================================================
+def dep2pres( dep ):
+
+    dep *= 6371000.0
+    pres = 4078.95095544*10 / 1.1115348931000002e-07
+    pres *= np.exp( 1.1115348931000002e-07 * dep) - 1.0
+    pres *= 1.0E-9
+    return pres
+
+#====================================================================
 def figure4( args ):
 
     width = 4.7747 # * 0.5
@@ -556,13 +565,8 @@ def figure4( args ):
 
     dd = fig_o.data_d
 
-    # FIXME: below will now break because I am not loading in the 
-    # python model
-    dep2pres = fig_o.data_d['solver_o'].sol_o.mesh_o._calc_pressure
-    mesh_o = dd['solver_o'].sol_o.mesh_o
     # below, only basic internal nodes
-    xconst = 55692628932.82327
-    xconst *= 1.0E-9 # to GPa
+    #xconst = 55692628932.82327 # scaling for pressure but could change
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -574,10 +578,8 @@ def figure4( args ):
     Sliq_file = '/Users/dan/Documents/research/my_papers/in_prep/magma_ocean_method/toymodel/Sliq_processed.dat'
     rad, Sliq = np.loadtxt( Sliq_file, unpack=True )
     depth = 1.0 - rad
-    # FIXME
     pres = dep2pres( depth )
-    pres *= xconst
-    const = 2993.025100070677
+    const = 2993.025100070677 # scaling for entropy but could change
     Sliq *= const
     # titles and axes labels, legends, etc
     title = '(d) Liquidus, J kg$^{-1}$ K$^{-1}$'
@@ -596,12 +598,9 @@ def figure4( args ):
     rad2, dSliqdr = np.loadtxt( dSliqdr_file, unpack=True )
     depth = 1.0 - rad
     depth2 = 1.0 - rad2
-    # FIXME
     pres = dep2pres( depth )
     pres2 = dep2pres( depth2 )
 
-    pres *= xconst
-    pres2 *= xconst
     const = 0.0004697889028520918
     dSdr *= const * -1.0 # DJB HACK
     dSliqdr *= const
@@ -619,7 +618,7 @@ def figure4( args ):
     #yticks= [-1.0E-3, -1.0E-6, -1.0E-9, -1.0E-12, -1.0E-15]#, 1.0E-3]
     yticks = [1.0E-15, 1.0E-12, 1.0E-9,1.0E-6,1.0E-3]
     fig_o.set_myaxes( ax1, yticks=yticks, xticks=xticks,
-        ylabel='$-\\frac{dS}{dr}$', fmt=dSdr_fmt, title=title)
+        ylabel='$-\\frac{\partial S}{\partial r}$', fmt=dSdr_fmt, title=title)
     ax1.yaxis.set_label_coords(-0.11,0.565)
 
     ############
@@ -627,9 +626,7 @@ def figure4( args ):
     Fconv_file = '/Users/dan/Documents/research/my_papers/in_prep/magma_ocean_method/toymodel/FluxConv_processed.dat'
     rad, Fconv = np.loadtxt( Fconv_file, unpack=True )
     depth = 1.0 - rad
-    # FIXME
     pres = dep2pres( depth )
-    pres *= xconst
 
     const = 193508342723647.66
     Fconv *= const
@@ -655,9 +652,7 @@ def figure4( args ):
     Fmix_file = '/Users/dan/Documents/research/my_papers/in_prep/magma_ocean_method/toymodel/FluxMix_processed.dat'
     rad, Fmix = np.loadtxt( Fmix_file, unpack=True )
     depth = 1.0 - rad
-    # FIXME
     pres = dep2pres( depth )
-    pres *= xconst
 
     const = 193508342723647.66
     Fmix *= const
@@ -1094,10 +1089,10 @@ def main( args ):
     if len(args) < 2 :
         raise Exception('You must provide an argument consisting of comma-separated times.')
 
-    figure1( args )
-    figure2( args )
-    figure3( args )
-    #figure4( args )
+    #figure1( args )
+    #figure2( args )
+    #figure3( args )
+    figure4( args )
     #figure5( args )
     #figure6( args )
     plt.show()
