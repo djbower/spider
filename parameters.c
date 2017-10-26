@@ -152,7 +152,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   }
 
   /* Grid parameters */
-  P->numpts_b = 100;
+  P->numpts_b = 200;
   ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_b,NULL);CHKERRQ(ierr);
   P->numpts_s = P->numpts_b - 1;
 
