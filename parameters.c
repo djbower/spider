@@ -170,12 +170,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   //P->numpts_b= 11532
   //P->numpts_b= 22996
   //P->numpts_b= 45928
+
+  ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_b,NULL);CHKERRQ(ierr);
   P->numpts_s = P->numpts_b - 1;
-  {
-    PetscBool set = PETSC_FALSE;
-    ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_s,&set);CHKERRQ(ierr);
-    if (set) P->numpts_b = P->numpts_s + 1;
-  }
+
 
   /* Monitor */
   P->monitor = PETSC_TRUE;
