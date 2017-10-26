@@ -1,0 +1,160 @@
+# time stepping
+
+# number of macro steps
+-nstepsmacro 18
+
+# macro step size in years
+-dtmacro_years 100
+
+# for default time ranges
+# if one of these is set, then the above time stepping
+# parameters are ignored
+# 0 - 10 kyr
+#-early
+# 0 - 100 Myr
+#-middle
+# 0 - 4.55 Byr
+#-late
+
+# for the PETSc interface to SUNDIALS, matchstep is not
+# allowed, and in testing it doesn't appear that interpolate
+# or stepover result in different behaviour
+-ts_exact_final_time stepover
+#-ts_exact_final_time interpolate
+#-ts_exact_final_time matchstep
+
+# tolerances
+-ts_sundials_atol 1.0e-6
+-ts_sundials_rtol 1.0e-6
+
+# mesh
+# number of basic nodes
+-n 200
+
+# all units are SI unless indicated otherwise
+
+# primary scaling parameters
+# - these are used to non-dimensionalise (scale) the numerical problem
+#   and do not represent the physical quantities that are actually
+#   used (physical parameters are listed below)
+-radius0 6371000.0 # Earth radius
+-entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
+-temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
+-density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
+# volatile0 is only used if SOLVE_FOR_VOLATILES=1 or MODEL=3
+-volatile0 1.0E2
+
+# energy fluxes and sources to include
+# [0] is off
+# [1] is on
+-CONDUCTION 1 # conduction
+-CONVECTION 1 # convection
+-MIXING 1 # mixing (latent heat transport)
+-SEPARATION 1 # gravitational separation of solid and melt phase
+-HRADIO 0 # radioactive heating (TODO: not currently implemented)
+-HTIDAL 0 # tidal heating (TODO: not currently implemented)
+
+# melting curves
+# for bottom-up crystallisation (double precision OK)
+-curves andrault2011
+# for middle-out crystallisation (quadruple precision required)
+#-curves stixrude2009
+
+# mixing length
+# [1] is conventional, i.e. distance from the nearest boundary
+#     which is either the surface or core-mantle boundary
+# [2] is constant, i.e. 1/4 x mantle depth, which is the mean
+#     of conventional theory.  This can help to prevent a rigid
+#     lid from forming at the surface
+-mixing_length 1
+
+# physical parameters
+
+# radius of the planet
+-radius 6371000.0 # Earth radius
+
+# initial condition
+-sinit 3052.885602072091 # initial specific entropy at top of domain (top cell)
+#-sinit 2137.0199214504637
+-ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
+# for Earth scalings, above is -1.0E-3 in non-dimensional units
+
+# static pressure profile derived from Adams-Williamson equation of state
+# these parameters are from fitting PREM in the lower mantle (for Earth)
+-rhos 4078.95095544 # surface density
+-beta 1.1115348931000002e-07 # beta parameter
+-gravity -10.0 # gravity
+
+# material properties
+-cond_sol 4.0 # conductivity of solid
+-cond_mel 4.0 # conductivity of melt
+-grain 1.0E-3 # grain size (m)
+
+# smoothing of material properties across liquidus and solidus
+# units of melt fraction (non-dimensional)
+-swidth 1.0E-2
+
+# viscosity
+-log10visc_sol 21.0 # solid viscosity (log10)
+-log10visc_mel 2.0 # melt viscosity (log10)
+-phi_critical 0.4 # transition melt fraction (non-dimensional)
+-phi_width 0.15 # transition width (non-dimensional)
+
+# core
+-coresize 0.55 # fractional radius of core-mantle boundary
+-rho_core 10738.332568062382 # core density
+-cp_core 880.0 # core heat capacity
+
+# atmosphere parameters
+# [1] grey-body, i.e. sigma*emiss*(T^4-Teqm^4), with constant emissivity
+# [2] steam atmosphere parameterisation (Zahnle et al., 1988)
+# [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
+-MODEL 1
+# HYBRID is a hack to prevent a rigid lid from forming at the surface
+# and should only be used with caution (talk to Dan before using)
+-HYBRID 0
+# if MODEL = 1 or 2, the following constant emissivity is used
+-emissivity0 1.0
+# equilibrium temperature of the planet
+-teqm 273.0
+# parameterise the upper thermal boundary layer, where
+# dT = param_utbl_const * [Surface temperature]**3.0
+# this is useful for high melt fraction dynamics where the ultra-thin thermal boundary layer
+# (often only a few cms thick) cannot be resolved by the choice of mesh
+-PARAM_UTBL 1 # flag to turn on parameterisation
+-param_utbl_const 1.0E-7 # value of parameterisation
+
+# track time-dependence of volatile content in atmosphere and magma ocean
+# can be done passively (with MODEL=1 or 2 above), or self-consistently
+# with MODEL=3 above (where the volatile content feeds back into determining
+# the emissivity of the atmosphere)
+# [0] off
+# [1] on
+-SOLVE_FOR_VOLATILES 0
+
+# below is for MODEL=3, see Abe and Matsui (1986) and Elkins-Tanton (2008)
+# for the grey-body atmosphere formulation.  The expressions for the partial
+# pressure of each component (H2O and CO2) are taken from Lebrun et al. (2013)
+
+# atmosphere reference pressure (Pa)
+-P0 101325.0 # Pa (= 1 atm)
+
+# parameters relating to CO2 volatile
+#-CO2_initial 0.0 # ppm
+#-CO2_initial 1000.0 # ppm, Elkins-Tanton (2008) case 1 
+-CO2_initial 100.0 # ppm, Elkins-Tanton (2008) case 2 
+#-CO2_initial 6000.0 # ppm, Elkins-Tanton (2008) case 3
+-CO2_kdist 5.0E-4 # distribution coefficient between solid and melt (non-dimensional)
+-CO2_kabs 0.05 # absorption (m^2/kg)
+-CO2_henry 4.4E-6 # ppm/Pa (Lebrun et al., 2013)
+-CO2_henry_pow 1.0 # power for Henry's law (Lebrun et al., 2013)
+
+# parameters relating to H2O volatile
+#-H2O_initial 0.0 # ppm
+#-H2O_initial 5000.0 # ppm, Elkins-Tanton (2008) case 1
+-H2O_initial 500.0 # ppm, Elkins-Tanton (2008) case 2
+#-H2O_initial 0.0 # ppm, Elkins-Tanton (2008) case 3
+-H2O_kdist 1.0E-4 # distribution coefficients are given in supplementary material of ET08
+-H2O_kabs 0.01 # absorption (m^2/kg)
+-H2O_henry 6.8E-2 # ppm/Pa (Lebrun et al., 2013)
+-H2O_henry_pow 1.4285714285714286 # Power for Henry's law (1.0/0.7) (Lebrun et al., 2013)
