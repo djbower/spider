@@ -139,16 +139,16 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       dtmacro_years_set = PETSC_TRUE;
       if (early) {
         /* early evolution to 10 kyr */
-        P->nstepsmacro = 1000;
-        dtmacro_years = 10; // years
+        P->nstepsmacro = 1E2;
+        dtmacro_years = 1E2; // years
       } else if (middle) {
         /* middle evolution to 100 Myr */
-        P->nstepsmacro = 10000;
-        dtmacro_years = 10000; //years
+        P->nstepsmacro = 1E2;
+        dtmacro_years = 1E6; //years
       } else if (late) {
         /* late evolution to 4.55 Byr */
         P->nstepsmacro = 455;
-        dtmacro_years = 1000000000000; // years
+        dtmacro_years = 1E9; // years
       }
     }
 
@@ -162,18 +162,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* Grid parameters */
   P->numpts_b = 100;
-  //P->numpts_b= 278
-  //P->numpts_b= 372
-  //P->numpts_b= 656
-  //P->numpts_b= 2939
-  //P->numpts_b= 5802
-  //P->numpts_b= 11532
-  //P->numpts_b= 22996
-  //P->numpts_b= 45928
-
   ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_b,NULL);CHKERRQ(ierr);
   P->numpts_s = P->numpts_b - 1;
-
 
   /* Monitor */
   P->monitor = PETSC_TRUE;
