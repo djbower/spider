@@ -302,7 +302,7 @@ def figure1( args ):
             ax0.plot( xx_liq, yy_b, '-', linewidth=0.5, color='black' )
         else:
             # dashed constant melt fraction lines
-            ax0.plot( xx_liq, yy_b, ':', linewidth=1.0, color='white' )
+            ax0.plot( xx_liq, yy_b, '--', linewidth=1.0, color='white' )
 
     handle_l = [] # handles for legend
 
