@@ -113,29 +113,23 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* Time frame parameters */
   P->maxsteps    = 100000000; /* Effectively infinite */
   P->t0          = 0.0;
-  // TODO -dtmacro, contrary to the pattern, are still input in nondim units..
-  // TODO: consider *only* accepting -dtmacro_years
   {
     PetscReal dtmacro_years;
-    PetscBool dtmacro_set = PETSC_FALSE, dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
+    PetscBool dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
               early = PETSC_FALSE, middle=PETSC_FALSE, late = PETSC_FALSE;
     P->nstepsmacro = 1000;
     ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,&nstepsmacro_set);CHKERRQ(ierr);
-    P->dtmacro = 1000000.0;
-    ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&P->dtmacro,&dtmacro_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetBool(NULL,NULL,"-early",&early,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetBool(NULL,NULL,"-middle",&middle,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetBool(NULL,NULL,"-late",&late,NULL);CHKERRQ(ierr);
     if (early || middle || late ){
-      if(dtmacro_set || dtmacro_years_set || nstepsmacro_set){
-        ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -early, -middle, or -late provided. Ignoring -nstepsmacro, -nstepmacro_years, and/or -nstepsmacro\n");CHKERRQ(ierr);
+      if(dtmacro_years_set || nstepsmacro_set){
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -early, -middle, or -late provided. Ignoring -nstepsmacro and/or -dtmacro_years\n");CHKERRQ(ierr);
       }
       if ((int)early + (int)middle + (int)late > 1) {
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"only one of -early, -middle, or -late may be provided");
       }
-      /* all these use dtmacro_years, so must turn on flag to activate
-         scaling below */
       dtmacro_years_set = PETSC_TRUE;
       if (early) {
         /* early evolution to 10 kyr */
@@ -152,12 +146,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       }
     }
 
-    if (dtmacro_set && dtmacro_years_set) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: both -dtmacro and -dtmacro_years provided. Using -dtmacro\n");CHKERRQ(ierr);
-    /* this is also now called for -early, -middle, and -late */
-    } else if (dtmacro_years_set) {
-        P->dtmacro = dtmacro_years / C->TIMEYRS;
-    }
+    // P->dtmacro is non-dimensional
+    P->dtmacro = dtmacro_years / C->TIMEYRS;
   }
 
   /* Grid parameters */

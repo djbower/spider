@@ -17,8 +17,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
      times (less than a year) will overwrite each other.  For debugging this could
      be annoying, but in terms of plotting and analysis it is a non-issue since nothing
      is happening at timescales less than a year */
-  /* FIXME: I think this is still breaking in some cases.  To investigate:
-     (run with input.opts and -early) */
   Constants const *C = &ctx->parameters.constants;
   PetscReal dtmacro_years;
   dtmacro_years = PetscCeilReal(dtmacro * C->TIMEYRS);
