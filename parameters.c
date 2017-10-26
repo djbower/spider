@@ -117,7 +117,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     PetscReal dtmacro_years;
     PetscBool dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
               early = PETSC_FALSE, middle=PETSC_FALSE, late = PETSC_FALSE;
-    P->nstepsmacro = 1000;
+    P->nstepsmacro = 18;
+    dtmacro_years = 100;
     ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,&nstepsmacro_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetBool(NULL,NULL,"-early",&early,NULL);CHKERRQ(ierr);
@@ -302,8 +303,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* for radiative boundary condition at the top surface
      dT = param_utbl_const * [Surface temperature]**3 */
-  Ap->PARAM_UTBL = PETSC_FALSE;
-  Ap->param_utbl_const = 0.0;
+  Ap->PARAM_UTBL = PETSC_TRUE;
+  Ap->param_utbl_const = 1.0e-7;
   ierr = PetscOptionsGetBool(NULL,NULL,"-PARAM_UTBL",&Ap->PARAM_UTBL,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,"-param_utbl_const",&Ap->param_utbl_const,NULL);CHKERRQ(ierr);
   if (Ap->PARAM_UTBL){
