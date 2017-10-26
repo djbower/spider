@@ -1089,11 +1089,11 @@ def main( args ):
     if len(args) < 2 :
         raise Exception('You must provide an argument consisting of comma-separated times.')
 
-    #figure1( args )
-    #figure2( args )
-    #figure3( args )
-    figure4( args )
-    figure5( args )
+    figure1( args )
+    figure2( args )
+    figure3( args )
+    #figure4( args )
+    #figure5( args )
     #figure6( args )
     plt.show()
 
