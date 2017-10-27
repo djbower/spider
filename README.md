@@ -1,4 +1,5 @@
 # SPIDER
+*Simulating Planetary Interior Dynamics with Extreme Rheology*
 
 ## Citation
 
