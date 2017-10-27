@@ -39,13 +39,16 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal tyrs )
 /* radiogenic heat generation */
 static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
 {
-    PetscErrorCode ierr;
-    Solution       *S = &E->solution;
-    PetscScalar    Alheat;
-    PetscScalar    thalf = 7.17E5; // years (from Tim's spreadsheet)
+    /* TODO: template code snippets below, but radiogenic heating
+       is currently not implemented */
+
+    //PetscErrorCode ierr;
+    //Solution       *S = &E->solution;
+    //PetscScalar    Alheat;
+    //PetscScalar    thalf = 7.17E5; // years (from Tim's spreadsheet)
     /* initial heating rate of Al26 */
-    PetscScalar    Alinit = 1.526E-7; // W/kg (from Tim's spreadsheet)
-    PetscScalar    decayconst = log(2)/thalf; // 1/years
+    //PetscScalar    Alinit = 1.526E-7; // W/kg (from Tim's spreadsheet)
+    //PetscScalar    decayconst = log(2)/thalf; // 1/years
 
     PetscFunctionBeginUser;
 
@@ -66,10 +69,11 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
     //ierr = VecSet( S->Hradio_s, 0.0 ); CHKERRQ(ierr);
 
     /* decay Al26 radiogenic heat production with time */
-    Alheat = Alinit*exp(-decayconst*tyrs);
-    ierr = VecSet( S->Hradio_s, Alheat ); CHKERRQ(ierr);
+    //Alheat = Alinit*exp(-decayconst*tyrs);
+    //ierr = VecSet( S->Hradio_s, Alheat ); CHKERRQ(ierr);
 
-    ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
+    // final command is always an append call to the Htot_s array
+    //ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -77,15 +81,19 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
 /* tidal heat generation */
 static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
 {
-    PetscErrorCode ierr;
-    Solution       *S = &E->solution;
+    /* TODO: template code snippets below, but tidal heating is
+       currently not implemented */
+
+    //PetscErrorCode ierr;
+    //Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
 
     /* do stuff here */
-    ierr = VecSet( S->Htidal_s, 0.0 ); CHKERRQ(ierr);
+    //ierr = VecSet( S->Htidal_s, 0.0 ); CHKERRQ(ierr);
 
-    ierr = VecAXPY( S->Htot_s, 1.0, S->Htidal_s ); CHKERRQ(ierr);
+    // final command is always an append call to the Htot_s array
+    //ierr = VecAXPY( S->Htot_s, 1.0, S->Htidal_s ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
