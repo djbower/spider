@@ -1,5 +1,13 @@
 # SPIDER
 
+## Citation
+
+### 1. SPIDER code
+Bower, D.J., P. Sanan, and A.S. Wolf (2017), Numerical solution of a non-linear conservation law applicable to the interior dynamics of partially molten planets, Phys. Earth Planet. Inter.
+
+### 2. Use of MgSiO3 melt data tables (RTpress) within SPIDER
+Wolf, A.S. and D.J. Bower (2017), An equation of state for high pressure-temperature liquids (RTpress) with application to MgSiO3 melt, Phys. Earth Planet. Inter.
+
 ## Building
 
 1. Provide a working C compiler
