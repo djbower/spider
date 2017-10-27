@@ -56,9 +56,8 @@
 
 # melting curves
 # for bottom-up crystallisation (double precision OK)
--curves andrault2011
-# for middle-out crystallisation (quadruple precision required)
-#-curves stixrude2009
+-liquidus_filename_rel_to_src lookup_data/RTmelt/liquidus_andrault2011.dat
+-solidus_filename_rel_to_src lookup_data/RTmelt/solidus_andrault2011.dat
 
 # mixing length
 # [1] is conventional, i.e. distance from the nearest boundary
