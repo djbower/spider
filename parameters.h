@@ -93,7 +93,25 @@ typedef struct _Parameters {
     PetscReal   t0; /* Initial time */
     PetscInt    numpts_b,numpts_s;
 
+    // Output Parameters
     PetscBool monitor;
+    char outputDirectory[PETSC_MAX_PATH_LEN];
+
+    // Lookup tables
+    char        liquidusFilename[PETSC_MAX_PATH_LEN];
+    char        solidusFilename[PETSC_MAX_PATH_LEN];
+    char        alphaSolFilename[PETSC_MAX_PATH_LEN];
+    char        alphaMelFilename[PETSC_MAX_PATH_LEN];
+    char        cpSolFilename[PETSC_MAX_PATH_LEN];
+    char        cpMelFilename[PETSC_MAX_PATH_LEN];
+    char        dtdpsSolFilename[PETSC_MAX_PATH_LEN];
+    char        dtdpsMelFilename[PETSC_MAX_PATH_LEN];
+    char        rhoSolFilename[PETSC_MAX_PATH_LEN];
+    char        rhoMelFilename[PETSC_MAX_PATH_LEN];
+    char        tempSolFilename[PETSC_MAX_PATH_LEN];
+    char        tempMelFilename[PETSC_MAX_PATH_LEN];
+    Lookup      melt_prop;
+    Lookup      solid_prop;
 
     //  "Standard" parameters
     // 26
@@ -123,22 +141,6 @@ typedef struct _Parameters {
     PetscScalar cond_sol;
     PetscScalar log10visc_mel;
     PetscScalar cond_mel;
-
-    // Lookup tables
-    char        liquidusFilename[PETSC_MAX_PATH_LEN];
-    char        solidusFilename[PETSC_MAX_PATH_LEN];
-    char        alphaSolFilename[PETSC_MAX_PATH_LEN];
-    char        alphaMelFilename[PETSC_MAX_PATH_LEN];
-    char        cpSolFilename[PETSC_MAX_PATH_LEN];
-    char        cpMelFilename[PETSC_MAX_PATH_LEN];
-    char        dtdpsSolFilename[PETSC_MAX_PATH_LEN];
-    char        dtdpsMelFilename[PETSC_MAX_PATH_LEN];
-    char        rhoSolFilename[PETSC_MAX_PATH_LEN];
-    char        rhoMelFilename[PETSC_MAX_PATH_LEN];
-    char        tempSolFilename[PETSC_MAX_PATH_LEN];
-    char        tempMelFilename[PETSC_MAX_PATH_LEN];
-    Lookup      melt_prop;
-    Lookup      solid_prop;
 
     // Additional Atmosphere Parameters
     AtmosphereParameters atmosphere_parameters;

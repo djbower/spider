@@ -17,10 +17,10 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
      times (less than a year) will overwrite each other.  For debugging this could
      be annoying, but in terms of plotting and analysis it is a non-issue since nothing
      is happening at timescales less than a year */
-  Constants const *C = &ctx->parameters.constants;
-  PetscReal dtmacro_years;
-  dtmacro_years = PetscCeilReal(dtmacro * C->TIMEYRS);
-  long long nstep = (long long) dtmacro_years * (long long )step;
+  Parameters const *P = &ctx->parameters;
+  Constants const  *C = &P->constants;
+  PetscReal        dtmacro_years = PetscCeilReal(dtmacro * C->TIMEYRS);
+  long long        nstep = (long long) dtmacro_years * (long long )step;
 
   PetscFunctionBeginUser;
 
@@ -30,7 +30,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
 #if (defined PETSC_USE_REAL___FLOAT128)
   ierr = PetscOptionsSetValue(NULL,"-binary_write_double","");CHKERRQ(ierr);
 #endif
-
 
   {
     PetscReal minval,maxval;
@@ -56,7 +55,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   {
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/dSdr_b_aug_%lld.m",nstep);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/dSdr_b_aug_%lld.m",P->outputDirectory,nstep);CHKERRQ(ierr);
     ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug",nstep);CHKERRQ(ierr);
     ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr); //Annoyingly, PETSc wants you to use binary output so badly that this is the easiest way to get full-precision ASCII..
@@ -76,7 +75,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     Solution             *S = &ctx->solution;
 
     /* for debugging, switch 'nstep' below to 'step' to over overwriting output data files */
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/petscbin.%lld",nstep);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/petscbin.%lld",P->outputDirectory,nstep);CHKERRQ(ierr);
     ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer);CHKERRQ(ierr);
 
     /* the following order of export must match exactly the order of the fields in plot_figure.py
@@ -193,7 +192,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       PetscViewer viewer;
       char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
 
-      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"output/rhs_b.%D.m",step);CHKERRQ(ierr);
+      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/rhs_b.%D.m",P->outputDirectory,step);CHKERRQ(ierr);
       ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"rhs_step_%D",step);CHKERRQ(ierr);
       ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
       ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
