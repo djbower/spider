@@ -23,34 +23,7 @@
 /* 1-D datafiles containing liquidus and solidus
    as a function of pressure */
 #define NLS 301 /* no. of coordinates in liq and sol datafiles */
-
-/* datafile locations and material-specific constants */
-
-/* A Root Directory */
-/* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
-#define STRINGIFY(x) STRINGIFY2(x)
-#define STRINGIFY2(x) #x
-#define MAGMA_ROOT_DIR_STR STRINGIFY(MAGMA_ROOT_DIR)
-
-/* liquidus/solidus data files */
-#define LIQUIDUS_STIXRUDE2009 "lookup_data/RTmelt/liquidus_stixrude2009.dat"
-#define LIQUIDUS_ANDRAULT2011 "lookup_data/RTmelt/liquidus_andrault2011.dat"
-#define SOLIDUS_STIXRUDE2009 "lookup_data/RTmelt/solidus_stixrude2009.dat"
-#define SOLIDUS_ANDRAULT2011 "lookup_data/RTmelt/solidus_andrault2011.dat"
-
-/* solid data files */
-#define ALPHA_SOL_DEFAULT "lookup_data/RTmelt/thermal_exp_solid.dat"
-#define CP_SOL_DEFAULT "lookup_data/RTmelt/heat_capacity_solid.dat"
-#define DTDPS_SOL_DEFAULT "lookup_data/RTmelt/adiabat_temp_grad_solid.dat"
-#define RHO_SOL_DEFAULT "lookup_data/RTmelt/density_solid.dat"
-#define TEMP_SOL_DEFAULT "lookup_data/RTmelt/temperature_solid.dat"
-
-/* melt data files */
-#define ALPHA_MEL_DEFAULT "lookup_data/RTmelt/thermal_exp_melt.dat"
-#define CP_MEL_DEFAULT "lookup_data/RTmelt/heat_capacity_melt.dat"
-#define DTDPS_MEL_DEFAULT "lookup_data/RTmelt/adiabat_temp_grad_melt.dat"
-#define RHO_MEL_DEFAULT "lookup_data/RTmelt/density_melt.dat"
-#define TEMP_MEL_DEFAULT "lookup_data/RTmelt/temperature_melt.dat"
+// TODO make NLS a parameter
 
 /* this structure has an x and y array size equal to NLS  */
 typedef struct _Interp1d {

@@ -26,8 +26,7 @@ PetscErrorCode set_interp2d( const char * filename, Interp2d *interp, PetscScala
     fp = fopen( filename, "r" );
 
     if(fp==NULL) {
-        perror("Error opening file.\n");
-        exit(-1);
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",filename);
     }
 
     // fgets reads in string, sscanf processes it
@@ -132,7 +131,7 @@ PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n
     fp = fopen( filename, "r" );
 
     if (!fp) {
-      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file");
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",filename);
     }
     // fgets reads in string, sscanf processes it
     while(fgets(string, sizeof(string), fp) != NULL) {

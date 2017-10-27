@@ -1,13 +1,12 @@
 static char help[] =
 "Magma ocean timestepper\n\
 -n : specify the number of staggered points\n\
--sinit : specify an entropy value to base the initial condition upon\n\
 -monitor : use custom monitor to dump output\n\
 -nstepsmacro : specify the number of macro (output dump) steps\n\
 -dtmacro : specify the macro (output dump) time step, in nondimensionalised time (will not be exact!)\n\
 -dtmacro_years : specify the macro (output dump) time step, in years\n\
--curves : specify a set of data files to load. Currently accepts 'andrault2011' (default) and 'stixrude2009'\n\
 -early, -middle, -late: shortcuts to set -dtmacro and -nstepsmacro (overrides these)\n\
+See example input files in examples/ for many more available options\n\
 ";
 
 #include "petsc.h"
