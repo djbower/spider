@@ -54,6 +54,9 @@
 -HRADIO 0 # radioactive heating (TODO: not currently implemented)
 -HTIDAL 0 # tidal heating (TODO: not currently implemented)
 
+# output directory
+-outputDirectory output
+
 # melting curves
 # for bottom-up crystallisation (double precision OK)
 -liquidus_filename_rel_to_src lookup_data/RTmelt/liquidus_andrault2011.dat
