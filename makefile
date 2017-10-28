@@ -1,5 +1,5 @@
 # executable name
-EXNAME = main
+EXNAME = spider
 
 # Required objects (rules included below build these from .c files)
 OBJ = main.o ctx.o rhs.o ic.o mesh.o lookup.o bc.o util.o twophase.o monitor.o aug.o energy.o matprop.o output.o parameters.o
