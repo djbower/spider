@@ -16,13 +16,6 @@ PetscErrorCode set_interp2d( const char * filename, Interp2d *interp, PetscScala
     PetscScalar xa[NX], ya[NY], za[NX*NY];
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    {
-      PetscErrorCode ierr;
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp2d:\n");CHKERRQ(ierr);
-    }
-#endif
-
     fp = fopen( filename, "r" );
 
     if(fp==NULL) {
@@ -120,14 +113,6 @@ PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n
     PetscScalar x, y, xscale=0.0, yscale=0.0, xa[n], ya[n];
 
     PetscFunctionBeginUser;
-
-#if (defined VERBOSE)
-    {
-      PetscErrorCode ierr;
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"set_interp1d:\n");CHKERRQ(ierr);
-    }
-#endif
-
     fp = fopen( filename, "r" );
 
     if (!fp) {
@@ -188,6 +173,7 @@ PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
        linear interpolation with truncation for values
        that fall outside the data lookup range */
 
+    PetscErrorCode    ierr;
     PetscScalar       w1, result;
     PetscScalar const *xa, *ya;
     PetscScalar       xmax, xmin;
@@ -205,16 +191,12 @@ PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
        extrapolation is necessary). Here we truncate instead. */
 
     if( x<=xmin ){
-#if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x<xmin.  Truncating\n");CHKERRQ(ierr);
-#endif
       ind = 0; // minimum index, max index is always +1
       x = xmin;
     }
     else if( x>=xmax ){
-#if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x>xmax.  Truncating\n");CHKERRQ(ierr);
-#endif
       ind = n-2; // minimum index, max index is always +1
       x = xmax;
     }
@@ -248,9 +230,7 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
        spaced so we use a faster lookup approach by computing
        indices directly rather than looping through data */
 
-#if (defined VERBOSE)
     PetscErrorCode ierr;
-#endif
     PetscScalar z1, z2, z3, z4;
     PetscScalar w1, w2, w3, w4; // weights
     PetscScalar result;
@@ -278,16 +258,12 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
 
     /* for pressure (x), constant spacing assumed */
     if( x<=xmin ){
-#if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x<xmin.  Truncating\n");CHKERRQ(ierr);
-#endif
       indx = 0; // minimum index, max index is always +1
       x = xmin;
     }
     else if( x>=xmax ){
-#if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x>xmax.  Truncating\n");CHKERRQ(ierr);
-#endif
       indx = NX-2; // minimum index, max index is always +1
       x = xmax;
     }
@@ -302,16 +278,12 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
 
     /* for entropy (y), irregular spacing assumed */
     if( y<=ymin ){
-#if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y<ymin.  Truncating\n");CHKERRQ(ierr);
-#endif
       indy = 0; // minimum index, max index is always +1
       y = ymin;
     }
     else if( y>=ymax ){
-#if (defined VERBOSE)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y>ymax.  Truncating\n");CHKERRQ(ierr);
-#endif
       indy = NY-2; // minimum index, max index is always +1
       y = ymax;
     }

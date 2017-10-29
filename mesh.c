@@ -20,9 +20,6 @@ PetscErrorCode set_mesh( Ctx *E)
     Parameters     *P = &E->parameters;
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_mesh:\n");CHKERRQ(ierr);
-#endif
 
     /* Create vectors required for the mesh */
     for (i=0;i<NUMMESHVECS_B;++i) {
