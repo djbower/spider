@@ -3,12 +3,11 @@
 
 #include "ctx.h"
 
-PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscReal time, Vec x, void * ptr, double walltime0, double* walltimeprev);
-
-typedef struct TSMonitorWalltimedCtx {
+typedef struct MonitorCtx {
   double walltime0,walltimeprev;
-} TSMonitorWalltimedCtx;
+} MonitorCtx;
 
+PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscReal time, Vec x, void *ptr, MonitorCtx *mctx);
 PetscErrorCode TSMonitorWalltimed(TS ts,PetscInt steps,PetscReal time,Vec x,void *mctx);
 
 #endif

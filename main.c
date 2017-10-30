@@ -105,8 +105,8 @@ int main(int argc, char ** argv)
      TS object, to output periodically within our macro steps, useful if a
      macro step takes a longer amount of time. */
   {
-    PetscReal             time,nexttime;
-    TSMonitorWalltimedCtx mctx;
+    PetscReal  time,nexttime;
+    MonitorCtx mctx;
 
     time = P->t0;
     mctx.walltime0 = MPI_Wtime();
@@ -121,13 +121,13 @@ int main(int argc, char ** argv)
     nexttime = P->dtmacro; // non-dim time
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     if (P->monitor) {
-      ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,dSdr_b_aug,&ctx,mctx.walltime0,&mctx.walltimeprev);CHKERRQ(ierr);
+      ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,dSdr_b_aug,&ctx,&mctx);CHKERRQ(ierr);
     }
     for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
       ierr = TSSolve(ts,dSdr_b_aug);CHKERRQ(ierr);
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (P->monitor) {
-        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,dSdr_b_aug,&ctx,mctx.walltime0,&mctx.walltimeprev);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,dSdr_b_aug,&ctx,&mctx);CHKERRQ(ierr);
       }
       nexttime = (stepmacro + 1) * P->dtmacro; // non-dim
       ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
