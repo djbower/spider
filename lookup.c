@@ -190,13 +190,13 @@ PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
        attempted on a value outside of the range of x (where
        extrapolation is necessary). Here we truncate instead. */
 
-    if( x<=xmin ){
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x<xmin.  Truncating\n");CHKERRQ(ierr);
+    if( x<xmin ){
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x<xmin, %f<%f.  Truncating\n",(double)x,(double)xmin);CHKERRQ(ierr);
       ind = 0; // minimum index, max index is always +1
       x = xmin;
     }
-    else if( x>=xmax ){
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x>xmax.  Truncating\n");CHKERRQ(ierr);
+    else if( x>xmax ){
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x>xmax, %f>%f.  Truncating\n",(double)x,(double)xmax);CHKERRQ(ierr);
       ind = n-2; // minimum index, max index is always +1
       x = xmax;
     }
