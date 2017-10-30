@@ -39,9 +39,8 @@ something called "`gcc`" which is actually a wrapper for their own compiler. You
 If you see a message about "Apple LLVM", then you have the wrong compiler!
 
 ### 2. Build Dependencies
-Before you begin comment out any existing references to `PETSC_DIR` and `PETSC_ARCH` in your
-`.profile`, `.bash_profile`,`.bashrc`,etc. and re-source (clear these variables)
-profile or bash_profile and resource (clear these variables)
+Before you begin, comment out any existing references to `PETSC_DIR` and `PETSC_ARCH` in your
+`.profile`, `.bash_profile`,`.bashrc`, etc. and clear these variables.
 
 ### 2a. Build Dependencies: Double Precision
 
