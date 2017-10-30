@@ -15,6 +15,7 @@ See example input files in examples/ for many more available options\n\
 #include "monitor.h"
 #include "rhs.h"
 #include "aug.h"
+#include "version.h"
 
 int main(int argc, char ** argv)
 {
@@ -29,6 +30,11 @@ int main(int argc, char ** argv)
   PetscMPIInt     size;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
+
+  /* Print header and version number */
+  ierr = PetscPrintf(
+      PETSC_COMM_WORLD,"::::::::::::::::: SPIDER version %s.%s.%s :::::::::::::::::\n\n",
+      SPIDER_MAJOR_VERSION,SPIDER_MINOR_VERSION,SPIDER_PATCH_VERSION);CHKERRQ(ierr);
 
   /* We don't want to take the time to debug things in MPI (though the
      problems are likely minor), so don't allow multi-rank runs */
