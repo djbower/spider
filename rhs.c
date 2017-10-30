@@ -27,9 +27,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   PetscScalar          x0, x1;
 
   PetscFunctionBeginUser;
-#if (defined VERBOSE)
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"rhs:\n");CHKERRQ(ierr);
-#endif
   ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
   MPI_Comm_rank(PETSC_COMM_WORLD,&rank);

@@ -19,13 +19,13 @@
 # for the PETSc interface to SUNDIALS, matchstep is not
 # allowed, and in testing it doesn't appear that interpolate
 # or stepover result in different behaviour
--ts_exact_final_time stepover
-#-ts_exact_final_time interpolate
+#-ts_exact_final_time stepover
+-ts_exact_final_time interpolate
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-6
--ts_sundials_rtol 1.0e-6
+-ts_sundials_atol 1.0e-7
+-ts_sundials_rtol 1.0e-7
 
 # mesh
 # number of basic nodes

@@ -98,9 +98,6 @@ static PetscErrorCode set_liquidus( Ctx *E )
     Parameters const  *P = &E->parameters;
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_liquidus:\n");CHKERRQ(ierr);
-#endif
 
     S = &E->solution;
     interp = &P->melt_prop.liquidus;
@@ -169,9 +166,6 @@ static PetscErrorCode set_solidus( Ctx *E )
     Parameters const  *P = &E->parameters;
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_solidus:\n");CHKERRQ(ierr);
-#endif
     S = &E->solution;
     interp = &P->solid_prop.solidus;
     interpR = &P->solid_prop.rho;
@@ -228,9 +222,6 @@ static PetscErrorCode set_fusion( Ctx *E )
     Solution *S;
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_fusion:\n");CHKERRQ(ierr);
-#endif
     S = &E->solution;
 
     /* fusion = liquidus - solidus */
@@ -253,9 +244,6 @@ static PetscErrorCode set_fusion_curve( Ctx *E )
     Solution *S;
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_fusion_curve:\n");CHKERRQ(ierr);
-#endif
     S = &E->solution;
 
     /* basic nodes fusion_curve = solidus + 0.5*fusion*/
@@ -284,10 +272,6 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
     Solution *S;
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_mixed_phase\n");CHKERRQ(ierr);
-#endif
-
     S = &E->solution;
 
     /* dTdrs_mix = -dfusdr * (fusion_temp/fusion) + dfusdr_temp */

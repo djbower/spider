@@ -1,5 +1,3 @@
-/* Here, we define a monitor to produce output for debugging */
-
 #include "monitor.h"
 #include "output.h"
 #include "rhs.h"
@@ -32,14 +30,20 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
 #endif
 
   {
-    PetscReal minval,maxval;
+    PetscReal     minval,maxval;
+    double        walltime;
+    long long int elapsedSeconds;
+    int           days,hours,minutes,seconds;
+
     ierr = VecMin(x_aug,NULL,&minval);CHKERRQ(ierr); /* Note that this includes the extra point now, so might not be as meaningful! */
     ierr = VecMax(x_aug,NULL,&maxval);CHKERRQ(ierr);
-    double walltime = MPI_Wtime();
-    double walltimetotal = walltime - walltime0;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,
-        "***  Writing output at macro Step %D, t=%f. Min/Max %f/%f [%.2f s]\n",
-        step,(double)time,(double)minval,(double)maxval,walltimetotal);CHKERRQ(ierr);
+    walltime = MPI_Wtime();
+    elapsedSeconds = (long long int) (walltime - walltime0);
+    seconds = elapsedSeconds % 60;
+    minutes = ((elapsedSeconds - seconds)/60) % 60;
+    hours = ((elapsedSeconds - 60*minutes - seconds)/(60*60)) % 24;
+    days = (elapsedSeconds - 24*60*hours - 60*minutes - seconds)/(24*60*60);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"***  Writing output at macro Step %D, t=%f. Min/Max %f/%f [%lld:%02d:%02d:%02d]\n",step,(double)time,(double)minval,(double)maxval,days,hours,minutes,seconds);CHKERRQ(ierr);
     *walltimeprev = walltime;
   }
 
@@ -220,3 +224,30 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
 
   PetscFunctionReturn(0);
 }
+
+PetscErrorCode TSMonitorWalltimed(TS ts,PetscInt steps,PetscReal time,Vec x,void *mctx)
+{
+  PetscErrorCode        ierr;
+  TSMonitorWalltimedCtx *ctx = mctx;
+  double                walltime;
+  const double          split = 3.0; //s // TODO increase
+  long long int         elapsedSeconds;
+  int                   hours,days,minutes,seconds;
+  PetscReal             dt;
+ 
+  PetscFunctionBeginUser;
+  walltime = MPI_Wtime();
+  if (walltime - ctx->walltimeprev > split){
+    ctx->walltimeprev = walltime;
+    elapsedSeconds = (int) (walltime - ctx->walltime0);
+    seconds = elapsedSeconds % 60;
+    minutes = ((elapsedSeconds - seconds)/60) % 60;
+    hours = ((elapsedSeconds - 60*minutes - seconds)/(60*60)) % 24;
+    days = (elapsedSeconds - 24*60*hours - 60*minutes - seconds)/(24*60*60);
+    ierr = TSGetTimeStep(ts,&dt);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"  micro step %D, t=%0.3f, dt=%0.3f [%d:%02d:%02d:%02d]\n",steps,(double)time,(double)dt,days,hours,minutes,seconds,elapsedSeconds);CHKERRQ(ierr);
+  }
+  PetscFunctionReturn(0);
+}
+
+
