@@ -32,7 +32,7 @@ You can test that you have a working `gcc` C compiler by running the following f
 
 If you plan to use quadruple precision, you need to ensure that you have an actual version
 of GCC installed. This is harder than it should be, because Apple irresponsibly installs
-something called "`gcc`" which actually a wrapper for their own compiler. You can check by running
+something called "`gcc`" which is actually a wrapper for their own compiler. You can check by running
 
         gcc --version
 
