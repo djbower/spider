@@ -257,13 +257,13 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
        value outside of the lookup data range */
 
     /* for pressure (x), constant spacing assumed */
-    if( x<=xmin ){
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x<xmin.  Truncating\n");CHKERRQ(ierr);
+    if( x<xmin ){
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: %f<%f.  Truncating\n",(double)x,(double)xmin);CHKERRQ(ierr);
       indx = 0; // minimum index, max index is always +1
       x = xmin;
     }
-    else if( x>=xmax ){
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x>xmax.  Truncating\n");CHKERRQ(ierr);
+    else if( x>xmax ){
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: %f>%f.  Truncating\n",(double)x,(double)xmin);CHKERRQ(ierr);
       indx = NX-2; // minimum index, max index is always +1
       x = xmax;
     }
