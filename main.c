@@ -125,6 +125,9 @@ int main(int argc, char ** argv)
     }
     for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
       ierr = TSSolve(ts,dSdr_b_aug);CHKERRQ(ierr);
+      if (stepmacro == 1) {
+        ierr = TSView(ts,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+      }
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (P->monitor) {
         ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,dSdr_b_aug,&ctx,&mctx);CHKERRQ(ierr);
