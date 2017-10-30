@@ -12,17 +12,12 @@ PetscErrorCode set_entropy( Ctx *E, PetscScalar S0 )
     Solution       *S = &E->solution;
     PetscScalar    *arr_S_b, *arr_S_s, *arr_dSdr_b, *arr_radius_s, *arr_radius_b;
     PetscInt       i, ihi_b, ilo_b, w_b;
-#if (defined VERBOSE)
     PetscMPIInt    size;
-#endif
     DM             da_s = E->da_s, da_b=E->da_b;
 
     PetscFunctionBeginUser;
-
-#if (defined VERBOSE)
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
     if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
-#endif
 
     /* for looping over basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);

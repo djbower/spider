@@ -33,9 +33,6 @@ PetscErrorCode set_surface_flux( Ctx *E )
     Solution             *S  = &E->solution;
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_surface_flux:\n");CHKERRQ(ierr);
-#endif
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
 
     if (!rank){
@@ -169,9 +166,6 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_core_mantle_flux:\n");CHKERRQ(ierr);
-#endif
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ix  = numpts_b-1;
     ix2 = numpts_b-2;
