@@ -275,6 +275,15 @@ def figure1( args ):
 
     TIMEYRS = fig_o.get_data( 'constant_data', 0 )[8]
 
+    # hack to compute some average properties for Bower et al. (2017)
+    #xx_liq, yy_liq = fig_o.get_xy_data( 'liquidus_rho', time )
+    #xx_sol, yy_sol = fig_o.get_xy_data( 'solidus_rho', time )
+    #diff = (yy_liq - yy_sol) / yy_sol * 100.0
+    #print diff[40:]
+    #print np.mean(diff[40:])
+    #sys.exit(1)
+
+
     # shade grey between liquidus and solidus
     xx_liq, yy_liq = fig_o.get_xy_data( 'liquidus', time )
     xx_sol, yy_sol = fig_o.get_xy_data( 'solidus', time )
@@ -283,10 +292,10 @@ def figure1( args ):
     xx_solt, yy_solt = fig_o.get_xy_data( 'solidus_temp', time )
     ax1.fill_between( xx_liqt, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
 
+    # hack to compute some average properties for Bower et al. (2017)
     #print xx_sol
     #print np.mean(yy_liq[20:]-yy_sol[20:])
     #sys.exit(1)
-
 
     # dotted lines of constant melt fraction
     for xx in range( 0, 11, 2 ):
