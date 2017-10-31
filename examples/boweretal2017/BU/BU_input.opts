@@ -24,8 +24,8 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-18
--ts_sundials_rtol 1.0e-18
+-ts_sundials_atol 1.0e-7
+-ts_sundials_rtol 1.0e-7
 
 # mesh
 # number of basic nodes
@@ -58,9 +58,23 @@
 -outputDirectory output
 
 # melting curves
-# for middle-out crystallisation (quadruple precision required)
--liquidus_filename_rel_to_src lookup_data/RTmelt/liquidus_stixrude2009.dat
--solidus_filename_rel_to_src lookup_data/RTmelt/solidus_stixrude2009.dat
+# for bottom-up crystallisation (double precision OK)
+-liquidus_filename_rel_to_src lookup_data/RTmelt/liquidus_andrault2011.dat
+-solidus_filename_rel_to_src lookup_data/RTmelt/solidus_andrault2011.dat
+
+# melt lookup data
+-alphaMel_filename_rel_to_src lookup_data/RTmelt/thermal_exp_melt.dat
+-cpMel_filename_rel_to_src lookup_data/RTmelt/heat_capacity_melt.dat
+-dtdpsMel_filename_rel_to_src lookup_data/RTmelt/adiabat_temp_grad_melt.dat
+-rhoMel_filename_rel_to_src lookup_data/RTmelt/density_melt.dat
+-tempMel_filename_rel_to_src lookup_data/RTmelt/temperature_melt.dat
+
+# solid lookup data
+-alphaSol_filename_rel_to_src lookup_data/RTmelt/thermal_exp_solid.dat
+-cpSol_filename_rel_to_src lookup_data/RTmelt/heat_capacity_solid.dat
+-dtdpsSol_filename_rel_to_src lookup_data/RTmelt/adiabat_temp_grad_solid.dat
+-rhoSol_filename_rel_to_src lookup_data/RTmelt/density_solid.dat
+-tempSol_filename_rel_to_src lookup_data/RTmelt/temperature_solid.dat
 
 # mixing length
 # [1] is conventional, i.e. distance from the nearest boundary
