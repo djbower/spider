@@ -24,12 +24,12 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-7
--ts_sundials_rtol 1.0e-7
+-ts_sundials_atol 1.0e-10
+-ts_sundials_rtol 1.0e-10
 
 # mesh
 # number of basic nodes
--n 200
+-n 100
 
 # all units are SI unless indicated otherwise
 
