@@ -29,7 +29,7 @@
 
 # mesh
 # number of basic nodes
--n 100
+-n 200
 
 # all units are SI unless indicated otherwise
 
