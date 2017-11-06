@@ -114,13 +114,12 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->maxsteps    = 100000000; /* Effectively infinite */
   P->t0          = 0.0;
   {
-    PetscReal dtmacro_years;
     PetscBool dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
               early = PETSC_FALSE, middle=PETSC_FALSE, late = PETSC_FALSE;
     P->nstepsmacro = 18;
-    dtmacro_years = 100;
+    P->dtmacro_years = 100;
     ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,&nstepsmacro_set);CHKERRQ(ierr);
-    ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&P->dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
     ierr = PetscOptionsGetBool(NULL,NULL,"-early",&early,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetBool(NULL,NULL,"-middle",&middle,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetBool(NULL,NULL,"-late",&late,NULL);CHKERRQ(ierr);
@@ -135,20 +134,20 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       if (early) {
         /* early evolution to 10 kyr */
         P->nstepsmacro = 1E2;
-        dtmacro_years = 1E2; // years
+        P->dtmacro_years = 1E2; // years
       } else if (middle) {
         /* middle evolution to 100 Myr */
         P->nstepsmacro = 1E2;
-        dtmacro_years = 1E6; //years
+        P->dtmacro_years = 1E6; //years
       } else if (late) {
         /* late evolution to 4.55 Byr */
         P->nstepsmacro = 455;
-        dtmacro_years = 1E9; // years
+        P->dtmacro_years = 1E9; // years
       }
     }
 
     // P->dtmacro is non-dimensional
-    P->dtmacro = dtmacro_years / C->TIMEYRS;
+    P->dtmacro = P->dtmacro_years / C->TIMEYRS;
   }
 
   /* Grid parameters */

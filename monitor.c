@@ -2,7 +2,7 @@
 #include "output.h"
 #include "rhs.h"
 
-PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscReal time, Vec x_aug, void *ptr, MonitorCtx *mctx)
+PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years, PetscInt step, PetscReal time, Vec x_aug, void *ptr, MonitorCtx *mctx)
 {
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
@@ -16,8 +16,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
      be annoying, but in terms of plotting and analysis it is a non-issue since nothing
      is happening at timescales less than a year */
   Parameters const *P = &ctx->parameters;
-  Constants const  *C = &P->constants;
-  PetscReal        dtmacro_years = PetscCeilReal(dtmacro * C->TIMEYRS);
   long long        nstep = (long long) dtmacro_years * (long long )step;
 
   PetscFunctionBeginUser;

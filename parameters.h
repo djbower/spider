@@ -90,6 +90,7 @@ typedef struct _Parameters {
     // Discretization parameters
     PetscInt    nstepsmacro,maxsteps;
     PetscReal   dtmacro;
+    PetscReal   dtmacro_years; // required for output
     PetscReal   t0; /* Initial time */
     PetscInt    numpts_b,numpts_s;
 

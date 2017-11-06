@@ -24,8 +24,7 @@ int main(int argc, char ** argv)
   Vec              dSdr_b;
   Vec              dSdr_b_aug;                /* Solution Vector (basic points, plus extra points) */
   Ctx              ctx;                       /* Solver context */
-  Parameters const *P;
-  Constants const  *C;
+  Parameters const *P=&ctx.parameters;
 
   PetscMPIInt     size;
 
@@ -45,8 +44,6 @@ int main(int argc, char ** argv)
   /* Perform all initialization for our problem, allocating data
      Note that this checks all command-line options. */
   ierr = SetupCtx(&ctx);CHKERRQ(ierr);
-  P = &ctx.parameters;
-  C = &P->constants;
 
   ///////////////////////
   /* initial condition */
@@ -116,12 +113,12 @@ int main(int argc, char ** argv)
        pausing to optionally produce output before updating the "final" time
        and proceeding again */
     ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f = %f years\n",
-        P->nstepsmacro,(double) P->dtmacro, (double) (P->dtmacro * C->TIMEYRS));CHKERRQ(ierr);
+        P->nstepsmacro,(double) P->dtmacro, (double) P->dtmacro_years);CHKERRQ(ierr);
     ierr = TSMonitorSet(ts,TSMonitorWalltimed,&mctx,NULL);CHKERRQ(ierr);
     nexttime = P->dtmacro; // non-dim time
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     if (P->monitor) {
-      ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,dSdr_b_aug,&ctx,&mctx);CHKERRQ(ierr);
+      ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,dSdr_b_aug,&ctx,&mctx);CHKERRQ(ierr);
     }
     for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
       ierr = TSSolve(ts,dSdr_b_aug);CHKERRQ(ierr);
@@ -130,7 +127,7 @@ int main(int argc, char ** argv)
       }
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (P->monitor) {
-        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,dSdr_b_aug,&ctx,&mctx);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,dSdr_b_aug,&ctx,&mctx);CHKERRQ(ierr);
       }
       nexttime = (stepmacro + 1) * P->dtmacro; // non-dim
       ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
