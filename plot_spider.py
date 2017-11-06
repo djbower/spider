@@ -37,7 +37,7 @@ class FigureData( object ):
         dd = {}
         self.data_d = dd
         dd['time_l'] = args[1]
-        dd['time_units'] = 'kyr' # hard-coded
+        dd['time_units'] = 'Myr' # hard-coded
         dd['time_decimal_places'] = 2 # hard-coded
         self.process_time_list()
         self.set_properties( nrows, ncols, width, height )
@@ -845,20 +845,51 @@ def figure6( args ):
     xticks = [1E-2,1E-1,1E0,1E1,1E2]
     xlabel = 'Time (Myr)'
 
+    red = fig_o.get_color(3)
+    blue = fig_o.get_color(-3)
+
+    ### new to make regime plot
+    yy = Mliq/Mtot
+    xx = time
+    #cont_l = np.linspace(0.2,0.8,3)
+    cont_l = [0.2,0.8]#,0.8]
+    val_l = []
+    for cont in cont_l:
+        value = find_value( xx, yy, cont )
+        val_l.append( value )
+
     # figure a
-    title = '(a) Volatile reservoirs'
-    h5, = ax0.semilogx( time, Mliq/Mtot, 'k--', label='Melt frac' )
-    h1, = ax0.semilogx( time, CO2liq, 'r-', label='CO2 liq' )
-    #h2, = ax0.semilogx( time, CO2sol, 'b-', label='CO2 sol' )
-    h2, = ax0.semilogx( time, CO2atm, 'g-', label='CO2 atm' )
-    h3, = ax0.semilogx( time, H2Oliq, 'r--', label='H2O liq' )
-    #h5, = ax0.semilogx( time, H2Osol, 'b--', label='H2O sol' )
-    h4, = ax0.semilogx( time, H2Oatm, 'g--', label='H2O atm' )
-    #ax0.semilogx( time, CO2liq+CO2sol+CO2atm, 'k-' )
-    fig_o.set_myaxes( ax0, title=title, ylabel='$x$', xticks=xticks )
-    handle_l = [h1,h2,h3,h4,h5]
+    title = '(a) Partial pressure (bar)'
+    ylabel = '$p$'
+    # for testing
+    #h3, = ax0.semilogx( time, 400*Mliq/Mtot, 'k--' )
+    for cc, cont in enumerate(cont_l):
+        h3, = ax0.semilogx( [val_l[cc],val_l[cc]],[0,400], color='0.25', linestyle=':')
+        label = 100*cont
+        ax0.text( val_l[cc], 400, '%(label)0d' % vars(), ha='center' )#, rotation='vertical' )
+    phishift = val_l[cc] - 0.135
+    ax0.text( phishift, 400, '$\phi (\%)$' )
+    h1, = ax0.semilogx( time, CO2p*1.0E-5, color=red, linestyle='-', label='CO$_2$')
+    h2, = ax0.semilogx( time, H2Op*1.0E-5, color=blue, linestyle='-', label='H$_2$O')
+    handle_l = [h1,h2]
+    fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xticks=xticks )
     fig_o.set_mylegend( ax0, handle_l, loc='center right', ncol=1, TITLE=0 )
-    ax0.yaxis.set_label_coords(-0.1,0.46)
+    ax0.yaxis.set_label_coords(-0.1,0.575)
+
+    # figure b
+    title = '(b) Volatile reservoirs'
+    #h5, = ax0.semilogx( time, Mliq/Mtot, 'k--', label='melt' )
+    h1, = ax1.semilogx( time, CO2liq+CO2sol, color=red, linestyle='-', label='Magma' )
+    #h2, = ax0.semilogx( time, CO2sol, 'b-', label='CO2 sol' )
+    h2, = ax1.semilogx( time, CO2atm, color=red, linestyle='--', label='Atmos' )
+    h3, = ax1.semilogx( time, H2Oliq+H2Osol, color=blue, linestyle='-')#, label='H2O magma' )
+    #h5, = ax0.semilogx( time, H2Osol, 'b--', label='H2O sol' )
+    h4, = ax1.semilogx( time, H2Oatm, color=blue, linestyle='--')#, label='H2O atmos' )
+    #ax0.semilogx( time, CO2liq+CO2sol+CO2atm, 'k-' )
+    fig_o.set_myaxes( ax1, title=title, ylabel='$x$', xticks=xticks )
+    handle_l = [h1,h2]#,h3,h4,h5]
+    fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1, TITLE=0 )
+    ax1.yaxis.set_label_coords(-0.1,0.46)
 
     # figure c
     #title = '(c) H$_2$O reservoirs'
@@ -872,25 +903,33 @@ def figure6( args ):
     #fig_o.set_mylegend( ax2, handle_l, loc='center left', ncol=1, TITLE=0 )
     #ax2.yaxis.set_label_coords(-0.1,0.46)
 
-    # figure e
-    title = '(b) Partial pressure (bar)'
-    ylabel = '$p$'
-    h1, = ax1.semilogx( time, CO2p*1.0E-5, 'r-', label='CO$_2$')
-    h2, = ax1.semilogx( time, H2Op*1.0E-5, 'b-', label='H$_2$O')
-    handle_l = [h1,h2]
-    fig_o.set_myaxes( ax1, title=title, ylabel=ylabel, xticks=xticks )
-    fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1, TITLE=0 )
-    ax1.yaxis.set_label_coords(-0.1,0.575)
+    # figure c
+    title = '(c) Surface temperature'
+    ylabel = '$T$'
+    ax2.semilogx( time, tsurf, 'k-' )
+    fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks )
+    ax2.yaxis.set_label_coords(-0.1,0.5)
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
-    # figure f
+    # figure d
     title = '(d) Emissivity'
     ylabel = '$\epsilon$'
     ax3.semilogx( time, emissivity, 'k-' )
     fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks )
-    ax3.yaxis.set_label_coords(-0.1,0.58)
+    ax3.yaxis.set_label_coords(-0.1,0.55)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
     fig_o.savefig(6)
+
+#====================================================================
+def find_value( xx, yy, yywant ):
+
+    for cc, entry in enumerate(yy):
+        if entry > yywant:
+            continue
+        else:
+            print entry, yywant
+            return xx[cc]
 
 #====================================================================
 def atmosphere_data_to_array( fig_o ):
@@ -1098,12 +1137,12 @@ def main( args ):
     if len(args) < 2 :
         raise Exception('You must provide an argument consisting of comma-separated times.')
 
-    figure1( args )
-    figure2( args )
-    figure3( args )
+    #figure1( args )
+    #figure2( args )
+    #figure3( args )
     #figure4( args )
     #figure5( args )
-    #figure6( args )
+    figure6( args )
     plt.show()
 
 #====================================================================
