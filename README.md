@@ -2,7 +2,11 @@
 *Simulating Planetary Interior Dynamics with Extreme Rheology*
 
 ## Usage
-This code is not (yet) open source so you have been granted access by Dan J. Bower.  Please follow the standard development practice of forking and pull requests.  For example:
+This code is not (yet) open source; you have been granted access by Dan J. Bower.
+Until released under an open source license, the original authors retain all copyright.
+
+You are free to create your own private fork of the code.
+Please follow the standard development practice of forking and pull requests.  For example:
 
 https://confluence.atlassian.com/bitbucket/forking-a-repository-221449527.html
 
@@ -10,7 +14,9 @@ https://blog.scottlowe.org/2015/01/27/using-fork-branch-git-workflow/
 
 https://help.github.com/articles/fork-a-repo/
 
-Whilst you are encouraged to develop the code for your own purposes, in general we expect that your new feature(s) will be merged into the mainline following publication of your work.  You can issue a pull request for this.  In the meantime, try and follow the structure and format of the code to ensure changes can be relatively easily merged.
+Whilst you are encouraged to develop the code for your own purposes, we expect that useful new feature(s) 
+will be merged into the mainline following publication of your work.  You can issue a pull request for this.  
+In the meantime, try and follow the structure and format of the existing code to ensure changes can be relatively easily merged.
 
 And of course, please issue pull requests for bugs immediately.
 
