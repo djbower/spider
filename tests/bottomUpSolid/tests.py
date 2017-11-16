@@ -10,7 +10,7 @@ def bottomUpSolid(rootDir) :
   launch = [\
           'mkdir -p output',\
           os.path.join(rootDir,'main')  + ' -options_file ' + os.path.join(thisDir,'test.opts'),\
-          '../../plot_figure.py 0',\
+          '../../plot_spider.py 0',\
           ]
 
   expectedFile = os.path.join(thisDir,'expected')
