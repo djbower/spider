@@ -171,6 +171,6 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc")
 
 You should now be ready to use the code!
 
-### 4. Plotting and data processing
+## Plotting and data processing
 
 There is a basic python script 'plot\_spider.py' that plots model output, although some parameters remain hard-coded.  When you run a model, output data is stored in an output directory in petsc binary format.  You can see in the source code the order of the vector data.  This order is then mimicked in the python script to access the data.  The script itself needs more clean up, but it should be fairly straightforward to reverse engineer to understand how the data is accessed.
