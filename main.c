@@ -34,6 +34,11 @@ int main(int argc, char ** argv)
   ierr = PetscPrintf(
       PETSC_COMM_WORLD,"::::::::::::::::: SPIDER version %s.%s.%s :::::::::::::::::\n\n",
       SPIDER_MAJOR_VERSION,SPIDER_MINOR_VERSION,SPIDER_PATCH_VERSION);CHKERRQ(ierr);
+#if defined(PETSC_USE_REAL___FLOAT128)
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Using quadruple (128-bit,__float128) precision scalars\n\n");CHKERRQ(ierr);
+#elif defined(PETSC_USE_REAL_DOUBLE)
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Using double (64-bit) precision scalars\n\n");CHKERRQ(ierr);
+#endif
 
   /* We don't want to take the time to debug things in MPI (though the
      problems are likely minor), so don't allow multi-rank runs */
