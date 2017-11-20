@@ -38,10 +38,16 @@ Wolf, A.S. and D.J. Bower (2017), An equation of state for high pressure-tempera
 
 First, ensure that you have a suitable, working C compiler.
 
-A simple way to proceed is install GCC compilers to the default location from:
-         http://hpc.sourceforge.net
+#### Aside for Mac OS X]
+A simple way to proceed is to install GCC compilers to the default location from:
+    http://hpc.sourceforge.net
+    
+This site contains precompiled binaries for versions of OS X, and will install everything into:
+    `/usr/local`
+    
+Note, however, that binaries for High Sierra are currently not available.
 
-This will install everything into `/usr/local`
+#### Otherwise
 
 If you use MacPorts, Homebrew, or apt, these can also be used to easily install GCC.
 
