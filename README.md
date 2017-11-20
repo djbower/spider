@@ -107,7 +107,8 @@ you can allow PETSc to automatically download and install SUNDIALS
 1. Clone our hacked version of SUNDIALS from the git repository.
 
         cd /somewhere/to/install
-        git clone https://bitbucket.org/psanan/sundials-quad
+        mkdir src
+        git clone https://bitbucket.org/psanan/sundials-quad src
 
 2. Make sure that you have CMake available by typing `cmake --version`.  If this fails, then install CMake from your package manager (homebrew, macports, apt,..) or by following the instructions at cmake.org/download.
 
@@ -117,10 +118,9 @@ you can allow PETSc to automatically download and install SUNDIALS
 
 3. Configure, build, and install SUNDIALS.
 
-        cd sundials-quad
         mkdir install build
         cd build
-        cmake ..
+        cmake ../src
         ccmake .            # with apt you may need to install this separately
 
 4.  Use the ccmake interface to set values similar to those below.
