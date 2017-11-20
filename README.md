@@ -38,7 +38,7 @@ Wolf, A.S. and D.J. Bower (2017), An equation of state for high pressure-tempera
 
 First, ensure that you have a suitable, working C compiler.
 
-#### Aside for Mac OS X]
+#### Aside for Mac OS X
 A simple way to proceed is to install GCC compilers to the default location from:
     http://hpc.sourceforge.net
     
