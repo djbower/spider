@@ -867,6 +867,11 @@ def figure6( args ):
         h3, = ax0.semilogx( [val_l[cc],val_l[cc]],[0,400], color='0.25', linestyle=':')
         label = 100*cont
         ax0.text( val_l[cc], 400, '%(label)0d' % vars(), ha='center' )#, rotation='vertical' )
+        # for massive atmosphere
+        #h3, = ax0.semilogx( [val_l[cc],val_l[cc]],[0,4000], color='0.25', linestyle=':')
+        #ax0.text( val_l[cc], 4000, '%(label)0d' % vars(), ha='center' )#, rotation='vertical' )
+    #phishift = val_l[cc] - 1.8 #0.135
+    #ax0.text( phishift, 4000, '$\phi (\%)$' )
     phishift = val_l[cc] - 0.135
     ax0.text( phishift, 400, '$\phi (\%)$' )
     h1, = ax0.semilogx( time, CO2p*1.0E-5, color=red, linestyle='-', label='CO$_2$')
@@ -928,7 +933,8 @@ def find_value( xx, yy, yywant ):
         if entry > yywant:
             continue
         else:
-            print entry, yywant
+            # for debugging
+            #print entry, yywant
             return xx[cc]
 
 #====================================================================
