@@ -24,13 +24,13 @@ typedef struct _Mesh {
 
 } Mesh;
 
-#define NUMSOLUTIONVECS_B 40
+#define NUMSOLUTIONVECS_B 41
 #define NUMSOLUTIONVECS_S 24
 typedef struct _Solution {
 
     Vec solutionVecs_b[NUMSOLUTIONVECS_B];
     PetscScalar solutionScalings_b[NUMSOLUTIONVECS_B]; // contains scalings
-    Vec alpha, alpha_mix, cond, cp, cp_mix, dfusdr, dfusdr_temp, dSdr, dSliqdr, dSsoldr, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, fwtl, fwts, gphi, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, rho, S, solidus, solidus_rho, solidus_temp, temp, visc;
+    Vec alpha, alpha_mix, cond, cp, cp_mix, dfusdr, dfusdr_temp, dSdr, dSliqdr, dSsoldr, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, fwtl, fwts, gphi, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, regime, rho, S, solidus, solidus_rho, solidus_temp, temp, visc;
 
     Vec solutionVecs_s[NUMSOLUTIONVECS_S];
     PetscScalar solutionScalings_s[NUMSOLUTIONVECS_S]; // contains scalings

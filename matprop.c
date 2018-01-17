@@ -156,7 +156,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
     DM                da_b=E->da_b;
     // material properties that are updated here
-    PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappah, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_rho;
+    PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappah, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
     // material properties used to update above
     const PetscScalar *arr_dSdr, *arr_S_b, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
     // for smoothing properties across liquidus and solidus
@@ -216,6 +216,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->solidus_temp,&arr_solidus_temp); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->temp,&arr_temp); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->visc,&arr_visc); CHKERRQ(ierr);
+    /* regime: not convecting (0), inviscid (1), viscous (2) */
+    ierr = DMDAVecGetArray(    da_b,S->regime,&arr_regime); CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){
 
@@ -329,12 +331,15 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       if( arr_gsuper[i] <= 0.0 ){
         /* no convection, subadiabatic */
         kh = 0.0;
+        arr_regime[i] = 0.0;
       } else if( arr_gsuper[i] > crit ){
         /* inviscid scaling from Vitense (1953) */
         kh = 0.25 * PetscPowScalar(arr_mix_b[i],2) * PetscSqrtScalar(arr_alpha[i]*arr_gsuper[i]);
+        arr_regime[i] = 1.0;
       } else{
         /* viscous scaling */
         kh = arr_alpha[i] * arr_gsuper[i] * PetscPowScalar(arr_mix_b[i],4) / (18.0*arr_nu[i]);
+        arr_regime[i] = 2.0;
       }
       arr_kappah[i] = kh;
 
@@ -373,6 +378,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,S->solidus_temp,&arr_solidus_temp); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->temp,&arr_temp); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->visc,&arr_visc); CHKERRQ(ierr);
+    /* regime */
+    ierr = DMDAVecRestoreArray(    da_b,S->regime,&arr_regime); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

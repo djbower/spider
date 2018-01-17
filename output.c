@@ -71,13 +71,14 @@ PetscErrorCode SetScalingsForOutput(Ctx *E)
     solutionScalings_b[30] = C->TEMP;
     solutionScalings_b[31] = C->KAPPA;
     solutionScalings_b[32] = 1.0; // melt fraction is non-dimensional
-    solutionScalings_b[33] = C->DENSITY;
-    solutionScalings_b[34] = C->ENTROPY;
+    solutionScalings_b[33] = 1.0; // dynamic regime (subadiabatic,inviscid,viscous)
+    solutionScalings_b[34] = C->DENSITY;
     solutionScalings_b[35] = C->ENTROPY;
-    solutionScalings_b[36] = C->DENSITY;
-    solutionScalings_b[37] = C->TEMP;
+    solutionScalings_b[36] = C->ENTROPY;
+    solutionScalings_b[37] = C->DENSITY;
     solutionScalings_b[38] = C->TEMP;
-    solutionScalings_b[39] = C->VISC;
+    solutionScalings_b[39] = C->TEMP;
+    solutionScalings_b[40] = C->VISC;
 
     /* staggered vecs */
     solutionScalings_s[0] = C->ENTROPY;
