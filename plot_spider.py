@@ -37,7 +37,7 @@ class FigureData( object ):
         dd = {}
         self.data_d = dd
         dd['time_l'] = args[1]
-        dd['time_units'] = 'Myr' # hard-coded
+        dd['time_units'] = 'kyr' # hard-coded
         dd['time_decimal_places'] = 2 # hard-coded
         self.process_time_list()
         self.set_properties( nrows, ncols, width, height )
@@ -927,6 +927,76 @@ def figure6( args ):
     fig_o.savefig(6)
 
 #====================================================================
+def figure7( args ):
+
+    '''Extract magma ocean depth for partitioning of moderately
+       siderophile elements'''
+
+    width = 4.7747
+    height = 4.7747
+    fig_o = FigureData( args, 2, 2, width, height )
+
+    ax0 = fig_o.ax[0][0]
+    ax1 = fig_o.ax[0][1]
+
+    handle_l = []
+
+    for nn, time in enumerate( fig_o.time ):
+        color = fig_o.get_color( nn )
+        # use melt fraction to determine mixed region
+        xx, yy = fig_o.get_xy_data( 'phi', time )
+        MIX = get_mix( yy )
+
+        label = fig_o.get_legend_label( time )
+
+        # regime
+        xx, yy = fig_o.get_xy_data( 'regime', time )
+        ax0.plot( xx, yy, '--', color=color )
+        handle, = ax0.plot( xx*MIX, yy*MIX, '-', color=color, label=label )
+        handle_l.append( handle )
+
+        # regime based on melt fraction
+        xx, yy = fig_o.get_xy_data( 'phi', time )
+        regime = np.copy(yy)
+        regime[:] = 0
+        regime[yy>=0.4] = 1.0
+        regime[yy<0.4] = 2.0 
+
+        ax1.plot( xx, regime, '--', color=color )
+        handle, = ax1.plot( xx*MIX, regime*MIX, '-', color=color, label=label )
+        handle_l.append( handle )
+
+        # temperature
+        #xx, yy = fig_o.get_xy_data( 'temp', time )
+        #ax1.plot( xx, yy, '--', color=color )
+        #ax1.plot( xx*MIX, yy*MIX, '-', color=color )
+        # melt fraction
+        #xx, yy = fig_o.get_xy_data( 'phi', time )
+        #ax2.plot( xx, yy, '-', color=color )
+
+
+    xticks = [0,50,100,135]
+
+    # titles and axes labels, legends, etc
+    title = '(a) Regime from dynamics'
+    yticks = [1.0,2.0]
+    yvals = ['liquid','solid']
+    fig_o.set_myaxes( ax0, title=title, xlabel='$P$ (GPa)', ylabel='regime', xticks=xticks, yticks=yticks )
+    ax0.set_yticklabels(yvals)
+    ax0.set_ylim([0.9,2.1])
+    #ax0.yaxis.set_label_coords(-0.075,0.59)
+
+    title = '(b) Regime from melt fraction'
+    yticks = [1.0,2.0]
+    yvals = ['liquid','solid']
+    fig_o.set_myaxes( ax1, title=title, xlabel='$P$ (GPa)', ylabel='regime', xticks=xticks, yticks=yticks )
+    ax1.set_yticklabels(yvals)
+    ax1.set_ylim([0.9,2.1])
+    #ax1.yaxis.set_label_coords(-0.075,0.59)
+
+    fig_o.savefig(7)
+
+#====================================================================
 def find_value( xx, yy, yywant ):
 
     for cc, entry in enumerate(yy):
@@ -1099,6 +1169,7 @@ def get_vector_index( instring ):
         'liquidus_temp',
         'nu',
         'phi',
+        'regime',
         'rho',
         'S',
         'solidus',
@@ -1143,12 +1214,13 @@ def main( args ):
     if len(args) < 2 :
         raise Exception('You must provide an argument consisting of comma-separated times.')
 
-    #figure1( args )
+    figure1( args )
     #figure2( args )
     #figure3( args )
     #figure4( args )
     #figure5( args )
-    figure6( args )
+    #figure6( args )
+    figure7( args )
     plt.show()
 
 #====================================================================
