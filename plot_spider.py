@@ -49,7 +49,7 @@ class FigureData( object ):
         filename = 'petscbin.{0}'.format( time )
         tname = os.path.join( out, filename )
         if not os.path.isfile( tname ):
-            print('petsc_bin_filename: ERROR'+tname+'does not exist')
+            print('petsc_bin_filename: ERROR '+tname+' does not exist')
             print('    please specify times for which data exists in output/')
             sys.exit(1)
         return tname
