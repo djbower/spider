@@ -124,7 +124,8 @@ typedef struct _Parameters {
     PetscBool HTIDAL;
     PetscInt mixing_length;
     PetscInt initial_condition;
-    char restart_file[PETSC_MAX_PATH_LEN];
+    char ic_filename[PETSC_MAX_PATH_LEN];
+    PetscScalar ic_melt_pressure;
     PetscScalar sinit;
     PetscScalar ic_dsdr;
     PetscScalar radius;

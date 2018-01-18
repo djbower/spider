@@ -1,10 +1,87 @@
 #include "ic.h"
 #include "bc.h"
+#include "aug.h"
 
-static PetscErrorCode set_ic_dSdr_constant( Ctx *, Vec );
+static PetscErrorCode set_ic_default( Ctx *, Vec );
+static PetscErrorCode set_ic_constant_dSdr( Ctx *, Vec );
+static PetscErrorCode set_ic_extra( Ctx *, Vec );
+static PetscErrorCode set_ic_from_file( Ctx *, Vec );
+static PetscErrorCode set_ic_from_impact( Ctx *, Vec );
 
-PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
+PetscErrorCode set_initial_condition( Ctx *E, Vec dSdr_b_aug)
 {
+    PetscErrorCode ierr;
+    Parameters const *P = &E->parameters;
+    PetscInt IC = P->initial_condition;
+
+    PetscFunctionBeginUser;
+
+    if( IC==1 ){
+        ierr = set_ic_default( E, dSdr_b_aug ); CHKERRQ(ierr);
+    }
+    else if( IC==2 ){
+        ierr = set_ic_from_file( E, dSdr_b_aug ); CHKERRQ(ierr);
+    }
+    else if( IC==3 ){
+        ierr = set_ic_from_impact( E, dSdr_b_aug ); CHKERRQ(ierr);
+    }
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_ic_default( Ctx *E, Vec dSdr_b_aug )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = set_ic_constant_dSdr( E, dSdr_b_aug ); CHKERRQ(ierr);
+    ierr = set_ic_extra( E, dSdr_b_aug ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_ic_constant_dSdr( Ctx *E, Vec dSdr_b_aug )
+{
+    /* set initial entropy gradient to constant for all nodes */
+
+    PetscErrorCode   ierr;
+    Parameters const *P = &E->parameters;
+    Vec dSdr_b;
+
+    PetscFunctionBeginUser;
+#if (defined VERBOSE)
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_constant_dSdr:\n");CHKERRQ(ierr);
+#endif
+
+    ierr = DMCreateGlobalVector( E->da_b, &dSdr_b );CHKERRQ(ierr);
+
+    ierr = VecSet( dSdr_b, P->ic_dsdr ); CHKERRQ( ierr );
+
+    /* these next two lines are simply convenient reminders that the
+       first and last values are meaningless because the fluxes here
+       are controlled by boundary conditions.  But for debugging and
+       clarity it is convenient to explicitly set these values to
+       zero */
+    ierr = VecSetValue( dSdr_b, 0, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+    ierr = VecSetValue( dSdr_b, P->numpts_b-1, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+
+    VecAssemblyBegin( dSdr_b );
+    VecAssemblyEnd( dSdr_b );
+
+    ierr = ToAug( dSdr_b, dSdr_b_aug ); CHKERRQ(ierr);
+
+    ierr = VecDestroy( &dSdr_b ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+
+static PetscErrorCode set_ic_extra( Ctx *E, Vec dSdr_b_aug )
+{
+    /* set initial condition for the extra points */
 
     PetscErrorCode ierr;
     Parameters           const *P  = &E->parameters;
@@ -55,13 +132,17 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_ic_aug_from_file( const char * filename, Ctx *E, Vec dSdr_b_aug )
+static PetscErrorCode set_ic_from_file( Ctx *E, Vec dSdr_b_aug )
 {
+
+    /* reads in the output from dSdr_b_aug_[timestep].m to use as the
+       initial condition to enable restarting */
 
     PetscErrorCode ierr;
     Parameters const *P  = &E->parameters;
     FILE *fp;
-    PetscInt head=3, i=0, j=0;
+    const PetscInt head=3;
+    PetscInt i=0, j=0;
     char string[PETSC_MAX_PATH_LEN];
 #if (defined PETSC_USE_REAL___FLOAT128)
     char xtemp[30]
@@ -69,10 +150,10 @@ PetscErrorCode set_ic_aug_from_file( const char * filename, Ctx *E, Vec dSdr_b_a
     PetscScalar x;
 
     PetscFunctionBeginUser;
-    fp = fopen( filename, "r" );
+    fp = fopen( P->ic_filename, "r" );
 
     if(fp==NULL) {
-      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",filename);
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",P->ic_filename);
     }
 
     while(fgets(string, sizeof(string), fp) != NULL) {
@@ -96,43 +177,11 @@ PetscErrorCode set_ic_aug_from_file( const char * filename, Ctx *E, Vec dSdr_b_a
 
 }
 
-PetscErrorCode set_ic_dSdr( Ctx *E, Vec dSdr_in) 
+static PetscErrorCode set_ic_from_impact( Ctx *E, Vec dSdr_b_aug )
 {
-    /* initial entropy gradient for basic nodes */
+   PetscFunctionBeginUser;
 
-    PetscFunctionBeginUser;
+   /* place holder */
 
-    set_ic_dSdr_constant( E, dSdr_in );
-
-    /* add more initial condition options here if desired */
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode set_ic_dSdr_constant( Ctx *E, Vec dSdr_in )
-{
-    /* set initial entropy gradient to constant for basic nodes */
-
-    PetscErrorCode   ierr;
-    Parameters const *P = &E->parameters;
-
-    PetscFunctionBeginUser;
-#if (defined VERBOSE)
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_dSdr_constant:\n");CHKERRQ(ierr);
-#endif
-
-    ierr = VecSet( dSdr_in, P->ic_dsdr ); CHKERRQ( ierr );
-
-    /* these next two lines are simply convenient reminders that the
-       first and last values are meaningless because the fluxes here
-       are controlled by boundary conditions.  But for debugging and
-       clarity it is convenient to explicitly set these values to
-       zero */
-    ierr = VecSetValue( dSdr_in, 0, 0.0, INSERT_VALUES); CHKERRQ(ierr);
-    ierr = VecSetValue( dSdr_in, P->numpts_b-1, 0.0, INSERT_VALUES); CHKERRQ(ierr);
-
-    VecAssemblyBegin( dSdr_in );
-    VecAssemblyEnd( dSdr_in );
-
-    PetscFunctionReturn(0);
+   PetscFunctionReturn(0);
 }

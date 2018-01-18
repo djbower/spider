@@ -177,12 +177,18 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->mixing_length = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-mixing_length",&P->mixing_length,NULL);CHKERRQ(ierr);
 
+  /* initial condition */
   P->initial_condition = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-initial_condition",&P->initial_condition,NULL);CHKERRQ(ierr);
 
-  ierr = PetscStrcpy(P->restart_file,"output/restart.m"); CHKERRQ(ierr);
-  if (P->initial_condition==2){
-    ierr = PetscOptionsGetString(NULL,NULL,"-restart_file",P->restart_file,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
+  ierr = PetscStrcpy(P->ic_filename,"output/dSdr_b_aug_0.m"); CHKERRQ(ierr);
+  if ( (P->initial_condition==2) || (P->initial_condition==3) ){
+    ierr = PetscOptionsGetString(NULL,NULL,"-ic_filename",P->ic_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
+  }
+
+  P->ic_melt_pressure = 30.0; // GPa
+  if ( P->initial_condition==3 ){
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_melt_pressure",&P->ic_melt_pressure,NULL); CHKERRQ(ierr);
   }
 
   /* initial entropy at top of adiabat (J/kg-K) */

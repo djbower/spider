@@ -21,7 +21,7 @@ int main(int argc, char ** argv)
 {
   PetscErrorCode   ierr;
   TS               ts;                        /* ODE solver object */
-  Vec              dSdr_b;
+  Vec              dummy_b;
   Vec              dSdr_b_aug;                /* Solution Vector (basic points, plus extra points) */
   Ctx              ctx;                       /* Solver context */
   Parameters const *P=&ctx.parameters;
@@ -53,27 +53,19 @@ int main(int argc, char ** argv)
   ///////////////////////
   /* initial condition */
   ///////////////////////
+
   /* must call after setup_ctx */
+  /* this is effectively a dummy vector with length of the number of basic nodes */
+  ierr = DMCreateGlobalVector( ctx.da_b, &dummy_b );CHKERRQ(ierr);
 
-  ierr = DMCreateGlobalVector( ctx.da_b, &dSdr_b );CHKERRQ(ierr);
+  /* can now use dummy_b to create an augmented (solution) vector that contains extra
+     points related to other necessary quantities (entropy at the uppermost node,
+     volatile concentrations etc.)  The number of extra quantities are defined
+     by AUG_NUM in aug.c */
+  ierr = CreateAug(dummy_b, &dSdr_b_aug); CHKERRQ(ierr);
 
-  /* initialises the dSdr_b vector, although the (constant) value
-     assigned to each element in this vector may be subsequently
-     over-ridden */
-  set_ic_dSdr( &ctx, dSdr_b ); CHKERRQ(ierr);
-
-  /* Create a special vector with extra points and transfer IC */
-  ierr = CreateAug(dSdr_b,&dSdr_b_aug);CHKERRQ(ierr);
-  ierr = ToAug(dSdr_b,dSdr_b_aug);CHKERRQ(ierr);
-
-  if(P->initial_condition==1){
-      /* add initial values of other quantities to the augmented vector */
-      ierr = set_ic_aug( &ctx, dSdr_b_aug ); CHKERRQ(ierr);
-  }
-  else if (P->initial_condition==2){
-      /* read from file, i.e. restart */
-      ierr = set_ic_aug_from_file( P->restart_file, &ctx, dSdr_b_aug ); CHKERRQ(ierr);
-  }
+  /* see ic.c */
+  ierr = set_initial_condition( &ctx, dSdr_b_aug ); CHKERRQ(ierr);
 
   ///////////////////////////
   /* end initial condition */
@@ -152,7 +144,7 @@ int main(int argc, char ** argv)
   ierr = DestroyCtx(&ctx);CHKERRQ(ierr);
 
   /* Destroy solution vector */
-  ierr = VecDestroy(&dSdr_b);CHKERRQ(ierr);
+  ierr = VecDestroy(&dummy_b);CHKERRQ(ierr);
   ierr = VecDestroy(&dSdr_b_aug);CHKERRQ(ierr);
 
   /* Cleanup and finalize */
