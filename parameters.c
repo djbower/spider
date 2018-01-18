@@ -177,6 +177,14 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->mixing_length = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-mixing_length",&P->mixing_length,NULL);CHKERRQ(ierr);
 
+  P->initial_condition = 1;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-initial_condition",&P->initial_condition,NULL);CHKERRQ(ierr);
+
+  ierr = PetscStrcpy(P->restart_file,"output/restart.m"); CHKERRQ(ierr);
+  if (P->initial_condition==2){
+    ierr = PetscOptionsGetString(NULL,NULL,"-restart_file",P->restart_file,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
+  }
+
   /* initial entropy at top of adiabat (J/kg-K) */
   P->sinit = 3052.885602072091;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);

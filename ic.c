@@ -55,6 +55,46 @@ PetscErrorCode set_ic_aug( Ctx *E, Vec dSdr_b_aug )
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode set_ic_aug_from_file( const char * filename, Ctx *E, Vec dSdr_b_aug )
+{
+
+    PetscErrorCode ierr;
+    Parameters const *P  = &E->parameters;
+    FILE *fp;
+    PetscInt head=3, i=0, j=0;
+    char string[PETSC_MAX_PATH_LEN];
+#if (defined PETSC_USE_REAL___FLOAT128)
+    char xtemp[30]
+#endif
+    PetscScalar x;
+
+    PetscFunctionBeginUser;
+    fp = fopen( filename, "r" );
+
+    if(fp==NULL) {
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",filename);
+    }
+
+    while(fgets(string, sizeof(string), fp) != NULL) {
+        if( (i>=head) && (i<=P->numpts_b+head+2) ){ /* 3 header lines in dSdr_b_aug_[timestep].m */
+#if (defined PETSC_USE_REAL___FLOAT128)
+            sscanf( string, "%s", xtemp );
+            x = strtoflt182(xtemp, NULL);
+#else
+            sscanf(string, "%lf", &x );
+#endif            
+            j = i-3;
+            ierr = VecSetValue(dSdr_b_aug,j,x,INSERT_VALUES); CHKERRQ(ierr);
+        }
+        ++i;
+    }
+
+    VecAssemblyBegin( dSdr_b_aug );
+    VecAssemblyEnd( dSdr_b_aug );
+
+    PetscFunctionReturn(0);
+
+}
 
 PetscErrorCode set_ic_dSdr( Ctx *E, Vec dSdr_in) 
 {

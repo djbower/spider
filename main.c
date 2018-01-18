@@ -57,14 +57,23 @@ int main(int argc, char ** argv)
 
   ierr = DMCreateGlobalVector( ctx.da_b, &dSdr_b );CHKERRQ(ierr);
 
+  /* initialises the dSdr_b vector, although the (constant) value
+     assigned to each element in this vector may be subsequently
+     over-ridden */
   set_ic_dSdr( &ctx, dSdr_b ); CHKERRQ(ierr);
 
   /* Create a special vector with extra points and transfer IC */
   ierr = CreateAug(dSdr_b,&dSdr_b_aug);CHKERRQ(ierr);
   ierr = ToAug(dSdr_b,dSdr_b_aug);CHKERRQ(ierr);
 
-  /* add initial values of other quantities to the augmented vector */
-  ierr = set_ic_aug( &ctx, dSdr_b_aug ); CHKERRQ(ierr);
+  if(P->initial_condition==1){
+      /* add initial values of other quantities to the augmented vector */
+      ierr = set_ic_aug( &ctx, dSdr_b_aug ); CHKERRQ(ierr);
+  }
+  else if (P->initial_condition==2){
+      /* read from file, i.e. restart */
+      ierr = set_ic_aug_from_file( P->restart_file, &ctx, dSdr_b_aug ); CHKERRQ(ierr);
+  }
 
   ///////////////////////////
   /* end initial condition */

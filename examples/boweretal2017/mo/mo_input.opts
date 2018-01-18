@@ -31,6 +31,12 @@
 # number of basic nodes
 -n 200
 
+# initial condition
+# [1] is set dS/dr to constant everywhere
+# [2] is restart from file
+-initial_condition 1
+-restart_file output/restart.m
+
 # all units are SI unless indicated otherwise
 
 # primary scaling parameters

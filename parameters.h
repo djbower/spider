@@ -123,6 +123,8 @@ typedef struct _Parameters {
     PetscBool HRADIO;
     PetscBool HTIDAL;
     PetscInt mixing_length;
+    PetscInt initial_condition;
+    char restart_file[PETSC_MAX_PATH_LEN];
     PetscScalar sinit;
     PetscScalar ic_dsdr;
     PetscScalar radius;
