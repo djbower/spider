@@ -9,7 +9,7 @@ def middleOutMixed(rootDir) :
   ranks = 1
   launch = [\
           'mkdir -p output',\
-          os.path.join(rootDir,'main')  + ' -options_file ' + os.path.join(thisDir,'test.opts'),\
+          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(thisDir,'test.opts'),\
           '../../plot_spider.py 0',\
           ]
 
