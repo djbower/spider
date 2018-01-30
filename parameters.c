@@ -443,19 +443,19 @@ PetscErrorCode PrintParameters(Parameters const *P)
 /* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
 #define STRINGIFY(x) STRINGIFY2(x)
 #define STRINGIFY2(x) #x
-#define MAGMA_ROOT_DIR_STR STRINGIFY(MAGMA_ROOT_DIR)
+#define SPIDER_ROOT_DIR_STR STRINGIFY(SPIDER_ROOT_DIR)
 static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
   PetscErrorCode ierr;
   char tmp[PETSC_MAX_PATH_LEN];
 
   PetscFunctionBeginUser;
   ierr = PetscStrcpy(tmp,path);CHKERRQ(ierr);
-  ierr = PetscStrcpy(path,MAGMA_ROOT_DIR_STR);CHKERRQ(ierr); /* lookup.h */
+  ierr = PetscStrcpy(path,SPIDER_ROOT_DIR_STR);CHKERRQ(ierr); /* lookup.h */
   ierr = PetscStrcat(path,"/");CHKERRQ(ierr); /* not portable */
   ierr = PetscStrcat(path,tmp);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
-#undef MAGMA_ROOT_DIR_STR
+#undef SPIDER_ROOT_DIR_STR
 
 PetscErrorCode SetLookups( Parameters *P )
 {
@@ -467,7 +467,7 @@ PetscErrorCode SetLookups( Parameters *P )
 
   /* Based on input options, determine which files to load.
      Options ending with _rel_to_src indicate a path relative
-     to the source code. In this case we prepend a string, MAGMA_ROOT_DIR_STR,
+     to the source code. In this case we prepend a string, SPIDER_ROOT_DIR_STR,
      and /. The corresponding option without this overrides.
      See lookup.h for the default paths, relative to the source */
 
