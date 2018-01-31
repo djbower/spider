@@ -64,6 +64,43 @@ PetscErrorCode set_entropy( Ctx *E, PetscScalar S0 )
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode set_dSdr_b_from_S_s( Ctx *E )
+{
+    PetscErrorCode ierr;
+    Mesh           *M = &E->mesh;
+    Solution       *S = &E->solution;
+    PetscScalar    *arr_dSdr_b, *arr_S_s, *arr_radius_s;
+    PetscInt       i, ihi_b, ilo_b, w_b;
+    PetscMPIInt    size;
+    DM             da_s = E->da_s, da_b=E->da_b;
+
+    PetscFunctionBeginUser;
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+    if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
+
+    /* for looping over basic nodes */
+    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+
+    ierr = DMDAVecGetArray(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+
+    arr_dSdr_b[0] = 0.0; // first point constrained by boundary conditions
+    arr_dSdr_b[ihi_b-1] = 0.0; // last point constrained by boundary conditions
+
+    for(i=ilo_b+1; i<ihi_b-1; ++i){
+        arr_dSdr_b[i] = arr_S_s[i] - arr_S_s[i-1];
+        arr_dSdr_b[i] /= arr_radius_s[i] - arr_radius_s[i-1];
+    }
+
+    ierr = DMDAVecRestoreArray(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 PetscScalar combine_matprop( PetscScalar weight, PetscScalar mat1, PetscScalar mat2 )
 {
     /* linear weighting of two quantities */

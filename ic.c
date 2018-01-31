@@ -1,6 +1,7 @@
 #include "ic.h"
 #include "bc.h"
 #include "aug.h"
+#include "util.h"
 
 static PetscErrorCode set_ic_default( Ctx *, Vec );
 static PetscErrorCode set_ic_constant_dSdr( Ctx *, Vec );
@@ -15,6 +16,10 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec dSdr_b_aug)
     PetscInt IC = P->initial_condition;
 
     PetscFunctionBeginUser;
+
+    /* TODO: these functions do not typically (consistently)
+       update entries in the vectors stored in Solution, they
+       simply write the data to the augmented vector (dSdr_b_aug) */
 
     if( IC==1 ){
         ierr = set_ic_default( E, dSdr_b_aug ); CHKERRQ(ierr);
@@ -160,7 +165,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec dSdr_b_aug )
         if( (i>=head) && (i<=P->numpts_b+head+2) ){ /* 3 header lines in dSdr_b_aug_[timestep].m */
 #if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( string, "%s", xtemp );
-            x = strtoflt182(xtemp, NULL);
+            x = strtoflt128(xtemp, NULL);
 #else
             sscanf(string, "%lf", &x );
 #endif            
@@ -179,9 +184,33 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec dSdr_b_aug )
 
 static PetscErrorCode set_ic_from_impact( Ctx *E, Vec dSdr_b_aug )
 {
+   PetscErrorCode ierr;
+   Solution *S = &E->solution;
+   PetscScalar S0;
+   PetscInt    ind;
+
    PetscFunctionBeginUser;
 
-   /* place holder */
+   ierr = set_ic_from_file( E, dSdr_b_aug ); CHKERRQ(ierr);
+   /* for simplicity, offset the tie point by some fixed fraction of
+      entropy */
+   //ierr = VecSetValue( dSdr_b_aug,2,0.2,ADD_VALUES ); CHKERRQ(ierr);
+
+   ind = 2;
+   ierr = VecGetValues( dSdr_b_aug,1,&ind,&S0); CHKERRQ(ierr);
+
+   /* need to transfer to S->dSdr otherwise set_entropy returns
+      constant profile (since dSdr=0 everywhere initially) */
+   ierr = FromAug( dSdr_b_aug,S->dSdr); CHKERRQ(ierr);
+
+   /* integrate to give S_s and S_b */
+   ierr = set_entropy( E, S0 );
+
+   /* TODO: set the entropy to above the liquidus for a certain depth
+      range to mimick an impactor that melts a portion of the mantle */
+
+   /* function to go the other way, i.e. compute dSdr from S_s */
+   ierr = set_dSdr_b_from_S_s( E );
 
    PetscFunctionReturn(0);
 }
