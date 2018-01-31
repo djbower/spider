@@ -25,7 +25,7 @@ CFLAGS+=${CFLAGS_EXTRA}
 # Provide the current directory so that absolute
 # paths to data files can be constructed. Note that this assumes that CURDIR
 # is correct (you can break this with make -f /somewhere/else/to/here/Makefile)
-CFLAGS+=-DMAGMA_ROOT_DIR=${CURDIR}
+CFLAGS+=-DSPIDER_ROOT_DIR=${CURDIR}
 
 ${EXNAME} : ${OBJ}
 	-${CLINKER}  -o $@ $^ ${PETSC_TS_LIB}
