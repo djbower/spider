@@ -7,7 +7,8 @@ EXNAME = spider
 
 # Source files, each corresponding to a .o object file and .d dependency file
 SRC_C = main.c ctx.c rhs.c ic.c mesh.c lookup.c bc.c util.c twophase.c \
-        monitor.c aug.c energy.c matprop.c output.c parameters.c
+        monitor.c aug.c energy.c matprop.c output.c parameters.c \
+        dimensionalisablefield.c
 
 # Main Target
 all :: ${EXNAME}
@@ -19,12 +20,12 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 
 ### Flags ######################################################################
 # Extra flags
-# Use -O0 to turn off optimizationto debug with LLDB/GDB
+# Use -O0 to turn off optimization, to debug with LLDB/GDB
 # You can specify this from the command line, e.g.
 #   make clean; make -j CFLAGS_EXTRA="-O0"
 CFLAGS+=${CFLAGS_EXTRA}
 
-# Generate dependencies
+# Generate dependency (.d) files as we compile
 CFLAGS+=${C_DEPFLAGS}
 
 # Provide the current directory so that absolute

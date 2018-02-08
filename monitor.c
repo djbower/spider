@@ -148,6 +148,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
     }
 
+    // PDS TODO: replace all this with calls to write individual output files (dimensionalized) with DimensionalisableField
     /* write mesh information for basic node quantities */
     ierr = scale_vectors_and_output( M->meshVecs_b, M->meshScalings_b, NUMMESHVECS_B, viewer );CHKERRQ(ierr);
 

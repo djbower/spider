@@ -11,6 +11,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   PetscErrorCode   ierr;
   PetscInt         i;
   Parameters const *P = &ctx->parameters;
+  Constants const  *C = &ctx->parameters.constants;
 
   PetscFunctionBeginUser;
 
@@ -27,6 +28,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   ierr = PrintParameters(P);CHKERRQ(ierr);
 
   // DJB NEW */
+  // PDS TODO: be rid of this, create and set scalings all in one function using DimensionalisableField
   ierr = SetScalingsForOutput(ctx);
 
   /* Set up a parallel structured grid as DMComposite with two included DMDAs
@@ -35,30 +37,37 @@ PetscErrorCode SetupCtx(Ctx* ctx)
      living on the same primal and staggered nodes.
   */
   const PetscInt stencilWidth = 1;
-  const PetscInt dof = 1;
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,dof,stencilWidth,NULL,&ctx->da_b);CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,dof,stencilWidth,NULL,&ctx->da_s);CHKERRQ(ierr);
+  const PetscInt dof = 1; // PDS TODO: determine if for multi-component problems, we want dof>1 (AoS) or to include multiple copies of these grids in a DMComposite (SoA)
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,dof,stencilWidth,NULL,&ctx->da_b      );CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,dof,stencilWidth,NULL,&ctx->da_s      );CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1          ,dof,0           ,NULL,&ctx->da_surface);CHKERRQ(ierr); // single-point DMDA
 
-#if (defined DEBUGOUTPUT)
-  {
-    PetscInt ilo_b,w_b,ihi_b,ilo_s,w_s,ihi_s;
-    PetscMPIInt rank;
-
-    ierr = DMDAGetCorners(ctx->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b;
-    ierr = DMDAGetCorners(ctx->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
-    ihi_s = ilo_s + w_s;
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_SELF,"[%d] index ranges b:%d<=i<%d, s:%d<=i<%d\n",rank,ilo_b,ihi_b,ilo_s,ihi_s);CHKERRQ(ierr);
-  }
-#endif
+  /* Create a composite DM of the basic nodes plus the additional surface node */
+  ierr = DMCompositeCreate(PETSC_COMM_WORLD,&ctx->dm_b_aug);CHKERRQ(ierr);
+  ierr = DMCompositeAddDM(ctx->dm_b_aug,(DM)ctx->da_surface);CHKERRQ(ierr);
+  ierr = DMCompositeAddDM(ctx->dm_b_aug,(DM)ctx->da_b);CHKERRQ(ierr);
 
   /* Continue to initialize context with distributed data */
+  // PDS TODO: move this to its own function once ready ...
+  // PDS TODO: create these with the scalings in SetScalingsForOutput, as DimensionalisableField objects
 
   for (i=0;i<NUMSOLUTIONVECS_B;++i){
+    // PDS TODO: remove this temp once finished
+    ctx->solution.solutionFields_b[i] = NULL;
+  }
+  { // Alpha
+    PetscScalar scaling = 1.0 / C->TEMP;
+    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[0],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[0],&ctx->solution.alpha); // Just for convenicnes - can always get this vecotr out when you need it
+    ctx->solution.solutionScalings_b[0] = scaling; // PDS TODO: this is temp, to be removed when we update monitor.c and output.c
+  }
+  // PDS TODO:: the rest of these...
+
+  for (i=0;i<NUMSOLUTIONVECS_B;++i){
+    // PDS TODO : instead create these by pulling a sub-DM by name out of the DMComposite, probably with a helper function like SpiderDMCompositeGetBasicVector()
     ierr = DMCreateGlobalVector(ctx->da_b,&(ctx->solution.solutionVecs_b[i]));CHKERRQ(ierr);
   }
-  ctx->solution.alpha               = ctx->solution.solutionVecs_b[0];
+  //ctx->solution.alpha               = ctx->solution.solutionVecs_b[0];
   ctx->solution.alpha_mix           = ctx->solution.solutionVecs_b[1];
   ctx->solution.cond                = ctx->solution.solutionVecs_b[2];
   ctx->solution.cp                  = ctx->solution.solutionVecs_b[3];
@@ -100,9 +109,11 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   ctx->solution.temp                = ctx->solution.solutionVecs_b[39];
   ctx->solution.visc                = ctx->solution.solutionVecs_b[40];
 
+  // PDS TODO : replace
   ierr = DMCreateLocalVector(ctx->da_b,&ctx->work_local_b);CHKERRQ(ierr);
 
   for (i=0;i<NUMSOLUTIONVECS_S;++i){
+    // PDS TODO: replace
     ierr = DMCreateGlobalVector(ctx->da_s,&(ctx->solution.solutionVecs_s[i]));CHKERRQ(ierr);
   }
   ctx->solution.cp_s                = ctx->solution.solutionVecs_s[0];
@@ -157,6 +168,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   }
   for (i=0;i<NUMSOLUTIONVECS_B;++i){
     ierr = VecDestroy(&ctx->solution.solutionVecs_b[i]);CHKERRQ(ierr);
+    if (ctx->solution.solutionFields_b[i]) {ierr = DimensionalisableFieldDestroy(&ctx->solution.solutionFields_b[i]);CHKERRQ(ierr);} // PDS TODO: later, remove the condiitonal (once we actually create all of these)
   }
   ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
   for (i=0;i<NUMSOLUTIONVECS_S;++i){
@@ -167,6 +179,8 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   ierr = MatDestroy(&ctx->ddr_at_b); CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->da_surface);CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->dm_b_aug);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }

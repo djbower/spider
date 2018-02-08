@@ -150,7 +150,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec dSdr_b_aug )
     PetscInt i=0, j=0;
     char string[PETSC_MAX_PATH_LEN];
 #if (defined PETSC_USE_REAL___FLOAT128)
-    char xtemp[30]
+    char xtemp[30];
 #endif
     PetscScalar x;
 

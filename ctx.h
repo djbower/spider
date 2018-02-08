@@ -3,12 +3,14 @@
 
 #include "petsc.h"
 #include "parameters.h"
+#include "dimensionalisablefield.h"
 
 /* common structures */
 
 #define NUMMESHVECS_B 5
 #define NUMMESHVECS_S 7
-typedef struct _Mesh {
+typedef struct Mesh_ {
+
 
     Vec meshVecs_b[NUMMESHVECS_B];
     PetscScalar meshScalings_b[NUMMESHVECS_B];
@@ -26,7 +28,10 @@ typedef struct _Mesh {
 
 #define NUMSOLUTIONVECS_B 41
 #define NUMSOLUTIONVECS_S 24
-typedef struct _Solution {
+typedef struct Solution_ {
+
+    // PDS TODO: replace these with our new structures
+    DimensionalisableField solutionFields_b[NUMSOLUTIONVECS_B];
 
     Vec solutionVecs_b[NUMSOLUTIONVECS_B];
     PetscScalar solutionScalings_b[NUMSOLUTIONVECS_B]; // contains scalings
@@ -39,10 +44,10 @@ typedef struct _Solution {
 } Solution;
 
 /* A Context for the Solver */
-typedef struct _Ctx {
+typedef struct Ctx_ {
   Mesh       mesh;
   Solution   solution;
-  DM         da_b,da_s;
+  DM         da_b,da_s,da_surface,dm_b_aug;
   Atmosphere atmosphere;
   Mat        qty_at_b, ddr_at_b;
   Parameters parameters;

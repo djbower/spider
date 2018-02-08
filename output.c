@@ -5,6 +5,7 @@ static PetscErrorCode add_vector_to_viewer( Vec, PetscViewer );
 PetscErrorCode SetScalingsForOutput(Ctx *E)
 {
     /* scalings for all output quantities */
+  // PDS TODO: take this all output and include in a new function which creates the vecotrs and the scalings at the same time as DimensionalisableField objects
 
     PetscFunctionBeginUser;
 
@@ -38,7 +39,7 @@ PetscErrorCode SetScalingsForOutput(Ctx *E)
        of the vectors as given in SetupCtx in ctx.c */
 
     /* basic vecs */
-    solutionScalings_b[0] = 1.0 / C->TEMP;
+    //solutionScalings_b[0] = 1.0 / C->TEMP;
     solutionScalings_b[1] = 1.0 / C->TEMP;
     solutionScalings_b[2] = C->COND;
     solutionScalings_b[3] = C->ENTROPY;
@@ -110,6 +111,7 @@ PetscErrorCode SetScalingsForOutput(Ctx *E)
 
 }
 
+// TODO PDS : this will be taken care of by ScalableField
 PetscErrorCode scale_vectors_and_output( Vec *vec, PetscScalar *arr_scale, PetscInt NUM, PetscViewer viewer)
 {
 
