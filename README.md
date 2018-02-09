@@ -85,7 +85,7 @@ you can allow PETSc to automatically download and install SUNDIALS
 
         cd petsc-double-direct/
 
-3. Configure PETSc using the following command:[Aside] For a debug build, amend command above to use --with-debugging=1
+3. Configure PETSc using the following command. For a debug build, use --with-debugging=1 instead.
 
         ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials --download-mpich --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
@@ -145,7 +145,7 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc")
         git clone https://bitbucket.org/psanan/petsc --depth=1 -b psanan/ts-sundials-quad-hack petsc-quad-direct
         cd petsc-quad-direct
 
-2. Configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change /somewhere/to/install to the place that you installed SUNDIALS). [Aside] For a debug build, amend the command to use `--with-debugging=1`
+2. Configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change /somewhere/to/install to the place that you installed SUNDIALS). For a debug build, amend the command to use `--with-debugging=1`
 
         ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/somewhere/to/install/sundials-quad/install --download-mpich --download-f2cblaslapack --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
