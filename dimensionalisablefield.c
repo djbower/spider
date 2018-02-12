@@ -16,7 +16,7 @@ PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField *pf, DM dm, P
   f->dm = dm;
 
   ierr = DMGetType(f->dm,&dmtype);CHKERRQ(ierr);
-  ierr = PetscStrcmp(dmtype,DMCOMPOSITE,&isComposite);CHKERRQ(ierr); 
+  ierr = PetscStrcmp(dmtype,DMCOMPOSITE,&isComposite);CHKERRQ(ierr);
   if (isComposite) {
     ierr = DMCompositeGetNumberDM(f->dm,&(f->numDomains));CHKERRQ(ierr);
   } else {
@@ -25,7 +25,9 @@ PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField *pf, DM dm, P
   ierr = PetscPrintf(PETSC_COMM_WORLD,"Created DimensionalisableField over DM with %d subdomains\n",f->numDomains);CHKERRQ(ierr);
 
   ierr = PetscMalloc1(f->numDomains,&f->scaling);CHKERRQ(ierr);
-  for (i=0; i<f->numDomains; ++i) f->scaling[i] = scalings[i];
+  for (i=0; i<f->numDomains; ++i) {
+    f->scaling[i] = scalings[i];
+  }
 
   f->isDimensionalised = isDimensionalised; // Not good design - requires the user to remember (or check) this when setting
 
@@ -47,7 +49,7 @@ PetscErrorCode DimensionalisableFieldDestroy(DimensionalisableField *pf)
   PetscFunctionReturn(0);
 }
 
-/* 
+/*
   Get the global vector. Note that this is created and destroyed along with the
   DimensionalisableField object, hence this just returns the Vec object (which
   is a pointer). Contrast to DimensionalisableFieldCreateLocalVector()
@@ -61,8 +63,20 @@ PetscErrorCode DimensionalisableFieldGetGlobalVec(DimensionalisableField f,Vec *
   PetscFunctionReturn(0);
 }
 
-/* 
-   Create a local vector. You should destroy this yourself. 
+PetscErrorCode DimensionalisableFieldGetScaling(DimensionalisableField f,PetscInt *numDomains, PetscScalar *scaling)
+{
+  PetscInt i;
+
+  PetscFunctionBeginUser;
+  *numDomains = f->numDomains;
+  for (i=0; i<f->numDomains; ++i) {
+    scaling[i] = f->scaling[i];
+  }
+  PetscFunctionReturn(0);
+}
+
+/*
+   Create a local vector. You should destroy this yourself.
  */
 PetscErrorCode DimensionalisableFieldCreateLocalVec(DimensionalisableField f,Vec *pv)
 {

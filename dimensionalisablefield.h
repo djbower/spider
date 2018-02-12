@@ -13,12 +13,13 @@ struct _p_DimensionalisableField{
 typedef struct _p_DimensionalisableField *DimensionalisableField;
 
 PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField*,DM,PetscScalar*,PetscBool);
+PetscErrorCode DimensionalisableFieldCreateLocalVec(DimensionalisableField,Vec*);
 PetscErrorCode DimensionalisableFieldDestroy(DimensionalisableField*);
+PetscErrorCode DimensionalisableFieldGetGlobalVec(DimensionalisableField,Vec*);
+PetscErrorCode DimensionalisableFieldGetScaling(DimensionalisableField,PetscInt*,PetscScalar*);
+PetscErrorCode DimensionalisableFieldReadFromFile(DimensionalisableField,PetscBool);
 PetscErrorCode DimensionalisableFieldSetScaled(DimensionalisableField);
 PetscErrorCode DimensionalisableFieldSetUnscaled(DimensionalisableField);
-PetscErrorCode DimensionalisableFieldCreateLocalVec(DimensionalisableField,Vec*);
-PetscErrorCode DimensionalisableFieldGetGlobalVec(DimensionalisableField,Vec*);
 PetscErrorCode DimensionalisableFieldWriteToFile(DimensionalisableField,PetscBool);
-PetscErrorCode DimensionalisableFieldReadFromFile(DimensionalisableField,PetscBool);
 
 #endif

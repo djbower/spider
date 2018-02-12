@@ -150,16 +150,16 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
 
     // PDS TODO: replace all this with calls to write individual output files (dimensionalized) with DimensionalisableField
     /* write mesh information for basic node quantities */
-    ierr = scale_vectors_and_output( M->meshVecs_b, M->meshScalings_b, NUMMESHVECS_B, viewer );CHKERRQ(ierr);
+    ierr = scale_vectors_and_output( M->meshFields_b, NUMMESHVECS_B, viewer );CHKERRQ(ierr);
 
     /* write mesh information for staggered node quantities */
-    ierr = scale_vectors_and_output( M->meshVecs_s, M->meshScalings_s, NUMMESHVECS_S, viewer );CHKERRQ(ierr);
+    ierr = scale_vectors_and_output( M->meshFields_s, NUMMESHVECS_S, viewer );CHKERRQ(ierr);
 
     /* write all vectors associated with basic node quantities */
-    ierr = scale_vectors_and_output( S->solutionVecs_b, S->solutionScalings_b, NUMSOLUTIONVECS_B, viewer );CHKERRQ(ierr);
+    ierr = scale_vectors_and_output( S->solutionFields_b, NUMSOLUTIONVECS_B, viewer );CHKERRQ(ierr);
 
     /* write all vectors associated with staggered node quantities */
-    ierr = scale_vectors_and_output( S->solutionVecs_s, S->solutionScalings_s, NUMSOLUTIONVECS_S, viewer );CHKERRQ(ierr);
+    ierr = scale_vectors_and_output( S->solutionFields_s, NUMSOLUTIONVECS_S, viewer );CHKERRQ(ierr);
 
     /* Close the viewer */
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
