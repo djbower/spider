@@ -41,9 +41,12 @@ clean ::
 ### Tests ######################################################################
 PYTHON=python
 test :
+	cd tests && ${PYTHON} ./runTests.py -t bottomUpLiquid && cd ..
+
+testall :
 	cd tests && ${PYTHON} ./runTests.py && cd ..
 
-.PHONY : test
+.PHONY : testall
 
 ### Dependencies ###############################################################
 # Indicate that SRC_D is up to date. Prevents the include from having quadratic complexity.
