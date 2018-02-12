@@ -42,6 +42,7 @@ clean ::
 PYTHON=python
 test :
 	cd tests && ${PYTHON} ./runTests.py && cd ..
+
 .PHONY : test
 
 ### Dependencies ###############################################################
