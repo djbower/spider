@@ -2,7 +2,6 @@ import os
 import re
 import pyTestHarness.test as pthtest
 
-# ---------------------------------------------------------------------------- #
 def bottomUpLiquid(rootDir) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "bottomUpLiquid"
@@ -10,7 +9,7 @@ def bottomUpLiquid(rootDir) :
   launch = [\
           'mkdir -p output',\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(thisDir,'test.opts'),\
-          '../../plot_spider.py 0,1000000,2000000,3000000,4000000',\
+          '../timeout.sh -t 4 ../../plot_spider.py 0,60,120,180,240',\
           ]
 
   expectedFile = os.path.join(thisDir,'expected')
@@ -20,7 +19,7 @@ def bottomUpLiquid(rootDir) :
 
   # Create Test Object
   t = pthtest.Test(testName,ranks,launch,expectedFile)
-  t.setComparisonFile('output/dSdr_b_aug_1000000.m')
+  t.setComparisonFile('output/dSdr_b_aug_240.m')
   t.setVerifyMethod(comparefunc)
   t.appendKeywords('%')
   t.appendKeywords('[')

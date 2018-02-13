@@ -27,14 +27,10 @@ import pyTestHarness.test as pthtest
 import pyTestHarness.harness as pthharness
 
 # Import functions to generate tests
-from bottomUpLiquid.tests  import *
-from bottomUpMixed.tests   import *
-from bottomUpSolid.tests   import *
-from middleOutLiquid.tests import *
-from middleOutMixed.tests  import *
-from middleOutSolid.tests  import *
+from bottomUpLiquid.tests import *
+from bottomUpMixed.tests  import *
+from bottomUpSolid.tests  import *
 
-# ---------------------------------------------------------------------------- #
 def main() :
 
     # Check for PETSc (should be the same as you used to compile)
@@ -48,14 +44,11 @@ def main() :
         sys.exit(1)
 
     # The set of tests to run
-    rootDir = os.path.join(thisDir,'..')
+    rootDir = os.path.join(thisDir,'..') # The SPIDER root directory
     allTests = [
         bottomUpSolid(rootDir),  \
         bottomUpMixed(rootDir),  \
         bottomUpLiquid(rootDir), \
-        middleOutSolid(rootDir), \
-        middleOutMixed(rootDir), \
-        middleOutLiquid(rootDir),\
     ]
 
     # Run tests
@@ -64,6 +57,5 @@ def main() :
     h.execute()
     h.verify()
 
-# ---------------------------------------------------------------------------- #
 if __name__ == "__main__" :
     main()

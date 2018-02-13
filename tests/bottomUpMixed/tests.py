@@ -10,7 +10,7 @@ def bottomUpMixed(rootDir) :
   launch = [\
           'mkdir -p output',\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(thisDir,'test.opts'),\
-          '../../plot_spider.py 0',\
+          '../timeout.sh -t 4 ../../plot_spider.py 0',\
           ]
 
   expectedFile = os.path.join(thisDir,'expected')

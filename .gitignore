@@ -4,6 +4,9 @@ spider
 # object files
 *.o
 
+# dependency files
+*.d
+
 # Vim swap files
 .*.swp
 
