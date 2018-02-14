@@ -205,7 +205,7 @@ PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
       /* trivial algorithm to find minimum index when x data
          is not evenly spaced */
       ind = 0;
-      while( (x-xa[ind])>0) {
+      while( (x-xa[ind])>=0) {
         ind += 1;
       }
       /* loop exits when sign changes, meaning that previous index
@@ -289,10 +289,10 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     }
     else{
       // loop to find minimum index
-      /* trivial algorithm to find minimum index when x data
+      /* trivial algorithm to find minimum index when y data
          is not evenly spaced */
       indy = 0;
-      while( (y-ya[indy])>0) {
+      while( (y-ya[indy])>=0) {
         indy += 1;
       }
       /* loop exits when sign changes, meaning that previous index
