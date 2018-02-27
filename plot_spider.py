@@ -146,14 +146,14 @@ class FigureData( object ):
         # color scheme 'bkr8' for light background from Crameri
         # see f_Colours.m at http://www.fabiocrameri.ch/visualisation.php
         # this is actually very similar (same?) as Tim's scheme above
-        colors_l = [(0.0,0.0,0.3),
-                    (0.1,0.1,0.5),
-                    (0.2,0.2,0.7),
-                    (0.4,0.4,0.8),
-                    (0.8,0.4,0.4),
-                    (0.7,0.2,0.2),
-                    (0.5,0.1,0.1),
-                    (0.3,0.0,0.0)]
+        #colors_l = [(0.0,0.0,0.3),
+        #            (0.1,0.1,0.5),
+        #            (0.2,0.2,0.7),
+        #            (0.4,0.4,0.8),
+        #            (0.8,0.4,0.4),
+        #            (0.7,0.2,0.2),
+        #            (0.5,0.1,0.1),
+        #            (0.3,0.0,0.0)]
         colors_l.reverse()
         dd['colors_l'] = colors_l
 
@@ -196,10 +196,10 @@ class FigureData( object ):
     def set_mylegend( self, ax, handles, loc=4, ncol=1, TITLE=1 ):
         dd = self.data_d
         units = dd['time_units']
-        if TITLE:
+        if TITLE==1:
             title = r'Time ({0})'.format( units )
         else:
-            title = ''
+            title = TITLE
         fontsize = self.data_d['fontsize_legend']
         legend = ax.legend(title=title, handles=handles, loc=loc,
             ncol=ncol, fontsize=fontsize)
@@ -345,11 +345,11 @@ def figure1( args ):
 
     # titles and axes labels, legends, etc
     title = '(a) Entropy, J kg$^{-1}$ K$^{-1}$'
-    yticks = [1600,2000,2400,2800,3200]
+    yticks = [300,1000,1600,2000,2400,2800,3200]
     fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, yticks=yticks )
     ax0.yaxis.set_label_coords(-0.075,0.59)
     title = '(b) Temperature, K'
-    yticks= [1000,2000,3000,4000,5000]
+    yticks= [300,1000,2000,3000,4000,5000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xticks=xticks, yticks=yticks )
     ax1.yaxis.set_label_coords(-0.075,0.59)
     fig_o.set_mylegend( ax1, handle_l, loc=4, ncol=2 )
@@ -855,8 +855,9 @@ def figure6( args ):
     cont_l = [0.2,0.8]#,0.8]
     val_l = []
     for cont in cont_l:
-        value = find_value( xx, yy, cont )
-        val_l.append( value )
+        # this is probbaly broken now
+        item, yval = find_value( xx, yy, cont )
+        val_l.append( yval )
 
     # figure a
     title = '(a) Partial pressure (bar)'
@@ -878,7 +879,7 @@ def figure6( args ):
     h2, = ax0.semilogx( time, H2Op*1.0E-5, color=blue, linestyle='-', label='H$_2$O')
     handle_l = [h1,h2]
     fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xticks=xticks )
-    fig_o.set_mylegend( ax0, handle_l, loc='center right', ncol=1, TITLE=0 )
+    fig_o.set_mylegend( ax0, handle_l, loc='center right', ncol=1, TITLE="" )
     ax0.yaxis.set_label_coords(-0.1,0.575)
 
     # figure b
@@ -893,7 +894,7 @@ def figure6( args ):
     #ax0.semilogx( time, CO2liq+CO2sol+CO2atm, 'k-' )
     fig_o.set_myaxes( ax1, title=title, ylabel='$x$', xticks=xticks )
     handle_l = [h1,h2]#,h3,h4,h5]
-    fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1, TITLE=0 )
+    fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1, TITLE="" )
     ax1.yaxis.set_label_coords(-0.1,0.46)
 
     # figure c
@@ -997,15 +998,144 @@ def figure7( args ):
     fig_o.savefig(7)
 
 #====================================================================
+def figure8( args ):
+
+    width = 4.7747
+    height = 4.7747
+    fig_o = FigureData( args, 1, 1, width, height )
+
+    ax0 = fig_o.ax
+
+    handle_l = []
+
+    fig_o.time = range(0,5000,20)
+
+    phi9_l = [] # melt fraction
+    phi8_l = []
+    phi7_l = []
+    phi6_l = []
+    phi5_l = []
+    phi4_l = []
+    phi3_l = []
+    regime_l = []
+    liquidus_l = []
+
+    for nn, time in enumerate( fig_o.time ):
+
+        # liquidus
+        xx, yy = fig_o.get_xy_data( 'liquidus', time )
+        xx2, yy2 = fig_o.get_xy_data( 'S', time )
+        result = find_value( xx, yy, yy2 )
+        result = find_first_non_zero( result )
+        liquidus_l.append( result )
+
+        # phi contours
+        xx, yy = fig_o.get_xy_data( 'phi', time )
+        result = find_value( xx, yy, 0.9 )
+        result = find_first_non_zero( result )
+        phi9_l.append( result )
+
+        xx, yy = fig_o.get_xy_data( 'phi', time )
+        result = find_value( xx, yy, 0.8 )
+        result = find_first_non_zero( result )
+        phi8_l.append( result )
+
+        xx, yy = fig_o.get_xy_data( 'phi', time )
+        result = find_value( xx, yy, 0.7 )
+        result = find_first_non_zero( result )
+        phi7_l.append( result )
+
+        xx, yy = fig_o.get_xy_data( 'phi', time )
+        result = find_value( xx, yy, 0.6 )
+        result = find_first_non_zero( result )
+        phi6_l.append( result )
+
+        xx, yy = fig_o.get_xy_data( 'phi', time )
+        result = find_value( xx, yy, 0.5 )
+        result = find_first_non_zero( result )
+        phi5_l.append( result )
+
+        xx, yy = fig_o.get_xy_data( 'phi', time )
+        result = find_value( xx, yy, 0.4 )
+        result = find_first_non_zero( result )
+        phi4_l.append( result )
+
+        xx, yy = fig_o.get_xy_data( 'phi', time )
+        result = find_value( xx, yy, 0.3 )
+        result = find_first_non_zero( result )
+        phi3_l.append( result )
+
+        # use dynamic regime to define depth
+        xx, yy = fig_o.get_xy_data( 'regime', time )
+        result = find_value( xx, yy, 1.5 ) # regime either 1 or 2
+        result = find_first_non_zero( result )
+        regime_l.append( result )
+
+    handle, = ax0.plot( fig_o.time, liquidus_l, label=r'Liquidus')
+    handle_l.append( handle )
+    handle, = ax0.plot( fig_o.time, phi9_l, label=r'$\phi=0.9$' )
+    handle_l.append( handle )
+    handle, = ax0.plot( fig_o.time, phi8_l, label=r'$\phi=0.8$' )
+    handle_l.append( handle )
+    handle, = ax0.plot( fig_o.time, phi7_l, label=r'$\phi=0.7$' )
+    handle_l.append( handle )
+    handle, = ax0.plot( fig_o.time, phi6_l, label=r'$\phi=0.6$' )
+    handle_l.append( handle )
+    handle, = ax0.plot( fig_o.time, phi5_l, label=r'$\phi=0.5$' )
+    handle_l.append( handle )
+    handle, = ax0.plot( fig_o.time, phi4_l, label=r'$\phi=0.4$' )
+    handle_l.append( handle )
+    handle, = ax0.plot( fig_o.time, phi3_l, label=r'$\phi=0.3$' )
+    handle_l.append( handle )
+    handle, = ax0.plot( fig_o.time, regime_l, label=r'Dynamic' )
+    handle_l.append( handle )
+
+    # titles and axes labels, legends, etc
+    title = 'Pressure (GPa) at base of magma ocean'
+    yticks = [0,50,100,135]
+
+    fig_o.set_myaxes( ax0, title=title, ylabel='$P$ (GPa)', xlabel='Time post-impact (Yrs)', yticks=yticks )
+    fig_o.set_mylegend( ax0, handle_l, loc=1, ncol=2, TITLE=r'$\phi$ contour' )
+
+    ax0.set_xlim([0,2000])
+
+    fig_o.savefig(8)
+
+#====================================================================
 def find_value( xx, yy, yywant ):
 
-    for cc, entry in enumerate(yy):
-        if entry > yywant:
-            continue
-        else:
-            # for debugging
-            #print entry, yywant
-            return xx[cc]
+    a = yy - yywant
+
+    s = sign_change( a )
+
+    # for ease, just add zero at the beginning to enable us to
+    # have the same length array.  Could equally add to the end, or
+    # interpolate
+
+    s = np.insert(s,0,0)
+
+    result = xx * s
+
+    return result
+
+#====================================================================
+def find_first_non_zero( myList ):
+
+    # https://stackoverflow.com/questions/19502378/python-find-first-instance-of-non-zero-number-in-list
+
+    index = next((i for i, x in enumerate(myList) if x), None)
+
+    if index is None:
+        return None
+    else:
+        return myList[index]
+
+#====================================================================
+def sign_change( a ):
+
+    s = (np.diff(np.sign(a)) != 0)*1
+
+    return s
 
 #====================================================================
 def atmosphere_data_to_array( fig_o ):
@@ -1220,7 +1350,8 @@ def main( args ):
     #figure4( args )
     #figure5( args )
     #figure6( args )
-    figure7( args )
+    #figure7( args )
+    figure8( args )
     plt.show()
 
 #====================================================================
