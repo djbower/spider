@@ -6,11 +6,13 @@ import matplotlib.ticker as mtick
 import numpy as np
 import os
 import sys 
+
 PETSC_DIR = os.getenv('PETSC_DIR')
 if not PETSC_DIR :
     print('You must define PETSC_DIR in your environment')
     sys.exit(1)
 sys.path.append(os.path.join(PETSC_DIR,'bin'))
+
 import PetscBinaryIO
 
 #===================================================================
@@ -998,106 +1000,151 @@ def figure7( args ):
     fig_o.savefig(7)
 
 #====================================================================
+def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='black' ):
+
+    data_l = []
+
+    for nn, time in enumerate( time_l ):
+
+        xx1, yy1 = fig_o.get_xy_data( field1, time )
+        try:
+            xx2, yy2 = fig_o.get_xy_data( criteria, time )
+        except ValueError:
+            yy2 = criteria
+
+        # always need temperature
+        x_temp, y_temp = fig_o.get_xy_data( 'temp', time )
+
+        # find the pressure(s) that correspond(s) to the cross-over point
+        pres = find_value( xx1, yy1, yy2 )
+        ind = get_first_non_zero_index( pres )
+
+        current_pres = x_temp[-1]
+        current_temp = y_temp[-1]
+        try:
+            previous_pres = data_l[-1][0]
+            if ind is None and previous_pres > 120:
+                data_l.append( (current_pres, current_temp, time ) )
+            elif ind is None and previous_pres < 20:
+                current_pres = x_temp[0]
+                current_temp = y_temp[0]
+                data_l.append( (current_pres, current_temp, time ) )
+            #if ind is None:
+            #    pass
+            else:
+                current_pres = pres[ind]
+                current_temp = y_temp[ind]
+                if current_pres < previous_pres:
+                    data_l.append( (current_pres, current_temp, time ) )
+        except IndexError:
+            #if ind is not None:
+            #    current_pres = pres[ind]
+            #    current_temp = y_temp[ind]
+            #    data_l.append( (current_pres, current_temp, time ) )
+            data_l.append( (current_pres, current_temp, time ) )
+
+    # reshape data
+    # column order: pressure, temperature, time
+    data_a = np.reshape( data_l, (-1,3) )
+    print(data_a)
+
+    polydegree = 5 # hard-coded
+
+    # just fit the part where the rheological transition is advancing
+    # through the magma ocean
+    # compute the start and end indices for this
+    diff_a = np.diff( data_a[:,0] )
+    sin = get_first_non_zero_index( diff_a )
+    ein = 1 + len( diff_a ) - get_first_non_zero_index( diff_a[::-1] )
+
+    pres_coeff = np.polyfit( data_a[:,2][sin:ein], data_a[:,0][sin:ein], polydegree ) # pressure
+    pres_poly = np.poly1d( pres_coeff )
+    pres_fit = pres_poly( data_a[:,2][sin:ein] )
+    temp_coeff = np.polyfit( data_a[:,2][sin:ein], data_a[:,1][sin:ein], polydegree ) # temperature
+    temp_poly = np.poly1d( temp_coeff )
+    temp_fit = temp_poly( data_a[:,2][sin:ein] )
+
+    tmax = np.max( data_a[:,2][sin:ein] )
+    tmin = np.min( data_a[:,2][sin:ein] )
+
+    vmax = np.max( data_a[:,2] )
+    vmin = np.min( data_a[:,2] )
+
+    print( '---------------------------------------------------' )
+    print( 'rheological transition advancing through the mantle' )
+    print( '---------------------------------------------------' )
+    print( 'fitting coefficients for %(polydegree)sth order polynomial' % vars() )
+    print( 'between t_min= %(tmin)s yrs and t_max= %(tmax)s yrs' % vars() )
+    print( 'pres_coeff=', pres_coeff )
+    print( 'temp_coeff=', temp_coeff )
+
+    # now fit cooling at 135 GPa fixed pressure
+    temp_coeff2 = np.polyfit( data_a[:,2][0:sin+1], data_a[:,1][0:sin+1], polydegree )
+    temp_poly2 = np.poly1d( temp_coeff2 )
+    temp_fit2 = temp_poly2( data_a[:,2][0:sin+1] )
+
+    print( '------------------------------------------------' )
+    print( 'cooling before rheological transition is reached' )
+    print( '------------------------------------------------' )
+    print( 'temp_coeff2=', temp_coeff2 )
+
+    handle_scatter = fig_o.ax[1].scatter( data_a[:,0], data_a[:,1], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax )
+    handle_fit, = fig_o.ax[1].plot( pres_fit, temp_fit, color=color, label=label )
+
+    handle_fit2 = fig_o.ax[0].plot( data_a[:,2][0:sin+1], temp_fit2, 'k-' )
+
+    return ( handle_scatter, handle_fit )
+
+#====================================================================
 def figure8( args ):
 
-    width = 4.7747
-    height = 4.7747
-    fig_o = FigureData( args, 1, 1, width, height )
+    width = 4.7747#/2
+    height = 4.7747/2
+    fig_o = FigureData( args, 1, 2, width, height )
 
-    ax0 = fig_o.ax
+    ax0 = fig_o.ax[0]
+    ax1 = fig_o.ax[1]
 
     handle_l = []
 
-    fig_o.time = range(0,5000,20)
+    fig_o.time = range(0,3000,10)
+    #fig_o.time = [40,100,200,400,600,800,1000,1400,1800]
+    #fig_o.time = [40,100,200,400,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2100,2200]
 
-    phi9_l = [] # melt fraction
-    phi8_l = []
-    phi7_l = []
-    phi6_l = []
-    phi5_l = []
-    phi4_l = []
-    phi3_l = []
-    regime_l = []
-    liquidus_l = []
+    hs1, hf1 = get_mo_PT_conditions( fig_o, fig_o.time, 'regime', 1.5, r'Polynomial fit', 'blue' )
+    #hs2, hf2 = get_mo_PT_conditions( fig_o, fig_o.time, 'phi', 0.4, r'$\phi=0.4$', 'red' )
 
-    for nn, time in enumerate( fig_o.time ):
+    hf_l = [hf1]#[hf1, hf2]
 
-        # liquidus
-        xx, yy = fig_o.get_xy_data( 'liquidus', time )
-        xx2, yy2 = fig_o.get_xy_data( 'S', time )
-        result = find_value( xx, yy, yy2 )
-        result = find_first_non_zero( result )
-        liquidus_l.append( result )
+    #for i, txt in enumerate( liquidus_l[2] ):
+    #    if txt is not None:
+    #        xoff = liquidus_l[0][i]+1
+    #        yoff = liquidus_l[1][i]-50
+    #        ax0.annotate( txt, xy=(liquidus_l[0][i], liquidus_l[1][i]), xytext=(xoff,yoff) )
 
-        # phi contours
-        xx, yy = fig_o.get_xy_data( 'phi', time )
-        result = find_value( xx, yy, 0.9 )
-        result = find_first_non_zero( result )
-        phi9_l.append( result )
-
-        xx, yy = fig_o.get_xy_data( 'phi', time )
-        result = find_value( xx, yy, 0.8 )
-        result = find_first_non_zero( result )
-        phi8_l.append( result )
-
-        xx, yy = fig_o.get_xy_data( 'phi', time )
-        result = find_value( xx, yy, 0.7 )
-        result = find_first_non_zero( result )
-        phi7_l.append( result )
-
-        xx, yy = fig_o.get_xy_data( 'phi', time )
-        result = find_value( xx, yy, 0.6 )
-        result = find_first_non_zero( result )
-        phi6_l.append( result )
-
-        xx, yy = fig_o.get_xy_data( 'phi', time )
-        result = find_value( xx, yy, 0.5 )
-        result = find_first_non_zero( result )
-        phi5_l.append( result )
-
-        xx, yy = fig_o.get_xy_data( 'phi', time )
-        result = find_value( xx, yy, 0.4 )
-        result = find_first_non_zero( result )
-        phi4_l.append( result )
-
-        xx, yy = fig_o.get_xy_data( 'phi', time )
-        result = find_value( xx, yy, 0.3 )
-        result = find_first_non_zero( result )
-        phi3_l.append( result )
-
-        # use dynamic regime to define depth
-        xx, yy = fig_o.get_xy_data( 'regime', time )
-        result = find_value( xx, yy, 1.5 ) # regime either 1 or 2
-        result = find_first_non_zero( result )
-        regime_l.append( result )
-
-    handle, = ax0.plot( fig_o.time, liquidus_l, label=r'Liquidus')
-    handle_l.append( handle )
-    handle, = ax0.plot( fig_o.time, phi9_l, label=r'$\phi=0.9$' )
-    handle_l.append( handle )
-    handle, = ax0.plot( fig_o.time, phi8_l, label=r'$\phi=0.8$' )
-    handle_l.append( handle )
-    handle, = ax0.plot( fig_o.time, phi7_l, label=r'$\phi=0.7$' )
-    handle_l.append( handle )
-    handle, = ax0.plot( fig_o.time, phi6_l, label=r'$\phi=0.6$' )
-    handle_l.append( handle )
-    handle, = ax0.plot( fig_o.time, phi5_l, label=r'$\phi=0.5$' )
-    handle_l.append( handle )
-    handle, = ax0.plot( fig_o.time, phi4_l, label=r'$\phi=0.4$' )
-    handle_l.append( handle )
-    handle, = ax0.plot( fig_o.time, phi3_l, label=r'$\phi=0.3$' )
-    handle_l.append( handle )
-    handle, = ax0.plot( fig_o.time, regime_l, label=r'Dynamic' )
-    handle_l.append( handle )
 
     # titles and axes labels, legends, etc
-    title = 'Pressure (GPa) at base of magma ocean'
-    yticks = [0,50,100,135]
+    title = r'Global magma ocean ($P$=135 GPa)'
+    fig_o.set_myaxes( ax0, title=title, ylabel='$T$ (K)', xlabel='Time after $t_0$ (yrs)' )
+    ax0.yaxis.set_label_coords(-0.15,0.575)
 
-    fig_o.set_myaxes( ax0, title=title, ylabel='$P$ (GPa)', xlabel='Time post-impact (Yrs)', yticks=yticks )
-    fig_o.set_mylegend( ax0, handle_l, loc=1, ncol=2, TITLE=r'$\phi$ contour' )
+    title = r'Partially molten magma ocean'
+    xticks = [0,50,100,135]
+    yticks = [1000,2000,3000,4000,5000]
 
-    ax0.set_xlim([0,2000])
+    fig_o.set_myaxes( ax1, title=title, ylabel='$T$ (K)', yticks=yticks, xlabel='$P$ (GPa)', xticks=xticks )
+    ax1.yaxis.set_label_coords(-0.15,0.575)
+
+    fig_o.set_mylegend( ax1, hf_l, loc='upper left', ncol=1, TITLE="" )
+    cbar = fig_o.fig.colorbar( hs1 )#, ticks=[0,200,400,600,800,1000,2000] )
+    cbar.set_label('Time after $t_0$ (yrs)')
+
+    #cbar.ax.set_yticklabels(['0','0.2 kyr','0.4 kyr','0.6 kyr','0.8 kyr','1 kyr'])
+    #cbar.ax.set_ylim([0,1000])
+
+    plt.show()
+
+    #ax0.set_xlim([0,2000])
 
     fig_o.savefig(8)
 
@@ -1119,16 +1166,13 @@ def find_value( xx, yy, yywant ):
     return result
 
 #====================================================================
-def find_first_non_zero( myList ):
+def get_first_non_zero_index( myList ):
 
     # https://stackoverflow.com/questions/19502378/python-find-first-instance-of-non-zero-number-in-list
 
     index = next((i for i, x in enumerate(myList) if x), None)
 
-    if index is None:
-        return None
-    else:
-        return myList[index]
+    return index
 
 #====================================================================
 def sign_change( a ):
