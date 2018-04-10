@@ -57,31 +57,26 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   {
     PetscInt f = 0;
 
-    ctx->numFields = 4;
-    ierr = PetscMalloc1(4,&ctx->solutionFieldDescription);CHKERRQ(ierr);
+    ierr = PetscMalloc1(4,&ctx->solutionFieldIDs);CHKERRQ(ierr);
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_b);CHKERRQ(ierr);
-    ctx->solutionFieldDescription[f] = "dS/dr (basic nodes)";
+    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_DSDR_B;
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_surface);CHKERRQ(ierr);
-    ctx->solutionFieldDescription[f] = "S at surface";
+    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_S0;
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_mo_co2);CHKERRQ(ierr);
-    ctx->solutionFieldDescription[f] = "Magma ocean CO2 content";
+    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_CO2;
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_mo_h2o);CHKERRQ(ierr);
-    ctx->solutionFieldDescription[f] = "Magma ocean H20 content";
+    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_H20;
     ++f;
   }
 
-  {
-    PetscInt numFieldsCheck;
-    ierr = DMCompositeGetNumberDM(ctx->dm_sol,&numFieldsCheck);CHKERRQ(ierr);
-    if (numFieldsCheck != ctx->numFields) SETERRQ2(PetscObjectComm((PetscObject)ctx->dm_sol),PETSC_ERR_ARG_INCOMP,"The number of sub-DMs in ctx->dm_sol (%D) should be equal to %D",numFieldsCheck,ctx->numFields);
-  }
+  ierr = DMCompositeGetNumberDM(ctx->dm_sol,&ctx->numFields);CHKERRQ(ierr); /* For convenience */
 
   /* Continue to initialize context with distributed data */
   ierr = CtxCreateFields(ctx);
@@ -117,7 +112,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   for (i=0;i<NUMSOLUTIONVECS_S;++i){
     ierr = DimensionalisableFieldDestroy(&ctx->solution.solutionFields_s[i]);CHKERRQ(ierr);
   }
-  ierr = PetscFree(ctx->solutionFieldDescription);CHKERRQ(ierr);
+  ierr = PetscFree(ctx->solutionFieldIDs);CHKERRQ(ierr);
   ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
   ierr = MatDestroy(&ctx->qty_at_b);CHKERRQ(ierr);
   ierr = MatDestroy(&ctx->ddr_at_b);CHKERRQ(ierr);

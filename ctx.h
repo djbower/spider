@@ -41,18 +41,30 @@ typedef struct Solution_ {
 
 } Solution;
 
+/* Some helpers for keeping track of sub-fields
+ - To add a new field type, update these three things!
+*/
+static const PetscInt SPIDER_NUM_FIELD_IDS=5;
+typedef enum {
+  SPIDER_SOLUTION_FIELD_UNDEFINED=0,
+  SPIDER_SOLUTION_FIELD_DSDR_B,
+  SPIDER_SOLUTION_FIELD_S0,
+  SPIDER_SOLUTION_FIELD_MO_CO2,
+  SPIDER_SOLUTION_FIELD_MO_H20
+} SpiderSolutionFieldID;
+static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr (basic nodes","S at surface","Magma Ocean CO2 content","Magma Ocean H2O content"}; /* Order must match the enum! */
 
 /* A Context for the Solver */
 typedef struct Ctx_ {
-  Mesh            mesh;
-  Solution        solution;
-  DM              da_b,da_s,da_surface,da_mo_co2,da_mo_h2o; /* DMs for different subdomains */
-  DM              dm_sol; /* A composite DM for all fields used in the timestepper */
-  PetscInt        numFields; /* Number of sub-DMs in dm_sol */
-  const char      **solutionFieldDescription;
-  Atmosphere      atmosphere;
-  Mat             qty_at_b, ddr_at_b;
-  Parameters      parameters;
+  Mesh                  mesh;
+  Solution              solution;
+  DM                    da_b,da_s,da_surface,da_mo_co2,da_mo_h2o; /* DMs for different subdomains */
+  DM                    dm_sol; /* A composite DM for all fields used in the timestepper */
+  PetscInt              numFields; /* Number of sub-DMs in dm_sol */
+  SpiderSolutionFieldID *solutionFieldIDs;
+  Atmosphere            atmosphere;
+  Mat                   qty_at_b, ddr_at_b;
+  Parameters            parameters;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

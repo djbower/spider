@@ -63,7 +63,7 @@ int main(int argc, char ** argv)
       ierr = DMGetGlobalVector(sub_dms[f],&vecTemp);CHKERRQ(ierr);
       ierr = VecGetSize(vecTemp,&nEntries);CHKERRQ(ierr);
       entriesString = nEntries > 1 ? "entries" : "entry";
-     ierr = PetscPrintf(PETSC_COMM_WORLD,"  %D: %s (%D %s)\n",f,ctx.solutionFieldDescription[f],nEntries,entriesString);CHKERRQ(ierr);
+     ierr = PetscPrintf(PETSC_COMM_WORLD,"  %D: %s (%D %s)\n",f,SpiderSolutionFieldDescriptions[ctx.solutionFieldIDs[f]],nEntries,entriesString);CHKERRQ(ierr);
       ierr = DMRestoreGlobalVector(sub_dms[f],&vecTemp);CHKERRQ(ierr);
     }
     ierr = PetscFree(sub_dms);CHKERRQ(ierr);
