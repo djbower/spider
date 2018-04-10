@@ -34,15 +34,14 @@ static PetscErrorCode add_vector_to_viewer( Vec vec, PetscViewer viewer)
   PetscFunctionBeginUser;
   // convenient for some output formats, but not Petsc binary
   //ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"phi_s_%lld",step);CHKERRQ(ierr);
-  //ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
+  //ierr = PetscObjectSetName((PetscObject)sol,vecname);CHKERRQ(ierr);
   ierr = VecView( vec, viewer ); CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode atmosphere_structs_to_vec( Vec x_aug, Ctx *E, Vec vec )
+PetscErrorCode atmosphere_structs_to_vec( Vec sol, Ctx *E, Vec vec )
 {
-
     PetscErrorCode ierr;
 
     Atmosphere           const *A = &E->atmosphere;
@@ -51,23 +50,27 @@ PetscErrorCode atmosphere_structs_to_vec( Vec x_aug, Ctx *E, Vec vec )
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     VolatileParameters   const *CO2 = &Ap->CO2_volatile_parameters;
     VolatileParameters   const *H2O = &Ap->H2O_volatile_parameters;
-    Mesh const *M = &E->mesh;
-    PetscInt ind;
-    PetscScalar Msol,Mliq;
-    PetscScalar sol0,liq0,atm0,tot0,sol1,liq1,atm1,tot1;
-    PetscScalar x0,x1;
-
-    PetscScalar FAC, MASS;
+    Mesh                 const *M = &E->mesh;
+    const PetscInt             ind0 = 0;
+    PetscScalar                Msol,Mliq;
+    PetscScalar                sol0,liq0,atm0,tot0,sol1,liq1,atm1,tot1;
+    PetscScalar                x0,x1;
+    PetscScalar                FAC, MASS;
+    Vec                        *subVecs;
 
     PetscFunctionBeginUser;
 
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
     /* CO2 content of magma ocean (liquid phase) */
-    ind = 0;
-    ierr = VecGetValues(x_aug,1,&ind,&x0);CHKERRQ(ierr);
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],1,&ind0,&x0);CHKERRQ(ierr);
 
     /* H2O content of magma ocean (liquid phase) */
-    ind = 1;
-    ierr = VecGetValues(x_aug,1,&ind,&x1);CHKERRQ(ierr);
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],1,&ind0,&x1);CHKERRQ(ierr);
+
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
     /* scalings */
     MASS = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
