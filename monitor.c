@@ -53,8 +53,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
   {
     PetscViewer viewer;
     char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/dSdr_b_aug_%lld.m",P->outputDirectory,nstep);CHKERRQ(ierr);
-    ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug",nstep);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/sol_%lld.m",P->outputDirectory,nstep);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"sol",nstep);CHKERRQ(ierr);
     ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr); //Annoyingly, PETSc wants you to use binary output so badly that this is the easiest way to get full-precision ASCII..
     ierr = PetscObjectSetName((PetscObject)sol,vecname);CHKERRQ(ierr);
@@ -143,7 +143,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     /* Add the solution vector */
     {
       char vecname[PETSC_MAX_PATH_LEN];
-      ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug_%d",step);CHKERRQ(ierr);
+      ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"sol_%d",step);CHKERRQ(ierr);
       ierr = PetscObjectSetName((PetscObject)sol,vecname);CHKERRQ(ierr);
       ierr = VecView(sol,viewer);CHKERRQ(ierr);
     }
@@ -170,7 +170,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing dSdr_b_aug for testing ---\n",time);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing sol for testing ---\n",time);CHKERRQ(ierr);
     ierr = VecView(sol,viewer);CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing rhs for testing ---\n",time);CHKERRQ(ierr);
     ierr = VecView(rhs,viewer);CHKERRQ(ierr);

@@ -137,7 +137,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* TODO: I think this breaks for parallel */
   ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,dS0dt,INSERT_VALUES);CHKERRQ(ierr);
 
-  /* time-dependence of additional quantities at the top of the augmented array */
+  /* time-dependence of additional quantities */
   if (Ap->SOLVE_FOR_VOLATILES || Ap->MODEL==3){
     PetscScalar dx0dt, dx1dt;
     dx0dt = get_dx0dt( E, x0 );
