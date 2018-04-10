@@ -1,5 +1,4 @@
 #include "ctx.h"
-#include "aug.h"
 #include "bc.h"
 #include "energy.h"
 #include "matprop.h"
@@ -8,7 +7,7 @@
 
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"
-PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,void *ptr)
+PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 {
   PetscErrorCode    ierr;
   Ctx                  *E = (Ctx*) ptr;
@@ -22,9 +21,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   PetscInt             i,ihi_b,ilo_b,w_b,numpts_b;
   DM                   da_s = E->da_s, da_b=E->da_b;
   Vec                  rhs_b;
-  PetscInt             ind;
   PetscScalar          S0, dS0dt;
   PetscScalar          x0, x1;
+  Vec                  *subVecs;
+
+  const PetscInt       ind0 = 0;
 
   PetscFunctionBeginUser;
   ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
@@ -36,32 +37,32 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMDAGetCorners(da_s,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
   ihi_b = ilo_b + w_b;
 
+  ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+  ierr = DMCompositeGetAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
   /* Transfer from the input vector to "S->dSdr", which is the same, minus the
      extra points */
-  ierr = FromAug(dSdr_b_aug_in,S->dSdr);CHKERRQ(ierr);
+  ierr = VecCopy(subVecs[0],S->dSdr);CHKERRQ(ierr);
+
+  /* extract other necessary quantities from sol array */
+  /* volatiles have already been initialised to zero in the
+     initial condition, so reading them here is fine even if
+     we are not explicitly using volatiles in a model run */
+
+  /* Get first staggered node value (stored as S0) */
+  ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],1,&ind0,&S0);CHKERRQ(ierr);
+
+  /* CO2 content of magma ocean (liquid phase) */
+  ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],1,&ind0,&x0);CHKERRQ(ierr);
+
+  /* H2O content of magma ocean (liquid phase) */
+  ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],1,&ind0,&x1);CHKERRQ(ierr);
+
+  ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
   /* Create rhs vector of "normal" size (no extra point)
      this is initialised with zeros (potential for bug?) */
   ierr = VecDuplicate(S->dSdr,&rhs_b);CHKERRQ(ierr);
-
-  /////////////////////////////////////////////////////////////
-  /* extract other necessary quantities from augmented array */
-  /* volatiles have already been initialised to zero in the 
-     initial condition, so reading them here is fine even if
-     we are not explicitly using volatiles in a model run */
-
-  /* CO2 content of magma ocean (liquid phase) */
-  ind = 0;
-  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x0);CHKERRQ(ierr);
-
-  /* H2O content of magma ocean (liquid phase) */
-  ind = 1;
-  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&x1);CHKERRQ(ierr);
-
-  /* Get first staggered node value (stored as S0) */
-  ind = 2;
-  ierr = VecGetValues(dSdr_b_aug_in,1,&ind,&S0);CHKERRQ(ierr);
-  ////////////////////////////////////////////////////////////
 
   ierr = set_entropy( E, S0 );CHKERRQ(ierr);
 
@@ -122,34 +123,41 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec dSdr_b_aug_in,Vec rhs_b_aug,voi
   ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
+
   /* Transfer back  */
-  ierr = ToAug(rhs_b,rhs_b_aug);CHKERRQ(ierr);
+  ierr = DMCompositeGetAccessArray(E->dm_sol,rhs,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+  ierr = VecCopy(rhs_b,subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]]);CHKERRQ(ierr);
 
   /* these update A->Mliq, A->Msol, and A->dMliqdt */
   ierr = set_Mliq( E );CHKERRQ(ierr);
   ierr = set_Msol( E );CHKERRQ(ierr);
   ierr = set_dMliqdt( E );CHKERRQ(ierr); /* must be after dS/dt computation */
 
+  /* S0 */
+  /* TODO: I think this breaks for parallel */
+  ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,dS0dt,INSERT_VALUES);CHKERRQ(ierr);
+
   /* time-dependence of additional quantities at the top of the augmented array */
   if (Ap->SOLVE_FOR_VOLATILES || Ap->MODEL==3){
     PetscScalar dx0dt, dx1dt;
     dx0dt = get_dx0dt( E, x0 );
     dx1dt = get_dx1dt( E, x1 );
-    ierr = VecSetValue(rhs_b_aug,0,dx0dt,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(rhs_b_aug,1,dx1dt,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,dx0dt,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,dx1dt,INSERT_VALUES);CHKERRQ(ierr);
   }
   else{
-    ierr = VecSetValue(rhs_b_aug,0,0.0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(rhs_b_aug,1,0.0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,0.0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,0.0,INSERT_VALUES);CHKERRQ(ierr);
+  }
+  for (i=1; i<E->numFields; ++i) {
+    ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
+  }
+  for (i=1; i<E->numFields; ++i) {
+    ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
   }
 
-  /* S0 */
-  /* TODO: I think this breaks for parallel */
-  ierr = VecSetValue(rhs_b_aug,2,dS0dt,INSERT_VALUES);CHKERRQ(ierr);
-
-  /* VecAssembly */
-  ierr = VecAssemblyBegin(rhs_b_aug);CHKERRQ(ierr);
-  ierr = VecAssemblyEnd(rhs_b_aug);CHKERRQ(ierr);
+  ierr = DMCompositeRestoreAccessArray(E->dm_sol,rhs,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+  ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
   ierr = VecDestroy(&rhs_b);CHKERRQ(ierr);
 
