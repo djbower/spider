@@ -19,12 +19,12 @@ def bottomUpLiquid(rootDir) :
 
   # Create Test Object
   t = pthtest.Test(testName,ranks,launch,expectedFile)
-  t.setComparisonFile('output/dSdr_b_aug_240.m')
+  t.setComparisonFile('output/sol_240.m')
   t.setVerifyMethod(comparefunc)
   t.appendKeywords('%')
   t.appendKeywords('[')
   t.appendKeywords(']')
-  t.appendKeywords('dSdr_b_aug')
+  t.appendKeywords('sol')
   t.setUseSandbox()
 
   return(t)
