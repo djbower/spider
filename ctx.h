@@ -13,7 +13,7 @@ typedef struct Mesh_ {
 
     DimensionalisableField meshFields_b[NUMMESHVECS_B];
     DimensionalisableField meshFields_s[NUMMESHVECS_S];
-    
+
     // PDS TODO: eventually get rid of these (though think about how to better name the DimensionalisableFields..)
     Vec area_b,dPdr_b,pressure_b,radius_b, mix_b;
 
@@ -41,14 +41,18 @@ typedef struct Solution_ {
 
 } Solution;
 
+
 /* A Context for the Solver */
 typedef struct Ctx_ {
-  Mesh       mesh;
-  Solution   solution;
-  DM         da_b,da_s,da_surface,dm_b_aug;
-  Atmosphere atmosphere;
-  Mat        qty_at_b, ddr_at_b;
-  Parameters parameters;
+  Mesh            mesh;
+  Solution        solution;
+  DM              da_b,da_s,da_surface,da_mo_co2,da_mo_h2o; /* DMs for different subdomains */
+  DM              dm_sol; /* A composite DM for all fields used in the timestepper */
+  PetscInt        numFields; /* Number of sub-DMs in dm_sol */
+  const char      **solutionFieldDescription;
+  Atmosphere      atmosphere;
+  Mat             qty_at_b, ddr_at_b;
+  Parameters      parameters;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
@@ -57,6 +61,8 @@ typedef struct Ctx_ {
   // Note: there is no real reason that we have some data here and some in Solution and some in Mesh.
   //       it could all be flattened out (and probably would be in a re-implementation)
 } Ctx;
+// TODO: would be cleaner if Ctx where a pointer to _p_Ctx, as with PETSc objects.
+
 
 PetscErrorCode SetupCtx(Ctx *);
 PetscErrorCode DestroyCtx(Ctx *);

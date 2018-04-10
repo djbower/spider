@@ -33,21 +33,60 @@ PetscErrorCode SetupCtx(Ctx* ctx)
      living on the same primal and staggered nodes.
   */
   const PetscInt stencilWidth = 1;
-  const PetscInt dof = 1; // PDS TODO: determine if for multi-component problems, we want dof>1 (AoS) or to include multiple copies of these grids in a DMComposite (SoA)
+  const PetscInt dof = 1;
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,dof,stencilWidth,NULL,&ctx->da_b      );CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,dof,stencilWidth,NULL,&ctx->da_s      );CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1          ,dof,0           ,NULL,&ctx->da_surface);CHKERRQ(ierr); // single-point DMDA
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1          ,dof,0           ,NULL,&ctx->da_mo_co2 );CHKERRQ(ierr); // single-point DMDA
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1          ,dof,0           ,NULL,&ctx->da_mo_h2o );CHKERRQ(ierr); // single-point DMDA
 
-  /* Create a composite DM of the basic nodes plus the additional surface node */
-  ierr = DMCompositeCreate(PETSC_COMM_WORLD,&ctx->dm_b_aug);CHKERRQ(ierr);
-  ierr = DMCompositeAddDM(ctx->dm_b_aug,(DM)ctx->da_surface);CHKERRQ(ierr);
-  ierr = DMCompositeAddDM(ctx->dm_b_aug,(DM)ctx->da_b);CHKERRQ(ierr);
+  /* Create a composite DM of the basic nodes plus additional quantities.
+    This allows us to create a vector to solve for all of these quantites.
+
+     */
+  ierr = DMCompositeCreate(PETSC_COMM_WORLD,&ctx->dm_sol);CHKERRQ(ierr);
+
+  /* Define some more-descriptive names for the solution fields, for output */
+
+  /* Note: the order in which DMCompositeAddDM() is called matters!
+     This should be the ONLY place this function is called in the code.
+     To try to avoid confusion, we maintain a list of strings describing each
+     entry (indexed in the same way as the sub-DMs).
+     This is intended to catch errors when we change the number of fields we are
+     simultaneously solving for. */
+  {
+    PetscInt f = 0;
+
+    ctx->numFields = 4;
+    ierr = PetscMalloc1(4,&ctx->solutionFieldDescription);CHKERRQ(ierr);
+
+    ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_b);CHKERRQ(ierr);
+    ctx->solutionFieldDescription[f] = "dS/dr (basic nodes)";
+    ++f;
+
+    ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_surface);CHKERRQ(ierr);
+    ctx->solutionFieldDescription[f] = "S at surface";
+    ++f;
+
+    ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_mo_co2);CHKERRQ(ierr);
+    ctx->solutionFieldDescription[f] = "Magma ocean CO2 content";
+    ++f;
+
+    ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_mo_h2o);CHKERRQ(ierr);
+    ctx->solutionFieldDescription[f] = "Magma ocean H20 content";
+    ++f;
+  }
+
+  {
+    PetscInt numFieldsCheck;
+    ierr = DMCompositeGetNumberDM(ctx->dm_sol,&numFieldsCheck);CHKERRQ(ierr);
+    if (numFieldsCheck != ctx->numFields) SETERRQ2(PetscObjectComm((PetscObject)ctx->dm_sol),PETSC_ERR_ARG_INCOMP,"The number of sub-DMs in ctx->dm_sol (%D) should be equal to %D",numFieldsCheck,ctx->numFields);
+  }
 
   /* Continue to initialize context with distributed data */
   ierr = CtxCreateFields(ctx);
 
   /* Create a work vector */
-  // PDS TODO : replace the use of this with something that comes from a DimensionalisableField, thus ensuring that the correct DM is used to generate the vector!
   ierr = DMCreateLocalVector(ctx->da_b,&ctx->work_local_b);CHKERRQ(ierr);
 
   /* Populate vectors (initial condition is set in main.c) */
@@ -78,9 +117,10 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   for (i=0;i<NUMSOLUTIONVECS_S;++i){
     ierr = DimensionalisableFieldDestroy(&ctx->solution.solutionFields_s[i]);CHKERRQ(ierr);
   }
+  ierr = PetscFree(ctx->solutionFieldDescription);CHKERRQ(ierr);
   ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
-  ierr = MatDestroy(&ctx->qty_at_b); CHKERRQ(ierr);
-  ierr = MatDestroy(&ctx->ddr_at_b); CHKERRQ(ierr);
+  ierr = MatDestroy(&ctx->qty_at_b);CHKERRQ(ierr);
+  ierr = MatDestroy(&ctx->ddr_at_b);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_surface);CHKERRQ(ierr);
