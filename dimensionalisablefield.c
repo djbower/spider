@@ -29,7 +29,7 @@ PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField *pf, DM dm, P
     f->scaling[i] = scalings[i];
   }
 
-  f->isDimensionalised = isDimensionalised; // Not good design - requires the user to remember (or check) this when setting
+  f->isDimensionalised = isDimensionalised; // Not good design - requires the user to remember (or check) this when setting, and doesn't account for a (weird) case where some fields are dimensionalized and some are not, or this value isn't known. Perhaps better to replace with an enum giving several statuses.
 
   ierr = DMCreateGlobalVector(f->dm,&f->vecGlobal);CHKERRQ(ierr);
 

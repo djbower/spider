@@ -84,7 +84,9 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_surface);CHKERRQ(ierr);
-  ierr = DMDestroy(&ctx->dm_b_aug);CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->da_mo_co2);CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->da_mo_h2o);CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->dm_sol);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
