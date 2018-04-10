@@ -2,12 +2,12 @@
 #include "output.h"
 #include "rhs.h"
 
-PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years, PetscInt step, PetscReal time, Vec x_aug, void *ptr, MonitorCtx *mctx)
+PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years, PetscInt step, PetscReal time, Vec sol, void *ptr, MonitorCtx *mctx)
 {
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
   PetscBool      test_view = PETSC_FALSE;
-  Vec rhs_b_aug;
+  Vec rhs;
   /* it remains convenient to be able to plot both short and long times together
      on the same plot, and since these are output by different settings in main.c,
      it is easiest if the output files reference the actual time in years, rather
@@ -33,8 +33,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     long long int elapsedSeconds;
     int           days,hours,minutes,seconds;
 
-    ierr = VecMin(x_aug,NULL,&minval);CHKERRQ(ierr); /* Note that this includes the extra point now, so might not be as meaningful! */
-    ierr = VecMax(x_aug,NULL,&maxval);CHKERRQ(ierr);
+    ierr = VecMin(sol,NULL,&minval);CHKERRQ(ierr); /* Note that this includes the extra point now, so might not be as meaningful! */
+    ierr = VecMax(sol,NULL,&maxval);CHKERRQ(ierr);
     walltime = MPI_Wtime();
     elapsedSeconds = (long long int) (walltime - mctx->walltime0);
     seconds = elapsedSeconds % 60;
@@ -46,8 +46,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
   }
 
   /* Reevaluate the RHS */
-  ierr = VecDuplicate(x_aug,&rhs_b_aug);CHKERRQ(ierr);
-  ierr = RHSFunction(ts,time,x_aug,rhs_b_aug,ctx);CHKERRQ(ierr);
+  ierr = VecDuplicate(sol,&rhs);CHKERRQ(ierr);
+  ierr = RHSFunction(ts,time,sol,rhs,ctx);CHKERRQ(ierr);
 
   /* Dump the solution to a file named for the timestep */
   {
@@ -57,8 +57,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug",nstep);CHKERRQ(ierr);
     ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr); //Annoyingly, PETSc wants you to use binary output so badly that this is the easiest way to get full-precision ASCII..
-    ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
-    ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)sol,vecname);CHKERRQ(ierr);
+    ierr = VecView(sol,viewer);CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
 
@@ -133,7 +133,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
         ierr = VecSetType(data,VECSEQ);CHKERRQ(ierr);
         ierr = VecSetSizes(data,nData,nData);CHKERRQ(ierr);
-        ierr = atmosphere_structs_to_vec( x_aug, ctx, data ); CHKERRQ(ierr);
+        ierr = atmosphere_structs_to_vec( sol, ctx, data ); CHKERRQ(ierr);
         //ierr = PetscObjectSetName((PetscObject)data,vecname);CHKERRQ(ierr);
         ierr = VecView(data,viewer);CHKERRQ(ierr);
         ierr = VecDestroy(&data);CHKERRQ(ierr);
@@ -144,8 +144,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     {
       char vecname[PETSC_MAX_PATH_LEN];
       ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"dSdr_b_aug_%d",step);CHKERRQ(ierr);
-      ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
-      ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
+      ierr = PetscObjectSetName((PetscObject)sol,vecname);CHKERRQ(ierr);
+      ierr = VecView(sol,viewer);CHKERRQ(ierr);
     }
 
     // PDS TODO: replace all this with calls to write individual output files (dimensionalized) with DimensionalisableField
@@ -171,47 +171,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
     ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing dSdr_b_aug for testing ---\n",time);CHKERRQ(ierr);
-    ierr = VecView(x_aug,viewer);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing rhs_b_aug for testing ---\n",time);CHKERRQ(ierr);
-    ierr = VecView(rhs_b_aug,viewer);CHKERRQ(ierr);
+    ierr = VecView(sol,viewer);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing rhs for testing ---\n",time);CHKERRQ(ierr);
+    ierr = VecView(rhs,viewer);CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
 
-  ierr = VecDestroy(&rhs_b_aug);CHKERRQ(ierr);
-
-#if 0
-  /* Recompute the rhs to a file named for the timestep */
-  {
-    Vec rhs_b_aug;
-
-    ierr = VecDuplicate(x_aug,&rhs_b_aug);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)rhs_b_aug,"rhs_b_aug");CHKERRQ(ierr);
-    ierr = RHSFunction(ts,time,x_aug,rhs_b_aug,ctx);CHKERRQ(ierr);
-    {
-      PetscViewer viewer;
-      char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
-
-      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/rhs_b.%D.m",P->outputDirectory,step);CHKERRQ(ierr);
-      ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"rhs_step_%D",step);CHKERRQ(ierr);
-      ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
-      ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
-      ierr = PetscObjectSetName((PetscObject)x,vecname);CHKERRQ(ierr);
-      ierr = VecView(rhs_b,viewer);CHKERRQ(ierr);
-      ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
-    }
-
-    {
-      PetscViewer viewer;
-
-      ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
-      ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
-      ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing rhs_b_aug for testing ---\n",time);CHKERRQ(ierr);
-      ierr = VecView(rhs_b_aug,viewer);CHKERRQ(ierr);
-      ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
-    }
-  }
-#endif
+  ierr = VecDestroy(&rhs);CHKERRQ(ierr);
 
   /* At this point, we should have processed all command line options, so we
      check to see if any are stray (this usually would indicate a typo) */
@@ -244,5 +210,3 @@ PetscErrorCode TSMonitorWalltimed(TS ts,PetscInt steps,PetscReal time,Vec x,void
   }
   PetscFunctionReturn(0);
 }
-
-
