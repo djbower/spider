@@ -55,24 +55,31 @@ PetscErrorCode SetupCtx(Ctx* ctx)
      This is intended to catch errors when we change the number of fields we are
      simultaneously solving for. */
   {
-    PetscInt f = 0;
+    PetscInt i,f;
 
-    ierr = PetscMalloc1(4,&ctx->solutionFieldIDs);CHKERRQ(ierr);
+    /* Note the hard-coded "4" here: */
+    ierr = PetscMalloc2(4,&ctx->solutionFieldIDs,SPIDER_NUM_FIELD_IDS,&ctx->solutionSlots);CHKERRQ(ierr);
+    for (i=0; i<SPIDER_NUM_FIELD_IDS; ++i) ctx->solutionSlots[i] = -1;
+    f = 0;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_b);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_DSDR_B;
+    ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_surface);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_S0;
+    ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_mo_co2);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_CO2;
+    ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_mo_h2o);CHKERRQ(ierr);
-    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_H20;
+    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_H2O;
+    ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
     ++f;
   }
 
@@ -112,7 +119,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   for (i=0;i<NUMSOLUTIONVECS_S;++i){
     ierr = DimensionalisableFieldDestroy(&ctx->solution.solutionFields_s[i]);CHKERRQ(ierr);
   }
-  ierr = PetscFree(ctx->solutionFieldIDs);CHKERRQ(ierr);
+  ierr = PetscFree2(ctx->solutionFieldIDs,ctx->solutionSlots);CHKERRQ(ierr);
   ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
   ierr = MatDestroy(&ctx->qty_at_b);CHKERRQ(ierr);
   ierr = MatDestroy(&ctx->ddr_at_b);CHKERRQ(ierr);

@@ -50,9 +50,9 @@ typedef enum {
   SPIDER_SOLUTION_FIELD_DSDR_B,
   SPIDER_SOLUTION_FIELD_S0,
   SPIDER_SOLUTION_FIELD_MO_CO2,
-  SPIDER_SOLUTION_FIELD_MO_H20
+  SPIDER_SOLUTION_FIELD_MO_H2O
 } SpiderSolutionFieldID;
-static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr (basic nodes","S at surface","Magma Ocean CO2 content","Magma Ocean H2O content"}; /* Order must match the enum! */
+static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr (basic nodes)","S at surface","Magma Ocean CO2 content","Magma Ocean H2O content"}; /* Order must match the enum! */
 
 /* A Context for the Solver */
 typedef struct Ctx_ {
@@ -61,7 +61,8 @@ typedef struct Ctx_ {
   DM                    da_b,da_s,da_surface,da_mo_co2,da_mo_h2o; /* DMs for different subdomains */
   DM                    dm_sol; /* A composite DM for all fields used in the timestepper */
   PetscInt              numFields; /* Number of sub-DMs in dm_sol */
-  SpiderSolutionFieldID *solutionFieldIDs;
+  SpiderSolutionFieldID *solutionFieldIDs; /* Which fields are in which slot */
+  PetscInt              *solutionSlots;    /* The inverse map */
   Atmosphere            atmosphere;
   Mat                   qty_at_b, ddr_at_b;
   Parameters            parameters;
