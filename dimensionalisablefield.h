@@ -16,10 +16,8 @@ PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField*,DM,PetscScal
 PetscErrorCode DimensionalisableFieldCreateLocalVec(DimensionalisableField,Vec*);
 PetscErrorCode DimensionalisableFieldDestroy(DimensionalisableField*);
 PetscErrorCode DimensionalisableFieldGetGlobalVec(DimensionalisableField,Vec*);
-PetscErrorCode DimensionalisableFieldGetScaling(DimensionalisableField,PetscInt*, PetscScalar*);
+PetscErrorCode DimensionalisableFieldGetScaling(DimensionalisableField,PetscInt*,PetscScalar*);
 PetscErrorCode DimensionalisableFieldScale(DimensionalisableField);
 PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField);
-PetscErrorCode DimensionalisableFieldReadFromFile(DimensionalisableField,PetscBool);
-PetscErrorCode DimensionalisableFieldWriteToFile(DimensionalisableField,PetscBool);
 
 #endif
