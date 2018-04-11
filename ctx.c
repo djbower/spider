@@ -140,7 +140,7 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     PetscScalar scaling = 1.0 / C->TEMP;
     ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[0],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[0],&ctx->solution.alpha); // Just for convenience - can always get this vecotr out when you need it
-    ctx->solution.solutionFields_b[0]->name="alpha_b"; // TODO: proper setter for this
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[0],"alpha_b");CHKERRQ(ierr);
   }
   { // alpha_mix
     PetscScalar scaling = 1.0 / C->TEMP;

@@ -22,5 +22,6 @@ PetscErrorCode DimensionalisableFieldGetScaling(DimensionalisableField,PetscInt*
 PetscErrorCode DimensionalisableFieldScale(DimensionalisableField);
 PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField);
 PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const,cJSON**);
+PetscErrorCode DimensionalisableFieldSetName(DimensionalisableField,const char*);
 
 #endif

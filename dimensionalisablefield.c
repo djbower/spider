@@ -198,3 +198,10 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
   cJSON_AddItemToObject(json,"values",values);
   PetscFunctionReturn(0);
 }
+
+PetscErrorCode DimensionalisableFieldSetName(DimensionalisableField f,const char *name)
+{
+  PetscFunctionBeginUser;
+  f->name = name;
+  PetscFunctionReturn(0);
+}
