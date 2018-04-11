@@ -32,6 +32,8 @@ PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField *pf, DM dm, P
 
   ierr = DMCreateGlobalVector(f->dm,&f->vecGlobal);CHKERRQ(ierr);
 
+  (*pf)->name = "Unnamed DimensionalisableField";
+
   PetscFunctionReturn(0);
 }
 
@@ -134,5 +136,29 @@ PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField f)
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
   ierr = DimensionalisableFieldScaleOrUnscale(f,PETSC_FALSE);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField f,cJSON **pjson)
+{
+  PetscErrorCode ierr;
+  DMType         dmType;
+  PetscBool      isComposite;
+  PetscInt       vecSize;
+  cJSON          *str,*json,*number;
+
+  PetscFunctionBeginUser;
+
+  ierr = DMGetType(f->dm,&dmType);CHKERRQ(ierr);
+  ierr = PetscStrcmp(dmType,DMCOMPOSITE,&isComposite);CHKERRQ(ierr);
+  if (isComposite) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented for composite vectors yet");
+
+  *pjson = cJSON_CreateObject();
+  json = *pjson;
+  str = cJSON_CreateString(f->name);
+  cJSON_AddItemToObject(json,"Name",str);
+  ierr = VecGetSize(f->vecGlobal,&vecSize);CHKERRQ(ierr);
+  number = cJSON_CreateNumber(vecSize);
+  cJSON_AddItemToObject(json,"size",number);
   PetscFunctionReturn(0);
 }

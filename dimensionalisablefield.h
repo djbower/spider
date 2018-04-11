@@ -2,6 +2,7 @@
 #define SCALABLEFIELD_H_
 
 #include <petscdm.h>
+#include "cJSON.h"
 
 struct _p_DimensionalisableField {
   DM          dm;
@@ -9,6 +10,7 @@ struct _p_DimensionalisableField {
   PetscInt    numDomains;
   PetscScalar *scaling;
   PetscBool   scaled;
+  char        *name;
 };
 typedef struct _p_DimensionalisableField *DimensionalisableField;
 
@@ -19,5 +21,6 @@ PetscErrorCode DimensionalisableFieldGetGlobalVec(DimensionalisableField,Vec*);
 PetscErrorCode DimensionalisableFieldGetScaling(DimensionalisableField,PetscInt*,PetscScalar*);
 PetscErrorCode DimensionalisableFieldScale(DimensionalisableField);
 PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField);
+PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField,cJSON**);
 
 #endif
