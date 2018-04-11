@@ -52,7 +52,6 @@ int main(int argc, char ** argv)
   {
     PetscInt f;
     DM       *sub_dms;
-    // PDS TODO get sizes (assuming DMDA) and dump those as well!
     ierr = PetscPrintf(PETSC_COMM_WORLD,"\n*** Timestepper will solve for coupled fields:\n");CHKERRQ(ierr);
     ierr = PetscMalloc1(ctx.numFields,&sub_dms);CHKERRQ(ierr);
     ierr = DMCompositeGetEntriesArray(ctx.dm_sol,sub_dms);CHKERRQ(ierr);
