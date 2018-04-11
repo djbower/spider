@@ -56,16 +56,17 @@ static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Erro
 
 /* A Context for the Solver */
 typedef struct Ctx_ {
-  Mesh                  mesh;
-  Solution              solution;
-  DM                    da_b,da_s,da_point; /* DMs for different subdomains */
-  DM                    dm_sol; /* A composite DM for all fields used in the timestepper */
-  PetscInt              numFields; /* Number of sub-DMs in dm_sol */
-  SpiderSolutionFieldID *solutionFieldIDs; /* Which fields are in which slot */
-  PetscInt              *solutionSlots;    /* The inverse map */
-  Atmosphere            atmosphere;
-  Mat                   qty_at_b, ddr_at_b;
-  Parameters            parameters;
+  Mesh                   mesh;
+  Solution               solution;
+  DM                     da_b,da_s,da_point; /* DMs for different subdomains */
+  DM                     dm_sol; /* A composite DM for all fields used in the timestepper */
+  PetscInt               numFields; /* Number of sub-DMs in dm_sol */
+  SpiderSolutionFieldID  *solutionFieldIDs; /* Which fields are in which slot */
+  PetscInt               *solutionSlots;    /* The inverse map */
+  Atmosphere             atmosphere;
+  Mat                    qty_at_b, ddr_at_b;
+  Parameters             parameters;
+  DimensionalisableField solDF; /* The solution and attached scalings */
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

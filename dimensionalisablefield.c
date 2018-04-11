@@ -1,5 +1,6 @@
 #include <petscdmcomposite.h>
 #include "dimensionalisablefield.h"
+#include "ctx.h"
 
 PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField *pf, DM dm, PetscScalar *scalings, PetscBool isScaled)
 {
@@ -142,18 +143,13 @@ PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField f)
 PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON **pjson)
 {
   PetscErrorCode    ierr;
-  DMType            dmType;
-  PetscBool         isComposite;
   Vec               vec;
-  PetscInt          vecSize,i;
-  cJSON             *str,*json,*number,*values;
+  PetscInt          vecSize,i,d;
+  cJSON             *str,*json,*number,*values,*valuesArray;
   const PetscScalar *arr;
+  Vec               *subVecs;
 
   PetscFunctionBeginUser;
-
-  ierr = DMGetType(f->dm,&dmType);CHKERRQ(ierr);
-  ierr = PetscStrcmp(dmType,DMCOMPOSITE,&isComposite);CHKERRQ(ierr);
-  if (isComposite) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented for composite vectors yet");
 
   ierr = DimensionalisableFieldGetGlobalVec(f,&vec);CHKERRQ(ierr);
 
@@ -161,40 +157,72 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
   json = *pjson;
   str = cJSON_CreateString(f->name);
   cJSON_AddItemToObject(json,"Name",str);
-  ierr = VecGetSize(vec,&vecSize);CHKERRQ(ierr);
-  number = cJSON_CreateNumber(vecSize);
-  cJSON_AddItemToObject(json,"size",number);
-  number = cJSON_CreateNumber(*f->scaling);
-  cJSON_AddItemToObject(json,"scaling",number); // TODO array of scaling
-  str = f->scaled? cJSON_CreateString("true") : cJSON_CreateString("false");
-  cJSON_AddItemToObject(json,"scaled",str);
-
-  /* Store vector values as STRINGS to ensure precision we want */
-  /* Current implementation assumes single rank */
-  {
-    PetscMPIInt size;
-    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);
-    if (size != 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented in parallel");
+  number = cJSON_CreateNumber(f->numDomains);
+  cJSON_AddItemToObject(json,"subdomains",number);
+  if (f->numDomains > 1) {
+    valuesArray = cJSON_CreateArray();
+    ierr = PetscMalloc1(f->numDomains,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(f->dm,vec,f->numDomains,NULL,subVecs);CHKERRQ(ierr);
+  } else {
+    valuesArray = NULL;
   }
-  ierr = VecGetArrayRead(vec,&arr);CHKERRQ(ierr);
-  values = cJSON_CreateArray();
-  {
-    for (i=0; i<vecSize; ++i) {
-      cJSON *entry;
-      char str[64]; /* note hard-coded size */
-#if defined(PETSC_USE_REAL___FLOAT128)
-      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented for quad yet");CHKERRQ(ierr);
-#else
-      ierr = PetscSNPrintf(str,64,"%16.16g",arr[i]);CHKERRQ(ierr); /* hard-coded value */
-#endif
-      entry = cJSON_CreateString(str);
-      cJSON_AddItemToArray(values,entry);
+  for (d=0; d<f->numDomains; ++d){
+    cJSON *curr;
+    Vec   vecCurr;
+    if (f->numDomains > 1) {
+      cJSON *number;
+      curr = cJSON_CreateObject();
+      vecCurr = subVecs[d];
+      number = cJSON_CreateNumber(d);
+      cJSON_AddItemToObject(curr,"slot",number);
+    } else {
+      curr = json;
+      vecCurr = vec;
     }
+    ierr = VecGetSize(vecCurr,&vecSize);CHKERRQ(ierr);
+    number = cJSON_CreateNumber(vecSize);
+    cJSON_AddItemToObject(curr,"size",number);
 
+    number = cJSON_CreateNumber(f->scaling[d]);
+    cJSON_AddItemToObject(curr,"scaling",number);
+    str = f->scaled? cJSON_CreateString("true") : cJSON_CreateString("false");
+    cJSON_AddItemToObject(curr,"scaled",str);
+
+    /* Store vector values as STRINGS to ensure precision we want */
+    /* Current implementation assumes single rank */
+    {
+      PetscMPIInt size;
+      ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);
+      if (size != 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented in parallel");
+    }
+    ierr = VecGetArrayRead(vecCurr,&arr);CHKERRQ(ierr);
+    values = cJSON_CreateArray();
+    {
+      for (i=0; i<vecSize; ++i) {
+        cJSON *entry;
+        char str[64]; /* note hard-coded size */
+#if defined(PETSC_USE_REAL___FLOAT128)
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented for quad yet");CHKERRQ(ierr);
+#else
+        ierr = PetscSNPrintf(str,64,"%16.16g",arr[i]);CHKERRQ(ierr); /* hard-coded value */
+#endif
+        entry = cJSON_CreateString(str);
+        cJSON_AddItemToArray(values,entry);
+      }
+
+    }
+    ierr = VecRestoreArrayRead(vecCurr,&arr);CHKERRQ(ierr);
+
+    cJSON_AddItemToObject(curr,"values",values);
+    if (f->numDomains > 1) {
+      cJSON_AddItemToArray(valuesArray,curr);
+    }
   }
-  ierr = VecRestoreArrayRead(vec,&arr);CHKERRQ(ierr);
-
-  cJSON_AddItemToObject(json,"values",values);
+  if (f->numDomains > 1 ) {
+    cJSON_AddItemToObject(json,"values array",valuesArray);
+    ierr = DMCompositeRestoreAccessArray(f->dm,vec,f->numDomains,NULL,subVecs);CHKERRQ(ierr);
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
+  }
   PetscFunctionReturn(0);
 }
 

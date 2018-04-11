@@ -47,7 +47,7 @@ int main(int argc, char ** argv)
   ierr = PrintFields(&ctx);CHKERRQ(ierr);
 
   /* Create Vector for solution provided to timestepper */
-  ierr = DMCreateGlobalVector(ctx.dm_sol,&sol);CHKERRQ(ierr);
+  ierr = DimensionalisableFieldGetGlobalVec(ctx.solDF,&sol);CHKERRQ(ierr);
 
   /* see ic.c : must call after setup_ctx */
   ierr = set_initial_condition( &ctx, sol ); CHKERRQ(ierr);

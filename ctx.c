@@ -44,6 +44,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
      */
   ierr = DMCompositeCreate(PETSC_COMM_WORLD,&ctx->dm_sol);CHKERRQ(ierr);
 
+
   /* Define some more-descriptive names for the solution fields, for output */
 
   /* Note: the order in which DMCompositeAddDM() is called matters!
@@ -53,36 +54,51 @@ PetscErrorCode SetupCtx(Ctx* ctx)
      This is intended to catch errors when we change the number of fields we are
      simultaneously solving for. */
   {
+    Constants const *C = &ctx->parameters.constants;
     PetscInt i,f;
+    PetscScalar *sol_scalings;
 
     /* We (over)allocate assuming a maximum of SPIDER_NUM_FIELD_IDS fields, that is that
        you will never have more than one copy of the same field. */
     ierr = PetscMalloc2(SPIDER_NUM_FIELD_IDS,&ctx->solutionFieldIDs,SPIDER_NUM_FIELD_IDS,&ctx->solutionSlots);CHKERRQ(ierr);
+    ierr = PetscMalloc1(SPIDER_NUM_FIELD_IDS,&sol_scalings);CHKERRQ(ierr);
     for (i=0; i<SPIDER_NUM_FIELD_IDS; ++i) ctx->solutionSlots[i] = -1;
     f = 0;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_b);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_DSDR_B;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
+    sol_scalings[f] = C->DSDR;
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_point);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_S0;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
+    sol_scalings[f] = C->ENTROPY; // TODO DJB check
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_point);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_CO2;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
+    sol_scalings[f] = 1.0; // TODO DJB check
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_point);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_H2O;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
+    sol_scalings[f] = 1.0; // TODO DJB check
     ++f;
+
+    /* Create a DimensionalisableField, referring to this DMComposite,
+       for keeping track of the "solution" as seen by the solver. We will
+       extra the vector from this to use as our solution vector */
+    ierr = DimensionalisableFieldCreate(&ctx->solDF,ctx->dm_sol,sol_scalings,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetName(ctx->solDF,"SPIDER solution");CHKERRQ(ierr);
+    ierr = PetscFree(sol_scalings);CHKERRQ(ierr);
   }
 
   ierr = DMCompositeGetNumberDM(ctx->dm_sol,&ctx->numFields);CHKERRQ(ierr); /* For convenience */
+
 
   /* Continue to initialize context with distributed data */
   ierr = CtxCreateFields(ctx);
@@ -106,6 +122,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   PetscFunctionBeginUser;
 
   /* Destroy data allocated in Ctx */
+  ierr = DimensionalisableFieldDestroy(&ctx->solDF);CHKERRQ(ierr);
   for (i=0;i<NUMMESHVECS_B;++i){
     ierr = DimensionalisableFieldDestroy(&ctx->mesh.meshFields_b[i]);CHKERRQ(ierr);
   }

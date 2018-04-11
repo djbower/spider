@@ -229,6 +229,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       // TODO : add other stuff we might like in the header
 
       // TODO: add solution and Rhs (composite)
+      /* Add solution to file */
+      {
+        cJSON *solJSON;
+        ierr = DimensionalisableFieldToJSON(ctx->solDF,&solJSON);CHKERRQ(ierr);
+        cJSON_AddItemToObject(json,"solution",solJSON);
+      }
+
 
       /* Add data of interest */
       // Note: this is duplicative, but it's too painful to flatten out the Ctx
