@@ -95,7 +95,7 @@ static PetscErrorCode DimensionalisableFieldScaleOrUnscale(DimensionalisableFiel
 
   PetscFunctionBeginUser;
   if (f->scaled == forward) {
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: attempting to scale an already-scaled field. Doing nothing.\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: attempting to scale/unscale an already-scaled/unscaled field. Doing nothing.\n");CHKERRQ(ierr);
   } else {
     f->scaled = forward;
     if (f->numDomains == 1) {
