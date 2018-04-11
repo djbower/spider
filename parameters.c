@@ -47,7 +47,7 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     C->LHS       = C->MASS * C->TEMP; // kg.K
     /* TODO: add scaling for internal heat generation since this might
        be required in the internal heat generation functions */
-    /* the augmented rhs vector contains various quantities
+    /* the full rhs vector contains various quantities
        with different units, so we cannot scale simply by multiplying
        by a constant value */
     C->RHS       = 1.0; // no scaling, as per comment above

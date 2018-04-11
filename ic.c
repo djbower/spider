@@ -1,15 +1,16 @@
 #include "ic.h"
 #include "bc.h"
-#include "aug.h"
 #include "util.h"
 
 static PetscErrorCode set_ic_default( Ctx *, Vec );
 static PetscErrorCode set_ic_constant_dSdr( Ctx *, Vec );
 static PetscErrorCode set_ic_extra( Ctx *, Vec );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec );
+#if 0
 static PetscErrorCode set_ic_from_impact( Ctx *, Vec );
+#endif
 
-PetscErrorCode set_initial_condition( Ctx *E, Vec dSdr_b_aug)
+PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
     Parameters const *P = &E->parameters;
@@ -19,91 +20,90 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec dSdr_b_aug)
 
     /* TODO: these functions do not typically (consistently)
        update entries in the vectors stored in Solution, they
-       simply write the data to the augmented vector (dSdr_b_aug) */
+       simply write the data to the solution vector (sol) */
 
     if( IC==1 ){
-        ierr = set_ic_default( E, dSdr_b_aug ); CHKERRQ(ierr);
+        ierr = set_ic_default( E, sol ); CHKERRQ(ierr);
     }
     else if( IC==2 ){
-        ierr = set_ic_from_file( E, dSdr_b_aug ); CHKERRQ(ierr);
+        ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
     }
+
+#if 0
     else if( IC==3 ){
-        ierr = set_ic_from_impact( E, dSdr_b_aug ); CHKERRQ(ierr);
+        ierr = set_ic_from_impact( E, sol ); CHKERRQ(ierr);
     }
+#endif
 
     PetscFunctionReturn(0);
-
 }
 
-static PetscErrorCode set_ic_default( Ctx *E, Vec dSdr_b_aug )
+static PetscErrorCode set_ic_default( Ctx *E, Vec sol )
 {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
 
-    ierr = set_ic_constant_dSdr( E, dSdr_b_aug ); CHKERRQ(ierr);
-    ierr = set_ic_extra( E, dSdr_b_aug ); CHKERRQ(ierr);
+    ierr = set_ic_constant_dSdr( E, sol ); CHKERRQ(ierr);
+    ierr = set_ic_extra( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_ic_constant_dSdr( Ctx *E, Vec dSdr_b_aug )
+static PetscErrorCode set_ic_constant_dSdr( Ctx *E, Vec sol )
 {
     /* set initial entropy gradient to constant for all nodes */
 
     PetscErrorCode   ierr;
     Parameters const *P = &E->parameters;
-    Vec dSdr_b;
+    Vec              dSdr_b;
+    Vec              *subVecs;
 
     PetscFunctionBeginUser;
 #if (defined VERBOSE)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_constant_dSdr:\n");CHKERRQ(ierr);
 #endif
 
-    ierr = DMCreateGlobalVector( E->da_b, &dSdr_b );CHKERRQ(ierr);
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    dSdr_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]];
 
-    ierr = VecSet( dSdr_b, P->ic_dsdr ); CHKERRQ( ierr );
+    ierr = VecSet(dSdr_b, P->ic_dsdr ); CHKERRQ( ierr );
 
     /* these next two lines are simply convenient reminders that the
        first and last values are meaningless because the fluxes here
        are controlled by boundary conditions.  But for debugging and
        clarity it is convenient to explicitly set these values to
        zero */
-    ierr = VecSetValue( dSdr_b, 0, 0.0, INSERT_VALUES); CHKERRQ(ierr);
-    ierr = VecSetValue( dSdr_b, P->numpts_b-1, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+    ierr = VecSetValue( dSdr_b, 0,             0.0, INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue( dSdr_b, P->numpts_b-1, 0.0, INSERT_VALUES);CHKERRQ(ierr);
 
-    VecAssemblyBegin( dSdr_b );
-    VecAssemblyEnd( dSdr_b );
+    ierr = VecAssemblyBegin( dSdr_b );CHKERRQ(ierr);
+    ierr = VecAssemblyEnd( dSdr_b );CHKERRQ(ierr);
 
-    ierr = ToAug( dSdr_b, dSdr_b_aug ); CHKERRQ(ierr);
-
-    ierr = VecDestroy( &dSdr_b ); CHKERRQ(ierr);
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
 
-static PetscErrorCode set_ic_extra( Ctx *E, Vec dSdr_b_aug )
+static PetscErrorCode set_ic_extra( Ctx *E, Vec sol )
 {
     /* set initial condition for the extra points */
 
-    PetscErrorCode ierr;
+    PetscErrorCode             ierr;
+    PetscInt                   i;
+    Vec                        *subVecs;
     Parameters           const *P  = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    VolatileParameters const *CO2 = &Ap->CO2_volatile_parameters;
-    VolatileParameters const *H2O = &Ap->H2O_volatile_parameters;
+    VolatileParameters const   *CO2 = &Ap->CO2_volatile_parameters;
+    VolatileParameters const   *H2O = &Ap->H2O_volatile_parameters;
 
     PetscScalar x0, x1;
 
     PetscFunctionBeginUser;
-
-    /* augmented vector organised as follows:
-         0.     CO2 (dissolved content of CO2 in magma ocean)
-         1.     H2O (dissolved content of H2O in magma ocean)
-         2.     S0 (entropy at uppermost staggered node)
-         3-end  dS/dr at basic nodes (see set_ic_dSdr)
-    */
 
     /* initial volatile content */
     x0 = 0.0;
@@ -125,34 +125,47 @@ static PetscErrorCode set_ic_extra( Ctx *E, Vec dSdr_b_aug )
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Initial volatile content cannot be negative: %d",x0);
     }
 
-    ierr = VecSetValue(dSdr_b_aug,0,x0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(dSdr_b_aug,1,x1,INSERT_VALUES);CHKERRQ(ierr);
-   
-    /* include initial entropy at staggered node */
-    ierr = VecSetValue(dSdr_b_aug,2,P->sinit,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
-    VecAssemblyBegin( dSdr_b_aug );
-    VecAssemblyEnd( dSdr_b_aug );
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,x0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,x1,INSERT_VALUES);CHKERRQ(ierr);
+
+    /* include initial entropy at staggered node */
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,P->sinit,INSERT_VALUES);CHKERRQ(ierr);
+
+    for (i=0; i<E->numFields; ++i) {
+      ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
+      ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
+    }
+
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_ic_from_file( Ctx *E, Vec dSdr_b_aug )
+static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 {
 
-    /* reads in the output from dSdr_b_aug_[timestep].m to use as the
-       initial condition to enable restarting */
+    /* reads in the output from sol_[timestep].m to use as the
+       initial condition to enable restarting
 
-    PetscErrorCode ierr;
+       Warning: this assumes a particular ordering of the fields in the solution
+       vector, so can only assumed to be valid when the file is generated
+       by this exact version of SPIDER.
+       */
+
+    PetscErrorCode   ierr;
     Parameters const *P  = &E->parameters;
-    FILE *fp;
-    const PetscInt head=3;
-    PetscInt i=0, j=0;
-    char string[PETSC_MAX_PATH_LEN];
+    FILE             *fp;
+    PetscInt         i=0, j=0;
+    char             string[PETSC_MAX_PATH_LEN];
 #if (defined PETSC_USE_REAL___FLOAT128)
-    char xtemp[30]
+    char             xtemp[30];
 #endif
-    PetscScalar x;
+    PetscScalar      x;
+    const PetscInt   head=3;
 
     PetscFunctionBeginUser;
     fp = fopen( P->ic_filename, "r" );
@@ -162,27 +175,28 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec dSdr_b_aug )
     }
 
     while(fgets(string, sizeof(string), fp) != NULL) {
-        if( (i>=head) && (i<=P->numpts_b+head+2) ){ /* 3 header lines in dSdr_b_aug_[timestep].m */
+        if( (i>=head) && (i<=P->numpts_b+head+2) ){ /* 3 header lines in sol_[timestep].m */
 #if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( string, "%s", xtemp );
             x = strtoflt128(xtemp, NULL);
 #else
             sscanf(string, "%lf", &x );
-#endif            
+#endif
             j = i-3;
-            ierr = VecSetValue(dSdr_b_aug,j,x,INSERT_VALUES); CHKERRQ(ierr);
+            ierr = VecSetValue(sol,j,x,INSERT_VALUES); CHKERRQ(ierr);
         }
         ++i;
     }
 
-    VecAssemblyBegin( dSdr_b_aug );
-    VecAssemblyEnd( dSdr_b_aug );
+    VecAssemblyBegin( sol );
+    VecAssemblyEnd( sol );
 
     PetscFunctionReturn(0);
-
 }
 
-static PetscErrorCode set_ic_from_impact( Ctx *E, Vec dSdr_b_aug )
+// PDS: not sure if this is current, so commenting out
+#if 0
+static PetscErrorCode set_ic_from_impact( Ctx *E, Vec sol )
 {
    PetscErrorCode ierr;
    Solution *S = &E->solution;
@@ -191,17 +205,17 @@ static PetscErrorCode set_ic_from_impact( Ctx *E, Vec dSdr_b_aug )
 
    PetscFunctionBeginUser;
 
-   ierr = set_ic_from_file( E, dSdr_b_aug ); CHKERRQ(ierr);
+   ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
    /* for simplicity, offset the tie point by some fixed fraction of
       entropy */
-   //ierr = VecSetValue( dSdr_b_aug,2,0.2,ADD_VALUES ); CHKERRQ(ierr);
+   //ierr = VecSetValue( sol,2,0.2,ADD_VALUES ); CHKERRQ(ierr);
 
    ind = 2;
-   ierr = VecGetValues( dSdr_b_aug,1,&ind,&S0); CHKERRQ(ierr);
+   ierr = VecGetValues( sol,1,&ind,&S0); CHKERRQ(ierr);
 
    /* need to transfer to S->dSdr otherwise set_entropy returns
       constant profile (since dSdr=0 everywhere initially) */
-   ierr = FromAug( dSdr_b_aug,S->dSdr); CHKERRQ(ierr);
+   ierr = FromAug( sol,S->dSdr); CHKERRQ(ierr);
 
    /* integrate to give S_s and S_b */
    ierr = set_entropy( E, S0 );
@@ -214,3 +228,4 @@ static PetscErrorCode set_ic_from_impact( Ctx *E, Vec dSdr_b_aug )
 
    PetscFunctionReturn(0);
 }
+#endif

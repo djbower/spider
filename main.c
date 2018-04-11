@@ -14,16 +14,14 @@ See example input files in examples/ for many more available options\n\
 #include "ic.h"
 #include "monitor.h"
 #include "rhs.h"
-#include "aug.h"
 #include "version.h"
 
 int main(int argc, char ** argv)
 {
   PetscErrorCode   ierr;
-  TS               ts;                        /* ODE solver object */
-  Vec              dummy_b;
-  Vec              dSdr_b_aug;                /* Solution Vector (basic points, plus extra points) */
-  Ctx              ctx;                       /* Solver context */
+  TS               ts;                 /* ODE solver object */
+  Vec              sol;                /* Solution Vector (packed vector from several DMs) */
+  Ctx              ctx;                /* Solver context */
   Parameters const *P=&ctx.parameters;
 
   PetscMPIInt     size;
@@ -50,22 +48,37 @@ int main(int argc, char ** argv)
      Note that this checks all command-line options. */
   ierr = SetupCtx(&ctx);CHKERRQ(ierr);
 
+  /* Print out the quantities we're solving for */
+  {
+    PetscInt f;
+    DM       *sub_dms;
+    // PDS TODO get sizes (assuming DMDA) and dump those as well!
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"\n*** Timestepper will solve for coupled fields:\n");CHKERRQ(ierr);
+    ierr = PetscMalloc1(ctx.numFields,&sub_dms);CHKERRQ(ierr);
+    ierr = DMCompositeGetEntriesArray(ctx.dm_sol,sub_dms);CHKERRQ(ierr);
+    for (f=0; f<ctx.numFields; ++f) {
+      Vec vecTemp;
+      PetscInt nEntries;
+      const char * entriesString;
+      ierr = DMGetGlobalVector(sub_dms[f],&vecTemp);CHKERRQ(ierr);
+      ierr = VecGetSize(vecTemp,&nEntries);CHKERRQ(ierr);
+      entriesString = nEntries > 1 ? "entries" : "entry";
+     ierr = PetscPrintf(PETSC_COMM_WORLD,"  %D: %s (%D %s)\n",f,SpiderSolutionFieldDescriptions[ctx.solutionFieldIDs[f]],nEntries,entriesString);CHKERRQ(ierr);
+      ierr = DMRestoreGlobalVector(sub_dms[f],&vecTemp);CHKERRQ(ierr);
+    }
+    ierr = PetscFree(sub_dms);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"\n");CHKERRQ(ierr);
+  }
+
   ///////////////////////
   /* initial condition */
   ///////////////////////
 
   /* must call after setup_ctx */
-  /* this is effectively a dummy vector with length of the number of basic nodes */
-  ierr = DMCreateGlobalVector( ctx.da_b, &dummy_b );CHKERRQ(ierr);
-
-  /* can now use dummy_b to create an augmented (solution) vector that contains extra
-     points related to other necessary quantities (entropy at the uppermost node,
-     volatile concentrations etc.)  The number of extra quantities are defined
-     by AUG_NUM in aug.c */
-  ierr = CreateAug(dummy_b, &dSdr_b_aug); CHKERRQ(ierr);
+  ierr = DMCreateGlobalVector(ctx.dm_sol,&sol);CHKERRQ(ierr);
 
   /* see ic.c */
-  ierr = set_initial_condition( &ctx, dSdr_b_aug ); CHKERRQ(ierr);
+  ierr = set_initial_condition( &ctx, sol ); CHKERRQ(ierr);
 
   ///////////////////////////
   /* end initial condition */
@@ -74,7 +87,7 @@ int main(int argc, char ** argv)
   /* Set up timestepper */
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
-  ierr = TSSetSolution(ts,dSdr_b_aug);CHKERRQ(ierr);
+  ierr = TSSetSolution(ts,sol);CHKERRQ(ierr);
 
   /* always use SUNDIALS CVODE (BDF) */
   /* must use direct solver, so requires Patrick's hacks */
@@ -124,16 +137,16 @@ int main(int argc, char ** argv)
     nexttime = P->dtmacro; // non-dim time
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     if (P->monitor) {
-      ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,dSdr_b_aug,&ctx,&mctx);CHKERRQ(ierr);
+      ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
     }
     for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
-      ierr = TSSolve(ts,dSdr_b_aug);CHKERRQ(ierr);
+      ierr = TSSolve(ts,sol);CHKERRQ(ierr);
       if (stepmacro == 1) {
         ierr = TSView(ts,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
       }
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (P->monitor) {
-        ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,dSdr_b_aug,&ctx,&mctx);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
       }
       nexttime = (stepmacro + 1) * P->dtmacro; // non-dim
       ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
@@ -144,8 +157,7 @@ int main(int argc, char ** argv)
   ierr = DestroyCtx(&ctx);CHKERRQ(ierr);
 
   /* Destroy solution vector */
-  ierr = VecDestroy(&dummy_b);CHKERRQ(ierr);
-  ierr = VecDestroy(&dSdr_b_aug);CHKERRQ(ierr);
+  ierr = VecDestroy(&sol);CHKERRQ(ierr);
 
   /* Cleanup and finalize */
   ierr = TSDestroy(&ts);CHKERRQ(ierr);

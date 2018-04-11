@@ -13,36 +13,11 @@ static PetscErrorCode aw_mass( Mesh * );
 PetscErrorCode set_mesh( Ctx *E)
 {
 
-    PetscErrorCode ierr;
-    PetscInt       i;
     Mesh           *M = &E->mesh;
     DM             da_b=E->da_b, da_s=E->da_s;
     Parameters     *P = &E->parameters;
 
     PetscFunctionBeginUser;
-
-    /* Create vectors required for the mesh */
-    for (i=0;i<NUMMESHVECS_B;++i) {
-      ierr = DMCreateGlobalVector(E->da_b,&M->meshVecs_b[i]);CHKERRQ(ierr);
-    }
-    // TODO: We should be creating ALL the vecs at the same time - do that as we roll all this into one function (create these vecs outside this function)
-
-    M->area_b     = M->meshVecs_b[0];
-    M->dPdr_b     = M->meshVecs_b[1];
-    M->pressure_b = M->meshVecs_b[2];
-    M->radius_b   = M->meshVecs_b[3];
-    M->mix_b      = M->meshVecs_b[4];
-
-    for (i=0;i<NUMMESHVECS_S;++i) {
-      ierr = DMCreateGlobalVector(E->da_s,&M->meshVecs_s[i]);CHKERRQ(ierr);
-    }
-    M->pressure_s = M->meshVecs_s[0];
-    M->radius_s   = M->meshVecs_s[1];
-    M->volume_s   = M->meshVecs_s[2];
-    M->dPdr_s     = M->meshVecs_s[3];
-    M->area_s     = M->meshVecs_s[4];
-    M->rho_s      = M->meshVecs_s[5];
-    M->mass_s     = M->meshVecs_s[6];
 
     /* for regular mesh, although without resolving the ultra-thin
        thermal boundary layer at the base of the mantle this likely

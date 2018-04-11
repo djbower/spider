@@ -2,135 +2,26 @@
 
 static PetscErrorCode add_vector_to_viewer( Vec, PetscViewer );
 
-PetscErrorCode SetScalingsForOutput(Ctx *E)
+// TODO PDS : this will be taken care of by ScalableField eventually
+PetscErrorCode scale_vectors_and_output( DimensionalisableField *f, PetscInt NUM, PetscViewer viewer)
 {
-    /* scalings for all output quantities */
-
-    PetscFunctionBeginUser;
-
-    Constants const *C = &E->parameters.constants;
-
-    PetscScalar *meshScalings_b = E->mesh.meshScalings_b;
-    PetscScalar *meshScalings_s = E->mesh.meshScalings_s;
-    PetscScalar *solutionScalings_b = E->solution.solutionScalings_b;
-    PetscScalar *solutionScalings_s = E->solution.solutionScalings_s;
-
-    /* must ensure these entries correspond positionally to the order
-       of the vectors as given in set_mesh */
-
-    /* basic vecs */
-    meshScalings_b[0] = C->AREA * 4.0 * PETSC_PI;
-    meshScalings_b[1] = C->DPDR;
-    meshScalings_b[2] = C->PRESSURE;
-    meshScalings_b[3] = C->RADIUS;
-    meshScalings_b[4] = C->RADIUS;
-
-    /* staggered vecs */
-    meshScalings_s[0] = C->PRESSURE;
-    meshScalings_s[1] = C->RADIUS;
-    meshScalings_s[2] = C->VOLUME * 4.0 * PETSC_PI;
-    meshScalings_s[3] = C->DPDR;
-    meshScalings_s[4] = C->AREA * 4.0 * PETSC_PI;
-    meshScalings_s[5] = C->DENSITY;
-    meshScalings_s[6] = C->MASS * 4.0 * PETSC_PI;
-
-    /* must ensure these entries correspond positionally to the order
-       of the vectors as given in SetupCtx in ctx.c */
-
-    /* basic vecs */
-    solutionScalings_b[0] = 1.0 / C->TEMP;
-    solutionScalings_b[1] = 1.0 / C->TEMP;
-    solutionScalings_b[2] = C->COND;
-    solutionScalings_b[3] = C->ENTROPY;
-    solutionScalings_b[4] = C->ENTROPY;
-    solutionScalings_b[5] = C->DSDR;
-    solutionScalings_b[6] = C->DTDR;
-    solutionScalings_b[7] = C->DSDR;
-    solutionScalings_b[8] = C->DSDR;
-    solutionScalings_b[9] = C->DSDR;
-    solutionScalings_b[10] = C->DTDR;
-    solutionScalings_b[11] = C->DTDR;
-    solutionScalings_b[12] = C->POWER * 4.0 * PETSC_PI; // total energy flow over spherical surface
-    solutionScalings_b[13] = C->ENTROPY;
-    solutionScalings_b[14] = C->ENTROPY;
-    solutionScalings_b[15] = C->TEMP;
-    solutionScalings_b[16] = C->DENSITY;
-    solutionScalings_b[17] = C->TEMP;
-    solutionScalings_b[18] = 1.0; // weight is non-dimensional
-    solutionScalings_b[19] = 1.0; // weight is non-dimensional
-    solutionScalings_b[20] = 1.0; // (generalised) melt fraction is non-dimensional
-    solutionScalings_b[21] = C->GSUPER;
-    solutionScalings_b[22] = C->FLUX;
-    solutionScalings_b[23] = C->FLUX;
-    solutionScalings_b[24] = C->FLUX;
-    solutionScalings_b[25] = C->FLUX;
-    solutionScalings_b[26] = C->FLUX;
-    solutionScalings_b[27] = C->KAPPA;
-    solutionScalings_b[28] = C->ENTROPY;
-    solutionScalings_b[29] = C->DENSITY;
-    solutionScalings_b[30] = C->TEMP;
-    solutionScalings_b[31] = C->KAPPA;
-    solutionScalings_b[32] = 1.0; // melt fraction is non-dimensional
-    solutionScalings_b[33] = 1.0; // dynamic regime (subadiabatic,inviscid,viscous)
-    solutionScalings_b[34] = C->DENSITY;
-    solutionScalings_b[35] = C->ENTROPY;
-    solutionScalings_b[36] = C->ENTROPY;
-    solutionScalings_b[37] = C->DENSITY;
-    solutionScalings_b[38] = C->TEMP;
-    solutionScalings_b[39] = C->TEMP;
-    solutionScalings_b[40] = C->VISC;
-
-    /* staggered vecs */
-    solutionScalings_s[0] = C->ENTROPY;
-    solutionScalings_s[1] = C->ENTROPY;
-    solutionScalings_s[2] = C->RHS; // note: C->RHS is 1.0 (see parameters.c)
-    solutionScalings_s[3] = C->ENTROPY;
-    solutionScalings_s[4] = C->ENTROPY;
-    solutionScalings_s[5] = C->TEMP;
-    solutionScalings_s[6] = C->TEMP;
-    solutionScalings_s[7] = 1.0; // non-dimensional weight
-    solutionScalings_s[8] = 1.0; // non-dimenisonal weight
-    solutionScalings_s[9] = 1.0; // generalised melt fraction is non-dimensional
-    solutionScalings_s[10] = C->SENERGY / C->TIME; // W/kg
-    solutionScalings_s[11] = C->SENERGY / C->TIME; // W/kg
-    solutionScalings_s[12] = C->SENERGY / C->TIME; // W/kg
-    solutionScalings_s[13] = C->LHS * 4.0 * PETSC_PI;
-    solutionScalings_s[14] = C->DENSITY;
-    solutionScalings_s[15] = C->ENTROPY;
-    solutionScalings_s[16] = C->TEMP;
-    solutionScalings_s[17] = 1.0; // melt fraction is non-dimensional
-    solutionScalings_s[18] = C->DENSITY;
-    solutionScalings_s[19] = C->ENTROPY;
-    solutionScalings_s[20] = C->ENTROPY;
-    solutionScalings_s[21] = C->DENSITY;
-    solutionScalings_s[22] = C->TEMP;
-    solutionScalings_s[23] = C->TEMP;
-
-    PetscFunctionReturn(0);
-
-}
-
-PetscErrorCode scale_vectors_and_output( Vec *vec, PetscScalar *arr_scale, PetscInt NUM, PetscViewer viewer)
-{
-
   PetscErrorCode ierr;
-  Vec vec_scaled;
-  PetscScalar scale;
-  PetscInt i;
+  Vec            vec,vec_scaled;
+  PetscScalar    scale;
+  PetscInt       i,numFields;
 
   PetscFunctionBeginUser;
-
-  for (i=0;i<NUM;++i){
-    ierr = VecDuplicate( vec[i], &vec_scaled); CHKERRQ(ierr);
-    ierr = VecCopy( vec[i], vec_scaled ); CHKERRQ(ierr);
-    scale = arr_scale[i];
+  for (i=0; i<NUM; ++i) {
+    ierr = DimensionalisableFieldGetGlobalVec(f[i],&vec);CHKERRQ(ierr);
+    ierr = VecDuplicate( vec, &vec_scaled); CHKERRQ(ierr);
+    ierr = VecCopy( vec, vec_scaled ); CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetScaling(f[i],&numFields,&scale);CHKERRQ(ierr);
+    if (numFields != 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not supported - only expecting to output single fields with this function");
     ierr = VecScale( vec_scaled, scale );
     ierr = add_vector_to_viewer( vec_scaled, viewer ); CHKERRQ(ierr);
     ierr = VecDestroy(&vec_scaled); CHKERRQ(ierr);
   }
-
   PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode add_vector_to_viewer( Vec vec, PetscViewer viewer)
@@ -143,15 +34,14 @@ static PetscErrorCode add_vector_to_viewer( Vec vec, PetscViewer viewer)
   PetscFunctionBeginUser;
   // convenient for some output formats, but not Petsc binary
   //ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"phi_s_%lld",step);CHKERRQ(ierr);
-  //ierr = PetscObjectSetName((PetscObject)x_aug,vecname);CHKERRQ(ierr);
+  //ierr = PetscObjectSetName((PetscObject)sol,vecname);CHKERRQ(ierr);
   ierr = VecView( vec, viewer ); CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode atmosphere_structs_to_vec( Vec x_aug, Ctx *E, Vec vec )
+PetscErrorCode atmosphere_structs_to_vec( Vec sol, Ctx *E, Vec vec )
 {
-
     PetscErrorCode ierr;
 
     Atmosphere           const *A = &E->atmosphere;
@@ -160,23 +50,27 @@ PetscErrorCode atmosphere_structs_to_vec( Vec x_aug, Ctx *E, Vec vec )
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     VolatileParameters   const *CO2 = &Ap->CO2_volatile_parameters;
     VolatileParameters   const *H2O = &Ap->H2O_volatile_parameters;
-    Mesh const *M = &E->mesh;
-    PetscInt ind;
-    PetscScalar Msol,Mliq;
-    PetscScalar sol0,liq0,atm0,tot0,sol1,liq1,atm1,tot1;
-    PetscScalar x0,x1;
-
-    PetscScalar FAC, MASS;
+    Mesh                 const *M = &E->mesh;
+    const PetscInt             ind0 = 0;
+    PetscScalar                Msol,Mliq;
+    PetscScalar                sol0,liq0,atm0,tot0,sol1,liq1,atm1,tot1;
+    PetscScalar                x0,x1;
+    PetscScalar                FAC, MASS;
+    Vec                        *subVecs;
 
     PetscFunctionBeginUser;
 
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
     /* CO2 content of magma ocean (liquid phase) */
-    ind = 0;
-    ierr = VecGetValues(x_aug,1,&ind,&x0);CHKERRQ(ierr);
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],1,&ind0,&x0);CHKERRQ(ierr);
 
     /* H2O content of magma ocean (liquid phase) */
-    ind = 1;
-    ierr = VecGetValues(x_aug,1,&ind,&x1);CHKERRQ(ierr);
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],1,&ind0,&x1);CHKERRQ(ierr);
+
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
     /* scalings */
     MASS = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
