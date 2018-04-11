@@ -209,11 +209,10 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     if (rank==0) {
       cJSON       *json,*str,*number,*data;
       char        *outputString;
-      PetscViewer viewer;
       char        filename[PETSC_MAX_PATH_LEN];
+      PetscInt    i;
 
       ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/%lld.json",P->outputDirectory,nstep);CHKERRQ(ierr);
-      ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
 
       /* Create a new JSON object */
       json = cJSON_CreateObject();
@@ -229,30 +228,50 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       cJSON_AddItemToObject(json,"step",number);
       // TODO : add other stuff we might like in the header
 
+      // TODO: add solution and Rhs (composite)
+
       /* Add data of interest */
+      // Note: this is duplicative, but it's too painful to flatten out the Ctx
       data = cJSON_CreateArray();
-      {
+      for (i=0; i<NUMMESHVECS_S; ++i) {
         cJSON *item;
-        DimensionalisableField curr = ctx->solution.solutionFields_b[0];
+        DimensionalisableField curr = ctx->mesh.meshFields_s[i];
         ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
         cJSON_AddItemToArray(data,item);
       }
-      // TODO : add all desired data
-
+      for (i=0; i<NUMMESHVECS_B; ++i) {
+        cJSON *item;
+        DimensionalisableField curr = ctx->mesh.meshFields_b[i];
+        ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
+        cJSON_AddItemToArray(data,item);
+      }
+      for (i=0; i<NUMSOLUTIONVECS_S; ++i) {
+        cJSON *item;
+        DimensionalisableField curr = ctx->solution.solutionFields_s[i];
+        ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
+        cJSON_AddItemToArray(data,item);
+      }
+      for (i=0; i<NUMSOLUTIONVECS_B; ++i) {
+        cJSON *item;
+        DimensionalisableField curr = ctx->solution.solutionFields_b[i];
+        ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
+        cJSON_AddItemToArray(data,item);
+      }
       cJSON_AddItemToObject(json,"data",data);
 
       /* Print to a string */
       outputString = cJSON_Print(json);
 
-      // DEBUG (TODO remove)
-      ierr = PetscPrintf(PETSC_COMM_WORLD,outputString);CHKERRQ(ierr);
-
-      /* Print to file */
-      ierr = PetscViewerASCIIPrintf(viewer,outputString);CHKERRQ(ierr);
+      /* Print to file (the dumb way since PETSc's ASCII viewer seems buggy) */
+      {
+        FILE *fp;
+        fp = fopen(filename,"w");
+        fprintf(fp,"%s\n",outputString);
+        fclose(fp);
+      }
 
       /* Delete the JSON object and viewer (close file)*/
       cJSON_Delete(json);
-      ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
     }
   }
 
