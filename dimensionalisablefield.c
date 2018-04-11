@@ -22,7 +22,6 @@ PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField *pf, DM dm, P
   } else {
     f->numDomains = 1;
   }
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"Created DimensionalisableField over DM with %d subdomains\n",f->numDomains);CHKERRQ(ierr);
 
   ierr = PetscMalloc1(f->numDomains,&f->scaling);CHKERRQ(ierr);
   for (i=0; i<f->numDomains; ++i) {
