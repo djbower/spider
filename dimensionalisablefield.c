@@ -141,11 +141,13 @@ PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField f)
 
 PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField f,cJSON **pjson)
 {
-  PetscErrorCode ierr;
-  DMType         dmType;
-  PetscBool      isComposite;
-  PetscInt       vecSize;
-  cJSON          *str,*json,*number;
+  PetscErrorCode    ierr;
+  DMType            dmType;
+  PetscBool         isComposite;
+  Vec               vec;
+  PetscInt          vecSize;
+  cJSON             *str,*json,*number,*values;
+  const PetscScalar *arr;
 
   PetscFunctionBeginUser;
 
@@ -153,12 +155,45 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField f,cJSON **pjs
   ierr = PetscStrcmp(dmType,DMCOMPOSITE,&isComposite);CHKERRQ(ierr);
   if (isComposite) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented for composite vectors yet");
 
+  ierr = DimensionalisableFieldGetGlobalVec(f,&vec);CHKERRQ(ierr);
+
   *pjson = cJSON_CreateObject();
   json = *pjson;
   str = cJSON_CreateString(f->name);
   cJSON_AddItemToObject(json,"Name",str);
-  ierr = VecGetSize(f->vecGlobal,&vecSize);CHKERRQ(ierr);
+  ierr = VecGetSize(vec,&vecSize);CHKERRQ(ierr);
   number = cJSON_CreateNumber(vecSize);
   cJSON_AddItemToObject(json,"size",number);
+  values = cJSON_CreateArray();
+
+  /* Current implementation assume single rank */
+  {
+    PetscMPIInt size;
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);
+    if (size != 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented in parallel");
+  }
+
+  /* Store vector values as STRINGS to ensure precision we want */
+  ierr = VecGetArrayRead(vec,&arr);CHKERRQ(ierr);
+  // TEST - need to check to get full precision
+  {
+    int i;
+    for (i=0; i<vecSize; ++i) {
+      cJSON *entry;
+      char str[64]; /* note hard-coded size */
+#if defined(PETSC_USE_REAL___FLOAT128)
+      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented for quad yet");CHKERRQ(ierr);
+#else
+      ierr = PetscSNPrintf(str,64,"%16.16g",arr[i]);CHKERRQ(ierr); /* hard-coded value */
+#endif
+      entry = cJSON_CreateString(str);
+      cJSON_AddItemToArray(values,entry);
+    }
+
+  }
+  ierr = VecRestoreArrayRead(vec,&arr);CHKERRQ(ierr);
+
+  // ...
+  cJSON_AddItemToObject(json,"values",values);
   PetscFunctionReturn(0);
 }
