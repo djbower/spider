@@ -28,21 +28,40 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
 #endif
 
   {
-    PetscReal     minval,maxval;
     double        walltime;
     long long int elapsedSeconds;
     int           days,hours,minutes,seconds;
+    Vec           *subVecs;
+    PetscScalar   *maxVals,*minVals;
+    PetscInt      i;
 
-    ierr = VecMin(sol,NULL,&minval);CHKERRQ(ierr); /* Note that this includes the extra point now, so might not be as meaningful! */
-    ierr = VecMax(sol,NULL,&maxval);CHKERRQ(ierr);
+    /* Compute min/max for each field */
+    ierr = PetscMalloc3(ctx->numFields,&subVecs,ctx->numFields,&maxVals,ctx->numFields,&minVals);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(ctx->dm_sol,sol,ctx->numFields,NULL,subVecs);CHKERRQ(ierr);
+
+    for (i=0; i<ctx->numFields; ++i) {
+      ierr = VecMin(subVecs[i],NULL,&minVals[i]);CHKERRQ(ierr);
+      ierr = VecMax(subVecs[i],NULL,&maxVals[i]);CHKERRQ(ierr);
+    }
+    ierr = DMCompositeRestoreAccessArray(ctx->dm_sol,sol,ctx->numFields,NULL,subVecs);CHKERRQ(ierr);
+
+    /* Compute timing information */
     walltime = MPI_Wtime();
+    mctx->walltimeprev = walltime;
     elapsedSeconds = (long long int) (walltime - mctx->walltime0);
     seconds = elapsedSeconds % 60;
     minutes = ((elapsedSeconds - seconds)/60) % 60;
     hours = ((elapsedSeconds - 60*minutes - seconds)/(60*60)) % 24;
     days = (elapsedSeconds - 24*60*hours - 60*minutes - seconds)/(24*60*60);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"***  Writing output at macro Step %D, t=%f. Min/Max %f/%f [%lld:%02d:%02d:%02d]\n",step,(double)time,(double)minval,(double)maxval,days,hours,minutes,seconds);CHKERRQ(ierr);
-    mctx->walltimeprev = walltime;
+
+    /* Print */
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"***  Writing output at macro Step %D, t=%f. [%lld:%02d:%02d:%02d]\n",step,(double)time,days,hours,minutes,seconds);CHKERRQ(ierr);
+    for (i=0; i<ctx->numFields; ++i) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"  Field %D Min/Max %f/%f\n",i,(double)minVals[i],(double)maxVals[i]);CHKERRQ(ierr);
+    }
+
+    /* Cleanup */
+    ierr = PetscFree3(subVecs,maxVals,minVals);CHKERRQ(ierr);
   }
 
   /* Reevaluate the RHS */
