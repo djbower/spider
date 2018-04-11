@@ -55,8 +55,9 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   {
     PetscInt i,f;
 
-    /* Note the hard-coded "4" here: */
-    ierr = PetscMalloc2(4,&ctx->solutionFieldIDs,SPIDER_NUM_FIELD_IDS,&ctx->solutionSlots);CHKERRQ(ierr);
+    /* We (over)allocate assuming a maximum of SPIDER_NUM_FIELD_IDS fields, that is that
+       you will never have more than one copy of the same field. */
+    ierr = PetscMalloc2(SPIDER_NUM_FIELD_IDS,&ctx->solutionFieldIDs,SPIDER_NUM_FIELD_IDS,&ctx->solutionSlots);CHKERRQ(ierr);
     for (i=0; i<SPIDER_NUM_FIELD_IDS; ++i) ctx->solutionSlots[i] = -1;
     f = 0;
 
