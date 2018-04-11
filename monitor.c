@@ -170,7 +170,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       ierr = VecView(sol,viewer);CHKERRQ(ierr);
     }
 
-    // PDS TODO: replace all this with calls to write individual output files (dimensionalized) with DimensionalisableField
     /* write mesh information for basic node quantities */
     ierr = scale_vectors_and_output( M->meshFields_b, NUMMESHVECS_B, viewer );CHKERRQ(ierr);
 
@@ -272,7 +271,7 @@ PetscErrorCode TSMonitorWalltimed(TS ts,PetscInt steps,PetscReal time,Vec x,void
   long long int  elapsedSeconds;
   int            hours,days,minutes,seconds;
   PetscReal      dt;
- 
+
   PetscFunctionBeginUser;
   walltime = MPI_Wtime();
   if (walltime - ctx->walltimeprev > split){
