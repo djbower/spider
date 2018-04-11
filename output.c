@@ -2,7 +2,7 @@
 
 static PetscErrorCode add_vector_to_viewer( Vec, PetscViewer );
 
-// TODO PDS : this will be taken care of by ScalableField eventually
+// TODO : remove this once new JSON output is in place
 PetscErrorCode scale_vectors_and_output( DimensionalisableField *f, PetscInt NUM, PetscViewer viewer)
 {
   PetscErrorCode ierr;
