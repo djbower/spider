@@ -139,13 +139,13 @@ PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField f)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField f,cJSON **pjson)
+PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON **pjson)
 {
   PetscErrorCode    ierr;
   DMType            dmType;
   PetscBool         isComposite;
   Vec               vec;
-  PetscInt          vecSize;
+  PetscInt          vecSize,i;
   cJSON             *str,*json,*number,*values;
   const PetscScalar *arr;
 
@@ -164,20 +164,21 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField f,cJSON **pjs
   ierr = VecGetSize(vec,&vecSize);CHKERRQ(ierr);
   number = cJSON_CreateNumber(vecSize);
   cJSON_AddItemToObject(json,"size",number);
-  values = cJSON_CreateArray();
+  number = cJSON_CreateNumber(*f->scaling);
+  cJSON_AddItemToObject(json,"scaling",number); // TODO array of scaling
+  str = f->scaled? cJSON_CreateString("true") : cJSON_CreateString("false");
+  cJSON_AddItemToObject(json,"scaled",str);
 
-  /* Current implementation assume single rank */
+  /* Store vector values as STRINGS to ensure precision we want */
+  /* Current implementation assumes single rank */
   {
     PetscMPIInt size;
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);
     if (size != 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented in parallel");
   }
-
-  /* Store vector values as STRINGS to ensure precision we want */
   ierr = VecGetArrayRead(vec,&arr);CHKERRQ(ierr);
-  // TEST - need to check to get full precision
+  values = cJSON_CreateArray();
   {
-    int i;
     for (i=0; i<vecSize; ++i) {
       cJSON *entry;
       char str[64]; /* note hard-coded size */

@@ -21,6 +21,6 @@ PetscErrorCode DimensionalisableFieldGetGlobalVec(DimensionalisableField,Vec*);
 PetscErrorCode DimensionalisableFieldGetScaling(DimensionalisableField,PetscInt*,PetscScalar*);
 PetscErrorCode DimensionalisableFieldScale(DimensionalisableField);
 PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField);
-PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField,cJSON**);
+PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const,cJSON**);
 
 #endif
