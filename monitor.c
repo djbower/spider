@@ -234,9 +234,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       {
         cJSON *item;
         DimensionalisableField curr = ctx->solution.solutionFields_b[0];
-        //ierr = DimensionalisableFieldScale(curr);CHKERRQ(ierr);
         ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
-        //ierr = DimensionalisableFieldUnscale(curr);CHKERRQ(ierr);
         cJSON_AddItemToArray(data,item);
       }
       // TODO : add all desired data

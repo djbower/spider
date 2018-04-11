@@ -194,7 +194,6 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
   }
   ierr = VecRestoreArrayRead(vec,&arr);CHKERRQ(ierr);
 
-  // ...
   cJSON_AddItemToObject(json,"values",values);
   PetscFunctionReturn(0);
 }
