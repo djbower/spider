@@ -1,6 +1,8 @@
 #include "monitor.h"
 #include "output.h"
 #include "rhs.h"
+#include "cJSON.h"
+#include "version.h"
 
 PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years, PetscInt step, PetscReal time, Vec sol, void *ptr, MonitorCtx *mctx)
 {
@@ -27,6 +29,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
   ierr = PetscOptionsSetValue(NULL,"-binary_write_double","");CHKERRQ(ierr);
 #endif
 
+  /* Info for stdout */
   {
     double        walltime;
     long long int elapsedSeconds;
@@ -197,6 +200,48 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
   }
 
   ierr = VecDestroy(&rhs);CHKERRQ(ierr);
+
+  // TODO: once JSON output stable, remove the above old output (leaving the stdout output!)
+  /* Dump a JSON file for this timestep */
+  {
+    PetscMPIInt rank;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+
+    if (rank==0) {
+      cJSON       *json,*str;
+      char        *outputString;
+      PetscViewer viewer;
+      char        filename[PETSC_MAX_PATH_LEN];
+
+      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/%lld.json",P->outputDirectory,nstep);CHKERRQ(ierr);
+      ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
+
+      /* Create a new JSON object */
+      json = cJSON_CreateObject();
+
+      /* Add some header info */
+      str = cJSON_CreateString(SPIDER_MAJOR_VERSION);
+      cJSON_AddItemToObject(json,"Major Version",str);
+      str = cJSON_CreateString(SPIDER_MINOR_VERSION);
+      cJSON_AddItemToObject(json,"Minor Version",str);
+      str = cJSON_CreateString(SPIDER_PATCH_VERSION);
+      cJSON_AddItemToObject(json,"Patch Version",str);
+
+      /* Add data of interest */
+      // TODO
+
+      /* Print to a string */
+      outputString = cJSON_Print(json);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,outputString);CHKERRQ(ierr);
+
+      /* Print to file */
+      ierr = PetscViewerASCIIPrintf(viewer,outputString);CHKERRQ(ierr);
+
+      /* Delete the JSON object and viewer (close file)*/
+      cJSON_Delete(json);
+      ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+    }
+  }
 
   /* At this point, we should have processed all command line options, so we
      check to see if any are stray (this usually would indicate a typo) */
