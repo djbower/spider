@@ -45,12 +45,11 @@ ${EXNAME} : ${SRC_O}
 	#${RM} $^
 
 ### Tests ######################################################################
-PYTHON=python
 test :
-	cd tests && ${PYTHON} ./runTests.py -t bottomUpLiquid && cd ..
+	cd tests && ./runTests.py -t bottomUpLiquid && cd ..
 
 testall :
-	cd tests && ${PYTHON} ./runTests.py && cd ..
+	cd tests && ./runTests.py && cd ..
 
 .PHONY : testall
 
