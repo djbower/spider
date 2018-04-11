@@ -208,7 +208,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
 
     if (rank==0) {
-      cJSON       *json,*str,*data;
+      cJSON       *json,*str,*number,*data;
       char        *outputString;
       PetscViewer viewer;
       char        filename[PETSC_MAX_PATH_LEN];
@@ -221,11 +221,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
 
       /* Add some header info */
       str = cJSON_CreateString(SPIDER_MAJOR_VERSION);
-      cJSON_AddItemToObject(json,"Major Version",str);
+      cJSON_AddItemToObject(json,"SPIDER major version",str);
       str = cJSON_CreateString(SPIDER_MINOR_VERSION);
-      cJSON_AddItemToObject(json,"Minor Version",str);
+      cJSON_AddItemToObject(json,"SPIDER minor version",str);
       str = cJSON_CreateString(SPIDER_PATCH_VERSION);
-      cJSON_AddItemToObject(json,"Patch Version",str);
+      cJSON_AddItemToObject(json,"SPIDER patch version",str);
+      number = cJSON_CreateNumber(nstep);
+      cJSON_AddItemToObject(json,"step",number);
       // TODO : add other stuff we might like in the header
 
       /* Add data of interest */
