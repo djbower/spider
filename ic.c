@@ -6,9 +6,6 @@ static PetscErrorCode set_ic_default( Ctx *, Vec );
 static PetscErrorCode set_ic_constant_dSdr( Ctx *, Vec );
 static PetscErrorCode set_ic_extra( Ctx *, Vec );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec );
-#if 0
-static PetscErrorCode set_ic_from_impact( Ctx *, Vec );
-#endif
 
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
@@ -28,12 +25,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     else if( IC==2 ){
         ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
     }
-
-#if 0
-    else if( IC==3 ){
-        ierr = set_ic_from_impact( E, sol ); CHKERRQ(ierr);
-    }
-#endif
 
     PetscFunctionReturn(0);
 }
@@ -193,39 +184,3 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 
     PetscFunctionReturn(0);
 }
-
-// PDS: not sure if this is current, so commenting out
-#if 0
-static PetscErrorCode set_ic_from_impact( Ctx *E, Vec sol )
-{
-   PetscErrorCode ierr;
-   Solution *S = &E->solution;
-   PetscScalar S0;
-   PetscInt    ind;
-
-   PetscFunctionBeginUser;
-
-   ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
-   /* for simplicity, offset the tie point by some fixed fraction of
-      entropy */
-   //ierr = VecSetValue( sol,2,0.2,ADD_VALUES ); CHKERRQ(ierr);
-
-   ind = 2;
-   ierr = VecGetValues( sol,1,&ind,&S0); CHKERRQ(ierr);
-
-   /* need to transfer to S->dSdr otherwise set_entropy returns
-      constant profile (since dSdr=0 everywhere initially) */
-   ierr = FromAug( sol,S->dSdr); CHKERRQ(ierr);
-
-   /* integrate to give S_s and S_b */
-   ierr = set_entropy( E, S0 );
-
-   /* TODO: set the entropy to above the liquidus for a certain depth
-      range to mimick an impactor that melts a portion of the mantle */
-
-   /* function to go the other way, i.e. compute dSdr from S_s */
-   ierr = set_dSdr_b_from_S_s( E );
-
-   PetscFunctionReturn(0);
-}
-#endif
