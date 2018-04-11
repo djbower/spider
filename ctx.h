@@ -58,7 +58,7 @@ static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Erro
 typedef struct Ctx_ {
   Mesh                  mesh;
   Solution              solution;
-  DM                    da_b,da_s,da_surface,da_mo_co2,da_mo_h2o; /* DMs for different subdomains */
+  DM                    da_b,da_s,da_point; /* DMs for different subdomains */
   DM                    dm_sol; /* A composite DM for all fields used in the timestepper */
   PetscInt              numFields; /* Number of sub-DMs in dm_sol */
   SpiderSolutionFieldID *solutionFieldIDs; /* Which fields are in which slot */
