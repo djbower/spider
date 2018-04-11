@@ -14,10 +14,10 @@ typedef struct Mesh_ {
     DimensionalisableField meshFields_b[NUMMESHVECS_B];
     DimensionalisableField meshFields_s[NUMMESHVECS_S];
 
-    // PDS TODO: eventually get rid of these (though think about how to better name the DimensionalisableFields..)
+    // TODO: eventually get rid of these (though think about how to better name the DimensionalisableFields..)
     Vec area_b,dPdr_b,pressure_b,radius_b, mix_b;
 
-    // PDS TODO: eventually get rid of these
+    // TODO: eventually get rid of these
     Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,rho_s,mass_s;
 
     /* DJB atmosphere.  For seeing what the 'pressure' estimate of the
@@ -33,10 +33,10 @@ typedef struct Solution_ {
     DimensionalisableField solutionFields_b[NUMSOLUTIONVECS_B];
     DimensionalisableField solutionFields_s[NUMSOLUTIONVECS_S];
 
-    // PDS TODO: eventually get rid of these
+    // TODO: eventually get rid of these
     Vec alpha, alpha_mix, cond, cp, cp_mix, dfusdr, dfusdr_temp, dSdr, dSliqdr, dSsoldr, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, fwtl, fwts, gphi, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, regime, rho, S, solidus, solidus_rho, solidus_temp, temp, visc;
 
-    // PDS TODO: eventually get rid of these
+    // TODO: eventually get rid of these
     Vec cp_s, cp_mix_s, dSdt_s, fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, fwtl_s, fwts_s, gphi_s, Hradio_s, Htidal_s, Htot_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
 
 } Solution;
@@ -70,12 +70,10 @@ typedef struct Ctx_ {
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
 
-  // PDS TODO:
-  // Note: there is no real reason that we have some data here and some in Solution and some in Mesh.
+  // TODO: there is no real reason that we have some data here and some in Solution and some in Mesh.
   //       it could all be flattened out (and probably would be in a re-implementation)
 } Ctx;
-// TODO: would be cleaner if Ctx where a pointer to _p_Ctx, as with PETSc objects.
-
+// TODO: would be cleaner if Ctx were a pointer to _p_Ctx, as with PETSc objects.
 
 PetscErrorCode SetupCtx(Ctx *);
 PetscErrorCode DestroyCtx(Ctx *);
