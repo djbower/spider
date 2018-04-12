@@ -89,15 +89,19 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     sol_scalings[f] = 1.0; // TODO DJB check
     ++f;
 
+    ierr = DMCompositeGetNumberDM(ctx->dm_sol,&ctx->numFields);CHKERRQ(ierr); /* For convenience */
+
     /* Create a DimensionalisableField, referring to this DMComposite,
        for keeping track of the "solution" as seen by the solver. We will
        extra the vector from this to use as our solution vector */
     ierr = DimensionalisableFieldCreate(&ctx->solDF,ctx->dm_sol,sol_scalings,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetName(ctx->solDF,"SPIDER solution");CHKERRQ(ierr);
+    for (f=0; f<ctx->numFields; ++f) {
+      ierr = DimensionalisableFieldSetSlotName(ctx->solDF,f,SpiderSolutionFieldDescriptions[ctx->solutionFieldIDs[f]]);CHKERRQ(ierr);CHKERRQ(ierr);
+    }
     ierr = PetscFree(sol_scalings);CHKERRQ(ierr);
   }
 
-  ierr = DMCompositeGetNumberDM(ctx->dm_sol,&ctx->numFields);CHKERRQ(ierr); /* For convenience */
 
 
   /* Continue to initialize context with distributed data */

@@ -228,7 +228,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       cJSON_AddItemToObject(json,"step",number);
       // TODO : add other stuff we might like in the header
 
-      // TODO: add solution and Rhs (composite)
       /* Add solution to file */
       {
         cJSON *solJSON;
@@ -236,6 +235,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         cJSON_AddItemToObject(json,"solution",solJSON);
       }
 
+      // TODO: add Rhs
 
       /* Add data of interest */
       // Note: this is duplicative, but it's too painful to flatten out the Ctx

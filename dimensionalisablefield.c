@@ -33,7 +33,16 @@ PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField *pf, DM dm, P
 
   ierr = DMCreateGlobalVector(f->dm,&f->vecGlobal);CHKERRQ(ierr);
 
-  (*pf)->name = "Unnamed DimensionalisableField";
+  f->name = "Unnamed DimensionalisableField";
+
+  if (f->numDomains == 1) {
+    f->slotNames = NULL;
+  } else {
+    ierr = PetscMalloc1(f->numDomains,&f->slotNames);CHKERRQ(ierr);
+    for (i=0; i<f->numDomains; ++i) {
+      f->slotNames[i] = NULL;
+    }
+  }
 
   PetscFunctionReturn(0);
 }
@@ -47,6 +56,7 @@ PetscErrorCode DimensionalisableFieldDestroy(DimensionalisableField *pf)
   f = *pf;
   if (f->vecGlobal) {ierr = VecDestroy(&f->vecGlobal);CHKERRQ(ierr);}
   ierr = PetscFree(f->scaling);CHKERRQ(ierr);
+  if (f->slotNames) {ierr = PetscFree(f->slotNames);CHKERRQ(ierr);}
   ierr = PetscFree(*pf);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -175,6 +185,10 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
       vecCurr = subVecs[d];
       number = cJSON_CreateNumber(d);
       cJSON_AddItemToObject(curr,"slot",number);
+      if (f->slotNames[d]) {
+        cJSON *str = cJSON_CreateString(f->slotNames[d]);
+        cJSON_AddItemToObject(curr,"description",str);
+      }
     } else {
       curr = json;
       vecCurr = vec;
@@ -230,5 +244,12 @@ PetscErrorCode DimensionalisableFieldSetName(DimensionalisableField f,const char
 {
   PetscFunctionBeginUser;
   f->name = name;
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode DimensionalisableFieldSetSlotName(DimensionalisableField f,PetscInt slot,const char *name)
+{
+  PetscFunctionBeginUser;
+  f->slotNames[slot] = name;
   PetscFunctionReturn(0);
 }

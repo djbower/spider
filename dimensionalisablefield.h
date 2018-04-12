@@ -11,6 +11,7 @@ struct _p_DimensionalisableField {
   PetscScalar  *scaling;
   PetscBool    scaled;
   const char   *name;
+  const char   **slotNames;
 };
 typedef struct _p_DimensionalisableField *DimensionalisableField;
 
@@ -23,5 +24,6 @@ PetscErrorCode DimensionalisableFieldScale(DimensionalisableField);
 PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField);
 PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const,cJSON**);
 PetscErrorCode DimensionalisableFieldSetName(DimensionalisableField,const char*);
+PetscErrorCode DimensionalisableFieldSetSlotName(DimensionalisableField,PetscInt,const char*);
 
 #endif
