@@ -1,11 +1,11 @@
 static char help[] =
-"Magma ocean timestepper\n\
+"SPIDER. Magma ocean timestepper\n\
 -n : specify the number of staggered points\n\
 -monitor : use custom monitor to dump output\n\
 -nstepsmacro : specify the number of macro (output dump) steps\n\
 -dtmacro : specify the macro (output dump) time step, in nondimensionalised time (will not be exact!)\n\
 -dtmacro_years : specify the macro (output dump) time step, in years\n\
--early, -middle, -late: shortcuts to set -dtmacro and -nstepsmacro (overrides these)\n\
+-early, -middle, -late : shortcuts to set -dtmacro and -nstepsmacro (overrides these)\n\
 See example input files in examples/ for many more available options\n\
 ";
 
@@ -15,6 +15,9 @@ See example input files in examples/ for many more available options\n\
 #include "monitor.h"
 #include "rhs.h"
 #include "version.h"
+
+static PetscErrorCode PrintSPIDERHeader();
+static PetscErrorCode PrintFields(Ctx*);
 
 int main(int argc, char ** argv)
 {
@@ -28,15 +31,7 @@ int main(int argc, char ** argv)
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
-  /* Print header and version number */
-  ierr = PetscPrintf(
-      PETSC_COMM_WORLD,"::::::::::::::::: SPIDER version %s.%s.%s :::::::::::::::::\n\n",
-      SPIDER_MAJOR_VERSION,SPIDER_MINOR_VERSION,SPIDER_PATCH_VERSION);CHKERRQ(ierr);
-#if defined(PETSC_USE_REAL___FLOAT128)
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Using quadruple (128-bit,__float128) precision scalars\n\n");CHKERRQ(ierr);
-#elif defined(PETSC_USE_REAL_DOUBLE)
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Using double (64-bit) precision scalars\n\n");CHKERRQ(ierr);
-#endif
+  ierr = PrintSPIDERHeader();CHKERRQ(ierr);
 
   /* We don't want to take the time to debug things in MPI (though the
      problems are likely minor), so don't allow multi-rank runs */
@@ -49,39 +44,13 @@ int main(int argc, char ** argv)
   ierr = SetupCtx(&ctx);CHKERRQ(ierr);
 
   /* Print out the quantities we're solving for */
-  {
-    PetscInt f;
-    DM       *sub_dms;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"\n*** Timestepper will solve for coupled fields:\n");CHKERRQ(ierr);
-    ierr = PetscMalloc1(ctx.numFields,&sub_dms);CHKERRQ(ierr);
-    ierr = DMCompositeGetEntriesArray(ctx.dm_sol,sub_dms);CHKERRQ(ierr);
-    for (f=0; f<ctx.numFields; ++f) {
-      Vec vecTemp;
-      PetscInt nEntries;
-      const char * entriesString;
-      ierr = DMGetGlobalVector(sub_dms[f],&vecTemp);CHKERRQ(ierr);
-      ierr = VecGetSize(vecTemp,&nEntries);CHKERRQ(ierr);
-      entriesString = nEntries > 1 ? "entries" : "entry";
-     ierr = PetscPrintf(PETSC_COMM_WORLD,"  %D: %s (%D %s)\n",f,SpiderSolutionFieldDescriptions[ctx.solutionFieldIDs[f]],nEntries,entriesString);CHKERRQ(ierr);
-      ierr = DMRestoreGlobalVector(sub_dms[f],&vecTemp);CHKERRQ(ierr);
-    }
-    ierr = PetscFree(sub_dms);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"\n");CHKERRQ(ierr);
-  }
+  ierr = PrintFields(&ctx);CHKERRQ(ierr);
 
-  ///////////////////////
-  /* initial condition */
-  ///////////////////////
-
-  /* must call after setup_ctx */
+  /* Create Vector for solution provided to timestepper */
   ierr = DMCreateGlobalVector(ctx.dm_sol,&sol);CHKERRQ(ierr);
 
-  /* see ic.c */
+  /* see ic.c : must call after setup_ctx */
   ierr = set_initial_condition( &ctx, sol ); CHKERRQ(ierr);
-
-  ///////////////////////////
-  /* end initial condition */
-  ///////////////////////////
 
   /* Set up timestepper */
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
@@ -152,15 +121,52 @@ int main(int argc, char ** argv)
     }
   }
 
-  /* Free allocated data in the context */
+  /* Free allocated data and clean up */
   ierr = DestroyCtx(&ctx);CHKERRQ(ierr);
-
-  /* Destroy solution vector */
-  ierr = VecDestroy(&sol);CHKERRQ(ierr);
-
-  /* Cleanup and finalize */
   ierr = TSDestroy(&ts);CHKERRQ(ierr);
+  ierr = VecDestroy(&sol);CHKERRQ(ierr);
   ierr = PetscFinalize();CHKERRQ(ierr);
 
   return 0;
+}
+
+PetscErrorCode PrintSPIDERHeader()
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+  ierr = PetscPrintf(
+      PETSC_COMM_WORLD,"::::::::::::::::: SPIDER version %s.%s.%s :::::::::::::::::\n\n",
+      SPIDER_MAJOR_VERSION,SPIDER_MINOR_VERSION,SPIDER_PATCH_VERSION);CHKERRQ(ierr);
+#if defined(PETSC_USE_REAL___FLOAT128)
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"Using quadruple (128-bit,__float128) precision scalars\n\n");CHKERRQ(ierr);
+#elif defined(PETSC_USE_REAL_DOUBLE)
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"Using double (64-bit) precision scalars\n\n");CHKERRQ(ierr);
+#endif
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode PrintFields(Ctx *ctx)
+{
+  PetscErrorCode ierr;
+  PetscInt f;
+  DM       *sub_dms;
+
+  PetscFunctionBeginUser;
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\n*** Timestepper will solve for coupled fields:\n");CHKERRQ(ierr);
+  ierr = PetscMalloc1(ctx->numFields,&sub_dms);CHKERRQ(ierr);
+  ierr = DMCompositeGetEntriesArray(ctx->dm_sol,sub_dms);CHKERRQ(ierr);
+  for (f=0; f<ctx->numFields; ++f) {
+    Vec vecTemp;
+    PetscInt nEntries;
+    const char * entriesString;
+    ierr = DMGetGlobalVector(sub_dms[f],&vecTemp);CHKERRQ(ierr);
+    ierr = VecGetSize(vecTemp,&nEntries);CHKERRQ(ierr);
+    entriesString = nEntries > 1 ? "entries" : "entry";
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"  %D: %s (%D %s)\n",f,SpiderSolutionFieldDescriptions[ctx->solutionFieldIDs[f]],nEntries,entriesString);CHKERRQ(ierr);
+    ierr = DMRestoreGlobalVector(sub_dms[f],&vecTemp);CHKERRQ(ierr);
+  }
+  ierr = PetscFree(sub_dms);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\n");CHKERRQ(ierr);
+  PetscFunctionReturn(0);
 }
