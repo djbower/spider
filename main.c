@@ -124,7 +124,6 @@ int main(int argc, char ** argv)
   /* Free allocated data and clean up */
   ierr = DestroyCtx(&ctx);CHKERRQ(ierr);
   ierr = TSDestroy(&ts);CHKERRQ(ierr);
-  ierr = VecDestroy(&sol);CHKERRQ(ierr);
   ierr = PetscFinalize();CHKERRQ(ierr);
 
   return 0;
