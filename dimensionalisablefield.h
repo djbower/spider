@@ -18,6 +18,7 @@ typedef struct _p_DimensionalisableField *DimensionalisableField;
 PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField*,DM,PetscScalar*,PetscBool);
 PetscErrorCode DimensionalisableFieldCreateLocalVec(DimensionalisableField,Vec*);
 PetscErrorCode DimensionalisableFieldDestroy(DimensionalisableField*);
+PetscErrorCode DimensionalisableFieldDuplicate(DimensionalisableField,DimensionalisableField*);
 PetscErrorCode DimensionalisableFieldGetGlobalVec(DimensionalisableField,Vec*);
 PetscErrorCode DimensionalisableFieldGetScaling(DimensionalisableField,PetscInt*,PetscScalar*);
 PetscErrorCode DimensionalisableFieldScale(DimensionalisableField);

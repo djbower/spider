@@ -61,6 +61,23 @@ PetscErrorCode DimensionalisableFieldDestroy(DimensionalisableField *pf)
   PetscFunctionReturn(0);
 }
 
+PetscErrorCode DimensionalisableFieldDuplicate(DimensionalisableField f,DimensionalisableField *pfNew)
+{
+  PetscErrorCode         ierr;
+  DimensionalisableField fNew;
+
+  PetscFunctionBeginUser;
+  ierr = DimensionalisableFieldCreate(pfNew,f->dm,f->scaling,f->scaled);CHKERRQ(ierr);
+  fNew = *pfNew;
+  if (fNew->numDomains > 1){
+    PetscErrorCode i;
+    for (i=0; i<fNew->numDomains; ++i) {
+      ierr = DimensionalisableFieldSetSlotName(fNew,i,f->slotNames[i]);CHKERRQ(ierr);
+    }
+  }
+  PetscFunctionReturn(0);
+}
+
 /*
   Get the global vector. Note that this is created and destroyed along with the
   DimensionalisableField object, hence this just returns the Vec object (which
