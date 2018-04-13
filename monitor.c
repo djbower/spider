@@ -68,8 +68,11 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
   }
 
   /* Reevaluate the RHS */
+  {
+
   ierr = VecDuplicate(sol,&rhs);CHKERRQ(ierr);
   ierr = RHSFunction(ts,time,sol,rhs,ctx);CHKERRQ(ierr);
+  }
 
   /* Dump the solution to a file named for the timestep */
   {
@@ -235,7 +238,20 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         cJSON_AddItemToObject(json,"solution",solJSON);
       }
 
-      // TODO: add Rhs
+      /* Re-evaluate rhs and add to file */
+      {
+        DimensionalisableField rhsDF;
+        Vec rhs;
+        cJSON *rhsJSON;
+        ierr = DimensionalisableFieldDuplicate(ctx->solDF,&rhsDF);CHKERRQ(ierr);
+        ierr = DimensionalisableFieldSetName(rhsDF,"SPIDER rhs");CHKERRQ(ierr);
+        ierr = DimensionalisableFieldGetGlobalVec(rhsDF,&rhs);CHKERRQ(ierr);
+        ierr = RHSFunction(ts,time,sol,rhs,ctx);CHKERRQ(ierr);
+        ierr = DimensionalisableFieldToJSON(rhsDF,&rhsJSON);CHKERRQ(ierr);
+        cJSON_AddItemToObject(json,"rhs",rhsJSON);CHKERRQ(ierr);
+        ierr = DimensionalisableFieldDestroy(&rhsDF);CHKERRQ(ierr);
+
+      }
 
       /* Add data of interest */
       // Note: this is duplicative, but it's too painful to flatten out the Ctx
