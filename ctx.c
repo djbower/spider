@@ -39,7 +39,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1          ,dof,0           ,NULL,&ctx->da_point);CHKERRQ(ierr); // single-point DMDA
 
   /* Create a composite DM of the basic nodes plus additional quantities.
-    This allows us to create a vector to solve for all of these quantites.
+    This allows us to create a vector to solve for all of these quantities.
 
      */
   ierr = DMCompositeCreate(PETSC_COMM_WORLD,&ctx->dm_sol);CHKERRQ(ierr);
@@ -74,19 +74,19 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_point);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_S0;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
-    sol_scalings[f] = C->ENTROPY; // TODO DJB check
+    sol_scalings[f] = C->ENTROPY;
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_point);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_CO2;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
-    sol_scalings[f] = 1.0; // TODO DJB check
+    sol_scalings[f] = C->VOLATILE;
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_point);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_H2O;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
-    sol_scalings[f] = 1.0; // TODO DJB check
+    sol_scalings[f] = C->VOLATILE;
     ++f;
 
     ierr = DMCompositeGetNumberDM(ctx->dm_sol,&ctx->numFields);CHKERRQ(ierr); /* For convenience */
