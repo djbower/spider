@@ -87,7 +87,7 @@ you can allow PETSc to automatically download and install SUNDIALS
 
 3. Configure PETSc using the following command. For a debug build, use --with-debugging=1 instead.
 
-        ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials --download-mpich --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+        ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 4. Make.  PETSc's configure process, if successful, will end by printing out a command which you can copy and paste, e.g.
 
