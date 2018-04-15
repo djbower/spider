@@ -14,7 +14,7 @@ SRC_C = main.c ctx.c rhs.c ic.c mesh.c lookup.c bc.c util.c twophase.c \
 # Main Target
 all :: ${EXNAME}
 
-### PETSc #####################################################################
+### PETSc ######################################################################
 # Include PETSc variables and rules
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
@@ -68,7 +68,7 @@ clean ::
 
 .PHONY: clean
 
-### Misc ######################################################################
+### Misc #######################################################################
 
 # Remove results of partial, failed builds
 .DELETE_ON_ERROR:
