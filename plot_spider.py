@@ -340,7 +340,7 @@ def figure1( args ):
 
     for nn, time in enumerate( fig_o.time ):
         # read json
-        myjson_o = MyJSON( 'output/%(time)s.json' % vars() )
+        myjson_o = MyJSON( 'output/{}.json'.format(time) )
 
         color = fig_o.get_color( nn )
         # use melt fraction to determine mixed region
@@ -371,14 +371,14 @@ def figure1( args ):
 
     # titles and axes labels, legends, etc
     units = myjson_o.get_field_units('S_b')
-    title = '(a) Entropy, ' + units # J kg$^{-1}$ K$^{-1}$'
+    title = '(a) Entropy, {}'.format(units)
     yticks = [1600,2000,2400,2800,3200]
     # DJB used this next range for work with Bayreuth
     #yticks = [300,1000,1600,2000,2400,2800,3200]
     fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, yticks=yticks )
     ax0.yaxis.set_label_coords(-0.075,0.59)
     units = myjson_o.get_field_units('temp_b')
-    title = '(b) Temperature, ' + units
+    title = '(b) Temperature, {}'.format(units)
     yticks= [1000,2000,3000,4000,5000]
     # DJB used this next range for work with Bayreuth
     #yticks= [300,1000,2000,3000,4000,5000]
@@ -470,20 +470,24 @@ def figure2( args ):
     # titles and axes labels, legends, etc.
     xticks = [0,50,100,135]
     yticks = [-1E15,-1E12, -1E6, -1E0, 0, 1E0, 1E6, 1E12, 1E15]
-    title = '(a) Convective flux, W m$^{-2}$'
+    units = myjson_o.get_field_units('Jconv_b')
+    title = '(a) Convective flux, {}'.format(units)
     fig_o.set_myaxes( ax0, title=title, ylabel='$F_\mathrm{conv}$',
         yticks=yticks, xticks=xticks, fmt=flux_fmt )
     ax0.yaxis.set_label_coords(-0.16,0.54)
     fig_o.set_mylegend( ax0, handle_l, ncol=2 )
-    title = '(c) Mixing flux, W m$^{-2}$'
+    units = myjson_o.get_field_units('Jmix_b')
+    title = '(c) Mixing flux, {}'.format(units)
     fig_o.set_myaxes( ax2, title=title, xlabel='$P$ (GPa)',
         ylabel='$F_\mathrm{mix}$', yticks=yticks, xticks=xticks, fmt=flux_fmt )
     ax2.yaxis.set_label_coords(-0.16,0.54)
-    title = '(b) Separation flux, W m$^{-2}$'
+    units = myjson_o.get_field_units('Jgrav_b')
+    title = '(b) Separation flux, {}'.format(units)
     fig_o.set_myaxes( ax1, title=title,
         ylabel='$F_\mathrm{grav}$', yticks=yticks, xticks=xticks, fmt=flux_fmt )
     ax1.yaxis.set_label_coords(-0.16,0.54)
-    title = '(d) Total flux, W m$^{-2}$'
+    units = myjson_o.get_field_units('Jtot_b')
+    title = '(d) Total flux, {}'.format(units)
     fig_o.set_myaxes( ax3, title=title, xlabel='$P$ (GPa)',
         ylabel='$F_\mathrm{tot}$', yticks=yticks, xticks=xticks, fmt=flux_fmt )
     ax3.yaxis.set_label_coords(-0.16,0.54)
@@ -516,83 +520,101 @@ def figure3( args ):
         # uncomment below to plot every other line
         if (nn-1) % 2:
             continue
+
+        # read json
+        myjson_o = MyJSON( 'output/{}.json'.format(time) )
+
         color = fig_o.get_color( nn )
         # use melt fraction to determine mixed region
-        xx, yy = fig_o.get_xy_data( 'phi', time )
+        yy = myjson_o.get_scaled_field_values_internal('phi_b')
         MIX = get_mix( yy )
 
         label = fig_o.get_legend_label( time )
 
+        # pressure for x-axis
+        xx_pres = myjson_o.get_scaled_field_values_internal('pressure_b')
+        xx_pres *= 1.0E-9
+
         # eddy diffusivity
-        xx, yy = fig_o.get_xy_data( 'kappah', time, eddy_fmt )
-        ax0.plot( xx, yy, '--', color=color )
-        handle, = ax0.plot( xx*MIX, yy*MIX, '-', label=label, 
+        yy = myjson_o.get_scaled_field_values_internal('kappah_b', eddy_fmt)
+        ax0.plot( xx_pres, yy, '--', color=color )
+        handle, = ax0.plot( xx_pres*MIX, yy*MIX, '-', label=label, 
             color=color )
         handle_l.append( handle )
         # density
-        xx, yy = fig_o.get_xy_data( 'rho', time )
-        ax1.plot( xx, yy, '--', color=color )
-        ax1.plot( xx*MIX, yy*MIX, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('rho_b')
+        ax1.plot( xx_pres, yy, '--', color=color )
+        ax1.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # thermal expansion coefficient
-        xx, yy = fig_o.get_xy_data( 'alpha', time, alpha_fmt )
-        ax3.plot( xx, yy, '--', color=color )
-        ax3.plot( xx*MIX, yy*MIX, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('alpha_b', alpha_fmt)
+        ax3.plot( xx_pres, yy, '--', color=color )
+        ax3.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # heat capacity
-        xx, yy = fig_o.get_xy_data( 'cp', time )
-        ax4.plot( xx, yy, '--', color=color )
-        ax4.plot( xx*MIX, yy*MIX, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('cp_b')
+        ax4.plot( xx_pres, yy, '--', color=color )
+        ax4.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # dTdrs
-        xx, yy = fig_o.get_xy_data( 'dTdrs', time )
-        ax5.plot( xx, yy, '--', color=color )
-        ax5.plot( xx*MIX, yy*MIX, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('dTdrs_b')
+        ax5.plot( xx_pres, yy, '--', color=color )
+        ax5.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # entropy gradient
-        xx, yy = fig_o.get_xy_data( 'dSdr', time, dSdr_fmt )
-        ax2.plot( xx, yy, '--', color=color )
-        ax2.plot( xx*MIX, yy*MIX, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('dSdr_b', dSdr_fmt )
+        yy *= -1.0
+        ax2.plot( xx_pres, yy, '--', color=color )
+        ax2.plot( xx_pres*MIX, yy*MIX, '-', color=color )
 
     xticks = [0,50,100,135]
 
     # titles and axes labels, legends, etc.
-    title = '(a) Eddy diffusivity, W m$^{-1}$ K$^{-1}$'
+    units = myjson_o.get_field_units('kappah_b')
+    title = '(a) Eddy diffusivity, {}'.format(units)
     yticks = [1.0, 1.0E3, 1.0E6, 1.0E9]
     fig_o.set_myaxes( ax0, title=title, ylabel='$\kappa_h$',
         yticks=yticks, fmt=eddy_fmt, xticks=xticks )
     ax0.yaxis.set_label_coords(-0.1,0.475)
 
-    title = '(b) Density, kg m$^{-3}$'
+    units = myjson_o.get_field_units('rho_b')
+    title = '(b) Density, {}'.format(units)
     yticks = [2000,3000,4000,5000,6000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$\\rho$',
         yticks=yticks, xticks=xticks )
     ax1.yaxis.set_label_coords(-0.1,0.6)
     fig_o.set_mylegend( ax1, handle_l, loc=4, ncol=2 )
 
-    title = '(d) Thermal expansion, K$^{-1}$'
-    yticks = [1.0E-5, 1.0E-4, 1.0E-3, 1.0E-2]
-    fig_o.set_myaxes( ax3, title=title, ylabel='$\\alpha$',
-        yticks=yticks, fmt=alpha_fmt, xticks=xticks )
-    ax3.yaxis.set_label_coords(-0.1,0.475)
-
-    title = '(e) Heat capacity, J kg$^{-1}$ K$^{-1}$'
-    yticks = [0,5000,10000,15000]
-    fig_o.set_myaxes( ax4, title=title, xlabel='$P$ (GPa)', ylabel='$c$',
-        yticks=yticks, xticks=xticks )
-    ax4.yaxis.set_label_coords(-0.1,0.475)
-
-    title = '(f) Adiabatic grad, K m$^{-1}$'
-    yticks = [-3E-3, -2E-3, -1E-3, 0]
-    fig_o.set_myaxes( ax5, title=title, xlabel='$P$ (GPa)',
-        yticks=yticks, xticks=xticks,
-        ylabel='$\\left(\\frac{\partial T}{\partial r}\\right)_S$')
-    ax5.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.0e'))
-    ax5.yaxis.set_label_coords(-0.15,0.43)
-
-    title = '(c) Entropy grad, J kg$^{-1}$ K$^{-1}$ m$^{-1}$'
+    units = myjson_o.get_field_units('dSdr_b')
+    title = '(c) Entropy grad, {}'.format(units)
     #yticks= [-1.0E-3, -1.0E-6, -1.0E-9, -1.0E-12, -1.0E-15]
     yticks = [1E-15, 1E-12, 1E-9, 1E-6, 1E-3]
     fig_o.set_myaxes( ax2, title=title,
         yticks=yticks, xticks=xticks,
         ylabel='$-\\frac{\partial S}{\partial r}$', fmt=dSdr_fmt)
     ax2.yaxis.set_label_coords(-0.1,0.565)
+
+    fig_o.savefig(3)
+
+
+    units = myjson_o.get_field_units('alpha_b')
+    title = '(d) Thermal expansion, {}'.format(units)
+    yticks = [1.0E-5, 1.0E-4, 1.0E-3, 1.0E-2]
+    fig_o.set_myaxes( ax3, title=title, ylabel='$\\alpha$',
+        yticks=yticks, fmt=alpha_fmt, xticks=xticks )
+    ax3.yaxis.set_label_coords(-0.1,0.475)
+
+    units = myjson_o.get_field_units('cp_b')
+    title = '(e) Heat capacity, {}'.format(units)
+    yticks = [0,5000,10000,15000]
+    fig_o.set_myaxes( ax4, title=title, xlabel='$P$ (GPa)', ylabel='$c$',
+        yticks=yticks, xticks=xticks )
+    ax4.yaxis.set_label_coords(-0.1,0.475)
+
+    units = myjson_o.get_field_units('dTdrs_b')
+    title = '(f) Adiabatic grad, {}'.format(units)
+    yticks = [-3E-3, -2E-3, -1E-3, 0]
+    fig_o.set_myaxes( ax5, title=title, xlabel='$P$ (GPa)',
+        yticks=yticks, xticks=xticks,
+        ylabel='$\\left(\\frac{\partial T}{\partial r}\\right)_S$')
+    ax5.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.0e'))
+    ax5.yaxis.set_label_coords(-0.15,0.43)
 
     fig_o.savefig(3)
 
@@ -1449,8 +1471,8 @@ def main( args ):
     logger.addHandler(ch)
 
     #figure1( args )
-    figure2( args )
-    #figure3( args )
+    #figure2( args )
+    figure3( args )
     #figure4( args )
     #figure5( args )
     #figure6( args )
