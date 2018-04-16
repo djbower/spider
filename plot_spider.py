@@ -550,7 +550,7 @@ def figure3( args ):
     ax5.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.0e'))
     ax5.yaxis.set_label_coords(-0.15,0.43)
 
-    title = '(c) Entropy grad, K m$^{-1}$'
+    title = '(c) Entropy grad, J kg$^{-1}$ K$^{-1}$ m$^{-1}$'
     #yticks= [-1.0E-3, -1.0E-6, -1.0E-9, -1.0E-12, -1.0E-15]
     yticks = [1E-15, 1E-12, 1E-9, 1E-6, 1E-3]
     fig_o.set_myaxes( ax2, title=title,
@@ -627,7 +627,7 @@ def figure4( args ):
     dSdr = ascale( dSdr, dSdr_fmt.const )
     handle2, = ax1.plot( pres, dSdr, 'k-' )
 
-    title = '(b) Entropy grad, K m$^{-1}$'
+    title = '(b) Entropy grad, J kg$^{-1}$ K$^{-1}$ m$^{-1}$'
     #yticks= [-1.0E-3, -1.0E-6, -1.0E-9, -1.0E-12, -1.0E-15]#, 1.0E-3]
     yticks = [1.0E-15, 1.0E-12, 1.0E-9,1.0E-6,1.0E-3]
     fig_o.set_myaxes( ax1, yticks=yticks, xticks=xticks,
