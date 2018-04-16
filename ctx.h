@@ -53,6 +53,7 @@ typedef enum {
   SPIDER_SOLUTION_FIELD_MO_H2O
 } SpiderSolutionFieldID;
 static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr (basic nodes)","S at surface","Magma Ocean CO2 content","Magma Ocean H2O content"}; /* Order must match the enum! */
+static const char * const SpiderSolutionFieldUnits[] = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "ppm", "ppm"}; // Order must match the enum! */
 
 /* A Context for the Solver */
 typedef struct Ctx_ {
