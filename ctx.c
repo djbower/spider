@@ -353,7 +353,7 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[27],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[27],&ctx->solution.kappah); // Just for convenience - can always get this vector out when you need it
     ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[27],"kappah_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[27],"m s$^{-2}$");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[27],"m$^2$ s$^{-1}$");CHKERRQ(ierr);
   }
   {
     PetscScalar scaling = C->ENTROPY;
