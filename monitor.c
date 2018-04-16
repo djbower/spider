@@ -227,8 +227,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       cJSON_AddItemToObject(json,"SPIDER minor version",str);
       str = cJSON_CreateString(SPIDER_PATCH_VERSION);
       cJSON_AddItemToObject(json,"SPIDER patch version",str);
-      number = cJSON_CreateNumber(nstep);
+      // TODO: some of these variable names lack clear meaning (e.g., nstep)
+      number = cJSON_CreateNumber(step);
       cJSON_AddItemToObject(json,"step",number);
+      number = cJSON_CreateNumber(dtmacro_years);
+      cJSON_AddItemToObject(json,"dtmacro_years",number);
+      number = cJSON_CreateNumber(nstep);
+      cJSON_AddItemToObject(json,"nstep",number);
       // TODO : add other stuff we might like in the header
 
       /* Add solution to file */
