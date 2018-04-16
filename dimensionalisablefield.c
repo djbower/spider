@@ -61,6 +61,7 @@ PetscErrorCode DimensionalisableFieldDestroy(DimensionalisableField *pf)
   if (f->vecGlobal) {ierr = VecDestroy(&f->vecGlobal);CHKERRQ(ierr);}
   ierr = PetscFree(f->scaling);CHKERRQ(ierr);
   if (f->slotNames) {ierr = PetscFree(f->slotNames);CHKERRQ(ierr);}
+  if (f->slotUnits) {ierr = PetscFree(f->slotUnits);CHKERRQ(ierr);}
   ierr = PetscFree(*pf);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
