@@ -34,13 +34,17 @@ PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField *pf, DM dm, P
   ierr = DMCreateGlobalVector(f->dm,&f->vecGlobal);CHKERRQ(ierr);
 
   f->name = "Unnamed DimensionalisableField";
+  f->units = "Unknown Units";
 
   if (f->numDomains == 1) {
     f->slotNames = NULL;
+    f->slotUnits = NULL;
   } else {
     ierr = PetscMalloc1(f->numDomains,&f->slotNames);CHKERRQ(ierr);
+    ierr = PetscMalloc1(f->numDomains,&f->slotUnits);CHKERRQ(ierr);
     for (i=0; i<f->numDomains; ++i) {
       f->slotNames[i] = NULL;
+      f->slotUnits[i] = NULL;
     }
   }
 
@@ -57,6 +61,7 @@ PetscErrorCode DimensionalisableFieldDestroy(DimensionalisableField *pf)
   if (f->vecGlobal) {ierr = VecDestroy(&f->vecGlobal);CHKERRQ(ierr);}
   ierr = PetscFree(f->scaling);CHKERRQ(ierr);
   if (f->slotNames) {ierr = PetscFree(f->slotNames);CHKERRQ(ierr);}
+  if (f->slotUnits) {ierr = PetscFree(f->slotUnits);CHKERRQ(ierr);}
   ierr = PetscFree(*pf);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -73,6 +78,7 @@ PetscErrorCode DimensionalisableFieldDuplicate(DimensionalisableField f,Dimensio
     PetscErrorCode i;
     for (i=0; i<fNew->numDomains; ++i) {
       ierr = DimensionalisableFieldSetSlotName(fNew,i,f->slotNames[i]);CHKERRQ(ierr);
+      ierr = DimensionalisableFieldSetSlotUnits(fNew,i,f->slotUnits[i]);CHKERRQ(ierr);
     }
   }
   PetscFunctionReturn(0);
@@ -183,7 +189,11 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
   *pjson = cJSON_CreateObject();
   json = *pjson;
   str = cJSON_CreateString(f->name);
-  cJSON_AddItemToObject(json,"Name",str);
+  cJSON_AddItemToObject(json,"name",str);
+  if (f->numDomains == 1) {
+    str = cJSON_CreateString(f->units);
+    cJSON_AddItemToObject(json,"units",str);
+  }
   number = cJSON_CreateNumber(f->numDomains);
   cJSON_AddItemToObject(json,"subdomains",number);
   if (f->numDomains > 1) {
@@ -205,6 +215,10 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
       if (f->slotNames[d]) {
         cJSON *str = cJSON_CreateString(f->slotNames[d]);
         cJSON_AddItemToObject(curr,"description",str);
+      }
+      if (f->slotUnits[d]) {
+        cJSON *str = cJSON_CreateString(f->slotUnits[d]);
+        cJSON_AddItemToObject(curr,"units",str);
       }
     } else {
       curr = json;
@@ -264,9 +278,23 @@ PetscErrorCode DimensionalisableFieldSetName(DimensionalisableField f,const char
   PetscFunctionReturn(0);
 }
 
+PetscErrorCode DimensionalisableFieldSetUnits(DimensionalisableField f,const char *units)
+{
+  PetscFunctionBeginUser;
+  f->units = units;
+  PetscFunctionReturn(0);
+}
+
 PetscErrorCode DimensionalisableFieldSetSlotName(DimensionalisableField f,PetscInt slot,const char *name)
 {
   PetscFunctionBeginUser;
   f->slotNames[slot] = name;
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode DimensionalisableFieldSetSlotUnits(DimensionalisableField f,PetscInt slot,const char *units)
+{
+  PetscFunctionBeginUser;
+  f->slotUnits[slot] = units;
   PetscFunctionReturn(0);
 }
