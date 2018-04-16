@@ -1,21 +1,14 @@
 #!/usr/bin/env python
 
-#!!! THIS HAS NOT BEEN UPDATED AFTER CHANGING THE "AUGMENTED VECTOR" APPROACH
-
+import json
+import logging
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
-import os
-import sys 
+import os, sys 
 
-PETSC_DIR = os.getenv('PETSC_DIR')
-if not PETSC_DIR :
-    print('You must define PETSC_DIR in your environment')
-    sys.exit(1)
-sys.path.append(os.path.join(PETSC_DIR,'bin'))
-
-import PetscBinaryIO
+logger = logging.getLogger(__name__)
 
 #===================================================================
 class MyFuncFormatter( object ):
@@ -35,6 +28,61 @@ class MyFuncFormatter( object ):
         return fmt
 
 #====================================================================
+class MyJSON( object ):
+
+    '''load and access json data'''
+
+    def __init__( self, filename ):
+        self.filename = filename
+        self._load()
+
+    def _load( self ):
+        '''load and store json data from file'''
+        try:
+            json_data  = open( self.filename )
+        except FileNotFoundError:
+            logger.critical('cannot find file: %s', self.filename )
+            logger.critical('please specify times for which data exists')
+            sys.exit(1)
+        self.data_d = json.load( json_data )
+        json_data.close()
+
+    def get_field_data( self, field ):
+        '''get all data relating to a particular field'''
+        field_l = self.data_d['data']
+        for ii in range( len(field_l) ):
+            if field_l[ii]['name'] == field:
+                fdata_d = field_l[ii]
+        try:
+            return fdata_d
+        except NameError:
+            logger.critical('data for %s does not exist', field )
+            sys.exit(1)
+
+    def get_field_units( self, field ):
+        '''get the units (SI) of a particular field'''
+        fdata_d = self.get_field_data( field )
+        units = fdata_d['units']
+        units = None if units == 'None' else units
+        return units
+
+    def get_scaled_field_values( self, field, fmt_o='' ):
+        '''get the scaled values for a particular field'''
+        fdata_d = self.get_field_data( field )
+        scaling = fdata_d['scaling']
+        values_a = np.array( [float(value) for value in fdata_d['values']] )
+        scaled_values_a = scaling * values_a
+        if fmt_o:
+            scaled_values_a = ascale( scaled_values_a, fmt_o.const )
+        return scaled_values_a
+
+    def get_scaled_field_values_internal( self, field, fmt_o='' ):
+        '''get the scaled values for the internal nodes (ignore top
+           and bottom nodes)'''
+        scaled_values_a = self.get_scaled_field_values( field, fmt_o )
+        return scaled_values_a[1:-1]
+ 
+#====================================================================
 class FigureData( object ):
 
     def __init__( self, args, nrows, ncols, width, height ):
@@ -45,18 +93,6 @@ class FigureData( object ):
         dd['time_decimal_places'] = 2 # hard-coded
         self.process_time_list()
         self.set_properties( nrows, ncols, width, height )
-
-    def petsc_bin_filename( self, time ):
-        '''filename for petsc binary file output'''
-        dd = self.data_d
-        out = 'output'
-        filename = 'petscbin.{0}'.format( time )
-        tname = os.path.join( out, filename )
-        if not os.path.isfile( tname ):
-            print('petsc_bin_filename: ERROR '+tname+' does not exist')
-            print('    please specify times for which data exists in output/')
-            sys.exit(1)
-        return tname
 
     def get_color( self, num ):
         dd = self.data_d
@@ -83,32 +119,6 @@ class FigureData( object ):
         #label = '%0.{}f'.format( dp )
         label = label % age
         return label
-
-    def get_data( self, field, time ):
-
-        infile = self.petsc_bin_filename( time )
-        io = PetscBinaryIO.PetscBinaryIO(precision='double')
-        objects_l = io.readBinaryFile( infile )
-        index = get_vector_index( field )
-        yy = objects_l[index]
-        return yy
-
-    def get_xy_data( self, field, time, fmt_o='' ):
-        yy_b = self.get_data( field, time )
-
-        # next index (4) should correlate to pressure_b
-        xx_b = self.get_data( 'pressure_b', time ) * 1.0E-9 # to GPa
-        xx_b = xx_b[1:-1] # basic internal nodes only
-
-        # FIXME: this is hacky at the moment
-        # want to flip the sign of the entropy gradient to make it
-        # cleaner to plot
-        if field == 'dSdr':
-            yy_b *= -1.0
-        yy = yy_b[1:-1] # only basic internal nodes
-        if fmt_o:
-            yy = ascale( yy, fmt_o.const )
-        return ( xx_b, yy )
 
     def process_time_list( self ):
         dd = self.data_d
@@ -167,10 +177,13 @@ class FigureData( object ):
         dd['ncols'] = ncols
         dd['width'] = width # inches
         dd['height'] = height # inches
+        # TODO: breaks for MacOSX, since I don't think Mac comes
+        # with serif font.  But whatever it decides to switch to
+        # also looks OK and LaTeX-like.
         font_d = {'family' : 'serif',
                   #'style': 'normal',
-                  #'weight' : 'bold',
-                  'serif': ['computer modern roman'],
+                  #'weight' : 'bold'
+                  'serif': ['Computer Modern Roman'],
                   'size'   : '8'}
         mpl.rc('font', **font_d)
         # Use TeX font for labels etc.
@@ -267,6 +280,8 @@ def figure1( args ):
     # article class text width is 4.7747 inches
     # http://tex.stackexchange.com/questions/39383/determine-text-width
 
+    logger.info( 'building figure1' )
+
     fig_o = FigureData( args, 2, 2, 4.7747, 4.7747 )
 
     ax0 = fig_o.ax[0][0]
@@ -275,11 +290,13 @@ def figure1( args ):
     ax3 = fig_o.ax[1][1]
  
     time = fig_o.time[0] # first timestep since liquidus and solidus
-                          # are time-independent
+                         # are time-independent
 
-    TIMEYRS = fig_o.get_data( 'constant_data', 0 )[8]
+    myjson_o = MyJSON( 'output/{}.json'.format(time) )
 
-    # hack to compute some average properties for Bower et al. (2017)
+    TIMEYRS = myjson_o.data_d['nstep'] 
+
+    # hack to compute some average properties for Bower et al. (2018)
     #xx_liq, yy_liq = fig_o.get_xy_data( 'liquidus_rho', time )
     #xx_sol, yy_sol = fig_o.get_xy_data( 'solidus_rho', time )
     #diff = (yy_liq - yy_sol) / yy_sol * 100.0
@@ -287,16 +304,18 @@ def figure1( args ):
     #print np.mean(diff[40:])
     #sys.exit(1)
 
+    xx_pres = myjson_o.get_scaled_field_values_internal('pressure_b')
+    xx_pres *= 1.0E-9
 
     # shade grey between liquidus and solidus
-    xx_liq, yy_liq = fig_o.get_xy_data( 'liquidus', time )
-    xx_sol, yy_sol = fig_o.get_xy_data( 'solidus', time )
-    ax0.fill_between( xx_liq, yy_liq, yy_sol, facecolor='grey', alpha=0.35, linewidth=0 )
-    xx_liqt, yy_liqt = fig_o.get_xy_data( 'liquidus_temp', time )
-    xx_solt, yy_solt = fig_o.get_xy_data( 'solidus_temp', time )
-    ax1.fill_between( xx_liqt, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
+    yy_liq = myjson_o.get_scaled_field_values_internal('liquidus_b')
+    yy_sol = myjson_o.get_scaled_field_values_internal('solidus_b')
+    ax0.fill_between( xx_pres, yy_liq, yy_sol, facecolor='grey', alpha=0.35, linewidth=0 )
+    yy_liqt = myjson_o.get_scaled_field_values_internal('liquidus_temp_b')
+    yy_solt = myjson_o.get_scaled_field_values_internal('solidus_temp_b')
+    ax1.fill_between( xx_pres, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
 
-    # hack to compute some average properties for Bower et al. (2017)
+    # hack to compute some average properties for Bower et al. (2018)
     #print xx_sol
     #print np.mean(yy_liq[20:]-yy_sol[20:])
     #sys.exit(1)
@@ -306,54 +325,63 @@ def figure1( args ):
         yy_b = xx/10.0 * (yy_liq - yy_sol) + yy_sol
         if xx == 0:
             # solidus
-            ax0.plot( xx_liq, yy_b, '-', linewidth=0.5, color='black' )
+            ax0.plot( xx_pres, yy_b, '-', linewidth=0.5, color='black' )
         elif xx == 3:
             # typically, the approximate location of the rheological transition
-            ax0.plot( xx_liq, yy_b, '-', linewidth=1.0, color='white')
+            ax0.plot( xx_pres, yy_b, '-', linewidth=1.0, color='white')
         elif xx == 10:
             # liquidus
-            ax0.plot( xx_liq, yy_b, '-', linewidth=0.5, color='black' )
+            ax0.plot( xx_pres, yy_b, '-', linewidth=0.5, color='black' )
         else:
             # dashed constant melt fraction lines
-            ax0.plot( xx_liq, yy_b, '--', linewidth=1.0, color='white' )
+            ax0.plot( xx_pres, yy_b, '--', linewidth=1.0, color='white' )
 
     handle_l = [] # handles for legend
 
     for nn, time in enumerate( fig_o.time ):
+        # read json
+        myjson_o = MyJSON( 'output/%(time)s.json' % vars() )
+
         color = fig_o.get_color( nn )
         # use melt fraction to determine mixed region
-        xx, yy = fig_o.get_xy_data( 'phi', time )
+        yy = myjson_o.get_scaled_field_values_internal('phi_b')
         MIX = get_mix( yy )
 
         label = fig_o.get_legend_label( time )
 
         # entropy
-        xx, yy = fig_o.get_xy_data( 'S', time )
-        ax0.plot( xx, yy, '--', color=color )
-        handle, = ax0.plot( xx*MIX, yy*MIX, '-', color=color, label=label )
+        yy = myjson_o.get_scaled_field_values_internal('S_b')
+        ax0.plot( xx_pres, yy, '--', color=color )
+        handle, = ax0.plot( xx_pres*MIX, yy*MIX, '-', color=color, label=label )
         handle_l.append( handle )
         # temperature
-        xx, yy = fig_o.get_xy_data( 'temp', time )
-        ax1.plot( xx, yy, '--', color=color )
-        ax1.plot( xx*MIX, yy*MIX, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('temp_b')
+        ax1.plot( xx_pres, yy, '--', color=color )
+        ax1.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # melt fraction
-        xx, yy = fig_o.get_xy_data( 'phi', time )
-        ax2.plot( xx, yy, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('phi_b')
+        ax2.plot( xx_pres, yy, '-', color=color )
         # viscosity
         visc_const = 1 # this is used for the arcsinh scaling
         visc_fmt = MyFuncFormatter( visc_const )
-        xx, yy = fig_o.get_xy_data( 'visc', time, visc_fmt)
-        ax3.plot( xx, yy, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('visc_b', visc_fmt)
+        ax3.plot( xx_pres, yy, '-', color=color )
 
     xticks = [0,50,100,135]
 
     # titles and axes labels, legends, etc
-    title = '(a) Entropy, J kg$^{-1}$ K$^{-1}$'
-    yticks = [300,1000,1600,2000,2400,2800,3200]
+    units = myjson_o.get_field_units('S_b')
+    title = '(a) Entropy, ' + units # J kg$^{-1}$ K$^{-1}$'
+    yticks = [1600,2000,2400,2800,3200]
+    # DJB used this next range for work with Bayreuth
+    #yticks = [300,1000,1600,2000,2400,2800,3200]
     fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, yticks=yticks )
     ax0.yaxis.set_label_coords(-0.075,0.59)
-    title = '(b) Temperature, K'
-    yticks= [300,1000,2000,3000,4000,5000]
+    units = myjson_o.get_field_units('temp_b')
+    title = '(b) Temperature, ' + units
+    yticks= [1000,2000,3000,4000,5000]
+    # DJB used this next range for work with Bayreuth
+    #yticks= [300,1000,2000,3000,4000,5000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xticks=xticks, yticks=yticks )
     ax1.yaxis.set_label_coords(-0.075,0.59)
     fig_o.set_mylegend( ax1, handle_l, loc=4, ncol=2 )
@@ -364,7 +392,8 @@ def figure1( args ):
         ylabel='$\phi$', xticks=xticks, yticks=yticks )
     ax2.yaxis.set_label_coords(-0.075,0.475)
     ax2.set_ylim( [0, 1] )
-    title = '(d) Viscosity, Pa$\cdot$s'
+    units = myjson_o.get_field_units('visc_b')
+    title = '(d) Viscosity, ' + units
     yticks = [1.0E2, 1.0E6, 1.0E12, 1.0E18, 1.0E21]
     fig_o.set_myaxes( ax3, title=title, xlabel='$P$ (GPa)',
         ylabel='$\eta$', xticks=xticks, yticks=yticks, fmt=visc_fmt )
@@ -1284,111 +1313,133 @@ def sci_notation(num, decimal_digits=1, precision=None, exponent=None):
     #return r"${0:.{2}f}\cdot10^{{{1:d}}}$".format(coeff, exponent, precision)
 
 #====================================================================
-def get_vector_index( instring ):
-    """
-    the order of fields in data_l must match exactly the order in
-    which PetscVecs are written to the output Petsc binary.
-    See monitor.c
-    """
 
-    data_l = [
+# REMOVE
+
+#def get_vector_index( instring ):
+#    """
+#    the order of fields in data_l must match exactly the order in
+#    which PetscVecs are written to the output Petsc binary.
+#    See monitor.c
+#    """
+
+#    data_l = [
         # extraneous
-        'time_data',
-        'constant_data',
-        'atmosphere_data',
-        'dSdr_b_aug',
-        # stored in M->meshVecs_b
-        'area_b',
-        'dPdr_b',
-        'pressure_b',
-        'radius_b',
-        'mix_b',
-        # stored in M->meshVecs_s
-        'pressure_s',
-        'radius_s',
-        'volume_s',
-        'dPdr_s',
-        'area_s',
-        'rho_s',
-        'mass_s',
-        # stored in S->solutionVecs_b
-        'alpha',
-        'alpha_mix',
-        'cond',
-        'cp',
-        'cp_mix',
-        'dfusdr',
-        'dfusdr_temp',
-        'dSdr',
-        'dSliqdr',
-        'dSsoldr',
-        'dTdrs',
-        'dTdrs_mix',
-        'Etot',
-        'fusion',
-        'fusion_curve',
-        'fusion_curve_temp',
-        'fusion_rho',
-        'fusion_temp',
-        'fwtl',
-        'fwts',
-        'gphi',
-        'gsuper',
-        'Jcond',
-        'Jconv',
-        'Jgrav',
-        'Jmix',
-        'Jtot',
-        'kappah',
-        'liquidus',
-        'liquidus_rho',
-        'liquidus_temp',
-        'nu',
-        'phi',
-        'regime',
-        'rho',
-        'S',
-        'solidus',
-        'solidus_rho',
-        'solidus_temp',
-        'temp',
-        'visc',
+#        'time_data',
+#        'constant_data',
+#        'atmosphere_data',
+#        'dSdr_b_aug',
+#        # stored in M->meshVecs_b
+#        'area_b',
+#        'dPdr_b',
+#        'pressure_b',
+#        'radius_b',
+#        'mix_b',
+#        # stored in M->meshVecs_s
+#        'pressure_s',
+#        'radius_s',
+#        'volume_s',
+#        'dPdr_s',
+#        'area_s',
+#        'rho_s',
+#        'mass_s',
+#        # stored in S->solutionVecs_b
+#        'alpha',
+#        'alpha_mix',
+#        'cond',
+#        'cp',
+#        'cp_mix',
+#        'dfusdr',
+#        'dfusdr_temp',
+#        'dSdr',
+#        'dSliqdr',
+#        'dSsoldr',
+#        'dTdrs',
+#        'dTdrs_mix',
+#        'Etot',
+#        'fusion',
+#        'fusion_curve',
+#        'fusion_curve_temp',
+#        'fusion_rho',
+#        'fusion_temp',
+#        'fwtl',
+#        'fwts',
+#        'gphi',
+#        'gsuper',
+#        'Jcond',
+#        'Jconv',
+#        'Jgrav',
+#        'Jmix',
+#        'Jtot',
+#        'kappah',
+#        'liquidus',
+#        'liquidus_rho',
+#        'liquidus_temp',
+#        'nu',
+#        'phi',
+#        'regime',
+#        'rho',
+#        'S',
+#        'solidus',
+#        'solidus_rho',
+#        'solidus_temp',
+#        'temp',
+#        'visc',
          # stored in S->solutionVecs_s
-        'cp_s',
-        'cp_mix_s',
-        'dSdt_s',
-        'fusion_s',
-        'fusion_curve_s',
-        'fusion_curve_temp_s',
-        'fusion_temp_s',
-        'fwtl_s',
-        'fwts_s',
-        'gphi_s',
-        'Hradio_s',
-        'Htidal_s',
-        'Htot_s',
-        'lhs_s',
-        'liquidus_rho_s',
-        'liquidus_s',
-        'liquidus_temp_s',
-        'phi_s',
-        'rho_s',
-        'S_s',
-        'solidus_s',
-        'solidus_rho_s',
-        'solidus_temp_s',
-        'temp_s'
-    ]
+#        'cp_s',
+#        'cp_mix_s',
+#        'dSdt_s',
+#        'fusion_s',
+#        'fusion_curve_s',
+#        'fusion_curve_temp_s',
+#        'fusion_temp_s',
+#        'fwtl_s',
+#        'fwts_s',
+#        'gphi_s',
+#        'Hradio_s',
+#        'Htidal_s',
+#        'Htot_s',
+#        'lhs_s',
+#        'liquidus_rho_s',
+#        'liquidus_s',
+#        'liquidus_temp_s',
+#        'phi_s',
+#        'rho_s',
+#        'S_s',
+#        'solidus_s',
+#        'solidus_rho_s',
+#        'solidus_temp_s',
+#        'temp_s'
+#    ]
 
-    index = data_l.index( instring )
+#    index = data_l.index( instring )
 
-    return index
+#    return index
 
 #====================================================================
 def main( args ):
 
     if len(args) < 2 :
         raise Exception('You must provide an argument consisting of comma-separated times.')
+
+    # setup logger
+
+    # create logger with 'main'
+    #logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler('main.log')
+    fh.setLevel(logging.DEBUG)
+    # create console handler with a higher log level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    # add the handlers to the logger
+    logger.addHandler(fh)
+    logger.addHandler(ch)
 
     figure1( args )
     #figure2( args )
@@ -1397,7 +1448,7 @@ def main( args ):
     #figure5( args )
     #figure6( args )
     #figure7( args )
-    figure8( args )
+    #figure8( args )
     plt.show()
 
 #====================================================================
