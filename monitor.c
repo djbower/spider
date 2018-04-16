@@ -210,7 +210,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
 
     if (rank==0) {
-      cJSON       *json,*str,*number,*data;
+      cJSON       *json,*data;
       char        *outputString;
       char        filename[PETSC_MAX_PATH_LEN];
       PetscInt    i;
@@ -221,19 +221,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       json = cJSON_CreateObject();
 
       /* Add some header info */
-      str = cJSON_CreateString(SPIDER_MAJOR_VERSION);
-      cJSON_AddItemToObject(json,"SPIDER major version",str);
-      str = cJSON_CreateString(SPIDER_MINOR_VERSION);
-      cJSON_AddItemToObject(json,"SPIDER minor version",str);
-      str = cJSON_CreateString(SPIDER_PATCH_VERSION);
-      cJSON_AddItemToObject(json,"SPIDER patch version",str);
+      cJSON_AddItemToObject(json,"SPIDER major version",cJSON_CreateString(SPIDER_MAJOR_VERSION));
+      cJSON_AddItemToObject(json,"SPIDER minor version",cJSON_CreateString(SPIDER_MINOR_VERSION));
+      cJSON_AddItemToObject(json,"SPIDER patch version",cJSON_CreateString(SPIDER_PATCH_VERSION));
       // TODO: some of these variable names lack clear meaning (e.g., nstep)
-      number = cJSON_CreateNumber(step);
-      cJSON_AddItemToObject(json,"step",number);
-      number = cJSON_CreateNumber(dtmacro_years);
-      cJSON_AddItemToObject(json,"dtmacro_years",number);
-      number = cJSON_CreateNumber(nstep);
-      cJSON_AddItemToObject(json,"nstep",number);
+      cJSON_AddItemToObject(json,"step",cJSON_CreateNumber(step));
+      cJSON_AddItemToObject(json,"dtmacro_years",cJSON_CreateNumber(dtmacro_years));
+      cJSON_AddItemToObject(json,"nstep",cJSON_CreateNumber(nstep));
       // TODO : add other stuff we might like in the header
 
       /* Add solution to file */
@@ -246,8 +240,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       /* Re-evaluate rhs and add to file */
       {
         DimensionalisableField rhsDF;
-        Vec rhs;
-        cJSON *rhsJSON;
+        Vec                    rhs;
+        cJSON                  *rhsJSON;
         ierr = DimensionalisableFieldDuplicate(ctx->solDF,&rhsDF);CHKERRQ(ierr);
         ierr = DimensionalisableFieldSetName(rhsDF,"SPIDER rhs");CHKERRQ(ierr);
         ierr = DimensionalisableFieldGetGlobalVec(rhsDF,&rhs);CHKERRQ(ierr);
@@ -255,7 +249,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         ierr = DimensionalisableFieldToJSON(rhsDF,&rhsJSON);CHKERRQ(ierr);
         cJSON_AddItemToObject(json,"rhs",rhsJSON);CHKERRQ(ierr);
         ierr = DimensionalisableFieldDestroy(&rhsDF);CHKERRQ(ierr);
-
       }
 
       /* Add data of interest */

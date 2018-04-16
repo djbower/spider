@@ -178,7 +178,7 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
   PetscErrorCode    ierr;
   Vec               vec;
   PetscInt          vecSize,i,d;
-  cJSON             *str,*json,*number,*values,*valuesArray;
+  cJSON             *json,*values,*valuesArray;
   const PetscScalar *arr;
   Vec               *subVecs;
 
@@ -188,14 +188,11 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
 
   *pjson = cJSON_CreateObject();
   json = *pjson;
-  str = cJSON_CreateString(f->name);
-  cJSON_AddItemToObject(json,"name",str);
+  cJSON_AddItemToObject(json,"name",cJSON_CreateString(f->name));
   if (f->numDomains == 1) {
-    str = cJSON_CreateString(f->units);
-    cJSON_AddItemToObject(json,"units",str);
+    cJSON_AddItemToObject(json,"units",cJSON_CreateString(f->units));
   }
-  number = cJSON_CreateNumber(f->numDomains);
-  cJSON_AddItemToObject(json,"subdomains",number);
+  cJSON_AddItemToObject(json,"subdomains",cJSON_CreateNumber(f->numDomains));
   if (f->numDomains > 1) {
     valuesArray = cJSON_CreateArray();
     ierr = PetscMalloc1(f->numDomains,&subVecs);CHKERRQ(ierr);
@@ -207,31 +204,23 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
     cJSON *curr;
     Vec   vecCurr;
     if (f->numDomains > 1) {
-      cJSON *number;
       curr = cJSON_CreateObject();
       vecCurr = subVecs[d];
-      number = cJSON_CreateNumber(d);
-      cJSON_AddItemToObject(curr,"slot",number);
+      cJSON_AddItemToObject(curr,"slot",cJSON_CreateNumber(d));
       if (f->slotNames[d]) {
-        cJSON *str = cJSON_CreateString(f->slotNames[d]);
-        cJSON_AddItemToObject(curr,"description",str);
+        cJSON_AddItemToObject(curr,"description",cJSON_CreateString(f->slotNames[d]));
       }
       if (f->slotUnits[d]) {
-        cJSON *str = cJSON_CreateString(f->slotUnits[d]);
-        cJSON_AddItemToObject(curr,"units",str);
+        cJSON_AddItemToObject(curr,"units",cJSON_CreateString(f->slotUnits[d]));
       }
     } else {
       curr = json;
       vecCurr = vec;
     }
     ierr = VecGetSize(vecCurr,&vecSize);CHKERRQ(ierr);
-    number = cJSON_CreateNumber(vecSize);
-    cJSON_AddItemToObject(curr,"size",number);
-
-    number = cJSON_CreateNumber(f->scaling[d]);
-    cJSON_AddItemToObject(curr,"scaling",number);
-    str = f->scaled? cJSON_CreateString("true") : cJSON_CreateString("false");
-    cJSON_AddItemToObject(curr,"scaled",str);
+    cJSON_AddItemToObject(curr,"size",cJSON_CreateNumber(vecSize));
+    cJSON_AddItemToObject(curr,"scaling",cJSON_CreateNumber(f->scaling[d]));
+    cJSON_AddItemToObject(curr,"scaled",f->scaled? cJSON_CreateString("true") : cJSON_CreateString("false"));
 
     /* Store vector values as STRINGS to ensure precision we want */
     /* Current implementation assumes single rank */
@@ -244,17 +233,14 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
     values = cJSON_CreateArray();
     {
       for (i=0; i<vecSize; ++i) {
-        cJSON *entry;
         char str[64]; /* note hard-coded size */
 #if defined(PETSC_USE_REAL___FLOAT128)
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not implemented for quad yet");CHKERRQ(ierr);
 #else
         ierr = PetscSNPrintf(str,64,"%16.16g",arr[i]);CHKERRQ(ierr); /* hard-coded value */
 #endif
-        entry = cJSON_CreateString(str);
-        cJSON_AddItemToArray(values,entry);
+        cJSON_AddItemToArray(values,cJSON_CreateString(str));
       }
-
     }
     ierr = VecRestoreArrayRead(vecCurr,&arr);CHKERRQ(ierr);
 
