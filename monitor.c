@@ -293,6 +293,9 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         fclose(fp);
       }
 
+      /* Free the string */
+      free(outputString);
+
       /* Delete the JSON object and viewer (close file)*/
       cJSON_Delete(json);
     }
