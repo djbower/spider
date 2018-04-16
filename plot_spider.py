@@ -434,31 +434,38 @@ def figure2( args ):
         if (nn-1) % 2:
             continue
 
+        # read json
+        myjson_o = MyJSON( 'output/{}.json'.format(time) )
+
         color = fig_o.get_color( nn )
         # use melt fraction to determine mixed region
-        xx, yy = fig_o.get_xy_data( 'phi', time )
+        yy = myjson_o.get_scaled_field_values_internal('phi_b')
         MIX = get_mix( yy )
 
         label = fig_o.get_legend_label( time )
 
+        # pressure for x-axis
+        xx_pres = myjson_o.get_scaled_field_values_internal('pressure_b')
+        xx_pres *= 1.0E-9
+
         # Jconv_b
-        xx, yy = fig_o.get_xy_data( 'Jconv', time, flux_fmt )
-        ax0.plot( xx, yy, '--', color=color )
-        handle, = ax0.plot( xx*MIX, yy*MIX, '-', label=label, 
+        yy = myjson_o.get_scaled_field_values_internal('Jconv_b', flux_fmt)
+        ax0.plot( xx_pres, yy, '--', color=color )
+        handle, = ax0.plot( xx_pres*MIX, yy*MIX, '-', label=label, 
             color=color )
         handle_l.append( handle )
         # Jmix_b
-        xx, yy = fig_o.get_xy_data( 'Jmix', time, flux_fmt )
-        ax2.plot( xx, yy, '--', color=color )
-        ax2.plot( xx*MIX, yy*MIX, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('Jmix_b', flux_fmt)
+        ax2.plot( xx_pres, yy, '--', color=color )
+        ax2.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # Jgrav_b
-        xx, yy = fig_o.get_xy_data( 'Jgrav', time, flux_fmt )
-        ax1.plot( xx, yy, '--', color=color )
-        ax1.plot( xx*MIX, yy*MIX, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('Jgrav_b', flux_fmt)
+        ax1.plot( xx_pres, yy, '--', color=color )
+        ax1.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # Jtot_b
-        xx, yy = fig_o.get_xy_data( 'Jtot', time, flux_fmt )
-        ax3.plot( xx, yy, '--', color=color )
-        ax3.plot( xx*MIX, yy*MIX, '-', color=color )
+        yy = myjson_o.get_scaled_field_values_internal('Jtot_b', flux_fmt)
+        ax3.plot( xx_pres, yy, '--', color=color )
+        ax3.plot( xx_pres*MIX, yy*MIX, '-', color=color )
 
     # titles and axes labels, legends, etc.
     xticks = [0,50,100,135]
@@ -1441,8 +1448,8 @@ def main( args ):
     logger.addHandler(fh)
     logger.addHandler(ch)
 
-    figure1( args )
-    #figure2( args )
+    #figure1( args )
+    figure2( args )
     #figure3( args )
     #figure4( args )
     #figure5( args )
