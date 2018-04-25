@@ -85,12 +85,13 @@ class MyJSON( object ):
 #====================================================================
 class FigureData( object ):
 
-    def __init__( self, args, nrows, ncols, width, height ):
+    def __init__( self, args, nrows, ncols, width, height, outname='fig' ):
         dd = {}
         self.data_d = dd
         dd['time_l'] = args[1]
         dd['time_units'] = 'kyr' # hard-coded
         dd['time_decimal_places'] = 2 # hard-coded
+        dd['outname'] = outname
         self.process_time_list()
         self.set_properties( nrows, ncols, width, height )
 
@@ -141,7 +142,10 @@ class FigureData( object ):
 
     def savefig( self, num ):
         dd = self.data_d
-        outname = 'fig{}.pdf'.format( num)
+        if dd['outname']:
+            outname = dd['outname'] + '.pdf'
+        else:
+            outname = 'fig{}.pdf'.format( num)
         self.fig.savefig(outname, transparent=True, bbox_inches='tight',
             pad_inches=0.05, dpi=dd['dpi'])
 
@@ -160,6 +164,7 @@ class FigureData( object ):
         # color scheme 'bkr8' for light background from Crameri
         # see f_Colours.m at http://www.fabiocrameri.ch/visualisation.php
         # this is actually very similar (same?) as Tim's scheme above
+        # used in Bower et al. (2018)
         colors_l = [(0.0,0.0,0.3),
                     (0.1,0.1,0.5),
                     (0.2,0.2,0.7),
@@ -275,14 +280,14 @@ def get_mix( melt_fraction_a ):
     return MIX
 
 #====================================================================
-def figure1( args ):
+def bower_et_al_2018_fig3( args ):
 
     # article class text width is 4.7747 inches
     # http://tex.stackexchange.com/questions/39383/determine-text-width
 
-    logger.info( 'building figure1' )
+    logger.info( 'building bower_et_al_2018_fig3' )
 
-    fig_o = FigureData( args, 2, 2, 4.7747, 4.7747 )
+    fig_o = FigureData( args, 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig3' )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -414,9 +419,11 @@ def figure1( args ):
     fig_o.savefig(1)
 
 #====================================================================
-def figure2( args ):
+def bower_et_al_2018_fig4( args ):
 
-    fig_o = FigureData( args, 2, 2, 4.7747, 4.7747 )
+    logger.info( 'building bower_et_al_2018_fig4' )
+
+    fig_o = FigureData( args, 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig4' )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -495,10 +502,12 @@ def figure2( args ):
     fig_o.savefig(2)
 
 #====================================================================
-def figure3( args ):
+def bower_et_al_2018_fig5( args ):
+
+    logger.info( 'building bower_et_al_2018_fig5' )
 
     # keep y the same by scaling (7.1621)
-    fig_o = FigureData( args, 3, 2, 4.7747, 7.1621 )
+    fig_o = FigureData( args, 3, 2, 4.7747, 7.1621, 'bower_et_al_2018_fig5' )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -619,38 +628,51 @@ def figure3( args ):
     fig_o.savefig(3)
 
 #====================================================================
-def dep2pres( dep ):
+def dep2pres( dep, R0 ):
 
-    dep *= 6371000.0
+    dep *= R0
     pres = 4078.95095544*10 / 1.1115348931000002e-07
     pres *= np.exp( 1.1115348931000002e-07 * dep) - 1.0
     pres *= 1.0E-9
     return pres
 
 #====================================================================
-def figure4( args ):
+def bower_et_al_2018_fig2( args ):
+
+    logger.info( 'building bower_et_al_2018_fig2' )
+
+    # define scalings (hard-coded)
+    # these were used for the original Bower et al. (2018) work
+    # but could in principle be different in future models
+    S0 = 2993.025100070677
+    R0 = 6371000.0
+    T0 = 4033.6070755893948
+    D0 = 4613.109568155063
+    FLUX0 = D0 * (S0*T0)**(3.0/2.0)
 
     width = 4.7747 # * 0.5
     height = 4.7747 # * 0.5
-    fig_o = FigureData( args, 2, 2, width, height )
+    fig_o = FigureData( args, 2, 2, width, height, 'bower_et_al_2018_fig2' )
 
     dd = fig_o.data_d
 
     # below, only basic internal nodes
-    #xconst = 55692628932.82327 # scaling for pressure but could change
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
     ax2 = fig_o.ax[1][0]
     ax3 = fig_o.ax[1][1]
 
+    # directory containing simplified model data
+    prefix = 'examples/bower_et_al_2018/simplified_model/fig2'
+
     ###############
     # plot liquidus
-    Sliq_file = '/Users/dan/Documents/research/my_papers/in_prep/magma_ocean_method/toymodel/Sliq_processed.dat'
+    Sliq_file = os.path.join(prefix,'Sliq_processed.dat')
     rad, Sliq = np.loadtxt( Sliq_file, unpack=True )
     depth = 1.0 - rad
-    pres = dep2pres( depth )
-    const = 2993.025100070677 # scaling for entropy but could change
+    pres = dep2pres( depth, R0 )
+    const = S0 # scaling for entropy but could change
     Sliq *= const
     # titles and axes labels, legends, etc
     title = '(d) Liquidus, J kg$^{-1}$ K$^{-1}$'
@@ -662,22 +684,22 @@ def figure4( args ):
 
     ###############################
     # plot semi-analytical solution
-    dSdr_file = '/Users/dan/Documents/research/my_papers/in_prep/magma_ocean_method/toymodel/flux1E6dim_processed.dat'
-    dSliqdr_file = '/Users/dan/Documents/research/my_papers/in_prep/magma_ocean_method/toymodel/dSliqdr_processed.dat'
+    const = S0/R0
 
+    dSdr_file = os.path.join(prefix,'dSdr_processed.dat')
     rad, dSdr = np.loadtxt( dSdr_file, unpack=True )
-    rad2, dSliqdr = np.loadtxt( dSliqdr_file, unpack=True )
     depth = 1.0 - rad
-    depth2 = 1.0 - rad2
-    pres = dep2pres( depth )
-    pres2 = dep2pres( depth2 )
+    pres = dep2pres( depth, R0 )
+    dSdr *= const * -1.0
 
-    const = 0.0004697889028520918
-    dSdr *= const * -1.0 # DJB HACK
-    dSliqdr *= const
-
+    # dSliqdr was not plotted in the end
+    #dSliqdr_file = os.path.join(prefix,'dSliqdr_processed.dat')
+    #rad2, dSliqdr = np.loadtxt( dSliqdr_file, unpack=True )
+    #depth2 = 1.0 - rad2
+    #pres2 = dep2pres( depth2, R0 )
+    #dSliqdr *= const
     # must scale by 1/2
-    dSliqdr *= 0.5
+    #dSliqdr *= 0.5
 
     dSdr_const = 1.0E15
     dSdr_fmt = MyFuncFormatter( dSdr_const )
@@ -694,16 +716,15 @@ def figure4( args ):
 
     ############
     # plot Fconv
-    Fconv_file = '/Users/dan/Documents/research/my_papers/in_prep/magma_ocean_method/toymodel/FluxConv_processed.dat'
+    Fconv_file = os.path.join(prefix,'FluxConv_processed.dat')
     rad, Fconv = np.loadtxt( Fconv_file, unpack=True )
     depth = 1.0 - rad
-    pres = dep2pres( depth )
+    pres = dep2pres( depth, R0 )
 
-    const = 193508342723647.66
+    const = FLUX0
     Fconv *= const
 
     # for arcsinh scaling
-    #flux_const = 1.0E6
     flux_const = 1.0E6
     flux_fmt = MyFuncFormatter( flux_const )
     Fconv = ascale( Fconv, flux_fmt.const )
@@ -711,7 +732,7 @@ def figure4( args ):
 
     # titles and axes labels, legends, etc.
     #yticks = [-1.0E12, -1.0E6, -1.0E0, -1.0E-3, 1.0E-3, 1.0E0, 1.0E6, 1E12]
-    yticks = [-1.0E15, -1.0E12, -1.0E6, -1.0E0,0, 1.0E0, 1.0E6, 1.0E12, 1.0E15]
+    yticks = [-1.0E15, -1.0E12, -1.0E6, -1.0E0, 0, 1.0E0, 1.0E6, 1.0E12, 1.0E15]
 
     title = '(a) Convective flux, W m$^{-2}$'
     fig_o.set_myaxes( ax0, title=title, ylabel='$F_\mathrm{conv}$',
@@ -720,17 +741,16 @@ def figure4( args ):
 
     ###########
     # plot Fmix
-    Fmix_file = '/Users/dan/Documents/research/my_papers/in_prep/magma_ocean_method/toymodel/FluxMix_processed.dat'
+    Fmix_file = os.path.join(prefix,'FluxMix_processed.dat')
     rad, Fmix = np.loadtxt( Fmix_file, unpack=True )
     depth = 1.0 - rad
-    pres = dep2pres( depth )
+    pres = dep2pres( depth, R0 )
 
-    const = 193508342723647.66
+    const = FLUX0
     Fmix *= const
 
     Fmix = ascale( Fmix, flux_fmt.const )
     handle4, = ax2.plot( pres, Fmix, 'k-' )
-    #handle4, = ax2.plot( pres, Fmix, 'k-' )
 
     #fig_o.set_mylegend( ax3, handle_l, ncol=2 )
     title = '(c) Mixing flux, W m$^{-2}$'
@@ -749,15 +769,27 @@ def figure4( args ):
     fig_o.savefig(4)
 
 #====================================================================
-def figure5( args ):
+def bower_et_al_2018_fig1( args ):
+
+    logger.info( 'building bower_et_al_2018_fig1' )
+
+    prefix = 'examples/bower_et_al_2018/simplified_model/fig1'
+
+    # define scalings (hard-coded)
+    # these were used for the original Bower et al. (2018) work
+    # but could in principle be different in future models
+    S0 = 2993.025100070677
+    R0 = 6371000.0
+    T0 = 4033.6070755893948
+    D0 = 4613.109568155063
 
     width = 4.7747 * 0.5
     height = 4.7747 * 0.5
-    fig_o = FigureData( args, 1, 1, width, height )
+    fig_o = FigureData( args, 1, 1, width, height, 'bower_et_al_2018_fig1' )
 
     ax0 = fig_o.ax
 
-    const = 0.0004697889028520918
+    const = S0/R0
 
     dSdr_const = 1.0E15
     dSdr_fmt = MyFuncFormatter( dSdr_const )
@@ -777,8 +809,6 @@ def figure5( args ):
     ax0.yaxis.set_label_coords(-0.1,0.565)
     #ax0.set_xlim( -5.2, 0.4)
 
-    prefix = '/Users/dan/Documents/research/my_papers/in_prep/magma_ocean_method/toymodel/regime_diagram/'
-
     # plot asymptote
     FLAG = 1
     if FLAG:
@@ -786,7 +816,7 @@ def figure5( args ):
         # probably to account for the x shift?
         xx2 = np.linspace( -20.4, 0.8, 1000000 )
         xx2 *= const
-        yy2 = 0.5 * xx2 * -1.0 # DJB HACK TO FLIP Y
+        yy2 = 0.5 * xx2 * -1.0
         xx2 = ascale( xx2, dSliqdr_fmt.const )
         yy2 = ascale( yy2, dSdr_fmt.const )
         ax0.plot( xx2, yy2, 'k--' )
@@ -797,7 +827,7 @@ def figure5( args ):
         #xx2 = np.linspace( -20.4, 0.8, 1000000 )
         xx2 = np.linspace( -20.4, -0.0001, 1000000 )
         xx2 *= const
-        yy2 = 1.0/6.0 * xx2 * -1.0 # DJB HACK TO FLIP Y
+        yy2 = 1.0/6.0 * xx2 * -1.0
         xx2 = ascale( xx2, dSliqdr_fmt.const )
         yy2 = ascale( yy2, dSdr_fmt.const )
         xx2 -= 0.4
@@ -806,11 +836,11 @@ def figure5( args ):
 
     # positive heat fluxes
     for cc, nn in enumerate([12,9,6]):
-        filein = prefix + 'dSdr_10p%(nn)d_processed.dat' % vars()
+        filein = os.path.join(prefix,'dSdr_10p%(nn)d_processed.dat' % vars())
         xx, yy = np.loadtxt( filein, unpack=True )
         xx *= const
         xx = ascale( xx, dSliqdr_fmt.const )
-        yy *= const * -1.0 # DJB HACK TO FLIP Y
+        yy *= const * -1.0
         yy = ascale( yy, dSdr_fmt.const )
         # offset y for visual clarity
         xx += 0.4
@@ -819,11 +849,11 @@ def figure5( args ):
 
     # negative heat fluxes
     for cc, nn in enumerate([12,9,6]):
-        filein = prefix + 'dSdr_n10p%(nn)d_processed.dat' % vars()
+        filein = os.path.join(prefix,'dSdr_n10p%(nn)d_processed.dat' % vars())
         xx, yy = np.loadtxt( filein, unpack=True )
         xx *= const
         xx = ascale( xx, dSliqdr_fmt.const )
-        yy *= const * -1.0 # DJB HACK TO FLIP Y
+        yy *= const * -1.0
         yy = ascale( yy, dSdr_fmt.const )
         # offset y for visual clarity
         xx -= 0.4
@@ -1310,17 +1340,18 @@ def sci_notation(num, decimal_digits=1, precision=None, exponent=None):
     explicitly.
     """
 
-    # Bit hacky, but flag allows us to plot 0 on the y axis, which is
-    # useful to emphasize that we are plotting positive and negative
-    # values, e.g. for the heat fluxes
-    FLAG = 0
+    # plotting zero is useful to emphasize that we are plotting both
+    # positive and negative values, e.g. for the heat fluxes
+    if num==0:
+        fmt = r"$0$"
+        return fmt
 
     if not exponent:
-        try:
-            exponent = int(np.floor(np.log10(abs(num))))
-        except OverflowError:
-            exponent = 0
-            FLAG=1
+        exponent = abs(num)
+        exponent = np.log10( exponent )
+        exponent = np.floor( exponent )
+        exponent = int( exponent )
+
     coeff = round(num / float(10**exponent), decimal_digits)
     # sometimes, probably due to floating point precision? the coeff
     # is not less than ten.  Correct for that here
@@ -1330,13 +1361,11 @@ def sci_notation(num, decimal_digits=1, precision=None, exponent=None):
     if not precision:
         precision = decimal_digits
 
-    if coeff < 0.0 and not FLAG:
+    if coeff < 0.0:
         fmt = r"$-10^{{{0}}}$".format(exponent)
         #fmt= r"${{{0}}}$".format(exponent)
-    elif coeff > 0.0 and not FLAG:
-        fmt = r"$10^{{{0}}}$".format(exponent)
     else:
-        fmt = r"$0$"
+        fmt = r"$10^{{{0}}}$".format(exponent)
 
     return fmt
     #return r"${0:.{2}f}\cdot10^{{{1:d}}}$".format(coeff, exponent, precision)
@@ -1448,9 +1477,6 @@ def sci_notation(num, decimal_digits=1, precision=None, exponent=None):
 #====================================================================
 def main( args ):
 
-    if len(args) < 2 :
-        raise Exception('You must provide an argument consisting of comma-separated times.')
-
     # setup logger
 
     # create logger with 'main'
@@ -1470,11 +1496,21 @@ def main( args ):
     logger.addHandler(fh)
     logger.addHandler(ch)
 
-    figure1( args )
-    figure2( args )
-    figure3( args )
-    #figure4( args )
-    #figure5( args )
+    # reproduce staple figures in Bower et al. (2018)
+    # i.e., figs 3,4,5,6,7,8
+    if 0:
+        if len(args) < 2 :
+            raise Exception('You must provide an argument consisting of comma-separated times.')
+        bower_et_al_2018_fig3( args )
+        bower_et_al_2018_fig4( args )
+        bower_et_al_2018_fig5( args )
+
+    # simplified model in Bower et al. (2018)
+    # i.e., figs 1,2
+    if 0:
+        bower_et_al_2018_fig1( args )
+        bower_et_al_2018_fig2( args )
+
     #figure6( args )
     #figure7( args )
     #figure8( args )
