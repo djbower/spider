@@ -6,7 +6,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
-import os, sys 
+import os
+import sys
+import argparse
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +83,7 @@ class MyJSON( object ):
            and bottom nodes)'''
         scaled_values_a = self.get_scaled_field_values( field, fmt_o )
         return scaled_values_a[1:-1]
- 
+
 #====================================================================
 class FigureData( object ):
 
@@ -293,13 +295,13 @@ def bower_et_al_2018_fig3( args ):
     ax1 = fig_o.ax[0][1]
     ax2 = fig_o.ax[1][0]
     ax3 = fig_o.ax[1][1]
- 
+
     time = fig_o.time[0] # first timestep since liquidus and solidus
                          # are time-independent
 
     myjson_o = MyJSON( 'output/{}.json'.format(time) )
 
-    TIMEYRS = myjson_o.data_d['nstep'] 
+    TIMEYRS = myjson_o.data_d['nstep']
 
     # hack to compute some average properties for Bower et al. (2018)
     #xx_liq, yy_liq = fig_o.get_xy_data( 'liquidus_rho', time )
@@ -458,7 +460,7 @@ def bower_et_al_2018_fig4( args ):
         # Jconv_b
         yy = myjson_o.get_scaled_field_values_internal('Jconv_b', flux_fmt)
         ax0.plot( xx_pres, yy, '--', color=color )
-        handle, = ax0.plot( xx_pres*MIX, yy*MIX, '-', label=label, 
+        handle, = ax0.plot( xx_pres*MIX, yy*MIX, '-', label=label,
             color=color )
         handle_l.append( handle )
         # Jmix_b
@@ -547,7 +549,7 @@ def bower_et_al_2018_fig5( args ):
         # eddy diffusivity
         yy = myjson_o.get_scaled_field_values_internal('kappah_b', eddy_fmt)
         ax0.plot( xx_pres, yy, '--', color=color )
-        handle, = ax0.plot( xx_pres*MIX, yy*MIX, '-', label=label, 
+        handle, = ax0.plot( xx_pres*MIX, yy*MIX, '-', label=label,
             color=color )
         handle_l.append( handle )
         # density
@@ -1053,7 +1055,7 @@ def figure7( args ):
         regime = np.copy(yy)
         regime[:] = 0
         regime[yy>=0.4] = 1.0
-        regime[yy<0.4] = 2.0 
+        regime[yy<0.4] = 2.0
 
         ax1.plot( xx, regime, '--', color=color )
         handle, = ax1.plot( xx*MIX, regime*MIX, '-', color=color, label=label )
@@ -1475,7 +1477,29 @@ def sci_notation(num, decimal_digits=1, precision=None, exponent=None):
 #    return index
 
 #====================================================================
-def main( args ):
+def main():
+
+    # arguments (run with -h to summarize)
+    parser = argparse.ArgumentParser(description='SPIDER plotting script')
+    parser.add_argument('times',type=str, help='Comma-separated (no spaces) list of times');
+    parser.add_argument('-f1', '--fig1', help='Plot figure 1', action="store_true")
+    parser.add_argument('-f2', '--fig2', help='Plot figure 2', action="store_true")
+    parser.add_argument('-f3', '--fig3', help='Plot figure 3', action="store_true")
+    parser.add_argument('-f4', '--fig4', help='Plot figure 4', action="store_true")
+    parser.add_argument('-f5', '--fig5', help='Plot figure 5', action="store_true")
+    parser.add_argument('-f6', '--fig6', help='Plot figure 6', action="store_true")
+    parser.add_argument('-f7', '--fig7', help='Plot figure 7', action="store_true")
+    parser.add_argument('-f8', '--fig8', help='Plot figure 8', action="store_true")
+    args = parser.parse_args()
+
+    # If nothing specified, choose a default set
+    if not (args.fig1 or args.fig2 or args.fig3 or args.fig4 or args.fig5 or args.fig6 or args.fig7 or args.fig8) :
+        args.fig3 = True;
+        args.fig4 = True;
+        args.fig5 = True;
+
+    # Old-style arguments as expected by the plotting functions
+    old_args = [None,args.times]
 
     # setup logger
 
@@ -1496,30 +1520,34 @@ def main( args ):
     logger.addHandler(fh)
     logger.addHandler(ch)
 
-    # reproduce staple figures in Bower et al. (2018)
-    # i.e., figs 3,4,5,6,7,8
-    if 0:
-        if len(args) < 2 :
-            raise Exception('You must provide an argument consisting of comma-separated times.')
-        bower_et_al_2018_fig3( args )
-        bower_et_al_2018_fig4( args )
-        bower_et_al_2018_fig5( args )
-
     # simplified model in Bower et al. (2018)
     # i.e., figs 1,2
-    if 0:
-        bower_et_al_2018_fig1( args )
-        bower_et_al_2018_fig2( args )
+    if args.fig1 :
+        bower_et_al_2018_fig1( old_args )
+    if args.fig2 :
+        bower_et_al_2018_fig2( old_args )
 
-    #figure6( args )
-    #figure7( args )
-    #figure8( args )
+    # reproduce staple figures in Bower et al. (2018)
+    # i.e., figs 3,4,5,6,7,8
+    if args.fig3 :
+        bower_et_al_2018_fig3( old_args )
+    if args.fig4 :
+        bower_et_al_2018_fig4( old_args )
+    if args.fig5 :
+        bower_et_al_2018_fig5( old_args )
+
+    # additional figures
+    if args.fig6 :
+        figure6( old_args )
+    if args.fig7 :
+        figure7( old_args )
+    if args.fig8 :
+        figure8( old_args )
+
     plt.show()
 
 #====================================================================
 
 if __name__ == "__main__":
 
-    main( sys.argv )
-
-    sys.exit(1)
+    main()
