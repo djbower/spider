@@ -1,7 +1,9 @@
 #include "output.h"
 
-static PetscErrorCode add_vector_to_viewer( Vec, PetscViewer );
+// to remove
+//static PetscErrorCode add_vector_to_viewer( Vec, PetscViewer );
 
+#if 0
 // TODO : remove this once new JSON output is in place
 PetscErrorCode scale_vectors_and_output( DimensionalisableField *f, PetscInt NUM, PetscViewer viewer)
 {
@@ -23,7 +25,9 @@ PetscErrorCode scale_vectors_and_output( DimensionalisableField *f, PetscInt NUM
   }
   PetscFunctionReturn(0);
 }
+#endif
 
+#if 0
 static PetscErrorCode add_vector_to_viewer( Vec vec, PetscViewer viewer)
 {
   /* simple wrapper to add a vector to a PetscViewer */
@@ -39,6 +43,7 @@ static PetscErrorCode add_vector_to_viewer( Vec vec, PetscViewer viewer)
 
   PetscFunctionReturn(0);
 }
+#endif
 
 PetscErrorCode atmosphere_structs_to_vec( Vec sol, Ctx *E, Vec vec )
 {
@@ -140,6 +145,7 @@ PetscErrorCode atmosphere_structs_to_vec( Vec sol, Ctx *E, Vec vec )
     PetscFunctionReturn(0);
 }
 
+#if 0
 PetscErrorCode constants_struct_to_vec( Constants const *C, Vec vec )
 {
 
@@ -181,3 +187,4 @@ PetscErrorCode constants_struct_to_vec( Constants const *C, Vec vec )
 
     PetscFunctionReturn(0);
 }
+#endif

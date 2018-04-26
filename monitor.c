@@ -1,3 +1,4 @@
+#include "dimensionalisablefield.h"
 #include "monitor.h"
 #include "output.h"
 #include "rhs.h"
@@ -87,6 +88,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
 
+/* below can be removed */
+#if 0
   /* Dump several PETSc binary vectors to a file named for the timestep */
   {
     /* Set up a binary viewer */
@@ -189,6 +192,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
 
+#endif
+
   if (test_view) {
     PetscViewer viewer;
     ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
@@ -254,6 +259,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       /* Add data of interest */
       // Note: this is duplicative, but it's too painful to flatten out the Ctx
       data = cJSON_CreateArray();
+
       for (i=0; i<NUMMESHVECS_S; ++i) {
         cJSON *item;
         DimensionalisableField curr = ctx->mesh.meshFields_s[i];
@@ -278,6 +284,79 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
         cJSON_AddItemToArray(data,item);
       }
+      //cJSON_AddItemToObject(json,"data",data);
+
+      /* atmosphere */
+      {
+        Atmosphere const *A = &ctx->atmosphere;
+        Parameters           const *P = &ctx->parameters;
+        Constants            const *C  = &P->constants;
+        AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+        VolatileParameters   const *CO2 = &Ap->CO2_volatile_parameters;
+        VolatileParameters   const *H2O = &Ap->H2O_volatile_parameters;
+        Mesh                 const *M = &ctx->mesh;
+        const PetscInt             ind0 = 0;
+        PetscScalar                Msol,Mliq;
+        PetscScalar                sol0,liq0,atm0,tot0,sol1,liq1,atm1,tot1;
+        PetscScalar                x0,x1;
+        PetscScalar                FAC, MASS;
+        Vec                        *subVecs;
+
+        ierr = PetscMalloc1(ctx->numFields,&subVecs);CHKERRQ(ierr);
+        ierr = DMCompositeGetAccessArray(ctx->dm_sol,sol,ctx->numFields,NULL,subVecs);CHKERRQ(ierr);
+
+        /* CO2 content of magma ocean (liquid phase) */
+        ierr = VecGetValues(subVecs[ctx->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],1,&ind0,&x0);CHKERRQ(ierr);
+
+        /* H2O content of magma ocean (liquid phase) */
+        ierr = VecGetValues(subVecs[ctx->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],1,&ind0,&x1);CHKERRQ(ierr);
+
+        ierr = DMCompositeRestoreAccessArray(ctx->dm_sol,sol,ctx->numFields,NULL,subVecs);CHKERRQ(ierr);
+        ierr = PetscFree(subVecs);CHKERRQ(ierr);
+
+        /* scalings */
+        MASS = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
+        FAC = C->VOLATILE / 1.0E6;
+
+        // TODO: this was previous, might break output below if commented!
+        //Msol = A->Msol * MASS;
+        //Mliq = A->Mliq * MASS;
+
+        // CO2
+        sol0 = FAC * x0 * CO2->kdist * Msol; // solid
+        liq0 = FAC * x0 * Mliq; // liquid
+        atm0 = A->m0 * MASS; // atmosphere
+        tot0 = FAC * CO2->initial * M->mantle_mass * MASS; // total
+
+        // H2O
+        sol1 = FAC * x1 * H2O->kdist * Msol; // solid
+        liq1 = FAC * x1 * Mliq; // liquid
+        atm1 = A->m1 * MASS; // atmosphere
+        tot1 = FAC * H2O->initial * M->mantle_mass * MASS; // total
+
+        /* PDS: the next block is what I will duplicate for all other atmosphere outputs
+           hence wanting to get it right before I duplicate! */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"Mliq");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"kg");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Mliq,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+      /* add the atmos array to data */
+      //cJSON_AddItemToArray(data,atmos);
+
+      }
+
+      /* now add all the data array to the output */
       cJSON_AddItemToObject(json,"data",data);
 
       /* Print to a string */
