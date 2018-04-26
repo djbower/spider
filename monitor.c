@@ -284,7 +284,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
         cJSON_AddItemToArray(data,item);
       }
-      //cJSON_AddItemToObject(json,"data",data);
 
       /* atmosphere */
       {
@@ -350,9 +349,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
-
-      /* add the atmos array to data */
-      //cJSON_AddItemToArray(data,atmos);
 
       }
 
