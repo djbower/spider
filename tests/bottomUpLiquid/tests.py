@@ -15,11 +15,11 @@ def bottomUpLiquid(rootDir) :
   expectedFile = os.path.join(thisDir,'expected')
 
   def comparefunc(t) :
-      t.compareFloatingPoint('',1e-5) # match everything
+      t.compareFloatingPointRelative('',1e-2) # match everything
 
   # Create Test Object
   t = pthtest.Test(testName,ranks,launch,expectedFile)
-  t.setComparisonFile('output/sol_240.m')
+  t.setComparisonFile('output/sol_20.m')
   t.setVerifyMethod(comparefunc)
   t.appendKeywords('%')
   t.appendKeywords('[')

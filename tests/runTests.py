@@ -25,6 +25,7 @@ except Exception as errorMessage :
 # Main objects from pyTestHarness
 import pyTestHarness.test as pthtest
 import pyTestHarness.harness as pthharness
+import pyTestHarness.version as pthversion
 
 # Import functions to generate tests
 from bottomUpLiquid.tests import *
@@ -32,6 +33,11 @@ from bottomUpMixed.tests  import *
 from bottomUpSolid.tests  import *
 
 def main() :
+
+    # Check that the version of pyTestHarness is great enough
+    pthMajor,pthMinor,pthPath = pthversion.getVersion()
+    if pthMinor < 3:
+        raise RuntimeError("pyTestHarness version 0.3.0 or greater required")
 
     # Check for PETSc (should be the same as you used to compile)
     PETSC_DIR = os.getenv('PETSC_DIR')
