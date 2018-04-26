@@ -25,11 +25,10 @@ pipelines:
             - make -j
 
             # Test
-            # NOTE: these are EASY to pass. The actual timestepping needs to be examined "by hand"
             - cd tests
             - git clone https://bitbucket.org/dmay/pythontestharness
             - ./runTests.py -d # create default config
-            - ./runTests.py -f -t bottomUpMixed,bottomUpSolid # Return error code based on test success
+            - ./runTests.py -f # Return error code based on test success
 definitions:
    caches:
       petsc-double-direct: petsc-double-direct
