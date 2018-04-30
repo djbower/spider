@@ -1,6 +1,5 @@
 #include "dimensionalisablefield.h"
 #include "monitor.h"
-#include "output.h"
 #include "rhs.h"
 #include "cJSON.h"
 #include "version.h"
@@ -87,112 +86,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     ierr = VecView(sol,viewer);CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
   }
-
-/* below can be removed */
-#if 0
-  /* Dump several PETSc binary vectors to a file named for the timestep */
-  {
-    /* Set up a binary viewer */
-    PetscViewer          viewer;
-    char                 filename[PETSC_MAX_PATH_LEN];
-    Parameters           *P = &ctx->parameters;
-    Constants            *C = &P->constants;
-    Mesh                 *M = &ctx->mesh;
-    Solution             *S = &ctx->solution;
-
-    /* for debugging, switch 'nstep' below to 'step' to over overwriting output data files */
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/petscbin.%lld",P->outputDirectory,nstep);CHKERRQ(ierr);
-    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer);CHKERRQ(ierr);
-
-    /* the following order of export must match exactly the order of the fields in plot_figure.py
-       see get_vector_index in plot_figure.py */
-
-    /* Add a data vector */
-    {
-      Vec data;
-      PetscMPIInt rank;
-      //char vecname[PETSC_MAX_PATH_LEN];
-      const int nData = 2;
-      ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
-      if (!rank) {
-        ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
-        ierr = VecSetType(data,VECSEQ);CHKERRQ(ierr);
-        ierr = VecSetSizes(data,nData,nData);CHKERRQ(ierr);
-        ierr = VecSetValue(data,0,(PetscScalar)step,INSERT_VALUES);CHKERRQ(ierr);
-        ierr = VecSetValue(data,1,(PetscScalar)dtmacro,INSERT_VALUES);CHKERRQ(ierr);
-        ierr = VecAssemblyBegin(data);CHKERRQ(ierr);
-        ierr = VecAssemblyEnd(data);CHKERRQ(ierr);
-        //ierr = PetscObjectSetName((PetscObject)data,vecname);CHKERRQ(ierr);
-        ierr = VecView(data,viewer);CHKERRQ(ierr);
-        ierr = VecDestroy(&data);CHKERRQ(ierr);
-      }
-    }
-
-    /* Add constants */
-    {
-      Vec data;
-      PetscMPIInt rank;
-      //char vecname[PETSC_MAX_PATH_LEN];
-      /* FIXME: it's really easy to update output.c and forget to change the size
-         of the array in the next line */
-      const int nData = 28;
-      ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
-      if (!rank) {
-        ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
-        ierr = VecSetType(data,VECSEQ);CHKERRQ(ierr);
-        ierr = VecSetSizes(data,nData,nData);CHKERRQ(ierr);
-        ierr = constants_struct_to_vec( C, data ); CHKERRQ(ierr);
-        //ierr = PetscObjectSetName((PetscObject)data,vecname);CHKERRQ(ierr);
-        ierr = VecView(data,viewer);CHKERRQ(ierr);
-        ierr = VecDestroy(&data);CHKERRQ(ierr);
-      }
-    }
-
-    /* Add atmosphere */
-    {
-      Vec data;
-      PetscMPIInt rank;
-      //char vecname[PETSC_MAX_PATH_LEN];
-      /* FIXME: it's really easy to update output.c and forget to change the size
-         of the array in the next line */
-      const int nData = 20; //34;
-      ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
-      if (!rank) {
-        ierr = VecCreate(PETSC_COMM_SELF,&data);CHKERRQ(ierr);
-        ierr = VecSetType(data,VECSEQ);CHKERRQ(ierr);
-        ierr = VecSetSizes(data,nData,nData);CHKERRQ(ierr);
-        ierr = atmosphere_structs_to_vec( sol, ctx, data ); CHKERRQ(ierr);
-        //ierr = PetscObjectSetName((PetscObject)data,vecname);CHKERRQ(ierr);
-        ierr = VecView(data,viewer);CHKERRQ(ierr);
-        ierr = VecDestroy(&data);CHKERRQ(ierr);
-      }
-    }
-
-    /* Add the solution vector */
-    {
-      char vecname[PETSC_MAX_PATH_LEN];
-      ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"sol_%d",step);CHKERRQ(ierr);
-      ierr = PetscObjectSetName((PetscObject)sol,vecname);CHKERRQ(ierr);
-      ierr = VecView(sol,viewer);CHKERRQ(ierr);
-    }
-
-    /* write mesh information for basic node quantities */
-    ierr = scale_vectors_and_output( M->meshFields_b, NUMMESHVECS_B, viewer );CHKERRQ(ierr);
-
-    /* write mesh information for staggered node quantities */
-    ierr = scale_vectors_and_output( M->meshFields_s, NUMMESHVECS_S, viewer );CHKERRQ(ierr);
-
-    /* write all vectors associated with basic node quantities */
-    ierr = scale_vectors_and_output( S->solutionFields_b, NUMSOLUTIONVECS_B, viewer );CHKERRQ(ierr);
-
-    /* write all vectors associated with staggered node quantities */
-    ierr = scale_vectors_and_output( S->solutionFields_s, NUMSOLUTIONVECS_S, viewer );CHKERRQ(ierr);
-
-    /* Close the viewer */
-    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
-  }
-
-#endif
 
   if (test_view) {
     PetscViewer viewer;

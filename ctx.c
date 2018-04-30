@@ -3,7 +3,6 @@
 #include "mesh.h"
 #include "twophase.h"
 #include "util.h"
-#include "output.h"
 
 static PetscErrorCode CtxCreateFields(Ctx* ctx);
 
