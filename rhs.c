@@ -138,7 +138,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,dS0dt,INSERT_VALUES);CHKERRQ(ierr);
 
   /* time-dependence of additional quantities */
-  if (Ap->SOLVE_FOR_VOLATILES || Ap->MODEL==3){
+  if (Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
     PetscScalar dx0dt, dx1dt;
     dx0dt = get_dx0dt( E, x0 );
     dx1dt = get_dx1dt( E, x1 );

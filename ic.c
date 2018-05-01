@@ -101,7 +101,7 @@ static PetscErrorCode set_ic_extra( Ctx *E, Vec sol )
     x1 = 0.0;
 
     /* turn on volatiles for these conditions */
-    if(Ap->SOLVE_FOR_VOLATILES || Ap->MODEL==3){
+    if(Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
       /* CO2 */
       if( CO2->initial > 0.0 ){
         x0 = get_initial_volatile( E, CO2 );

@@ -11,6 +11,7 @@ typedef struct _Constants {
     PetscScalar TEMP;
     PetscScalar ENTROPY;
     PetscScalar DENSITY;
+    PetscScalar VOLATILE;
     // derived from primary
     PetscScalar AREA;
     PetscScalar VOLUME;
@@ -35,7 +36,6 @@ typedef struct _Constants {
     PetscScalar SIGMA;
     PetscScalar LHS;
     PetscScalar RHS;
-    PetscScalar VOLATILE;
 } Constants;
 
 /* atmosphere */
@@ -65,13 +65,13 @@ typedef struct VolatileParameters_ {
     PetscScalar henry_pow;
 } VolatileParameters;
 
-/* for storing atmosphere outputs for eventual writing to Petsc
-   binary file */
-typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES} MagmaOceanAtmosphereType;
+/* for storing atmosphere outputs */
+typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY} MagmaOceanAtmosphereType;
 typedef struct AtmosphereParameters_ {
     // input parameters
-    MagmaOceanAtmosphereType MODEL;
+    MagmaOceanAtmosphereType SURFACE_BC;
     PetscBool HYBRID;
+    PetscScalar surface_bc_value;
     // below are standard, also used for grey-body atmosphere
     PetscScalar emissivity0;
     PetscScalar sigma;
@@ -85,6 +85,7 @@ typedef struct AtmosphereParameters_ {
     VolatileParameters CO2_volatile_parameters;
 } AtmosphereParameters;
 
+typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct _Parameters {
 
     // Discretization parameters
@@ -115,7 +116,10 @@ typedef struct _Parameters {
     Lookup      solid_prop;
 
     //  "Standard" parameters
-    // 26
+    // 28
+    MagmaOceanCoreType CORE_BC;
+    PetscScalar core_bc_value;
+
     PetscBool CONDUCTION;
     PetscBool CONVECTION;
     PetscBool MIXING;

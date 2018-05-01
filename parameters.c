@@ -283,26 +283,78 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_mel",&P->cond_mel,NULL);CHKERRQ(ierr);
   P->cond_mel /= C->COND;
 
-  /* atmosphere parameters
-     MODEL = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body
-     MODEL = MO_ATMOSPHERE_TYPE_ZAHNLE: steam atmosphere
-     MODEL = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
-     with CO2 and H2O volatiles
-     uses plane-parallel radiative eqm model
-     of Abe and Matsui (1985)
-     */
-  Ap->MODEL=MO_ATMOSPHERE_TYPE_GREY_BODY;
+
+  /* core boundary condition
+     CORE_BC = MO_CORE_TYPE_COOLING: simple core cooling
+     CORE_BC = MO_CORE_TYPE_HEAT_FLUX: heat flux (prescribed)
+     CORE_BC = MO_CORE_TYPE_ENTROPY: entropy (prescribed)
+      */
+  P->CORE_BC=MO_CORE_TYPE_COOLING;
   {
-    PetscInt  MODEL = 0;
-    PetscBool MODELset = PETSC_FALSE;
-    ierr = PetscOptionsGetInt(NULL,NULL,"-MODEL",&MODEL,&MODELset);CHKERRQ(ierr);
-    if( MODELset ) Ap->MODEL = MODEL;
+    PetscInt  CORE_BC = 0;
+    PetscBool CORE_BCset = PETSC_FALSE;
+    ierr = PetscOptionsGetInt(NULL,NULL,"-CORE_BC",&CORE_BC,&CORE_BCset);CHKERRQ(ierr);
+    if( CORE_BCset ) P->CORE_BC = CORE_BC;
+  }
+  switch( P->CORE_BC ){
+    case 1:
+      // core cooling, and P->core_bc_value is not used
+      P->core_bc_value = 0.0;
+      break;
+    case 2:
+      // prescribed heat flux
+      P->core_bc_value /= C->FLUX;
+      break;
+    case 3:
+      // prescribed entropy
+      // TODO: need this to be consistent with initial condition also
+      P->core_bc_value /= C->ENTROPY;
+      break;
+  }
+
+  /* atmosphere parameters
+     SURFACE_BC = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body
+     SURFACE_BC = MO_ATMOSPHERE_TYPE_ZAHNLE: steam atmosphere
+     SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
+       with CO2 and H2O volatile using plane-parallel radiative eqm model
+       of Abe and Matsui (1985)
+     SURFACE_BC = MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed)
+     SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy (prescribed)
+     */
+  Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
+  {
+    PetscInt  SURFACE_BC = 0;
+    PetscBool SURFACE_BCset = PETSC_FALSE;
+    ierr = PetscOptionsGetInt(NULL,NULL,"-SURFACE_BC",&SURFACE_BC,&SURFACE_BCset);CHKERRQ(ierr);
+    if( SURFACE_BCset ) Ap->SURFACE_BC = SURFACE_BC;
+  }
+  switch( Ap->SURFACE_BC ){
+    case 1:
+      // do nothing
+      Ap->surface_bc_value = 0.0;
+      break;
+    case 2:
+      // do nothing
+      Ap->surface_bc_value = 0.0;
+      break;
+    case 3:
+      // do nothing
+      Ap->surface_bc_value = 0.0;
+      break;
+    case 4:
+      // prescribed heat flux
+      Ap->surface_bc_value /= C->FLUX;
+      break;
+    case 5:
+      // prescribed entropy
+      Ap->surface_bc_value /= C->ENTROPY;
+      break;
   }
 
   Ap->HYBRID = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-HYBRID",&Ap->HYBRID,NULL);CHKERRQ(ierr);
 
-  /* emissivity is constant for MODEL != MO_ATMOSPHERE_TYPE_VOLATILES */
+  /* emissivity is constant for SURFACE_BC != MO_ATMOSPHERE_TYPE_VOLATILES */
   Ap->emissivity0 = 1.0; // non-dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-emissivity0",&Ap->emissivity0,NULL);CHKERRQ(ierr);
 
@@ -330,7 +382,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->SOLVE_FOR_VOLATILES = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-SOLVE_FOR_VOLATILES",&Ap->SOLVE_FOR_VOLATILES,NULL);CHKERRQ(ierr);
 
-  /* below here are only used for MODEL = MO_ATMOSPHERE_TYPE_VOLATILES */
+  /* below here are only used for SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES */
 
   /* atmosphere reference pressure (Pa) */
   Ap->P0 = 101325.0; // Pa (= 1 atm)

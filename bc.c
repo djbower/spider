@@ -62,7 +62,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
       }
 
       /* determine surface flux */
-      switch( Ap->MODEL ){
+      switch( Ap->SURFACE_BC ){
         case 1:
           // grey-body with constant emissivity
           A->emissivity = Ap->emissivity0;
@@ -79,8 +79,18 @@ PetscErrorCode set_surface_flux( Ctx *E )
           A->emissivity = get_emissivity_abe_matsui( P, A );
           Qout = grey_body( A, Ap );
           break;
+        case 4:
+          // heat flux
+          Qout = Ap->surface_bc_value;
+          break;
+        case 5:
+          // entropy
+          // TODO: need to get heat flux for second node
+          // and make sure energy in top cell does not change
+          Qout = 0.0;
+          break;
         default:
-          SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported model value %d provided",Ap->MODEL);
+          SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported model value %d provided",Ap->SURFACE_BC);
       }
 
       /* for legacy purposes */
@@ -173,38 +183,53 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
 
-    /* Assume that the last rank contains the last two points */
-    if (rank == size-1 ){
-        ierr = VecGetValues( M->area_b,1,&ix,&area1);CHKERRQ(ierr); // without 4*pi
-        ierr = VecGetValues( M->area_b,1,&ix2,&area2);CHKERRQ(ierr); // without 4*pi
-        ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr); // without 4*pi
-        ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
-        ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
-        vol_core = 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0); // without 4*pi
-        fac = vol / vol_core; // excluding 4*pi is OK since here we take the ratio of two volumes
-        fac *= rho_cmb / P->rho_core;
-        fac *= cp_cmb / P->cp_core;
-        fac /= P->tfac_core_avg;
+    /* assume that the last rank contains the last two points */
+    if (rank == size-1){
+      switch( P->CORE_BC ){
+        case 1:
+          // core cooling
+          ierr = VecGetValues( M->area_b,1,&ix,&area1);CHKERRQ(ierr); // without 4*pi
+          ierr = VecGetValues( M->area_b,1,&ix2,&area2);CHKERRQ(ierr); // without 4*pi
+          ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr); // without 4*pi
+          ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
+          ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
+          vol_core = 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0); // without 4*pi
+          fac = vol / vol_core; // excluding 4*pi is OK since here we take the ratio of two volumes
+          fac *= rho_cmb / P->rho_core;
+          fac *= cp_cmb / P->cp_core;
+          fac /= P->tfac_core_avg;
 
-        fac = 1.0 / (1.0 + fac);
-        fac *= area2 / area1; // excluding 4*pi is OK since here we take the ratio of two areas
+          fac = 1.0 / (1.0 + fac);
+          fac *= area2 / area1; // excluding 4*pi is OK since here we take the ratio of two areas
 
-        /* energy flux (Jtot) */
-        ierr = VecGetValues(S->Jtot,1,&ix2,&val);CHKERRQ(ierr);
-        val *= fac;
-        ierr = VecSetValue(S->Jtot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
+          /* energy flux (Jtot) */
+          ierr = VecGetValues(S->Jtot,1,&ix2,&val);CHKERRQ(ierr);
+          val *= fac;
+          ierr = VecSetValue(S->Jtot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
 
-        /* energy flow (Etot) */
-        val *= area1; // without 4*pi is correct
-        ierr = VecSetValue(S->Etot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
+          /* energy flow (Etot) */
+          val *= area1; // without 4*pi is correct
+          ierr = VecSetValue(S->Etot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
+          break;
+        case 2:
+          // heat flux
+          val = P->core_bc_value;
+          ierr = VecSetValue(S->Jtot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecSetValue(S->Etot,ix,val,INSERT_VALUES);CHKERRQ(ierr);
+          break;
+        case 3:
+          // entropy
+          // TODO
+          break;
+        default:
+            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported CORE_BC value %d provided",P->CORE_BC);
+      }
+
+      ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
+      ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
+      ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+      ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
     }
-
-    /* this is the only place where VecAssembly calls operate
-       on Jtot and Etot */
-    ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
