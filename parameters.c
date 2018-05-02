@@ -290,11 +290,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->cond_mel /= C->COND;
 
 
-  /* core boundary condition
-     CORE_BC = MO_CORE_TYPE_COOLING: simple core cooling
-     CORE_BC = MO_CORE_TYPE_HEAT_FLUX: heat flux (prescribed)
-     CORE_BC = MO_CORE_TYPE_ENTROPY: entropy (prescribed)
-      */
+  /* core boundary condition */
   P->CORE_BC=MO_CORE_TYPE_COOLING;
   {
     PetscInt  CORE_BC = 0;
