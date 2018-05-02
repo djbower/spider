@@ -51,7 +51,7 @@ test :
 testall :
 	cd tests && ./runTests.py && cd ..
 
-.PHONY : testall
+.PHONY: test testall
 
 ### Dependencies ###############################################################
 SRC_D = ${SRC_C:%.c=%.d}
