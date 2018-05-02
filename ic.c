@@ -19,10 +19,10 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
        update entries in the vectors stored in Solution, they
        simply write the data to the solution vector (sol) */
 
-    if( IC==1 ){
+    if(IC==1){
         ierr = set_ic_default( E, sol ); CHKERRQ(ierr);
     }
-    else if( IC==2 ){
+    else if(IC==2){
         ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
     }
 
@@ -37,6 +37,9 @@ static PetscErrorCode set_ic_default( Ctx *E, Vec sol )
 
     ierr = set_ic_constant_dSdr( E, sol ); CHKERRQ(ierr);
     ierr = set_ic_extra( E, sol ); CHKERRQ(ierr);
+
+    // XXX
+    ierr = set_entropy( E, sol );
 
     PetscFunctionReturn(0);
 

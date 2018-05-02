@@ -5,19 +5,29 @@ static PetscErrorCode set_d_dr_linear( Ctx * );
 
 /* integrate dS/dr to get the entropy profile
    this function only works in serial */
-PetscErrorCode set_entropy( Ctx *E, PetscScalar S0 )
+PetscErrorCode set_entropy( Ctx *E, Vec sol )
 {
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
+    PetscScalar    S0;
     PetscScalar    *arr_S_b, *arr_S_s, *arr_dSdr_b, *arr_radius_s, *arr_radius_b;
     PetscInt       i, ihi_b, ilo_b, w_b;
     PetscMPIInt    size;
     DM             da_s = E->da_s, da_b=E->da_b;
+    Vec            *subVecs;
+
+    const PetscInt ind0 = 0;
 
     PetscFunctionBeginUser;
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
     if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
+
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    /* Get first staggered node value (store as S0) */
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],1,&ind0,&S0);CHKERRQ(ierr);
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
     /* for looping over basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
