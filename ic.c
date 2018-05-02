@@ -10,10 +10,19 @@ static PetscErrorCode set_ic_from_file( Ctx *, Vec );
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
+    PetscMPIInt rank,size;
+    PetscInt ind,numpts_s;
+    Solution *S = &E->solution;
     Parameters const *P = &E->parameters;
     PetscInt IC = P->initial_condition;
 
     PetscFunctionBeginUser;
+
+    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ind = numpts_s-1;
+
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
 
     /* TODO: these functions do not typically (consistently)
        update entries in the vectors stored in Solution, they
@@ -24,6 +33,19 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     }
     else if(IC==2){
         ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
+    }
+
+    /* ensure initial condition complies with boundary conditions.
+       Notably, the entropy at the base of the mantle is given
+       by core_bc_value if CORE_BC==3 */
+    if (rank == size-1){
+      if(P->CORE_BC==3){
+        ierr = set_entropy( E, sol );
+        ierr = VecSetValues( S->S_s,1,&ind,&P->core_bc_value,INSERT_VALUES );CHKERRQ(ierr);
+        ierr = VecAssemblyBegin(S->S_s);CHKERRQ(ierr);
+        ierr = VecAssemblyEnd(S->S_s);CHKERRQ(ierr);
+        ierr = set_dSdr_b_from_S_s( E, sol );CHKERRQ(ierr);
+      }
     }
 
     PetscFunctionReturn(0);
@@ -37,9 +59,6 @@ static PetscErrorCode set_ic_default( Ctx *E, Vec sol )
 
     ierr = set_ic_constant_dSdr( E, sol ); CHKERRQ(ierr);
     ierr = set_ic_extra( E, sol ); CHKERRQ(ierr);
-
-    // XXX
-    ierr = set_entropy( E, sol );
 
     PetscFunctionReturn(0);
 

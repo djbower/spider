@@ -71,10 +71,12 @@ PetscErrorCode set_entropy( Ctx *E, Vec sol )
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
 
+    PetscFree(subVecs);
+
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_dSdr_b_from_S_s( Ctx *E )
+PetscErrorCode set_dSdr_b_from_S_s( Ctx *E, Vec sol )
 {
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
@@ -83,16 +85,22 @@ PetscErrorCode set_dSdr_b_from_S_s( Ctx *E )
     PetscInt       i, ihi_b, ilo_b, w_b;
     PetscMPIInt    size;
     DM             da_s = E->da_s, da_b=E->da_b;
+    Vec            dSdr_b;
+    Vec            *subVecs;
 
     PetscFunctionBeginUser;
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
     if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
 
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    dSdr_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]];
+
     /* for looping over basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
 
-    ierr = DMDAVecGetArray(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
@@ -104,9 +112,12 @@ PetscErrorCode set_dSdr_b_from_S_s( Ctx *E )
         arr_dSdr_b[i] /= arr_radius_s[i] - arr_radius_s[i-1];
     }
 
-    ierr = DMDAVecRestoreArray(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
