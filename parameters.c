@@ -105,6 +105,12 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
      other parameters */
   ierr = InitializeConstantsAndSetFromOptions(&P->constants);CHKERRQ(ierr);
 
+  /* Set lookup tables */
+  /* must be after setting constants, but before boundary conditions
+     since lookups might be required to map temperature to entropy
+     and vice versa for boundary conditions */
+  ierr = SetLookups(P);CHKERRQ(ierr);
+
   /* For each entry in parameters, we set a default value and immediately scale it.
      Dimensional/unscaled quantities are not explicitly stored.
      All SI units unless non-dimensional.
@@ -296,31 +302,30 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     ierr = PetscOptionsGetInt(NULL,NULL,"-CORE_BC",&CORE_BC,&CORE_BCset);CHKERRQ(ierr);
     if( CORE_BCset ) P->CORE_BC = CORE_BC;
   }
+  P->core_bc_value = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-core_bc_value",&P->core_bc_value,NULL);CHKERRQ(ierr);
   switch( P->CORE_BC ){
     case 1:
-      // core cooling, and P->core_bc_value is not used
+      // CORE_BC = MO_CORE_TYPE_COOLING: simple core cooling
       P->core_bc_value = 0.0;
       break;
     case 2:
-      // prescribed heat flux
+      // CORE_BC = MO_CORE_TYPE_HEAT_FLUX: heat flux (prescribed)
       P->core_bc_value /= C->FLUX;
       break;
     case 3:
-      // prescribed entropy
-      // TODO: need this to be consistent with initial condition also
+      // CORE_BC = MO_CORE_TYPE_ENTROPY: entropy (prescribed)
+      // TODO: needs to be consistent with initial condition
       P->core_bc_value /= C->ENTROPY;
+      break;
+    case 4:
+      // CORE_BC = MO_CORE_TYPE_TEMPERATURE: temperature (prescribed)
+      // TODO: needs to be consistent with initial condition
+      P->core_bc_value /= C->TEMP;
       break;
   }
 
-  /* atmosphere parameters
-     SURFACE_BC = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body
-     SURFACE_BC = MO_ATMOSPHERE_TYPE_ZAHNLE: steam atmosphere
-     SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
-       with CO2 and H2O volatile using plane-parallel radiative eqm model
-       of Abe and Matsui (1985)
-     SURFACE_BC = MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed)
-     SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy (prescribed)
-     */
+  /* (top) surface boundary condition */
   Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
   {
     PetscInt  SURFACE_BC = 0;
@@ -328,26 +333,35 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     ierr = PetscOptionsGetInt(NULL,NULL,"-SURFACE_BC",&SURFACE_BC,&SURFACE_BCset);CHKERRQ(ierr);
     if( SURFACE_BCset ) Ap->SURFACE_BC = SURFACE_BC;
   }
+  Ap->surface_bc_value = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-surface_bc_value",&Ap->surface_bc_value,NULL);CHKERRQ(ierr);
   switch( Ap->SURFACE_BC ){
     case 1:
-      // do nothing
-      Ap->surface_bc_value = 0.0;
+      /* SURFACE_BC = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body
+         do nothing */
       break;
     case 2:
-      // do nothing
-      Ap->surface_bc_value = 0.0;
+      /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ZAHNLE: steam atmosphere
+         do nothing */
       break;
     case 3:
-      // do nothing
-      Ap->surface_bc_value = 0.0;
+      /* SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
+           with CO2 and H2O volatile using plane-parallel radiative equilibrium model
+           of Abe and Matsui (1985)
+         do nothing */
       break;
     case 4:
-      // prescribed heat flux
+      // MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed)
       Ap->surface_bc_value /= C->FLUX;
       break;
     case 5:
-      // prescribed entropy
+      // SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy (prescribed)
       Ap->surface_bc_value /= C->ENTROPY;
+      P->sinit = Ap->surface_bc_value; // update ic to be consistent
+      break;
+    case 6:
+      // SURFACE_BC = MO_ATMOSPHERE_TYPE_TEMPERATURE: temperature (prescribed)
+      Ap->surface_bc_value /= C->TEMP;
       break;
   }
 
@@ -420,9 +434,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->henry /= C->VOLATILE;
   CO2->henry_pow = 1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
-
-  /* Get lookup tables */
-  ierr = SetLookups(P);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }

@@ -66,7 +66,7 @@ typedef struct VolatileParameters_ {
 } VolatileParameters;
 
 /* for storing atmosphere outputs */
-typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY} MagmaOceanAtmosphereType;
+typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY,MO_ATMOSPHERE_TYPE_TEMPERATURE} MagmaOceanAtmosphereType;
 typedef struct AtmosphereParameters_ {
     // input parameters
     MagmaOceanAtmosphereType SURFACE_BC;
@@ -85,7 +85,7 @@ typedef struct AtmosphereParameters_ {
     VolatileParameters CO2_volatile_parameters;
 } AtmosphereParameters;
 
-typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
+typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY,MO_CORE_TYPE_TEMPERATURE} MagmaOceanCoreType;
 typedef struct _Parameters {
 
     // Discretization parameters
