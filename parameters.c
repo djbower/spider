@@ -318,10 +318,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       // TODO: needs to be consistent with initial condition
       P->core_bc_value /= C->ENTROPY;
       break;
-    case 4:
-      // CORE_BC = MO_CORE_TYPE_TEMPERATURE: temperature (prescribed)
-      // TODO: needs to be consistent with initial condition
-      P->core_bc_value /= C->TEMP;
+    default:
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported CORE_BC value %d provided",P->CORE_BC);
       break;
   }
 
@@ -356,12 +354,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       break;
     case 5:
       // SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy (prescribed)
-      Ap->surface_bc_value /= C->ENTROPY;
-      P->sinit = Ap->surface_bc_value; // update ic to be consistent
+      // do nothing
       break;
-    case 6:
-      // SURFACE_BC = MO_ATMOSPHERE_TYPE_TEMPERATURE: temperature (prescribed)
-      Ap->surface_bc_value /= C->TEMP;
+    default:
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
       break;
   }
 
