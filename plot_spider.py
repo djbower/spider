@@ -393,14 +393,18 @@ def bower_et_al_2018_fig3( args ):
     # titles and axes labels, legends, etc
     units = myjson_o.get_field_units('S_b')
     title = '(a) Entropy, {}'.format(units)
-    yticks = [1600,2000,2400,2800,3200]
+    yticks = [800,1600,2400,3200]
+    # Bower et al. (2018)
+    #yticks = [1600,2000,2400,2800,3200]
     # DJB used this next range for work with Bayreuth
     #yticks = [300,1000,1600,2000,2400,2800,3200]
     fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, xmax=xmax, yticks=yticks )
     ax0.yaxis.set_label_coords(-0.075,0.59)
     units = myjson_o.get_field_units('temp_b')
     title = '(b) Temperature, {}'.format(units)
-    yticks= [1000,2000,3000,4000,5000]
+    yticks = [300,1000,2000,3000,4000,5000]
+    # Bower et al. (2018)
+    #yticks= [1000,2000,3000,4000,5000]
     # DJB used this next range for work with Bayreuth
     #yticks= [300,1000,2000,3000,4000,5000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xticks=xticks, xmax=xmax, yticks=yticks )
