@@ -72,7 +72,7 @@ class MyJSON( object ):
     def get_scaled_field_values( self, field, fmt_o='' ):
         '''get the scaled values for a particular field'''
         fdata_d = self.get_field_data( field )
-        scaling = fdata_d['scaling']
+        scaling = float(fdata_d['scaling'])
         if len( fdata_d['values'] ) == 1:
             values_a = float( fdata_d['values'][0] )
         else:

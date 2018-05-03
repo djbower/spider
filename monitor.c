@@ -24,11 +24,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
 
   ierr = PetscOptionsGetBool(NULL,NULL,"-test_view",&test_view,NULL);CHKERRQ(ierr);
 
-  /* Globally, output double, if we are computing with quad precision */
-#if (defined PETSC_USE_REAL___FLOAT128)
-  ierr = PetscOptionsSetValue(NULL,"-binary_write_double","");CHKERRQ(ierr);
-#endif
-
   /* Info for stdout */
   {
     double        walltime;
