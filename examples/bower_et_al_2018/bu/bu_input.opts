@@ -47,7 +47,7 @@
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
-# volatile0 is only used if SOLVE_FOR_VOLATILES=1 or MODEL=3
+# volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
 -volatile0 1.0E2
 
 # energy fluxes and sources to include
@@ -122,20 +122,28 @@
 -phi_critical 0.4 # transition melt fraction (non-dimensional)
 -phi_width 0.15 # transition width (non-dimensional)
 
-# core
+# core-mantle boundary condition
+# [1] core-cooling
+# [2] heat flux (prescribe value using core_bc_value)
+# [3] entropy (prescribe value using core_bc_value)
+-CORE_BC 1
+-core_bc_value 0.0
+
+# core parameters for CORE_BC=1
 -coresize 0.55 # fractional radius of core-mantle boundary
 -rho_core 10738.332568062382 # core density
 -cp_core 880.0 # core heat capacity
 
-# atmosphere parameters
+# surface boundary condition
 # [1] grey-body, i.e. sigma*emiss*(T^4-Teqm^4), with constant emissivity
 # [2] steam atmosphere parameterisation (Zahnle et al., 1988)
 # [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
--MODEL 1
-# HYBRID is a hack to prevent a rigid lid from forming at the surface
-# and should only be used with caution (talk to Dan before using)
--HYBRID 0
-# if MODEL = 1 or 2, the following constant emissivity is used
+# [4] heat flux (prescribe value using surface_bc_value)
+# [5] entropy (prescribe value using surface_bc_value, overrides sinit above)
+-SURFACE_BC 1
+-surface_bc_value 0.0
+
+# if SURFACE_BC=1 or 2, the following constant emissivity is used
 -emissivity0 1.0
 # equilibrium temperature of the planet
 -teqm 273.0
@@ -147,14 +155,14 @@
 -param_utbl_const 1.0E-7 # value of parameterisation
 
 # track time-dependence of volatile content in atmosphere and magma ocean
-# can be done passively (with MODEL=1 or 2 above), or self-consistently
-# with MODEL=3 above (where the volatile content feeds back into determining
+# can be done passively (with SURFACE_BC=1 or 2 above), or self-consistently
+# with SURFACE_BC=3 above (where the volatile content feeds back into determining
 # the emissivity of the atmosphere)
 # [0] off
 # [1] on
 -SOLVE_FOR_VOLATILES 0
 
-# below is for MODEL=3, see Abe and Matsui (1986) and Elkins-Tanton (2008)
+# below is for SURFACE_BC=3, see Abe and Matsui (1986) and Elkins-Tanton (2008)
 # for the grey-body atmosphere formulation.  The expressions for the partial
 # pressure of each component (H2O and CO2) are taken from Lebrun et al. (2013)
 
