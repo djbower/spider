@@ -99,6 +99,12 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   VolatileParameters   *H2O = &Ap->H2O_volatile_parameters;
   VolatileParameters   *CO2 = &Ap->CO2_volatile_parameters;
   Constants const      *C  = &P->constants;
+  RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
+  RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
+  RadiogenicIsotopeParameters *fe60 = &P->fe60_parameters;
+  RadiogenicIsotopeParameters *th232 = &P->th232_parameters;
+  RadiogenicIsotopeParameters *u235 = &P->u235_parameters;
+  RadiogenicIsotopeParameters *u238 = &P->u238_parameters;
 
   PetscFunctionBegin;
 
@@ -427,6 +433,97 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->henry /= C->VOLATILE;
   CO2->henry_pow = 1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
+
+  /* radiogenic heating */
+  /* aluminium 26 */
+  al26->t0 = 0.0; // years
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-al26_t0",&al26->t0,NULL);CHKERRQ(ierr);
+  al26->t0 /= C->TIMEYRS;
+  al26->abundance = 0.0; // fractional
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-al26_abundance",&al26->abundance,NULL);CHKERRQ(ierr);
+  al26->concentration = 0.0; // ppm
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-al_concentration",&al26->concentration,NULL);CHKERRQ(ierr);
+  al26->heat_production = 0.3583; // W/kg (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-al26_heat_production",&al26->heat_production,NULL);CHKERRQ(ierr);
+  al26->heat_production /= C->HEATGEN;
+  al26->half_life = 0.717E6; // years (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-al26_half_life",&al26->half_life,NULL);CHKERRQ(ierr);
+  al26->half_life /= C->TIMEYRS;
+
+  /* potassium 40 */
+  k40->t0 = 4.55E9; // years
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-k40_t0",&k40->t0,NULL);CHKERRQ(ierr);
+  k40->t0 /= C->TIMEYRS;
+  k40->abundance = 1.1668E-4; // fractional (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-k40_abundance",&k40->abundance,NULL);CHKERRQ(ierr);
+  k40->concentration = 0.0; // ppm
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-k_concentration",&k40->concentration,NULL);CHKERRQ(ierr);
+  k40->heat_production = 2.8761E-5; // W/kg (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-k40_heat_production",&k40->heat_production,NULL);CHKERRQ(ierr);
+  k40->heat_production /= C->HEATGEN;
+  k40->half_life = 1248E6; // years (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-k40_half_life",&k40->half_life,NULL);CHKERRQ(ierr);
+  k40->half_life /= C->TIMEYRS;
+
+  /* iron 60 */
+  fe60->t0 = 0.0; // years
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-fe60_t0",&fe60->t0,NULL);CHKERRQ(ierr);
+  fe60->t0 /= C->TIMEYRS;
+  fe60->abundance = 0.0; // fractional
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-fe60_abundance",&fe60->abundance,NULL);CHKERRQ(ierr);
+  fe60->concentration = 0.0; // ppm
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-fe_concentration",&fe60->concentration,NULL);CHKERRQ(ierr);
+  fe60->heat_production = 3.6579E-2; // W/kg (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-fe60_heat_production",&fe60->heat_production,NULL);CHKERRQ(ierr);
+  fe60->heat_production /= C->HEATGEN;
+  fe60->half_life = 2.62E6; // years (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-fe60_half_life",&fe60->half_life,NULL);CHKERRQ(ierr);
+  fe60->half_life /= C->TIMEYRS;
+
+  /* thorium 232 */
+  th232->t0 = 4.55E9; // years
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-th232_t0",&th232->t0,NULL);CHKERRQ(ierr);
+  th232->t0 /= C->TIMEYRS;
+  th232->abundance = 1.0; // fractional
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-th232_abundance",&th232->abundance,NULL);CHKERRQ(ierr);
+  th232->concentration = 0.0; // ppm
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-th_concentration",&th232->concentration,NULL);CHKERRQ(ierr);
+  th232->heat_production = 2.6368E-5; // W/kg (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-th232_heat_production",&th232->heat_production,NULL);CHKERRQ(ierr);
+  th232->heat_production /= C->HEATGEN;
+  th232->half_life = 14000E6; // years (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-th232_half_life",&th232->half_life,NULL);CHKERRQ(ierr);
+  th232->half_life /= C->TIMEYRS;
+
+  /* uranium 235 */
+  u235->t0 = 4.55E9; // years
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u235_t0",&u235->t0,NULL);CHKERRQ(ierr);
+  u235->t0 /= C->TIMEYRS;
+  u235->abundance = 0.0072045; // fractional
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u235_abundance",&u235->abundance,NULL);CHKERRQ(ierr);
+  u235->concentration = 0.0; // ppm
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u_concentration",&u235->concentration,NULL);CHKERRQ(ierr);
+  u235->heat_production = 5.68402E-4; // W/kg (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u235_heat_production",&u235->heat_production,NULL);CHKERRQ(ierr);
+  u235->heat_production /= C->HEATGEN;
+  u235->half_life = 704E6; // years (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u235_half_life",&u235->half_life,NULL);CHKERRQ(ierr);
+  u235->half_life /= C->TIMEYRS;
+
+  /* uranium 238 */
+  u238->t0 = 4.55E9; // years
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_t0",&u238->t0,NULL);CHKERRQ(ierr);
+  u238->t0 /= C->TIMEYRS;
+  u238->abundance = 0.0; // fractional
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_abundance",&u238->abundance,NULL);CHKERRQ(ierr);
+  u238->concentration = 0.0; // ppm
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u_concentration",&u238->concentration,NULL);CHKERRQ(ierr);
+  u238->heat_production = 9.4946E-5; // W/kg (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_heat_production",&u238->heat_production,NULL);CHKERRQ(ierr);
+  u238->heat_production /= C->HEATGEN;
+  u238->half_life = 4468E6; // years (Ruedas, 2017)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_half_life",&u238->half_life,NULL);CHKERRQ(ierr);
+  u238->half_life /= C->TIMEYRS;
 
   PetscFunctionReturn(0);
 }

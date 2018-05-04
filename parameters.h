@@ -86,6 +86,15 @@ typedef struct AtmosphereParameters_ {
     VolatileParameters CO2_volatile_parameters;
 } AtmosphereParameters;
 
+/* radiogenic heating */
+typedef struct RadiogenicIsotopeParameters_ {
+    PetscScalar t0;
+    PetscScalar abundance; // isotopic abundance at t0
+    PetscScalar concentration; // elemental concentration at t0
+    PetscScalar heat_production;
+    PetscScalar half_life;
+} RadiogenicIsotopeParameters;
+
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct _Parameters {
 
@@ -156,6 +165,14 @@ typedef struct _Parameters {
 
     // Scaling factors / dimensionalising constants
     Constants constants;
+
+    RadiogenicIsotopeParameters al26_parameters;
+    RadiogenicIsotopeParameters k40_parameters;
+    RadiogenicIsotopeParameters fe60_parameters;
+    RadiogenicIsotopeParameters th232_parameters;
+    RadiogenicIsotopeParameters u235_parameters;
+    RadiogenicIsotopeParameters u238_parameters;
+
 } Parameters;
 
 PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *parameters);
