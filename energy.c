@@ -5,14 +5,15 @@ static PetscErrorCode append_Jcond( Ctx * );
 static PetscErrorCode append_Jconv( Ctx * );
 static PetscErrorCode append_Jmix( Ctx * );
 static PetscErrorCode append_Jgrav( Ctx * );
-static PetscErrorCode append_Hradio( Ctx *, PetscReal tyrs );
-static PetscErrorCode append_Htidal( Ctx *, PetscReal tyrs );
+static PetscErrorCode append_Hradio( Ctx *, PetscReal );
+static PetscErrorCode append_Htidal( Ctx *, PetscReal );
+static PetscScalar get_radiogenic_heat_production( RadiogenicIsotopeParameters const *, PetscReal );
 
 ///////////////////////////
 /* internal heat sources */
 ///////////////////////////
 /* total internal heat generation */
-PetscErrorCode set_Htot( Ctx *E, PetscReal tyrs )
+PetscErrorCode set_Htot( Ctx *E, PetscReal time )
 {
     PetscErrorCode ierr;
     Parameters     const *P = &E->parameters;
@@ -23,57 +24,70 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal tyrs )
     /* Htot = int_V rho H dV */
 
     /* initialise to zero */
-    ierr = VecSet( S->Htot_s, 0.0 ); CHKERRQ(ierr);
+    ierr = VecSet( S->Hradio_s, 0.0 );CHKERRQ(ierr);
+    ierr = VecSet( S->Htot_s, 0.0 );CHKERRQ(ierr);
+    ierr = VecSet( S->Hal26_s, 0.0 );CHKERRQ(ierr);
+    ierr = VecSet( S->Hk40_s, 0.0 );CHKERRQ(ierr);
+    ierr = VecSet( S->Hfe60_s, 0.0 );CHKERRQ(ierr);
+    ierr = VecSet( S->Hth232_s, 0.0 );CHKERRQ(ierr);
+    ierr = VecSet( S->Hu235_s, 0.0 );CHKERRQ(ierr);
+    ierr = VecSet( S->Hu238_s, 0.0 );CHKERRQ(ierr);
 
     /* total internal heat generation by summing terms */
     if (P->HRADIO){
-      ierr = append_Hradio( E, tyrs ); CHKERRQ(ierr);
+      ierr = append_Hradio( E, time ); CHKERRQ(ierr);
     }
     if (P->HTIDAL){
-      ierr = append_Htidal( E, tyrs ); CHKERRQ(ierr);
+      ierr = append_Htidal( E, time ); CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
 }
 
 /* radiogenic heat generation */
-static PetscErrorCode append_Hradio( Ctx *E, PetscReal tyrs )
+static PetscErrorCode append_Hradio( Ctx *E, PetscReal time )
 {
-    /* TODO: template code snippets below, but radiogenic heating
-       is currently not implemented */
 
-    //PetscErrorCode ierr;
-    //Solution       *S = &E->solution;
-    //PetscScalar    Alheat;
-    //PetscScalar    thalf = 7.17E5; // years (from Tim's spreadsheet)
-    /* initial heating rate of Al26 */
-    //PetscScalar    Alinit = 1.526E-7; // W/kg (from Tim's spreadsheet)
-    //PetscScalar    decayconst = log(2)/thalf; // 1/years
+    PetscErrorCode ierr;
+    PetscScalar H;
+    Solution       *S = &E->solution;
+    Parameters const *P = &E->parameters;
+    RadiogenicIsotopeParameters const *al26 = &P->al26_parameters;
+    RadiogenicIsotopeParameters const *k40 = &P->k40_parameters;
+    RadiogenicIsotopeParameters const *fe60 = &P->fe60_parameters;
+    RadiogenicIsotopeParameters const *th232 = &P->th232_parameters;
+    RadiogenicIsotopeParameters const *u235 = &P->u235_parameters;
+    RadiogenicIsotopeParameters const *u238 = &P->u238_parameters;
 
     PetscFunctionBeginUser;
 
-    /* we may need a time offset here (toff) to account for the fact
-       that our magma ocean model does not coincide with time zero
-       according to cosmochemistry */
+    // al26
+    H = get_radiogenic_heat_production( al26, time );
+    ierr = VecSet(S->Hal26_s,H);CHKERRQ(ierr);
+    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hal26_s ); CHKERRQ(ierr);
+    // k40
+    H = get_radiogenic_heat_production( k40, time );
+    ierr = VecSet(S->Hk40_s,H);CHKERRQ(ierr);
+    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hk40_s ); CHKERRQ(ierr);
+    // fe60
+    H = get_radiogenic_heat_production( fe60, time );
+    ierr = VecSet(S->Hfe60_s,H);CHKERRQ(ierr);
+    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hfe60_s ); CHKERRQ(ierr);
+    // th232
+    H = get_radiogenic_heat_production( th232, time );
+    ierr = VecSet(S->Hth232_s,H);CHKERRQ(ierr);
+    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hth232_s ); CHKERRQ(ierr);
+    // u235
+    H = get_radiogenic_heat_production( u235, time );
+    ierr = VecSet(S->Hu235_s,H);CHKERRQ(ierr);
+    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hu235_s ); CHKERRQ(ierr);
+    // u238
+    H = get_radiogenic_heat_production( u238, time );
+    ierr = VecSet(S->Hu238_s,H);CHKERRQ(ierr);
+    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hu238_s ); CHKERRQ(ierr);
 
-    /* a simple calculation for Earth (r=6371000, core size=0.55)
-       tells you that to balance a heat flux of 10^6 W requires
-       internal heating around 1.41E-4 W/kg */
-
-    /* do stuff here */
-
-    /* this applies constant heating throughout the domain */
-    //ierr = VecSet( S->Hradio_s, 1.41E-4 ); CHKERRQ(ierr);
-
-    // no heating example */
-    //ierr = VecSet( S->Hradio_s, 0.0 ); CHKERRQ(ierr);
-
-    /* decay Al26 radiogenic heat production with time */
-    //Alheat = Alinit*exp(-decayconst*tyrs);
-    //ierr = VecSet( S->Hradio_s, Alheat ); CHKERRQ(ierr);
-
-    // final command is always an append call to the Htot_s array
-    //ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
+    // append total of radiogenic heating to total heating vector
+    ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -98,6 +112,18 @@ static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
     PetscFunctionReturn(0);
 }
 
+static PetscScalar get_radiogenic_heat_production( RadiogenicIsotopeParameters const *Iso, PetscReal time )
+{
+    PetscScalar H;
+
+    H = (Iso->t0-time) * PetscLogScalar(2.0);
+    H /= Iso->half_life;
+    H = PetscExpScalar(H);
+    H *= Iso->heat_production * Iso->abundance * Iso->concentration * 1.0E-6; // since ppm
+
+    return H;
+
+}
 
 ///////////////////
 /* energy fluxes */

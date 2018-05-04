@@ -74,9 +74,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   ierr = set_Etot( E );CHKERRQ(ierr);
 
-  /* FIXME: make sure time is correct in years depending on
-     non dimensionalisation scheme */
-  /* note pass in current time in years here */
   ierr = set_Htot( E, t );CHKERRQ(ierr);
 
   /* will populate A->p?, A->dp?dx, and A->m? with zeros if
