@@ -156,7 +156,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
     DM                da_b=E->da_b;
     // material properties that are updated here
-    PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappah, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
+    PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
     // material properties used to update above
     const PetscScalar *arr_dSdr, *arr_S_b, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
     // for smoothing properties across liquidus and solidus
@@ -204,6 +204,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->fwtl,&arr_fwtl); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->fwts,&arr_fwts); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(    da_b,S->kappac,&arr_kappac); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->liquidus,&arr_liquidus); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->liquidus_rho,&arr_liquidus_rho); CHKERRQ(ierr);
@@ -324,25 +325,46 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       arr_gsuper[i] = P->gravity * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
 
       /* eddy diffusivity */
-      PetscScalar kh, crit;
-      crit = 81.0 * PetscPowScalar(arr_nu[i],2);
-      crit /= 4.0 * arr_alpha[i] * PetscPowScalar(arr_mix_b[i],4);
+      {
+        /* always compute based on force balance and then select below */
+        PetscScalar kh, crit;
+        crit = 81.0 * PetscPowScalar(arr_nu[i],2);
+        crit /= 4.0 * arr_alpha[i] * PetscPowScalar(arr_mix_b[i],4);
 
-      if( arr_gsuper[i] <= 0.0 ){
-        /* no convection, subadiabatic */
-        kh = 0.0;
-        arr_regime[i] = 0.0;
-      } else if( arr_gsuper[i] > crit ){
-        /* inviscid scaling from Vitense (1953) */
-        kh = 0.25 * PetscPowScalar(arr_mix_b[i],2) * PetscSqrtScalar(arr_alpha[i]*arr_gsuper[i]);
-        arr_regime[i] = 1.0;
-      } else{
-        /* viscous scaling */
-        kh = arr_alpha[i] * arr_gsuper[i] * PetscPowScalar(arr_mix_b[i],4) / (18.0*arr_nu[i]);
-        arr_regime[i] = 2.0;
+        if( arr_gsuper[i] <= 0.0 ){
+          /* no convection, subadiabatic */
+          kh = 0.0;
+          arr_regime[i] = 0.0;
+        } else if( arr_gsuper[i] > crit ){
+          /* inviscid scaling from Vitense (1953) */
+          kh = 0.25 * PetscPowScalar(arr_mix_b[i],2) * PetscSqrtScalar(arr_alpha[i]*arr_gsuper[i]);
+          arr_regime[i] = 1.0;
+        } else{
+          /* viscous scaling */
+          kh = arr_alpha[i] * arr_gsuper[i] * PetscPowScalar(arr_mix_b[i],4) / (18.0*arr_nu[i]);
+          arr_regime[i] = 2.0;
+        }
+
+        /* thermal eddy diffusivity */
+        if (P->eddy_diffusivity_thermal > 0.0){
+          /* scale */
+          arr_kappah[i] = P->eddy_diffusivity_thermal * kh;
+        }
+        else{
+          /* else set (and negate to account for sign flag) */
+          arr_kappah[i] = -P->eddy_diffusivity_thermal;
+        }
+
+        /* chemical eddy diffusivity */
+        if (P->eddy_diffusivity_chemical > 0.0){
+          /* scale */
+          arr_kappac[i] = P->eddy_diffusivity_chemical * kh;
+        }
+        else{
+          /* else set (and negate to account for sign flag) */
+          arr_kappac[i] = -P->eddy_diffusivity_chemical;
+        }
       }
-      arr_kappah[i] = kh;
-
     }
 
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr); CHKERRQ(ierr);
@@ -366,6 +388,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,S->fwtl,&arr_fwtl); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->fwts,&arr_fwts); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(    da_b,S->kappac,&arr_kappac); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->liquidus,&arr_liquidus); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->liquidus_rho,&arr_liquidus_rho); CHKERRQ(ierr);

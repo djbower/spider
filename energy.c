@@ -209,15 +209,14 @@ static PetscErrorCode append_Jmix( Ctx *E )
     PetscFunctionBeginUser;
 
     /* convective mixing */
-    // these first two lines give F_Jmix (in the python script)
     // arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
     // arr_Jmix[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
     ierr = VecWAXPY(S->Jmix,-1.0,S->dSliqdr,S->dSsoldr);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->phi);CHKERRQ(ierr);
     ierr = VecAYPX(S->Jmix,1.0,S->dSdr);CHKERRQ(ierr);
     ierr = VecAXPY(S->Jmix,-1.0,S->dSsoldr);CHKERRQ(ierr);
-    // arr_Jmix[i] *= -arr_kappah[i] * arr_rho[i] * arr_temp[i];
-    ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->kappah);CHKERRQ(ierr);
+    // arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
+    ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->kappac);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->rho);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->temp);CHKERRQ(ierr);
     ierr = VecScale(S->Jmix,-1.0);CHKERRQ(ierr);

@@ -296,6 +296,24 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_mel",&P->cond_mel,NULL);CHKERRQ(ierr);
   P->cond_mel /= C->COND;
 
+  /* option to scale eddy diffusivities for temperature and chemistry, or set as constants */
+  P->eddy_diffusivity_thermal = 1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-eddy_diffusivity_thermal",&P->eddy_diffusivity_thermal,NULL);CHKERRQ(ierr);
+  /* if input is negative, then set as constant.  Retain negative sign to use as flag */
+  if( P->eddy_diffusivity_thermal < 0.0){
+    /* must scale */
+    P->eddy_diffusivity_thermal /= C->KAPPA;
+  }
+  /* otherwise, we just scale the calculated eddy diffusivity by the user-specified constant */
+
+  P->eddy_diffusivity_chemical = 1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-eddy_diffusivity_chemical",&P->eddy_diffusivity_chemical,NULL);CHKERRQ(ierr);
+  /* if input is negative, then set as constant.  Retain negative sign to use as flag */
+  if( P->eddy_diffusivity_chemical < 0.0){
+    /* must scale */
+    P->eddy_diffusivity_chemical /= C->KAPPA;
+  }
+  /* otherwise, we just scale the calculated eddy diffusivity by the user-specified constant */
 
   /* core boundary condition */
   P->CORE_BC=MO_CORE_TYPE_COOLING;

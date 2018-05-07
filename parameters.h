@@ -126,7 +126,7 @@ typedef struct _Parameters {
     Lookup      solid_prop;
 
     //  "Standard" parameters
-    // 28
+    // 30
     MagmaOceanCoreType CORE_BC;
     PetscScalar core_bc_value;
 
@@ -159,6 +159,8 @@ typedef struct _Parameters {
     PetscScalar cond_sol;
     PetscScalar log10visc_mel;
     PetscScalar cond_mel;
+    PetscScalar eddy_diffusivity_thermal;
+    PetscScalar eddy_diffusivity_chemical;
 
     // Additional Atmosphere Parameters
     AtmosphereParameters atmosphere_parameters;
