@@ -74,9 +74,7 @@ static PetscErrorCode set_ic_constant_dSdr( Ctx *E, Vec sol )
     Vec              *subVecs;
 
     PetscFunctionBeginUser;
-#if (defined VERBOSE)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_constant_dSdr:\n");CHKERRQ(ierr);
-#endif
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
