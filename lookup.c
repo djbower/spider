@@ -191,12 +191,12 @@ PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
        extrapolation is necessary). Here we truncate instead. */
 
     if( x<xmin ){
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x<xmin, %f<%f.  Truncating\n",(double)x,(double)xmin);CHKERRQ(ierr);
+      //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x<xmin, %f<%f.  Truncating\n",(double)x,(double)xmin);CHKERRQ(ierr);
       ind = 0; // minimum index, max index is always +1
       x = xmin;
     }
     else if( x>xmax ){
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x>xmax, %f>%f.  Truncating\n",(double)x,(double)xmax);CHKERRQ(ierr);
+      //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x>xmax, %f>%f.  Truncating\n",(double)x,(double)xmax);CHKERRQ(ierr);
       ind = n-2; // minimum index, max index is always +1
       x = xmax;
     }
@@ -258,12 +258,12 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
 
     /* for pressure (x), constant spacing assumed */
     if( x<xmin ){
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x<xmin, %f<%f.  Truncating\n",(double)x,(double)xmin);CHKERRQ(ierr);
+      //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x<xmin, %f<%f.  Truncating\n",(double)x,(double)xmin);CHKERRQ(ierr);
       indx = 0; // minimum index, max index is always +1
       x = xmin;
     }
     else if( x>xmax ){
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x>xmax, %f>%f.  Truncating\n",(double)x,(double)xmax);CHKERRQ(ierr);
+      //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x>xmax, %f>%f.  Truncating\n",(double)x,(double)xmax);CHKERRQ(ierr);
       indx = NX-2; // minimum index, max index is always +1
       x = xmax;
     }
@@ -278,12 +278,12 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
 
     /* for entropy (y), irregular spacing assumed */
     if( y<ymin ){
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y<ymin, %f<%f.  Truncating\n",(double)y,(double)ymin);CHKERRQ(ierr);
+      //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y<ymin, %f<%f.  Truncating\n",(double)y,(double)ymin);CHKERRQ(ierr);
       indy = 0; // minimum index, max index is always +1
       y = ymin;
     }
     else if( y>ymax ){
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y>ymax, %f>%f.  Truncating\n",(double)y,(double)ymax);CHKERRQ(ierr);
+      //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y>ymax, %f>%f.  Truncating\n",(double)y,(double)ymax);CHKERRQ(ierr);
       indy = NY-2; // minimum index, max index is always +1
       y = ymax;
     }
