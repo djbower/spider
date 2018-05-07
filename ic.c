@@ -14,7 +14,9 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     PetscInt ind,numpts_s;
     Solution *S = &E->solution;
     Parameters const *P = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     PetscInt IC = P->initial_condition;
+    PetscInt const ind0=0;
 
     PetscFunctionBeginUser;
 
@@ -35,17 +37,26 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
         ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
     }
 
-    /* ensure initial condition complies with boundary conditions.
-       Notably, the entropy at the base of the mantle is given
-       by core_bc_value if CORE_BC==3 */
-    if (rank == size-1){
-      if(P->CORE_BC==3){
-        ierr = set_entropy( E, sol );
+    /* this is to enforce approximately equal thermal boundary layer
+       drops when both the surface and core entropy are defined by 
+       boundary conditions */
+    /* FIXME: in general bcs could be mixed.  Below assumes both isothermal */
+    /* FIXME: will break in parallel */
+    if( (Ap->SURFACE_BC==5) && (P->CORE_BC==3)){
+        PetscScalar shift;
+        /* rem that top staggered node is already set to Ap->surface_bc_value,
+           so need to shift all entropy values */
+        shift = P->sinit - Ap->surface_bc_value;
+        ierr = set_entropy( E, sol ); // slightly super-adiabatic
+        ierr = VecShift( S->S_s, shift ); // shift to P->sinit
+        // set surface bc
+        ierr = VecSetValues( S->S_s,1,&ind0,&Ap->surface_bc_value,INSERT_VALUES );CHKERRQ(ierr);
+        // set core bc
         ierr = VecSetValues( S->S_s,1,&ind,&P->core_bc_value,INSERT_VALUES );CHKERRQ(ierr);
         ierr = VecAssemblyBegin(S->S_s);CHKERRQ(ierr);
         ierr = VecAssemblyEnd(S->S_s);CHKERRQ(ierr);
+        // finally, set dSdr based on this entropy profile
         ierr = set_dSdr_b_from_S_s( E, sol );CHKERRQ(ierr);
-      }
     }
 
     PetscFunctionReturn(0);
@@ -107,6 +118,7 @@ static PetscErrorCode set_ic_extra( Ctx *E, Vec sol )
     PetscErrorCode             ierr;
     PetscInt                   i;
     Vec                        *subVecs;
+    PetscScalar                S0;
     Parameters           const *P  = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     VolatileParameters const   *CO2 = &Ap->CO2_volatile_parameters;
@@ -143,7 +155,13 @@ static PetscErrorCode set_ic_extra( Ctx *E, Vec sol )
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,x1,INSERT_VALUES);CHKERRQ(ierr);
 
     /* include initial entropy at staggered node */
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,P->sinit,INSERT_VALUES);CHKERRQ(ierr);
+    if ((Ap->SURFACE_BC==5) && (P->CORE_BC==3)){
+        S0 = Ap->surface_bc_value;
+    }
+    else{
+        S0 = P->sinit;
+    }
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,S0,INSERT_VALUES);CHKERRQ(ierr);
 
     for (i=0; i<E->numFields; ++i) {
       ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
