@@ -336,7 +336,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       break;
     case 3:
       // CORE_BC = MO_CORE_TYPE_ENTROPY: entropy (prescribed)
-      // TODO: needs to be consistent with initial condition
       P->core_bc_value /= C->ENTROPY;
       break;
     default:
@@ -375,7 +374,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       break;
     case 5:
       // SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy (prescribed)
-      // do nothing
+      Ap->surface_bc_value /= C->ENTROPY;
       break;
     default:
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
