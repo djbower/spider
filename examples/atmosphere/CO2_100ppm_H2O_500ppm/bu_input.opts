@@ -107,6 +107,12 @@
 -beta 1.1115348931000002e-07 # beta parameter
 -gravity -10.0 # gravity
 
+# eddy diffusivity
+# if negative, this value is adopted (units m^2/s)
+# if positive, this value is used to scale the internally calculated eddy diffusivity
+-eddy_diffusivity_thermal 1.0 
+-eddy_diffusivity_chemical 1.0 
+
 # material properties
 -cond_sol 4.0 # conductivity of solid
 -cond_mel 4.0 # conductivity of melt
