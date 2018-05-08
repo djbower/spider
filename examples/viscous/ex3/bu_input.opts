@@ -1,10 +1,10 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 18
+-nstepsmacro 100
 
 # macro step size in years
--dtmacro_years 100
+-dtmacro_years 100000000
 
 # for default time ranges
 # if one of these is set, then the above time stepping
@@ -24,8 +24,8 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-10
--ts_sundials_rtol 1.0e-10
+-ts_sundials_atol 1.0e-7
+-ts_sundials_rtol 1.0e-7
 
 # mesh
 # number of basic nodes
@@ -55,8 +55,8 @@
 # [1] is on
 -CONDUCTION 1 # conduction
 -CONVECTION 1 # convection
--MIXING 1 # mixing (latent heat transport)
--SEPARATION 1 # gravitational separation of solid and melt phase
+-MIXING 0 # mixing (latent heat transport)
+-SEPARATION 0 # gravitational separation of solid and melt phase
 -HRADIO 0 # radioactive heating
 -HTIDAL 0 # tidal heating (TODO: not currently implemented)
 
@@ -91,8 +91,8 @@
 # [3] is conventional as [1] above, but additionally allows you to
 #      specify a mid-mantle interface
 
--mixing_length 1
--mixing_length_layer_radius 0.0 # non-dimensional radius
+-mixing_length 3
+-mixing_length_layer_radius 0.6 # non-dimensional radius
 
 # physical parameters
 
@@ -100,8 +100,9 @@
 -radius 6371000.0 # Earth radius
 
 # initial condition
--sinit 3052.885602072091 # initial specific entropy at top of domain (top cell)
+#-sinit 720.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
 #-sinit 2137.0199214504637
+-sinit 1500
 -ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
 
@@ -115,7 +116,7 @@
 # if negative, this value is adopted (units m^2/s)
 # if positive, this value is used to scale the internally calculated eddy diffusivity
 -eddy_diffusivity_thermal 1.0
--eddy_diffusivity_chemical 1.0
+-eddy_diffusivity_chemical 1.0 
 
 # material properties
 -cond_sol 4.0 # conductivity of solid
@@ -136,8 +137,8 @@
 # [1] core-cooling
 # [2] heat flux (prescribe value using core_bc_value)
 # [3] entropy (prescribe value using core_bc_value)
--CORE_BC 1
--core_bc_value 0.0
+-CORE_BC 3
+-core_bc_value 2000.0
 
 # core parameters for CORE_BC=1
 -coresize 0.55 # fractional radius of core-mantle boundary
@@ -150,8 +151,8 @@
 # [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
 # [4] heat flux (prescribe value using surface_bc_value)
 # [5] entropy (prescribe value using surface_bc_value, overrides sinit above)
--SURFACE_BC 1
--surface_bc_value 0.0
+-SURFACE_BC 5
+-surface_bc_value 720.0
 
 # if SURFACE_BC=1 or 2, the following constant emissivity is used
 -emissivity0 1.0
@@ -197,7 +198,7 @@
 -H2O_kdist 1.0E-4 # distribution coefficients are given in supplementary material of ET08
 -H2O_kabs 0.01 # absorption (m^2/kg)
 -H2O_henry 6.8E-2 # ppm/Pa (Lebrun et al., 2013)
--H2O_henry_pow 1.4285714285714286 # power for Henry's law (1.0/0.7) (Lebrun et al., 2013)
+-H2O_henry_pow 1.4285714285714286 # Power for Henry's law (1.0/0.7) (Lebrun et al., 2013)
 
 # internal heat sources
 # Al26 (extinct at present day)
@@ -216,7 +217,7 @@
 
 # Fe60 (extinct at present day)
 -fe60_t0 0.0 # years
--fe60_abundance 0.0
+-fe60_abundance 0.0 
 -fe_concentration 0.0 # ppm
 -fe60_heat_production 3.6579E-2 # W/kg (Ruedas, 2017)
 -fe60_half_life 2.62E6 # years (Ruedas, 2017)
