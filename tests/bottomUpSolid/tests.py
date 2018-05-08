@@ -10,7 +10,7 @@ def bottomUpSolid(rootDir) :
   launch = [\
           'mkdir -p output',\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(thisDir,'test.opts'),\
-          '../timeout.sh -t 6 ../../plot_spider.py 0 -f3',\
+          '../timeout.sh -t 6 ../../py3/plot_spider.py 0 -f3',\
           ]
 
   expectedFile = os.path.join(thisDir,'expected')
