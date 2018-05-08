@@ -1034,10 +1034,12 @@ def figure6( args ):
 #====================================================================
 def figure7( args ):
 
-    # TODO: needs updating to use json output
-
     '''Extract magma ocean depth for partitioning of moderately
        siderophile elements'''
+
+    # TODO: this is an intermediary plot that has been superseded
+    # by fig. 8.  It can probably be removed soon, once I have the
+    # desired plotting for fig. 8.
 
     width = 4.7747
     height = 4.7747
@@ -1048,29 +1050,37 @@ def figure7( args ):
 
     handle_l = []
 
+    time = fig_o.time[0]
+    myjson_o = MyJSON( 'output/{}.json'.format(time) )
+    xx_pres_b = myjson_o.get_scaled_field_values_internal('pressure_b')
+    xx_pres_b *= 1.0E-9
+
     for nn, time in enumerate( fig_o.time ):
+        # read json
+        myjson_o = MyJSON( 'output/{}.json'.format(time) )
+
         color = fig_o.get_color( nn )
         # use melt fraction to determine mixed region
-        xx, yy = fig_o.get_xy_data( 'phi', time )
+        yy = myjson_o.get_scaled_field_values_internal( 'phi_b' )
         MIX = get_mix( yy )
 
         label = fig_o.get_legend_label( time )
 
         # regime
-        xx, yy = fig_o.get_xy_data( 'regime', time )
-        ax0.plot( xx, yy, '--', color=color )
-        handle, = ax0.plot( xx*MIX, yy*MIX, '-', color=color, label=label )
+        yy = myjson_o.get_scaled_field_values_internal( 'regime_b' )
+        ax0.plot( xx_pres_b, yy, '--', color=color )
+        handle, = ax0.plot( xx_pres_b*MIX, yy*MIX, '-', color=color, label=label )
         handle_l.append( handle )
 
         # regime based on melt fraction
-        xx, yy = fig_o.get_xy_data( 'phi', time )
+        yy = myjson_o.get_scaled_field_values_internal( 'phi_b' )
         regime = np.copy(yy)
         regime[:] = 0
         regime[yy>=0.4] = 1.0
         regime[yy<0.4] = 2.0
 
-        ax1.plot( xx, regime, '--', color=color )
-        handle, = ax1.plot( xx*MIX, regime*MIX, '-', color=color, label=label )
+        ax1.plot( xx_pres_b, regime, '--', color=color )
+        handle, = ax1.plot( xx_pres_b*MIX, regime*MIX, '-', color=color, label=label )
         handle_l.append( handle )
 
         # temperature
