@@ -173,7 +173,7 @@ PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
        linear interpolation with truncation for values
        that fall outside the data lookup range */
 
-    PetscErrorCode    ierr;
+    //PetscErrorCode    ierr;
     PetscScalar       w1, result;
     PetscScalar const *xa, *ya;
     PetscScalar       xmax, xmin;
@@ -230,7 +230,7 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
        spaced so we use a faster lookup approach by computing
        indices directly rather than looping through data */
 
-    PetscErrorCode ierr;
+    //PetscErrorCode ierr;
     PetscScalar z1, z2, z3, z4;
     PetscScalar w1, w2, w3, w4; // weights
     PetscScalar result;
