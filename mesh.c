@@ -5,6 +5,9 @@ static PetscErrorCode regular_mesh( Ctx * );
 static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
 static PetscErrorCode mixing_length( DM, Vec, Vec, Parameters const * );
+static PetscScalar mixing_length_conventional( Parameters const *, PetscScalar const );
+static PetscScalar mixing_length_average( Parameters const *, PetscScalar const );
+static PetscScalar mixing_length_layer( Parameters const *, PetscScalar const );
 static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const * );
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const * );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const * );
@@ -238,7 +241,6 @@ static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix, const Parameter
     PetscScalar       *arr_m;
     const PetscScalar *arr_r;
     PetscInt          i,ilo,ihi,w;
-    PetscScalar       rad1, rad2;
 
     PetscFunctionBeginUser;
     ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
@@ -248,19 +250,62 @@ static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix, const Parameter
     for(i=ilo; i<ihi; ++i){
       // conventional mixing length
       if(P->mixing_length == 1){
-        rad1 = arr_r[i] - P->radius*P->coresize;
-        rad2 = P->radius - arr_r[i];
-        arr_m[i] = PetscMin( rad1, rad2 );
+        arr_m[i] = mixing_length_conventional( P, arr_r[i] );
       }
       // avg mixing length from conventional theory, i.e. 1/4*depth */
-      if(P->mixing_length == 2){
-        arr_m[i] = P->radius * (1.0-P->coresize); // mantle thickness
-        arr_m[i] /= 4.0; // to give average of conventional theory
+      else if(P->mixing_length == 2){
+        arr_m[i] = mixing_length_average( P, arr_r[i] );
+      }
+      // two layers
+      else if(P->mixing_length == 3){
+        arr_m[i] = mixing_length_layer( P, arr_r[i] );
       }
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,mix,&arr_m);CHKERRQ(ierr);
     PetscFunctionReturn(0);
+}
+
+
+static PetscScalar mixing_length_conventional( const Parameters *P, const PetscScalar rad_in )
+{
+    /* distance to nearest top or bottom boundary */
+
+    PetscScalar rad1, rad2, out;
+
+    rad1 = rad_in - P->radius * P->coresize;
+    rad2 = P->radius - rad_in;
+    out = PetscMin( rad1, rad2 );
+
+    return out;   
+}
+
+
+static PetscScalar mixing_length_average( const Parameters *P, const PetscScalar rad_in )
+{
+    /* constant, based on average of distance to nearest top or bottom
+       boundary */
+
+    PetscScalar out;
+
+    out = 0.25 * P->radius * (1.0-P->coresize);
+
+    return out;
+}
+
+static PetscScalar mixing_length_layer( const Parameters *P, const PetscScalar rad_in )
+{
+    /* account for an additional interface separating two convecting
+       layers */
+
+    PetscScalar out, dist3;
+
+    out = mixing_length_conventional( P, rad_in );
+    dist3 = rad_in - P->mixing_length_layer_radius;
+    dist3 = PetscAbsReal( dist3 );
+    out = PetscMin( out, dist3 );
+
+    return out;
 }
 
 static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parameters *P )

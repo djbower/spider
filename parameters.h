@@ -126,7 +126,7 @@ typedef struct _Parameters {
     Lookup      solid_prop;
 
     //  "Standard" parameters
-    // 30
+    // 31
     MagmaOceanCoreType CORE_BC;
     PetscScalar core_bc_value;
 
@@ -137,6 +137,7 @@ typedef struct _Parameters {
     PetscBool HRADIO;
     PetscBool HTIDAL;
     PetscInt mixing_length;
+    PetscScalar mixing_length_layer_radius;
     PetscInt initial_condition;
     char ic_filename[PETSC_MAX_PATH_LEN];
     PetscScalar ic_melt_pressure;
