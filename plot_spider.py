@@ -158,7 +158,7 @@ class FigureData( object ):
     def set_colors( self, num=6 ):
         dd = self.data_d
         cmap = plt.get_cmap('jet')
-        #colors_l = [cmap(i) for i in np.linspace(0, 1, num)]
+        colors_l = [cmap(i) for i in np.linspace(0, 1, num)]
         # color scheme from Tim.  Nice reds and blues
         #colors_l = ['#2364A4',
         #            '#1695F9',
@@ -171,15 +171,15 @@ class FigureData( object ):
         # see f_Colours.m at http://www.fabiocrameri.ch/visualisation.php
         # this is actually very similar (same?) as Tim's scheme above
         # used in Bower et al. (2018)
-        colors_l = [(0.0,0.0,0.3),
-                    (0.1,0.1,0.5),
-                    (0.2,0.2,0.7),
-                    (0.4,0.4,0.8),
-                    (0.8,0.4,0.4),
-                    (0.7,0.2,0.2),
-                    (0.5,0.1,0.1),
-                    (0.3,0.0,0.0)]
-        colors_l.reverse()
+        #colors_l = [(0.0,0.0,0.3),
+        #            (0.1,0.1,0.5),
+        #            (0.2,0.2,0.7),
+        #            (0.4,0.4,0.8),
+        #            (0.8,0.4,0.4),
+        #            (0.7,0.2,0.2),
+        #            (0.5,0.1,0.1),
+        #            (0.3,0.0,0.0)]
+        #colors_l.reverse()
         dd['colors_l'] = colors_l
 
     def set_properties( self, nrows, ncols, width, height ):
