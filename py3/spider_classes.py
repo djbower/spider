@@ -113,7 +113,6 @@ class MyJSON( object ):
         units = None if units == 'None' else units
         return units
 
-
     def get_scaled_field_values( self, field, fmt_o='' ):
         '''get the scaled values for a particular field'''
         fdata_d = self.get_field_data( field )
@@ -132,6 +131,19 @@ class MyJSON( object ):
            and bottom nodes)'''
         scaled_values_a = self.get_scaled_field_values( field, fmt_o )
         return scaled_values_a[1:-1]
+
+    def get_mixed_phase_boolean_array( self, nodes='basic' ):
+        if nodes == 'basic':
+            phi = self.get_scaled_field_values( 'phi_b' )
+        elif nodes == 'basic_internal':
+            phi = self.get_scaled_field_values_internal( 'phi_b' )
+        elif nodes == 'staggered':
+            phi = self.get_scaled_field_values( 'phi_s' )
+        MIX = (phi<0.999) & (phi>0.001)
+        MIX = MIX * 1.0 # convert to float array
+        MIX[MIX==0] = np.nan # set single phase regions to nans to prevent plotting
+
+        return MIX
 
 #===================================================================
 class FigureData( object ):
