@@ -6,6 +6,12 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import matplotlib.transforms as transforms
 import numpy as np
+import logging
+import os
+
+#===================================================================
+# CLASSES
+#===================================================================
 
 #===================================================================
 class MyFuncFormatter( object ):
@@ -133,15 +139,19 @@ class MyJSON( object ):
         return scaled_values_a[1:-1]
 
     def get_mixed_phase_boolean_array( self, nodes='basic' ):
+        '''this array enables us to plot different linestyles for 
+           mixed phase versus single phase quantities'''
         if nodes == 'basic':
             phi = self.get_scaled_field_values( 'phi_b' )
         elif nodes == 'basic_internal':
             phi = self.get_scaled_field_values_internal( 'phi_b' )
         elif nodes == 'staggered':
             phi = self.get_scaled_field_values( 'phi_s' )
+        # define mixed phase by these threshold values
         MIX = (phi<0.999) & (phi>0.001)
         MIX = MIX * 1.0 # convert to float array
-        MIX[MIX==0] = np.nan # set single phase regions to nans to prevent plotting
+        # set single phase region to nan to prevent plotting
+        MIX[MIX==0] = np.nan
 
         return MIX
 
@@ -329,3 +339,35 @@ class FigureData( object ):
         ax.set_yticks( yticks)
         # set y limits to match extent of ticks
         ax.set_ylim( yticks[0], yticks[-1] )
+
+#====================================================================
+
+#====================================================================
+# FUNCTIONS
+#====================================================================
+def get_all_output_times( odir='output' ):
+
+    '''get all times (in Myrs) from the json files located in the
+       output directory'''
+
+    # locate times to process based on files located in odir/
+    file_l = [f for f in os.listdir(odir) if os.path.isfile(os.path.join(odir,f))]
+    if not file_l:
+        print('ERROR: output directory contains no files')
+        sys.exit(1)
+
+    time_l = [fname for fname in file_l]
+    time_l = list(filter(lambda a: a.endswith('json'), time_l))
+    time_l = [int(time.split('.json')[0]) for time in time_l]
+    # ascending order
+    time_l = sorted( time_l, key=int)
+    time_a = np.array( time_l )
+
+    return time_a
+
+#====================================================================
+def ppm_to_mass_fraction( ppm ):
+
+    return ppm * 1.0E-6
+
+#====================================================================

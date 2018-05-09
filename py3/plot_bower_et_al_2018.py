@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-from spider_classes import MyJSON
-from spider_classes import FigureData
-from spider_classes import MyFuncFormatter
+import spider_utils as su
 import argparse
 import logging
 import matplotlib.pyplot as plt
@@ -12,13 +10,27 @@ import os
 
 logger = logging.getLogger(__name__)
 
-#====================================================================
-def dep2pres( dep, R0 ):
+# global constants are the scalings used in Bower et al. (2018)
+# note that these could change for other models
+radius0 = 6371000.0
+entropy0 = 2993.025100070677
+temperature0 = 4033.6070755893948
+density0 = 4613.109568155063
+dSdr0 = entropy0 / radius0
+flux0 = density0 * (entropy0 * temperature0)**(3.0/2.0)
 
-    dep *= R0
-    pres = 4078.95095544*10 / 1.1115348931000002e-07
-    pres *= np.exp( 1.1115348931000002e-07 * dep) - 1.0 
-    pres *= 1.0E-9
+#====================================================================
+def dep2pres( dep ):
+    '''Adams-Williamson EOS used to relate pressure and depth'''
+
+    rho_surface = 4078.95095544
+    gravity = 10.0
+    beta = 1.1115348931000002e-07
+
+    dep *= radius0
+    pres = rho_surface*gravity / beta
+    pres *= np.exp( beta * dep) - 1.0 
+    pres *= 1.0E-9 # to GPa
     return pres
 
 #====================================================================
@@ -28,29 +40,21 @@ def bower_et_al_2018_fig1( args ):
 
     prefix = 'bower_et_al_2018/simplified_model/fig1'
 
-    # define scalings (hard-coded)
-    # these were used for the original Bower et al. (2018) work
-    # but could in principle be different in future models
-    S0 = 2993.025100070677
-    R0 = 6371000.0
-    T0 = 4033.6070755893948
-    D0 = 4613.109568155063
-
     width = 4.7747 * 0.5 
     height = 4.7747 * 0.5 
-    fig_o = FigureData( args, 1, 1, width, height, 'bower_et_al_2018_fig1' )
+    fig_o = su.FigureData( args, 1, 1, width, height, 'bower_et_al_2018_fig1' )
 
     ax0 = fig_o.ax
 
-    const = S0/R0
+    const = dSdr0
 
     dSdr_const = 1.0E15
-    dSdr_fmt = MyFuncFormatter( dSdr_const )
+    dSdr_fmt = su.MyFuncFormatter( dSdr_const )
     yticks = [1.0E-15, 1.0E-12, 1.0E-9,1.0E-6,1.0E-3]
     #yticks = [-1E-3,-1E-6,-1E-9,-1E-12,-1E-15]
 
     dSliqdr_const = 1.0E6 #1.0E15
-    dSliqdr_fmt = MyFuncFormatter( dSliqdr_const )
+    dSliqdr_fmt = su.MyFuncFormatter( dSliqdr_const )
     xticks = [-1E-2,-1E-4,0,1E-4,1E-2]#,1E-3,1]
 
     #fig_o.set_mylegend( ax0, handle_l, ncol=2 )
@@ -100,7 +104,6 @@ def bower_et_al_2018_fig1( args ):
         yy += 0.4
         ax0.plot( xx, yy, '-', color=fig_o.get_color(cc) ) #, 'k-' )
 
-
     # negative heat fluxes
     for cc, nn in enumerate([12,9,6]):
         filein = os.path.join(prefix,'dSdr_n10p%(nn)d_processed.dat' % vars())
@@ -144,18 +147,9 @@ def bower_et_al_2018_fig2( args ):
 
     logger.info( 'building bower_et_al_2018_fig2' )
 
-    # define scalings (hard-coded)
-    # these were used for the original Bower et al. (2018) work
-    # but could in principle be different in future models
-    S0 = 2993.025100070677
-    R0 = 6371000.0
-    T0 = 4033.6070755893948
-    D0 = 4613.109568155063
-    FLUX0 = D0 * (S0*T0)**(3.0/2.0)
-
     width = 4.7747 # * 0.5
     height = 4.7747 # * 0.5
-    fig_o = FigureData( args, 2, 2, width, height, 'bower_et_al_2018_fig2' )
+    fig_o = su.FigureData( args, 2, 2, width, height, 'bower_et_al_2018_fig2' )
 
     dd = fig_o.data_d
 
@@ -174,8 +168,8 @@ def bower_et_al_2018_fig2( args ):
     Sliq_file = os.path.join(prefix,'Sliq_processed.dat')
     rad, Sliq = np.loadtxt( Sliq_file, unpack=True )
     depth = 1.0 - rad
-    pres = dep2pres( depth, R0 )
-    const = S0 # scaling for entropy but could change
+    pres = dep2pres( depth )
+    const = entropy0 # scaling for entropy but could change
     Sliq *= const
     # titles and axes labels, legends, etc
     title = '(d) Liquidus, J kg$^{-1}$ K$^{-1}$'
@@ -188,25 +182,25 @@ def bower_et_al_2018_fig2( args ):
 
     ###############################
     # plot semi-analytical solution
-    const = S0/R0
+    const = dSdr0
 
     dSdr_file = os.path.join(prefix,'dSdr_processed.dat')
     rad, dSdr = np.loadtxt( dSdr_file, unpack=True )
     depth = 1.0 - rad
-    pres = dep2pres( depth, R0 )
+    pres = dep2pres( depth )
     dSdr *= const * -1.0
 
     # dSliqdr was not plotted in the end
     #dSliqdr_file = os.path.join(prefix,'dSliqdr_processed.dat')
     #rad2, dSliqdr = np.loadtxt( dSliqdr_file, unpack=True )
     #depth2 = 1.0 - rad2
-    #pres2 = dep2pres( depth2, R0 )
+    #pres2 = dep2pres( depth2 )
     #dSliqdr *= const
     # must scale by 1/2
     #dSliqdr *= 0.5
 
     dSdr_const = 1.0E15
-    dSdr_fmt = MyFuncFormatter( dSdr_const )
+    dSdr_fmt = su.MyFuncFormatter( dSdr_const )
 
     dSdr = dSdr_fmt.ascale( dSdr )
     handle2, = ax1.plot( pres, dSdr, 'k-' )
@@ -223,17 +217,16 @@ def bower_et_al_2018_fig2( args ):
     Fconv_file = os.path.join(prefix,'FluxConv_processed.dat')
     rad, Fconv = np.loadtxt( Fconv_file, unpack=True )
     depth = 1.0 - rad
-    pres = dep2pres( depth, R0 )
+    pres = dep2pres( depth )
 
-    const = FLUX0
+    const = flux0
     Fconv *= const
 
     # for arcsinh scaling
     flux_const = 1.0E6
-    flux_fmt = MyFuncFormatter( flux_const )
+    flux_fmt = su.MyFuncFormatter( flux_const )
     Fconv = flux_fmt.ascale( Fconv )
     handle3, = ax0.plot( pres, Fconv, 'k-' )
-
 
     # titles and axes labels, legends, etc.
     #yticks = [-1.0E12, -1.0E6, -1.0E0, -1.0E-3, 1.0E-3, 1.0E0, 1.0E6, 1E12]
@@ -249,9 +242,9 @@ def bower_et_al_2018_fig2( args ):
     Fmix_file = os.path.join(prefix,'FluxMix_processed.dat')
     rad, Fmix = np.loadtxt( Fmix_file, unpack=True )
     depth = 1.0 - rad
-    pres = dep2pres( depth, R0 )
+    pres = dep2pres( depth )
 
-    const = FLUX0
+    const = flux0
     Fmix *= const
 
     Fmix = flux_fmt.ascale( Fmix )
@@ -281,7 +274,7 @@ def bower_et_al_2018_fig3( args ):
 
     logger.info( 'building bower_et_al_2018_fig3' )
 
-    fig_o = FigureData( args, 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig3' )
+    fig_o = su.FigureData( args, 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig3' )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -291,7 +284,7 @@ def bower_et_al_2018_fig3( args ):
     time = fig_o.time[0] # first timestep since liquidus and solidus
                          # are time-independent
 
-    myjson_o = MyJSON( 'output/{}.json'.format(time) )
+    myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
 
     TIMEYRS = myjson_o.data_d['nstep']
 
@@ -341,7 +334,7 @@ def bower_et_al_2018_fig3( args ):
 
     for nn, time in enumerate( fig_o.time ):
         # read json
-        myjson_o = MyJSON( 'output/{}.json'.format(time) )
+        myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
 
         color = fig_o.get_color( nn )
         # use melt fraction to determine mixed region
@@ -367,7 +360,7 @@ def bower_et_al_2018_fig3( args ):
         ax2.plot( xx_pres, yy, '-', color=color )
         # viscosity
         visc_const = 1 # this is used for the arcsinh scaling
-        visc_fmt = MyFuncFormatter( visc_const )
+        visc_fmt = su.MyFuncFormatter( visc_const )
         yy = myjson_o.get_scaled_field_values_internal('visc_b', visc_fmt)
         ax3.plot( xx_pres, yy, '-', color=color )
 
@@ -428,7 +421,7 @@ def bower_et_al_2018_fig4( args ):
 
     logger.info( 'building bower_et_al_2018_fig4' )
 
-    fig_o = FigureData( args, 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig4' )
+    fig_o = su.FigureData( args, 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig4' )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -439,7 +432,7 @@ def bower_et_al_2018_fig4( args ):
 
     # for arcsinh scaling
     flux_const = 1.0E6
-    flux_fmt = MyFuncFormatter( flux_const )
+    flux_fmt = su.MyFuncFormatter( flux_const )
 
     for nn, time in enumerate( fig_o.time ):
         # uncomment below to plot every other line
@@ -447,7 +440,7 @@ def bower_et_al_2018_fig4( args ):
             continue
 
         # read json
-        myjson_o = MyJSON( 'output/{}.json'.format(time) )
+        myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
 
         color = fig_o.get_color( nn )
         # use melt fraction to determine mixed region
@@ -512,7 +505,7 @@ def bower_et_al_2018_fig5( args ):
     logger.info( 'building bower_et_al_2018_fig5' )
 
     # keep y the same by scaling (7.1621)
-    fig_o = FigureData( args, 3, 2, 4.7747, 7.1621, 'bower_et_al_2018_fig5' )
+    fig_o = su.FigureData( args, 3, 2, 4.7747, 7.1621, 'bower_et_al_2018_fig5' )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -524,11 +517,11 @@ def bower_et_al_2018_fig5( args ):
     handle_l = []
 
     eddy_const = 1.0
-    eddy_fmt = MyFuncFormatter( eddy_const )
+    eddy_fmt = su.MyFuncFormatter( eddy_const )
     alpha_const = 1.0E6
-    alpha_fmt = MyFuncFormatter( alpha_const )
+    alpha_fmt = su.MyFuncFormatter( alpha_const )
     dSdr_const = 1.0E15
-    dSdr_fmt = MyFuncFormatter( dSdr_const )
+    dSdr_fmt = su.MyFuncFormatter( dSdr_const )
 
     for nn, time in enumerate( fig_o.time ):
         # uncomment below to plot every other line
