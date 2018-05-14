@@ -238,7 +238,7 @@ class FigureData( object ):
         # see f_Colours.m at http://www.fabiocrameri.ch/visualisation.php
         # this is actually very similar (same?) as Tim's scheme above
         # used in Bower et al. (2018)
-        if cmap=='bkr8' and num == 8:
+        if cmap=='bkr8' and num==8:
             colors_l = [(0.0,0.0,0.3),
                         (0.1,0.1,0.5),
                         (0.2,0.2,0.7),
@@ -249,7 +249,10 @@ class FigureData( object ):
                         (0.3,0.0,0.0)]
             colors_l.reverse()
         else:
-            cmap = plt.get_cmap( cmap )
+            try:
+                cmap = plt.get_cmap( cmap )
+            except ValueError:
+                cmap = plt.get_cmap('jet_r')
             colors_l = [cmap(i) for i in np.linspace(0, 1, num)]
         dd['colors_l'] = colors_l
 

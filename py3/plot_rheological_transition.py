@@ -238,8 +238,6 @@ def figure8():
     #cbar.ax.set_yticklabels(['0','0.2 kyr','0.4 kyr','0.6 kyr','0.8 kyr','1 kyr'])
     #cbar.ax.set_ylim([0,1000])
 
-    plt.show()
-
     #ax0.set_xlim([0,2000])
 
     fig_o.savefig(8)
