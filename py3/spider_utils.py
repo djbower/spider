@@ -159,11 +159,11 @@ class MyJSON( object ):
 class FigureData( object ):
 
     def __init__( self, nrows, ncols, width, height, outname='fig', 
-        time_l=None ):
+        times=None ):
         dd = {}
         self.data_d = dd
-        if time_l:
-            dd['time_l'] = time_l
+        if times:
+            dd['time_l'] = times
             self.process_time_list()
             dd['time_units'] = 'kyr' # hard-coded
             dd['time_decimal_places'] = 2 # hard-coded
