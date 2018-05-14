@@ -248,54 +248,54 @@ def figure8( args ):
     fig_o.savefig(8)
 
 #====================================================================
-def find_value( xx, yy, yywant ):
+#def find_value( xx, yy, yywant ):
 
-    a = yy - yywant
-
-    s = sign_change( a )
+#    a = yy - yywant
+#
+#    s = sign_change( a )
 
     # for ease, just add zero at the beginning to enable us to
     # have the same length array.  Could equally add to the end, or
     # interpolate
+#
+#    s = np.insert(s,0,0)
 
-    s = np.insert(s,0,0)
+#    result = xx * s
 
-    result = xx * s
-
-    return result
+#    return result
 
 #====================================================================
-def get_first_non_zero_index( myList ):
+#def get_first_non_zero_index( myList ):
 
     # https://stackoverflow.com/questions/19502378/python-find-first-instance-of-non-zero-number-in-list
 
-    index = next((i for i, x in enumerate(myList) if x), None)
+#    index = next((i for i, x in enumerate(myList) if x), None)
 
-    return index
-
-#====================================================================
-def sign_change( a ):
-
-    s = (np.diff(np.sign(a)) != 0)*1
-
-    return s
+#    return index
 
 #====================================================================
-def get_single_values_for_times( field, time_l ):
+#def sign_change( a ):
 
-    data_l = []
+#    s = (np.diff(np.sign(a)) != 0)*1
 
-    for nn, time in enumerate( time_l ):
+#    return s
+
+#====================================================================
+#def get_single_values_for_times( field, time_l ):
+
+#    data_l = []
+
+#    for nn, time in enumerate( time_l ):
 
         # read json
-        myjson_o = MyJSON( 'output/{}.json'.format(time) )
+#        myjson_o = MyJSON( 'output/{}.json'.format(time) )
 
-        yy = myjson_o.get_scaled_field_values( field )
-        data_l.append( yy )
+#        yy = myjson_o.get_scaled_field_values( field )
+#        data_l.append( yy )
 
-    data_a = np.array( data_l )
+#    data_a = np.array( data_l )
 
-    return data_a
+#    return data_a
 
 #====================================================================
 def main():

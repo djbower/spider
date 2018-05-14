@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
 import os
+import sys
 
-logger = logging.getLogger(__name__)
+logger = su.get_my_logger(__name__)
 
 # global constants are the scalings used in Bower et al. (2018)
 # note that these could change for other models
@@ -21,6 +22,7 @@ flux0 = density0 * (entropy0 * temperature0)**(3.0/2.0)
 
 #====================================================================
 def dep2pres( dep ):
+
     '''Adams-Williamson EOS used to relate pressure and depth'''
 
     rho_surface = 4078.95095544
@@ -34,7 +36,7 @@ def dep2pres( dep ):
     return pres
 
 #====================================================================
-def bower_et_al_2018_fig1( args ):
+def bower_et_al_2018_fig1():
 
     logger.info( 'building bower_et_al_2018_fig1' )
 
@@ -42,7 +44,7 @@ def bower_et_al_2018_fig1( args ):
 
     width = 4.7747 * 0.5 
     height = 4.7747 * 0.5 
-    fig_o = su.FigureData( args, 1, 1, width, height, 'bower_et_al_2018_fig1' )
+    fig_o = su.FigureData( 1, 1, width, height, 'bower_et_al_2018_fig1')
 
     ax0 = fig_o.ax
 
@@ -93,7 +95,7 @@ def bower_et_al_2018_fig1( args ):
 
     # positive heat fluxes
     for cc, nn in enumerate([12,9,6]):
-        filein = os.path.join(prefix,'dSdr_10p%(nn)d_processed.dat' % vars())
+        filein = os.path.join(prefix,'dSdr_10p{:d}_processed.dat'.format(nn))
         xx, yy = np.loadtxt( filein, unpack=True )
         xx *= const
         xx = dSliqdr_fmt.ascale( xx )
@@ -106,7 +108,7 @@ def bower_et_al_2018_fig1( args ):
 
     # negative heat fluxes
     for cc, nn in enumerate([12,9,6]):
-        filein = os.path.join(prefix,'dSdr_n10p%(nn)d_processed.dat' % vars())
+        filein = os.path.join(prefix,'dSdr_n10p{:d}_processed.dat'.format(nn))
         xx, yy = np.loadtxt( filein, unpack=True )
         xx *= const
         xx = dSliqdr_fmt.ascale( xx )
@@ -143,13 +145,13 @@ def bower_et_al_2018_fig1( args ):
     fig_o.savefig(5)
 
 #====================================================================
-def bower_et_al_2018_fig2( args ):
+def bower_et_al_2018_fig2():
 
     logger.info( 'building bower_et_al_2018_fig2' )
 
     width = 4.7747 # * 0.5
     height = 4.7747 # * 0.5
-    fig_o = su.FigureData( args, 2, 2, width, height, 'bower_et_al_2018_fig2' )
+    fig_o = su.FigureData( 2, 2, width, height, 'bower_et_al_2018_fig2' )
 
     dd = fig_o.data_d
 
@@ -267,14 +269,14 @@ def bower_et_al_2018_fig2( args ):
     fig_o.savefig(4)
 
 #====================================================================
-def bower_et_al_2018_fig3( args ):
+def bower_et_al_2018_fig3( times ):
 
     # article class text width is 4.7747 inches
     # http://tex.stackexchange.com/questions/39383/determine-text-width
 
     logger.info( 'building bower_et_al_2018_fig3' )
 
-    fig_o = su.FigureData( args, 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig3' )
+    fig_o = su.FigureData( 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig3', times )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -370,18 +372,18 @@ def bower_et_al_2018_fig3( args ):
     # titles and axes labels, legends, etc
     units = myjson_o.get_field_units('S_b')
     title = '(a) Entropy, {}'.format(units)
-    #yticks = [700,1600,2400,3200]
+    yticks = [700,1600,2400,3200]
     # Bower et al. (2018)
-    yticks = [1600,2000,2400,2800,3200]
+    #yticks = [1600,2000,2400,2800,3200]
     # DJB used this next range for work with Bayreuth
     #yticks = [300,1000,1600,2000,2400,2800,3200]
     fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, xmax=xmax, yticks=yticks )
     ax0.yaxis.set_label_coords(-0.075,0.59)
     units = myjson_o.get_field_units('temp_b')
     title = '(b) Temperature, {}'.format(units)
-    #yticks = [300,1000,2000,3000,4000,5000]
+    yticks = [300,1000,2000,3000,4000,5000]
     # Bower et al. (2018)
-    yticks= [1000,2000,3000,4000,5000]
+    #yticks= [1000,2000,3000,4000,5000]
     # DJB used this next range for work with Bayreuth
     #yticks= [300,1000,2000,3000,4000,5000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xticks=xticks, xmax=xmax, yticks=yticks )
@@ -417,11 +419,11 @@ def bower_et_al_2018_fig3( args ):
     fig_o.savefig(1)
 
 #====================================================================
-def bower_et_al_2018_fig4( args ):
+def bower_et_al_2018_fig4( times ):
 
     logger.info( 'building bower_et_al_2018_fig4' )
 
-    fig_o = su.FigureData( args, 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig4' )
+    fig_o = su.FigureData( 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig4', times )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -435,9 +437,10 @@ def bower_et_al_2018_fig4( args ):
     flux_fmt = su.MyFuncFormatter( flux_const )
 
     for nn, time in enumerate( fig_o.time ):
-        # uncomment below to plot every other line
-        if (nn-1) % 2:
-            continue
+        # In Bower et al. (2018), just every other line
+        # is plotted for visual clarity (uncomment below)
+        #if (nn-1) % 2:
+        #    continue
 
         # read json
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
@@ -500,12 +503,12 @@ def bower_et_al_2018_fig4( args ):
     fig_o.savefig(2)
 
 #====================================================================
-def bower_et_al_2018_fig5( args ):
+def bower_et_al_2018_fig5( times ):
 
     logger.info( 'building bower_et_al_2018_fig5' )
 
     # keep y the same by scaling (7.1621)
-    fig_o = su.FigureData( args, 3, 2, 4.7747, 7.1621, 'bower_et_al_2018_fig5' )
+    fig_o = su.FigureData( 3, 2, 4.7747, 7.1621, 'bower_et_al_2018_fig5', times )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -524,12 +527,13 @@ def bower_et_al_2018_fig5( args ):
     dSdr_fmt = su.MyFuncFormatter( dSdr_const )
 
     for nn, time in enumerate( fig_o.time ):
-        # uncomment below to plot every other line
-        if (nn-1) % 2:
-            continue
+        # In Bower et al. (2018), just every other line
+        # is plotted for visual clarity (uncomment below)
+        #if (nn-1) % 2:
+        #    continue
 
         # read json
-        myjson_o = MyJSON( 'output/{}.json'.format(time) )
+        myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
 
         color = fig_o.get_color( nn )
         # use melt fraction to determine mixed region
@@ -627,7 +631,7 @@ def main():
 
     # arguments (run with -h to summarize)
     parser = argparse.ArgumentParser(description='SPIDER plotting script')
-    parser.add_argument('times',type=str, help='Comma-separated (no spaces) list of times');
+    parser.add_argument('-t', '--times', type=str, help='Comma-separated (no spaces) list of times');
     parser.add_argument('-f1', '--fig1', help='Plot figure 1', action="store_true")
     parser.add_argument('-f2', '--fig2', help='Plot figure 2', action="store_true")
     parser.add_argument('-f3', '--fig3', help='Plot figure 3', action="store_true")
@@ -635,47 +639,32 @@ def main():
     parser.add_argument('-f5', '--fig5', help='Plot figure 5', action="store_true")
     args = parser.parse_args()
 
-    # If nothing specified, choose a default set
+    # if nothing specified, choose a default set
     if not (args.fig1 or args.fig2 or args.fig3 or args.fig4 or args.fig5):
         args.fig3 = True;
         args.fig4 = True;
         args.fig5 = True;
 
-    # Old-style arguments as expected by the plotting functions
-    old_args = [None,args.times]
-
-    # create logger with 'main'
-    #logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    # create file handler which logs even debug messages
-    fh = logging.FileHandler('main.log')
-    fh.setLevel(logging.DEBUG)
-    # create console handler with a higher log level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.ERROR)
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    # add the handlers to the logger
-    logger.addHandler(fh)
-    logger.addHandler(ch)
+    if args.fig3 or args.fig4 or args.fig5:
+        if not args.times:
+            logger.critical( 'You must specify times in a comma-separated list (no spaces) using -t' )
+            sys.exit(0)
 
     # simplified model in Bower et al. (2018)
     # i.e., figs 1,2
     if args.fig1 :
-        bower_et_al_2018_fig1( old_args )
+        bower_et_al_2018_fig1()
     if args.fig2 :
-        bower_et_al_2018_fig2( old_args )
+        bower_et_al_2018_fig2()
 
     # reproduce staple figures in Bower et al. (2018)
     # i.e., figs 3,4,5,6,7,8
     if args.fig3 :
-        bower_et_al_2018_fig3( old_args )
+        bower_et_al_2018_fig3( times=args.times )
     if args.fig4 :
-        bower_et_al_2018_fig4( old_args )
+        bower_et_al_2018_fig4( times=args.times )
     if args.fig5 :
-        bower_et_al_2018_fig5( old_args )
+        bower_et_al_2018_fig5( times=args.times )
 
     plt.show()
 

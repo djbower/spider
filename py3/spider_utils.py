@@ -158,14 +158,16 @@ class MyJSON( object ):
 #===================================================================
 class FigureData( object ):
 
-    def __init__( self, args, nrows, ncols, width, height, outname='fig' ):
+    def __init__( self, nrows, ncols, width, height, outname='fig', 
+        time_l=None ):
         dd = {}
         self.data_d = dd
-        dd['time_l'] = args[1]
-        dd['time_units'] = 'kyr' # hard-coded
-        dd['time_decimal_places'] = 2 # hard-coded
+        if time_l:
+            dd['time_l'] = time_l
+            self.process_time_list()
+            dd['time_units'] = 'kyr' # hard-coded
+            dd['time_decimal_places'] = 2 # hard-coded
         dd['outname'] = outname
-        self.process_time_list()
         self.set_properties( nrows, ncols, width, height )
 
     def get_color( self, num ):
@@ -222,10 +224,8 @@ class FigureData( object ):
         self.fig.savefig(outname, transparent=True, bbox_inches='tight',
             pad_inches=0.05, dpi=dd['dpi'])
 
-    def set_colors( self, num=6 ):
+    def set_colors( self, num=8, cmap='bkr8' ):
         dd = self.data_d
-        cmap = plt.get_cmap('jet')
-        #colors_l = [cmap(i) for i in np.linspace(0, 1, num)]
         # color scheme from Tim.  Nice reds and blues
         #colors_l = ['#2364A4',
         #            '#1695F9',
@@ -238,15 +238,19 @@ class FigureData( object ):
         # see f_Colours.m at http://www.fabiocrameri.ch/visualisation.php
         # this is actually very similar (same?) as Tim's scheme above
         # used in Bower et al. (2018)
-        colors_l = [(0.0,0.0,0.3),
-                    (0.1,0.1,0.5),
-                    (0.2,0.2,0.7),
-                    (0.4,0.4,0.8),
-                    (0.8,0.4,0.4),
-                    (0.7,0.2,0.2),
-                    (0.5,0.1,0.1),
-                    (0.3,0.0,0.0)]
-        colors_l.reverse()
+        if cmap=='bkr8' and num == 8:
+            colors_l = [(0.0,0.0,0.3),
+                        (0.1,0.1,0.5),
+                        (0.2,0.2,0.7),
+                        (0.4,0.4,0.8),
+                        (0.8,0.4,0.4),
+                        (0.7,0.2,0.2),
+                        (0.5,0.1,0.1),
+                        (0.3,0.0,0.0)]
+            colors_l.reverse()
+        else:
+            cmap = plt.get_cmap( cmap )
+            colors_l = [cmap(i) for i in np.linspace(0, 1, num)]
         dd['colors_l'] = colors_l
 
     def set_properties( self, nrows, ncols, width, height ):
@@ -272,7 +276,10 @@ class FigureData( object ):
         dd['fontsize_title'] = 8
         dd['fontsize_xlabel'] = 8
         dd['fontsize_ylabel'] = 8
-        self.set_colors( len(self.time) )
+        try:
+            self.set_colors( len(self.time) )
+        except AttributeError:
+            self.set_colors( num=8 )
         self.make_figure()
 
     def set_myaxes( self, ax, title='', xlabel='', xticks='',
@@ -290,8 +297,8 @@ class FigureData( object ):
 
     def set_mylegend( self, ax, handles, loc=4, ncol=1, TITLE=1 ):
         dd = self.data_d
-        units = dd['time_units']
         if TITLE==1:
+            units = dd['time_units']
             title = r'Time ({0})'.format( units )
         else:
             title = TITLE
@@ -366,8 +373,65 @@ def get_all_output_times( odir='output' ):
     return time_a
 
 #====================================================================
+def find_xx_for_yy( xx, yy, yywant ):
+
+    a = yy - yywant
+
+    s = sign_change( a ) 
+
+    # for ease, just add zero at the beginning to enable us to
+    # have the same length array.  Could equally add to the end, or
+    # interpolate
+
+    s = np.insert(s,0,0)
+
+    result = xx * s 
+
+    return result
+
+#====================================================================
+def get_first_non_zero_index( myList ):
+
+    # https://stackoverflow.com/questions/19502378/python-find-first-instance-of-non-zero-number-in-list
+
+    index = next((i for i, x in enumerate(myList) if x), None)
+
+    return index
+
+#====================================================================
+def sign_change( a ):
+
+    s = (np.diff(np.sign(a)) != 0)*1
+
+    return s
+
+#====================================================================
+def get_my_logger( name ):
+
+    '''setup logger configuration and handles'''
+
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    fh = logging.FileHandler('mylog.log')
+    fh.setLevel(logging.DEBUG)
+    # create console handler with a higher log level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    # add the handlers to the logger
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    return logger
+
+#====================================================================
 def ppm_to_mass_fraction( ppm ):
 
     return ppm * 1.0E-6
 
 #====================================================================
+
+logger = get_my_logger(__name__)
+

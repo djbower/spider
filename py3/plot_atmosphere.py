@@ -2,18 +2,21 @@
 
 import logging
 import spider_utils as su
+import matplotlib.transforms as transforms
+import matplotlib.pyplot as plt
+import numpy as np
 import os
 
-logger = logging.getLogger(__name__)
+logger = su.get_my_logger(__name__)
 
 #====================================================================
-def plot_atmosphere( args=[None,'0'] ):
+def plot_atmosphere():
 
     logger.info( 'building atmosphere' )
 
     width = 4.7747
     height = 4.7747
-    fig_o = su.FigureData( args, 2, 2, width, height, 'atmosphere' )
+    fig_o = su.FigureData( 2, 2, width, height, 'atmosphere' )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -39,17 +42,17 @@ def plot_atmosphere( args=[None,'0'] ):
     H2O_atmos_a = get_single_values_for_times( 'H2O_atmosphere', fig_o.time )
 
     # compute total mass (kg) in each reservoir
-    CO2_liquid_kg_a = ppm_to_mass_fraction( CO2_liquid_a ) * mass_liquid_a
-    CO2_solid_kg_a = ppm_to_mass_fraction( CO2_solid_a ) * mass_solid_a
-    CO2_total_kg_a = ppm_to_mass_fraction( CO2_initial_a ) * mass_mantle
+    CO2_liquid_kg_a = su.ppm_to_mass_fraction( CO2_liquid_a ) * mass_liquid_a
+    CO2_solid_kg_a = su.ppm_to_mass_fraction( CO2_solid_a ) * mass_solid_a
+    CO2_total_kg_a = su.ppm_to_mass_fraction( CO2_initial_a ) * mass_mantle
     CO2_total_kg = CO2_total_kg_a[0] # time-independent
     # TODO: below mass is conserved by definition, but can also
     # compute directly from partial pressure
     CO2_atmos_kg_a = CO2_total_kg - CO2_liquid_kg_a - CO2_solid_kg_a
 
-    H2O_liquid_kg_a = ppm_to_mass_fraction( H2O_liquid_a ) * mass_liquid_a
-    H2O_solid_kg_a = ppm_to_mass_fraction( H2O_solid_a ) * mass_solid_a
-    H2O_total_kg_a = ppm_to_mass_fraction( H2O_initial_a ) * mass_mantle
+    H2O_liquid_kg_a = su.ppm_to_mass_fraction( H2O_liquid_a ) * mass_liquid_a
+    H2O_solid_kg_a = su.ppm_to_mass_fraction( H2O_solid_a ) * mass_solid_a
+    H2O_total_kg_a = su.ppm_to_mass_fraction( H2O_initial_a ) * mass_mantle
     H2O_total_kg = H2O_total_kg_a[0] # time-independent
     # TODO: below mass is conserved by definition, but can also
     # compute directly from partial pressure
@@ -70,8 +73,8 @@ def plot_atmosphere( args=[None,'0'] ):
     phi_cont_l = [0.2, 0.8] # 20% and 80% melt fraction
     phi_time_l = [] # contains the times for each contour
     for cont in phi_cont_l:
-        time_temp_l = find_value( timeMyr_a, phi_a, cont )
-        index = get_first_non_zero_index( time_temp_l )
+        time_temp_l = su.find_xx_for_yy( timeMyr_a, phi_a, cont )
+        index = su.get_first_non_zero_index( time_temp_l )
         phi_time_l.append( timeMyr_a[index] )
 
     ##########
@@ -129,28 +132,27 @@ def plot_atmosphere( args=[None,'0'] ):
     fig_o.savefig(6)
 
 #====================================================================
+def get_single_values_for_times( field, time_l ):
+
+    data_l = []
+
+    for nn, time in enumerate( time_l ):
+
+        # read json
+        myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
+
+        yy = myjson_o.get_scaled_field_values( field )
+        data_l.append( yy )
+
+    data_a = np.array( data_l )
+
+    return data_a
+
+#====================================================================
 def main():
 
-    # create logger with 'main'
-    #logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    # create file handler which logs even debug messages
-    fh = logging.FileHandler('main.log')
-    fh.setLevel(logging.DEBUG)
-    # create console handler with a higher log level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.ERROR)
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    # add the handlers to the logger
-    logger.addHandler(fh)
-    logger.addHandler(ch)
-
-    # arguments (run with -h to summarize)
     plot_atmosphere()
-    plt.shpw()
+    plt.show()
 
 #====================================================================
 
