@@ -12,7 +12,9 @@ import sys
 logger = su.get_my_logger(__name__)
 
 # TODO: user should set SPIDERPATH at the end of code compilation
-spiderpath = os.environ['SPIDERPATH']
+spiderpath = os.environ.get('SPIDERPATH')
+if not spiderpath :
+    raise RuntimeError('You must define SPIDERPATH in your environment to point to the root directory of the SPIDER installation');
 
 # global constants are the scalings used in Bower et al. (2018)
 # note that these could change for other models
