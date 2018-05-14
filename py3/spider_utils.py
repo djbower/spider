@@ -8,6 +8,7 @@ import matplotlib.transforms as transforms
 import numpy as np
 import logging
 import os
+import sys
 
 #===================================================================
 # CLASSES
@@ -363,8 +364,8 @@ def get_all_output_times( odir='output' ):
     # locate times to process based on files located in odir/
     file_l = [f for f in os.listdir(odir) if os.path.isfile(os.path.join(odir,f))]
     if not file_l:
-        print('ERROR: output directory contains no files')
-        sys.exit(1)
+        logger.critical('output directory contains no files')
+        sys.exit(0)
 
     time_l = [fname for fname in file_l]
     time_l = list(filter(lambda a: a.endswith('json'), time_l))
