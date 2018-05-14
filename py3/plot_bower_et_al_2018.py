@@ -11,6 +11,9 @@ import sys
 
 logger = su.get_my_logger(__name__)
 
+# TODO: user should set SPIDERPATH at the end of code compilation
+spiderpath = os.environ['SPIDERPATH']
+
 # global constants are the scalings used in Bower et al. (2018)
 # note that these could change for other models
 radius0 = 6371000.0
@@ -40,7 +43,7 @@ def bower_et_al_2018_fig1():
 
     logger.info( 'building bower_et_al_2018_fig1' )
 
-    prefix = 'bower_et_al_2018/simplified_model/fig1'
+    prefix = os.path.join(spiderpath,'py3/bower_et_al_2018/simplified_model/fig1')
 
     width = 4.7747 * 0.5 
     height = 4.7747 * 0.5 
@@ -149,6 +152,8 @@ def bower_et_al_2018_fig2():
 
     logger.info( 'building bower_et_al_2018_fig2' )
 
+    prefix = os.path.join(spiderpath,'py3/bower_et_al_2018/simplified_model/fig2')
+
     width = 4.7747 # * 0.5
     height = 4.7747 # * 0.5
     fig_o = su.FigureData( 2, 2, width, height, 'bower_et_al_2018_fig2' )
@@ -161,9 +166,6 @@ def bower_et_al_2018_fig2():
     ax1 = fig_o.ax[0][1]
     ax2 = fig_o.ax[1][0]
     ax3 = fig_o.ax[1][1]
-
-    # directory containing simplified model data
-    prefix = 'bower_et_al_2018/simplified_model/fig2'
 
     ###############
     # plot liquidus
