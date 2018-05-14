@@ -1,19 +1,15 @@
 #!/usr/bin/env python
 
-# next is bad practice, but fastest for getting something up and running
-import spider_util as su
+import spider_utils as su
 import logging
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-import sys
 import argparse
 
 logger = logging.getLogger(__name__)
 
 #====================================================================
-def figure7( args ):
+def figure7( times ):
 
     '''Extract magma ocean depth for partitioning of moderately
        siderophile elements'''
@@ -24,7 +20,7 @@ def figure7( args ):
 
     width = 4.7747
     height = 4.7747
-    fig_o = su.FigureData( args, 2, 2, width, height )
+    fig_o = su.FigureData( 2, 2, width, height, times=times )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -117,8 +113,8 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
         y_temp = myjson_o.get_scaled_field_values( 'temp_b' )
 
         # find the pressure(s) that correspond(s) to the cross-over point
-        pres = find_value( xx_pres_b, yy1, yy2 )
-        ind = get_first_non_zero_index( pres )
+        pres = su.find_xx_for_yy( xx_pres_b, yy1, yy2 )
+        ind = su.get_first_non_zero_index( pres )
 
         current_pres = xx_pres_b[-1]
         current_temp = y_temp[-1]
@@ -155,8 +151,9 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
     # through the magma ocean
     # compute the start and end indices for this
     diff_a = np.diff( data_a[:,0] )
-    sin = get_first_non_zero_index( diff_a )
-    ein = 1 + len( diff_a ) - get_first_non_zero_index( diff_a[::-1] )
+    sin = su.get_first_non_zero_index( diff_a )
+    ein = 1 + len( diff_a ) - su.get_first_non_zero_index( diff_a[::-1] )
+
 
     pres_coeff = np.polyfit( data_a[:,2][sin:ein], data_a[:,0][sin:ein], polydegree ) # pressure
     pres_poly = np.poly1d( pres_coeff )
@@ -197,18 +194,18 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
     return ( handle_scatter, handle_fit )
 
 #====================================================================
-def figure8( args ):
+def figure8():
 
     width = 4.7747#/2
     height = 4.7747/2
-    fig_o = su.FigureData( args, 1, 2, width, height )
+    fig_o = su.FigureData( 1, 2, width, height )
 
     ax0 = fig_o.ax[0]
     ax1 = fig_o.ax[1]
 
     handle_l = []
 
-    fig_o.time = get_all_output_times()
+    fig_o.time = su.get_all_output_times()
 
     hs1, hf1 = get_mo_PT_conditions( fig_o, fig_o.time, 'regime_b', 1.5, r'Polynomial fit', 'blue' )
     #hs2, hf2 = get_mo_PT_conditions( fig_o, fig_o.time, 'phi', 0.4, r'$\phi=0.4$', 'red' )
@@ -248,123 +245,15 @@ def figure8( args ):
     fig_o.savefig(8)
 
 #====================================================================
-#def find_value( xx, yy, yywant ):
-
-#    a = yy - yywant
-#
-#    s = sign_change( a )
-
-    # for ease, just add zero at the beginning to enable us to
-    # have the same length array.  Could equally add to the end, or
-    # interpolate
-#
-#    s = np.insert(s,0,0)
-
-#    result = xx * s
-
-#    return result
-
-#====================================================================
-#def get_first_non_zero_index( myList ):
-
-    # https://stackoverflow.com/questions/19502378/python-find-first-instance-of-non-zero-number-in-list
-
-#    index = next((i for i, x in enumerate(myList) if x), None)
-
-#    return index
-
-#====================================================================
-#def sign_change( a ):
-
-#    s = (np.diff(np.sign(a)) != 0)*1
-
-#    return s
-
-#====================================================================
-#def get_single_values_for_times( field, time_l ):
-
-#    data_l = []
-
-#    for nn, time in enumerate( time_l ):
-
-        # read json
-#        myjson_o = MyJSON( 'output/{}.json'.format(time) )
-
-#        yy = myjson_o.get_scaled_field_values( field )
-#        data_l.append( yy )
-
-#    data_a = np.array( data_l )
-
-#    return data_a
-
-#====================================================================
 def main():
 
     # arguments (run with -h to summarize)
     parser = argparse.ArgumentParser(description='SPIDER plotting script')
-    parser.add_argument('times',type=str, help='Comma-separated (no spaces) list of times');
-    parser.add_argument('-f1', '--fig1', help='Plot figure 1', action="store_true")
-    parser.add_argument('-f2', '--fig2', help='Plot figure 2', action="store_true")
-    parser.add_argument('-f3', '--fig3', help='Plot figure 3', action="store_true")
-    parser.add_argument('-f4', '--fig4', help='Plot figure 4', action="store_true")
-    parser.add_argument('-f5', '--fig5', help='Plot figure 5', action="store_true")
-    parser.add_argument('-f6', '--fig6', help='Plot figure 6', action="store_true")
-    parser.add_argument('-f7', '--fig7', help='Plot figure 7', action="store_true")
-    parser.add_argument('-f8', '--fig8', help='Plot figure 8', action="store_true")
+    parser.add_argument('-t', '--times', type=str, help='Comma-separated (no spaces) list of times');
     args = parser.parse_args()
 
-    # If nothing specified, choose a default set
-    if not (args.fig1 or args.fig2 or args.fig3 or args.fig4 or args.fig5 or args.fig6 or args.fig7 or args.fig8) :
-        args.fig3 = True;
-        args.fig4 = True;
-        args.fig5 = True;
-
-    # Old-style arguments as expected by the plotting functions
-    old_args = [None,args.times]
-
-    # setup logger
-
-    # create logger with 'main'
-    #logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    # create file handler which logs even debug messages
-    fh = logging.FileHandler('main.log')
-    fh.setLevel(logging.DEBUG)
-    # create console handler with a higher log level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.ERROR)
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    # add the handlers to the logger
-    logger.addHandler(fh)
-    logger.addHandler(ch)
-
-    # simplified model in Bower et al. (2018)
-    # i.e., figs 1,2
-    if args.fig1 :
-        bower_et_al_2018_fig1( old_args )
-    if args.fig2 :
-        bower_et_al_2018_fig2( old_args )
-
-    # reproduce staple figures in Bower et al. (2018)
-    # i.e., figs 3,4,5,6,7,8
-    if args.fig3 :
-        bower_et_al_2018_fig3( old_args )
-    if args.fig4 :
-        bower_et_al_2018_fig4( old_args )
-    if args.fig5 :
-        bower_et_al_2018_fig5( old_args )
-
-    # additional figures
-    if args.fig6 :
-        figure6( old_args )
-    if args.fig7 :
-        figure7( old_args )
-    if args.fig8 :
-        figure8( old_args )
-
+    figure7( args.times )
+    figure8()
     plt.show()
 
 #====================================================================
