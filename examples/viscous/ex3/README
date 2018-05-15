@@ -1,1 +1,1 @@
-Example of two-layer viscous convection with isothermal boundary conditions at the surface and core mantle boundary.  From the contrived initial condition it takes about 10 Byrs to reach steady state.
+Example of two-layer viscous convection with isothermal boundary conditions (i.e., constant entropy) at the surface and core mantle boundary.  From the contrived initial condition it takes about 10 Byrs to reach steady state.
