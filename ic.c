@@ -14,7 +14,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     PetscInt ind,numpts_s;
     Solution *S = &E->solution;
     Parameters const *P = &E->parameters;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     PetscInt IC = P->initial_condition;
     PetscInt const ind0=0;
 
@@ -37,27 +36,17 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
         ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
     }
 
-    /* this is to enforce approximately equal thermal boundary layer
-       drops when both the surface and core entropy are defined by 
-       boundary conditions */
-    /* FIXME: in general bcs could be mixed.  Below assumes both isothermal */
     /* FIXME: will break in parallel */
-    if( (Ap->SURFACE_BC==5) && (P->CORE_BC==3)){
-        PetscScalar shift;
-        /* rem that top staggered node is already set to Ap->surface_bc_value,
-           so need to shift all entropy values */
-        shift = P->sinit - Ap->surface_bc_value;
-        ierr = set_entropy( E, sol ); // slightly super-adiabatic
-        ierr = VecShift( S->S_s, shift ); // shift to P->sinit
-        // set surface bc
-        ierr = VecSetValues( S->S_s,1,&ind0,&Ap->surface_bc_value,INSERT_VALUES );CHKERRQ(ierr);
-        // set core bc
-        ierr = VecSetValues( S->S_s,1,&ind,&P->core_bc_value,INSERT_VALUES );CHKERRQ(ierr);
-        ierr = VecAssemblyBegin(S->S_s);CHKERRQ(ierr);
-        ierr = VecAssemblyEnd(S->S_s);CHKERRQ(ierr);
-        // finally, set dSdr based on this entropy profile
-        ierr = set_dSdr_b_from_S_s( E, sol );CHKERRQ(ierr);
+    ierr = set_entropy_from_solution( E, sol );
+    if( P->ic_surface_entropy > 0.0 ){
+        ierr = VecSetValues( S->S_s,1,&ind0,&P->ic_surface_entropy,INSERT_VALUES );CHKERRQ(ierr);
     }
+    if( P->ic_core_entropy > 0.0 ){
+        ierr = VecSetValues( S->S_s,1,&ind,&P->ic_core_entropy,INSERT_VALUES );CHKERRQ(ierr);
+    }
+    ierr = VecAssemblyBegin(S->S_s);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->S_s);CHKERRQ(ierr);
+    ierr = set_solution_from_entropy( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

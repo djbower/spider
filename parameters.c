@@ -218,6 +218,20 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_dsdr",&P->ic_dsdr,NULL);CHKERRQ(ierr);
   P->ic_dsdr /= C->DSDR;
 
+  /* initial entropy at the surface, or set to P->sinit if P->ic_surface_entropy < 0.0 */
+  P->ic_surface_entropy = -1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_surface_entropy",&P->ic_surface_entropy,NULL);CHKERRQ(ierr);
+  if( P->ic_surface_entropy > 0.0 ){
+    P->ic_surface_entropy /= C->ENTROPY;
+  }
+
+  /* initial entropy at the core-mantle boundary, or leave as value at base of adiabat if P->ic_core_entropy < 0.0 */
+  P->ic_core_entropy = -1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_core_entropy",&P->ic_core_entropy,NULL);CHKERRQ(ierr);
+  if( P->ic_core_entropy > 0.0 ){
+    P->ic_core_entropy /= C->ENTROPY;
+  }
+
   /* radius of planet (m) */
   P->radius = 6371000.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-radius",&P->radius,NULL);CHKERRQ(ierr);

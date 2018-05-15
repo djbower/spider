@@ -3,9 +3,8 @@
 static PetscErrorCode set_d_dr_linear( Ctx * );
 //static PetscErrorCode set_d_dr_quadratic( Ctx * );
 
-/* integrate dS/dr to get the entropy profile
-   this function only works in serial */
-PetscErrorCode set_entropy( Ctx *E, Vec sol )
+/* integrate dS/dr to get the entropy profile (S_s and S_b) */
+PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 {
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
@@ -76,11 +75,12 @@ PetscErrorCode set_entropy( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_dSdr_b_from_S_s( Ctx *E, Vec sol )
+PetscErrorCode set_solution_from_entropy( Ctx *E, Vec sol )
 {
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
+    PetscScalar    S0;
     PetscScalar    *arr_dSdr_b, *arr_S_s, *arr_radius_s;
     PetscInt       i, ihi_b, ilo_b, w_b;
     PetscMPIInt    size;
@@ -106,16 +106,20 @@ PetscErrorCode set_dSdr_b_from_S_s( Ctx *E, Vec sol )
 
     arr_dSdr_b[0] = 0.0; // first point constrained by boundary conditions
     arr_dSdr_b[ihi_b-1] = 0.0; // last point constrained by boundary conditions
-
     for(i=ilo_b+1; i<ihi_b-1; ++i){
         arr_dSdr_b[i] = arr_S_s[i] - arr_S_s[i-1];
         arr_dSdr_b[i] /= arr_radius_s[i] - arr_radius_s[i-1];
     }
 
+    /* set entropy at top staggered node */
+    S0 = arr_S_s[0];
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,S0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);CHKERRQ(ierr);
+
     ierr = DMDAVecRestoreArray(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
-
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
