@@ -141,7 +141,7 @@ typedef struct _Parameters {
     PetscInt initial_condition;
     char ic_filename[PETSC_MAX_PATH_LEN];
     PetscScalar ic_melt_pressure;
-    PetscScalar sinit;
+    PetscScalar sinit; // entropy at top of adiabat
     PetscScalar ic_dsdr;
     PetscScalar radius;
     PetscScalar coresize;

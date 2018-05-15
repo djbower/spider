@@ -3,8 +3,8 @@
 #include "util.h"
 
 static PetscErrorCode set_ic_default( Ctx *, Vec );
-static PetscErrorCode set_ic_constant_dSdr( Ctx *, Vec );
-static PetscErrorCode set_ic_extra( Ctx *, Vec );
+static PetscErrorCode set_ic_entropy( Ctx *, Vec );
+static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec );
 
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
@@ -68,18 +68,20 @@ static PetscErrorCode set_ic_default( Ctx *E, Vec sol )
 
     PetscFunctionBeginUser;
 
-    ierr = set_ic_constant_dSdr( E, sol ); CHKERRQ(ierr);
-    ierr = set_ic_extra( E, sol ); CHKERRQ(ierr);
+    ierr = set_ic_entropy( E, sol ); CHKERRQ(ierr);
+    ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_ic_constant_dSdr( Ctx *E, Vec sol )
+static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
 {
     /* set initial entropy gradient to constant for all nodes */
 
     PetscErrorCode   ierr;
+    PetscInt         i;
+    PetscScalar      S0;
     Parameters const *P = &E->parameters;
     Vec              dSdr_b;
     Vec              *subVecs;
@@ -89,9 +91,10 @@ static PetscErrorCode set_ic_constant_dSdr( Ctx *E, Vec sol )
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
     dSdr_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]];
 
-    ierr = VecSet(dSdr_b, P->ic_dsdr ); CHKERRQ( ierr );
+    ierr = VecSet(dSdr_b, P->ic_dsdr );CHKERRQ(ierr);
 
     /* these next two lines are simply convenient reminders that the
        first and last values are meaningless because the fluxes here
@@ -101,8 +104,14 @@ static PetscErrorCode set_ic_constant_dSdr( Ctx *E, Vec sol )
     ierr = VecSetValue( dSdr_b, 0,             0.0, INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue( dSdr_b, P->numpts_b-1, 0.0, INSERT_VALUES);CHKERRQ(ierr);
 
-    ierr = VecAssemblyBegin( dSdr_b );CHKERRQ(ierr);
-    ierr = VecAssemblyEnd( dSdr_b );CHKERRQ(ierr);
+    /* set entropy at top of adiabat */
+    S0 = P->sinit;
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,S0,INSERT_VALUES);CHKERRQ(ierr);
+
+    for (i=0; i<E->numFields; ++i) {
+      ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
+      ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
+    }
 
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
@@ -111,14 +120,13 @@ static PetscErrorCode set_ic_constant_dSdr( Ctx *E, Vec sol )
 }
 
 
-static PetscErrorCode set_ic_extra( Ctx *E, Vec sol )
+static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 {
     /* set initial condition for the extra points */
 
     PetscErrorCode             ierr;
     PetscInt                   i;
     Vec                        *subVecs;
-    PetscScalar                S0;
     Parameters           const *P  = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     VolatileParameters const   *CO2 = &Ap->CO2_volatile_parameters;
@@ -154,15 +162,6 @@ static PetscErrorCode set_ic_extra( Ctx *E, Vec sol )
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,x0,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,x1,INSERT_VALUES);CHKERRQ(ierr);
 
-    /* include initial entropy at staggered node */
-    if ((Ap->SURFACE_BC==5) && (P->CORE_BC==3)){
-        S0 = Ap->surface_bc_value;
-    }
-    else{
-        S0 = P->sinit;
-    }
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,S0,INSERT_VALUES);CHKERRQ(ierr);
-
     for (i=0; i<E->numFields; ++i) {
       ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
       ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
@@ -176,6 +175,8 @@ static PetscErrorCode set_ic_extra( Ctx *E, Vec sol )
 
 static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 {
+
+    /* FIXME: currently broken since change to new output format (json) */
 
     /* reads in the output from sol_[timestep].m to use as the
        initial condition to enable restarting
