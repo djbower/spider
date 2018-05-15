@@ -315,6 +315,10 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       }
 
       /* compute viscosity */
+      /* TODO: this is a weighted log-average (geometric mean) of the
+         melt and solid viscosity.  Option to include temperature
+         dependence, either for individual phases (melt and solid) or
+         just for one phase (probably solid initially) */
       arr_visc[i] = PetscPowScalar( 10.0, arr_visc[i] );
 
       /* other useful material properties */
