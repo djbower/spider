@@ -43,7 +43,7 @@
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
--radius0 6371.0 # Earth radius
+-radius0 63710.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
