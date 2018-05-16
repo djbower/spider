@@ -1,4 +1,4 @@
 -curves andrault2011
--sinit 1600
+-ic_adiabat_entropy 1600
 -nstepsmacro 0
 -dtmacro 1000000

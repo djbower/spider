@@ -94,7 +94,7 @@ static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
     ierr = VecSetValue( dSdr_b, P->numpts_b-1, 0.0, INSERT_VALUES);CHKERRQ(ierr);
 
     /* set entropy at top of adiabat */
-    S0 = P->sinit;
+    S0 = P->ic_adiabat_entropy;
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,S0,INSERT_VALUES);CHKERRQ(ierr);
 
     for (i=0; i<E->numFields; ++i) {

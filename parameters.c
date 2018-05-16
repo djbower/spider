@@ -209,24 +209,24 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   }
 
   /* initial entropy at top of adiabat (J/kg-K) */
-  P->sinit = 3052.885602072091;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-sinit",&P->sinit,NULL);CHKERRQ(ierr);
-  P->sinit /= C->ENTROPY;
+  P->ic_adiabat_entropy = 3052.885602072091;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_adiabat_entropy",&P->ic_adiabat_entropy,NULL);CHKERRQ(ierr);
+  P->ic_adiabat_entropy /= C->ENTROPY;
 
   /* initial entropy gradient (J/kg-K-m) */
   P->ic_dsdr = -4.6978890285209187e-07;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_dsdr",&P->ic_dsdr,NULL);CHKERRQ(ierr);
   P->ic_dsdr /= C->DSDR;
 
-  /* initial entropy at the surface, or set to P->sinit if P->ic_surface_entropy < 0.0 */
-  P->ic_surface_entropy = -1.0;
+  /* initial entropy at the surface, or set to P->ic_adiabat_entropy if P->ic_surface_entropy < 0.0 */
+  P->ic_surface_entropy = -1;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_surface_entropy",&P->ic_surface_entropy,NULL);CHKERRQ(ierr);
   if( P->ic_surface_entropy > 0.0 ){
     P->ic_surface_entropy /= C->ENTROPY;
   }
 
   /* initial entropy at the core-mantle boundary, or leave as value at base of adiabat if P->ic_core_entropy < 0.0 */
-  P->ic_core_entropy = -1.0;
+  P->ic_core_entropy = -1;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_core_entropy",&P->ic_core_entropy,NULL);CHKERRQ(ierr);
   if( P->ic_core_entropy > 0.0 ){
     P->ic_core_entropy /= C->ENTROPY;
@@ -606,7 +606,7 @@ PetscErrorCode PrintParameters(Parameters const *P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"nstepsmacro",P->nstepsmacro                                               );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"numpts_b"   ,P->numpts_b                                                  );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"numpts_s"   ,P->numpts_s                                                  );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","S_init"     ,(double)P->sinit       ,(double)(P->sinit*C->ENTROPY) ,"J/kg-K"      );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","ic_adiabat_entropy"     ,(double)P->ic_adiabat_entropy       ,(double)(P->ic_adiabat_entropy*C->ENTROPY) ,"J/kg-K"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"liquidus data file"         ,P->liquidusFilename                          );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"solidus data file"          ,P->solidusFilename                           );CHKERRQ(ierr);
