@@ -3,9 +3,12 @@
 static PetscErrorCode set_d_dr_linear( Ctx * );
 //static PetscErrorCode set_d_dr_quadratic( Ctx * );
 
-/* integrate dS/dr to get the entropy profile (S_s and S_b) */
 PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 {
+    /* Set entropy at the basic (S_b) and staggered (S_s) nodes
+       using the solution fields SPIDER_SOLUTION_FIELD_S0 and
+       SPIDER_SOLUTION_FIELD_DSDR_B */
+
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
@@ -14,8 +17,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     PetscInt       i, ihi_b, ilo_b, w_b;
     PetscMPIInt    size;
     DM             da_s = E->da_s, da_b=E->da_b;
-    Vec            *subVecs;
-
+    Vec            *subVecs, dSdr_b;
     const PetscInt ind0 = 0;
 
     PetscFunctionBeginUser;
@@ -24,17 +26,18 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-    /* Get first staggered node value (store as S0) */
+    /* get dS/dr at basic nodes */
+    dSdr_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]];
+    /* get first staggered node value (store as S0) */
     ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],1,&ind0,&S0);CHKERRQ(ierr);
-    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
     /* for looping over basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
 
-    ierr = DMDAVecGetArray(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
@@ -64,12 +67,13 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     arr_S_b[ihi_b-1] = arr_dSdr_b[ihi_b-2] * 0.5 * (arr_radius_b[ihi_b-1]-arr_radius_b[ihi_b-2]);
     arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
 
-    ierr = DMDAVecRestoreArray(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     PetscFree(subVecs);
 
     PetscFunctionReturn(0);
@@ -77,6 +81,10 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
 PetscErrorCode set_solution_from_entropy( Ctx *E, Vec sol )
 {
+    /* Set the solution fields SPIDER_SOLUTION_FIELD_S0 and
+       SPIDER_SOLUTION_FIELD_DSDR_B using the entropy at
+       staggered nodes (S_s) */
+
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;

@@ -37,16 +37,18 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     }
 
     /* FIXME: will break in parallel */
-    ierr = set_entropy_from_solution( E, sol );
-    if( P->ic_surface_entropy > 0.0 ){
-        ierr = VecSetValues( S->S_s,1,&ind0,&P->ic_surface_entropy,INSERT_VALUES );CHKERRQ(ierr);
+    if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
+        ierr = set_entropy_from_solution( E, sol );
+        if( P->ic_surface_entropy > 0.0 ){
+            ierr = VecSetValues( S->S_s,1,&ind0,&P->ic_surface_entropy,INSERT_VALUES );CHKERRQ(ierr);
+        }
+        if( P->ic_core_entropy > 0.0 ){
+            ierr = VecSetValues( S->S_s,1,&ind,&P->ic_core_entropy,INSERT_VALUES );CHKERRQ(ierr);
+        }
+        ierr = VecAssemblyBegin(S->S_s);CHKERRQ(ierr);
+        ierr = VecAssemblyEnd(S->S_s);CHKERRQ(ierr);
+        ierr = set_solution_from_entropy( E, sol );CHKERRQ(ierr);
     }
-    if( P->ic_core_entropy > 0.0 ){
-        ierr = VecSetValues( S->S_s,1,&ind,&P->ic_core_entropy,INSERT_VALUES );CHKERRQ(ierr);
-    }
-    ierr = VecAssemblyBegin(S->S_s);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(S->S_s);CHKERRQ(ierr);
-    ierr = set_solution_from_entropy( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
