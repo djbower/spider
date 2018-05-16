@@ -162,7 +162,7 @@
 # dT = param_utbl_const * [Surface temperature]**3.0
 # this is useful for high melt fraction dynamics where the ultra-thin thermal boundary layer
 # (often only a few cms thick) cannot be resolved by the choice of mesh
--PARAM_UTBL 1 # flag to turn on parameterisation
+-PARAM_UTBL 0 # flag to turn on parameterisation
 -param_utbl_const 1.0E-7 # value of parameterisation
 
 # track time-dependence of volatile content in atmosphere and magma ocean
