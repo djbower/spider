@@ -31,12 +31,6 @@
 # number of basic nodes
 -n 200
 
-# initial condition
-# [1] is set dS/dr to constant everywhere
-# [2] is restart from file
--initial_condition 1
--ic_filename output/dSdr_b_aug_0.m
-
 # all units are SI unless indicated otherwise
 
 # primary scaling parameters
@@ -82,6 +76,18 @@
 -rhoSol_filename_rel_to_src lookup_data/RTmelt/density_solid.dat
 -tempSol_filename_rel_to_src lookup_data/RTmelt/temperature_solid.dat
 
+# initial condition
+# [1] is set dS/dr to constant everywhere
+# [2] is restart from file
+-initial_condition 1
+-ic_filename output/dSdr_b_aug_0.m
+-ic_adiabat_entropy 3052.885602072091 # initial specific entropy at top of domain (top cell)
+-ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
+# for Earth scalings, above is -1.0E-3 in non-dimensional units
+# set surface and core entropy (-1 is a flag to ignore, positive values are used)
+-ic_surface_entropy -1
+-ic_core_entropy -1
+
 # mixing length
 # [1] is conventional, i.e. distance from the nearest boundary
 #     which is either the surface or core-mantle boundary
@@ -98,12 +104,6 @@
 
 # radius of the planet
 -radius 6371000.0 # Earth radius
-
-# initial condition
--sinit 3052.885602072091 # initial specific entropy at top of domain (top cell)
-#-sinit 2137.0199214504637
--ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
-# for Earth scalings, above is -1.0E-3 in non-dimensional units
 
 # static pressure profile derived from Adams-Williamson equation of state
 # these parameters are from fitting PREM in the lower mantle (for Earth)
@@ -135,7 +135,7 @@
 # core-mantle boundary condition
 # [1] core-cooling
 # [2] heat flux (prescribe value using core_bc_value)
-# [3] entropy (prescribe value using core_bc_value)
+# [3] entropy
 -CORE_BC 1
 -core_bc_value 0.0
 
@@ -149,7 +149,7 @@
 # [2] steam atmosphere parameterisation (Zahnle et al., 1988)
 # [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
 # [4] heat flux (prescribe value using surface_bc_value)
-# [5] entropy (prescribe value using surface_bc_value, overrides sinit above)
+# [5] entropy
 -SURFACE_BC 1
 -surface_bc_value 0.0
 

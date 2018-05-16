@@ -353,8 +353,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       P->core_bc_value /= C->FLUX;
       break;
     case 3:
-      // CORE_BC = MO_CORE_TYPE_ENTROPY: entropy (prescribed)
-      P->core_bc_value /= C->ENTROPY;
+      /* CORE_BC = MO_CORE_TYPE_ENTROPY: entropy
+         do nothing */
       break;
     default:
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported CORE_BC value %d provided",P->CORE_BC);
@@ -391,8 +391,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       Ap->surface_bc_value /= C->FLUX;
       break;
     case 5:
-      // SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy (prescribed)
-      Ap->surface_bc_value /= C->ENTROPY;
+      /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy
+         do nothing */
       break;
     default:
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
