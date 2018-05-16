@@ -26,7 +26,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscErrorCode       ierr;
     PetscMPIInt          rank;
     PetscScalar          temp0,Qout,area0;
-    PetscInt             const ind=0;
+    PetscInt             const ind0=0, ind1=1;
     Atmosphere           *A  = &E->atmosphere;
     Mesh                 const *M  = &E->mesh;
     Parameters           const *P  = &E->parameters;
@@ -39,7 +39,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
     if (!rank){
 
-      ierr = VecGetValues(M->area_b,1,&ind,&area0);CHKERRQ(ierr);
+      ierr = VecGetValues(M->area_b,1,&ind0,&area0);CHKERRQ(ierr);
 
       /* TODO: these quantities might not get set, so to ensure they
          are initialised and set to zero here.  This should be moved to
@@ -51,7 +51,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       /* temperature (potential temperature if coarse mesh is used)
          this is taken from the top staggered node */
-      ierr = VecGetValues(S->temp,1,&ind,&temp0); CHKERRQ(ierr);
+      ierr = VecGetValues(S->temp_s,1,&ind0,&temp0); CHKERRQ(ierr);
 
       /* correct for ultra-thin thermal boundary layer at the surface */
       if( Ap->PARAM_UTBL ){
@@ -86,10 +86,9 @@ PetscErrorCode set_surface_flux( Ctx *E )
         case 5:
           // entropy
           {
-            PetscInt const one=1;
             PetscScalar area1,val;
-            ierr = VecGetValues( M->area_b,1,&one,&area1);CHKERRQ(ierr);
-            ierr = VecGetValues(S->Jtot,1,&one,&val);CHKERRQ(ierr);
+            ierr = VecGetValues(M->area_b,1,&ind1,&area1);CHKERRQ(ierr);
+            ierr = VecGetValues(S->Jtot,1,&ind1,&val);CHKERRQ(ierr);
             Qout = val * area1/area0;
             break;
           }
@@ -114,10 +113,6 @@ PetscErrorCode set_surface_flux( Ctx *E )
       A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
 
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
-
-      PetscScalar area0;
-      PetscInt ind = 0; // perhaps redundant because set above, but just to be safe
-      ierr = VecGetValues(M->area_b,1,&ind,&area0);CHKERRQ(ierr);
       Qout *= area0 ;
       ierr = VecSetValue(S->Etot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
     }
