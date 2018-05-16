@@ -75,7 +75,11 @@ def plot_atmosphere():
     for cont in phi_cont_l:
         time_temp_l = su.find_xx_for_yy( timeMyr_a, phi_a, cont )
         index = su.get_first_non_zero_index( time_temp_l )
-        phi_time_l.append( timeMyr_a[index] )
+        if index is None:
+            out = 0.0
+        else:
+            out = timeMyr_a[index]
+        phi_time_l.append( out )
 
     ##########
     # figure a
