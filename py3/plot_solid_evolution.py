@@ -115,7 +115,7 @@ def solid_evolution_fig3( times ):
     # titles and axes labels, legends, etc
     units = myjson_o.get_field_units('S_b')
     title = '(a) Entropy, {}'.format(units)
-    yticks = [700,1600,2400,3200]
+    yticks = [400,800,1600,2400,3200]
     # Bower et al. (2018)
     #yticks = [1600,2000,2400,2800,3200]
     # DJB used this next range for work with Bayreuth
