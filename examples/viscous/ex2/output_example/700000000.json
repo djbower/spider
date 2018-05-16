@@ -782,7 +782,7 @@
 			"size":	1,
 			"scaling":	4033.607076,
 			"scaled":	"false",
-			"values":	["0.1039295895826675"]
+			"values":	["0.1095447379060421"]
 		}, {
 			"name":	"optical_depth",
 			"units":	"None",
@@ -798,7 +798,7 @@
 			"size":	1,
 			"scaling":	1,
 			"scaled":	"false",
-			"values":	["1.042425187790125e-05"]
+			"values":	["8.108214243923796e-06"]
 		}, {
 			"name":	"CO2_initial",
 			"units":	"ppm",
