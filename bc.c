@@ -226,7 +226,7 @@ static PetscScalar simple_core_cooling( const Ctx *E )
 {
     PetscErrorCode ierr;
     PetscInt ix,ix2,numpts_b;
-    PetscScalar area1,area2,jtot,fac,vol,vol_core,rho_cmb,cp_cmb;
+    PetscScalar area1,area2,jtot,fac,vol,vol_core,rho_cmb,cp_cmb,htot_cmb;
     PetscScalar Qin;
     Mesh const *M = &E->mesh;
     Parameters const *P = &E->parameters;
@@ -234,23 +234,29 @@ static PetscScalar simple_core_cooling( const Ctx *E )
 
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ix  = numpts_b-1; // last basic node
-    ix2 = numpts_b-2; // penultimate basic node
+    ix2 = numpts_b-2; // penultimate basic node (also last staggered node)
 
+    // basic
     ierr = VecGetValues(M->area_b,1,&ix,&area1);CHKERRQ(ierr);
     ierr = VecGetValues(M->area_b,1,&ix2,&area2);CHKERRQ(ierr);
     ierr = VecGetValues(S->Jtot,1,&ix2,&jtot);CHKERRQ(ierr); // flux at penultimate basic node
 
+    // staggered (last staggered node)
     ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr);
     ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
     ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
+    ierr = VecGetValues( S->Htot_s,1,&ix2,&htot_cmb);CHKERRQ(ierr);
+
     vol_core = 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
     fac = vol / vol_core;
     fac *= rho_cmb / P->rho_core;
     fac *= cp_cmb / P->cp_core;
     fac /= P->tfac_core_avg;
     fac = 1.0 / (1.0 + fac);
-    fac *= area2 / area1;
-    Qin = jtot*fac;
+
+    Qin = jtot*area2 - vol*rho_cmb*htot_cmb;
+    Qin *= fac;
+    Qin /= area1;
 
     return Qin;
 }
