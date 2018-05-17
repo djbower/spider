@@ -7,6 +7,7 @@ static PetscScalar hybrid( Ctx *, PetscScalar );
 static PetscScalar tsurf_param( PetscScalar, AtmosphereParameters const * );
 static PetscScalar grey_body( Atmosphere const *, AtmosphereParameters const * );
 static PetscScalar isothermal_surface( Ctx const * );
+static PetscScalar simple_core_cooling( Ctx const * );
 static PetscScalar steam_atmosphere_zahnle_1988( Atmosphere const *, Constants const *C );
 static PetscScalar get_emissivity_abe_matsui( Parameters const *, Atmosphere * );
 static PetscScalar get_emissivity_from_flux( Atmosphere const *, AtmosphereParameters const *, PetscScalar );
@@ -86,6 +87,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
         case 5:
           // isothermal (constant entropy)
+          // TODO: is this consistent with A->tsurf?
           Qout = isothermal_surface( E );
           break;
         default:
@@ -108,16 +110,17 @@ PetscErrorCode set_surface_flux( Ctx *E )
          in those cases */
       A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
 
-      // flux (i.e., per area)
+      // energy flux (Jtot)
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
-      Qout *= area0; // energy flow (scaled by area)
+      // energy flow (Etot)
+      Qout *= area0;
       ierr = VecSetValue(S->Etot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
     }
 
-    ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
     ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -165,57 +168,40 @@ static PetscScalar hybrid( Ctx *E, PetscScalar Qin )
 PetscErrorCode set_core_mantle_flux( Ctx *E )
 {
     PetscErrorCode    ierr;
-    PetscInt          ix;             // index of last basic node
-    PetscInt          ix2;            // index of penultimate basic node
-    PetscInt          numpts_b;
-    PetscScalar       area1,area2,val,Qin;
+    PetscInt          ix,numpts_b;
+    PetscScalar       area1,Qin;
     PetscMPIInt       rank,size;
 
-    Mesh              *M = &E->mesh;
-    Parameters        *P = &E->parameters;
+    Mesh        const *M = &E->mesh;
+    Parameters  const *P = &E->parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ix  = numpts_b-1;
-    ix2 = numpts_b-2;
+    ix  = numpts_b-1; // index of last basic node
 
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
 
     /* assume that the last rank contains the last two points */
     if (rank == size-1){
-      // next are needed for most of the cases, so just compute once
-      ierr = VecGetValues(M->area_b,1,&ix,&area1);CHKERRQ(ierr); // without 4*pi
-      ierr = VecGetValues(M->area_b,1,&ix2,&area2);CHKERRQ(ierr); // without 4*pi
-      ierr = VecGetValues(S->Jtot,1,&ix2,&val);CHKERRQ(ierr); // flux at penultimate basic node
+
+      ierr = VecGetValues(M->area_b,1,&ix,&area1);CHKERRQ(ierr); // area of cmb
 
       switch( P->CORE_BC ){
         case 1:
           // core cooling
-          {
-            PetscScalar fac,vol,vol_core,rho_cmb,cp_cmb;
-
-            ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr); // without 4*pi
-            ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
-            ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
-            vol_core = 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0); // without 4*pi
-            fac = vol / vol_core; // excluding 4*pi is OK since here we take the ratio of two volumes
-            fac *= rho_cmb / P->rho_core;
-            fac *= cp_cmb / P->cp_core;
-            fac /= P->tfac_core_avg;
-            fac = 1.0 / (1.0 + fac);
-            fac *= area2 / area1; // excluding 4*pi is OK since here we take the ratio of two areas
-            Qin = val*fac;
-            break;
-          }
+          Qin = simple_core_cooling( E );
+          break;
         case 2:
           // heat flux
           Qin = P->core_bc_value; // CMB heat flux
           break;
         case 3:
           // constant entropy (equivalent to isothermal)
-          Qin = val*area2/area1;
+          //Qin = val*area2/area1;
+          // FIXME: currently broken
+          Qin = 0.0;
           break;
         default:
           SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported CORE_BC value %d provided",P->CORE_BC);
@@ -224,17 +210,51 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
       /* energy flux (Jtot) */
       ierr = VecSetValue(S->Jtot,ix,Qin,INSERT_VALUES);CHKERRQ(ierr);
       /* energy flow (Etot) */
-      Qin *= area1; // without 4*pi is correct
+      Qin *= area1;
       ierr = VecSetValue(S->Etot,ix,Qin,INSERT_VALUES);CHKERRQ(ierr);
 
-      ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
-      ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
       ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
       ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+      ierr = VecAssemblyBegin(S->Etot);CHKERRQ(ierr);
+      ierr = VecAssemblyEnd(S->Etot);CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
 }
+
+static PetscScalar simple_core_cooling( const Ctx *E )
+{
+    PetscErrorCode ierr;
+    PetscInt ix,ix2,numpts_b;
+    PetscScalar area1,area2,jtot,fac,vol,vol_core,rho_cmb,cp_cmb;
+    PetscScalar Qin;
+    Mesh const *M = &E->mesh;
+    Parameters const *P = &E->parameters;
+    Solution const *S = &E->solution;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ix  = numpts_b-1; // last basic node
+    ix2 = numpts_b-2; // penultimate basic node
+
+    ierr = VecGetValues(M->area_b,1,&ix,&area1);CHKERRQ(ierr);
+    ierr = VecGetValues(M->area_b,1,&ix2,&area2);CHKERRQ(ierr);
+    ierr = VecGetValues(S->Jtot,1,&ix2,&jtot);CHKERRQ(ierr); // flux at penultimate basic node
+
+    ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr);
+    ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
+    ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
+    vol_core = 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
+    fac = vol / vol_core;
+    fac *= rho_cmb / P->rho_core;
+    fac *= cp_cmb / P->cp_core;
+    fac /= P->tfac_core_avg;
+    fac = 1.0 / (1.0 + fac);
+    fac *= area2 / area1;
+    Qin = jtot*fac;
+
+    return Qin;
+}
+
 
 ///////////////////
 /* isothermal bc */
