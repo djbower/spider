@@ -7,7 +7,8 @@ static PetscScalar hybrid( Ctx *, PetscScalar );
 static PetscScalar tsurf_param( PetscScalar, AtmosphereParameters const * );
 static PetscScalar grey_body( Atmosphere const *, AtmosphereParameters const * );
 static PetscScalar isothermal_surface( Ctx const * );
-static PetscScalar simple_core_cooling( Ctx const * );
+static PetscScalar isothermal_or_cooling_cmb( Ctx const *, PetscScalar const cooling_factor);
+static PetscScalar get_core_cooling_factor( Ctx const * );
 static PetscScalar steam_atmosphere_zahnle_1988( Atmosphere const *, Constants const *C );
 static PetscScalar get_emissivity_abe_matsui( Parameters const *, Atmosphere * );
 static PetscScalar get_emissivity_from_flux( Atmosphere const *, AtmosphereParameters const *, PetscScalar );
@@ -169,7 +170,7 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          ix,numpts_b;
-    PetscScalar       area1,Qin;
+    PetscScalar       fac,area1,Qin;
     PetscMPIInt       rank,size;
 
     Mesh        const *M = &E->mesh;
@@ -191,7 +192,8 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
       switch( P->CORE_BC ){
         case 1:
           // core cooling
-          Qin = simple_core_cooling( E );
+          fac = get_core_cooling_factor( E );
+          Qin = isothermal_or_cooling_cmb( E, fac );
           break;
         case 2:
           // heat flux
@@ -199,9 +201,8 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
           break;
         case 3:
           // constant entropy (equivalent to isothermal)
-          //Qin = val*area2/area1;
-          // FIXME: currently broken
-          Qin = 0.0;
+          fac = 1.0;
+          Qin = isothermal_or_cooling_cmb( E, fac );
           break;
         default:
           SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported CORE_BC value %d provided",P->CORE_BC);
@@ -222,30 +223,22 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar simple_core_cooling( const Ctx *E )
+static PetscScalar get_core_cooling_factor( const Ctx *E )
 {
     PetscErrorCode ierr;
-    PetscInt ix,ix2,numpts_b;
-    PetscScalar area1,area2,jtot,fac,vol,vol_core,rho_cmb,cp_cmb,htot_cmb;
-    PetscScalar Qin;
+    PetscInt ix2,numpts_b;
+    PetscScalar fac,vol,vol_core,rho_cmb,cp_cmb;
     Mesh const *M = &E->mesh;
     Parameters const *P = &E->parameters;
     Solution const *S = &E->solution;
 
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ix  = numpts_b-1; // last basic node
     ix2 = numpts_b-2; // penultimate basic node (also last staggered node)
-
-    // basic
-    ierr = VecGetValues(M->area_b,1,&ix,&area1);CHKERRQ(ierr);
-    ierr = VecGetValues(M->area_b,1,&ix2,&area2);CHKERRQ(ierr);
-    ierr = VecGetValues(S->Jtot,1,&ix2,&jtot);CHKERRQ(ierr); // flux at penultimate basic node
 
     // staggered (last staggered node)
     ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr);
     ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
     ierr = VecGetValues( S->cp_s,1,&ix2,&cp_cmb);CHKERRQ(ierr);
-    ierr = VecGetValues( S->Htot_s,1,&ix2,&htot_cmb);CHKERRQ(ierr);
 
     vol_core = 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
     fac = vol / vol_core;
@@ -254,17 +247,8 @@ static PetscScalar simple_core_cooling( const Ctx *E )
     fac /= P->tfac_core_avg;
     fac = 1.0 / (1.0 + fac);
 
-    Qin = jtot*area2 - vol*rho_cmb*htot_cmb;
-    Qin *= fac;
-    Qin /= area1;
-
-    return Qin;
+    return fac;
 }
-
-
-///////////////////
-/* isothermal bc */
-///////////////////
 
 static PetscScalar isothermal_surface( const Ctx *E )
 {
@@ -290,6 +274,37 @@ static PetscScalar isothermal_surface( const Ctx *E )
 
     return Qout;
 }
+
+static PetscScalar isothermal_or_cooling_cmb( const Ctx *E, const PetscScalar cooling_factor )
+{
+    PetscErrorCode ierr;
+    PetscInt ix,ix2,numpts_b;
+    PetscScalar area1,area2,jtot,vol,rho_cmb,htot_cmb;
+    PetscScalar Qin;
+    Mesh const *M = &E->mesh;
+    Solution const *S = &E->solution;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ix  = numpts_b-1; // last basic node
+    ix2 = numpts_b-2; // penultimate basic node (also last staggered node)
+
+    // basic
+    ierr = VecGetValues(M->area_b,1,&ix,&area1);CHKERRQ(ierr);
+    ierr = VecGetValues(M->area_b,1,&ix2,&area2);CHKERRQ(ierr);
+    ierr = VecGetValues(S->Jtot,1,&ix2,&jtot);CHKERRQ(ierr); // flux at penultimate basic node
+
+    // staggered
+    ierr = VecGetValues( M->volume_s,1,&ix2,&vol);CHKERRQ(ierr);
+    ierr = VecGetValues( S->rho_s,1,&ix2,&rho_cmb);CHKERRQ(ierr);
+    ierr = VecGetValues( S->Htot_s,1,&ix2,&htot_cmb);CHKERRQ(ierr);
+
+    Qin = jtot*area2 - vol*rho_cmb*htot_cmb;
+    Qin /= area1;
+    Qin *= cooling_factor;
+
+    return Qin;
+}
+
 
 ////////////////////////
 /* atmosphere related */
