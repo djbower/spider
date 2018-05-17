@@ -6,6 +6,7 @@ static PetscScalar hybrid( Ctx *, PetscScalar );
 #endif
 static PetscScalar tsurf_param( PetscScalar, AtmosphereParameters const * );
 static PetscScalar grey_body( Atmosphere const *, AtmosphereParameters const * );
+static PetscScalar isothermal_surface( Ctx const * );
 static PetscScalar steam_atmosphere_zahnle_1988( Atmosphere const *, Constants const *C );
 static PetscScalar get_emissivity_abe_matsui( Parameters const *, Atmosphere * );
 static PetscScalar get_emissivity_from_flux( Atmosphere const *, AtmosphereParameters const *, PetscScalar );
@@ -26,7 +27,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscErrorCode       ierr;
     PetscMPIInt          rank;
     PetscScalar          temp0,Qout,area0;
-    PetscInt             const ind0=0, ind1=1;
+    PetscInt             const ind0=0;
     Atmosphere           *A  = &E->atmosphere;
     Mesh                 const *M  = &E->mesh;
     Parameters           const *P  = &E->parameters;
@@ -84,14 +85,9 @@ PetscErrorCode set_surface_flux( Ctx *E )
           Qout = Ap->surface_bc_value;
           break;
         case 5:
-          // entropy
-          {
-            PetscScalar area1,val;
-            ierr = VecGetValues(M->area_b,1,&ind1,&area1);CHKERRQ(ierr);
-            ierr = VecGetValues(S->Jtot,1,&ind1,&val);CHKERRQ(ierr);
-            Qout = val * area1/area0;
-            break;
-          }
+          // isothermal (constant entropy)
+          Qout = isothermal_surface( E );
+          break;
         default:
           SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
           break;
@@ -112,8 +108,9 @@ PetscErrorCode set_surface_flux( Ctx *E )
          in those cases */
       A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
 
+      // flux (i.e., per area)
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
-      Qout *= area0 ;
+      Qout *= area0; // energy flow (scaled by area)
       ierr = VecSetValue(S->Etot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
     }
 
@@ -237,6 +234,35 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
     }
 
     PetscFunctionReturn(0);
+}
+
+///////////////////
+/* isothermal bc */
+///////////////////
+
+static PetscScalar isothermal_surface( const Ctx *E )
+{
+    PetscErrorCode ierr;
+    PetscScalar Qout;
+    PetscScalar area0,area1,jtot1; // basic
+    PetscScalar htot0,vol0,rho0; // staggered
+    PetscInt const ind0=0, ind1=1;
+    Mesh const *M  = &E->mesh;
+    Solution const *S  = &E->solution;
+
+    // basic
+    ierr = VecGetValues(M->area_b,1,&ind0,&area0);CHKERRQ(ierr);
+    ierr = VecGetValues(M->area_b,1,&ind1,&area1);CHKERRQ(ierr);
+    ierr = VecGetValues(S->Jtot,1,&ind1,&jtot1);CHKERRQ(ierr);
+    // staggered
+    ierr = VecGetValues(S->Htot_s,1,&ind0,&htot0);CHKERRQ(ierr);
+    ierr = VecGetValues(M->volume_s,1,&ind0,&vol0);CHKERRQ(ierr);
+    ierr = VecGetValues(S->rho_s,1,&ind0,&rho0);CHKERRQ(ierr);
+
+    Qout = jtot1*area1 + vol0*rho0*htot0;
+    Qout /= area0;
+
+    return Qout;
 }
 
 ////////////////////////

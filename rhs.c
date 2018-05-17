@@ -80,6 +80,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
      x0 and x1 and/or are zero */
   ierr = set_atmosphere_volatile_content( E, x0, x1 );CHKERRQ(ierr);
 
+  /* boundary conditions must be after all arrays are set */
   ierr = set_surface_flux( E );CHKERRQ(ierr);
 
   ierr = set_core_mantle_flux( E );CHKERRQ(ierr);
