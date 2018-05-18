@@ -63,10 +63,17 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
   }
 
   /* Reevaluate the RHS */
-  {
-
   ierr = VecDuplicate(sol,&rhs);CHKERRQ(ierr);
   ierr = RHSFunction(ts,time,sol,rhs,ctx);CHKERRQ(ierr);
+
+  /* Ensure that the output directory exists */
+  if (!mctx->outputDirectoryExistenceConfirmed) {
+    PetscBool exists;
+    ierr = PetscTestDirectory(P->outputDirectory,'w',&exists);CHKERRQ(ierr);
+    if (!exists) {
+      ierr = PetscMkdir(P->outputDirectory);CHKERRQ(ierr);
+    }
+    mctx->outputDirectoryExistenceConfirmed = PETSC_TRUE;
   }
 
   /* Dump the solution to a file named for the timestep */

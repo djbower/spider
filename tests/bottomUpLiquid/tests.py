@@ -7,7 +7,6 @@ def bottomUpLiquid(rootDir) :
   testName = "bottomUpLiquid"
   ranks = 1
   launch = [\
-          'mkdir -p output',\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(thisDir,'test.opts'),\
           '../timeout.sh -t 6 ../../py3/plot_bower_et_al_2018.py -t 0,60,120,180,240 -f3',\
           ]

@@ -95,6 +95,7 @@ int main(int argc, char ** argv)
     time = P->t0;
     mctx.walltime0 = MPI_Wtime();
     mctx.walltimeprev = mctx.walltime0;
+    mctx.outputDirectoryExistenceConfirmed = PETSC_FALSE;
     PetscInt stepmacro=0;
     /* This code proceeds by performing multiple solves with a TS object,
        pausing to optionally produce output before updating the "final" time

@@ -8,7 +8,6 @@ def bottomUpSolid(rootDir) :
   testName = "bottomUpSolid"
   ranks = 1
   launch = [\
-          'mkdir -p output',\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(thisDir,'test.opts'),\
           '../timeout.sh -t 6 ../../py3/plot_bower_et_al_2018.py -t 0 -f3',\
           ]
