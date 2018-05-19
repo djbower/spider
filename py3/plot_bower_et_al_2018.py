@@ -11,11 +11,6 @@ import sys
 
 logger = su.get_my_logger(__name__)
 
-# TODO: user should set SPIDERPATH at the end of code compilation
-spiderpath = os.environ.get('SPIDERPATH')
-if not spiderpath :
-    raise RuntimeError('You must define SPIDERPATH in your environment to point to the root directory of the SPIDER installation');
-
 # global constants are the scalings used in Bower et al. (2018)
 # note that these could change for other models
 radius0 = 6371000.0
@@ -44,6 +39,12 @@ def dep2pres( dep ):
 def bower_et_al_2018_fig1():
 
     logger.info( 'building bower_et_al_2018_fig1' )
+
+    # Note: this function expects that the user has set SPIDERPATH
+    # so that it can find data files
+    spiderpath = os.environ.get('SPIDERPATH')
+    if not spiderpath :
+        raise RuntimeError('You must define SPIDERPATH in your environment to point to the root directory of the SPIDER installation');
 
     prefix = os.path.join(spiderpath,'py3/bower_et_al_2018/simplified_model/fig1')
 
@@ -153,6 +154,12 @@ def bower_et_al_2018_fig1():
 def bower_et_al_2018_fig2():
 
     logger.info( 'building bower_et_al_2018_fig2' )
+
+    # Note: this function expects that the user has set SPIDERPATH
+    # so that it can find data files
+    spiderpath = os.environ.get('SPIDERPATH')
+    if not spiderpath :
+        raise RuntimeError('You must define SPIDERPATH in your environment to point to the root directory of the SPIDER installation');
 
     prefix = os.path.join(spiderpath,'py3/bower_et_al_2018/simplified_model/fig2')
 

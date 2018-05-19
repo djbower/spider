@@ -5,6 +5,7 @@
 
 typedef struct MonitorCtx {
   double walltime0,walltimeprev;
+  PetscBool outputDirectoryExistenceConfirmed;
 } MonitorCtx;
 
 PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years, PetscInt step, PetscReal time, Vec x, void *ptr, MonitorCtx *mctx);
