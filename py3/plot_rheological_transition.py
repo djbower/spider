@@ -101,6 +101,7 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
 
     for nn, time in enumerate( time_l ):
 
+        print('time=',time)
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
 
         yy1 = myjson_o.get_scaled_field_values( field1 )
@@ -116,54 +117,36 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
         pres = su.find_xx_for_yy( xx_pres_b, yy1, yy2 )
         ind = su.get_first_non_zero_index( pres )
 
-        current_pres = xx_pres_b[-1]
-        current_temp = y_temp[-1]
-        try:
-            previous_pres = data_l[-1][0]
-            if ind is None and previous_pres > 120:
-                data_l.append( (current_pres, current_temp, time ) )
-            elif ind is None and previous_pres < 20:
-                current_pres = xx_pres_b[0]
-                current_temp = y_temp[0]
-                data_l.append( (current_pres, current_temp, time ) )
-            #if ind is None:
-            #    pass
-            else:
-                current_pres = pres[ind]
-                current_temp = y_temp[ind]
-                if current_pres < previous_pres:
-                    data_l.append( (current_pres, current_temp, time ) )
-        except IndexError:
-            #if ind is not None:
-            #    current_pres = pres[ind]
-            #    current_temp = y_temp[ind]
-            #    data_l.append( (current_pres, current_temp, time ) )
-            data_l.append( (current_pres, current_temp, time ) )
+        if ind is not None:
+            data_l.append( (pres[ind], y_temp[ind], time) )
+
+        # break loop once the rheological transition has reached
+        # the surface
+        if ind == 1:
+            break
 
     # reshape data
     # column order: pressure, temperature, time
     data_a = np.reshape( data_l, (-1,3) )
-    print(data_a)
 
-    polydegree = 3 # hard-coded
+    # set time offset to zero, such that t0 defines the time at which the
+    # rheological transition is at the CMB
+    data_a[:,2] -= data_a[0,2]
+
+    polydegree = 2 # hard-coded
 
     # just fit the part where the rheological transition is advancing
     # through the magma ocean
-    # compute the start and end indices for this
-    diff_a = np.diff( data_a[:,0] )
-    sin = su.get_first_non_zero_index( diff_a )
-    ein = 1 + len( diff_a ) - su.get_first_non_zero_index( diff_a[::-1] )
-
-
-    pres_coeff = np.polyfit( data_a[:,2][sin:ein], data_a[:,0][sin:ein], polydegree ) # pressure
+    pres_coeff = np.polyfit( data_a[:,2], data_a[:,0], polydegree ) # pressure
     pres_poly = np.poly1d( pres_coeff )
-    pres_fit = pres_poly( data_a[:,2][sin:ein] )
-    temp_coeff = np.polyfit( data_a[:,2][sin:ein], data_a[:,1][sin:ein], polydegree ) # temperature
+    pres_fit = pres_poly( data_a[:,2] )
+    temp_coeff = np.polyfit( data_a[:,2], data_a[:,1], polydegree ) # temperature
     temp_poly = np.poly1d( temp_coeff )
-    temp_fit = temp_poly( data_a[:,2][sin:ein] )
+    temp_fit = temp_poly( data_a[:,2] )
 
-    tmax = np.max( data_a[:,2][sin:ein] )
-    tmin = np.min( data_a[:,2][sin:ein] )
+    tmax = np.max( data_a[:,2] )
+    tmin = np.min( data_a[:,2] )
+    print( tmin )
 
     vmax = np.max( data_a[:,2] )
     vmin = np.min( data_a[:,2] )
@@ -176,69 +159,42 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
     print( 'pres_coeff=', pres_coeff )
     print( 'temp_coeff=', temp_coeff )
 
-    # now fit cooling at 135 GPa fixed pressure
-    temp_coeff2 = np.polyfit( data_a[:,2][0:sin+1], data_a[:,1][0:sin+1], polydegree )
-    temp_poly2 = np.poly1d( temp_coeff2 )
-    temp_fit2 = temp_poly2( data_a[:,2][0:sin+1] )
+    handle_scatter = fig_o.ax.scatter( data_a[:,0], data_a[:,1], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax )
+    handle_fit, = fig_o.ax.plot( pres_fit, temp_fit, color=color, label=label )
 
-    print( '------------------------------------------------' )
-    print( 'cooling before rheological transition is reached' )
-    print( '------------------------------------------------' )
-    print( 'temp_coeff2=', temp_coeff2 )
-
-    handle_scatter = fig_o.ax[1].scatter( data_a[:,0], data_a[:,1], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax )
-    handle_fit, = fig_o.ax[1].plot( pres_fit, temp_fit, color=color, label=label )
-
-    handle_fit2 = fig_o.ax[0].plot( data_a[:,2][0:sin+1], temp_fit2, 'k-' )
+    print( pres_fit )
+    print( temp_fit )
 
     return ( handle_scatter, handle_fit )
 
 #====================================================================
 def figure8():
 
-    width = 4.7747#/2
+    width = 4.7747/2
     height = 4.7747/2
-    fig_o = su.FigureData( 1, 2, width, height )
+    fig_o = su.FigureData( 1, 1, width, height )
 
-    ax0 = fig_o.ax[0]
-    ax1 = fig_o.ax[1]
+    ax0 = fig_o.ax
 
     handle_l = []
 
     fig_o.time = su.get_all_output_times()
 
-    hs1, hf1 = get_mo_PT_conditions( fig_o, fig_o.time, 'regime_b', 1.5, r'Polynomial fit', 'blue' )
-    #hs2, hf2 = get_mo_PT_conditions( fig_o, fig_o.time, 'phi', 0.4, r'$\phi=0.4$', 'red' )
+    hs1, hf1 = get_mo_PT_conditions( fig_o, fig_o.time, 'regime_b', 1.5, r'Fit', 'blue' )
 
-    hf_l = [hf1]#[hf1, hf2]
-
-    #for i, txt in enumerate( liquidus_l[2] ):
-    #    if txt is not None:
-    #        xoff = liquidus_l[0][i]+1
-    #        yoff = liquidus_l[1][i]-50
-    #        ax0.annotate( txt, xy=(liquidus_l[0][i], liquidus_l[1][i]), xytext=(xoff,yoff) )
-
+    hf_l = [hf1]
 
     # titles and axes labels, legends, etc
-    title = r'Global magma ocean ($P$=135 GPa)'
-    fig_o.set_myaxes( ax0, title=title, ylabel='$T$ (K)', xlabel='Time after $t_0$ (yrs)' )
-    ax0.yaxis.set_label_coords(-0.15,0.575)
-
     title = r'Partially molten magma ocean'
     xticks = [0,50,100,135]
     yticks = [1000,2000,3000,4000,5000]
 
-    fig_o.set_myaxes( ax1, title=title, ylabel='$T$ (K)', yticks=yticks, xlabel='$P$ (GPa)', xticks=xticks )
-    ax1.yaxis.set_label_coords(-0.15,0.575)
+    fig_o.set_myaxes( ax0, title=title, ylabel='$T$ (K)', yticks=yticks, xlabel='$P$ (GPa)', xticks=xticks )
+    ax0.yaxis.set_label_coords(-0.15,0.575)
 
-    fig_o.set_mylegend( ax1, hf_l, loc='upper left', ncol=1, TITLE="" )
+    fig_o.set_mylegend( ax0, hf_l, loc='upper left', ncol=1, TITLE="" )
     cbar = fig_o.fig.colorbar( hs1 )#, ticks=[0,200,400,600,800,1000,2000] )
     cbar.set_label('Time after $t_0$ (yrs)')
-
-    #cbar.ax.set_yticklabels(['0','0.2 kyr','0.4 kyr','0.6 kyr','0.8 kyr','1 kyr'])
-    #cbar.ax.set_ylim([0,1000])
-
-    #ax0.set_xlim([0,2000])
 
     fig_o.savefig(8)
 
@@ -246,11 +202,11 @@ def figure8():
 def main():
 
     # arguments (run with -h to summarize)
-    parser = argparse.ArgumentParser(description='SPIDER plotting script')
-    parser.add_argument('-t', '--times', type=str, help='Comma-separated (no spaces) list of times');
-    args = parser.parse_args()
+    #parser = argparse.ArgumentParser(description='SPIDER plotting script')
+    #parser.add_argument('-t', '--times', type=str, help='Comma-separated (no spaces) list of times');
+    #args = parser.parse_args()
 
-    figure7( args.times )
+    #figure7( args.times )
     figure8()
     plt.show()
 
