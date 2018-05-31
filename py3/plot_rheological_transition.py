@@ -90,7 +90,19 @@ def figure7( times ):
     fig_o.savefig(7)
 
 #====================================================================
-def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='black' ):
+def figure8():
+
+    width = 4.7747/2*3
+    height = 4.7747/2
+    fig_o = su.FigureData( 1, 3, width, height, 'rheological_transition' )
+
+    ax0 = fig_o.ax[0]
+    ax1 = fig_o.ax[1]
+    ax2 = fig_o.ax[2]
+
+    handle_l = []
+
+    fig_o.time = su.get_all_output_times()
 
     data_l = []
 
@@ -99,16 +111,13 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
     xx_pres_b = myjson_o.get_scaled_field_values('pressure_b')
     xx_pres_b *= 1.0E-9
 
-    for nn, time in enumerate( time_l ):
+    for nn, time in enumerate( fig_o.time ):
 
         print('time=',time)
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
 
-        yy1 = myjson_o.get_scaled_field_values( field1 )
-        try:
-            yy2 = float(criteria)
-        except TypeError:
-            yy2 = myjson_o.get_scaled_field_values( criteria )
+        yy1 = myjson_o.get_scaled_field_values( 'regime_b' )
+        yy2 = 1.5
 
         # always need temperature
         y_temp = myjson_o.get_scaled_field_values( 'temp_b' )
@@ -118,7 +127,7 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
         ind = su.get_first_non_zero_index( pres )
 
         if ind is not None:
-            data_l.append( (pres[ind], y_temp[ind], time) )
+            data_l.append( (xx_pres_b[ind], y_temp[ind], time) )
 
         # break loop once the rheological transition has reached
         # the surface
@@ -133,7 +142,7 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
     # rheological transition is at the CMB
     data_a[:,2] -= data_a[0,2]
 
-    polydegree = 2 # hard-coded
+    polydegree = 3 # hard-coded
 
     # just fit the part where the rheological transition is advancing
     # through the magma ocean
@@ -146,7 +155,6 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
 
     tmax = np.max( data_a[:,2] )
     tmin = np.min( data_a[:,2] )
-    print( tmin )
 
     vmax = np.max( data_a[:,2] )
     vmin = np.min( data_a[:,2] )
@@ -159,42 +167,36 @@ def get_mo_PT_conditions( fig_o, time_l, field1, criteria, label="", color='blac
     print( 'pres_coeff=', pres_coeff )
     print( 'temp_coeff=', temp_coeff )
 
-    handle_scatter = fig_o.ax.scatter( data_a[:,0], data_a[:,1], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax )
-    handle_fit, = fig_o.ax.plot( pres_fit, temp_fit, color=color, label=label )
+    fig_o.ax[0].scatter( data_a[:,2], data_a[:,0], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax, s=3.0  )
+    h1, = fig_o.ax[0].plot( data_a[:,2], pres_fit, linestyle='-', color='green', label=r'Fit' )
 
-    print( pres_fit )
-    print( temp_fit )
+    fig_o.ax[1].scatter( data_a[:,2], data_a[:,1], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax, s=3.0 )
+    h2, = fig_o.ax[1].plot( data_a[:,2], temp_fit, linestyle='-', color='green', label=r'Fit' )
 
-    return ( handle_scatter, handle_fit )
+    handle_scatter = fig_o.ax[2].scatter( data_a[:,0], data_a[:,1], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax, s=3.0 )
+    handle_fit, = fig_o.ax[2].plot( pres_fit, temp_fit, color='green', linestyle='-', label=r'Fit' )
 
-#====================================================================
-def figure8():
-
-    width = 4.7747/2
-    height = 4.7747/2
-    fig_o = su.FigureData( 1, 1, width, height )
-
-    ax0 = fig_o.ax
-
-    handle_l = []
-
-    fig_o.time = su.get_all_output_times()
-
-    hs1, hf1 = get_mo_PT_conditions( fig_o, fig_o.time, 'regime_b', 1.5, r'Fit', 'blue' )
-
-    hf_l = [hf1]
+    hf_l = [handle_fit]
 
     # titles and axes labels, legends, etc
-    title = r'Partially molten magma ocean'
+    title = r'$P(t)$, GPa'
+    fig_o.set_myaxes( ax0, title=title, ylabel='$P$', xlabel='Time (yrs)' )
+    ax0.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+
+    title = r'$T(t)$, K'
+    fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xlabel='Time (yrs)' )
+    ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+
+    title = r'$P-T-t$'
     xticks = [0,50,100,135]
     yticks = [1000,2000,3000,4000,5000]
-
-    fig_o.set_myaxes( ax0, title=title, ylabel='$T$ (K)', yticks=yticks, xlabel='$P$ (GPa)', xticks=xticks )
-    ax0.yaxis.set_label_coords(-0.15,0.575)
-
-    fig_o.set_mylegend( ax0, hf_l, loc='upper left', ncol=1, TITLE="" )
-    cbar = fig_o.fig.colorbar( hs1 )#, ticks=[0,200,400,600,800,1000,2000] )
-    cbar.set_label('Time after $t_0$ (yrs)')
+    fig_o.set_myaxes( ax2, title=title, ylabel='$T$', yticks=yticks, xlabel='$P$ (GPa)', xticks=xticks )
+    #ax2.yaxis.set_label_coords(-0.15,0.575)
+    fig_o.set_mylegend( ax0, hf_l, loc='upper right', ncol=1, TITLE="" )
+    fig_o.set_mylegend( ax1, hf_l, loc='upper right', ncol=1, TITLE="" )
+    fig_o.set_mylegend( ax2, hf_l, loc='upper right', ncol=1, TITLE="" )
+    cbar = fig_o.fig.colorbar( handle_scatter, format='%.0e' )#, ticks=[0,200,400,600,800,1000,2000] )
+    cbar.set_label('Time (yrs)')
 
     fig_o.savefig(8)
 
