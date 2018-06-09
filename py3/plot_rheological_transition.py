@@ -313,8 +313,8 @@ def figure9():
     ax3.text( tprime0, 0.84, '$t^\prime=0$', ha='center', va='bottom', transform = trans )
     ax3.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax3.text( tprime1abs, 0.82, '$t^\prime=t^\prime_1$', ha='right', va='bottom', transform = trans )
-    title = r'(b) $T0(t)$, K'
-    fig_o.set_myaxes( ax3, title=title, ylabel='$T$', xlabel='$t$ (yrs)' )
+    title = r'(b) $T0_m(t)$, K'
+    fig_o.set_myaxes( ax3, title=title, ylabel='$T0_m$', xlabel='$t$ (yrs)' )
     ax3.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
 
     # surface heat flux evolution
@@ -341,14 +341,14 @@ def figure9():
 
     ax0.plot( tpres_a[:,0][indp], tpres_a[:,1][indp], marker='o', markersize=3.0, color='0.8' )
     h2, = ax0.plot( tpres_a[:,0][indp], exp_func( tpres_a[:,0][indp], *popt2 ), '-', color='black', linewidth=2, label=r'Fit' )
-    title = r'(c) $P_r(t^\prime)$, GPa'
-    fig_o.set_myaxes( ax0, title=title, ylabel='$P_r$', xlabel='$t^\prime$ (yrs)' )
+    title = r'(c) $P_f(t^\prime)$, GPa'
+    fig_o.set_myaxes( ax0, title=title, ylabel='$P_f$', xlabel='$t^\prime$ (yrs)' )
     ax0.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
 
     ax1.plot( tpres_a[:,0][indp], tpres_a[:,2][indp], marker='o', markersize=3.0, color='0.8' )
     h2, = ax1.plot( tpres_a[:,0][indp], exp_func( tpres_a[:,0][indp], *popt3 ), '-', color='black', linewidth=2, label=r'Fit' )
-    title = r'(d) $T_r(t^\prime)$, GPa'
-    fig_o.set_myaxes( ax1, title=title, ylabel='$T_r$', xlabel='$t^\prime$ (yrs)' )
+    title = r'(d) $T_f(t^\prime)$, GPa'
+    fig_o.set_myaxes( ax1, title=title, ylabel='$T_f$', xlabel='$t^\prime$ (yrs)' )
     ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
 
     print( '--------' )
@@ -359,6 +359,7 @@ def figure9():
     print( 'between t_min= %(tmin)s yrs and t_max= %(tmax)s yrs' % vars() )
     print( 'Pr coeff=', popt2 )
     print( 'Tr coeff=', popt3 )
+    print( 'surface temperature at tprime=0 and tprime1' )
 
     #fig_o.ax[0].scatter( data_a[:,2], data_a[:,0], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax, s=3.0  )
     #h1, = fig_o.ax[0].plot( data_a[:,2], pres_fit, linestyle='-', color='green', label=r'Fit' )
