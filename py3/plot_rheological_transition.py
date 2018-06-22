@@ -11,14 +11,24 @@ from scipy.optimize import curve_fit
 logger = logging.getLogger(__name__)
 
 #===================================================================
-def exp_func( x, a, b, n=4, c=0 ):
-    exp = 1.0/(1.0-n)
-    return (a*x+b)**exp+c
+def exp_func4( x, a, b ):
+    exp = 1.0/(1.0-4.0)
+    return (a*x+b)**exp
+
+#===================================================================
+def x_from_exp_func4( y, a, b ):
+    exp = 1.0/(1.0-4.0)
+    return (y**(1.0/exp)-b)/a
+
+#===================================================================
+def exp_func( x, a, b, c=1.0 ):
+    #return (a*x+b)**c
+    return (a*x**c)+b
 
 #====================================================================
-def x_from_exp_func( y, a, b, n=4, c=0 ):
-    exp = 1.0/(1.0-n)
-    return ((y-c)**(1.0/exp)-b)/a
+def x_from_exp_func( y, a, b, c=1.0 ):
+    #return (y**(1.0/c)-b)/a
+    return ((y-b)/a)**(1.0/c)
 
 #====================================================================
 def figure7( times ):
@@ -288,34 +298,51 @@ def figure9():
     tpres_a[:,0] -= tprime0
 
     # P_r
-    ind = np.where( tpres_a[:,1] > 20.0 )[0]
+    ind = np.where( tpres_a[:,1] > 10.0 )[0]
     pres0fit = tpres_a[:,0][ind] # time
     pres1fit = tpres_a[:,1][ind] # pressure
     pres2fit = tpres_a[:,2][ind] # temperature
-    popt2, pcov2 = curve_fit( exp_func, pres0fit, pres1fit, maxfev=80000, p0=[1,1,0] )
-    popt3, pcov3 = curve_fit( exp_func, pres0fit, pres2fit, maxfev=80000, p0=[1,1,0] )
+    popt2, pcov2 = curve_fit( exp_func, pres0fit, pres1fit, maxfev=80000, p0=[-1e-4,135.0,1.0] )
+    popt3, pcov3 = curve_fit( exp_func, pres0fit, pres2fit, maxfev=80000, p0=[-1e-4,4000.0,1.0] )
 
     tprime1 = x_from_exp_func( 0.0, *popt2 )
     tprime1abs = tprime1 + tprime0
 
+    # R-squared for P_r
+    print()
+    print( 'R-squared information for P_r' )
+    print( '-----------------------------' )
+    RsqrP = Rsquared( pres1fit, exp_func( pres0fit, *popt2 ) )
+    RsqrP = np.round( RsqrP,4)
+
+    # R-squared for T_r
+    print()
+    print( 'R-squared information for T_r' )
+    print( '-----------------------------' )
+    RsqrT = Rsquared( pres2fit, exp_func( pres0fit, *popt3 ) )
+    RsqrT = np.round( RsqrT,4)
+
     # surface temperature evolution
     ttemp_a = np.column_stack( (fig_o.time, temp_l) )
-    ind = np.where( ttemp_a[:,1] > 1500.0 )[0]
+    ind = np.where( ttemp_a[:,1] > 1200.0 )[0]
     temp0fit = ttemp_a[:,0][ind]
     temp1fit = ttemp_a[:,1][ind]
-    popt, pcov = curve_fit( exp_func, temp0fit, temp1fit, maxfev=80000, p0=[1.0,1.0] )
+    popt, pcov = curve_fit( exp_func4, temp0fit, temp1fit, maxfev=80000 )
 
     trans = transforms.blended_transform_factory(
         ax3.transData, ax3.transAxes)
     ax3.plot( temp0fit, temp1fit, marker='o', markersize=6.0, color='0.8' )
-    h1, = ax3.plot( temp0fit, exp_func( temp0fit, *popt ), '-', color='black', linewidth=2, label=r'Fit' )
+    h1, = ax3.plot( temp0fit, exp_func4( temp0fit, *popt ), '-', color='black', linewidth=2, label=r'Fit' )
     ax3.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
-    ax3.text( tprime0, 0.84, '$t^\prime=0$', ha='center', va='bottom', transform = trans )
+    ax3.text( tprime0, 0.84, '$t^\prime=0$', ha='right', va='bottom', transform = trans )
     ax3.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax3.text( tprime1abs, 0.82, '$t^\prime=t^\prime_1$', ha='right', va='bottom', transform = trans )
     title = r'(b) $T0_m(t)$, K'
-    fig_o.set_myaxes( ax3, title=title, ylabel='$T0_m$', xlabel='$t$ (yrs)' )
+    yticks = [2000,3000,4000]
+    fig_o.set_myaxes( ax3, title=title, ylabel='$T0_m$', xlabel='$t$ (yrs)', yticks=yticks )
+    ax3.set_ylim( [1500,4500])
     ax3.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+    ax3.yaxis.set_label_coords(-0.2,0.575)
 
     # surface heat flux evolution
     tflux_a = np.column_stack( (fig_o.time, flux_l) )
@@ -325,12 +352,13 @@ def figure9():
         ax2.transData, ax2.transAxes)
     h1, = ax2.semilogy( flux0fit, flux1fit, marker='o', markersize=4.0, color='0.8' )
     ax2.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
-    ax2.text( tprime0, 0.84, '$t^\prime=0$', ha='center', va='bottom', transform = trans )
+    ax2.text( tprime0, 0.84, '$t^\prime=0$', ha='right', va='bottom', transform = trans )
     ax2.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax2.text( tprime1abs, 0.82, '$t^\prime=t^\prime_1$', ha='right', va='bottom', transform = trans )
     title = r'(a) $q_0(t)$, W/m$^2$'
     fig_o.set_myaxes( ax2, title=title, ylabel='$q_0$', xlabel='$t$ (yrs)' )
     ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+    ax2.yaxis.set_label_coords(-0.2,0.5)
 
     # indices for plotting
     indp = np.where( tpres_a[:,1] > 1.0 )[0]
@@ -342,24 +370,35 @@ def figure9():
     ax0.plot( tpres_a[:,0][indp], tpres_a[:,1][indp], marker='o', markersize=3.0, color='0.8' )
     h2, = ax0.plot( tpres_a[:,0][indp], exp_func( tpres_a[:,0][indp], *popt2 ), '-', color='black', linewidth=2, label=r'Fit' )
     title = r'(c) $P_f(t^\prime)$, GPa'
-    fig_o.set_myaxes( ax0, title=title, ylabel='$P_f$', xlabel='$t^\prime$ (yrs)' )
+    yticks = [0,50,100,150]
+    fig_o.set_myaxes( ax0, title=title, ylabel='$P_f$', xlabel='$t^\prime$ (yrs)', yticks=yticks )
     ax0.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+    ax0.yaxis.set_label_coords(-0.2,0.5)
 
     ax1.plot( tpres_a[:,0][indp], tpres_a[:,2][indp], marker='o', markersize=3.0, color='0.8' )
     h2, = ax1.plot( tpres_a[:,0][indp], exp_func( tpres_a[:,0][indp], *popt3 ), '-', color='black', linewidth=2, label=r'Fit' )
     title = r'(d) $T_f(t^\prime)$, GPa'
-    fig_o.set_myaxes( ax1, title=title, ylabel='$T_f$', xlabel='$t^\prime$ (yrs)' )
+    yticks = [2000,3000,4000]
+    fig_o.set_myaxes( ax1, title=title, ylabel='$T_f$', yticks=yticks, xlabel='$t^\prime$ (yrs)' )
     ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+    ax1.set_ylim( [1500,4500] )
+    ax1.yaxis.set_label_coords(-0.2,0.575)
 
-    print( '--------' )
-    print( 'figure 9' )
-    print( '--------' )
+    print()
+    #print( '--------' )
+    #print( 'figure 9' )
+    #print( '--------' )
     print( 'fitting coefficients' % vars() )
-    print( 'early temp coeff=', popt )
+    print( '--------------------' )
+    print( 'T0m=', popt )
     print( 'between t_min= %(tmin)s yrs and t_max= %(tmax)s yrs' % vars() )
     print( 'Pr coeff=', popt2 )
     print( 'Tr coeff=', popt3 )
-    print( 'surface temperature at tprime=0 and tprime1' )
+
+    print()
+    tmax2 = int(np.round(tmax,0))
+    print('line below is for copy-paste into table')
+    print( '{:d} & {:e} & {:e} & {:e} & {:0.4f} & {:e} & {:e} & {:e} & {:0.4f}'.format(tmax2,popt2[0], popt2[1], popt2[2],RsqrP,popt3[0],popt3[1],popt3[2],RsqrT))
 
     #fig_o.ax[0].scatter( data_a[:,2], data_a[:,0], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax, s=3.0  )
     #h1, = fig_o.ax[0].plot( data_a[:,2], pres_fit, linestyle='-', color='green', label=r'Fit' )
@@ -395,6 +434,21 @@ def figure9():
     #cbar.set_label('Time (yrs)')
 
     fig_o.savefig(9)
+
+#====================================================================
+def Rsquared( ydata, fmodel ):
+
+    # sum of squares of residuals
+    ybar = np.mean( ydata )
+    print( 'ybar=', ybar )
+    SSres = np.sum( np.square(ydata-fmodel) )
+    print( 'SSres=', SSres )
+    SStot = np.sum( np.square(ydata-ybar) )
+    print( 'SStot=', SStot )
+    Rsquared = 1.0 - SSres/SStot
+    print( 'Rsquared=', Rsquared )
+
+    return Rsquared
 
 #====================================================================
 def main():
