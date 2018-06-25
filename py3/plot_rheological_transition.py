@@ -240,7 +240,7 @@ def figure9():
 
     width = 4.7747
     height = 4.7747
-    fig_o = su.FigureData( 2, 2, width, height, 'early_evolution' )
+    fig_o = su.FigureData( 2, 2, width, height, 'rheological_front' )
     fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.4)
 
     ax0 = fig_o.ax[1][0]
@@ -292,21 +292,27 @@ def figure9():
 
     tpres_a = np.reshape( tpres_l, (-1,3) )
 
+    tstart = tpres_a[0,0]
+
     # set time offset to zero, such that t0 defines the time at which the
     # rheological transition is at the CMB
     tprime0 = tpres_a[0,0]
     tpres_a[:,0] -= tprime0
 
     # P_r
-    ind = np.where( tpres_a[:,1] > 10.0 )[0]
+    ind = np.where( tpres_a[:,1] > 5.0 )[0]
     pres0fit = tpres_a[:,0][ind] # time
     pres1fit = tpres_a[:,1][ind] # pressure
     pres2fit = tpres_a[:,2][ind] # temperature
+
     popt2, pcov2 = curve_fit( exp_func, pres0fit, pres1fit, maxfev=80000, p0=[-1e-4,135.0,1.0] )
     popt3, pcov3 = curve_fit( exp_func, pres0fit, pres2fit, maxfev=80000, p0=[-1e-4,4000.0,1.0] )
 
     tprime1 = x_from_exp_func( 0.0, *popt2 )
     tprime1abs = tprime1 + tprime0
+
+    print( 'start of rheological transition advancing', tstart )
+    print( 'end of rheological transition advancing', tprime1abs )
 
     # R-squared for P_r
     print()
@@ -334,9 +340,9 @@ def figure9():
     ax3.plot( temp0fit, temp1fit, marker='o', markersize=6.0, color='0.8' )
     h1, = ax3.plot( temp0fit, exp_func4( temp0fit, *popt ), '-', color='black', linewidth=2, label=r'Fit' )
     ax3.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
-    ax3.text( tprime0, 0.84, '$t^\prime=0$', ha='right', va='bottom', transform = trans )
+    ax3.text( tprime0, 0.82, '$t^\prime_0$', ha='right', va='bottom', transform = trans )
     ax3.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
-    ax3.text( tprime1abs, 0.82, '$t^\prime=t^\prime_1$', ha='right', va='bottom', transform = trans )
+    ax3.text( tprime1abs, 0.82, '$t^\prime_1$', ha='right', va='bottom', transform = trans )
     title = r'(b) $T0_m(t)$, K'
     yticks = [2000,3000,4000]
     fig_o.set_myaxes( ax3, title=title, ylabel='$T0_m$', xlabel='$t$ (yrs)', yticks=yticks )
@@ -352,9 +358,9 @@ def figure9():
         ax2.transData, ax2.transAxes)
     h1, = ax2.semilogy( flux0fit, flux1fit, marker='o', markersize=4.0, color='0.8' )
     ax2.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
-    ax2.text( tprime0, 0.84, '$t^\prime=0$', ha='right', va='bottom', transform = trans )
+    ax2.text( tprime0, 0.82, '$t^\prime_0$', ha='right', va='bottom', transform = trans )
     ax2.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
-    ax2.text( tprime1abs, 0.82, '$t^\prime=t^\prime_1$', ha='right', va='bottom', transform = trans )
+    ax2.text( tprime1abs, 0.82, '$t^\prime_1$', ha='right', va='bottom', transform = trans )
     title = r'(a) $q_0(t)$, W/m$^2$'
     fig_o.set_myaxes( ax2, title=title, ylabel='$q_0$', xlabel='$t$ (yrs)' )
     ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
@@ -451,6 +457,105 @@ def Rsquared( ydata, fmodel ):
     return Rsquared
 
 #====================================================================
+def figure10():
+ 
+    width = 4.7747
+    height = 4.7747*3.0/2
+    fig_o = su.FigureData( 3, 2, width, height, 'coefficient_surface' )
+    fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.4)
+
+    ax0 = fig_o.ax[0][0]
+    ax1 = fig_o.ax[1][0]
+    ax2 = fig_o.ax[2][0]
+    ax3 = fig_o.ax[0][1]
+    ax4 = fig_o.ax[1][1]
+    ax5 = fig_o.ax[2][1]
+
+    a_data = np.array([
+        (0.1,2,22000,-7.154085e-04,1.181943e+01,8.707197e-01,-3.144027e-02,2.059165e+03,8.950754e-01),
+        (0.5,2,450000,-2.491468e-01,7.020726e+01,4.258310e-01,-1.502319e+00,3.297166e+03,5.193690e-01),
+        (1.0,2,1500000,-2.317731e-02,1.365239e+02,6.078369e-01,-1.371577e-01,4.346591e+03,6.831874e-01),
+        (0.1,3,5000,-1.070143e-03,1.151725e+01,1.072060e+00,-3.564894e-02,2.039594e+03,1.138273e+00),
+        (0.5,3,54000,-3.917908e-01,6.925599e+01,4.786142e-01,-1.847744e+00,3.259747e+03,6.167259e-01),
+        (1.0,3,160000,-1.173778e-01,1.371625e+02,5.887531e-01,-5.473446e-01,4.342874e+03,7.004518e-01),
+        (0.1,4,460,-8.597201e-03,1.146412e+01,1.145746e+00,-3.281326e-01,2.036894e+03,1.215488e+00),
+        (0.5,4,4600,-8.011969e-01,6.833226e+01,5.287567e-01,-4.765589e+00,3.239179e+03,6.774352e-01),
+        (1.0,4,14000,-2.285362e-01,1.353608e+02,6.654485e-01,-1.258044e+00,4.309264e+03,7.869760e-01),
+        (0.1,5,44,-1.006908e-01,1.142039e+01,1.208162e+00,-4.450038e+00,2.034457e+03,1.282759e+00),
+        (0.5,5,410,-2.062429e+00,6.748609e+01,5.799420e-01,-1.562798e+01,3.219738e+03,7.471367e-01),
+        (1.0,5,1300,-5.925454e-01,1.335375e+02,7.536579e-01,-4.593979e+00,4.285006e+03,8.660381e-01),
+        (0.1,6,3,-1.964233e+00,1.044135e+01,1.147085e+00,-1.102602e+02,1.984107e+03,1.187183e+00),
+        (0.5,6,37,-6.564250e+00,6.659050e+01,6.414332e-01,-6.940401e+01,3.201900e+03,8.272998e-01),
+        (1.0,6,110,-2.612689e+00,1.326484e+02,8.176939e-01,-2.406493e+01,4.265949e+03,9.507189e-01)])
+    print(a_data)
+
+    rad = np.unique(a_data[:,0])
+    flux = np.unique(a_data[:,1])
+    Tau = a_data[:,2]
+    Pra = a_data[:,3]
+    Prb = a_data[:,4]
+    Prc = a_data[:,5]
+    Tra = a_data[:,6]
+    Trb = a_data[:,7]
+    Trc = a_data[:,8]
+ 
+    X, Y = np.meshgrid(rad,flux)
+
+    num = np.size(rad)
+    TAU = Tau.reshape(-1,num)
+    PRA = Pra.reshape(-1,num)
+    PRB = Prb.reshape(-1,num)
+    PRC = Prc.reshape(-1,num)
+    TRA = Tra.reshape(-1,num)
+    TRB = Trb.reshape(-1,num)
+    TRC = Trc.reshape(-1,num)
+
+    dx = 0.9
+    dy = 4
+    aspect= dx/dy
+    xticks = (0.1,0.5,1.0)
+    yticks = (2,3,4,5,6)
+    extent = (0.1,1.0,2,6)
+
+    #plt.pcolormesh( X, Y, Z, cmap='RdBu', shading='gourand')
+    im0 = ax0.imshow(PRA,origin='lower',interpolation='bilinear',extent=extent,aspect=aspect)
+    title = r'$P_r,\ a$ coefficient'
+    fig_o.set_myaxes( ax0, title=title, ylabel='$Q$', xlabel='$R$', yticks=yticks, xticks=xticks )
+    plt.colorbar(im0,ax=ax0)
+
+    #plt.pcolormesh( X, Y, Z, cmap='RdBu', shading='gourand')
+    im1 = ax1.imshow(PRB,origin='lower',interpolation='bilinear',extent=extent,aspect=aspect)
+    title = r'$P_r,\ b$ coefficient'
+    fig_o.set_myaxes( ax1, title=title, ylabel='$Q$', xlabel='$R$', yticks=yticks, xticks=xticks )
+    plt.colorbar(im1,ax=ax1)
+
+    #plt.pcolormesh( X, Y, Z, cmap='RdBu', shading='gourand')
+    im2 = ax2.imshow(PRC,origin='lower',interpolation='bilinear',extent=extent,aspect=aspect)
+    title = r'$P_r,\ c$ coefficient'
+    fig_o.set_myaxes( ax2, title=title, ylabel='$Q$', xlabel='$R$', yticks=yticks, xticks=xticks )
+    plt.colorbar(im2,ax=ax2)
+
+    #plt.pcolormesh( X, Y, Z, cmap='RdBu', shading='gourand')
+    im3 = ax3.imshow(TRA,origin='lower',interpolation='bilinear',extent=extent,aspect=aspect)
+    title = r'$T_r,\ a$ coefficient'
+    fig_o.set_myaxes( ax3, title=title, ylabel='$Q$', xlabel='$R$', yticks=yticks, xticks=xticks )
+    plt.colorbar(im3,ax=ax3)
+
+    #plt.pcolormesh( X, Y, Z, cmap='RdBu', shading='gourand')
+    im4 = ax4.imshow(TRB,origin='lower',interpolation='bilinear',extent=extent,aspect=aspect)
+    title = r'$T_r,\ b$ coefficient'
+    fig_o.set_myaxes( ax4, title=title, ylabel='$Q$', xlabel='$R$', yticks=yticks, xticks=xticks )
+    plt.colorbar(im4,ax=ax4)
+
+    #plt.pcolormesh( X, Y, Z, cmap='RdBu', shading='gourand')
+    im5 = ax5.imshow(TRC,origin='lower',interpolation='bilinear',extent=extent,aspect=aspect)
+    title = r'$T_r,\ c$ coefficient'
+    fig_o.set_myaxes( ax5, title=title, ylabel='$Q$', xlabel='$R$', yticks=yticks, xticks=xticks )
+    plt.colorbar(im5,ax=ax5)
+
+    fig_o.savefig(10)
+
+#====================================================================
 def main():
 
     # arguments (run with -h to summarize)
@@ -461,6 +566,7 @@ def main():
     #figure7( args.times )
     #figure8()
     figure9()
+    #figure10()
     plt.show()
 
 #====================================================================
