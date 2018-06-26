@@ -7,6 +7,7 @@ import matplotlib.transforms as transforms
 import numpy as np
 import argparse
 from scipy.optimize import curve_fit
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +23,17 @@ def x_from_exp_func4( y, a, b ):
 
 #===================================================================
 def exp_func( x, a, b, c=1.0 ):
-    #return (a*x+b)**c
-    return (a*x**c)+b
+    # for radius = 1
+    #b = 138.5
+    #c = 0.75
+    #b=0
+    #b = 0
+    return a*x**c+b
 
 #====================================================================
 def x_from_exp_func( y, a, b, c=1.0 ):
-    #return (y**(1.0/c)-b)/a
+    #c = 0.75
+    #b=0
     return ((y-b)/a)**(1.0/c)
 
 #====================================================================
@@ -174,7 +180,7 @@ def figure8():
     #pres_coeff = np.polyfit( data_a[:,2], data_a[:,0], polydegree ) # pressure
     #pres_poly = np.poly1d( pres_coeff )
     #pres_fit = pres_poly( data_a[:,2] )
-    ind = np.where( data_a[:,0] > 20.0 )[0]
+    ind = np.where( data_a[:,0] > 5.0 )[0]
     data2fit = data_a[:,2][ind]
     data0fit = data_a[:,0][ind]
     data1fit = data_a[:,1][ind]
@@ -238,6 +244,12 @@ def figure8():
 #====================================================================
 def figure9():
 
+    # flag to enable data output
+    EXPORT = True
+
+    # plot low pressure (linear) extension to cooling profile
+    PLOT_LOWP = False
+
     width = 4.7747
     height = 4.7747
     fig_o = su.FigureData( 2, 2, width, height, 'rheological_front' )
@@ -253,7 +265,7 @@ def figure9():
 
     fig_o.time = su.get_all_output_times()
 
-    tpres_l = []
+    data_l = []
 
     time = fig_o.time[0]
     myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
@@ -288,45 +300,74 @@ def figure9():
         ind = su.get_first_non_zero_index( pres )
 
         if ind is not None:
-            tpres_l.append( (time, xx_pres_b[ind], y_temp[ind]) )
+            data_l.append( (time, xx_pres_b[ind], y_temp[ind]) )
 
-    tpres_a = np.reshape( tpres_l, (-1,3) )
-
-    tstart = tpres_a[0,0]
+    data_a = np.reshape( data_l, (-1,3) )
 
     # set time offset to zero, such that t0 defines the time at which the
     # rheological transition is at the CMB
-    tprime0 = tpres_a[0,0]
-    tpres_a[:,0] -= tprime0
+    tprime0 = data_a[0,0]
+    data_a[:,0] -= tprime0
 
-    # P_r
-    ind = np.where( tpres_a[:,1] > 5.0 )[0]
-    pres0fit = tpres_a[:,0][ind] # time
-    pres1fit = tpres_a[:,1][ind] # pressure
-    pres2fit = tpres_a[:,2][ind] # temperature
+    #----------------------------------------------------------------
+    # trim data between a maximum and minimum pressure for plotting
+    PMIN = 1.0 # GPa
+    PMAX = 135.0 # GPa
+    ind = np.where( (data_a[:,1]<PMAX) & (data_a[:,1]>PMIN) )[0]
+    time_a = data_a[:,0][ind] # time
+    pres_a = data_a[:,1][ind] # pressure
+    temp_a = data_a[:,2][ind] # temperature
+    # save data to text files for plotting
+    if EXPORT:
+        np.savetxt( 'Pr.dat', np.column_stack((time_a,pres_a)))
+        np.savetxt( 'Tr.dat', np.column_stack((time_a,temp_a)))
+    #----------------------------------------------------------------
 
-    popt2, pcov2 = curve_fit( exp_func, pres0fit, pres1fit, maxfev=80000, p0=[-1e-4,135.0,1.0] )
-    popt3, pcov3 = curve_fit( exp_func, pres0fit, pres2fit, maxfev=80000, p0=[-1e-4,4000.0,1.0] )
+    # due to the change in the gradient of the melting curve around 20 GPa,
+    # we should formally fit the cooling trajectory using two different
+    # power laws.
+    PCUT = 20.0 # GPa
 
-    tprime1 = x_from_exp_func( 0.0, *popt2 )
+    # high pressure data (P>PCUT)
+    indh = np.where( data_a[:,1]>PCUT )[0]
+    timeh_a = data_a[:,0][indh] # time
+    presh_a = data_a[:,1][indh] # pressure
+    temph_a = data_a[:,2][indh] # temperature
+
+    popt_Prh, pcov_Prh = curve_fit( exp_func, timeh_a, presh_a, maxfev=80000, p0=[-1e-4,135.0,1.0] )
+    popt_Trh, pcov_Trh = curve_fit( exp_func, timeh_a, temph_a, maxfev=80000, p0=[-1e-4,4000.0,1.0] )
+    tprime1 = x_from_exp_func( 0.0, *popt_Prh )
     tprime1abs = tprime1 + tprime0
-
-    print( 'start of rheological transition advancing', tstart )
-    print( 'end of rheological transition advancing', tprime1abs )
-
-    # R-squared for P_r
+    print( 'high data: start of rheological transition advancing', tprime0 )
+    print( 'high data: end of rheological transition advancing', tprime1abs )
     print()
     print( 'R-squared information for P_r' )
     print( '-----------------------------' )
-    RsqrP = Rsquared( pres1fit, exp_func( pres0fit, *popt2 ) )
-    RsqrP = np.round( RsqrP,4)
-
-    # R-squared for T_r
+    RsqrPrh = Rsquared( presh_a, exp_func( timeh_a, *popt_Prh ) )
+    RsqrPrh = np.round( RsqrPrh,4)
     print()
     print( 'R-squared information for T_r' )
     print( '-----------------------------' )
-    RsqrT = Rsquared( pres2fit, exp_func( pres0fit, *popt3 ) )
-    RsqrT = np.round( RsqrT,4)
+    RsqrTrh = Rsquared( temph_a, exp_func( timeh_a, *popt_Trh ) )
+    RsqrTrh = np.round( RsqrTrh,4)
+
+    # low pressure data (P<=PCUT)
+    indl = np.where( data_a[:,1]<PCUT )[0]
+    timel_a = data_a[:,0][indl] # time
+    presl_a = data_a[:,1][indl] # pressure
+    templ_a = data_a[:,2][indl] # temperature
+
+    popt_Prl, pcov_Prl = curve_fit( exp_func, timel_a, presl_a, maxfev=80000, p0=[-1.0,135.0] )
+    popt_Trl, pcov_Trl = curve_fit( exp_func, timel_a, templ_a, maxfev=80000, p0=[-1,4000.0] )
+    print( 'R-squared information for P_r' )
+    print( '-----------------------------' )
+    RsqrPrl = Rsquared( presl_a, exp_func( timel_a, *popt_Prl ) )
+    RsqrPrl = np.round( RsqrPrl,4)
+    print()
+    print( 'R-squared information for T_r' )
+    print( '-----------------------------' )
+    RsqrTrl = Rsquared( templ_a, exp_func( timel_a, *popt_Trl ) )
+    RsqrTrl = np.round( RsqrTrl,4)
 
     # surface temperature evolution
     ttemp_a = np.column_stack( (fig_o.time, temp_l) )
@@ -367,22 +408,31 @@ def figure9():
     ax2.yaxis.set_label_coords(-0.2,0.5)
 
     # indices for plotting
-    indp = np.where( tpres_a[:,1] > 1.0 )[0]
-    tmax = np.max( tpres_a[:,0][indp] )
-    tmin = np.min( tpres_a[:,0][indp] )
-    vmax = np.max( tpres_a[:,0][indp] )
-    vmin = np.min( tpres_a[:,0][indp] )
+    indp = np.where( data_a[:,1] > 1.0 )[0]
+    tmax = np.max( data_a[:,0][indp] )
+    tmin = np.min( data_a[:,0][indp] )
+    vmax = np.max( data_a[:,0][indp] )
+    vmin = np.min( data_a[:,0][indp] )
 
-    ax0.plot( tpres_a[:,0][indp], tpres_a[:,1][indp], marker='o', markersize=3.0, color='0.8' )
-    h2, = ax0.plot( tpres_a[:,0][indp], exp_func( tpres_a[:,0][indp], *popt2 ), '-', color='black', linewidth=2, label=r'Fit' )
+    ax0.plot( data_a[:,0][indp], data_a[:,1][indp], marker='o', markersize=3.0, color='0.8' )
+    # high pressure fit
+    h2, = ax0.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Prh ), '-', color='black', linewidth=2, label=r'Fit' )
+    # low pressure fit
+    if PLOT_LOWP:
+        h3, = ax0.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Prl ), '-', color='black', linewidth=2, label=r'Fit' )
     title = r'(c) $P_f(t^\prime)$, GPa'
     yticks = [0,50,100,150]
     fig_o.set_myaxes( ax0, title=title, ylabel='$P_f$', xlabel='$t^\prime$ (yrs)', yticks=yticks )
     ax0.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     ax0.yaxis.set_label_coords(-0.2,0.5)
 
-    ax1.plot( tpres_a[:,0][indp], tpres_a[:,2][indp], marker='o', markersize=3.0, color='0.8' )
-    h2, = ax1.plot( tpres_a[:,0][indp], exp_func( tpres_a[:,0][indp], *popt3 ), '-', color='black', linewidth=2, label=r'Fit' )
+    ax1.plot( data_a[:,0][indp], data_a[:,2][indp], marker='o', markersize=3.0, color='0.8' )
+    # high pressure fit
+    h2, = ax1.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Trh ), '-', color='black', linewidth=2, label=r'Fit' )
+    # low pressure fit
+    if PLOT_LOWP:
+        h3, = ax1.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Trl ), '-', color='black', linewidth=2, label=r'Fit' )
+
     title = r'(d) $T_f(t^\prime)$, GPa'
     yticks = [2000,3000,4000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$T_f$', yticks=yticks, xlabel='$t^\prime$ (yrs)' )
@@ -398,46 +448,16 @@ def figure9():
     print( '--------------------' )
     print( 'T0m=', popt )
     print( 'between t_min= %(tmin)s yrs and t_max= %(tmax)s yrs' % vars() )
-    print( 'Pr coeff=', popt2 )
-    print( 'Tr coeff=', popt3 )
+    print( 'Pr coeff high=', popt_Prh )
+    print( 'Tr coeff high=', popt_Trh )
+    print( 'Pr coeff low =', popt_Prl )
+    print( 'Tr coeff low =', popt_Trl )
 
     print()
     tmax2 = int(np.round(tmax,0))
+    intPCUT = int(np.round(PCUT,0))
     print('line below is for copy-paste into table')
-    print( '{:d} & {:e} & {:e} & {:e} & {:0.4f} & {:e} & {:e} & {:e} & {:0.4f}'.format(tmax2,popt2[0], popt2[1], popt2[2],RsqrP,popt3[0],popt3[1],popt3[2],RsqrT))
-
-    #fig_o.ax[0].scatter( data_a[:,2], data_a[:,0], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax, s=3.0  )
-    #h1, = fig_o.ax[0].plot( data_a[:,2], pres_fit, linestyle='-', color='green', label=r'Fit' )
-    #h1, = fig_o.ax[0].plot( data_a[:,2], exp_func(data_a[:,2], *popt), linestyle='-', color='green', label=r'Fit' )
-
-    #fig_o.ax[1].scatter( data_a[:,2], data_a[:,1], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax, s=3.0 )
-    #h2, = fig_o.ax[1].plot( data_a[:,2], temp_fit, linestyle='-', color='green', label=r'Fit' )
-    #h2, = fig_o.ax[1].plot( data_a[:,2], exp_func(data_a[:,2], *popt2), linestyle='-', color='green', label=r'Fit' )
-
-    #handle_scatter = fig_o.ax[2].scatter( data_a[:,0], data_a[:,1], c=data_a[:,2], cmap='inferno', vmin=vmin, vmax=vmax, s=3.0 )
-    #handle_fit, = fig_o.ax[2].plot( exp_func(data_a[:,2], *popt), exp_func(data_a[:,2], *popt2), color='green', linestyle='-', label=r'Fit' )
-
-    #hf_l = [handle_fit]
-
-    # titles and axes labels, legends, etc
-    #title = r'$P(t)$, GPa'
-    #fig_o.set_myaxes( ax0, title=title, ylabel='$P$', xlabel='Time (yrs)' )
-    #ax0.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-
-    #title = r'$T(t)$, K'
-    #fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xlabel='Time (yrs)' )
-    #ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-
-    #title = r'$P-T-t$'
-    #xticks = [0,50,100,135]
-    #yticks = [1000,2000,3000,4000,5000]
-    #fig_o.set_myaxes( ax2, title=title, ylabel='$T$', yticks=yticks, xlabel='$P$ (GPa)', xticks=xticks )
-    #ax2.yaxis.set_label_coords(-0.15,0.575)
-    #fig_o.set_mylegend( ax0, hf_l, loc='upper right', ncol=1, TITLE="" )
-    #fig_o.set_mylegend( ax1, hf_l, loc='upper right', ncol=1, TITLE="" )
-    #fig_o.set_mylegend( ax2, hf_l, loc='upper right', ncol=1, TITLE="" )
-    #cbar = fig_o.fig.colorbar( handle_scatter, format='%.0e' )#, ticks=[0,200,400,600,800,1000,2000] )
-    #cbar.set_label('Time (yrs)')
+    print( '{:d} & {:d} & {:e} & {:e} & {:e} & {:0.4f} & {:e} & {:e} & {:e} & {:0.4f}'.format(tmax2,intPCUT,popt_Prh[0], popt_Prh[1], popt_Prh[2],RsqrPrh,popt_Trh[0],popt_Trh[1],popt_Trh[2],RsqrTrh))
 
     fig_o.savefig(9)
 
@@ -471,23 +491,7 @@ def figure10():
     ax4 = fig_o.ax[1][1]
     ax5 = fig_o.ax[2][1]
 
-    a_data = np.array([
-        (0.1,2,22000,-7.154085e-04,1.181943e+01,8.707197e-01,-3.144027e-02,2.059165e+03,8.950754e-01),
-        (0.5,2,450000,-2.491468e-01,7.020726e+01,4.258310e-01,-1.502319e+00,3.297166e+03,5.193690e-01),
-        (1.0,2,1500000,-2.317731e-02,1.365239e+02,6.078369e-01,-1.371577e-01,4.346591e+03,6.831874e-01),
-        (0.1,3,5000,-1.070143e-03,1.151725e+01,1.072060e+00,-3.564894e-02,2.039594e+03,1.138273e+00),
-        (0.5,3,54000,-3.917908e-01,6.925599e+01,4.786142e-01,-1.847744e+00,3.259747e+03,6.167259e-01),
-        (1.0,3,160000,-1.173778e-01,1.371625e+02,5.887531e-01,-5.473446e-01,4.342874e+03,7.004518e-01),
-        (0.1,4,460,-8.597201e-03,1.146412e+01,1.145746e+00,-3.281326e-01,2.036894e+03,1.215488e+00),
-        (0.5,4,4600,-8.011969e-01,6.833226e+01,5.287567e-01,-4.765589e+00,3.239179e+03,6.774352e-01),
-        (1.0,4,14000,-2.285362e-01,1.353608e+02,6.654485e-01,-1.258044e+00,4.309264e+03,7.869760e-01),
-        (0.1,5,44,-1.006908e-01,1.142039e+01,1.208162e+00,-4.450038e+00,2.034457e+03,1.282759e+00),
-        (0.5,5,410,-2.062429e+00,6.748609e+01,5.799420e-01,-1.562798e+01,3.219738e+03,7.471367e-01),
-        (1.0,5,1300,-5.925454e-01,1.335375e+02,7.536579e-01,-4.593979e+00,4.285006e+03,8.660381e-01),
-        (0.1,6,3,-1.964233e+00,1.044135e+01,1.147085e+00,-1.102602e+02,1.984107e+03,1.187183e+00),
-        (0.5,6,37,-6.564250e+00,6.659050e+01,6.414332e-01,-6.940401e+01,3.201900e+03,8.272998e-01),
-        (1.0,6,110,-2.612689e+00,1.326484e+02,8.176939e-01,-2.406493e+01,4.265949e+03,9.507189e-01)])
-    print(a_data)
+    a_data = get_all_data()
 
     rad = np.unique(a_data[:,0])
     flux = np.unique(a_data[:,1])
@@ -556,6 +560,57 @@ def figure10():
     fig_o.savefig(10)
 
 #====================================================================
+def figure11():
+ 
+    width = 4.7747/2
+    height = 4.7747/2
+    fig_o = su.FigureData( 1, 1, width, height, 'contour_plot' )
+    #fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.4)
+
+    ax0 = fig_o.ax
+
+    dir_l = ['R10Q6','R10Q5','R10Q4','R10Q3','R10Q2']
+
+    aa = get_all_data()
+    bb = (aa[14],aa[11],aa[8],aa[5],aa[2])
+
+    for nn, directory in enumerate(dir_l):
+        infile = os.path.join( directory, 'Pr.dat' )
+        time, pres = np.loadtxt( infile, unpack=True )
+        ax0.semilogx( time, pres )
+        popt = (bb[nn][3],bb[nn][4],bb[nn][5])
+        ax0.semilogx( time, exp_func(time,*popt), 'k--' )
+
+    title = 'Cooling fits'
+    fig_o.set_myaxes( ax0, title=title, ylabel='$P_f$', xlabel='$t^\prime$ (yrs)' )
+    ax0.set_ylim([0.0,135])
+    fig_o.savefig(11)
+
+
+#====================================================================
+def get_all_data():
+
+    a_data = np.array([
+        (0.1,2,22000,-7.154085e-04,1.181943e+01,8.707197e-01,-3.144027e-02,2.059165e+03,8.950754e-01),
+        (0.5,2,450000,-2.491468e-01,7.020726e+01,4.258310e-01,-1.502319e+00,3.297166e+03,5.193690e-01),
+        (1.0,2,1970000,-7.039320e-03,1.402555e+02,6.996766e-01,-3.920296e-02,4.381983e+03,7.774888e-01),
+        (0.1,3,5000,-1.070143e-03,1.151725e+01,1.072060e+00,-3.564894e-02,2.039594e+03,1.138273e+00),
+        (0.5,3,54000,-3.917908e-01,6.925599e+01,4.786142e-01,-1.847744e+00,3.259747e+03,6.167259e-01),
+        (1.0,3,168000,-3.057649e-02,1.397249e+02,7.120953e-01,-1.988970e-01,4.373327e+03,7.920353e-01),
+        (0.1,4,460,-8.597201e-03,1.146412e+01,1.145746e+00,-3.281326e-01,2.036894e+03,1.215488e+00),
+        (0.5,4,4600,-8.011969e-01,6.833226e+01,5.287567e-01,-4.765589e+00,3.239179e+03,6.774352e-01),
+        (1.0,4,15100,-1.288923e-01,1.388771e+02,7.343078e-01,-9.679921e-01,4.359172e+03,8.188002e-01),
+        (0.1,5,44,-1.006908e-01,1.142039e+01,1.208162e+00,-4.450038e+00,2.034457e+03,1.282759e+00),
+        (0.5,5,410,-2.062429e+00,6.748609e+01,5.799420e-01,-1.562798e+01,3.219738e+03,7.471367e-01),
+        (1.0,5,1410,-5.394592e-01,1.375848e+02,7.735149e-01,-4.710575e+00,4.338459e+03,8.648539e-01),
+        (0.1,6,3,-1.964233e+00,1.044135e+01,1.147085e+00,-1.102602e+02,1.984107e+03,1.187183e+00),
+        (0.5,6,37,-6.564250e+00,6.659050e+01,6.414332e-01,-6.940401e+01,3.201900e+03,8.272998e-01),
+        (1.0,6,125,-2.570421e+00,1.361605e+02,8.267566e-01,-2.679335e+01,4.316338e+03,9.266183e-01)])
+
+    print(a_data)
+    return a_data
+
+#====================================================================
 def main():
 
     # arguments (run with -h to summarize)
@@ -567,6 +622,7 @@ def main():
     #figure8()
     figure9()
     #figure10()
+    #figure11()
     plt.show()
 
 #====================================================================
