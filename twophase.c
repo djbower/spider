@@ -48,12 +48,33 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){
-        /* fwtl -> 1.0 for gphi > 1.0 */
-        /* fwtl -> 0.0 for gphi < 1.0 */
-        arr_fwtl[i] = tanh_weight( arr_gphi[i], 1.0, P->swidth );
-        /* fwts -> 1.0 for gphi > 0.0 */
-        /* fwts -> 0.0 for gphi < 0.0 */
-        arr_fwts[i] = tanh_weight( arr_gphi[i], 0.0, P->swidth );
+
+        /* no smoothing */
+        if( P->swidth == 0.0 ){
+            /* by default, mixed properties only */
+            arr_fwtl[i] = 0.0;
+            arr_fwts[i] = 1.0;
+            // liquid properties only
+            if( arr_gphi[i] > 1.0 ){
+                arr_fwtl[i] = 1.0;
+                //arr_fwts[i] = 0.0; // not used
+            }
+            // solid properties only
+            if( arr_gphi[i] < 0.0 ){
+                //arr_fwtl[i] = 0.0; // not used
+                arr_fwts[i] = 0.0;
+            }
+        }
+
+        /* tanh smoothing */
+        else{
+            /* fwtl -> 1.0 for gphi > 1.0 */
+            /* fwtl -> 0.0 for gphi < 1.0 */
+            arr_fwtl[i] = tanh_weight( arr_gphi[i], 1.0, P->swidth );
+            /* fwts -> 1.0 for gphi > 0.0 */
+            /* fwts -> 0.0 for gphi < 0.0 */
+            arr_fwts[i] = tanh_weight( arr_gphi[i], 0.0, P->swidth );
+        }
     }
 
     ierr = DMDAVecRestoreArray(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
