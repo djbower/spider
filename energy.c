@@ -234,9 +234,11 @@ static PetscErrorCode append_Jmix( Ctx *E )
        and solidus */
     for(i=ilo; i<ihi; ++i){
         if(arr_gphi[i] > 0.5){
+            // FIXME: smoothing width is hard-coded
             arr_Jmix[i] *= 1.0 - tanh_weight( arr_gphi[i], 1.0, 1.0E-2 );
         }
         else if (arr_gphi[i] <= 0.5){
+            // FIXME: smoothing width is hard-coded
             arr_Jmix[i] *= tanh_weight( arr_gphi[i], 0.0, 1.0E-2 );
         }   
     }
