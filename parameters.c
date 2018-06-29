@@ -291,8 +291,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->tfac_core_avg = 1.147;
 
   /* smoothing width */
-  P->swidth = 1.0E-2;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-swidth",&P->swidth,NULL);CHKERRQ(ierr);
+  P->matprop_smooth_width = 1.0E-2;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-matprop_smooth_width",&P->matprop_smooth_width,NULL);CHKERRQ(ierr);
 
   /* solid viscosity (Pa.s) */
   P->log10visc_sol = 21.0;

@@ -125,7 +125,7 @@
 
 # smoothing of material properties across liquidus and solidus
 # units of melt fraction (non-dimensional)
--swidth 1.0E-2
+-matprop_smooth_width 1.0E-2
 
 # viscosity
 -log10visc_sol 21.0 # solid viscosity (log10)

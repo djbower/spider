@@ -146,7 +146,7 @@ static PetscScalar hybrid( Ctx *E, PetscScalar Qin )
     ind = 0;
     ierr = VecGetValues(S->phi,1,&ind,&phi0); CHKERRQ(ierr);
     /* SWIDTH or PHI_WIDTH most appropriate choice here? */
-    fwt = tanh_weight( phi0, P->phi_critical, P->swidth );
+    fwt = tanh_weight( phi0, P->phi_critical, P->matprop_smooth_width );
 
     // energy flux from energy gradient
     ierr = VecGetValues(M->area_b,1,&ind,&G0); CHKERRQ(ierr);

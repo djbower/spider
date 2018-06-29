@@ -157,7 +157,7 @@ typedef struct _Parameters {
     PetscScalar rho_core;
     PetscScalar cp_core;
     PetscScalar tfac_core_avg;
-    PetscScalar swidth;
+    PetscScalar matprop_smooth_width;
     PetscScalar log10visc_sol;
     PetscScalar cond_sol;
     PetscScalar log10visc_mel;

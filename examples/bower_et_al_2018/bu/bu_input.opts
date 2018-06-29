@@ -24,8 +24,8 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-10
--ts_sundials_rtol 1.0e-10
+-ts_sundials_atol 1.0e-7
+-ts_sundials_rtol 1.0e-7
 
 # mesh
 # number of basic nodes
@@ -50,7 +50,7 @@
 -CONDUCTION 1 # conduction
 -CONVECTION 1 # convection
 -MIXING 1 # mixing (latent heat transport)
--SEPARATION 1 # gravitational separation of solid and melt phase
+-SEPARATION 0 # gravitational separation of solid and melt phase
 -HRADIO 0 # radioactive heating
 -HTIDAL 0 # tidal heating (TODO: not currently implemented)
 
@@ -124,7 +124,8 @@
 
 # smoothing of material properties across liquidus and solidus
 # units of melt fraction (non-dimensional)
--swidth 1.0E-2
+-matprop_smooth_width 0.0
+#1.0E-2
 
 # viscosity
 -log10visc_sol 21.0 # solid viscosity (log10)

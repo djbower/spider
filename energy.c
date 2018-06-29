@@ -1,4 +1,5 @@
 #include "energy.h"
+#include "util.h"
 
 static PetscErrorCode set_Jtot( Ctx * );
 static PetscErrorCode append_Jcond( Ctx * );
@@ -233,10 +234,10 @@ static PetscErrorCode append_Jmix( Ctx *E )
        and solidus */
     for(i=ilo; i<ihi; ++i){
         if(arr_gphi[i] > 0.5){
-            arr_Jmix[i] *= 1.0 - arr_fwtl[i];
+            arr_Jmix[i] *= 1.0 - tanh_weight( arr_gphi[i], 1.0, 1.0E-2 );
         }
         else if (arr_gphi[i] <= 0.5){
-            arr_Jmix[i] *= arr_fwts[i];
+            arr_Jmix[i] *= tanh_weight( arr_gphi[i], 0.0, 1.0E-2 );
         }   
     }
 

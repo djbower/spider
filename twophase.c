@@ -50,7 +50,7 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
     for(i=ilo; i<ihi; ++i){
 
         /* no smoothing */
-        if( P->swidth == 0.0 ){
+        if( P->matprop_smooth_width == 0.0 ){
             /* by default, mixed properties only */
             arr_fwtl[i] = 0.0;
             arr_fwts[i] = 1.0;
@@ -70,10 +70,10 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
         else{
             /* fwtl -> 1.0 for gphi > 1.0 */
             /* fwtl -> 0.0 for gphi < 1.0 */
-            arr_fwtl[i] = tanh_weight( arr_gphi[i], 1.0, P->swidth );
+            arr_fwtl[i] = tanh_weight( arr_gphi[i], 1.0, P->matprop_smooth_width );
             /* fwts -> 1.0 for gphi > 0.0 */
             /* fwts -> 0.0 for gphi < 0.0 */
-            arr_fwts[i] = tanh_weight( arr_gphi[i], 0.0, P->swidth );
+            arr_fwts[i] = tanh_weight( arr_gphi[i], 0.0, P->matprop_smooth_width );
         }
     }
 
@@ -92,8 +92,8 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_s,S->gphi_s,&arr_gphi_s);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
-        arr_fwtl_s[i] = tanh_weight( arr_gphi_s[i], 1.0, P->swidth );
-        arr_fwts_s[i] = tanh_weight( arr_gphi_s[i], 0.0, P->swidth );
+        arr_fwtl_s[i] = tanh_weight( arr_gphi_s[i], 1.0, P->matprop_smooth_width );
+        arr_fwts_s[i] = tanh_weight( arr_gphi_s[i], 0.0, P->matprop_smooth_width );
     }
 
     ierr = DMDAVecRestoreArray(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
