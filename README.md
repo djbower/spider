@@ -87,7 +87,7 @@ you can allow PETSc to automatically download and install SUNDIALS
 
 3. Configure PETSc using the following command. For a debug build, use --with-debugging=1 instead.
 
-        ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+        ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials --with-mpi=0 --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 4. Make.  PETSc's configure process, if successful, will end by printing out a command which you can copy and paste, e.g.
 
@@ -103,6 +103,8 @@ you can allow PETSc to automatically download and install SUNDIALS
 
 
 #### 2b.i Build SUNDIALS with quadruple precision
+
+Note: it is necessary to comment out the cmake_policy(SET CMP0042 NEW) in src/CMakeLists.txt if you are using an old version of cmake.
 
 1. Clone our hacked version of SUNDIALS from the git repository.
 
@@ -147,7 +149,7 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc")
 
 2. Configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change /somewhere/to/install to the place that you installed SUNDIALS). For a debug build, amend the command to use `--with-debugging=1`
 
-        ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/somewhere/to/install/sundials-quad/install --download-mpich --download-f2cblaslapack --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+        ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/somewhere/to/install/sundials-quad/install --with-mpi=0 --download-f2cblaslapack --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 3. Make by copying the line (the following all assume an optimised build, i.e, 3a above) e.g.
 
