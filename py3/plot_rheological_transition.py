@@ -22,19 +22,19 @@ def x_from_exp_func4( y, a, b ):
     return (y**(1.0/exp)-b)/a
 
 #===================================================================
-def exp_func( x, a, b, c=1.0 ):
-    # for radius = 1
-    #b = 138.5
-    #c = 0.75
-    #b=0
-    #b = 0
-    return a*x**c+b
+def log_exp_func4( x, a, b ):
+    exp = 1.0/(1.0-4.0)
+    return exp* np.log( a*x+b )
+
+#===================================================================
+def exp_func( x, a, b, c ):
+    exp = 1.0/(1.0-4.0)
+    return (a*x+b)**exp+c
 
 #====================================================================
-def x_from_exp_func( y, a, b, c=1.0 ):
-    #c = 0.75
-    #b=0
-    return ((y-b)/a)**(1.0/c)
+def x_from_exp_func( y, a, b, c ):
+    exp = 1.0/(1.0-4.0)
+    return (((y-c)**(1.0/exp))-b)/a
 
 #====================================================================
 def figure7( times ):
@@ -272,6 +272,7 @@ def figure9():
     xx_pres_b = myjson_o.get_scaled_field_values('pressure_b')
     xx_pres_b *= 1.0E-9
 
+    tempsurf_l = []
     temp_l = []
     flux_l = []
 
@@ -287,9 +288,13 @@ def figure9():
         #yy1 = myjson_o.get_scaled_field_values( 'phi_b' )
         #yy2 = 0.4
 
-        # always need temperature
+        # mantle potential temperature
         y_temp = myjson_o.get_scaled_field_values( 'temp_b' )
         temp_l.append( y_temp[0] )
+
+        # mantle surface temperature
+        tempsurf = myjson_o.get_scaled_field_values( 'temperature_surface' )
+        tempsurf_l.append( tempsurf )
 
         # surface flux
         y_flux = myjson_o.get_scaled_field_values( 'Jtot_b' )
@@ -334,8 +339,8 @@ def figure9():
     presh_a = data_a[:,1][indh] # pressure
     temph_a = data_a[:,2][indh] # temperature
 
-    popt_Prh, pcov_Prh = curve_fit( exp_func, timeh_a, presh_a, maxfev=80000, p0=[-1e-4,135.0,1.0] )
-    popt_Trh, pcov_Trh = curve_fit( exp_func, timeh_a, temph_a, maxfev=80000, p0=[-1e-4,4000.0,1.0] )
+    popt_Prh, pcov_Prh = curve_fit( exp_func, timeh_a, presh_a, maxfev=80000, p0=[-1e-4,1.0,135.0] )
+    popt_Trh, pcov_Trh = curve_fit( exp_func, timeh_a, temph_a, maxfev=80000, p0=[-1e-4,1.0,4000.0] )
     tprime1 = x_from_exp_func( 0.0, *popt_Prh )
     tprime1abs = tprime1 + tprime0
     print( 'high data: start of rheological transition advancing', tprime0 )
@@ -357,8 +362,8 @@ def figure9():
     presl_a = data_a[:,1][indl] # pressure
     templ_a = data_a[:,2][indl] # temperature
 
-    popt_Prl, pcov_Prl = curve_fit( exp_func, timel_a, presl_a, maxfev=80000, p0=[-1.0,135.0] )
-    popt_Trl, pcov_Trl = curve_fit( exp_func, timel_a, templ_a, maxfev=80000, p0=[-1,4000.0] )
+    popt_Prl, pcov_Prl = curve_fit( exp_func, timel_a, presl_a, maxfev=80000, p0=[-1.0,1.0,135.0] )
+    popt_Trl, pcov_Trl = curve_fit( exp_func, timel_a, templ_a, maxfev=80000, p0=[-1,1.0,4000.0] )
     print( 'R-squared information for P_r' )
     print( '-----------------------------' )
     RsqrPrl = Rsquared( presl_a, exp_func( timel_a, *popt_Prl ) )
@@ -370,24 +375,25 @@ def figure9():
     RsqrTrl = np.round( RsqrTrl,4)
 
     # surface temperature evolution
-    ttemp_a = np.column_stack( (fig_o.time, temp_l) )
-    ind = np.where( ttemp_a[:,1] > 1200.0 )[0]
+    ttemp_a = np.column_stack( (fig_o.time, tempsurf_l) )
+    ind = np.where( ttemp_a[:,1] > 1400.0 )[0]
     temp0fit = ttemp_a[:,0][ind]
     temp1fit = ttemp_a[:,1][ind]
-    popt, pcov = curve_fit( exp_func4, temp0fit, temp1fit, maxfev=80000 )
+    print( temp0fit )
+    popt, pcov = curve_fit( log_exp_func4, temp0fit, np.log(temp1fit), maxfev=80000 )
 
     trans = transforms.blended_transform_factory(
         ax3.transData, ax3.transAxes)
-    ax3.plot( temp0fit, temp1fit, marker='o', markersize=6.0, color='0.8' )
-    h1, = ax3.plot( temp0fit, exp_func4( temp0fit, *popt ), '-', color='black', linewidth=2, label=r'Fit' )
+    ax3.plot( temp0fit, temp1fit, marker='o', markersize=4.0, color='0.8' )
+    h1, = ax3.plot( temp0fit, np.exp(log_exp_func4( temp0fit, *popt )), '-', color='black', linewidth=2, label=r'Fit' )
     ax3.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax3.text( tprime0, 0.82, '$t^\prime_0$', ha='right', va='bottom', transform = trans )
     ax3.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax3.text( tprime1abs, 0.82, '$t^\prime_1$', ha='right', va='bottom', transform = trans )
     title = r'(b) $T0_m(t)$, K'
-    yticks = [2000,3000,4000]
+    yticks = [1500,2000,3000,4000]
     fig_o.set_myaxes( ax3, title=title, ylabel='$T0_m$', xlabel='$t$ (yrs)', yticks=yticks )
-    ax3.set_ylim( [1500,4500])
+    ax3.set_ylim( [1000,4500])
     ax3.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     ax3.yaxis.set_label_coords(-0.2,0.575)
 
@@ -414,7 +420,7 @@ def figure9():
     vmax = np.max( data_a[:,0][indp] )
     vmin = np.min( data_a[:,0][indp] )
 
-    ax0.plot( data_a[:,0][indp], data_a[:,1][indp], marker='o', markersize=3.0, color='0.8' )
+    ax0.plot( data_a[:,0][indp], data_a[:,1][indp], marker='o', markersize=4.0, color='0.8' )
     # high pressure fit
     h2, = ax0.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Prh ), '-', color='black', linewidth=2, label=r'Fit' )
     # low pressure fit
@@ -426,7 +432,7 @@ def figure9():
     ax0.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     ax0.yaxis.set_label_coords(-0.2,0.5)
 
-    ax1.plot( data_a[:,0][indp], data_a[:,2][indp], marker='o', markersize=3.0, color='0.8' )
+    ax1.plot( data_a[:,0][indp], data_a[:,2][indp], marker='o', markersize=4.0, color='0.8' )
     # high pressure fit
     h2, = ax1.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Trh ), '-', color='black', linewidth=2, label=r'Fit' )
     # low pressure fit
