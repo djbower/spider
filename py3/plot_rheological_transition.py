@@ -22,9 +22,9 @@ def x_from_exp_func4( y, a, b ):
     return (y**(1.0/exp)-b)/a
 
 #===================================================================
-def log_exp_func4( x, a, b ):
-    exp = 1.0/(1.0-4.0)
-    return exp* np.log( a*x+b )
+#def log_exp_func4( x, a, b ):
+#    exp = 1.0/(1.0-4.0)
+#    return exp* np.log( a*x+b )
 
 #===================================================================
 def exp_func( x, a, b, c ):
@@ -379,13 +379,12 @@ def figure9():
     ind = np.where( ttemp_a[:,1] > 1400.0 )[0]
     temp0fit = ttemp_a[:,0][ind]
     temp1fit = ttemp_a[:,1][ind]
-    print( temp0fit )
-    popt, pcov = curve_fit( log_exp_func4, temp0fit, np.log(temp1fit), maxfev=80000 )
+    popt, pcov = curve_fit( exp_func4, temp0fit, temp1fit, maxfev=80000 )
 
     trans = transforms.blended_transform_factory(
         ax3.transData, ax3.transAxes)
     ax3.plot( temp0fit, temp1fit, marker='o', markersize=4.0, color='0.8' )
-    h1, = ax3.plot( temp0fit, np.exp(log_exp_func4( temp0fit, *popt )), '-', color='black', linewidth=2, label=r'Fit' )
+    h1, = ax3.plot( temp0fit, exp_func4( temp0fit, *popt ), '-', color='black', linewidth=2, label=r'Fit' )
     ax3.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax3.text( tprime0, 0.82, '$t^\prime_0$', ha='right', va='bottom', transform = trans )
     ax3.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
