@@ -47,9 +47,19 @@ ${EXNAME} : ${SRC_O}
 ### Tests ######################################################################
 test :
 	cd tests && ./runTests.py -t bottomUpLiquid && cd ..
+	@printf "If on a batch system, wait until jobs complete and then\n"
+	@printf "  make testcheck\n"
+
+testcheck :
+	cd tests && ./runTests.py -v -t bottomUpLiquid && cd ..
 
 testall :
 	cd tests && ./runTests.py && cd ..
+	@printf "If on a batch system, wait until jobs complete and then\n"
+	@printf "  make testallcheck\n"
+
+testallcheck :
+	cd tests && ./runTests.py -v && cd ..
 
 .PHONY: test testall
 

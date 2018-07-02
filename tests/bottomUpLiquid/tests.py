@@ -24,6 +24,7 @@ def bottomUpLiquid(rootDir) :
   t.appendKeywords('[')
   t.appendKeywords(']')
   t.appendKeywords('sol')
+  t.setWalltime(10) # minutes
   t.setUseSandbox()
 
   return(t)
