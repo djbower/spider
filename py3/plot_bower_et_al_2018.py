@@ -361,7 +361,7 @@ def bower_et_al_2018_fig3( times ):
         # cell-wise and we can easily see the CMB boundary condition
         yy = myjson_o.get_scaled_field_values('S_s')
         #yy = myjson_o.get_scaled_field_values_internal('S_b')
-        ax0.plot( xx_pres_s, yy, '-', color=color )
+        ax0.plot( xx_pres_s, yy, '--', color=color )
         handle, = ax0.plot( xx_pres_s*MIX_s, yy*MIX_s, '-', color=color, label=label )
         handle_l.append( handle )
         # temperature
