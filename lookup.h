@@ -8,7 +8,6 @@
 #define HEAD 4 /* number of header lines in datafile */
 
 /* these next values are for lookup-hires-{RT}melt */
-/* note that you must also change the file locations below! */
 #define NROWS 10100 /* number of coordinates in datafiles */
 /* N.B., NROWS = NX * NY */
 #define NX 101 /* no. of x coordinates in datafiles */
