@@ -26,7 +26,7 @@ for nn, line in enumerate(lines):
     else:
         cols = line.split()
         col0 = cols[0]
-        if float(col0) < 0.0:
+        if float(col0) < 1.0E-6:
             col0n = '0.000000000000000000e+00'
             newline = '{} {} {}\n'.format( col0n, cols[1], cols[2] )
             outfile.write( newline )
