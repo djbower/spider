@@ -7,7 +7,7 @@
    as a functon of pressure and entropy */
 #define HEAD 4 /* number of header lines in datafiles */
 
-#if 0
+#if 1
 /*------------------- */
 /* lookup_data/RTmelt */
 /* number of coordinates in datafiles */
@@ -21,7 +21,7 @@
 /*--------------------*/
 #endif
 
-#if 1
+#if 0
 /*-------------------------------- */
 /* lookup_data/1TPa-dK09-elec-free */
 /* FIXME: these are actually for solid data tables only */
