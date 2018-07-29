@@ -5,24 +5,38 @@
 
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
-#define HEAD 4 /* number of header lines in datafile */
+#define HEAD 4 /* number of header lines in datafiles */
 
-/* these next values are for lookup-hires-{RT}melt */
-#define NROWS 10100 /* number of coordinates in datafiles */
+#if 0
+/*------------------- */
+/* lookup_data/RTmelt */
+/* number of coordinates in datafiles */
+#define NROWS 10100 /* RTmelt */
 /* N.B., NROWS = NX * NY */
 #define NX 101 /* no. of x coordinates in datafiles */
 #define NY 100 /* no. of y coordinates in datafiles */
-
-/* these next values are for lookup-hires-{RT}press */
-//#define NROWS 15100 /* number of coordinates in datafiles */
-/* N.B., NROWS = NX * NY */
-//#define NX 151 /* no. of x coordinates in datafiles */
-//#define NY 100 /* no. of y coordinates in datafiles */
-
 /* 1-D datafiles containing liquidus and solidus
    as a function of pressure */
 #define NLS 301 /* no. of coordinates in liq and sol datafiles */
-// TODO make NLS a parameter
+/*--------------------*/
+#endif
+
+#if 1
+/*-------------------------------- */
+/* lookup_data/1TPa-dK09-elec-free */
+/* FIXME: these are actually for solid data tables only */
+/* FIXME: melt tables have different length */
+/* number of coordinates in datafiles */
+#define NROWS 230280 /* solid only */ 
+/* N.B., NROWS = NX * NY */
+#define NX 2020 /* no. of x coordinates in datafiles */
+#define NY 114 /* no. of y coordinates in datafiles */
+/* 1-D datafiles containing liquidus and solidus
+   as a function of pressure */
+#define NLS 301 /* no. of coordinates in liq and sol datafiles */
+/*---------------------------------*/
+#endif
+
 
 /* this structure has an x and y array size equal to NLS  */
 typedef struct _Interp1d {
