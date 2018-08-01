@@ -5,33 +5,46 @@
 
 /* 2-D datafiles containing melt and solid properties
    as a functon of pressure and entropy */
+/* TODO: this might change when we read the lookup table size
+   from the header data for each file */
 #define HEAD 4 /* number of header lines in datafiles */
 
-#if 1
+/* set lookup table parameters to some large enough values, such
+   that they cover the range of the RTmelt and 1TPa-dK09-elec-free
+   models.  Could set these to values of largest dataset, for testing
+   let's make them a bit bigger to ensure we have the index ordering
+   correct */
+#define NX 2025 // 5 more than number for 1TPa-dK09-elec-free
+#define NY 115 // 1 more than number for 1TPa-dK09-elec-free
+#define NLS 310 // 9 more than number for 1TPa-dK09-elec-free
+
+/* TODO: can remove these old references once the new code is
+   working */
+//#if 0
 /*------------------- */
 /* lookup_data/RTmelt */
 /* number of coordinates in datafiles */
-#define NX 101 /* no. of x coordinates in datafiles */
-#define NY 100 /* no. of y coordinates in datafiles */
+//#define NX 101 /* no. of x coordinates in datafiles */
+//#define NY 100 /* no. of y coordinates in datafiles */
 /* 1-D datafiles containing liquidus and solidus
    as a function of pressure */
-#define NLS 301 /* no. of coordinates in liq and sol datafiles */
+//#define NLS 301 /* no. of coordinates in liq and sol datafiles */
 /*--------------------*/
-#endif
+//#endif
 
-#if 0
+//#if 0
 /*-------------------------------- */
 /* lookup_data/1TPa-dK09-elec-free */
 /* FIXME: these are actually for solid data tables only */
 /* FIXME: melt tables have different length */
 /* number of coordinates in datafiles */
-#define NX 2020 /* no. of x coordinates in datafiles */
-#define NY 114 /* no. of y coordinates in datafiles */
+//#define NX 2020 /* no. of x coordinates in datafiles */
+//#define NY 114 /* no. of y coordinates in datafiles */
 /* 1-D datafiles containing liquidus and solidus
    as a function of pressure */
-#define NLS 301 /* no. of coordinates in liq and sol datafiles */
+//#define NLS 301 /* no. of coordinates in liq and sol datafiles */
 /*---------------------------------*/
-#endif
+//#endif
 
 
 /* this structure has an x and y array size equal to NLS  */
