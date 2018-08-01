@@ -11,8 +11,6 @@
 /*------------------- */
 /* lookup_data/RTmelt */
 /* number of coordinates in datafiles */
-#define NROWS 10100 /* RTmelt */
-/* N.B., NROWS = NX * NY */
 #define NX 101 /* no. of x coordinates in datafiles */
 #define NY 100 /* no. of y coordinates in datafiles */
 /* 1-D datafiles containing liquidus and solidus
@@ -27,8 +25,6 @@
 /* FIXME: these are actually for solid data tables only */
 /* FIXME: melt tables have different length */
 /* number of coordinates in datafiles */
-#define NROWS 230280 /* solid only */ 
-/* N.B., NROWS = NX * NY */
 #define NX 2020 /* no. of x coordinates in datafiles */
 #define NY 114 /* no. of y coordinates in datafiles */
 /* 1-D datafiles containing liquidus and solidus
