@@ -7,16 +7,16 @@
    as a functon of pressure and entropy */
 /* TODO: this might change when we read the lookup table size
    from the header data for each file */
-#define HEAD 4 /* number of header lines in datafiles */
+#define HEAD 5 /* number of header lines in datafiles */
 
 /* set lookup table parameters to some large enough values, such
    that they cover the range of the RTmelt and 1TPa-dK09-elec-free
    models.  Could set these to values of largest dataset, for testing
    let's make them a bit bigger to ensure we have the index ordering
    correct */
-#define NX 2025 // 5 more than number for 1TPa-dK09-elec-free
-#define NY 115 // 1 more than number for 1TPa-dK09-elec-free
-#define NLS 310 // 9 more than number for 1TPa-dK09-elec-free
+#define NX 200 //2025 // 5 more than number for 1TPa-dK09-elec-free
+#define NY 200 //115 // 1 more than number for 1TPa-dK09-elec-free
+#define NLS 301 // exact for all present lookup data
 
 /* TODO: can remove these old references once the new code is
    working */
@@ -65,7 +65,7 @@ typedef struct _Interp2d {
     PetscScalar ymax;
     PetscScalar xa[NX];
     PetscScalar ya[NY];
-    PetscScalar za[NX*NY];
+    PetscScalar za[NX][NY];
     PetscScalar dx;
     PetscScalar dy;
 } Interp2d;
