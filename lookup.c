@@ -298,22 +298,20 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     PetscScalar w1, w2, w3, w4; // weights
     PetscScalar result;
     PetscScalar const *xa, *ya;
-    /* FIXME is this the best way?
-       https://stackoverflow.com/questions/1052818/create-a-pointer-to-two-dimensional-array
-    */
-    PetscScalar const (*za);//[NY];
+    PetscInt NX, NY;
     PetscScalar dx;
     PetscScalar xmin, xmax, ymin, ymax;
     // below only if y data is evenly spaced
     //PetscScalar dy;
-    PetscInt indx, indy, indz1, indz2, indz3, indz4;
+    PetscInt indx, indy;
 
-    dx = interp->dx;
+    NX = interp->NX;
     xa = interp->xa;
-    ya = interp->ya;
-    za = interp->za;
     xmin = interp->xmin;
     xmax = interp->xmax;
+    dx = interp->dx;
+    NY = interp->NY;
+    ya = interp->ya;
     ymin = interp->ymin;
     ymax = interp->ymax;
     // below only if y data is evenly spaced
@@ -331,7 +329,7 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     }
     else if( x>xmax ){
       //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x>xmax, %f>%f.  Truncating\n",(double)x,(double)xmax);CHKERRQ(ierr);
-      indx = interp->NX-2; // minimum index, max index is always +1
+      indx = NX-2; // minimum index, max index is always +1
       x = xmax;
     }
     else{
@@ -351,7 +349,7 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     }
     else if( y>ymax ){
       //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y>ymax, %f>%f.  Truncating\n",(double)y,(double)ymax);CHKERRQ(ierr);
-      indy = interp->NY-2; // minimum index, max index is always +1
+      indy = NY-2; // minimum index, max index is always +1
       y = ymax;
     }
     else{
@@ -371,14 +369,14 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     w3 = y-ya[indy]; // y-y1
     w4 = ya[indy+1]-y; // y2-y
 
-    indz1 = indy*interp->NX+indx; // min S (y), min P (x)
-    z1 = za[indz1];
-    indz2 = indz1+1; // min S (y), max P (x)
-    z2 = za[indz2];
-    indz3 = indz1+interp->NX; // max S (y), min P (x)
-    z3 = za[indz3];
-    indz4 = indz3+1; // max S (y), max P (x)
-    z4 = za[indz4];
+    // min P (x), min S (y)
+    z1 = interp->za[indx][indy];
+    // max P (x), min S (y)
+    z2 = interp->za[indx+1][indy];
+    // min P (x), max S (y)
+    z3 = interp->za[indx][indy+1];
+    // max P (x), max S (y)
+    z4 = interp->za[indx+1][indy+1];
 
     // bilinear interpolation
     result = z1 * w2 * w4;
@@ -387,8 +385,6 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     result += z4 * w1 * w3;
     result /= dx; // dx
     result /= ya[indy+1]-ya[indy]; // dy
-
-    result = 0.0;
 
     return result;
 }
