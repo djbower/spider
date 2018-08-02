@@ -1,9 +1,9 @@
 #include "parameters.h"
 #include "lookup.h"
+#include "util.h"
 
 PetscErrorCode set_interp2d( const char * filename, Interp2d *interp, PetscScalar xconst, PetscScalar yconst, PetscScalar zconst )
 {
-    PetscErrorCode ierr;
     FILE *fp;
     PetscInt i=0, j=0, k=0;
     char string[PETSC_MAX_PATH_LEN];
@@ -14,11 +14,11 @@ PetscErrorCode set_interp2d( const char * filename, Interp2d *interp, PetscScala
       uninitialised values for just the quadruple precision case */
     PetscScalar xscale=0.0, yscale=0.0, zscale=0.0;
     PetscScalar x, y, z;
-    PetscScalar xa[NX], ya[NY], za[NX][NY];
-    PetscInt HEADF=0, NXF=0, NYF=0; // replaced by entries in first header line
+    PetscInt HEAD, NX, NY; // replaced by entries in first header line
     PetscInt xind, yind;
 
     PetscFunctionBeginUser;
+
     fp = fopen( filename, "r" );
 
     if(fp==NULL) {
@@ -27,29 +27,21 @@ PetscErrorCode set_interp2d( const char * filename, Interp2d *interp, PetscScala
 
     // fgets reads in string, sscanf processes it
     while(fgets(string, sizeof(string), fp) != NULL) {
-        /* check array is large enough to accommodate the data, size
-           of data is give in the first header line */
-#if 1
+
+        /* first header contains size of arrays to create */
         if( i==0 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
-            /* TODO: this works for both double and quad? */
-            sscanf( string, "%d %d %d", &HEADF, &NXF, &NYF );
-            /* check lookup array is large enough to accommodate the dataset */
-            if( NXF > NX ){
-                // FIXME: report problem and exit
-                ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: set_val2d: NXF>NX, %d>%d.",NXF,NX);CHKERRQ(ierr);
-            }
-            if( NYF > NY ){
-                // FIXME: report problem and exit
-                ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: set_val2d: NYF>NY, %d>%d.",NYF,NY);CHKERRQ(ierr);
-            }
+            /* FIXME: works for both double and quad? */
+            sscanf( string, "%d %d %d", &HEAD, &NX, &NY );
+            /* make arrays based on the sizes in the header */
+            interp->xa = Make1DPetscScalarArray( NX );
+            interp->ya = Make1DPetscScalarArray( NY );
+            interp->za = Make2DPetscScalarArray( NX, NY );
         }
-#endif
+
         /* get column scalings from last line of header */
-        /* TODO: HEADF will always be assigned above, but might need
-           to initialise it for the compiler to not complain? */
-        else if( i==HEADF-1 ){
+        else if( i==HEAD-1 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
 #if (defined PETSC_USE_REAL___FLOAT128)
@@ -61,7 +53,7 @@ PetscErrorCode set_interp2d( const char * filename, Interp2d *interp, PetscScala
             sscanf( string, "%lf %lf %lf", &xscale, &yscale, &zscale );
 #endif
         }
-        else if( i>=HEADF ){
+        else if( i>=HEAD ){
 #if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( string, "%s %s %s", xtemp, ytemp, ztemp );
             x = strtoflt128(xtemp, NULL);
@@ -73,26 +65,26 @@ PetscErrorCode set_interp2d( const char * filename, Interp2d *interp, PetscScala
 
             /* need to determine x and y indices to insert data in
                correct position in the za (2-D) array */
-            xind = (i-HEADF) % NXF; // e.g., repeats 0->2019, 0->2019, 0->2019, for each set
-            yind = (i-HEADF) / NXF; // integer division gives correct yind (I think)
+            xind = (i-HEAD) % NX; // e.g., repeats 0->2019, 0->2019, 0->2019, for each set
+            yind = (i-HEAD) / NX; // integer division gives correct yind (I think)
 
             /* lookup value */
-            za[xind][yind] = z;
-            za[xind][yind] *= zscale;
-            za[xind][yind] /= zconst;
+            interp->za[xind][yind] = z;
+            interp->za[xind][yind] *= zscale;
+            interp->za[xind][yind] /= zconst;
 
             /* x coordinate */
-            if( i<HEADF+NXF ){
-                xa[j] = x;
-                xa[j] *= xscale;
-                xa[j] /= xconst;
+            if( i<HEAD+NX ){
+                interp->xa[j] = x;
+                interp->xa[j] *= xscale;
+                interp->xa[j] /= xconst;
                 ++j;
             }
             /* y coordinate */
-            if( (i-HEADF) % NXF ==0 ){
-                ya[k] = y;
-                ya[k] *= yscale;
-                ya[k] /= yconst;
+            if( (i-HEAD) % NX ==0 ){
+                interp->ya[k] = y;
+                interp->ya[k] *= yscale;
+                interp->ya[k] /= yconst;
                 ++k;
             }
 
@@ -104,42 +96,52 @@ PetscErrorCode set_interp2d( const char * filename, Interp2d *interp, PetscScala
 
     /* for debugging */
 #if (defined DEBUGOUTPUT)
+    PetscErrorCode ierr;
     PetscMPIInt rank;
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
-    for (i=0; i<NXF; i++ ){
-        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, i, (double) xa[i]);CHKERRQ(ierr);
+    for (i=0; i<NX; i++ ){
+        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, i, (double) interp->xa[i]);CHKERRQ(ierr);
     }
-    for (j=0; j<NYF; j++ ){
-        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, j, (double) ya[j]);
+    for (j=0; j<NY; j++ ){
+        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, j, (double) interp->ya[j]);CHKERRQ(ierr);
+    }
+    for(i=0; i<NX; i++ ){
+        for(j=0; j<NY; j++ ){
+            ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %d %f\n", rank, i, j, (double) interp->za[i][j]);CHKERRQ(ierr);
+        }
     }
 #endif
 
-    // FIXME: temporary debugging & testing
-    for(i=0; i<NXF; i++ ){
-        for(j=0; j<NYF; j++ ){
-            ierr = PetscPrintf(PETSC_COMM_SELF,"%d %d %f\n", i, j, (double) za[i][j]);CHKERRQ(ierr);
-        }
-    }
-
-    interp->xmin= xa[0];
-    interp->xmax= xa[NX-1];
-    interp->ymin= ya[0];
-    interp->ymax= ya[NY-1];
-
-    memmove( interp->xa, xa, sizeof interp->xa );
-    memmove( interp->ya, ya, sizeof interp->ya );
-    memmove( interp->za, za, sizeof interp->za );
-
+    interp->NX = NX;
+    interp->NY = NY;
+    interp->xmin= interp->xa[0];
+    interp->xmax= interp->xa[NX-1];
+    interp->ymin= interp->ya[0];
+    interp->ymax= interp->ya[NY-1];
     /* if we store the x and y step, we can more quickly locate the
        relevant indices in the arrays by direct calculation, if the
        data has constant spacing */
-    interp->dx = xa[1]-xa[0];
-    interp->dy = ya[1]-ya[0];
+    interp->dx = interp->xa[1]-interp->xa[0];
+    interp->dy = interp->ya[1]-interp->ya[0];
 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n, PetscScalar xconst, PetscScalar yconst )
+void free_interp2d( Interp2d *interp ){
+
+    PetscInt i;
+    PetscInt NX = interp->NX;
+
+    for(i=0; i<NX; i++) {
+        free( interp->za[i] );
+    }
+    free( interp->za );
+    free( interp->xa );
+    free( interp->ya );
+}
+
+
+PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscScalar xconst, PetscScalar yconst )
 {
     FILE *fp;
     PetscInt i=0;
@@ -147,7 +149,8 @@ PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n
 #if (defined PETSC_USE_REAL___FLOAT128)
     char xtemp[30], ytemp[30];
 #endif
-    PetscScalar x, y, xscale=0.0, yscale=0.0, xa[n], ya[n];
+    PetscScalar x, y, xscale=0.0, yscale=0.0;
+    PetscInt HEAD, NX;
 
     PetscFunctionBeginUser;
     fp = fopen( filename, "r" );
@@ -157,8 +160,20 @@ PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n
     }
     // fgets reads in string, sscanf processes it
     while(fgets(string, sizeof(string), fp) != NULL) {
+
+        /* first header contains size of arrays to create */
+        if( i==0 ){
+            /* remove # at start of line */
+            memmove( string, string+1, strlen(string) );
+            /* FIXME: works for both double and quad? */
+            sscanf( string, "%d %d", &HEAD, &NX );
+            /* make arrays based on the sizes in the header */
+            interp->xa = Make1DPetscScalarArray( NX );
+            interp->ya = Make1DPetscScalarArray( NX );
+        }
+
         /* get column scalings from last line of header */
-        if( i==HEAD-1 ){
+        else if( i==HEAD-1 ){
            /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
 #if (defined PETSC_USE_REAL___FLOAT128)
@@ -169,7 +184,7 @@ PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n
             sscanf(string, "%lf %lf", &xscale, &yscale );
 #endif
         }
-        if( i>=HEAD ){
+        else if( i>=HEAD ){
 #if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( string, "%s %s", xtemp, ytemp );
             x = strtoflt128(xtemp, NULL);
@@ -177,29 +192,40 @@ PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscInt n
 #else
             sscanf(string, "%lf %lf", &x, &y );
 #endif
-            xa[i-HEAD] = x;
-            xa[i-HEAD] *= xscale;
-            xa[i-HEAD] /= xconst;
-            ya[i-HEAD] = y;
-            ya[i-HEAD] *= yscale;
-            ya[i-HEAD] /= yconst;
+            interp->xa[i-HEAD] = x;
+            interp->xa[i-HEAD] *= xscale;
+            interp->xa[i-HEAD] /= xconst;
+            interp->ya[i-HEAD] = y;
+            interp->ya[i-HEAD] *= yscale;
+            interp->ya[i-HEAD] /= yconst;
             }
         ++i;
     }
 
     fclose( fp );
 
-    memmove( interp->xa, xa, sizeof interp->xa );
-    interp->xmin= xa[0];
-    interp->xmax= xa[n-1];
-    memmove( interp->ya, ya, sizeof interp->ya );
+    /* for debugging */
+#if (defined DEBUGOUTPUT)
+    PetscErrorCode ierr;
+    PetscMPIInt rank;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+    for (i=0; i<NX; i++ ){
+        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, i, (double) interp->xa[i]);CHKERRQ(ierr);
+    }
+    for (i=0; i<NX; i++ ){
+        ierr = PetscPrintf(PETSC_COMM_SELF,"[%D] %d %f\n", rank, i, (double) interp->ya[i]);CHKERRQ(ierr);
+    }
+#endif
+
+    interp->xmin= interp->xa[0];
+    interp->xmax= interp->xa[NX-1];
     /* ymin and ymax are not used at present, and it might be
        dangerous to do so since for the middle-out solidus and
        liquidus data the maximum entropy is not at the end of the
        array since the maximum occurs around mid-mantle pressures */
-    interp->ymin= ya[0];
-    interp->ymax= ya[n-1];
-    interp->n = n;
+    interp->ymin= interp->ya[0];
+    interp->ymax= interp->ya[NX-1];
+    interp->NX = NX;
 
     PetscFunctionReturn(0);
 }
@@ -220,7 +246,7 @@ PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
     xmax = interp->xmax;
     xmin = interp->xmin;
     ya = interp->ya;
-    n = interp->n;
+    n = interp->NX;
 
     /* to reproduce the behaviour of scipy.interpolate.interp1d the
        code should produce a ValueError if interpolation is
@@ -271,7 +297,11 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     PetscScalar z1, z2, z3, z4;
     PetscScalar w1, w2, w3, w4; // weights
     PetscScalar result;
-    PetscScalar const *xa, *ya, *za;
+    PetscScalar const *xa, *ya;
+    /* FIXME is this the best way?
+       https://stackoverflow.com/questions/1052818/create-a-pointer-to-two-dimensional-array
+    */
+    PetscScalar const (*za);//[NY];
     PetscScalar dx;
     PetscScalar xmin, xmax, ymin, ymax;
     // below only if y data is evenly spaced
@@ -301,7 +331,7 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     }
     else if( x>xmax ){
       //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: x>xmax, %f>%f.  Truncating\n",(double)x,(double)xmax);CHKERRQ(ierr);
-      indx = NX-2; // minimum index, max index is always +1
+      indx = interp->NX-2; // minimum index, max index is always +1
       x = xmax;
     }
     else{
@@ -321,7 +351,7 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     }
     else if( y>ymax ){
       //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val2d: y>ymax, %f>%f.  Truncating\n",(double)y,(double)ymax);CHKERRQ(ierr);
-      indy = NY-2; // minimum index, max index is always +1
+      indy = interp->NY-2; // minimum index, max index is always +1
       y = ymax;
     }
     else{
@@ -341,11 +371,11 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     w3 = y-ya[indy]; // y-y1
     w4 = ya[indy+1]-y; // y2-y
 
-    indz1 = indy*NX+indx; // min S (y), min P (x)
+    indz1 = indy*interp->NX+indx; // min S (y), min P (x)
     z1 = za[indz1];
     indz2 = indz1+1; // min S (y), max P (x)
     z2 = za[indz2];
-    indz3 = indz1+NX; // max S (y), min P (x)
+    indz3 = indz1+interp->NX; // max S (y), min P (x)
     z3 = za[indz3];
     indz4 = indz3+1; // max S (y), max P (x)
     z4 = za[indz4];
@@ -358,5 +388,14 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     result /= dx; // dx
     result /= ya[indy+1]-ya[indy]; // dy
 
+    result = 0.0;
+
     return result;
+}
+
+void free_interp1d( Interp1d *interp ){
+
+    free( interp->xa );
+    free( interp->ya );
+
 }
