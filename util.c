@@ -252,6 +252,29 @@ static PetscErrorCode set_d_dr_linear( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+PetscScalar* Make1DPetscScalarArray( PetscInt arraySize ){
+
+    PetscScalar* theArray;
+
+    theArray = (PetscScalar *) malloc(arraySize*sizeof(PetscScalar*));
+
+    return theArray;
+}
+
+PetscScalar** Make2DPetscScalarArray( PetscInt arraySizeX, PetscInt arraySizeY) {
+
+    PetscScalar** theArray;
+    PetscInt i;
+
+    theArray = (PetscScalar**) malloc(arraySizeX*sizeof(PetscScalar*));
+    for( i=0; i<arraySizeX; i++){
+        theArray[i] = (PetscScalar *) malloc(arraySizeY*sizeof(PetscScalar));
+    }
+
+    return theArray;
+}
+
+
 #if 0
 static PetscErrorCode set_d_dr_quadratic( Ctx *E )
 {
