@@ -239,14 +239,14 @@ PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
     //PetscErrorCode    ierr;
     PetscScalar       w1, result;
     PetscScalar const *xa, *ya;
-    PetscScalar       xmax, xmin;
-    PetscInt          ind, n;
+    PetscScalar       xmin, xmax;
+    PetscInt          ind, NX;
 
+    NX = interp->NX;
     xa = interp->xa;
-    xmax = interp->xmax;
     xmin = interp->xmin;
+    xmax = interp->xmax;
     ya = interp->ya;
-    n = interp->NX;
 
     /* to reproduce the behaviour of scipy.interpolate.interp1d the
        code should produce a ValueError if interpolation is
@@ -260,7 +260,7 @@ PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
     }
     else if( x>xmax ){
       //ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: get_val1d: x>xmax, %f>%f.  Truncating\n",(double)x,(double)xmax);CHKERRQ(ierr);
-      ind = n-2; // minimum index, max index is always +1
+      ind = NX-2; // minimum index, max index is always +1
       x = xmax;
     }
     else{
