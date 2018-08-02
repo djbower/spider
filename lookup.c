@@ -29,6 +29,8 @@ PetscErrorCode set_interp2d( const char * filename, Interp2d *interp, PetscScala
     while(fgets(string, sizeof(string), fp) != NULL) {
 
         /* first header contains size of arrays to create */
+        /* FIXME: if the header information is incorrect it can lead
+           to various memory errors.  Add some safety checks? */
         if( i==0 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
@@ -163,6 +165,8 @@ PetscErrorCode set_interp1d( const char * filename, Interp1d *interp, PetscScala
     while(fgets(string, sizeof(string), fp) != NULL) {
 
         /* first header contains size of arrays to create */
+        /* FIXME: if the header information is incorrect it can lead
+           to various memory errors.  Add some safety checks? */
         if( i==0 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
