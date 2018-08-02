@@ -817,13 +817,12 @@ PetscErrorCode SetLookups( Parameters *P )
 
   /* liquidus and solidus */
   /* 1d */
-
-  ierr = set_interp1d( P->liquidusFilename, &P->solid_prop.liquidus, NLS, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
-  ierr = set_interp1d( P->liquidusFilename, &P->melt_prop.liquidus, NLS, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp1d( P->liquidusFilename, &P->solid_prop.liquidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp1d( P->liquidusFilename, &P->melt_prop.liquidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
   /* duplication here, but want to remain flexible for future
      approaches for a multicomponent system */
-  ierr = set_interp1d( P->solidusFilename, &P->solid_prop.solidus, NLS, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
-  ierr = set_interp1d( P->solidusFilename, &P->melt_prop.solidus, NLS, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp1d( P->solidusFilename, &P->solid_prop.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp1d( P->solidusFilename, &P->melt_prop.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
