@@ -222,12 +222,12 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
     {
       char str[64]; /* hard-coded 64*/
 #if PETSC_USE_REAL___FLOAT128
-      ierr = quadmath_snprintf(str,64,"%32.32Qg",f->scaling); /* hard-coded value */
+      ierr = quadmath_snprintf(str,sizeof(str),"%32.32Qg",*f->scaling);
       if (ierr >= 64 || ierr < 0) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_LIB,"quadmath_snprintf() failed");
 #else
-      ierr = PetscSNPrintf(str,64-1,"%16.16g",f->scaling);CHKERRQ(ierr); /* hard-coded value */
+      ierr = PetscSNPrintf(str,sizeof(str),"%16.16g",*f->scaling);CHKERRQ(ierr);
 #endif
-      cJSON_AddItemToObject(curr,"scaling",cJSON_CreateNumber(f->scaling[d]));
+      cJSON_AddItemToObject(curr,"scaling",cJSON_CreateString(str));
     }
     cJSON_AddItemToObject(curr,"scaled",f->scaled? cJSON_CreateString("true") : cJSON_CreateString("false"));
 
@@ -244,10 +244,10 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
       for (i=0; i<vecSize; ++i) {
         char str[64]; /* note hard-coded size */
 #if defined(PETSC_USE_REAL___FLOAT128)
-        ierr = quadmath_snprintf(str,64,"%32.32Qg",arr[i]);
+        ierr = quadmath_snprintf(str,sizeof(str),"%32.32Qg",arr[i]);
         if (ierr >= 64 || ierr < 0) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_LIB,"quadmath_snprintf() failed");
 #else
-        ierr = PetscSNPrintf(str,64-1,"%16.16g",arr[i]);CHKERRQ(ierr); /* hard-coded value */
+        ierr = PetscSNPrintf(str,sizeof(str),"%16.16g",arr[i]);CHKERRQ(ierr);
 #endif
         cJSON_AddItemToArray(values,cJSON_CreateString(str));
       }
