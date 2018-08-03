@@ -799,7 +799,7 @@ PetscErrorCode SetLookups( Parameters *P )
   ierr = set_interp2d( P->rhoSolFilename, &P->solid_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
   ierr = set_interp2d( P->tempSolFilename, &P->solid_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
   /* const */
-  // FIXME: remove this redundancy
+  // TODO: remove this redundancy
   P->solid_prop.cond = P->cond_sol;
   P->solid_prop.log10visc = P->log10visc_sol;
 
@@ -811,7 +811,7 @@ PetscErrorCode SetLookups( Parameters *P )
   ierr = set_interp2d( P->rhoMelFilename, &P->melt_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
   ierr = set_interp2d( P->tempMelFilename, &P->melt_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
   /* const */
-  // FIXME remove this redundancy
+  // TODO: remove this redundancy
   P->melt_prop.cond = P->cond_mel;
   P->melt_prop.log10visc = P->log10visc_mel;
 
