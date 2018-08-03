@@ -50,7 +50,7 @@
 -CONDUCTION 1 # conduction
 -CONVECTION 1 # convection
 -MIXING 1 # mixing (latent heat transport)
--SEPARATION 0 # gravitational separation of solid and melt phase
+-SEPARATION 1 # gravitational separation of solid and melt phase
 -HRADIO 0 # radioactive heating
 -HTIDAL 0 # tidal heating (TODO: not currently implemented)
 

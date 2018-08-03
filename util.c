@@ -256,7 +256,7 @@ PetscScalar* Make1DPetscScalarArray( PetscInt arraySize ){
 
     PetscScalar* theArray;
 
-    theArray = (PetscScalar *) malloc(arraySize*sizeof(PetscScalar*));
+    theArray = (PetscScalar *) malloc(arraySize*sizeof(PetscScalar));
 
     return theArray;
 }
