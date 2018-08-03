@@ -26,7 +26,7 @@ pipelines:
             - make -j
 
             # run valgrind (examine manually!)
-            - valgrind --track-origins=yes --leak-check=full ./spider -nstepsmacro 1 -dtmacro_years 10
+            - valgrind ./spider -nstepsmacro 1 -dtmacro_years 10
 
             # Test
             - cd tests
