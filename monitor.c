@@ -190,10 +190,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         VolatileParameters   const *H2O = &Ap->H2O_volatile_parameters;
         Mesh                 const *M = &ctx->mesh;
         const PetscInt             ind0 = 0;
-        //PetscScalar                Msol,Mliq;
-        //PetscScalar                sol0,liq0,atm0,tot0,sol1,liq1,atm1,tot1;
         PetscScalar                x0,x1;
-        //PetscScalar                FAC, MASS;
         Vec                        *subVecs;
 
         ierr = PetscMalloc1(ctx->numFields,&subVecs);CHKERRQ(ierr);
@@ -208,20 +205,17 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         ierr = DMCompositeRestoreAccessArray(ctx->dm_sol,sol,ctx->numFields,NULL,subVecs);CHKERRQ(ierr);
         ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
-        /* scalings */
+        /* TODO: scalings are incorporated into the outputs below, but
+           keeping these scalings to document at some point */
         //MASS = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
         //FAC = C->VOLATILE / 1.0E6;
-
-        // TODO: this was previous, might break output below if commented!
         //Msol = A->Msol * MASS;
         //Mliq = A->Mliq * MASS;
-
         // CO2
         //sol0 = FAC * x0 * CO2->kdist * Msol; // solid
         //liq0 = FAC * x0 * Mliq; // liquid
         //atm0 = A->m0 * MASS; // atmosphere
         //tot0 = FAC * CO2->initial * M->mantle_mass * MASS; // total
-
         // H2O
         //sol1 = FAC * x1 * H2O->kdist * Msol; // solid
         //liq1 = FAC * x1 * Mliq; // liquid
