@@ -183,8 +183,8 @@ You should now be ready to use the code!
 
 ## Plotting and data processing
 
-There is a python script 'py3/plot\_bower\_et\_al\_2018.py' that recovers the plots shown in Bower et al. (2018).  The script is run using:
+There is a python script `py3/plot\_bower\_et\_al\_2018.py` that produces the plots shown in Bower et al. (2018):
 
         plot_bower_et_al_2018.py -t 0,100,200,400,800,1200,1600,1800
 
-where `-t` is the argument to specify output times (in years) that exist in the output directory ("`output/`") in JSON format.
+where `-t` is the argument to specify output times (in years) that exist in the output directory (`output/`) in JSON format.  Therefore, it is easiest to add the `py3` to your `PATH` and `PYTHONPATH` so you can call the python script within the directory of your model(s).
