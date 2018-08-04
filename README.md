@@ -36,34 +36,36 @@ Wolf, A.S. and D.J. Bower (2018), An equation of state for high pressure-tempera
 
 ### 1. C Compiler
 
-First, ensure that you have a suitable, working C compiler.
+You need a "pure" GCC compiler for quadruple precision calculations.
+Unfortunately on a Mac, "`gcc`" is a wrapper for the default Apple compiler ("`clang`") which is not a pure GCC compiler package (and hence does not support quadruple precision math).
+However, "`gcc`" ("`clang`") should work fine for double precision calculations.  Nevertheless, particularly for Mac OSX you may choose to install GCC to support both double and quadruple precision calculations using a single compiler.
 
-#### Aside for Mac OS X
-A simple way to proceed is to install GCC compilers to the default location from:
-    http://hpc.sourceforge.net
-    
-This site contains precompiled binaries for versions of OS X, and will install everything into:
-    `/usr/local`
-    
-Note, however, that binaries for High Sierra are currently not available.
-
-#### Otherwise
-
-If you use MacPorts, Homebrew, or apt, these can also be used to easily install GCC.
-
-You can test that you have a working `gcc` C compiler by running the following from the command line
+A basic test to ensure you have a working compiler is (note you can swap out "`gcc`" for another compiler binary name):
 
         echo '#include<stdio.h>' > t.c && echo 'int main(){printf("It seems to work!\n");}' >> t.c && gcc t.c && ./a.out && rm -f t.c a.out
 
-If you plan to use quadruple precision, you need to ensure that you have an actual version
-of GCC installed. This is harder than it should be, because Apple irresponsibly installs
-something called "`gcc`" which is actually a wrapper for their own compiler. You can check by running
+#### 1a. GCC compiler for both double and quadruple precision 
+
+If you use MacPorts, Homebrew, or apt, these can be used to easily install GCC.  For example, using MacPorts:
+
+        sudo port install gcc8
+
+This will install a set of GCC binaries, typically in "`/opt/local/bin`".  The C compiler (for GCC8) will be called "`gcc-mp-8"` where the mp is obviously clarifying that it was installed by MacPorts.
+Now on a Mac, you will usually access the default Apple compiler ("`clang`") using "`gcc`", but you can easily access the MacPorts GCC you just installed by using "`gcc-mp-8`" instead.
+So when you are installing the software in the next sections, just use "`gcc-mp-8`" instead of "`gcc`" when you are asked to specify the C compiler.
+
+If you plan to use quadruple precision, you must have an actual version of gcc installed (e.g., using MacPorts as above; the Apple compiler will not work). You can check by running (for example):
 
         gcc --version
+        gcc-mp-8 --version
 
-If you see a message about "Apple LLVM", then you have the wrong compiler! You can also test with this command:
+If you see a message about "Apple LLVM", then you have the wrong compiler (i.e., quadruple precision is not supported.)
+
+You can also test with this command (replace `gcc` by `gcc-mp-8` to test the MacPorts compiler):
 
         echo '#include<stdio.h>' > t.c && echo '#include<quadmath.h>' >> t.c && echo 'int main(){printf("It seems to work!\n");}' >> t.c && gcc t.c && ./a.out && rm -f t.c a.out
+
+In the following sections, it is assumed that you have installed "`gcc-mp-8`", but you can swap this out for your preferred compiler. 
 
 ### 2. Build Dependencies
 Before you begin, comment out any existing references to `PETSC_DIR` and `PETSC_ARCH` in your
@@ -87,7 +89,7 @@ you can allow PETSc to automatically download and install SUNDIALS
 
 3. Configure PETSc using the following command. For a debug build, use --with-debugging=1 instead.
 
-        ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+        ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc-mp-8 --download-sundials --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 4. Make.  PETSc's configure process, if successful, will end by printing out a command which you can copy and paste, e.g.
 
@@ -129,7 +131,7 @@ Note: it is necessary to comment out the cmake_policy(SET CMP0042 NEW) in src/CM
 Make sure you type "c" to configure once you have entered these values, then "g" to generate and exit.
 Note: specify the same C compiler you used to install PETSc (probably "gcc")
 
-        CMAKE_C_COMPILER: gcc
+        CMAKE_C_COMPILER: gcc-mp-8
         CMAKE_INSTALL_PREFIX: ../install
         EXAMPLES_INSTALL_PATH: ../install/examples
         SUNDIALS_PRECISION: quadruple
@@ -149,7 +151,7 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc")
 
 2. Configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change /somewhere/to/install to the place that you installed SUNDIALS). For a debug build, amend the command to use `--with-debugging=1`
 
-        ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/somewhere/to/install/sundials-quad/install --download-mpich --download-f2cblaslapack --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+        ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc-mp-8 --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/somewhere/to/install/sundials-quad/install --download-mpich --download-f2cblaslapack --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
 
 3. Make by copying the line (the following all assume an optimised build, i.e, 3a above) e.g.
 
