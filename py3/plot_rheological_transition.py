@@ -12,11 +12,21 @@ import os
 logger = logging.getLogger(__name__)
 
 #===================================================================
-def log_func4( x, a, b):
+def log_func( nn ):
+    def log_func_arg( x, *p):
+        exp = 1.0/(1.0-nn)
+        out = p[0]*x+p[1]
+        y = exp * np.log(out)
+        return np.exp(y)
+    return log_func_arg
+
+#===================================================================
+def x_from_log_func4( y, a, b ):
     n = 4.0
     exp = 1.0/(1.0-n)
-    out = a*x+b
-    return exp * np.log(out)
+    out = np.exp( y/exp )
+    x = (out - b)/a
+    return x
 
 #===================================================================
 def exp_func4( x, a, b, c=0 ):
@@ -254,54 +264,41 @@ def figure8():
 #====================================================================
 def figure9():
 
+    # set parameters
     # flag to enable data output
     EXPORT = True
-
     # exponent of surface heat flux
     nn = 4.0
-
     # plot low pressure (linear) extension to cooling profile
     PLOT_LOWP = False
+
+    # this exponent appears in lots of the equations
+    expo = 1.0/(1.0-nn)
 
     width = 4.7747
     height = 4.7747
     fig_o = su.FigureData( 2, 2, width, height, 'rheological_front' )
     fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.4)
 
-    # choose correct fitting function based on nn
-    if nn==4.0:
-        exp_func = exp_func4
-        x_from_exp_func = x_from_exp_func4
-    elif nn==0.0:
-        exp_func = exp_func0
-        x_from_exp_func = x_from_exp_func0
-    else:
-        msg = 'exp_func not defined for nn={}'.format( nn )
-        print( msg )
-        sys.exit(0)
-
     ax0 = fig_o.ax[1][0]
     ax1 = fig_o.ax[1][1]
     ax2 = fig_o.ax[0][0]
     ax3 = fig_o.ax[0][1]
-    #ax4 = fig_o.ax[2][0]
-
-    handle_l = []
 
     fig_o.time = su.get_all_output_times()
 
-    data_l = []
-
+    # get pressure in GPa
     time = fig_o.time[0]
     myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
     xx_pres_b = myjson_o.get_scaled_field_values('pressure_b')
     xx_pres_b *= 1.0E-9
 
+    data_l = []
     tempsurf_l = []
-    temp_l = []
     flux_l = []
+    handle_l = []
 
-    for nn, time in enumerate( fig_o.time ):
+    for ii, time in enumerate( fig_o.time ):
 
         print('time=',time)
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
@@ -315,7 +312,6 @@ def figure9():
 
         # mantle potential temperature
         y_temp = myjson_o.get_scaled_field_values( 'temp_b' )
-        temp_l.append( y_temp[0] )
 
         # mantle surface temperature
         tempsurf = myjson_o.get_scaled_field_values( 'temperature_surface' )
@@ -334,10 +330,48 @@ def figure9():
 
     data_a = np.reshape( data_l, (-1,3) )
 
-    # set time offset to zero, such that t0 defines the time at which the
+    # set time offset to zero; tprime0 defines the time at which the
     # rheological front is at the CMB
     tprime0 = data_a[0,0]
     data_a[:,0] -= tprime0
+
+    # ---- surface temperature ----
+
+    # surface temperature evolution from start to cut off temperature
+    # of around 1400 K
+    # used for plotting and to determine first set of fitting parameters:
+    # Psi and C (see manuscript)
+    surft_a = np.column_stack( (fig_o.time, tempsurf_l) )
+    ind = np.where( surft_a[:,1] > 1400.0 )[0]
+    surft0 = surft_a[:,0][ind]
+    surft1 = surft_a[:,1][ind]
+    # reasonable initial guess is quite important
+    popt, pcov = curve_fit( log_func(nn), surft0, surft1, maxfev=80000, p0=[1.0E-13,1.0E-11]  )
+
+    # based on the fit to the whole range of data, determine the value
+    # of the surface temperature at tprime0
+    surftC = log_func(nn)( tprime0, *popt )
+    surftC = surftC**(1.0/expo)
+    print( surftC )
+
+    # TODO: got to here
+    sys.exit(0)
+
+    # surface temperature evolution (for getting fitting parameters)
+    ttemp2_a = np.column_stack( (fig_o.time, tempsurf_l ) )
+    ind2 = np.where( (ttemp_a[:,1] > 1400.0) & (fig_o.time > tprime0) )
+    temp0fit2 = ttemp2_a[:,0][ind2]
+    temp1fit2 = ttemp2_a[:,1][ind2]
+    temp0fit2 -= tprime0
+    popt02, pcov02 = curve_fit( log_func(nn), temp0fit2, np.log(temp1fit2), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
+
+    # transfer first into second
+    # TODO: got to here
+    popt02[0] = popt[0]
+    popt02[1] = cc
+
+    # ---- end surface temperature ----
+
 
     #----------------------------------------------------------------
     # trim data between a maximum and minimum pressure for plotting
@@ -409,7 +443,14 @@ def figure9():
     temp0fit = ttemp_a[:,0][ind]
     temp1fit = ttemp_a[:,1][ind]
     # getting the initial guess reasonable is important for fitting
-    popt, pcov = curve_fit( log_func4, temp0fit, np.log(temp1fit), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
+    popt, pcov = curve_fit( log_func(nn), temp0fit, np.log(temp1fit), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
+
+    print( popt)
+    sys.exit(0)
+
+    # find intercept at tprime
+    cc = log_func(nn)( tprime0, *popt )
+    cc = np.exp(cc)**(-3.0)
 
     # surface temperature evolution (for getting fitting parameters)
     ttemp2_a = np.column_stack( (fig_o.time, tempsurf_l ) )
@@ -417,18 +458,18 @@ def figure9():
     temp0fit2 = ttemp2_a[:,0][ind2]
     temp1fit2 = ttemp2_a[:,1][ind2]
     temp0fit2 -= tprime0
-    popt02, pcov02 = curve_fit( log_func4, temp0fit2, np.log(temp1fit2), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
+    popt02, pcov02 = curve_fit( log_func(nn), temp0fit2, np.log(temp1fit2), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
 
     # transfer first into second
     # TODO: got to here
     popt02[0] = popt[0]
-
+    popt02[1] = cc
 
     trans = transforms.blended_transform_factory(
         ax3.transData, ax3.transAxes)
     ax3.plot( temp0fit, temp1fit, marker='o', markersize=4.0, color='0.8' )
-    h1, = ax3.plot( temp0fit, np.exp(log_func4( temp0fit, *popt )), '-', color='black', linewidth=2, label=r'Fit' )
-    h2, = ax3.plot( temp0fit2+tprime0, np.exp(log_func4( temp0fit2, *popt02 )), ':', color='blue', linewidth=2, label=r'Fit2')
+    h1, = ax3.plot( temp0fit, np.exp(log_func(nn)( temp0fit, *popt )), '-', color='black', linewidth=2, label=r'Fit' )
+    h2, = ax3.plot( temp0fit2+tprime0, np.exp(log_func(nn)( temp0fit2, *popt02 )), ':', color='blue', linewidth=2, label=r'Fit2')
     ax3.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax3.text( tprime0, 0.82, '$t^\prime_0$', ha='right', va='bottom', transform = trans )
     ax3.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
