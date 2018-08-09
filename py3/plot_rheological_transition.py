@@ -12,29 +12,39 @@ import os
 logger = logging.getLogger(__name__)
 
 #===================================================================
-def exp_func4( x, a, b ):
-    exp = 1.0/(1.0-4.0)
-    return (a*x+b)**exp
+def log_func4( x, a, b):
+    n = 4.0
+    exp = 1.0/(1.0-n)
+    out = a*x+b
+    return exp * np.log(out)
 
 #===================================================================
-def x_from_exp_func4( y, a, b ):
-    exp = 1.0/(1.0-4.0)
-    return (y**(1.0/exp)-b)/a
+def exp_func4( x, a, b, c=0 ):
+    '''fitting function for radiative cooling (n=4)'''
+    n = 4.0
+    exp = 1.0/(1.0-n)
+    return (a*x+b)**exp + c
 
 #===================================================================
-#def log_exp_func4( x, a, b ):
-#    exp = 1.0/(1.0-4.0)
-#    return exp* np.log( a*x+b )
+def x_from_exp_func4( y, a, b, c=0 ):
+    '''reverse fitting function for radiative cooling (n=4)'''
+    n = 4.0
+    exp = 1.0/(1.0-n)
+    return ((y-c)**(1.0/exp)-b)/a
 
 #===================================================================
-def exp_func( x, a, b, c ):
-    exp = 1.0/(1.0-4.0)
-    return (a*x+b)**exp+c
+def exp_func0( x, a, b, c=0 ):
+    '''fitting function for constant heat flux (n=0)'''
+    n = 0.0
+    exp = 1.0/(1.0-n)
+    return (a*x+b)**exp + c
 
-#====================================================================
-def x_from_exp_func( y, a, b, c ):
-    exp = 1.0/(1.0-4.0)
-    return (((y-c)**(1.0/exp))-b)/a
+#===================================================================
+def x_from_exp_func0( y, a, b, c=0 ):
+    '''reverse fitting function for constant heat flux (n=0)'''
+    n = 0.0
+    exp = 1.0/(1.0-n)
+    return ((y-c)**(1.0/exp)-b)/a
 
 #====================================================================
 def figure7( times ):
@@ -122,7 +132,7 @@ def figure8():
 
     width = 4.7747/2*3
     height = 4.7747/2
-    fig_o = su.FigureData( 1, 3, width, height, 'rheological_transition' )
+    fig_o = su.FigureData( 1, 3, width, height, 'rheological_front' )
 
     ax0 = fig_o.ax[0]
     ax1 = fig_o.ax[1]
@@ -161,7 +171,7 @@ def figure8():
         if ind is not None:
             data_l.append( (xx_pres_b[ind], y_temp[ind], time) )
 
-        # break loop once the rheological transition has reached
+        # break loop once the rheological front has reached
         # the surface
         if ind == 1:
             break
@@ -171,10 +181,10 @@ def figure8():
     data_a = np.reshape( data_l, (-1,3) )
 
     # set time offset to zero, such that t0 defines the time at which the
-    # rheological transition is at the CMB
+    # rheological front is at the CMB
     data_a[:,2] -= data_a[0,2]
 
-    # just fit the part where the rheological transition is advancing
+    # just fit the part where the rheological front is advancing
     # through the magma ocean
     #polydegree = 3 # hard-coded
     #pres_coeff = np.polyfit( data_a[:,2], data_a[:,0], polydegree ) # pressure
@@ -198,9 +208,9 @@ def figure8():
     vmax = np.max( data_a[:,2] )
     vmin = np.min( data_a[:,2] )
 
-    print( '---------------------------------------------------' )
-    print( 'rheological transition advancing through the mantle' )
-    print( '---------------------------------------------------' )
+    print( '----------------------------------------------' )
+    print( 'rheological front advancing through the mantle' )
+    print( '----------------------------------------------' )
     print( 'fitting coefficients' % vars() )
     print( 'between t_min= %(tmin)s yrs and t_max= %(tmax)s yrs' % vars() )
     print( 'pres_coeff=', popt )
@@ -247,6 +257,9 @@ def figure9():
     # flag to enable data output
     EXPORT = True
 
+    # exponent of surface heat flux
+    nn = 4.0
+
     # plot low pressure (linear) extension to cooling profile
     PLOT_LOWP = False
 
@@ -254,6 +267,18 @@ def figure9():
     height = 4.7747
     fig_o = su.FigureData( 2, 2, width, height, 'rheological_front' )
     fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.4)
+
+    # choose correct fitting function based on nn
+    if nn==4.0:
+        exp_func = exp_func4
+        x_from_exp_func = x_from_exp_func4
+    elif nn==0.0:
+        exp_func = exp_func0
+        x_from_exp_func = x_from_exp_func0
+    else:
+        msg = 'exp_func not defined for nn={}'.format( nn )
+        print( msg )
+        sys.exit(0)
 
     ax0 = fig_o.ax[1][0]
     ax1 = fig_o.ax[1][1]
@@ -310,7 +335,7 @@ def figure9():
     data_a = np.reshape( data_l, (-1,3) )
 
     # set time offset to zero, such that t0 defines the time at which the
-    # rheological transition is at the CMB
+    # rheological front is at the CMB
     tprime0 = data_a[0,0]
     data_a[:,0] -= tprime0
 
@@ -343,8 +368,10 @@ def figure9():
     popt_Trh, pcov_Trh = curve_fit( exp_func, timeh_a, temph_a, maxfev=80000, p0=[-1e-4,1.0,4000.0] )
     tprime1 = x_from_exp_func( 0.0, *popt_Prh )
     tprime1abs = tprime1 + tprime0
-    print( 'high data: start of rheological transition advancing', tprime0 )
-    print( 'high data: end of rheological transition advancing', tprime1abs )
+    print( 'pressure transition (PCUT) is at {} GPa'.format( PCUT ) )
+    print()
+    print( 'high data: start of rheological front advancing', tprime0 )
+    print( 'high data: end of rheological front advancing', tprime1abs )
     print()
     print( 'R-squared information for P_r' )
     print( '-----------------------------' )
@@ -355,36 +382,53 @@ def figure9():
     print( '-----------------------------' )
     RsqrTrh = Rsquared( temph_a, exp_func( timeh_a, *popt_Trh ) )
     RsqrTrh = np.round( RsqrTrh,4)
-
-    # low pressure data (P<=PCUT)
-    indl = np.where( data_a[:,1]<PCUT )[0]
-    timel_a = data_a[:,0][indl] # time
-    presl_a = data_a[:,1][indl] # pressure
-    templ_a = data_a[:,2][indl] # temperature
-
-    popt_Prl, pcov_Prl = curve_fit( exp_func, timel_a, presl_a, maxfev=80000, p0=[-1.0,1.0,135.0] )
-    popt_Trl, pcov_Trl = curve_fit( exp_func, timel_a, templ_a, maxfev=80000, p0=[-1,1.0,4000.0] )
-    print( 'R-squared information for P_r' )
-    print( '-----------------------------' )
-    RsqrPrl = Rsquared( presl_a, exp_func( timel_a, *popt_Prl ) )
-    RsqrPrl = np.round( RsqrPrl,4)
     print()
-    print( 'R-squared information for T_r' )
-    print( '-----------------------------' )
-    RsqrTrl = Rsquared( templ_a, exp_func( timel_a, *popt_Trl ) )
-    RsqrTrl = np.round( RsqrTrl,4)
 
-    # surface temperature evolution
+    if PLOT_LOWP:
+        # low pressure data (P<=PCUT)
+        indl = np.where( data_a[:,1]<PCUT )[0]
+        timel_a = data_a[:,0][indl] # time
+        presl_a = data_a[:,1][indl] # pressure
+        templ_a = data_a[:,2][indl] # temperature
+
+        popt_Prl, pcov_Prl = curve_fit( exp_func, timel_a, presl_a, maxfev=80000, p0=[-1.0,1.0,135.0] )
+        popt_Trl, pcov_Trl = curve_fit( exp_func, timel_a, templ_a, maxfev=80000, p0=[-1,1.0,4000.0] )
+        print( 'R-squared information for P_r' )
+        print( '-----------------------------' )
+        RsqrPrl = Rsquared( presl_a, exp_func( timel_a, *popt_Prl ) )
+        RsqrPrl = np.round( RsqrPrl,4)
+        print()
+        print( 'R-squared information for T_r' )
+        print( '-----------------------------' )
+        RsqrTrl = Rsquared( templ_a, exp_func( timel_a, *popt_Trl ) )
+        RsqrTrl = np.round( RsqrTrl,4)
+
+    # surface temperature evolution (for plotting)
     ttemp_a = np.column_stack( (fig_o.time, tempsurf_l) )
     ind = np.where( ttemp_a[:,1] > 1400.0 )[0]
     temp0fit = ttemp_a[:,0][ind]
     temp1fit = ttemp_a[:,1][ind]
-    popt, pcov = curve_fit( exp_func4, temp0fit, temp1fit, maxfev=80000 )
+    # getting the initial guess reasonable is important for fitting
+    popt, pcov = curve_fit( log_func4, temp0fit, np.log(temp1fit), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
+
+    # surface temperature evolution (for getting fitting parameters)
+    ttemp2_a = np.column_stack( (fig_o.time, tempsurf_l ) )
+    ind2 = np.where( (ttemp_a[:,1] > 1400.0) & (fig_o.time > tprime0) )
+    temp0fit2 = ttemp2_a[:,0][ind2]
+    temp1fit2 = ttemp2_a[:,1][ind2]
+    temp0fit2 -= tprime0
+    popt02, pcov02 = curve_fit( log_func4, temp0fit2, np.log(temp1fit2), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
+
+    # transfer first into second
+    # TODO: got to here
+    popt02[0] = popt[0]
+
 
     trans = transforms.blended_transform_factory(
         ax3.transData, ax3.transAxes)
     ax3.plot( temp0fit, temp1fit, marker='o', markersize=4.0, color='0.8' )
-    h1, = ax3.plot( temp0fit, exp_func4( temp0fit, *popt ), '-', color='black', linewidth=2, label=r'Fit' )
+    h1, = ax3.plot( temp0fit, np.exp(log_func4( temp0fit, *popt )), '-', color='black', linewidth=2, label=r'Fit' )
+    h2, = ax3.plot( temp0fit2+tprime0, np.exp(log_func4( temp0fit2, *popt02 )), ':', color='blue', linewidth=2, label=r'Fit2')
     ax3.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax3.text( tprime0, 0.82, '$t^\prime_0$', ha='right', va='bottom', transform = trans )
     ax3.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
@@ -421,7 +465,7 @@ def figure9():
 
     ax0.plot( data_a[:,0][indp], data_a[:,1][indp], marker='o', markersize=4.0, color='0.8' )
     # high pressure fit
-    h2, = ax0.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Prh ), '-', color='black', linewidth=2, label=r'Fit' )
+    h2, = ax0.plot( data_a[:,0][indp], exp_func4( data_a[:,0][indp], *popt_Prh ), '-', color='black', linewidth=2, label=r'Fit' )
     # low pressure fit
     if PLOT_LOWP:
         h3, = ax0.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Prl ), '-', color='black', linewidth=2, label=r'Fit' )
@@ -445,20 +489,26 @@ def figure9():
     ax1.set_ylim( [1500,4500] )
     ax1.yaxis.set_label_coords(-0.2,0.575)
 
-    print()
-    #print( '--------' )
-    #print( 'figure 9' )
-    #print( '--------' )
     print( 'fitting coefficients' % vars() )
     print( '--------------------' )
-    print( 'T0m=', popt )
+    print( 'T0m=', popt, 'for whole temperature range' )
+    print( 'T0m=', popt02, 'for rheological transition at CMB' )
     print( 'between t_min= %(tmin)s yrs and t_max= %(tmax)s yrs' % vars() )
     print( 'Pr coeff high=', popt_Prh )
     print( 'Tr coeff high=', popt_Trh )
-    print( 'Pr coeff low =', popt_Prl )
-    print( 'Tr coeff low =', popt_Trl )
+    if PLOT_LOWP:
+        print( 'Pr coeff low =', popt_Prl )
+        print( 'Tr coeff low =', popt_Trl )
 
     print()
+    print('Parameters for table')
+    Psi_prime = popt_Prh[0]
+    C_prime = popt_Prh[1]
+    D = popt_Prh[2]
+    print( 'Psi_prime=', Psi_prime )
+    print( 'C_prime=', C_prime )
+    print( 'D=', D )
+
     tmax2 = int(np.round(tmax,0))
     intPCUT = int(np.round(PCUT,0))
     print('line below is for copy-paste into table')
