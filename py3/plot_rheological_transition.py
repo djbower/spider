@@ -9,52 +9,94 @@ import argparse
 from scipy.optimize import curve_fit
 import os
 
-logger = logging.getLogger(__name__)
+#====================================================================
+def log_func_Psi_C( expon ):
+    '''Eq 8 in manuscript.  Used to determine Psi and C.'''
+    def log_func( x, *p):
+        y = p[0]*x+p[1]
+        y = expon * np.log(y)
+        return y
+    return log_func
 
-#===================================================================
-def log_func( nn ):
-    def log_func_arg( x, *p):
-        exp = 1.0/(1.0-nn)
-        out = p[0]*x+p[1]
-        y = exp * np.log(out)
-        return np.exp(y)
-    return log_func_arg
+#====================================================================
+def log_func_lambda_T0c( expon, Psi, C ):
+    '''Eq 11 in manuscript.  Used to determine lambda and T0c.'''
+    def log_func( x, *p):
+        y = ( Psi*x + C )**expon # Eq 8 in manuscript for Psi and C
+        y = np.log( p[0] ) + np.log( y - p[1] )
+        return y
+    return log_func
 
-#===================================================================
-def x_from_log_func4( y, a, b ):
-    n = 4.0
-    exp = 1.0/(1.0-n)
-    out = np.exp( y/exp )
-    x = (out - b)/a
-    return x
+#====================================================================
+def log_func_alpha( expon, Psi, C, lambdaa, T0c ):
+    def log_func( x, *p ):
+        Pf = pressure_from_time_rheological_front( x, expon, Psi, C, lambdaa, T0c )
+        y = np.log( T0c + p[0]*Pf )
+        return y
+    return log_func
 
-#===================================================================
-def exp_func4( x, a, b, c=0 ):
-    '''fitting function for radiative cooling (n=4)'''
-    n = 4.0
-    exp = 1.0/(1.0-n)
-    return (a*x+b)**exp + c
+#====================================================================
+def pressure_from_time_rheological_front( time, expon, Psi, C, lambdaa, T0c ):
+    '''pressure of rheological front from time'''
+    y = (Psi*time+C)**expon - T0c
+    y *= lambdaa
+    return y
 
-#===================================================================
-def x_from_exp_func4( y, a, b, c=0 ):
-    '''reverse fitting function for radiative cooling (n=4)'''
-    n = 4.0
-    exp = 1.0/(1.0-n)
-    return ((y-c)**(1.0/exp)-b)/a
+#====================================================================
+def time_from_pressure_rheological_front( pressure, expon, Psi, C, lambdaa, T0c ):
+    '''Inverse calculation of pressure_from_time_rheological_front'''
+    t = ( pressure / lambdaa + T0c ) ** (1.0/expon) - C
+    t /= Psi
+    return t
 
-#===================================================================
-def exp_func0( x, a, b, c=0 ):
-    '''fitting function for constant heat flux (n=0)'''
-    n = 0.0
-    exp = 1.0/(1.0-n)
-    return (a*x+b)**exp + c
+#====================================================================
+def temperature_from_time_rheological_front( time, expon, Psi, C, lambdaa, T0c, alpha ):
+    '''temperature of rheological front from time'''
+    Pf = pressure_from_time_rheological_front( time, expon, Psi, C, lambdaa, T0c )
+    Tf = T0c + alpha * Pf
+    return Tf
 
-#===================================================================
-def x_from_exp_func0( y, a, b, c=0 ):
-    '''reverse fitting function for constant heat flux (n=0)'''
-    n = 0.0
-    exp = 1.0/(1.0-n)
-    return ((y-c)**(1.0/exp)-b)/a
+#====================================================================
+def fit_pressure_rheological_front( ind_a, data_a, expon, Psi, C ):
+
+    time_a = data_a[:,0][ind_a] # time
+    pres_a = data_a[:,1][ind_a] # pressure
+
+    in_func = log_func_lambda_T0c( expon, Psi, C )
+    popt, pcov = curve_fit( in_func, time_a, np.log(pres_a), maxfev=80000, p0=(1.0,1.0) )
+
+    # lambda is a python keyword, hence lambdaa
+    lambdaa = popt[0]
+    T0c = popt[1]
+
+    tprime1 = time_from_pressure_rheological_front( 0.0, expon, Psi, C, lambdaa, T0c )
+    
+    print( 'R-squared information for Pr' )
+    pres_fit = pressure_from_time_rheological_front( time_a, expon, Psi, C, lambdaa, T0c )
+    Rsqr = Rsquared( pres_a, pres_fit )
+    Rsqr = np.round( Rsqr, 4 )
+    #print ('R-squared= {}'.format( Rsqr ) )
+
+    return popt, pcov, tprime1
+
+#====================================================================
+def fit_temperature_rheological_front( ind_a, data_a, expon, Psi, C, lambdaa, T0c ):
+
+    time_a = data_a[:,0][ind_a] # time
+    temp_a = data_a[:,2][ind_a] # temperature
+
+    in_func = log_func_alpha( expon, Psi, C, lambdaa, T0c )
+    popt, pcov = curve_fit( in_func, time_a, np.log(temp_a), maxfev=80000, p0=(1.0) )
+
+    alpha = popt[0]
+
+    print( 'R-squared information for Tr' )
+    temp_fit = temperature_from_time_rheological_front( time_a, expon, Psi, C, lambdaa, T0c, alpha )
+    Rsqr = Rsquared( temp_a, temp_fit )
+    Rsqr = np.round( Rsqr, 4 )
+    #print ('R-squared= {}'.format( Rsqr ) )
+
+    return popt, pcov
 
 #====================================================================
 def figure7( times ):
@@ -271,9 +313,12 @@ def figure9():
     nn = 4.0
     # plot low pressure (linear) extension to cooling profile
     PLOT_LOWP = False
+    # pressure cut-offs for curve fitting and plotting
+    PMIN = 1.0 # GPa
+    PMAX = 135.0 # GPa
 
     # this exponent appears in lots of the equations
-    expo = 1.0/(1.0-nn)
+    expon = 1.0/(1.0-nn)
 
     width = 4.7747
     height = 4.7747
@@ -287,7 +332,7 @@ def figure9():
 
     fig_o.time = su.get_all_output_times()
 
-    # get pressure in GPa
+    # pressure in GPa
     time = fig_o.time[0]
     myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
     xx_pres_b = myjson_o.get_scaled_field_values('pressure_b')
@@ -295,7 +340,7 @@ def figure9():
 
     data_l = []
     tempsurf_l = []
-    flux_l = []
+    fluxsurf_l = []
     handle_l = []
 
     for ii, time in enumerate( fig_o.time ):
@@ -319,7 +364,7 @@ def figure9():
 
         # surface flux
         y_flux = myjson_o.get_scaled_field_values( 'Jtot_b' )
-        flux_l.append( y_flux[0] )
+        fluxsurf_l.append( y_flux[0] )
 
         # find the pressure(s) that correspond(s) to the cross-over point
         pres = su.find_xx_for_yy( xx_pres_b, yy1, yy2 )
@@ -335,57 +380,62 @@ def figure9():
     tprime0 = data_a[0,0]
     data_a[:,0] -= tprime0
 
+    # -----------------------------
     # ---- surface temperature ----
 
     # surface temperature evolution from start to cut off temperature
-    # of around 1400 K
-    # used for plotting and to determine first set of fitting parameters:
+    # of around 1400 K for plotting first set of fitting parameters
     # Psi and C (see manuscript)
     surft_a = np.column_stack( (fig_o.time, tempsurf_l) )
-    ind = np.where( surft_a[:,1] > 1400.0 )[0]
-    surft0 = surft_a[:,0][ind]
-    surft1 = surft_a[:,1][ind]
+    ind_tcut = np.where( surft_a[:,1] > 1400.0 )[0]
+    surft0_a = surft_a[:,0][ind_tcut] # time
+    surft1_a = surft_a[:,1][ind_tcut] # surface temperature
     # reasonable initial guess is quite important
-    popt, pcov = curve_fit( log_func(nn), surft0, surft1, maxfev=80000, p0=[1.0E-13,1.0E-11]  )
+    popt, pcov = curve_fit( log_func_Psi_C(expon), surft0_a, np.log(surft1_a), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
 
     # based on the fit to the whole range of data, determine the value
     # of the surface temperature at tprime0
-    surftC = log_func(nn)( tprime0, *popt )
-    surftC = surftC**(1.0/expo)
-    print( surftC )
-
-    # TODO: got to here
-    sys.exit(0)
-
-    # surface temperature evolution (for getting fitting parameters)
-    ttemp2_a = np.column_stack( (fig_o.time, tempsurf_l ) )
-    ind2 = np.where( (ttemp_a[:,1] > 1400.0) & (fig_o.time > tprime0) )
-    temp0fit2 = ttemp2_a[:,0][ind2]
-    temp1fit2 = ttemp2_a[:,1][ind2]
-    temp0fit2 -= tprime0
-    popt02, pcov02 = curve_fit( log_func(nn), temp0fit2, np.log(temp1fit2), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
-
-    # transfer first into second
-    # TODO: got to here
-    popt02[0] = popt[0]
-    popt02[1] = cc
+    logsurftC = log_func_Psi_C(expon)( tprime0, *popt )
+    # temperature (K) at t'=0
+    surftC = np.exp( logsurftC )
+    print( 'surftC= {}'.format(surftC) )
+    # the parameter C in Eq. 8 is raised to a power
+    param_C = surftC**(1.0/expon)
+    #print( 'param_C= {}'.format(param_C) )
+    # the 1st fitting parameter (cooling rate) is the same
+    # the 2nd fitting parameter (constant) needs to be updated
+    #     to account for the time shift to t'=0
+    popt2 = (popt[0], param_C)
+    # fitting parameters for Psi and C
+    print( 'Psi= {}, C= {}'.format( *popt2 ) )
 
     # ---- end surface temperature ----
+    # ---------------------------------
 
 
-    #----------------------------------------------------------------
-    # trim data between a maximum and minimum pressure for plotting
-    PMIN = 1.0 # GPa
-    PMAX = 135.0 # GPa
-    ind = np.where( (data_a[:,1]<PMAX) & (data_a[:,1]>PMIN) )[0]
-    time_a = data_a[:,0][ind] # time
-    pres_a = data_a[:,1][ind] # pressure
-    temp_a = data_a[:,2][ind] # temperature
+    # ---------------------------
+    # ---- surface heat flux ----
+
+    surff_a = np.column_stack( (fig_o.time, fluxsurf_l) )
+    #ind = tflux_a[:,0] <= tprime1abs
+    surff0_a = surff_a[:,0][ind_tcut]
+    surff1_a = surff_a[:,1][ind_tcut]
+
+    # --- end of surface heat flux ----
+    # --------------------------------- 
+
+
+    # ---------------------------
+    # ---- rheological front ----
+    ind_pcut = np.where( (data_a[:,1]<PMAX) & (data_a[:,1]>PMIN) )[0]
+    # time offset has already been applied, so time is 0 at t'=0
+    time_a = data_a[:,0][ind_pcut] # time
+    pres_a = data_a[:,1][ind_pcut] # pressure
+    temp_a = data_a[:,2][ind_pcut] # temperature
     # save data to text files for plotting
     if EXPORT:
         np.savetxt( 'Pr.dat', np.column_stack((time_a,pres_a)))
         np.savetxt( 'Tr.dat', np.column_stack((time_a,temp_a)))
-    #----------------------------------------------------------------
 
     # due to the change in the gradient of the melting curve around 20 GPa,
     # we should formally fit the cooling trajectory using two different
@@ -393,83 +443,47 @@ def figure9():
     PCUT = 20.0 # GPa
 
     # high pressure data (P>PCUT)
-    indh = np.where( data_a[:,1]>PCUT )[0]
-    timeh_a = data_a[:,0][indh] # time
-    presh_a = data_a[:,1][indh] # pressure
-    temph_a = data_a[:,2][indh] # temperature
-
-    popt_Prh, pcov_Prh = curve_fit( exp_func, timeh_a, presh_a, maxfev=80000, p0=[-1e-4,1.0,135.0] )
-    popt_Trh, pcov_Trh = curve_fit( exp_func, timeh_a, temph_a, maxfev=80000, p0=[-1e-4,1.0,4000.0] )
-    tprime1 = x_from_exp_func( 0.0, *popt_Prh )
+    ind_a = np.where( data_a[:,1]>PCUT )[0]
+    popt3, pcov3, tprime1 = fit_pressure_rheological_front( ind_a, data_a, expon, *popt2 )
     tprime1abs = tprime1 + tprime0
-    print( 'pressure transition (PCUT) is at {} GPa'.format( PCUT ) )
-    print()
-    print( 'high data: start of rheological front advancing', tprime0 )
-    print( 'high data: end of rheological front advancing', tprime1abs )
-    print()
-    print( 'R-squared information for P_r' )
-    print( '-----------------------------' )
-    RsqrPrh = Rsquared( presh_a, exp_func( timeh_a, *popt_Prh ) )
-    RsqrPrh = np.round( RsqrPrh,4)
-    print()
-    print( 'R-squared information for T_r' )
-    print( '-----------------------------' )
-    RsqrTrh = Rsquared( temph_a, exp_func( timeh_a, *popt_Trh ) )
-    RsqrTrh = np.round( RsqrTrh,4)
-    print()
+    print( 'start of rheological front advancing', tprime0 )
+    print( 'end of rheological front advancing', tprime1abs )
 
-    if PLOT_LOWP:
+    # option to plot another linear segment, since a change in the
+    # gradient of the melting curve will break the constant
+    # gradient assumption (lambdaa)
+    #if PLOT_LOWP:
         # low pressure data (P<=PCUT)
-        indl = np.where( data_a[:,1]<PCUT )[0]
-        timel_a = data_a[:,0][indl] # time
-        presl_a = data_a[:,1][indl] # pressure
-        templ_a = data_a[:,2][indl] # temperature
+        #indl = np.where( data_a[:,1]<PCUT )[0]
+        #pop4, pcov4, tprime3 = fit_pressure_rheological_front( ind_a, data_a, expon, *popt2 )
+        #tprime3abs = tprime3 + tprime0
 
-        popt_Prl, pcov_Prl = curve_fit( exp_func, timel_a, presl_a, maxfev=80000, p0=[-1.0,1.0,135.0] )
-        popt_Trl, pcov_Trl = curve_fit( exp_func, timel_a, templ_a, maxfev=80000, p0=[-1,1.0,4000.0] )
-        print( 'R-squared information for P_r' )
-        print( '-----------------------------' )
-        RsqrPrl = Rsquared( presl_a, exp_func( timel_a, *popt_Prl ) )
-        RsqrPrl = np.round( RsqrPrl,4)
-        print()
-        print( 'R-squared information for T_r' )
-        print( '-----------------------------' )
-        RsqrTrl = Rsquared( templ_a, exp_func( timel_a, *popt_Trl ) )
-        RsqrTrl = np.round( RsqrTrl,4)
+    # clarify parameters
+    # expon = expon
+    # nn = nn
+    Psi = popt2[0]
+    C = popt2[1]
+    lambdaa = popt3[0]
+    T0c = popt3[1]
 
-    # surface temperature evolution (for plotting)
-    ttemp_a = np.column_stack( (fig_o.time, tempsurf_l) )
-    ind = np.where( ttemp_a[:,1] > 1400.0 )[0]
-    temp0fit = ttemp_a[:,0][ind]
-    temp1fit = ttemp_a[:,1][ind]
-    # getting the initial guess reasonable is important for fitting
-    popt, pcov = curve_fit( log_func(nn), temp0fit, np.log(temp1fit), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
+    # fit temperature of the rheological front
+    popt4, pcov4 = fit_temperature_rheological_front( ind_a, data_a, expon, Psi, C, lambdaa, T0c )
+    alpha = popt4[0]
 
-    print( popt)
-    sys.exit(0)
-
-    # find intercept at tprime
-    cc = log_func(nn)( tprime0, *popt )
-    cc = np.exp(cc)**(-3.0)
-
-    # surface temperature evolution (for getting fitting parameters)
-    ttemp2_a = np.column_stack( (fig_o.time, tempsurf_l ) )
-    ind2 = np.where( (ttemp_a[:,1] > 1400.0) & (fig_o.time > tprime0) )
-    temp0fit2 = ttemp2_a[:,0][ind2]
-    temp1fit2 = ttemp2_a[:,1][ind2]
-    temp0fit2 -= tprime0
-    popt02, pcov02 = curve_fit( log_func(nn), temp0fit2, np.log(temp1fit2), maxfev=80000, p0=[1.0E-13,1.0E-11]  )
-
-    # transfer first into second
-    # TODO: got to here
-    popt02[0] = popt[0]
-    popt02[1] = cc
+    # only need to plot until time that rheological front reaches the
+    # surface (up to tprime1)
+    rel_ind = time_a <= tprime1
+    abs_ind = surft0_a <= tprime1abs
+    time_rf_a = time_a[rel_ind]
+    time_rf_abs_a = surft0_a[abs_ind]
 
     trans = transforms.blended_transform_factory(
         ax3.transData, ax3.transAxes)
-    ax3.plot( temp0fit, temp1fit, marker='o', markersize=4.0, color='0.8' )
-    h1, = ax3.plot( temp0fit, np.exp(log_func(nn)( temp0fit, *popt )), '-', color='black', linewidth=2, label=r'Fit' )
-    h2, = ax3.plot( temp0fit2+tprime0, np.exp(log_func(nn)( temp0fit2, *popt02 )), ':', color='blue', linewidth=2, label=r'Fit2')
+    ax3.plot( surft0_a[abs_ind], surft1_a[abs_ind], marker='o', markersize=4.0, color='0.8' )
+    surft_fit = np.exp( log_func_Psi_C(expon)( time_rf_a, *popt2 ) )
+    h1, = ax3.plot( tprime0 + time_rf_a, surft_fit, ':', color='blue', linewidth=2, label=r'Fit2' )
+    surft_fit2 = np.exp( log_func_Psi_C(expon)( time_rf_abs_a, *popt ) )
+    h2, = ax3.plot( time_rf_abs_a, surft_fit2, '-', color='black', linewidth=2, label=r'Fit')
     ax3.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax3.text( tprime0, 0.82, '$t^\prime_0$', ha='right', va='bottom', transform = trans )
     ax3.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
@@ -482,12 +496,9 @@ def figure9():
     ax3.yaxis.set_label_coords(-0.2,0.575)
 
     # surface heat flux evolution
-    tflux_a = np.column_stack( (fig_o.time, flux_l) )
-    flux0fit = tflux_a[:,0][ind]
-    flux1fit = tflux_a[:,1][ind]
     trans = transforms.blended_transform_factory(
         ax2.transData, ax2.transAxes)
-    h1, = ax2.semilogy( flux0fit, flux1fit, marker='o', markersize=4.0, color='0.8' )
+    h1, = ax2.semilogy( surff0_a[abs_ind], surff1_a[abs_ind], marker='o', markersize=4.0, color='0.8' )
     ax2.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax2.text( tprime0, 0.82, '$t^\prime_0$', ha='right', va='bottom', transform = trans )
     ax2.axvline( tprime1abs, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
@@ -505,11 +516,11 @@ def figure9():
     vmin = np.min( data_a[:,0][indp] )
 
     ax0.plot( data_a[:,0][indp], data_a[:,1][indp], marker='o', markersize=4.0, color='0.8' )
-    # high pressure fit
-    h2, = ax0.plot( data_a[:,0][indp], exp_func4( data_a[:,0][indp], *popt_Prh ), '-', color='black', linewidth=2, label=r'Fit' )
+    Pf_fit = pressure_from_time_rheological_front( data_a[:,0][indp], expon, Psi, C, lambdaa, T0c )
+    h2, = ax0.plot( data_a[:,0][indp], Pf_fit, '-', color='black', linewidth=2, label=r'Fit' )
     # low pressure fit
-    if PLOT_LOWP:
-        h3, = ax0.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Prl ), '-', color='black', linewidth=2, label=r'Fit' )
+    #if PLOT_LOWP:
+    #    h3, = ax0.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Prl ), '-', color='black', linewidth=2, label=r'Fit' )
     title = r'(c) $P_f(t^\prime)$, GPa'
     yticks = [0,50,100,150]
     fig_o.set_myaxes( ax0, title=title, ylabel='$P_f$', xlabel='$t^\prime$ (yrs)', yticks=yticks )
@@ -517,12 +528,11 @@ def figure9():
     ax0.yaxis.set_label_coords(-0.2,0.5)
 
     ax1.plot( data_a[:,0][indp], data_a[:,2][indp], marker='o', markersize=4.0, color='0.8' )
-    # high pressure fit
-    h2, = ax1.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Trh ), '-', color='black', linewidth=2, label=r'Fit' )
+    Tf_fit = temperature_from_time_rheological_front( data_a[:,0][indp], expon, Psi, C, lambdaa, T0c, alpha )
+    h2, = ax1.plot( data_a[:,0][indp], Tf_fit, '-', color='black', linewidth=2, label=r'Fit' )
     # low pressure fit
-    if PLOT_LOWP:
-        h3, = ax1.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Trl ), '-', color='black', linewidth=2, label=r'Fit' )
-
+    #if PLOT_LOWP:
+    #    h3, = ax1.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Trl ), '-', color='black', linewidth=2, label=r'Fit' )
     title = r'(d) $T_f(t^\prime)$, GPa'
     yticks = [2000,3000,4000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$T_f$', yticks=yticks, xlabel='$t^\prime$ (yrs)' )
@@ -530,30 +540,20 @@ def figure9():
     ax1.set_ylim( [1500,4500] )
     ax1.yaxis.set_label_coords(-0.2,0.575)
 
-    print( 'fitting coefficients' % vars() )
-    print( '--------------------' )
-    print( 'T0m=', popt, 'for whole temperature range' )
-    print( 'T0m=', popt02, 'for rheological transition at CMB' )
-    print( 'between t_min= %(tmin)s yrs and t_max= %(tmax)s yrs' % vars() )
-    print( 'Pr coeff high=', popt_Prh )
-    print( 'Tr coeff high=', popt_Trh )
-    if PLOT_LOWP:
-        print( 'Pr coeff low =', popt_Prl )
-        print( 'Tr coeff low =', popt_Trl )
+    #tmax2 = int(np.round(tmax,0))
+    #intPCUT = int(np.round(PCUT,0))
+    #print('line below is for copy-paste into table')
+    #print( '{:d} & {:d} & {:e} & {:e} & {:e} & {:0.4f} & {:e} & {:e} & {:e} & {:0.4f}'.format(tmax2,intPCUT,popt_Prh[0], popt_Prh[1], popt_Prh[2],RsqrPrh,popt_Trh[0],popt_Trh[1],popt_Trh[2],RsqrTrh))
 
     print()
-    print('Parameters for table')
-    Psi_prime = popt_Prh[0]
-    C_prime = popt_Prh[1]
-    D = popt_Prh[2]
-    print( 'Psi_prime=', Psi_prime )
-    print( 'C_prime=', C_prime )
-    print( 'D=', D )
-
-    tmax2 = int(np.round(tmax,0))
-    intPCUT = int(np.round(PCUT,0))
-    print('line below is for copy-paste into table')
-    print( '{:d} & {:d} & {:e} & {:e} & {:e} & {:0.4f} & {:e} & {:e} & {:e} & {:0.4f}'.format(tmax2,intPCUT,popt_Prh[0], popt_Prh[1], popt_Prh[2],RsqrPrh,popt_Trh[0],popt_Trh[1],popt_Trh[2],RsqrTrh))
+    print( 'Fitting coefficients' )
+    print( '--------------------' )
+    print( 'n= {}'.format(nn) )
+    print( 'Psi= {}'.format(Psi) )
+    print( 'C= {}'.format(C) )
+    print( 'lambda= {}'.format(lambdaa) )
+    print( 'T0c= {}'.format(T0c) )
+    print( 'alpha= {}'.format(alpha) )
 
     fig_o.savefig(9)
 
