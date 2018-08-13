@@ -311,6 +311,7 @@ def figure9():
     EXPORT = True
     # exponent of surface heat flux
     nn = 4.0
+    #nn = 0.0
     # plot low pressure (linear) extension to cooling profile
     PLOT_LOWP = False
     # pressure cut-offs for curve fitting and plotting
@@ -387,7 +388,7 @@ def figure9():
     # of around 1400 K for plotting first set of fitting parameters
     # Psi and C (see manuscript)
     surft_a = np.column_stack( (fig_o.time, tempsurf_l) )
-    ind_tcut = np.where( surft_a[:,1] > 1400.0 )[0]
+    ind_tcut = surft_a[:,1] > 1200.0
     surft0_a = surft_a[:,0][ind_tcut] # time
     surft1_a = surft_a[:,1][ind_tcut] # surface temperature
     # reasonable initial guess is quite important
@@ -479,9 +480,9 @@ def figure9():
 
     trans = transforms.blended_transform_factory(
         ax3.transData, ax3.transAxes)
-    ax3.plot( surft0_a[abs_ind], surft1_a[abs_ind], marker='o', markersize=4.0, color='0.8' )
-    surft_fit = np.exp( log_func_Psi_C(expon)( time_rf_a, *popt2 ) )
-    h1, = ax3.plot( tprime0 + time_rf_a, surft_fit, ':', color='blue', linewidth=2, label=r'Fit2' )
+    ax3.plot( surft0_a, surft1_a, marker='o', markersize=4.0, color='0.8' )
+    #surft_fit = np.exp( log_func_Psi_C(expon)( time_rf_a, *popt2 ) )
+    #h1, = ax3.plot( tprime0 + time_rf_a, surft_fit, ':', color='blue', linewidth=2, label=r'Fit2' )
     surft_fit2 = np.exp( log_func_Psi_C(expon)( time_rf_abs_a, *popt ) )
     h2, = ax3.plot( time_rf_abs_a, surft_fit2, '-', color='black', linewidth=2, label=r'Fit')
     ax3.axvline( tprime0, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
