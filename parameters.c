@@ -296,6 +296,25 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* solid viscosity (Pa.s) */
   P->log10visc_sol = 21.0;
+    /*
+     Input parameter Mg_Si from some input file, create variable as correction to solid viscosity as a function of mantle composition in terms of Mg/Si-ratio. Only for top layer.
+     float log10visc_sol_comp_corr;
+     if(Mg_Si <= 0.5){
+        log10visc_sol_comp_corr = 2;
+     } else if (Mg_Si <= 0.7){
+        log10visc_sol_comp_corr = log10f(100 - 96.7*(Mg_Si - 0.5)/0.2);
+     } else if (Mg_Si <= 1.0){
+        log10visc_sol_comp_corr = log10f(3.3 - 2.3*(Mg_Si - 0.7)/0.3);
+     } else if (Mg_Si <= 1.25){
+        log10visc_sol_comp_corr = log10f(1 - 0.967*(Mg_Si - 1.0)/0.25);
+     } else if (Mg_Si <= 1.5){
+        log10visc_sol_comp_corr = log10f(0.033 - 0.023*(Mg_Si - 1.25)/0.25);
+     } else{
+        log10visc_sol_comp_corr = -2;
+     }
+     P->log10visc_sol += log10visc_sol_comp_corr;
+     
+     */
   ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_sol",&P->log10visc_sol,NULL);CHKERRQ(ierr);
   P->log10visc_sol -= C->LOG10VISC;
 
