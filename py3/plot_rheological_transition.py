@@ -24,6 +24,7 @@ def log_func_lambda_T0c( expon, Psi, C ):
     def log_func( x, *p):
         y = ( Psi*x + C )**expon # Eq 8 in manuscript for Psi and C
         y = np.log( p[0] ) + np.log( y - p[1] )
+        #y = p[0] * ( y - p[1] )
         return y
     return log_func
 
@@ -63,7 +64,9 @@ def fit_pressure_rheological_front( ind_a, data_a, expon, Psi, C ):
     pres_a = data_a[:,1][ind_a] # pressure
 
     in_func = log_func_lambda_T0c( expon, Psi, C )
+
     popt, pcov = curve_fit( in_func, time_a, np.log(pres_a), maxfev=80000, p0=(1.0,1.0) )
+    #popt, pcov = curve_fit( in_func, time_a, pres_a, maxfev=80000, p0=(1.0,1.0) )
 
     # lambda is a python keyword, hence lambdaa
     lambdaa = popt[0]
@@ -389,6 +392,7 @@ def figure9():
     # Psi and C (see manuscript)
     surft_a = np.column_stack( (fig_o.time, tempsurf_l) )
     ind_tcut = surft_a[:,1] > 1200.0
+    #ind_tcut = np.where( (surft_a[:,1] > 1200.0) & (surft_a[:,0] > tprime0))[0]
     surft0_a = surft_a[:,0][ind_tcut] # time
     surft1_a = surft_a[:,1][ind_tcut] # surface temperature
     # reasonable initial guess is quite important
