@@ -3,8 +3,9 @@
 #include "lookup.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
-static PetscScalar log_viscosity_mix( PetscScalar, Parameters const * );
-static PetscScalar viscosity_mix_no_skew( PetscScalar, Parameters const * );
+static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, Parameters const *);
+static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, Parameters const * );
+static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const * );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -162,6 +163,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_fwtl, *arr_fwts;
     PetscScalar       fwtl, fwts;
+    PetscScalar       log10visc_sol;
     Lookup const      *L;
     Mesh              *M = &E->mesh;
     Parameters const  *P = &E->parameters;
@@ -255,7 +257,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       /* thermal conductivity */
       arr_cond[i] = combine_matprop( arr_phi[i], P->cond_mel, P->cond_sol );
       /* log viscosity */
-      arr_visc[i] = log_viscosity_mix( arr_phi[i], P );
+      log10visc_sol = get_log10_viscosity_solid( arr_temp[i], arr_pres[i], P );
+      arr_visc[i] = get_log10_viscosity_mix( arr_phi[i], log10visc_sol, P );
 
       ////////////////
       /* melt phase */
@@ -311,7 +314,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
         arr_cond[i] += (1.0-fwts) * P->cond_sol;
         /* viscosity */
         arr_visc[i] *= fwts;
-        arr_visc[i] += (1.0-fwts) * P->log10visc_sol;
+        arr_visc[i] += (1.0-fwts) * log10visc_sol;
       }
 
       /* compute viscosity */
@@ -411,7 +414,60 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar log_viscosity_mix( PetscScalar meltf, Parameters const *P )
+static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, Parameters const *P )
+{
+
+    /* temperature and pressure contribution
+    A(T,P) = (E_a + V_a P) / RT   
+    eta = eta_0 * exp(A)
+    log10(eta) = log10(eta0) + log10(exp(A))
+    log10(eta) = log10(eta0) + A / ln(10)
+
+    Now introduce a temperature offset T0 to pin the reference viscosity
+    to a specific profile
+
+    log10(eta) = log10(eta0) + A(T)/ln(10) - A(T0)/ln10
+    log10(eta) = log10(eta0) + 1/ln(10) (E_a+V_aP)/R (1/T-1/T0)
+    */
+
+    PetscScalar const Ea = P->activation_energy_sol; // activation energy (non-dimensional)
+    PetscScalar const Va = P->activation_volume_sol; // activation volume (non-dimensional)
+    PetscScalar const T0 = P->viscosity_temperature_offset_sol; // temperature offset (non-dimensional)
+
+    PetscScalar B, lvisc;
+
+    lvisc = P->log10visc_sol; // i.e., log10(eta_0)
+
+    B = (Ea + Va*pressure);
+    B *= 1.0 / temperature - 1.0 / T0;
+
+    lvisc += B / PetscLogReal(10);
+
+    /* compositional part below */
+
+    /*  
+     Input parameter Mg_Si from some input file, create variable as correction to solid viscosity as a function of mantle composition in terms of Mg/Si-ratio. Only for top layer.
+     float log10visc_sol_comp_corr;
+     if(Mg_Si <= 0.5){
+        log10visc_sol_comp_corr = 2;
+     } else if (Mg_Si <= 0.7){
+        log10visc_sol_comp_corr = log10f(100 - 96.7*(Mg_Si - 0.5)/0.2);
+     } else if (Mg_Si <= 1.0){
+        log10visc_sol_comp_corr = log10f(3.3 - 2.3*(Mg_Si - 0.7)/0.3);
+     } else if (Mg_Si <= 1.25){
+        log10visc_sol_comp_corr = log10f(1 - 0.967*(Mg_Si - 1.0)/0.25);
+     } else if (Mg_Si <= 1.5){
+        log10visc_sol_comp_corr = log10f(0.033 - 0.023*(Mg_Si - 1.25)/0.25);
+     } else{
+        log10visc_sol_comp_corr = -2;
+     }
+     P->log10visc_sol += log10visc_sol_comp_corr;*/
+
+    return lvisc;
+
+}
+
+static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10visc_sol, Parameters const *P )
 {
     PetscScalar fwt, lvisc;
 
@@ -419,13 +475,13 @@ static PetscScalar log_viscosity_mix( PetscScalar meltf, Parameters const *P )
        critical solid fraction */
     //fwt = viscosity_mix_skew( meltf );
 
-    fwt = viscosity_mix_no_skew( meltf, P );
-    lvisc = fwt * P->log10visc_mel + (1.0 - fwt) * P->log10visc_sol;
+    fwt = get_viscosity_mix_no_skew( meltf, P );
+    lvisc = fwt * P->log10visc_mel + (1.0 - fwt) * log10visc_sol;
 
     return lvisc;
 }
 
-static PetscScalar viscosity_mix_no_skew( PetscScalar meltf, Parameters const *P )
+static PetscScalar get_viscosity_mix_no_skew( PetscScalar meltf, Parameters const *P )
 {
     /* viscosity in mixed phase region with no skew */
 
