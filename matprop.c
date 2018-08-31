@@ -420,6 +420,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const *P )
 {
 
+    PetscScalar Mg_Si0 = 0.9;
+    PetscScalar Mg_Si1 = 1.1;
     /* temperature and pressure contribution
     A(T,P) = (E_a + V_a P) / RT   
     eta = eta_0 * exp(A)
@@ -454,21 +456,37 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
 
     /*
      Input parameter Mg_Si from some input file, create variable as correction to solid viscosity as a function of mantle composition in terms of Mg/Si-ratio. Only for top layer.
-     float log10visc_sol_comp_corr;
-     if(Mg_Si <= 0.5){
-        log10visc_sol_comp_corr = 2;
-     } else if (Mg_Si <= 0.7){
-        log10visc_sol_comp_corr = log10f(100 - 96.7*(Mg_Si - 0.5)/0.2);
-     } else if (Mg_Si <= 1.0){
-        log10visc_sol_comp_corr = log10f(3.3 - 2.3*(Mg_Si - 0.7)/0.3);
-     } else if (Mg_Si <= 1.25){
-        log10visc_sol_comp_corr = log10f(1 - 0.967*(Mg_Si - 1.0)/0.25);
-     } else if (Mg_Si <= 1.5){
-        log10visc_sol_comp_corr = log10f(0.033 - 0.023*(Mg_Si - 1.25)/0.25);
+     float log10visc_sol_comp_corr;*/
+    
+    if(layer == 0){
+     if(Mg_Si0 <= 0.5){
+        lvisc += 2;
+     } else if (Mg_Si0 <= 0.7){
+        lvisc += 2 - 1.4815 * (Mg_Si0 - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
+     } else if (Mg_Si0 <= 1.0){
+        lvisc += 0.5185 * (1 - Mg_Si0)/0.3; // 0.5185 = log10(3.3)
+     } else if (Mg_Si0 <= 1.25){
+        lvisc += -1.4815 * (Mg_Si0 - 1)/0.25; // -1.4815 = log10(0.033)
+     } else if (Mg_Si0 <= 1.5){
+        lvisc += -2 + (0.5185) * (1.5 - Mg_Si0)/0.25; // 0.5185 = log10(0.033) - -2
      } else{
-        log10visc_sol_comp_corr = -2;
+        lvisc += -2;
      }
-     P->log10visc_sol += log10visc_sol_comp_corr;*/
+    } else if(layer == 1)
+        if(Mg_Si1 <= 0.5){
+            lvisc += 2;
+        } else if (Mg_Si1 <= 0.7){
+            lvisc += 2 - 1.4815 * (Mg_Si1 - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
+        } else if (Mg_Si1 <= 1.0){
+            lvisc += 0.5185 * (1 - Mg_Si1)/0.3; // 0.5185 = log10(3.3)
+        } else if (Mg_Si1 <= 1.25){
+            lvisc += -1.4815 * (Mg_Si1 - 1)/0.25; // -1.4815 = log10(0.033)
+        } else if (Mg_Si1 <= 1.5){
+            lvisc += -2 + (0.5185) * (1.5 - Mg_Si1)/0.25; // 0.5185 = log10(0.033) - -2
+        } else{
+            lvisc += -2;
+        }
+    }
 
     return lvisc;
 
