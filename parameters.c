@@ -194,14 +194,12 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_layer_radius",&P->mixing_length_layer_radius,NULL);CHKERRQ(ierr);
   }
     
-    /*
-  Mg_Si0 = 1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si0",&P->mixing_length,NULL);CHKERRQ(ierr);
-  Mg_Si1 = 0.0;
+  P->Mg_Si0 = 1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si0",&P->Mg_Si0,NULL);CHKERRQ(ierr);
+  P->Mg_Si1 = 0.0;
   if ( P->mixing_length == 3){
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si1",&P->mixing_length,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si1",&P->Mg_Si1,NULL);CHKERRQ(ierr);
   }
-     */
 
   /* initial condition */
   P->initial_condition = 1;
