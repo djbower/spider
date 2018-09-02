@@ -91,10 +91,8 @@
 # [3] is conventional as [1] above, but additionally allows you to
 #      specify a mid-mantle interface
 
--mixing_length 1
+-mixing_length 3
 -mixing_length_layer_radius 0.7 # non-dimensional radius
--Mg_Si0 0.7
--Mg_Si1 1.2
 
 # physical parameters
 
@@ -137,6 +135,8 @@
 -log10visc_mel 2.0 # melt viscosity (log10)
 -phi_critical 0.4 # transition melt fraction (non-dimensional)
 -phi_width 0.15 # transition width (non-dimensional)
+-Mg_Si0 0.7
+-Mg_Si1 1.2
 
 # core-mantle boundary condition
 # [1] core-cooling
