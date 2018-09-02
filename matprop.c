@@ -420,8 +420,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const *P )
 {
 
-    PetscScalar Mg_Si0 = 0.9;
-    PetscScalar Mg_Si1 = 1.1;
+    //PetscScalar Mg_Si0 = 0.9;
+    //PetscScalar Mg_Si1 = 1.1;
     /* temperature and pressure contribution
     A(T,P) = (E_a + V_a P) / RT   
     eta = eta_0 * exp(A)
@@ -438,6 +438,8 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
     PetscScalar Ea = P->activation_energy_sol; // activation energy (non-dimensional)
     PetscScalar Va = P->activation_volume_sol; // activation volume (non-dimensional)
     PetscScalar T0 = P->viscosity_temperature_offset_sol; // temperature offset (non-dimensional)
+    PetscScalar Mg_Si0 = P->Mg_Si0;
+    PetscScalar Mg_Si1 = P->Mg_Si1;
 
     PetscScalar B, lvisc;
 
@@ -457,6 +459,10 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
     /*
      Input parameter Mg_Si from some input file, create variable as correction to solid viscosity as a function of mantle composition in terms of Mg/Si-ratio. Only for top layer.
      float log10visc_sol_comp_corr;*/
+
+    /* FIXME: some of the tests might break because this code below will always
+       modify the solid viscosity.  Perhaps we should set Mg_Si0 and Mg_Si1
+       to -1 to turn off compositional effects */
     
     if(layer == 0){
      if(Mg_Si0 <= 0.5){
@@ -472,7 +478,7 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
      } else{
         lvisc += -2;
      }
-    } else if(layer == 1)
+    } else if(layer == 1){
         if(Mg_Si1 <= 0.5){
             lvisc += 2;
         } else if (Mg_Si1 <= 0.7){
