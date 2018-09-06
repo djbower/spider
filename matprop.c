@@ -73,14 +73,17 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
       fwts = arr_fwts_s[i];
 
       /* melt fraction, also truncated here [0,1] */
-      if (arr_phi_s[i] > 1.0){
+      //if (arr_phi_s[i] > 1.0){
         /* superliquidus */
-        arr_phi_s[i] = 1.0;
-      }
-      if (arr_phi_s[i] < 0.0){
+      //  arr_phi_s[i] = 1.0;
+      //}
+      //if (arr_phi_s[i] < 0.0){
         /* subsolidus */
-        arr_phi_s[i] = 0.0;
-      }
+      //  arr_phi_s[i] = 0.0;
+      //}
+
+      /* FIXME: hack to always use solid datatables */
+      arr_phi_s[i] = 0.0;
 
       /////////////////
       /* mixed phase */
@@ -231,14 +234,18 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       fwts = arr_fwts[i];
 
       /* truncate melt fraction */
-      if (arr_phi[i] > 1.0){
+      //if (arr_phi[i] > 1.0){
         /* superliquidus */
-        arr_phi[i] = 1.0;
-      }
-      if (arr_phi[i] < 0.0){
+      //  arr_phi[i] = 1.0;
+      //}
+      //if (arr_phi[i] < 0.0){
         /* subsolidus */
-        arr_phi[i] = 0.0;
-      }
+      //  arr_phi[i] = 0.0;
+      //}
+
+      /* FIXME: hack to always use solid data tables */
+      arr_phi[i] = 0.0;
+
       /////////////////
       /* mixed phase */
       /////////////////
