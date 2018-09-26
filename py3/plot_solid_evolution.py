@@ -142,7 +142,7 @@ def solid_evolution_fig3( times ):
     ax2.set_ylim( [0, 1] )
     units = myjson_o.get_field_units('visc_b')
     title = '(d) Viscosity, ' + units
-    yticks = [1.0E18,1.0E20,1.0E22,1.0E24,1.0E26,1.0E28,1.0E30]
+    yticks = [1.0E20,1.0E22,1.0E24,1.0E26,1.0E28]
     fig_o.set_myaxes( ax3, title=title, xlabel='$P$ (GPa)',
         ylabel='$\eta$', xticks=xticks, xmax=xmax, yticks=yticks, fmt=visc_fmt )
     ax3.yaxis.set_label_coords(-0.075,0.67)
