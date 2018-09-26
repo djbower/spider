@@ -327,12 +327,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
      see that this is true */
   P->activation_volume_sol = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-activation_volume_sol",&P->activation_volume_sol,NULL);CHKERRQ(ierr);
-  P->activation_volume_sol /= Rgas * C->TEMP * C->PRESSURE;
-
-  /* this defines the temperature at which the reference viscosity (log10visc_sol) is tied */
-  P->viscosity_temperature_offset_sol = 1.0; // must be non-zero
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-viscosity_temperature_offset_sol",&P->viscosity_temperature_offset_sol,NULL);CHKERRQ(ierr);
-  P->viscosity_temperature_offset_sol /= C->TEMP;
+  P->activation_volume_sol *= C->PRESSURE;
+  P->activation_volume_sol /= Rgas * C->TEMP;
 
   /* solid conductivity (W/m-K) */
   P->cond_sol = 4.0;
