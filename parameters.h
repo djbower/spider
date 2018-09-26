@@ -135,12 +135,9 @@ typedef struct _Parameters {
     PetscBool SEPARATION;
     PetscBool HRADIO;
     PetscBool HTIDAL;
+    PetscBool SOLID_CONVECTION_ONLY; // ignores melt properties
     PetscInt mixing_length;
     PetscScalar mixing_length_layer_radius;
-    /*
-    PetscScalar Mg_Si0;
-    PetscScalar Mg_Si1;
-     */
     PetscInt initial_condition;
     char ic_filename[PETSC_MAX_PATH_LEN];
     PetscScalar ic_melt_pressure;

@@ -173,19 +173,28 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscStrcpy(P->outputDirectory,"output");CHKERRQ(ierr);
   ierr = PetscOptionsGetString(NULL,NULL,"-outputDirectory",P->outputDirectory,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
 
+  P->SOLID_CONVECTION_ONLY = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-SOLID_CONVECTION_ONLY",&P->SOLID_CONVECTION_ONLY,NULL);CHKERRQ(ierr);
+
   /* Energy terms to include */
   P->CONDUCTION = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-CONDUCTION",&P->CONDUCTION,NULL);CHKERRQ(ierr);
   P->CONVECTION = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-CONVECTION",&P->CONVECTION,NULL);CHKERRQ(ierr);
-  P->MIXING = PETSC_TRUE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-MIXING",&P->MIXING,NULL);CHKERRQ(ierr);
-  P->SEPARATION = PETSC_TRUE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
   P->HRADIO = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-HRADIO",&P->HRADIO,NULL);CHKERRQ(ierr);
   P->HTIDAL = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-HTIDAL",&P->HTIDAL,NULL);CHKERRQ(ierr);
+
+  P->MIXING = PETSC_TRUE;
+  P->SEPARATION = PETSC_TRUE;
+  /* if SOLID_CONVECTION_ONLY, turn off mixed phase energy terms */
+  if( P->SOLID_CONVECTION_ONLY ){
+      P->MIXING = PETSC_FALSE;
+      P->SEPARATION = PETSC_FALSE;
+  }
+  ierr = PetscOptionsGetBool(NULL,NULL,"-MIXING",&P->MIXING,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetBool(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
 
   P->mixing_length = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-mixing_length",&P->mixing_length,NULL);CHKERRQ(ierr);
@@ -194,7 +203,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_layer_radius",&P->mixing_length_layer_radius,NULL);CHKERRQ(ierr);
   }
     
-  P->Mg_Si0 = 1.0;
+  P->Mg_Si0 = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si0",&P->Mg_Si0,NULL);CHKERRQ(ierr);
   P->Mg_Si1 = 0.0;
   if ( P->mixing_length == 3){

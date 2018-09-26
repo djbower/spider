@@ -6,6 +6,8 @@ static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, Parameters const *);
 static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, Parameters const * );
 static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const * );
+static PetscScalar get_melt_fraction( PetscScalar, Parameters const * );
+static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -21,6 +23,27 @@ PetscErrorCode set_capacitance_staggered( Ctx *E )
 
     PetscFunctionReturn(0);
 
+}
+
+static PetscScalar get_melt_fraction( PetscScalar phi, Parameters const *P )
+{
+    /* set melt fraction */
+    if(P->SOLID_CONVECTION_ONLY){ 
+        return 0.0;
+    }
+    else{
+      /* truncate [0,1] */
+      if (phi > 1.0){
+        /* superliquidus */
+        return 1.0;
+      }
+      else if (phi < 0.0){
+        /* subsolidus */
+        return 0.0;
+      }
+      else
+        return phi;
+    }
 }
 
 static PetscErrorCode set_matprop_staggered( Ctx *E )
@@ -72,18 +95,8 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
       fwtl = arr_fwtl_s[i];
       fwts = arr_fwts_s[i];
 
-      /* melt fraction, also truncated here [0,1] */
-      //if (arr_phi_s[i] > 1.0){
-        /* superliquidus */
-      //  arr_phi_s[i] = 1.0;
-      //}
-      //if (arr_phi_s[i] < 0.0){
-        /* subsolidus */
-      //  arr_phi_s[i] = 0.0;
-      //}
-
-      /* FIXME: hack to always use solid datatables */
-      arr_phi_s[i] = 0.0;
+      // melt fraction
+      arr_phi_s[i] = get_melt_fraction( arr_phi_s[i], P );
 
       /////////////////
       /* mixed phase */
@@ -229,22 +242,12 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 
     for(i=ilo; i<ihi; ++i){
 
-      /* for smoothing */
+      // for smoothing
       fwtl = arr_fwtl[i];
       fwts = arr_fwts[i];
 
-      /* truncate melt fraction */
-      //if (arr_phi[i] > 1.0){
-        /* superliquidus */
-      //  arr_phi[i] = 1.0;
-      //}
-      //if (arr_phi[i] < 0.0){
-        /* subsolidus */
-      //  arr_phi[i] = 0.0;
-      //}
-
-      /* FIXME: hack to always use solid data tables */
-      arr_phi[i] = 0.0;
+      // melt fraction
+      arr_phi[i] = get_melt_fraction( arr_phi[i], P );
 
       /////////////////
       /* mixed phase */
@@ -327,10 +330,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       }
 
       /* compute viscosity */
-      /* TODO: this is a weighted log-average (geometric mean) of the
-         melt and solid viscosity.  Option to include temperature
-         dependence, either for individual phases (melt and solid) or
-         just for one phase (probably solid initially) */
       arr_visc[i] = PetscPowScalar( 10.0, arr_visc[i] );
 
       /* other useful material properties */
@@ -427,8 +426,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const *P )
 {
 
-    //PetscScalar Mg_Si0 = 0.9;
-    //PetscScalar Mg_Si1 = 1.1;
     /* temperature and pressure contribution
     A(T,P) = (E_a + V_a P) / RT   
     eta = eta_0 * exp(A)
@@ -458,51 +455,43 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
     B *= 1.0 / temperature - 1.0 / T0;
     lvisc += B / PetscLogReal(10);
 
-    /* TODO: compositional part below */
-    /* here, you can use the fact that layer=0 for a regular layer, and layer=1 for the compositionally distinct layer
-       make sure that your code works for both cases: i.e. a single layer of 0's (no compositional correction),
-       or two layers with 0's and 1's */
+    /* compositional contribution (based on Mg/Si ratio) */
 
-    /*
-     Input parameter Mg_Si from some input file, create variable as correction to solid viscosity as a function of mantle composition in terms of Mg/Si-ratio. Only for top layer.
-     float log10visc_sol_comp_corr;*/
-
-    /* FIXME: some of the tests might break because this code below will always
-       modify the solid viscosity.  Perhaps we should set Mg_Si0 and Mg_Si1
-       to -1 to turn off compositional effects */
-    
+    /* regular (default) layer */
     if(layer == 0){
-     if(Mg_Si0 <= 0.5){
-        lvisc += 2;
-     } else if (Mg_Si0 <= 0.7){
-        lvisc += 2 - 1.4815 * (Mg_Si0 - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
-     } else if (Mg_Si0 <= 1.0){
-        lvisc += 0.5185 * (1 - Mg_Si0)/0.3; // 0.5185 = log10(3.3)
-     } else if (Mg_Si0 <= 1.25){
-        lvisc += -1.4815 * (Mg_Si0 - 1)/0.25; // -1.4815 = log10(0.033)
-     } else if (Mg_Si0 <= 1.5){
-        lvisc += -2 + (0.5185) * (1.5 - Mg_Si0)/0.25; // 0.5185 = log10(0.033) - -2
-     } else{
-        lvisc += -2;
-     }
-    } else if(layer == 1){
-        if(Mg_Si1 <= 0.5){
-            lvisc += 2;
-        } else if (Mg_Si1 <= 0.7){
-            lvisc += 2 - 1.4815 * (Mg_Si1 - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
-        } else if (Mg_Si1 <= 1.0){
-            lvisc += 0.5185 * (1 - Mg_Si1)/0.3; // 0.5185 = log10(3.3)
-        } else if (Mg_Si1 <= 1.25){
-            lvisc += -1.4815 * (Mg_Si1 - 1)/0.25; // -1.4815 = log10(0.033)
-        } else if (Mg_Si1 <= 1.5){
-            lvisc += -2 + (0.5185) * (1.5 - Mg_Si1)/0.25; // 0.5185 = log10(0.033) - -2
-        } else{
-            lvisc += -2;
-        }
+        if(Mg_Si0 > 0.0)
+            lvisc = add_compositional_viscosity( lvisc, Mg_Si0 );
+    }
+
+    /* optional, compositionally distinct layer */
+    if(layer == 1){
+        if(Mg_Si1 > 0.0)
+            lvisc = add_compositional_viscosity( lvisc, Mg_Si1 );
     }
 
     return lvisc;
 
+}
+
+static PetscScalar add_compositional_viscosity( PetscScalar lvisc, PetscScalar Mg_Si ){
+
+    /* These expressions were worked out by Rob Spaargaren as part
+       of his MSc thesis (2018) */
+
+    if(Mg_Si <= 0.5)
+        lvisc += 2;
+    else if (Mg_Si <= 0.7)
+        lvisc += 2 - 1.4815 * (Mg_Si - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
+    else if (Mg_Si <= 1.0)
+        lvisc += 0.5185 * (1 - Mg_Si)/0.3; // 0.5185 = log10(3.3)
+    else if (Mg_Si <= 1.25)
+        lvisc += -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
+    else if (Mg_Si <= 1.5)
+        lvisc += -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
+    else
+        lvisc += -2;
+
+    return lvisc;
 }
 
 static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10visc_sol, Parameters const *P )
@@ -554,9 +543,7 @@ static PetscScalar viscosity_mix_skew( PetscScalar meltf )
 
     return fwt;
 }
-#endif
 
-#if 0
 static PetscScalar zmap( PetscScalar z )
 {
     /* for skewed viscosity profile */

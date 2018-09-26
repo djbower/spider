@@ -50,6 +50,9 @@
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
 -volatile0 1.0E2
 
+# only consider solid-state convection
+-SOLID_CONVECTION_ONLY 1
+
 # energy fluxes and sources to include
 # [0] is off
 # [1] is on
