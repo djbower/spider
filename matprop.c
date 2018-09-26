@@ -431,28 +431,22 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
     eta = eta_0 * exp(A)
     log10(eta) = log10(eta0) + log10(exp(A))
     log10(eta) = log10(eta0) + A / ln(10)
-
-    Now introduce a temperature offset T0 to pin the reference viscosity
-    to a specific profile
-
-    log10(eta) = log10(eta0) + A(T)/ln(10) - A(T0)/ln10
-    log10(eta) = log10(eta0) + 1/ln(10) (E_a+V_aP)/R (1/T-1/T0)
     */
 
     PetscScalar Ea = P->activation_energy_sol; // activation energy (non-dimensional)
     PetscScalar Va = P->activation_volume_sol; // activation volume (non-dimensional)
-    PetscScalar T0 = P->viscosity_temperature_offset_sol; // temperature offset (non-dimensional)
     PetscScalar Mg_Si0 = P->Mg_Si0;
     PetscScalar Mg_Si1 = P->Mg_Si1;
 
     PetscScalar B, lvisc;
 
-    /* reference viscosity at T0 */
+    /* reference viscosity */
     lvisc = P->log10visc_sol; // i.e., log10(eta_0)
 
     /* temperature and pressure contribution */
     B = (Ea + Va*pressure);
-    B *= 1.0 / temperature - 1.0 / T0;
+    B *= 1.0 / temperature;
+
     lvisc += B / PetscLogReal(10);
 
     /* compositional contribution (based on Mg/Si ratio) */
