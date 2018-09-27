@@ -191,8 +191,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   P->MIXING = PETSC_TRUE;
   P->SEPARATION = PETSC_TRUE;
-  /* if SOLID_CONVECTION_ONLY, turn off mixed phase energy terms */
-  if( P->SOLID_CONVECTION_ONLY ){
+  /* mixed phase energy terms */
+  if( P->SOLID_CONVECTION_ONLY || P->LIQUID_CONVECTION_ONLY ){
       P->MIXING = PETSC_FALSE;
       P->SEPARATION = PETSC_FALSE;
   }
