@@ -24,8 +24,8 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-7
--ts_sundials_rtol 1.0e-7
+-ts_sundials_atol 1.0e-9
+-ts_sundials_rtol 1.0e-9
 
 # mesh
 # number of basic nodes
@@ -43,7 +43,7 @@
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
--radius0 6371000.0 # Earth radius
+-radius0 63710.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
@@ -104,7 +104,7 @@
 
 # initial condition
 -ic_adiabat_entropy 1400
--ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
+-ic_dsdr -4.6978890285209187e-05 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
 -ic_surface_entropy 403.0
 -ic_core_entropy 2000.0
@@ -132,8 +132,8 @@
 
 # viscosity
 -activation_energy_sol 300000.0 # J/mol
--activation_volume_sol 4.0E-6 # J/mol/Pa or m^3/mol (value is 1 J/bar/mol)
--log10visc_sol 10.0 # solid viscosity (log10)
+-activation_volume_sol 4.0E-6 # J/mol/Pa or m^3/mol
+-log10visc_sol 11.0 # solid viscosity (log10)
 -log10visc_mel 2.0 # melt viscosity (log10)
 -phi_critical 0.4 # transition melt fraction (non-dimensional)
 -phi_width 0.15 # transition width (non-dimensional)
