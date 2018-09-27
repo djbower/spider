@@ -1,7 +1,7 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 100
+-nstepsmacro 455
 
 # macro step size in years
 -dtmacro_years 100000000
@@ -34,7 +34,7 @@
 # initial condition
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
--initial_condition 1
+-initial_condition 3
 -ic_filename output/dSdr_b_aug_0.m
 
 # all units are SI unless indicated otherwise
@@ -107,7 +107,7 @@
 -ic_dsdr -4.6978890285209187e-05 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
 -ic_surface_entropy 403.0
--ic_core_entropy 2000.0
+-ic_core_entropy -1.0 #2000.0
 
 # static pressure profile derived from Adams-Williamson equation of state
 # these parameters are from fitting PREM in the lower mantle (for Earth)
