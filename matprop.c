@@ -6,7 +6,7 @@ static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, Parameters const *);
 static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, Parameters const * );
 static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const * );
-static PetscScalar get_melt_fraction( PetscScalar, Parameters const * );
+static PetscScalar get_melt_fraction_truncated( PetscScalar );
 static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
@@ -25,25 +25,19 @@ PetscErrorCode set_capacitance_staggered( Ctx *E )
 
 }
 
-static PetscScalar get_melt_fraction( PetscScalar phi, Parameters const *P )
+static PetscScalar get_melt_fraction_truncated( PetscScalar phi )
 {
-    /* set melt fraction */
-    if(P->SOLID_CONVECTION_ONLY){ 
-        return 0.0;
+    /* truncate [0,1] */
+    if (phi > 1.0){
+      /* superliquidus */
+      return 1.0;
     }
-    else{
-      /* truncate [0,1] */
-      if (phi > 1.0){
-        /* superliquidus */
-        return 1.0;
-      }
-      else if (phi < 0.0){
-        /* subsolidus */
-        return 0.0;
-      }
-      else
-        return phi;
+    else if (phi < 0.0){
+      /* subsolidus */
+      return 0.0;
     }
+    else
+      return phi;
 }
 
 static PetscErrorCode set_matprop_staggered( Ctx *E )
@@ -66,6 +60,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 
     PetscFunctionBeginUser;
 
+    // compute melt fraction (not truncated)
     ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->phi_s,S->phi_s,S->fusion_s);CHKERRQ(ierr);
 
@@ -91,68 +86,45 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 
     for(i=ilo_s; i<ihi_s; ++i){
 
-      // for smoothing
-      fwtl = arr_fwtl_s[i];
-      fwts = arr_fwts_s[i];
-
-      // melt fraction
-      arr_phi_s[i] = get_melt_fraction( arr_phi_s[i], P );
-
-      if(P->SOLID_CONVECTION_ONLY){
-          L = &P->solid_prop;
-          arr_rho_s[i] = get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
-          arr_temp_s[i] = get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
-          arr_cp_s[i] = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
-      }
-      else
-      {
-          /////////////////
-          /* mixed phase */
-          /////////////////
-          /* density */
-          arr_rho_s[i] = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
-          arr_rho_s[i] = 1.0 / arr_rho_s[i];
-          /* temperature */
-          arr_temp_s[i] = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
-          /* heat capacity */
-          arr_cp_s[i] = arr_cp_mix_s[i];
-
-          ////////////////
-          /* melt phase */
-          ////////////////
-          if (arr_phi_s[i] > 0.5){
-
-              /* get melt properties */
-              L = &P->melt_prop;
-              /* density */
-              arr_rho_s[i]   *= 1.0 - fwtl;
-              arr_rho_s[i]   += fwtl * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
-              /* temperature */
-              arr_temp_s[i]  *= 1.0 - fwtl;
-              arr_temp_s[i]  += fwtl * get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
-              /* heat capacity */
-              arr_cp_s[i]    *= 1.0 - fwtl;
-              arr_cp_s[i]    += fwtl * get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
-          }
-
-          /////////////////
-          /* solid phase */
-          /////////////////
-          else if (arr_phi_s[i]<=0.5){
-
-              /* get solid properties */
-              L = &P->solid_prop;
-              /* density */
-              arr_rho_s[i]   *= fwts;
-              arr_rho_s[i]   += ( 1.0 - fwts ) * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
-              /* temperature */
-              arr_temp_s[i]  *= fwts;
-              arr_temp_s[i]  += ( 1.0 - fwts ) * get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
-              /* heat capacity */
-              arr_cp_s[i]    *= fwts;
-              arr_cp_s[i]    += ( 1.0 - fwts ) * get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
-          }
+        if(P->SOLID_CONVECTION_ONLY){
+            L = &P->solid_prop;
+            arr_phi_s[i] = 0.0; // by definition
+            arr_rho_s[i] = get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
+            arr_temp_s[i] = get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
+            arr_cp_s[i] = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
         }
+
+        else{
+            /* mixed phase */
+            arr_phi_s[i] = get_melt_fraction_truncated( arr_phi_s[i] );
+            arr_rho_s[i] = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
+            arr_rho_s[i] = 1.0 / arr_rho_s[i];
+            arr_temp_s[i] = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
+            arr_cp_s[i] = arr_cp_mix_s[i];
+            /* melt phase */
+            if (arr_phi_s[i] > 0.5){
+                L = &P->melt_prop;
+                fwtl = arr_fwtl_s[i]; // for smoothing
+                arr_rho_s[i]   *= 1.0 - fwtl;
+                arr_rho_s[i]   += fwtl * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
+                arr_temp_s[i]  *= 1.0 - fwtl;
+                arr_temp_s[i]  += fwtl * get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
+                arr_cp_s[i]    *= 1.0 - fwtl;
+                arr_cp_s[i]    += fwtl * get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
+            }
+            /* solid phase */
+            else if (arr_phi_s[i]<=0.5){
+                L = &P->solid_prop;
+                fwts = arr_fwts_s[i]; // for smoothing
+                arr_rho_s[i]   *= fwts;
+                arr_rho_s[i]   += ( 1.0 - fwts ) * get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
+                arr_temp_s[i]  *= fwts;
+                arr_temp_s[i]  += ( 1.0 - fwts ) * get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
+                arr_cp_s[i]    *= fwts;
+                arr_cp_s[i]    += ( 1.0 - fwts ) * get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
+            }
+        }
+
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s,S->cp_mix_s,&arr_cp_mix_s);CHKERRQ(ierr);
@@ -250,114 +222,70 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 
     for(i=ilo; i<ihi; ++i){
 
-      // for smoothing
-      fwtl = arr_fwtl[i];
-      fwts = arr_fwts[i];
-
-      // melt fraction
-      arr_phi[i] = get_melt_fraction( arr_phi[i], P );
-
       if(P->SOLID_CONVECTION_ONLY){
-        /* get solid properties */
-        L = &P->solid_prop;
-        /* density */
-        arr_rho[i] = get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
-        /* adiabatic temperature gradient */
-        arr_dTdrs[i] = arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
-        /* heat capacity */
-        arr_cp[i] = get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
-        /* temperature */
-        arr_temp[i] = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
-        /* thermal expansion coefficient */
-        arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
-        /* thermal conductivity */
-        arr_cond[i] = P->cond_sol;
-        /* viscosity */
-        arr_visc[i] = get_log10_viscosity_solid( arr_temp[i], arr_pres[i], arr_layer_b[i], P );;
+          L = &P->solid_prop;
+          arr_phi[i] = 0.0; // by definition
+          arr_rho[i] = get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
+          arr_dTdrs[i] = arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
+          arr_cp[i] = get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
+          arr_temp[i] = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
+          arr_alpha[i] = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
+          arr_cond[i] = P->cond_sol;
+          arr_visc[i] = get_log10_viscosity_solid( arr_temp[i], arr_pres[i], arr_layer_b[i], P );;
       }
+
       else{
+          /* mixed phase */
+          arr_phi[i] = get_melt_fraction_truncated( arr_phi[i] );
+          arr_rho[i] = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
+          arr_rho[i] = 1.0 / arr_rho[i];
+          arr_dTdrs[i] = arr_dTdrs_mix[i];
+          arr_cp[i] = arr_cp_mix[i];
+          arr_temp[i] = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
+          arr_alpha[i] = -arr_fusion_rho[i] / arr_fusion_temp[i] / arr_rho[i];
+          arr_cond[i] = combine_matprop( arr_phi[i], P->cond_mel, P->cond_sol );
+          log10visc_sol = get_log10_viscosity_solid( arr_temp[i], arr_pres[i], arr_layer_b[i], P );
+          arr_visc[i] = get_log10_viscosity_mix( arr_phi[i], log10visc_sol, P );
+          /* melt phase */
+          if (arr_phi[i] > 0.5){
+              L = &P->melt_prop;
+              fwtl = arr_fwtl[i]; // for smoothing
+              arr_rho[i] *= 1.0 - fwtl;
+              arr_rho[i] += fwtl * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
+              arr_dTdrs[i] *= 1.0 - fwtl;
+              arr_dTdrs[i] += fwtl * arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
+              arr_cp[i] *= 1.0 - fwtl;
+              arr_cp[i] += fwtl * get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
+              arr_temp[i] *= 1.0 - fwtl;
+              arr_temp[i] += fwtl * get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
+              arr_alpha[i] *= 1.0 - fwtl;
+              arr_alpha[i] += fwtl * get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
+              arr_cond[i] *= 1.0 - fwtl;
+              arr_cond[i] += fwtl * P->cond_mel;
+              arr_visc[i] *= 1.0 - fwtl;
+              arr_visc[i] += fwtl * P->log10visc_mel;
+          }
+          /* solid phase */
+          else if (arr_phi[i] <= 0.5){
+              L = &P->solid_prop;
+              fwts = arr_fwts[i]; // for smoothing
+              arr_rho[i] *= fwts;
+              arr_rho[i] += (1.0-fwts) * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
+              arr_dTdrs[i] *= fwts;
+              arr_dTdrs[i] += (1.0-fwts) * arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
+              arr_cp[i] *= fwts;
+              arr_cp[i] += (1.0-fwts) * get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
+              arr_temp[i] *= fwts;
+              arr_temp[i] += (1.0-fwts) * get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
+              arr_alpha[i] *= fwts;
+              arr_alpha[i] += (1.0-fwts) * get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
+              arr_cond[i] *= fwts;
+              arr_cond[i] += (1.0-fwts) * P->cond_sol;
+              arr_visc[i] *= fwts;
+              arr_visc[i] += (1.0-fwts) * log10visc_sol;
+          }
 
-      /////////////////
-      /* mixed phase */
-      /////////////////
-
-      /* TODO: confirm that this cannot break for any value of i.
-         by inspection, I do not think it can */
-      /* density */
-      arr_rho[i] = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
-      arr_rho[i] = 1.0 / arr_rho[i];
-      /* adiabatic temperature gradient */
-      arr_dTdrs[i] = arr_dTdrs_mix[i];
-      /* heat capacity */
-      arr_cp[i] = arr_cp_mix[i];
-      /* temperature */
-      arr_temp[i] = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
-      /* thermal expansion coefficient */
-      arr_alpha[i] = -arr_fusion_rho[i] / arr_fusion_temp[i] / arr_rho[i];
-      /* thermal conductivity */
-      arr_cond[i] = combine_matprop( arr_phi[i], P->cond_mel, P->cond_sol );
-      /* log viscosity */
-      log10visc_sol = get_log10_viscosity_solid( arr_temp[i], arr_pres[i], arr_layer_b[i], P );
-      arr_visc[i] = get_log10_viscosity_mix( arr_phi[i], log10visc_sol, P );
-
-      ////////////////
-      /* melt phase */
-      ////////////////
-      if (arr_phi[i] > 0.5){
-
-        /* get melt properties */
-        L = &P->melt_prop;
-        /* density */
-        arr_rho[i] *= 1.0 - fwtl;
-        arr_rho[i] += fwtl * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
-        /* adiabatic temperature gradient */
-        arr_dTdrs[i] *= 1.0 - fwtl;
-        arr_dTdrs[i] += fwtl * arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
-        /* heat capacity */
-        arr_cp[i] *= 1.0 - fwtl;
-        arr_cp[i] += fwtl * get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
-        /* temperature */
-        arr_temp[i] *= 1.0 - fwtl;
-        arr_temp[i] += fwtl * get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
-        /* thermal expansion coefficient */
-        arr_alpha[i] *= 1.0 - fwtl;
-        arr_alpha[i] += fwtl * get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
-        /* thermal conductivity */
-        arr_cond[i] *= 1.0 - fwtl;
-        arr_cond[i] += fwtl * P->cond_mel;
-        /* viscosity */
-        arr_visc[i] *= 1.0 - fwtl;
-        arr_visc[i] += fwtl * P->log10visc_mel;
       }
-
-      else if (arr_phi[i] <= 0.5){
-
-        /* get solid properties */
-        L = &P->solid_prop;
-        /* density */
-        arr_rho[i] *= fwts;
-        arr_rho[i] += (1.0-fwts) * get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
-        /* adiabatic temperature gradient */
-        arr_dTdrs[i] *= fwts;
-        arr_dTdrs[i] += (1.0-fwts) * arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
-        /* heat capacity */
-        arr_cp[i] *= fwts;
-        arr_cp[i] += (1.0-fwts) * get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
-        /* temperature */
-        arr_temp[i] *= fwts;
-        arr_temp[i] += (1.0-fwts) * get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
-        /* thermal expansion coefficient */
-        arr_alpha[i] *= fwts;
-        arr_alpha[i] += (1.0-fwts) * get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
-        /* thermal conductivity */
-        arr_cond[i] *= fwts;
-        arr_cond[i] += (1.0-fwts) * P->cond_sol;
-        /* viscosity */
-        arr_visc[i] *= fwts;
-        arr_visc[i] += (1.0-fwts) * log10visc_sol;
-      }
-
-      } // end of not SOLID_CONVECTION_ONLY
 
       /* compute viscosity */
       arr_visc[i] = PetscPowScalar( 10.0, arr_visc[i] );
