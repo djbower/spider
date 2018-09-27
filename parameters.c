@@ -176,6 +176,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->SOLID_CONVECTION_ONLY = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-SOLID_CONVECTION_ONLY",&P->SOLID_CONVECTION_ONLY,NULL);CHKERRQ(ierr);
 
+  P->LIQUID_CONVECTION_ONLY = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-LIQUID_CONVECTION_ONLY",&P->LIQUID_CONVECTION_ONLY,NULL);CHKERRQ(ierr);
+
   /* Energy terms to include */
   P->CONDUCTION = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-CONDUCTION",&P->CONDUCTION,NULL);CHKERRQ(ierr);
@@ -310,7 +313,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->matprop_smooth_width = 1.0E-2;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-matprop_smooth_width",&P->matprop_smooth_width,NULL);CHKERRQ(ierr);
 
-  /* solid viscosity (Pa.s) */
+  /* solid viscosity (Pa.s)
+     this is a prefactor if activation_energy_sol or activation_volume_sol are non-zero */
   P->log10visc_sol = 21.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_sol",&P->log10visc_sol,NULL);CHKERRQ(ierr);
   P->log10visc_sol -= C->LOG10VISC;

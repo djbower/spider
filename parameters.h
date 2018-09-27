@@ -135,7 +135,8 @@ typedef struct _Parameters {
     PetscBool SEPARATION;
     PetscBool HRADIO;
     PetscBool HTIDAL;
-    PetscBool SOLID_CONVECTION_ONLY; // ignores melt properties
+    PetscBool SOLID_CONVECTION_ONLY; // solid convection only
+    PetscBool LIQUID_CONVECTION_ONLY; // liquid convection only
     PetscInt mixing_length;
     PetscScalar mixing_length_layer_radius;
     PetscInt initial_condition;
