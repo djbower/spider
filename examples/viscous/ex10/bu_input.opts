@@ -4,7 +4,7 @@
 -nstepsmacro 455
 
 # macro step size in years
--dtmacro_years 100000000
+-dtmacro_years 10000000
 
 # for default time ranges
 # if one of these is set, then the above time stepping
@@ -24,8 +24,8 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-9
--ts_sundials_rtol 1.0e-9
+-ts_sundials_atol 1.0e-8
+-ts_sundials_rtol 1.0e-8
 
 # mesh
 # number of basic nodes
