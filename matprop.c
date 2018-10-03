@@ -426,13 +426,13 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
     eta = eta_0 * exp(A)
     log10(eta) = log10(eta0) + log10(exp(A))
     log10(eta) = P->log10visc_sol + A/ln(10) */
-    B = 0.0;
+    A = 0.0;
     if(Ea>0.0)
-        B += Ea;
+        A += Ea;
     if(Va>0.0)
-        B += Va*pressure;
-    B *= 1.0 / temperature;
-    lvisc += B / PetscLogReal(10);
+        A += Va*pressure;
+    A *= 1.0 / temperature;
+    lvisc += A / PetscLogReal(10);
 
     /* compositional contribution (based on Mg/Si ratio) */
     /* regular (default) layer */
