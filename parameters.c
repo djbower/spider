@@ -334,6 +334,18 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->activation_volume_sol *= C->PRESSURE;
   P->activation_volume_sol /= Rgas * C->TEMP;
 
+  /* viscosity cut-offs */
+  P->log10visc_min = -1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_min",&P->log10visc_min,NULL);CHKERRQ(ierr);
+  if( P->log10visc_min > 0.0 ){
+      P->log10visc_min -= C->LOG10VISC;
+  }
+  P->log10visc_max = -1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_max",&P->log10visc_max,NULL);CHKERRQ(ierr);
+  if( P->log10visc_max > 0.0 ){
+      P->log10visc_max -= C->LOG10VISC;
+  }
+
   /* solid conductivity (W/m-K) */
   P->cond_sol = 4.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_sol",&P->cond_sol,NULL);CHKERRQ(ierr);

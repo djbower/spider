@@ -8,6 +8,7 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt
 static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
 static PetscScalar get_log10_viscosity_melt( PetscScalar, PetscScalar, PetscInt, Parameters const *);
 static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, PetscScalar, Parameters const * );
+static PetscScalar get_log10_viscosity_cutoff( PetscScalar, Parameters const * );
 static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const * );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
@@ -408,6 +409,28 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+static PetscScalar get_log10_viscosity_cutoff( PetscScalar in_visc, Parameters const *P )
+{
+
+    PetscScalar out_visc;
+
+    out_visc = in_visc;
+
+    if(P->log10visc_min > 0.0){
+        if(in_visc < P->log10visc_min){
+            out_visc = P->log10visc_min;
+        }
+    }
+    if(P->log10visc_max > 0.0){
+        if(in_visc > P->log10visc_max){
+            out_visc = P->log10visc_max;
+        }
+    }
+
+    return out_visc;
+
+}
+
 static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const *P )
 {
 
@@ -416,7 +439,7 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
     PetscScalar Mg_Si0 = P->Mg_Si0; // layer 0 (default) Mg/Si ratio
     PetscScalar Mg_Si1 = P->Mg_Si1; // layer 1 (basal layer) Mg/Si ratio
 
-    PetscScalar B, lvisc;
+    PetscScalar A, lvisc;
 
     /* reference viscosity */
     lvisc = P->log10visc_sol; // i.e., log10(eta_0)
@@ -445,6 +468,8 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
         if(Mg_Si1 > 0.0)
             lvisc = add_compositional_viscosity( lvisc, Mg_Si1 );
     }
+
+    lvisc = get_log10_viscosity_cutoff( lvisc, P );
 
     return lvisc;
 
@@ -480,6 +505,8 @@ static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScala
     PetscScalar lvisc;
 
     lvisc = P->log10visc_mel;
+
+    lvisc = get_log10_viscosity_cutoff( lvisc, P );
 
     return lvisc;
 

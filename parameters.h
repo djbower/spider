@@ -162,6 +162,8 @@ typedef struct _Parameters {
     PetscScalar log10visc_sol;
     PetscScalar activation_energy_sol;
     PetscScalar activation_volume_sol;
+    PetscScalar log10visc_min;
+    PetscScalar log10visc_max;
     PetscScalar Mg_Si0;
     PetscScalar Mg_Si1;
     PetscScalar cond_sol;
