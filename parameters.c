@@ -193,6 +193,13 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   if ( P->mixing_length==3 ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_layer_radius",&P->mixing_length_layer_radius,NULL);CHKERRQ(ierr);
   }
+    
+  P->Mg_Si0 = 1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si0",&P->Mg_Si0,NULL);CHKERRQ(ierr);
+  P->Mg_Si1 = 0.0;
+  if ( P->mixing_length == 3){
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si1",&P->Mg_Si1,NULL);CHKERRQ(ierr);
+  }
 
   /* initial condition */
   P->initial_condition = 1;
@@ -298,6 +305,25 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->log10visc_sol = 21.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_sol",&P->log10visc_sol,NULL);CHKERRQ(ierr);
   P->log10visc_sol -= C->LOG10VISC;
+
+  /* solid activation energy (J/mol) */
+  PetscScalar Rgas = 8.314; // gas constant (J/K/mol)
+  P->activation_energy_sol = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-activation_energy_sol",&P->activation_energy_sol,NULL);CHKERRQ(ierr);
+  P->activation_energy_sol /= Rgas * C->TEMP; // this is a new energy scale (i.e., not C->ENERGY defined above)
+
+  /* solid activation volume (m^3/mol) */
+  /* The numerical value in units of m^3/mol is the same as that in units of J/mol/Pa */
+  /* You can convince yourself of this by using the scalings for ENERGY and PRESSURE to
+     see that this is true */
+  P->activation_volume_sol = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-activation_volume_sol",&P->activation_volume_sol,NULL);CHKERRQ(ierr);
+  P->activation_volume_sol /= Rgas * C->TEMP * C->PRESSURE;
+
+  /* this defines the temperature at which the reference viscosity (log10visc_sol) is tied */
+  P->viscosity_temperature_offset_sol = 1.0; // must be non-zero
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-viscosity_temperature_offset_sol",&P->viscosity_temperature_offset_sol,NULL);CHKERRQ(ierr);
+  P->viscosity_temperature_offset_sol /= C->TEMP;
 
   /* solid conductivity (W/m-K) */
   P->cond_sol = 4.0;

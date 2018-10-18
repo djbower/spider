@@ -3,8 +3,9 @@
 #include "lookup.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
-static PetscScalar log_viscosity_mix( PetscScalar, Parameters const * );
-static PetscScalar viscosity_mix_no_skew( PetscScalar, Parameters const * );
+static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, Parameters const *);
+static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, Parameters const * );
+static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const * );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -159,9 +160,11 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
     // material properties used to update above
     const PetscScalar *arr_dSdr, *arr_S_b, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
+    const PetscInt *arr_layer_b;
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_fwtl, *arr_fwts;
     PetscScalar       fwtl, fwts;
+    PetscScalar       log10visc_sol;
     Lookup const      *L;
     Mesh              *M = &E->mesh;
     Parameters const  *P = &E->parameters;
@@ -189,6 +192,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->mix_b,&arr_mix_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
     /* material properties */
     ierr = DMDAVecGetArray(    da_b,S->alpha,&arr_alpha); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr);
@@ -255,7 +259,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       /* thermal conductivity */
       arr_cond[i] = combine_matprop( arr_phi[i], P->cond_mel, P->cond_sol );
       /* log viscosity */
-      arr_visc[i] = log_viscosity_mix( arr_phi[i], P );
+      log10visc_sol = get_log10_viscosity_solid( arr_temp[i], arr_pres[i], arr_layer_b[i], P );
+      arr_visc[i] = get_log10_viscosity_mix( arr_phi[i], log10visc_sol, P );
 
       ////////////////
       /* melt phase */
@@ -311,7 +316,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
         arr_cond[i] += (1.0-fwts) * P->cond_sol;
         /* viscosity */
         arr_visc[i] *= fwts;
-        arr_visc[i] += (1.0-fwts) * P->log10visc_sol;
+        arr_visc[i] += (1.0-fwts) * log10visc_sol;
       }
 
       /* compute viscosity */
@@ -377,6 +382,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->mix_b,&arr_mix_b); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
     /* material properties */
     ierr = DMDAVecRestoreArray(    da_b,S->alpha,&arr_alpha); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr);
@@ -411,7 +417,88 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar log_viscosity_mix( PetscScalar meltf, Parameters const *P )
+static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const *P )
+{
+
+    //PetscScalar Mg_Si0 = 0.9;
+    //PetscScalar Mg_Si1 = 1.1;
+    /* temperature and pressure contribution
+    A(T,P) = (E_a + V_a P) / RT   
+    eta = eta_0 * exp(A)
+    log10(eta) = log10(eta0) + log10(exp(A))
+    log10(eta) = log10(eta0) + A / ln(10)
+
+    Now introduce a temperature offset T0 to pin the reference viscosity
+    to a specific profile
+
+    log10(eta) = log10(eta0) + A(T)/ln(10) - A(T0)/ln10
+    log10(eta) = log10(eta0) + 1/ln(10) (E_a+V_aP)/R (1/T-1/T0)
+    */
+
+    PetscScalar Ea = P->activation_energy_sol; // activation energy (non-dimensional)
+    PetscScalar Va = P->activation_volume_sol; // activation volume (non-dimensional)
+    PetscScalar T0 = P->viscosity_temperature_offset_sol; // temperature offset (non-dimensional)
+    PetscScalar Mg_Si0 = P->Mg_Si0;
+    PetscScalar Mg_Si1 = P->Mg_Si1;
+
+    PetscScalar B, lvisc;
+
+    /* reference viscosity at T0 */
+    lvisc = P->log10visc_sol; // i.e., log10(eta_0)
+
+    /* temperature and pressure contribution */
+    B = (Ea + Va*pressure);
+    B *= 1.0 / temperature - 1.0 / T0;
+    lvisc += B / PetscLogReal(10);
+
+    /* TODO: compositional part below */
+    /* here, you can use the fact that layer=0 for a regular layer, and layer=1 for the compositionally distinct layer
+       make sure that your code works for both cases: i.e. a single layer of 0's (no compositional correction),
+       or two layers with 0's and 1's */
+
+    /*
+     Input parameter Mg_Si from some input file, create variable as correction to solid viscosity as a function of mantle composition in terms of Mg/Si-ratio. Only for top layer.
+     float log10visc_sol_comp_corr;*/
+
+    /* FIXME: some of the tests might break because this code below will always
+       modify the solid viscosity.  Perhaps we should set Mg_Si0 and Mg_Si1
+       to -1 to turn off compositional effects */
+    
+    if(layer == 0){
+     if(Mg_Si0 <= 0.5){
+        lvisc += 2;
+     } else if (Mg_Si0 <= 0.7){
+        lvisc += 2 - 1.4815 * (Mg_Si0 - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
+     } else if (Mg_Si0 <= 1.0){
+        lvisc += 0.5185 * (1 - Mg_Si0)/0.3; // 0.5185 = log10(3.3)
+     } else if (Mg_Si0 <= 1.25){
+        lvisc += -1.4815 * (Mg_Si0 - 1)/0.25; // -1.4815 = log10(0.033)
+     } else if (Mg_Si0 <= 1.5){
+        lvisc += -2 + (0.5185) * (1.5 - Mg_Si0)/0.25; // 0.5185 = log10(0.033) - -2
+     } else{
+        lvisc += -2;
+     }
+    } else if(layer == 1){
+        if(Mg_Si1 <= 0.5){
+            lvisc += 2;
+        } else if (Mg_Si1 <= 0.7){
+            lvisc += 2 - 1.4815 * (Mg_Si1 - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
+        } else if (Mg_Si1 <= 1.0){
+            lvisc += 0.5185 * (1 - Mg_Si1)/0.3; // 0.5185 = log10(3.3)
+        } else if (Mg_Si1 <= 1.25){
+            lvisc += -1.4815 * (Mg_Si1 - 1)/0.25; // -1.4815 = log10(0.033)
+        } else if (Mg_Si1 <= 1.5){
+            lvisc += -2 + (0.5185) * (1.5 - Mg_Si1)/0.25; // 0.5185 = log10(0.033) - -2
+        } else{
+            lvisc += -2;
+        }
+    }
+
+    return lvisc;
+
+}
+
+static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10visc_sol, Parameters const *P )
 {
     PetscScalar fwt, lvisc;
 
@@ -419,13 +506,13 @@ static PetscScalar log_viscosity_mix( PetscScalar meltf, Parameters const *P )
        critical solid fraction */
     //fwt = viscosity_mix_skew( meltf );
 
-    fwt = viscosity_mix_no_skew( meltf, P );
-    lvisc = fwt * P->log10visc_mel + (1.0 - fwt) * P->log10visc_sol;
+    fwt = get_viscosity_mix_no_skew( meltf, P );
+    lvisc = fwt * P->log10visc_mel + (1.0 - fwt) * log10visc_sol;
 
     return lvisc;
 }
 
-static PetscScalar viscosity_mix_no_skew( PetscScalar meltf, Parameters const *P )
+static PetscScalar get_viscosity_mix_no_skew( PetscScalar meltf, Parameters const *P )
 {
     /* viscosity in mixed phase region with no skew */
 

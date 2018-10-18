@@ -126,7 +126,6 @@ typedef struct _Parameters {
     Lookup      solid_prop;
 
     //  "Standard" parameters
-    // 31
     MagmaOceanCoreType CORE_BC;
     PetscScalar core_bc_value;
 
@@ -138,6 +137,10 @@ typedef struct _Parameters {
     PetscBool HTIDAL;
     PetscInt mixing_length;
     PetscScalar mixing_length_layer_radius;
+    /*
+    PetscScalar Mg_Si0;
+    PetscScalar Mg_Si1;
+     */
     PetscInt initial_condition;
     char ic_filename[PETSC_MAX_PATH_LEN];
     PetscScalar ic_melt_pressure;
@@ -159,6 +162,11 @@ typedef struct _Parameters {
     PetscScalar tfac_core_avg;
     PetscScalar matprop_smooth_width;
     PetscScalar log10visc_sol;
+    PetscScalar activation_energy_sol;
+    PetscScalar activation_volume_sol;
+    PetscScalar viscosity_temperature_offset_sol;
+    PetscScalar Mg_Si0;
+    PetscScalar Mg_Si1;
     PetscScalar cond_sol;
     PetscScalar log10visc_mel;
     PetscScalar cond_mel;

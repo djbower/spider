@@ -8,6 +8,7 @@ static PetscErrorCode mixing_length( DM, Vec, Vec, Parameters const * );
 static PetscScalar mixing_length_conventional( Parameters const *, PetscScalar const );
 static PetscScalar mixing_length_average( Parameters const *, PetscScalar const );
 static PetscScalar mixing_length_layer( Parameters const *, PetscScalar const );
+static PetscScalar get_layer( DM, Vec, Vec, Parameters const * );
 static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const * );
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const * );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const * );
@@ -56,6 +57,11 @@ PetscErrorCode set_mesh( Ctx *E)
 
     /* mixing length is minimum distance from boundary */
     mixing_length( da_b, M->radius_b, M->mix_b, P);
+
+    /* layer id.  0 everywhere for single layer (as determined by
+       P->mixing_length), and 0 for upper and 1 for lower layer
+       when P->mixing_length==3 */
+    get_layer( da_b, M->radius_b, M->layer_b, P );
 
     /* density at staggered nodes */
     aw_density( da_s, M->radius_s, M->rho_s, P );
@@ -306,6 +312,37 @@ static PetscScalar mixing_length_layer( const Parameters *P, const PetscScalar r
     out = PetscMin( out, dist3 );
 
     return out;
+}
+
+static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters *P )
+{
+    PetscErrorCode ierr;
+    PetscScalar *arr_layer;
+    const PetscScalar *arr_r;
+    PetscInt i,ilo,ihi,w;
+
+    PetscFunctionBeginUser;
+    ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ihi = ilo + w;
+    ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da,layer,&arr_layer);CHKERRQ(ierr);
+
+    for(i=ilo; i<ihi; ++i){
+        if( P->mixing_length==3){
+            if( arr_r[i] > P->mixing_length_layer_radius ){
+                arr_layer[i] = 0;
+            }
+            else{
+                arr_layer[i] = 1;
+            }
+        }
+        else{
+            arr_layer[i] = 0;
+        }
+    }
+    ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da,layer,&arr_layer);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 }
 
 static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parameters *P )
