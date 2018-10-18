@@ -173,19 +173,31 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscStrcpy(P->outputDirectory,"output");CHKERRQ(ierr);
   ierr = PetscOptionsGetString(NULL,NULL,"-outputDirectory",P->outputDirectory,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
 
+  P->SOLID_CONVECTION_ONLY = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-SOLID_CONVECTION_ONLY",&P->SOLID_CONVECTION_ONLY,NULL);CHKERRQ(ierr);
+
+  P->LIQUID_CONVECTION_ONLY = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-LIQUID_CONVECTION_ONLY",&P->LIQUID_CONVECTION_ONLY,NULL);CHKERRQ(ierr);
+
   /* Energy terms to include */
   P->CONDUCTION = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-CONDUCTION",&P->CONDUCTION,NULL);CHKERRQ(ierr);
   P->CONVECTION = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-CONVECTION",&P->CONVECTION,NULL);CHKERRQ(ierr);
-  P->MIXING = PETSC_TRUE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-MIXING",&P->MIXING,NULL);CHKERRQ(ierr);
-  P->SEPARATION = PETSC_TRUE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
   P->HRADIO = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-HRADIO",&P->HRADIO,NULL);CHKERRQ(ierr);
   P->HTIDAL = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-HTIDAL",&P->HTIDAL,NULL);CHKERRQ(ierr);
+
+  P->MIXING = PETSC_TRUE;
+  P->SEPARATION = PETSC_TRUE;
+  /* mixed phase energy terms */
+  if( P->SOLID_CONVECTION_ONLY || P->LIQUID_CONVECTION_ONLY ){
+      P->MIXING = PETSC_FALSE;
+      P->SEPARATION = PETSC_FALSE;
+  }
+  ierr = PetscOptionsGetBool(NULL,NULL,"-MIXING",&P->MIXING,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetBool(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
 
   P->mixing_length = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-mixing_length",&P->mixing_length,NULL);CHKERRQ(ierr);
@@ -194,7 +206,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_layer_radius",&P->mixing_length_layer_radius,NULL);CHKERRQ(ierr);
   }
     
-  P->Mg_Si0 = 1.0;
+  P->Mg_Si0 = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si0",&P->Mg_Si0,NULL);CHKERRQ(ierr);
   P->Mg_Si1 = 0.0;
   if ( P->mixing_length == 3){
@@ -301,7 +313,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->matprop_smooth_width = 1.0E-2;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-matprop_smooth_width",&P->matprop_smooth_width,NULL);CHKERRQ(ierr);
 
-  /* solid viscosity (Pa.s) */
+  /* solid viscosity (Pa.s)
+     this is a prefactor if activation_energy_sol or activation_volume_sol are non-zero */
   P->log10visc_sol = 21.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_sol",&P->log10visc_sol,NULL);CHKERRQ(ierr);
   P->log10visc_sol -= C->LOG10VISC;
@@ -318,12 +331,20 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
      see that this is true */
   P->activation_volume_sol = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-activation_volume_sol",&P->activation_volume_sol,NULL);CHKERRQ(ierr);
-  P->activation_volume_sol /= Rgas * C->TEMP * C->PRESSURE;
+  P->activation_volume_sol *= C->PRESSURE;
+  P->activation_volume_sol /= Rgas * C->TEMP;
 
-  /* this defines the temperature at which the reference viscosity (log10visc_sol) is tied */
-  P->viscosity_temperature_offset_sol = 1.0; // must be non-zero
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-viscosity_temperature_offset_sol",&P->viscosity_temperature_offset_sol,NULL);CHKERRQ(ierr);
-  P->viscosity_temperature_offset_sol /= C->TEMP;
+  /* viscosity cut-offs */
+  P->log10visc_min = -1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_min",&P->log10visc_min,NULL);CHKERRQ(ierr);
+  if( P->log10visc_min > 0.0 ){
+      P->log10visc_min -= C->LOG10VISC;
+  }
+  P->log10visc_max = -1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_max",&P->log10visc_max,NULL);CHKERRQ(ierr);
+  if( P->log10visc_max > 0.0 ){
+      P->log10visc_max -= C->LOG10VISC;
+  }
 
   /* solid conductivity (W/m-K) */
   P->cond_sol = 4.0;

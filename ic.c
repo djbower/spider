@@ -6,6 +6,7 @@ static PetscErrorCode set_ic_default( Ctx *, Vec );
 static PetscErrorCode set_ic_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec );
+static PetscErrorCode set_ic_from_solidus( Ctx*, Vec );
 
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
@@ -35,6 +36,11 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     else if(IC==2){
         ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
     }
+    else if(IC==3){
+        ierr = set_ic_from_solidus( E, sol ); CHKERRQ(ierr);
+    }
+
+    ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
 
     /* FIXME: will break in parallel */
     if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
@@ -60,7 +66,6 @@ static PetscErrorCode set_ic_default( Ctx *E, Vec sol )
     PetscFunctionBeginUser;
 
     ierr = set_ic_entropy( E, sol ); CHKERRQ(ierr);
-    ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -211,6 +216,20 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 
     VecAssemblyBegin( sol );
     VecAssemblyEnd( sol );
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
+{
+
+    PetscErrorCode ierr;
+    Solution    *S = &E->solution;
+
+    PetscFunctionBeginUser;
+
+    ierr = VecCopy( S->solidus_s, S->S_s ); CHKERRQ(ierr);
+    ierr = set_solution_from_entropy( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

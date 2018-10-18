@@ -135,12 +135,10 @@ typedef struct _Parameters {
     PetscBool SEPARATION;
     PetscBool HRADIO;
     PetscBool HTIDAL;
+    PetscBool SOLID_CONVECTION_ONLY; // solid convection only
+    PetscBool LIQUID_CONVECTION_ONLY; // liquid convection only
     PetscInt mixing_length;
     PetscScalar mixing_length_layer_radius;
-    /*
-    PetscScalar Mg_Si0;
-    PetscScalar Mg_Si1;
-     */
     PetscInt initial_condition;
     char ic_filename[PETSC_MAX_PATH_LEN];
     PetscScalar ic_melt_pressure;
@@ -164,7 +162,8 @@ typedef struct _Parameters {
     PetscScalar log10visc_sol;
     PetscScalar activation_energy_sol;
     PetscScalar activation_volume_sol;
-    PetscScalar viscosity_temperature_offset_sol;
+    PetscScalar log10visc_min;
+    PetscScalar log10visc_max;
     PetscScalar Mg_Si0;
     PetscScalar Mg_Si1;
     PetscScalar cond_sol;

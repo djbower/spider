@@ -1,10 +1,10 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 100
+-nstepsmacro 455
 
 # macro step size in years
--dtmacro_years 100000000
+-dtmacro_years 10000000
 
 # for default time ranges
 # if one of these is set, then the above time stepping
@@ -24,8 +24,8 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-7
--ts_sundials_rtol 1.0e-7
+-ts_sundials_atol 1.0e-8
+-ts_sundials_rtol 1.0e-8
 
 # mesh
 # number of basic nodes
@@ -34,7 +34,7 @@
 # initial condition
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
--initial_condition 1
+-initial_condition 3
 -ic_filename output/dSdr_b_aug_0.m
 
 # all units are SI unless indicated otherwise
@@ -43,7 +43,7 @@
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
--radius0 6371000.0 # Earth radius
+-radius0 63710.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
@@ -94,7 +94,7 @@
 # [3] is conventional as [1] above, but additionally allows you to
 #      specify a mid-mantle interface
 
--mixing_length 3
+-mixing_length 1
 -mixing_length_layer_radius 0.7 # non-dimensional radius
 
 # physical parameters
@@ -104,10 +104,10 @@
 
 # initial condition
 -ic_adiabat_entropy 1400
--ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
+-ic_dsdr -4.6978890285209187e-05 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
 -ic_surface_entropy 403.0
--ic_core_entropy 2000.0
+-ic_core_entropy -1.0 #2000.0
 
 # static pressure profile derived from Adams-Williamson equation of state
 # these parameters are from fitting PREM in the lower mantle (for Earth)
@@ -131,15 +131,14 @@
 -matprop_smooth_width 1.0E-2
 
 # viscosity
--activation_energy_sol 100000.0 # J/mol
--activation_volume_sol 1.5E-6 # J/mol/Pa or m^3/mol
--viscosity_temperature_offset_sol 1400.0 # K
--log10visc_sol 21.0 # solid viscosity (log10)
+-activation_energy_sol 300000.0 # J/mol
+-activation_volume_sol 4.0E-6 # J/mol/Pa or m^3/mol
+-log10visc_sol 11.0 # solid viscosity (log10)
 -log10visc_mel 2.0 # melt viscosity (log10)
 -phi_critical 0.4 # transition melt fraction (non-dimensional)
 -phi_width 0.15 # transition width (non-dimensional)
--Mg_Si0 0.7
--Mg_Si1 1.2
+-Mg_Si0 0.0
+-Mg_Si1 0.0
 
 # core-mantle boundary condition
 # [1] core-cooling
