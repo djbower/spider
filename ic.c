@@ -224,11 +224,21 @@ static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
 {
     
     PetscErrorCode ierr;
+    Parameters const *P = &E->parameters;
+    PetscInt N,i;
+    PetscScalar S_i;
     Solution    *S = &E->solution;
     
     PetscFunctionBeginUser;
     
     ierr = VecCopy( S->solidus_s, S->S_s ); CHKERRQ(ierr);
+    ierr = VecGetSize(S->S_s,&N); CHKERRQ(ierr);
+    for(i=1; i<N-1;++i) {
+        ierr = VecGetValues(S->S_s,1,&i,&S_i);CHKERRQ(ierr);
+        if(P->ic_adiabat_entropy < S_i){
+            ierr = VecSetValues(S->S_s,1,&i,&P->ic_adiabat_entropy,INSERT_VALUES);CHKERRQ(ierr);
+        }
+    }
     ierr = set_solution_from_entropy( E, sol ); CHKERRQ(ierr);
     
     PetscFunctionReturn(0);

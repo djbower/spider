@@ -4,7 +4,7 @@
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );
-static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, Parameters const *);
+static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const *);
 static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
 static PetscScalar get_log10_viscosity_melt( PetscScalar, PetscScalar, PetscInt, Parameters const *);
 static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, PetscScalar, Parameters const * );
@@ -170,7 +170,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     // material properties that are updated here
     PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
     // material properties used to update above
-    const PetscScalar *arr_dSdr, *arr_S_b, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b;
+    const PetscScalar *arr_dSdr, *arr_S_b, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b, *arr_radius_b;
     const PetscInt *arr_layer_b;
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_fwtl, *arr_fwts;
@@ -234,6 +234,9 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->solidus_temp,&arr_solidus_temp); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->temp,&arr_temp); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->visc,&arr_visc); CHKERRQ(ierr);
+    
+    ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b); CHKERRQ(ierr);
+    
     /* regime: not convecting (0), inviscid (1), viscous (2) */
     ierr = DMDAVecGetArray(    da_b,S->regime,&arr_regime); CHKERRQ(ierr);
 
@@ -250,7 +253,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       temp_sol = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
       alpha_sol = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
       cond_sol = P->cond_sol;
-      log10visc_sol = get_log10_viscosity_solid( arr_temp[i], arr_pres[i], arr_layer_b[i], P );
+      log10visc_sol = get_log10_viscosity_solid( arr_temp[i], arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
 
       /* melt phase */
       L = &P->melt_prop;
@@ -431,15 +434,19 @@ static PetscScalar get_log10_viscosity_cutoff( PetscScalar in_visc, Parameters c
 
 }
 
-static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const *P )
+static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, PetscScalar radius, Parameters const *P )
 {
 
     PetscScalar Ea = P->activation_energy_sol; // activation energy (non-dimensional)
     PetscScalar Va = P->activation_volume_sol; // activation volume (non-dimensional)
     PetscScalar Mg_Si0 = P->Mg_Si0; // layer 0 (default) Mg/Si ratio
     PetscScalar Mg_Si1 = P->Mg_Si1; // layer 1 (basal layer) Mg/Si ratio
+    PetscScalar lid_visc = P->visc_lid_bc;
+    PetscInt    lid_bc = P->bc_lid;
+    PetscScalar lid_r = P->lid_thickness;
 
     PetscScalar A, lvisc;
+    
 
     /* reference viscosity */
     lvisc = P->log10visc_sol; // i.e., log10(eta_0)
@@ -469,6 +476,12 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
             lvisc = add_compositional_viscosity( lvisc, Mg_Si1 );
     }
 
+    if(lid_bc == 1){
+        if(radius > 100 - lid_r){
+            lvisc += lid_visc;
+        }
+     }
+    
     lvisc = get_log10_viscosity_cutoff( lvisc, P );
 
     return lvisc;

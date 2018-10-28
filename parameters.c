@@ -204,6 +204,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->mixing_length_layer_radius = 0.0;
   if ( P->mixing_length==3 ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_layer_radius",&P->mixing_length_layer_radius,NULL);CHKERRQ(ierr);
+      PetscPrintf(PETSC_COMM_WORLD,"Mixing length: %d\n",P->mixing_length);
   }
     
   P->Mg_Si0 = 0.0;
@@ -380,6 +381,17 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   }
   /* otherwise, we just scale the calculated eddy diffusivity by the user-specified constant */
 
+    /* stagnant lid BCs */
+    P->bc_lid = 0;
+    ierr = PetscOptionsGetInt(NULL,NULL,"-bc_lid",&P->bc_lid,NULL);CHKERRQ(ierr);
+    P->lid_thickness = 0;
+    P->visc_lid_bc = 0;
+    if ( P->bc_lid==1 ){
+        ierr = PetscOptionsGetScalar(NULL,NULL,"-visc_lid_bc",&P->visc_lid_bc,NULL);CHKERRQ(ierr);
+        ierr = PetscOptionsGetScalar(NULL,NULL,"-lid_thickness",&P->lid_thickness,NULL);CHKERRQ(ierr);
+        P->lid_thickness /= C->RADIUS;
+    }
+    
   /* core boundary condition */
   P->CORE_BC=MO_CORE_TYPE_COOLING;
   {

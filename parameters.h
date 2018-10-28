@@ -171,6 +171,9 @@ typedef struct _Parameters {
     PetscScalar cond_mel;
     PetscScalar eddy_diffusivity_thermal;
     PetscScalar eddy_diffusivity_chemical;
+    PetscInt    bc_lid;
+    PetscScalar visc_lid_bc;
+    PetscScalar lid_thickness;
 
     // Additional Atmosphere Parameters
     AtmosphereParameters atmosphere_parameters;

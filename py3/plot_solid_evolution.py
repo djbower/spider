@@ -132,7 +132,7 @@ def solid_evolution_fig3( times ):
     fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xticks=xticks, xmax=xmax, yticks=yticks )
     ax1.set_xlim( xticks[0], 138 )
     ax1.yaxis.set_label_coords(-0.075,0.59)
-    fig_o.set_mylegend( ax1, handle_l, loc=4, ncol=2 )
+    fig_o.set_mylegend( ax2, handle_l, loc=4, ncol=2 )
     #fig_o.set_mylegend( ax0, handle_l, loc=2, ncol=2 )
     title = '(c) Melt fraction'
     yticks = [0,0.2,0.4,0.6,0.8,1.0]
@@ -142,7 +142,7 @@ def solid_evolution_fig3( times ):
     ax2.set_ylim( [0, 1] )
     units = myjson_o.get_field_units('visc_b')
     title = '(d) Viscosity, ' + units
-    yticks = [1.0E20,1.0E22,1.0E24,1.0E26,1.0E28]
+    yticks = [1.0E18,1.0E20,1.0E22,1.0E24,1.0E26,1.0E28]
     fig_o.set_myaxes( ax3, title=title, xlabel='$P$ (GPa)',
         ylabel='$\eta$', xticks=xticks, xmax=xmax, yticks=yticks, fmt=visc_fmt )
     ax3.yaxis.set_label_coords(-0.075,0.67)
