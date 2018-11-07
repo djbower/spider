@@ -538,7 +538,7 @@ def figure9():
     # low pressure fit
     #if PLOT_LOWP:
     #    h3, = ax1.plot( data_a[:,0][indp], exp_func( data_a[:,0][indp], *popt_Trl ), '-', color='black', linewidth=2, label=r'Fit' )
-    title = r'(d) $T_f(t^\prime)$, GPa'
+    title = r'(d) $T_f(t^\prime)$, K'
     yticks = [2000,3000,4000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$T_f$', yticks=yticks, xlabel='$t^\prime$ (yrs)' )
     ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
