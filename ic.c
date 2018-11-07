@@ -225,20 +225,29 @@ static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
 
     PetscErrorCode ierr;
     Parameters const *P = &E->parameters;
-    PetscInt N,i;
+    PetscInt i, numpts_s;
     PetscScalar S_i;
     Solution    *S = &E->solution;
 
     PetscFunctionBeginUser;
 
+    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
     ierr = VecCopy( S->solidus_s, S->S_s ); CHKERRQ(ierr);
-    ierr = VecGetSize(S->S_s,&N); CHKERRQ(ierr);
-    for(i=1; i<N-1;++i) {
+
+    /* added by Rob Spaargaren to enable the initial condition to
+       follow the solidus for entropies below a cutoff, and then
+       be constant for entropies above the cutoff */
+    for(i=1; i<numpts_s-1;++i) {
         ierr = VecGetValues(S->S_s,1,&i,&S_i);CHKERRQ(ierr);
         if(P->ic_adiabat_entropy < S_i){
             ierr = VecSetValues(S->S_s,1,&i,&P->ic_adiabat_entropy,INSERT_VALUES);CHKERRQ(ierr);
         }
     }
+
+    VecAssemblyBegin( S->S_s );
+    VecAssemblyEnd( S->S_s );
+
     ierr = set_solution_from_entropy( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

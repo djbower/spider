@@ -141,8 +141,8 @@
 -Mg_Si1 0.0
 
 #Extra bc for lid
--bc_lid 0
--visc_lid_bc 3.0
+-VISCOUS_LID 0
+-lid_log10visc 3.0
 -lid_thickness 200000.0
 #Lines:
 #parameters.h: 175-176

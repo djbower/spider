@@ -206,6 +206,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,M->mix_b,&arr_mix_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b); CHKERRQ(ierr);
     /* material properties */
     ierr = DMDAVecGetArray(    da_b,S->alpha,&arr_alpha); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr);
@@ -234,9 +235,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->solidus_temp,&arr_solidus_temp); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->temp,&arr_temp); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->visc,&arr_visc); CHKERRQ(ierr);
-    
-    ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b); CHKERRQ(ierr);
-    
     /* regime: not convecting (0), inviscid (1), viscous (2) */
     ierr = DMDAVecGetArray(    da_b,S->regime,&arr_regime); CHKERRQ(ierr);
 
@@ -441,9 +439,9 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
     PetscScalar Va = P->activation_volume_sol; // activation volume (non-dimensional)
     PetscScalar Mg_Si0 = P->Mg_Si0; // layer 0 (default) Mg/Si ratio
     PetscScalar Mg_Si1 = P->Mg_Si1; // layer 1 (basal layer) Mg/Si ratio
-    PetscScalar lid_visc = P->visc_lid_bc;
-    PetscInt    lid_bc = P->bc_lid;
-    PetscScalar lid_r = P->lid_thickness;
+    PetscInt    VISCOUS_LID = P->VISCOUS_LID;
+    PetscScalar lid_log10visc = P->lid_log10visc;
+    PetscScalar lid_thickness = P->lid_thickness;
 
     PetscScalar A, lvisc;
     
@@ -476,9 +474,11 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
             lvisc = add_compositional_viscosity( lvisc, Mg_Si1 );
     }
 
-    if(lid_bc == 1){
-        if(radius > 100 - lid_r){
-            lvisc += lid_visc;
+    /* viscous lid added by Rob Spaargaren */
+    if(VISCOUS_LID){
+        /* TODO: make this tanh to be smoother? */
+        if(radius > P->radius - lid_thickness){
+            lvisc += lid_log10visc;
         }
      }
     
