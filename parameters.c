@@ -204,7 +204,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->mixing_length_layer_radius = 0.0;
   if ( P->mixing_length==3 ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_layer_radius",&P->mixing_length_layer_radius,NULL);CHKERRQ(ierr);
-      PetscPrintf(PETSC_COMM_WORLD,"Mixing length: %d\n",P->mixing_length);
   }
     
   P->Mg_Si0 = 0.0;
