@@ -1,0 +1,1 @@
+Example input files for models with different Earth-radii and using the Zahnle parameterised steam atmosphere model (or black body, in one extra test case).  These are repeat cases in order to include the effect of the ultra-thin thermal boundary layer at the top of the magma ocean in the revised version of Bonati et al., (2018).
