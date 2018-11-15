@@ -1,0 +1,1 @@
+Since we are only considering Bridgmanite, we cannot map the merged temperature profiles from Andrault (2011) in the lower mantle and Hamano (2013) in the upper mantle without introducing wiggles in entropy at low pressure.  Here, Aaron manually ensured that the entropy only has inflection points but remains monotonically increasing.
