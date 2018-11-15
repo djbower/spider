@@ -144,7 +144,7 @@
 -VISCOUS_LID 1
 -lid_log10visc 2.0
 -lid_thickness 200000.0
-#Lines:
+#Lines (these will change as the code is developed, but kept for reference nonetheless):
 #parameters.h: 175-176
 #parameters.c: 383-388
 #matprop.c: 239; 257; 438; 446-447; 479-483
