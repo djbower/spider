@@ -1,7 +1,7 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 18
+-nstepsmacro 180
 
 # macro step size in years
 -dtmacro_years 100
@@ -24,8 +24,8 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-7
--ts_sundials_rtol 1.0e-7
+-ts_sundials_atol 1.0e-8
+-ts_sundials_rtol 1.0e-8
 
 # mesh
 # number of basic nodes
@@ -59,8 +59,8 @@
 
 # melting curves
 # for bottom-up crystallisation (double precision OK)
--liquidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/liquidus_andrault2011.dat
--solidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/solidus_andrault2011.dat
+-liquidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/liquidus_A11_H13.dat
+-solidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
 
 # melt lookup data
 -alphaMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
@@ -81,7 +81,7 @@
 # [2] is restart from file
 -initial_condition 1
 -ic_filename output/dSdr_b_aug_0.m
--ic_adiabat_entropy 3052.885602072091 # initial specific entropy at top of domain (top cell)
+-ic_adiabat_entropy 2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
 -ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
 # set surface and core entropy (-1 is a flag to ignore, positive values are used)
