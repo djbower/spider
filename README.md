@@ -48,7 +48,8 @@ A basic test to ensure you have a working compiler is (note you can swap out "`g
 
 If you use MacPorts, Homebrew, or apt, these can be used to easily install GCC.  For example, using MacPorts:
 
-        sudo port install gcc8
+        sudo port install gcc8 
+        # TL: Would be good to add here how to get the right version with homebrew. I was using homebrew before and had to install macports for getting gcc8. Not terribly annoying, but because you provide homebrew instructions below, you could here as well.
 
 This will install a set of GCC binaries, typically in "`/opt/local/bin`".  The C compiler (for GCC8) will be called "`gcc-mp-8"` where the mp is obviously clarifying that it was installed by MacPorts.
 Now on a Mac, you will usually access the default Apple compiler ("`clang`") using "`gcc`", but you can easily access the MacPorts GCC you just installed by using "`gcc-mp-8`" instead.
@@ -106,15 +107,13 @@ you can allow PETSc to automatically download and install SUNDIALS
 
 #### 2b.i Build SUNDIALS with quadruple precision
 
-Note: it is necessary to comment out the cmake_policy(SET CMP0042 NEW) in src/CMakeLists.txt if you are using an old version of cmake.
-
 1. Clone our hacked version of SUNDIALS from the git repository.
 
         cd /somewhere/to/install
         mkdir src
         git clone https://bitbucket.org/psanan/sundials-quad src
 
-2. Make sure that you have CMake available by typing `cmake --version`.  If this fails, then install CMake from your package manager (homebrew, macports, apt,..) or by following the instructions at cmake.org/download.
+2. Make sure that you have CMake available by typing `cmake --version`.  If this fails, then install CMake from your package manager (homebrew, macports, apt,..) or by following the instructions at cmake.org/download. Note: it is necessary to comment out the cmake_policy(SET CMP0042 NEW) in src/CMakeLists.txt if you are using an old version of cmake. # TL: You speak of cmake here for the first time, hence you could have this comment here.
 
         sudo port install cmake           # MacPorts
         brew install cmake                # Homebrew
