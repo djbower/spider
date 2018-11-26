@@ -342,9 +342,7 @@ static PetscScalar get_partial_pressure_volatile( PetscScalar x, VolatileParamet
     /* partial pressure of volatile */
     PetscScalar p;
 
-    p = 1.0 / PetscPowScalar( V->henry, V->henry_pow );
-    p *= PetscPowScalar( x, V->henry_pow );
-    p /= C->PRESSURE; // non-dimensionalise
+    p = PetscPowScalar( x / V->henry, V->henry_pow);
 
     return p;
 }
@@ -356,17 +354,18 @@ static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, Vola
 
     dpdx = V->henry_pow / V->henry;
     dpdx *= PetscPowScalar( x / V->henry, V->henry_pow-1.0 );
-    dpdx /= C->PRESSURE; // non-dimensionalise
 
     return dpdx;
 }
 
 static PetscScalar get_atmosphere_mass( Parameters const *P, PetscScalar p )
 {
-    /* mass of atmosphere */ 
+    /* mass of atmosphere */
+    Constants const *C  = &P->constants;
     PetscScalar mass_atm;
 
     mass_atm = PetscSqr(P->radius) * p / -P->gravity;
+    mass_atm *= 1.0E6 / C->VOLATILE;
 
     return mass_atm;
 }
@@ -450,11 +449,12 @@ PetscScalar get_emissivity_abe_matsui( Parameters const *P, Atmosphere *A )
 static PetscScalar get_optical_depth( Parameters const *P, PetscScalar mass_atm, VolatileParameters const *V )
 {
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    Constants            const *C  = &P->constants;
     PetscScalar tau;
 
     // note negative gravity
-    tau = 0.5 * mass_atm / PetscSqr( P->radius );
-    tau *= PetscSqrtScalar( 3.0 * V->kabs * -P->gravity / Ap->P0 );
+    tau = 3.0/2.0 * C->VOLATILE/1.0E6 * mass_atm / PetscSqr( P->radius );
+    tau *= PetscSqrtScalar( V->kabs * -P->gravity / (3.0*Ap->P0) );
 
     return tau; // dimensionless (by definition)
 }
@@ -520,8 +520,6 @@ PetscScalar get_initial_volatile( Ctx const *E, VolatileParameters const *V )
 
     fac = PetscSqr( P->radius );
     fac /= -P->gravity * M->mantle_mass;
-    fac /= C->PRESSURE;
-
     fac /= PetscPowScalar(V->henry,V->henry_pow);
     fac *= 1.0E6 / C->VOLATILE;
 
