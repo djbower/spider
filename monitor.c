@@ -564,7 +564,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           DimensionalisableField dfield;
           PetscScalar scaling = C->PRESSURE / 1.0E5; /* for bar */
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"H2O_atmosphere");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"H2O_atmosphere_bar");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"bar");CHKERRQ(ierr);
           ierr = VecSetValue(dfield->vecGlobal,0,A->p1,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
