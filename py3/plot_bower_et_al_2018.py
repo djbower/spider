@@ -383,7 +383,7 @@ def bower_et_al_2018_fig3( times ):
     # titles and axes labels, legends, etc
     units = myjson_o.get_field_units('S_b')
     title = '(a) Entropy, {}'.format(units)
-    yticks = [1600,2000,2400,2800,3200]
+    yticks = [1000,2000,2400,2800,3200]
     # Bower et al. (2018)
     #yticks = [1600,2000,2400,2800,3200]
     # DJB used this next range for work with Bayreuth

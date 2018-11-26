@@ -61,7 +61,8 @@ def plot_atmosphere():
     temperature_surface_a = get_single_values_for_times( 'temperature_surface', fig_o.time )
     emissivity_a = get_single_values_for_times( 'emissivity', fig_o.time )
 
-    xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
+    #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
+    xticks = [1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
     xlabel = 'Time (Myr)'
 
     red = fig_o.get_color(3)
@@ -121,13 +122,13 @@ def plot_atmosphere():
     ##########
     title = '(c) Surface temperature'
     ylabel = '$T$'
-    yticks = range(1400,2801,200)
+    yticks = range(1000,2801,200)
     ax2.semilogx( timeMyr_a, temperature_surface_a, 'k-' )
     fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks, yticks=yticks )
     ax2.yaxis.set_label_coords(-0.1,0.5)
     #ax2.set_ylim( 1050, 1850 )
     #ax2.set_xlim( 1E-5 , 1 )
-    ax2.set_ylim(1300,2900)
+    ax2.set_ylim(1000,2900)
 
     ##########
     # figure d
