@@ -24,8 +24,8 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-8
--ts_sundials_rtol 1.0e-8
+-ts_sundials_atol 1.0e-10
+-ts_sundials_rtol 1.0e-10
 
 # mesh
 # number of basic nodes
@@ -48,7 +48,7 @@
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
--volatile0 1.0E3
+-volatile0 1.0E2
 
 # energy fluxes and sources to include
 # [0] is off
@@ -65,8 +65,8 @@
 
 # melting curves
 # for bottom-up crystallisation (double precision OK)
--liquidus_filename_rel_to_src lookup_data/RTmelt/liquidus_andrault2011.dat
--solidus_filename_rel_to_src lookup_data/RTmelt/solidus_andrault2011.dat
+-liquidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/liquidus_A11_H13.dat
+-solidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
 
 # melt lookup data
 -alphaMel_filename_rel_to_src lookup_data/RTmelt/thermal_exp_melt.dat
@@ -99,7 +99,7 @@
 -radius 6371000.0 # Earth radius
 
 # initial condition
--ic_adiabat_entropy 3052.885602072091 # initial specific entropy at top of domain (top cell)
+-ic_adiabat_entropy 2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
 #-sinit 2137.0199214504637
 -ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
