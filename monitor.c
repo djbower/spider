@@ -324,7 +324,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           DimensionalisableField dfield;
           PetscScalar scaling = C->VOLATILE;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"CO2_initial");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"CO2_initial_ppm");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"ppm");CHKERRQ(ierr);
           ierr = VecSetValue(dfield->vecGlobal,0,CO2->initial,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
@@ -334,14 +334,29 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
+        /* initial CO2 volatile (kg) */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"CO2_initial_kg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"kg");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,CO2->initial*M->mantle_mass,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
         /* CO2 volatile in liquid mantle (ppm) */
-        /* to recover mass in kg, need to additionally multiply by mass_liquid/1.0E6 */
         {
           cJSON *item;
           DimensionalisableField dfield;
           PetscScalar scaling = C->VOLATILE;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"CO2_liquid");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"CO2_liquid_ppm");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"ppm");CHKERRQ(ierr);
           ierr = VecSetValue(dfield->vecGlobal,0,x0,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
@@ -351,8 +366,23 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
+        /* CO2 volatile in liquid mantle (kg) */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"CO2_liquid_kg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"kg");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,x0*A->Mliq,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
         /* CO2 volatile in solid mantle (ppm) */
-        /* to recover mass in kg, need to additionally multiply by mass_solid/1.0E6 */
         {
           cJSON *item;
           DimensionalisableField dfield;
@@ -368,15 +398,47 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
+        /* CO2 volatile in solid mantle (kg) */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"CO2_solid_kg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"kg");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,x0*CO2->kdist*A->Msol,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
         /* CO2 volatile in atmosphere (bar) */
         {
           cJSON *item;
           DimensionalisableField dfield;
-          PetscScalar scaling = C->PRESSURE / 1.0E5;
+          PetscScalar scaling = C->PRESSURE / 1.0E5; /* for bars */
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"CO2_atmosphere");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"CO2_atmosphere_bar");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"bar");CHKERRQ(ierr);
           ierr = VecSetValue(dfield->vecGlobal,0,A->p0,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* CO2 volatile in atmosphere (kg) */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"CO2_atmosphere_kg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"kg");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,A->m0,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
@@ -406,7 +468,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           DimensionalisableField dfield;
           PetscScalar scaling = C->VOLATILE;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"H2O_initial");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"H2O_initial_ppm");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"ppm");CHKERRQ(ierr);
           ierr = VecSetValue(dfield->vecGlobal,0,H2O->initial,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
@@ -416,14 +478,29 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
+        /* initial H2O volatile (kg) */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"H2O_initial_kg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"kg");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,H2O->initial*M->mantle_mass,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
         /* H2O volatile in liquid mantle (ppm) */
-        /* to recover mass in kg, need to additionally multiply by mass_liquid/1.0E6 */
         {
           cJSON *item;
           DimensionalisableField dfield;
           PetscScalar scaling = C->VOLATILE;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"H2O_liquid");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"H2O_liquid_ppm");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"ppm");CHKERRQ(ierr);
           ierr = VecSetValue(dfield->vecGlobal,0,x1,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
@@ -433,16 +510,47 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
+        /* H2O volatile in liquid mantle (kg) */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"H2O_liquid_kg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"kg");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,x1*A->Mliq,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
         /* H2O volatile in solid mantle (ppm) */
-        /* to recover mass in kg, need to additionally multiply by mass_solid/1.0E6 */
         {
           cJSON *item;
           DimensionalisableField dfield;
           PetscScalar scaling = C->VOLATILE;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"H2O_solid");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"H2O_solid_ppm");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"ppm");CHKERRQ(ierr);
           ierr = VecSetValue(dfield->vecGlobal,0,x1*H2O->kdist,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* H2O volatile in solid mantle (kg) */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"H2O_solid_kg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"kg");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,x1*H2O->kdist*A->Msol,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
@@ -454,11 +562,27 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         {
           cJSON *item;
           DimensionalisableField dfield;
-          PetscScalar scaling = C->PRESSURE / 1.0E5;
+          PetscScalar scaling = C->PRESSURE / 1.0E5; /* for bar */
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetName(dfield,"H2O_atmosphere");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"bar");CHKERRQ(ierr);
           ierr = VecSetValue(dfield->vecGlobal,0,A->p1,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* H2O volatile in atmosphere (kg) */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"H2O_atmosphere_kg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"kg");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,A->m1,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
