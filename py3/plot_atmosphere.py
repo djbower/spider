@@ -40,7 +40,7 @@ def plot_atmosphere():
     #H2O_initial_a = get_single_values_for_times( 'H2O_initial', fig_o.time )
     #H2O_liquid_a = get_single_values_for_times( 'H2O_liquid', fig_o.time )
     #H2O_solid_a = get_single_values_for_times( 'H2O_solid', fig_o.time )
-    H2O_atmos_a = get_single_values_for_times( 'H2O_atmosphere', fig_o.time )
+    H2O_atmos_a = get_single_values_for_times( 'H2O_atmosphere_bar', fig_o.time )
     print('H2O_atmos_a=', H2O_atmos_a)
 
     # compute total mass (kg) in each reservoir
