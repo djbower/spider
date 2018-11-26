@@ -418,7 +418,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         {
           cJSON *item;
           DimensionalisableField dfield;
-          PetscScalar scaling = C->PRESSURE / 1.0E5; /* for bars */
+          PetscScalar scaling = C->PRESSURE / 1.0E5; /* for bar */
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetName(dfield,"CO2_atmosphere_bar");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"bar");CHKERRQ(ierr);
