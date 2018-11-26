@@ -62,7 +62,7 @@ def plot_atmosphere():
     emissivity_a = get_single_values_for_times( 'emissivity', fig_o.time )
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
-    xticks = [1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
+    xticks = [1E-2,1E-1,1E0,1E1,1E2]#,1E4,1E6]#,1]
     xlabel = 'Time (Myr)'
 
     red = fig_o.get_color(3)
@@ -85,7 +85,7 @@ def plot_atmosphere():
     ##########
     # figure a
     ##########
-    if 0:
+    if 1:
         title = '(a) Partial pressure (bar)'
         ylabel = '$p$'
         trans = transforms.blended_transform_factory(
@@ -105,7 +105,7 @@ def plot_atmosphere():
     ##########
     # figure b
     ##########
-    if 0:
+    if 1:
         title = '(b) Volatile reservoirs'
         #h5, = ax1.semilogx( timeMyr_a, mass_liquid_a / mass_mantle, 'k--', label='melt' )
         h1, = ax1.semilogx( timeMyr_a, (CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg, color=red, linestyle='-', label='Magma' )
