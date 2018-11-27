@@ -69,18 +69,18 @@
 -solidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
 
 # melt lookup data
--alphaMel_filename_rel_to_src lookup_data/RTmelt/thermal_exp_melt.dat
--cpMel_filename_rel_to_src lookup_data/RTmelt/heat_capacity_melt.dat
--dtdpsMel_filename_rel_to_src lookup_data/RTmelt/adiabat_temp_grad_melt.dat
--rhoMel_filename_rel_to_src lookup_data/RTmelt/density_melt.dat
--tempMel_filename_rel_to_src lookup_data/RTmelt/temperature_melt.dat
+-alphaMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
+-cpMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_melt.dat
+-dtdpsMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_melt.dat
+-rhoMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_melt.dat
+-tempMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_melt.dat
 
 # solid lookup data
--alphaSol_filename_rel_to_src lookup_data/RTmelt/thermal_exp_solid.dat
--cpSol_filename_rel_to_src lookup_data/RTmelt/heat_capacity_solid.dat
--dtdpsSol_filename_rel_to_src lookup_data/RTmelt/adiabat_temp_grad_solid.dat
--rhoSol_filename_rel_to_src lookup_data/RTmelt/density_solid.dat
--tempSol_filename_rel_to_src lookup_data/RTmelt/temperature_solid.dat
+-alphaSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_solid.dat
+-cpSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_solid.dat
+-dtdpsSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_solid.dat
+-rhoSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_solid.dat
+-tempSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_solid.dat
 
 # mixing length
 # [1] is conventional, i.e. distance from the nearest boundary
@@ -100,7 +100,6 @@
 
 # initial condition
 -ic_adiabat_entropy 2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
-#-sinit 2137.0199214504637
 -ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
 -ic_surface_entropy = -1
