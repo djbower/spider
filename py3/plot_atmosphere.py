@@ -31,18 +31,6 @@ def plot_atmosphere():
     mass_mantle_a = get_single_values_for_times( 'mass_mantle', fig_o.time )
     mass_mantle = mass_mantle_a[0] # time independent
 
-    #CO2_initial_a = get_single_values_for_times( 'CO2_initial', fig_o.time )
-    #CO2_liquid_a = get_single_values_for_times( 'CO2_liquid', fig_o.time )
-    #CO2_solid_a = get_single_values_for_times( 'CO2_solid', fig_o.time )
-    CO2_atmos_a = get_single_values_for_times( 'CO2_atmosphere_bar', fig_o.time )
-    print('CO2_atmos_a=', CO2_atmos_a)
-
-    #H2O_initial_a = get_single_values_for_times( 'H2O_initial', fig_o.time )
-    #H2O_liquid_a = get_single_values_for_times( 'H2O_liquid', fig_o.time )
-    #H2O_solid_a = get_single_values_for_times( 'H2O_solid', fig_o.time )
-    H2O_atmos_a = get_single_values_for_times( 'H2O_atmosphere_bar', fig_o.time )
-    print('H2O_atmos_a=', H2O_atmos_a)
-
     # compute total mass (kg) in each reservoir
     CO2_liquid_kg_a = get_single_values_for_times( 'CO2_liquid_kg', fig_o.time ) #su.ppm_to_mass_fraction( CO2_liquid_a ) * mass_liquid_a
     CO2_solid_kg_a = get_single_values_for_times( 'CO2_solid_kg', fig_o.time ) #su.ppm_to_mass_fraction( CO2_solid_a ) * mass_solid_a
@@ -51,6 +39,7 @@ def plot_atmosphere():
     # TODO: below mass is conserved by definition, but can also
     # compute directly from partial pressure
     CO2_atmos_kg_a = CO2_total_kg - CO2_liquid_kg_a - CO2_solid_kg_a
+    CO2_atmos_a = get_single_values_for_times( 'CO2_atmosphere_bar', fig_o.time )
 
     H2O_liquid_kg_a = get_single_values_for_times( 'H2O_liquid_kg', fig_o.time ) # su.ppm_to_mass_fraction( H2O_liquid_a ) * mass_liquid_a
     H2O_solid_kg_a = get_single_values_for_times( 'H2O_solid_kg', fig_o.time ) # su.ppm_to_mass_fraction( H2O_solid_a ) * mass_solid_a
@@ -59,6 +48,7 @@ def plot_atmosphere():
     # TODO: below mass is conserved by definition, but can also
     # compute directly from partial pressure
     H2O_atmos_kg_a = H2O_total_kg - H2O_liquid_kg_a - H2O_solid_kg_a
+    H2O_atmos_a = get_single_values_for_times( 'H2O_atmosphere_bar', fig_o.time )
 
     temperature_surface_a = get_single_values_for_times( 'temperature_surface', fig_o.time )
     emissivity_a = get_single_values_for_times( 'emissivity', fig_o.time )
