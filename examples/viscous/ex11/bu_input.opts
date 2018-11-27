@@ -140,6 +140,9 @@
 -Mg_Si0 0.0
 -Mg_Si1 0.0
 
+-log10visc_max 24
+-log10visc_min -1.0
+
 # core-mantle boundary condition
 # [1] core-cooling
 # [2] heat flux (prescribe value using core_bc_value)
