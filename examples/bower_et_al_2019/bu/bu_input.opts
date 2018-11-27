@@ -1,7 +1,7 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 180
+-nstepsmacro 18
 
 # macro step size in years
 -dtmacro_years 100
@@ -50,7 +50,7 @@
 -CONDUCTION 1 # conduction
 -CONVECTION 1 # convection
 -MIXING 1 # mixing (latent heat transport)
--SEPARATION 0 # gravitational separation of solid and melt phase
+-SEPARATION 1 # gravitational separation of solid and melt phase
 -HRADIO 0 # radioactive heating
 -HTIDAL 0 # tidal heating (TODO: not currently implemented)
 
@@ -81,7 +81,8 @@
 # [2] is restart from file
 -initial_condition 1
 -ic_filename output/dSdr_b_aug_0.m
--ic_adiabat_entropy 2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
+# this next value is computed as the entropy at the base of the mantle for the liquidus
+-ic_adiabat_entropy 2593.133034435059 #2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
 -ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
 # set surface and core entropy (-1 is a flag to ignore, positive values are used)
