@@ -383,18 +383,17 @@ def bower_et_al_2018_fig3( times ):
     # titles and axes labels, legends, etc
     units = myjson_o.get_field_units('S_b')
     title = '(a) Entropy, {}'.format(units)
-    yticks = [1000,2000,2400,2800,3200]
+    #yticks = [1000,2000,2400,2800,3200]
     # Bower et al. (2018)
-    #yticks = [1600,2000,2400,2800,3200]
+    yticks = [1600,2000,2400,2800,3200]
     # DJB used this next range for work with Bayreuth
     #yticks = [300,1000,1600,2000,2400,2800,3200]
     fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, xmax=xmax, yticks=yticks )
     ax0.yaxis.set_label_coords(-0.075,0.59)
     units = myjson_o.get_field_units('temp_b')
     title = '(b) Temperature, {}'.format(units)
-    yticks = [1000,2000,3000,4000,5000]
     # Bower et al. (2018)
-    #yticks= [1000,2000,3000,4000,5000]
+    yticks= [1000,2000,3000,4000,5000]
     # DJB used this next range for work with Bayreuth
     #yticks= [300,1000,2000,3000,4000,5000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xticks=xticks, xmax=xmax, yticks=yticks )
@@ -450,8 +449,8 @@ def bower_et_al_2018_fig4( times ):
     for nn, time in enumerate( fig_o.time ):
         # In Bower et al. (2018), just every other line
         # is plotted for visual clarity (uncomment below)
-        #if (nn-1) % 2:
-        #    continue
+        if (nn-1) % 2:
+            continue
 
         # read json
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
@@ -540,8 +539,8 @@ def bower_et_al_2018_fig5( times ):
     for nn, time in enumerate( fig_o.time ):
         # In Bower et al. (2018), just every other line
         # is plotted for visual clarity (uncomment below)
-        #if (nn-1) % 2:
-        #    continue
+        if (nn-1) % 2:
+            continue
 
         # read json
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
