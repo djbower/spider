@@ -192,15 +192,10 @@ Add the installation directory to your `$PATH` so you can easily call the `spide
 1. `cd examples/bower_2019/blackbody`
 1. `mkdir output`
 1. `spider -options_file bu_input.opts`
-1. `plot_simple.py -t 0,100,200,400,1200,1500`
+1. `plot_blackbody.py -t 0,100,200,400,1200,1500`
 
 where `-t` is the argument to specify output times (in years) that exist in the output directory (`output/`) of the model in JSON format.  Note that the output JSON format can be read by a simple text (ascii) reader.
 
+## Note on Python scripts
 
-## Plotting and data processing
-
-There is a python script `py3/plot_bower_et_al_2018.py` that produces the plots shown in Bower et al. (2018):
-
-        plot_bower_et_al_2018.py -t 0,100,200,400,800,1200,1600,1800
-
-  Therefore, it is recommended to add the `py3/` directory to your `PATH` and `PYTHONPATH` so you can call the python script within the directories of your models.
+Python scripts are in `py3/` and can be used as templates for building your own analysis and plotting scripts.  Do not modify the scripts that are already in `py3/` unless you are fixing bugs or retaining backwards compatibility.  Instead, copy one of the existing scripts, rename, and then modify as you require.  You can of course check your plotting scripts into the repository, if you wish.
