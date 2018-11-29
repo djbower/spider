@@ -181,10 +181,26 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc")
 
 You should now be ready to use the code!
 
+## Running the code
+
+Add the installation directory to your `$PATH` so you can easily call the `spider` binary.  Typically you will set up a project folder elsewhere (outside the installation dirctory where the source code resides) to store your models.  Note that you should ensure that an `output/` directory exists before running a model, since currently the code does not create this directory for you.  You can run `spider` without an argument and standard parameters will be used for a simple magma ocean cooling model.  But in general, you will add an argument, i.e. `spider -options_file input.opts` to use the parameters specified in `input.opts` (this input filename is an example).  There are many example input files in the `examples/` directory.
+
+## Tutorial example
+
+1. Add the installation directory to your `$PATH` so you can easily call the `spider` binary
+1. Add the `py3` directory to your `$PATH` and `$PYTHONPATH` so you can call the python plotting scripts.  Note that this requires a Python 3 installation.  I recommend using anaconda to install a python 3 environment that is completely separate from any in-built python versions that come with your operating system.
+1. `cd examples/bower_2019/blackbody`
+1. `mkdir output`
+1. `spider -options_file bu_input.opts`
+1. `plot_simple.py -t 0,100,200,400,1200,1500`
+
+where `-t` is the argument to specify output times (in years) that exist in the output directory (`output/`) of the model in JSON format.  Note that the output JSON format can be read by a simple text (ascii) reader.
+
+
 ## Plotting and data processing
 
 There is a python script `py3/plot_bower_et_al_2018.py` that produces the plots shown in Bower et al. (2018):
 
         plot_bower_et_al_2018.py -t 0,100,200,400,800,1200,1600,1800
 
-where `-t` is the argument to specify output times (in years) that exist in the output directory (`output/`) of the model in JSON format.  Therefore, it is recommended to add the `py3/` directory to your `PATH` and `PYTHONPATH` so you can call the python script within the directories of your models.
+  Therefore, it is recommended to add the `py3/` directory to your `PATH` and `PYTHONPATH` so you can call the python script within the directories of your models.
