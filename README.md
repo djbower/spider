@@ -183,18 +183,28 @@ You should now be ready to use the code!
 
 ## Running the code
 
-Add the installation directory to your `$PATH` so you can easily call the `spider` binary.  Typically you will set up a project folder elsewhere (outside the installation dirctory where the source code resides) to store your models.  Note that you should ensure that an `output/` directory exists before running a model, since currently the code does not create this directory for you.  You can run `spider` without an argument and standard parameters will be used for a simple magma ocean cooling model.  But in general, you will add an argument, i.e. `spider -options_file input.opts` to use the parameters specified in `input.opts` (this input filename is an example).  There are many example input files in the `examples/` directory.
+Add the installation directory to your `$PATH` so you can call the `spider` binary without requiring the absolute path.  Typically, you will set up a project folder elsewhere to store your models, i.e., outside the installation directory where the SPIDER source code resides.  Note that you should ensure that an `output/` directory exists before running a model, since currently the code does not create this directory for you, and the code will crash if it cannot find an `output/` directory.  You can run `spider` without an argument and standard parameters will be used for a simple magma ocean cooling model.  But in general, you will add an argument, i.e. `spider -options_file input.opts` to use the parameters specified in `input.opts` (this input filename is an example).  There are example input files in the `examples/` directory.
 
-## Tutorial example
+## Tutorial example 1: Simple magma ocean cooling
 
-1. Add the installation directory to your `$PATH` so you can easily call the `spider` binary
-1. Add the `py3` directory to your `$PATH` and `$PYTHONPATH` so you can call the python plotting scripts.  Note that this requires a Python 3 installation.  I recommend using anaconda to install a python 3 environment that is completely separate from any in-built python versions that come with your operating system.
+1. Add the installation directory to your `$PATH`
+1. Add the `py3` directory to your `$PATH` and `$PYTHONPATH`.   Note that the plotting scripts require a Python 3 installation.  I recommend using anaconda to install a python 3 environment that is completely separate from any python versions that may have been installed by your operating system.
 1. `cd examples/bower_2019/blackbody`
 1. `mkdir output`
 1. `spider -options_file bu_input.opts`
-1. `plot_blackbody.py -t 0,100,200,400,1200,1500`
+1. `plot_spider.py -t 0,100,200,400,1200,1500`
 
 where `-t` is the argument to specify output times (in years) that exist in the output directory (`output/`) of the model in JSON format.  Note that the output JSON format can be read by a simple text (ascii) reader.
+
+## Tutorial example 2: Coupled interior-atmosphere evolution of a magma ocean
+
+This example is a prototype, because the transition from melt to solid at the surface needs careful treatment (work in progress).
+
+1. `cd examples/bower_2019/atmosphere`
+1. `mkdir output`
+1. `spider -options_file bu_input.opts`
+1. `plot_spider.py  -t 0,200000,500000,1000000,5000000,10000000`
+1. `plot_atmosphere.py`
 
 ## Note on Python scripts
 
