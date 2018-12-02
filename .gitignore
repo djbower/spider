@@ -1,6 +1,15 @@
 # executable
 spider
 
+# plots
+*.pdf
+
+# log files from plotting
+*.log
+
+# compiled python code
+*.pyc
+
 # object files
 *.o
 
