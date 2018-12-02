@@ -19,7 +19,7 @@ def solid_evolution_fig3( times ):
 
     logger.info( 'building solid_evolution_fig3' )
 
-    fig_o = su.FigureData( 2, 2, 4.7747, 4.7747, 'solid_evolution_fig3', times )
+    fig_o = su.FigureData( 2, 2, 4.7747, 4.7747, 'solid_evolution_fig3', times, units='Gyr' )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -50,30 +50,32 @@ def solid_evolution_fig3( times ):
     # shade grey between liquidus and solidus
     yy_liq = myjson_o.get_scaled_field_values_internal('liquidus_b')
     yy_sol = myjson_o.get_scaled_field_values_internal('solidus_b')
-    ax0.fill_between( xx_pres, yy_liq, yy_sol, facecolor='grey', alpha=0.35, linewidth=0 )
+    #ax0.fill_between( xx_pres, yy_liq, yy_sol, facecolor='grey', alpha=0.35, linewidth=0 )
     yy_liqt = myjson_o.get_scaled_field_values_internal('liquidus_temp_b')
     yy_solt = myjson_o.get_scaled_field_values_internal('solidus_temp_b')
-    ax1.fill_between( xx_pres, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
+    #ax1.fill_between( xx_pres, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
     # hack to compute some average properties for Bower et al. (2018)
     #print xx_sol
     #print np.mean(yy_liq[20:]-yy_sol[20:])
     #sys.exit(1)
 
     # dotted lines of constant melt fraction
-    for xx in range( 0, 11, 2 ):
-        yy_b = xx/10.0 * (yy_liq - yy_sol) + yy_sol
-        if xx == 0:
-            # solidus
-            ax0.plot( xx_pres, yy_b, '-', linewidth=0.5, color='black' )
-        elif xx == 3:
-            # typically, the approximate location of the rheological transition
-            ax0.plot( xx_pres, yy_b, '-', linewidth=1.0, color='white')
-        elif xx == 10:
-            # liquidus
-            ax0.plot( xx_pres, yy_b, '-', linewidth=0.5, color='black' )
-        else:
-            # dashed constant melt fraction lines
-            ax0.plot( xx_pres, yy_b, '--', linewidth=1.0, color='white' )
+    #for xx in range( 0, 11, 2 ):
+    #    yy_b = xx/10.0 * (yy_liq - yy_sol) + yy_sol
+    #    if xx == 0:
+    #        # solidus
+    #        ax0.plot( xx_pres, yy_b, '-', linewidth=0.5, color='black' )
+    #    elif xx == 3:
+    #        # typically, the approximate location of the rheological transition
+    #        ax0.plot( xx_pres, yy_b, '-', linewidth=1.0, color='white')
+    #    elif xx == 10:
+    #        # liquidus
+    #        ax0.plot( xx_pres, yy_b, '-', linewidth=0.5, color='black' )
+    #    else:
+    #        # dashed constant melt fraction lines
+    #        ax0.plot( xx_pres, yy_b, '--', linewidth=1.0, color='white' )
+    ax0.plot( xx_pres, yy_sol, '-', linewidth=1.0, color='black' )
+    ax1.plot( xx_pres, yy_solt, '-', linewidth=1.0, color='black' )
 
     handle_l = [] # handles for legend
 
@@ -109,8 +111,8 @@ def solid_evolution_fig3( times ):
         yy = myjson_o.get_scaled_field_values_internal('visc_b', visc_fmt)
         ax3.plot( xx_pres, yy, '-', color=color )
 
-    xticks = [0,50,100,135]
-    xmax = 138
+    xticks = [0,20,40,60,80,100,120,140]
+    xmax = 140
 
     # titles and axes labels, legends, etc
     units = myjson_o.get_field_units('S_b')
@@ -124,13 +126,13 @@ def solid_evolution_fig3( times ):
     ax0.yaxis.set_label_coords(-0.075,0.59)
     units = myjson_o.get_field_units('temp_b')
     title = '(b) Temperature, {}'.format(units)
-    yticks = [300,1000,2000,3000,4000,5000]
+    yticks = [500,1000,1500,2000,2500,3000,3500,4000]
     # Bower et al. (2018)
     #yticks= [1000,2000,3000,4000,5000]
     # DJB used this next range for work with Bayreuth
     #yticks= [300,1000,2000,3000,4000,5000]
-    fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xticks=xticks, xmax=xmax, yticks=yticks )
-    ax1.set_xlim( xticks[0], 138 )
+    fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xticks=xticks, xmax=xmax, ymin=300, ymax=4200, yticks=yticks )
+    ax1.set_xlim( xticks[0], xmax )
     ax1.yaxis.set_label_coords(-0.075,0.59)
     fig_o.set_mylegend( ax2, handle_l, loc=4, ncol=2 )
     #fig_o.set_mylegend( ax0, handle_l, loc=2, ncol=2 )

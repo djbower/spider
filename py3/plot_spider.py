@@ -36,258 +36,14 @@ def dep2pres( dep ):
     return pres
 
 #====================================================================
-def bower_et_al_2018_fig1():
-
-    logger.info( 'building bower_et_al_2018_fig1' )
-
-    # Note: this function expects that the user has set SPIDERPATH
-    # so that it can find data files
-    spiderpath = os.environ.get('SPIDERPATH')
-    if not spiderpath :
-        raise RuntimeError('You must define SPIDERPATH in your environment to point to the root directory of the SPIDER installation');
-
-    prefix = os.path.join(spiderpath,'py3/bower_et_al_2018/simplified_model/fig1')
-
-    width = 4.7747 * 0.5 
-    height = 4.7747 * 0.5 
-    fig_o = su.FigureData( 1, 1, width, height, 'bower_et_al_2018_fig1')
-
-    ax0 = fig_o.ax
-
-    const = dSdr0
-
-    dSdr_const = 1.0E15
-    dSdr_fmt = su.MyFuncFormatter( dSdr_const )
-    yticks = [1.0E-15, 1.0E-12, 1.0E-9,1.0E-6,1.0E-3]
-    #yticks = [-1E-3,-1E-6,-1E-9,-1E-12,-1E-15]
-
-    dSliqdr_const = 1.0E6 #1.0E15
-    dSliqdr_fmt = su.MyFuncFormatter( dSliqdr_const )
-    xticks = [-1E-2,-1E-4,0,1E-4,1E-2]#,1E-3,1]
-
-    #fig_o.set_mylegend( ax0, handle_l, ncol=2 )
-    title = 'Flux solution space'# for negative fluxes'
-    xlabel = '$\\frac{dS_{\\rm liq}}{dr}$'
-    ylabel = '$-\\frac{\partial S}{\partial r}$'
-    fig_o.set_myaxes( ax0, title=title, xlabel=xlabel, ylabel=ylabel,
-        yticks=yticks, fmt=dSdr_fmt, xticks=xticks, xfmt=dSliqdr_fmt )
-    ax0.yaxis.set_label_coords(-0.1,0.565)
-    #ax0.set_xlim( -5.2, 0.4)
-
-    # plot asymptote
-    FLAG = 1 
-    if FLAG:
-        # not sure why I need a negative number less than 5.2?
-        # probably to account for the x shift?
-        xx2 = np.linspace( -20.4, 0.8, 1000000 )
-        xx2 *= const
-        yy2 = 0.5 * xx2 * -1.0
-        xx2 = dSliqdr_fmt.ascale( xx2 )
-        yy2 = dSdr_fmt.ascale( yy2 )
-        ax0.plot( xx2, yy2, 'k--' )
-        ax0.fill_between( xx2, yy2, 0, facecolor='0.75' )
-
-    # plot flux minimum
-    if 1:
-        #xx2 = np.linspace( -20.4, 0.8, 1000000 )
-        xx2 = np.linspace( -20.4, -0.0001, 1000000 )
-        xx2 *= const
-        yy2 = 1.0/6.0 * xx2 * -1.0
-        xx2 = dSliqdr_fmt.ascale( xx2 )
-        yy2 = dSdr_fmt.ascale( yy2 )
-        xx2 -= 0.4
-        yy2 -= 0.4
-        ax0.plot( xx2, yy2, color='0.25', linestyle=':' )
-
-    # positive heat fluxes
-    for cc, nn in enumerate([12,9,6]):
-        filein = os.path.join(prefix,'dSdr_10p{:d}_processed.dat'.format(nn))
-        xx, yy = np.loadtxt( filein, unpack=True )
-        xx *= const
-        xx = dSliqdr_fmt.ascale( xx )
-        yy *= const * -1.0
-        yy = dSdr_fmt.ascale( yy )
-        # offset y for visual clarity
-        xx += 0.4
-        yy += 0.4
-        ax0.plot( xx, yy, '-', color=fig_o.get_color(cc) ) #, 'k-' )
-
-    # negative heat fluxes
-    for cc, nn in enumerate([12,9,6]):
-        filein = os.path.join(prefix,'dSdr_n10p{:d}_processed.dat'.format(nn))
-        xx, yy = np.loadtxt( filein, unpack=True )
-        xx *= const
-        xx = dSliqdr_fmt.ascale( xx )
-        yy *= const * -1.0
-        yy = dSdr_fmt.ascale( yy )
-        # offset y for visual clarity
-        xx -= 0.4
-        yy -= 0.4
-        ax0.plot( xx, yy, '-', color=fig_o.get_color(7-cc) )
-
-    # domains of F>0 and F<0
-    if 1:
-        prop_d = {'boxstyle':'round', 'facecolor':'white', 'linewidth': 0}
-        ax0.text(0.23, 0.4, '$\widetilde{F}<0$', fontsize=8, bbox=prop_d, transform=ax0.transAxes, horizontalalignment='left' )
-        ax0.text(0.77, 0.4, '$\widetilde{F}>0$', fontsize=8, transform=ax0.transAxes, horizontalalignment='right' )
-
-    # negative heat flux labels
-    if 1:
-        ax0.text(0.0, 0.86, '-10$^{12}$', fontsize=8, rotation=50, transform=ax0.transAxes )
-        ax0.text(0.01, 0.36, '-10$^9$', fontsize=8, rotation=50, transform=ax0.transAxes )
-        ax0.text(0.18, 0.09, '-10$^6$', fontsize=8, rotation=50, transform=ax0.transAxes )
-
-    # positive heat flux labels
-    if 1:
-        ax0.text(0.75, 0.85, '10$^{12}$', fontsize=8, rotation=0, transform=ax0.transAxes )
-        ax0.text(0.75, 0.57, '10$^9$', fontsize=8, rotation=-50, transform=ax0.transAxes )
-        ax0.text(0.75, 0.07, '10$^6$', fontsize=8, rotation=-50, transform=ax0.transAxes )
-
-    # flux minimum and zero label
-    if 1:
-        ax0.text(0.13, 0.77, '$\widetilde{F}_{\\rm min}$', fontsize=8, rotation=-33, transform=ax0.transAxes )
-        ax0.text(0.54, 0.16, '$\widetilde{F}=0$', fontsize=8, rotation=-90, transform=ax0.transAxes, horizontalalignment='center' )
-
-    fig_o.savefig(5)
-
-#====================================================================
-def bower_et_al_2018_fig2():
-
-    logger.info( 'building bower_et_al_2018_fig2' )
-
-    # Note: this function expects that the user has set SPIDERPATH
-    # so that it can find data files
-    spiderpath = os.environ.get('SPIDERPATH')
-    if not spiderpath :
-        raise RuntimeError('You must define SPIDERPATH in your environment to point to the root directory of the SPIDER installation');
-
-    prefix = os.path.join(spiderpath,'py3/bower_et_al_2018/simplified_model/fig2')
-
-    width = 4.7747 # * 0.5
-    height = 4.7747 # * 0.5
-    fig_o = su.FigureData( 2, 2, width, height, 'bower_et_al_2018_fig2' )
-
-    dd = fig_o.data_d
-
-    # below, only basic internal nodes
-
-    ax0 = fig_o.ax[0][0]
-    ax1 = fig_o.ax[0][1]
-    ax2 = fig_o.ax[1][0]
-    ax3 = fig_o.ax[1][1]
-
-    ###############
-    # plot liquidus
-    Sliq_file = os.path.join(prefix,'Sliq_processed.dat')
-    rad, Sliq = np.loadtxt( Sliq_file, unpack=True )
-    depth = 1.0 - rad
-    pres = dep2pres( depth )
-    const = entropy0 # scaling for entropy but could change
-    Sliq *= const
-    # titles and axes labels, legends, etc
-    title = '(d) Liquidus, J kg$^{-1}$ K$^{-1}$'
-    yticks = [1600,2000,2400,2800,3200]
-    xticks = [0,50,100,135]
-    fig_o.set_myaxes( ax3, title=title, xlabel='$P$ (GPa)', ylabel='$S_{\\rm liq}$', xticks=xticks, yticks=yticks )
-    ax3.yaxis.set_label_coords(-0.1,0.59)
-    handle, = ax3.plot( pres, Sliq, 'k--' )
-
-
-    ###############################
-    # plot semi-analytical solution
-    const = dSdr0
-
-    dSdr_file = os.path.join(prefix,'dSdr_processed.dat')
-    rad, dSdr = np.loadtxt( dSdr_file, unpack=True )
-    depth = 1.0 - rad
-    pres = dep2pres( depth )
-    dSdr *= const * -1.0
-
-    # dSliqdr was not plotted in the end
-    #dSliqdr_file = os.path.join(prefix,'dSliqdr_processed.dat')
-    #rad2, dSliqdr = np.loadtxt( dSliqdr_file, unpack=True )
-    #depth2 = 1.0 - rad2
-    #pres2 = dep2pres( depth2 )
-    #dSliqdr *= const
-    # must scale by 1/2
-    #dSliqdr *= 0.5
-
-    dSdr_const = 1.0E15
-    dSdr_fmt = su.MyFuncFormatter( dSdr_const )
-
-    dSdr = dSdr_fmt.ascale( dSdr )
-    handle2, = ax1.plot( pres, dSdr, 'k-' )
-
-    title = '(b) Entropy grad, J kg$^{-1}$ K$^{-1}$ m$^{-1}$'
-    #yticks= [-1.0E-3, -1.0E-6, -1.0E-9, -1.0E-12, -1.0E-15]#, 1.0E-3]
-    yticks = [1.0E-15, 1.0E-12, 1.0E-9,1.0E-6,1.0E-3]
-    fig_o.set_myaxes( ax1, yticks=yticks, xticks=xticks,
-        ylabel='$-\\frac{\partial S}{\partial r}$', fmt=dSdr_fmt, title=title)
-    ax1.yaxis.set_label_coords(-0.11,0.565)
-
-    ############
-    # plot Fconv
-    Fconv_file = os.path.join(prefix,'FluxConv_processed.dat')
-    rad, Fconv = np.loadtxt( Fconv_file, unpack=True )
-    depth = 1.0 - rad
-    pres = dep2pres( depth )
-
-    const = flux0
-    Fconv *= const
-
-    # for arcsinh scaling
-    flux_const = 1.0E6
-    flux_fmt = su.MyFuncFormatter( flux_const )
-    Fconv = flux_fmt.ascale( Fconv )
-    handle3, = ax0.plot( pres, Fconv, 'k-' )
-
-    # titles and axes labels, legends, etc.
-    #yticks = [-1.0E12, -1.0E6, -1.0E0, -1.0E-3, 1.0E-3, 1.0E0, 1.0E6, 1E12]
-    yticks = [-1.0E15, -1.0E12, -1.0E6, -1.0E0, 0, 1.0E0, 1.0E6, 1.0E12, 1.0E15]
-
-    title = '(a) Convective flux, W m$^{-2}$'
-    fig_o.set_myaxes( ax0, title=title, ylabel='$F_\mathrm{conv}$',
-        yticks=yticks, fmt=flux_fmt, xticks=xticks )
-    ax0.yaxis.set_label_coords(-0.16,0.54)
-
-    ###########
-    # plot Fmix
-    Fmix_file = os.path.join(prefix,'FluxMix_processed.dat')
-    rad, Fmix = np.loadtxt( Fmix_file, unpack=True )
-    depth = 1.0 - rad
-    pres = dep2pres( depth )
-
-    const = flux0
-    Fmix *= const
-
-    Fmix = flux_fmt.ascale( Fmix )
-    handle4, = ax2.plot( pres, Fmix, 'k-' )
-
-    #fig_o.set_mylegend( ax3, handle_l, ncol=2 )
-    title = '(c) Mixing flux, W m$^{-2}$'
-    fig_o.set_myaxes( ax2, title=title, xlabel='$P$ (GPa)', ylabel='$F_\mathrm{mix}$',
-        yticks=yticks, fmt=flux_fmt, xticks=xticks )
-    ax2.yaxis.set_label_coords(-0.16,0.54)
-
-    ###########
-    # plot Ftot
-    pres = np.array([0.0, 140.0])
-    Ftot = np.array([10.0**6, 10.0**6])
-    Ftot = flux_fmt.ascale( Ftot )
-    ax0.plot( pres, Ftot, 'k--' )
-    ax2.plot( pres, Ftot, 'k--' )
-
-    fig_o.savefig(4)
-
-#====================================================================
-def bower_et_al_2018_fig3( times ):
+def spiderplot_fig3( times ):
 
     # article class text width is 4.7747 inches
     # http://tex.stackexchange.com/questions/39383/determine-text-width
 
-    logger.info( 'building bower_et_al_2018_fig3' )
+    logger.info( 'building spiderplot_fig3' )
 
-    fig_o = su.FigureData( 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig3', times )
+    fig_o = su.FigureData( 2, 2, 4.7747, 4.7747, 'spiderplot_basic', times )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -383,9 +139,9 @@ def bower_et_al_2018_fig3( times ):
     # titles and axes labels, legends, etc
     units = myjson_o.get_field_units('S_b')
     title = '(a) Entropy, {}'.format(units)
-    #yticks = [1000,2000,2400,2800,3200]
+    yticks = [1200,1600,2000,2400,2800]
     # Bower et al. (2018)
-    yticks = [1600,2000,2400,2800,3200]
+    #yticks = [1600,2000,2400,2800,3200]
     # DJB used this next range for work with Bayreuth
     #yticks = [300,1000,1600,2000,2400,2800,3200]
     fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, xmax=xmax, yticks=yticks )
@@ -429,11 +185,11 @@ def bower_et_al_2018_fig3( times ):
     fig_o.savefig(1)
 
 #====================================================================
-def bower_et_al_2018_fig4( times ):
+def spiderplot_fig4( times ):
 
-    logger.info( 'building bower_et_al_2018_fig4' )
+    logger.info( 'building spiderplot_fig4' )
 
-    fig_o = su.FigureData( 2, 2, 4.7747, 4.7747, 'bower_et_al_2018_fig4', times )
+    fig_o = su.FigureData( 2, 2, 4.7747, 4.7747, 'spiderplot_fluxes', times )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -513,12 +269,12 @@ def bower_et_al_2018_fig4( times ):
     fig_o.savefig(2)
 
 #====================================================================
-def bower_et_al_2018_fig5( times ):
+def spiderplot_fig5( times ):
 
-    logger.info( 'building bower_et_al_2018_fig5' )
+    logger.info( 'building spiderplot_fig5' )
 
     # keep y the same by scaling (7.1621)
-    fig_o = su.FigureData( 3, 2, 4.7747, 7.1621, 'bower_et_al_2018_fig5', times )
+    fig_o = su.FigureData( 3, 2, 4.7747, 7.1621, 'spiderplot_matprop', times )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -663,18 +419,18 @@ def main():
     # simplified model in Bower et al. (2018)
     # i.e., figs 1,2
     if args.fig1 :
-        bower_et_al_2018_fig1()
+        spiderplot_fig1()
     if args.fig2 :
-        bower_et_al_2018_fig2()
+        spiderplot_fig2()
 
     # reproduce staple figures in Bower et al. (2018)
     # i.e., figs 3,4,5,6,7,8
     if args.fig3 :
-        bower_et_al_2018_fig3( times=args.times )
+        spiderplot_fig3( times=args.times )
     if args.fig4 :
-        bower_et_al_2018_fig4( times=args.times )
+        spiderplot_fig4( times=args.times )
     if args.fig5 :
-        bower_et_al_2018_fig5( times=args.times )
+        spiderplot_fig5( times=args.times )
 
     plt.show()
 

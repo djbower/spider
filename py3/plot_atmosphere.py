@@ -31,38 +31,30 @@ def plot_atmosphere():
     mass_mantle_a = get_single_values_for_times( 'mass_mantle', fig_o.time )
     mass_mantle = mass_mantle_a[0] # time independent
 
-    CO2_initial_a = get_single_values_for_times( 'CO2_initial', fig_o.time )
-    CO2_liquid_a = get_single_values_for_times( 'CO2_liquid', fig_o.time )
-    CO2_solid_a = get_single_values_for_times( 'CO2_solid', fig_o.time )
-    CO2_atmos_a = get_single_values_for_times( 'CO2_atmosphere', fig_o.time )
-
-    H2O_initial_a = get_single_values_for_times( 'H2O_initial', fig_o.time )
-    H2O_liquid_a = get_single_values_for_times( 'H2O_liquid', fig_o.time )
-    H2O_solid_a = get_single_values_for_times( 'H2O_solid', fig_o.time )
-    H2O_atmos_a = get_single_values_for_times( 'H2O_atmosphere', fig_o.time )
-
     # compute total mass (kg) in each reservoir
-    CO2_liquid_kg_a = su.ppm_to_mass_fraction( CO2_liquid_a ) * mass_liquid_a
-    CO2_solid_kg_a = su.ppm_to_mass_fraction( CO2_solid_a ) * mass_solid_a
-    CO2_total_kg_a = su.ppm_to_mass_fraction( CO2_initial_a ) * mass_mantle
+    CO2_liquid_kg_a = get_single_values_for_times( 'CO2_liquid_kg', fig_o.time ) #su.ppm_to_mass_fraction( CO2_liquid_a ) * mass_liquid_a
+    CO2_solid_kg_a = get_single_values_for_times( 'CO2_solid_kg', fig_o.time ) #su.ppm_to_mass_fraction( CO2_solid_a ) * mass_solid_a
+    CO2_total_kg_a = get_single_values_for_times( 'CO2_initial_kg', fig_o.time ) #su.ppm_to_mass_fraction( CO2_initial_a ) * mass_mantle
     CO2_total_kg = CO2_total_kg_a[0] # time-independent
     # TODO: below mass is conserved by definition, but can also
     # compute directly from partial pressure
     CO2_atmos_kg_a = CO2_total_kg - CO2_liquid_kg_a - CO2_solid_kg_a
+    CO2_atmos_a = get_single_values_for_times( 'CO2_atmosphere_bar', fig_o.time )
 
-    H2O_liquid_kg_a = su.ppm_to_mass_fraction( H2O_liquid_a ) * mass_liquid_a
-    H2O_solid_kg_a = su.ppm_to_mass_fraction( H2O_solid_a ) * mass_solid_a
-    H2O_total_kg_a = su.ppm_to_mass_fraction( H2O_initial_a ) * mass_mantle
+    H2O_liquid_kg_a = get_single_values_for_times( 'H2O_liquid_kg', fig_o.time ) # su.ppm_to_mass_fraction( H2O_liquid_a ) * mass_liquid_a
+    H2O_solid_kg_a = get_single_values_for_times( 'H2O_solid_kg', fig_o.time ) # su.ppm_to_mass_fraction( H2O_solid_a ) * mass_solid_a
+    H2O_total_kg_a = get_single_values_for_times( 'H2O_initial_kg', fig_o.time ) #su.ppm_to_mass_fraction( H2O_initial_a ) * mass_mantle
     H2O_total_kg = H2O_total_kg_a[0] # time-independent
     # TODO: below mass is conserved by definition, but can also
     # compute directly from partial pressure
     H2O_atmos_kg_a = H2O_total_kg - H2O_liquid_kg_a - H2O_solid_kg_a
+    H2O_atmos_a = get_single_values_for_times( 'H2O_atmosphere_bar', fig_o.time )
 
     temperature_surface_a = get_single_values_for_times( 'temperature_surface', fig_o.time )
     emissivity_a = get_single_values_for_times( 'emissivity', fig_o.time )
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
-    xticks = [1E-2,1E-1,1E0,1E1,1E2]#,1E4,1E6]#,1]
+    xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
     xlabel = 'Time (Myr)'
 
     red = fig_o.get_color(3)

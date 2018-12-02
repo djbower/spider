@@ -505,11 +505,11 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   H2O->kabs = 0.01; // m^2/kg
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kabs",&H2O->kabs,NULL);CHKERRQ(ierr);
   H2O->kabs *= C->DENSITY * C->RADIUS;
-  H2O->henry = 6.8E-2; // ppm/Pa
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
-  H2O->henry /= C->VOLATILE;
   H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry_pow",&H2O->henry_pow,NULL);CHKERRQ(ierr);
+  H2O->henry = 6.8E-2; // ppm/Pa^(1/henry_pow)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
+  H2O->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/H2O->henry_pow);
 
   /* CO2 volatile */
   CO2->initial = 100.0; // ppm
@@ -521,11 +521,11 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->kabs = 0.05; // m^2/kg
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kabs",&CO2->kabs,NULL);CHKERRQ(ierr);
   CO2->kabs *= C->DENSITY * C->RADIUS;
-  CO2->henry = 4.4E-6; // ppm/Pa
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
-  CO2->henry /= C->VOLATILE;
   CO2->henry_pow = 1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
+  CO2->henry = 4.4E-6; // ppm/Pa^(1/henry_pow)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
+  CO2->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/CO2->henry_pow);
 
   /* radiogenic heating */
   /* aluminium 26 */

@@ -160,13 +160,13 @@ class MyJSON( object ):
 class FigureData( object ):
 
     def __init__( self, nrows, ncols, width, height, outname='fig', 
-        times=None ):
+        times=None, units='kyr' ):
         dd = {}
         self.data_d = dd
         if times:
             dd['time_l'] = times
             self.process_time_list()
-            dd['time_units'] = 'kyr' # hard-coded
+            dd['time_units'] = units
             dd['time_decimal_places'] = 2 # hard-coded
         dd['outname'] = outname
         self.set_properties( nrows, ncols, width, height )
@@ -189,7 +189,7 @@ class FigureData( object ):
         elif units == 'Myr':
             age /= 1.0E6
             label = '%0.2f'
-        elif units == 'Byr':
+        elif units == 'Byr' or units == 'Gyr':
             age /= 1.0E9
             label = '%0.2f'
         #label = '%0.{}e'.format( dp )
@@ -287,17 +287,17 @@ class FigureData( object ):
         self.make_figure()
 
     def set_myaxes( self, ax, title='', xlabel='', xticks='',
-        ylabel='', yticks='', fmt='', xfmt='', xmax='' ):
+        ylabel='', yticks='', fmt='', xfmt='', xmin='', xmax='', ymin='', ymax='' ):
         if title:
             self.set_mytitle( ax, title )
         if xlabel:
             self.set_myxlabel( ax, xlabel )
         if xticks:
-            self.set_myxticks( ax, xticks, xmax, xfmt )
+            self.set_myxticks( ax, xticks, xmin, xmax, xfmt )
         if ylabel:
             self.set_myylabel( ax, ylabel )
         if yticks:
-            self.set_myyticks( ax, yticks, fmt )
+            self.set_myyticks( ax, yticks, ymin, ymax, fmt )
 
     def set_mylegend( self, ax, handles, loc=4, ncol=1, TITLE=1 ):
         dd = self.data_d
@@ -330,7 +330,7 @@ class FigureData( object ):
         label = r'{}'.format( label )
         ax.set_ylabel( label, fontsize=fontsize, rotation=rotation )
 
-    def set_myxticks( self, ax, xticks, xmax, fmt ):
+    def set_myxticks( self, ax, xticks, xmin, xmax, fmt ):
         dd = self.data_d
         if fmt:
             xticks = fmt.ascale( np.array(xticks) )
@@ -339,9 +339,10 @@ class FigureData( object ):
         ax.set_xticks( xticks)
         # set x limits to match extent of ticks
         if not xmax: xmax=xticks[-1]
-        ax.set_xlim( xticks[0], xmax )
+        if not xmin: xmin=xticks[0]
+        ax.set_xlim( xmin, xmax )
 
-    def set_myyticks( self, ax, yticks, fmt ):
+    def set_myyticks( self, ax, yticks, ymin, ymax, fmt ):
         dd = self.data_d
         if fmt:
             yticks = fmt.ascale( np.array(yticks) )
@@ -349,7 +350,9 @@ class FigureData( object ):
                 mpl.ticker.FuncFormatter(fmt))
         ax.set_yticks( yticks)
         # set y limits to match extent of ticks
-        ax.set_ylim( yticks[0], yticks[-1] )
+        if not ymax: ymax=yticks[-1]
+        if not ymin: ymin=yticks[0]
+        ax.set_ylim( ymin, ymax )
 
 #====================================================================
 
