@@ -21,7 +21,7 @@ def figure9():
     PMIN = 1.0 # GPa
     PMAX = 135.0 # GPa
     PHI = 0.4 # melt fraction contour, or -1 for dynamic
-    TPRIME1_PRESSURE = 5.0 # pressure at which rheological transition is assumed to be at the surface
+    TPRIME1_PRESSURE = 20.0 # pressure at which rheological transition is assumed to be at the surface
     #---------------
 
     width = 4.7747
@@ -160,23 +160,49 @@ def figure9():
     ###################
 
     # linear fit to pressure
-    deg = 2
+    deg = 1
     xx = data_a[tprime0ii:tprime1ii,0]-tprime0
     yy = data_a[tprime0ii:tprime1ii,2]
     rheological_pres_poly = np.polyfit( xx, yy, deg )
     rheological_pres_o = np.poly1d( rheological_pres_poly )
-    rheological_pres_fit = rheological_pres_o( data_a[:,1] )
-    ax2.plot( data_a[:,1], rheological_pres_fit )
+    rheological_pres_fit = rheological_pres_o( xx )
+    Rval = Rsquared( yy, rheological_pres_fit )
+    print( 'R^2 for pressure=', Rval )
+    print( 'poly for pressure=', rheological_pres_poly )
+    print( 'minimum for pressure fit=', np.min(rheological_pres_fit) )
+    print( 'maximum for pressure fit=', np.max(rheological_pres_fit) )
+    ax2.plot( xx, rheological_pres_fit )
 
     # linear fit to temperature
-    deg = 2
+    deg = 1
     yy = data_a[tprime0ii:tprime1ii,3]
     rheological_temp_poly = np.polyfit( xx, yy, deg )
     rheological_temp_o = np.poly1d( rheological_temp_poly )
-    rheological_temp_fit = rheological_temp_o( data_a[:,1] )
-    ax3.plot( data_a[:,1], rheological_temp_fit )
+    rheological_temp_fit = rheological_temp_o( xx )
+    Rval = Rsquared( yy, rheological_temp_fit )
+    print( 'R^2 for temperature=', Rval )
+    print( 'poly for temperature=', rheological_temp_poly )
+    print( 'minimum for pressure fit=', np.min(rheological_temp_fit) )
+    print( 'maximum for pressure fit=', np.max(rheological_temp_fit) )
+    ax3.plot( xx, rheological_temp_fit )
+
+    # plot a linear function of pressure, as per the original analytical model
+    # T0c is the intercept of the critical melt fraction at the surface
+    # here, it is actually deduc
+    T0c = np.min(rheological_temp_fit)
+    popt, pcov = curve_fit( in_func(T0c), rheological_pres_fit, yy, p0=[100.0] )   
+    print( 'alpha=', popt )
+    ax3.plot( xx, in_func(T0c)(rheological_pres_fit,*popt) )
 
     fig_o.savefig(9)
+
+
+#====================================================================
+def in_func( T0c ):
+    def in_func2( x, *p ):
+        y = T0c + p[0]*x
+        return y
+    return in_func2
 
 #====================================================================
 def Rsquared( ydata, fmodel ):
