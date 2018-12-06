@@ -15,7 +15,7 @@ def blackbody(rootDir) :
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','blackbody','bu_input.opts'),\
           os.path.join(thisDir,'json_timestep_to_txt.py 100'),
-          os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0,100,200,400,800,1200,1500',\
+          #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0,100,200,400,800,1200,1500',\
           ]
 
   expectedFile = os.path.join(thisDir,'expected.txt')
@@ -43,7 +43,7 @@ def blackbody_init_liquid(rootDir) :
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','blackbody','bu_input.opts') + ' -ic_adiabat_entropy 2700' + ' -nstepsmacro 0',\
           os.path.join(thisDir,'json_timestep_to_txt.py'),
-          os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0',\
+          #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0',\
           ]
 
   expectedFile = os.path.join(thisDir,'expected_init_liquid.txt')
@@ -71,7 +71,7 @@ def blackbody_init_mixed(rootDir) :
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','blackbody','bu_input.opts') + ' -ic_adiabat_entropy 1900' + ' -nstepsmacro 0',\
           os.path.join(thisDir,'json_timestep_to_txt.py'),
-          os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0',\
+          #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0',\
           ]
 
   expectedFile = os.path.join(thisDir,'expected_init_mixed.txt')
@@ -99,7 +99,7 @@ def blackbody_init_solid(rootDir) :
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','blackbody','bu_input.opts') + ' -ic_adiabat_entropy 1100' + ' -nstepsmacro 0',\
           os.path.join(thisDir,'json_timestep_to_txt.py'),
-          os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0',\
+          #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0',\
           ]
 
   expectedFile = os.path.join(thisDir,'expected_init_solid.txt')
