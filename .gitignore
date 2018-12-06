@@ -27,3 +27,6 @@ spider
 
 # output
 output/
+
+# test working directory (should agree with SPIDER_TEST_DIR in Makefile)
+test_dir/
