@@ -35,7 +35,7 @@
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
 -initial_condition 1
--ic_filename output/dSdr_b_aug_0.m
+#-ic_filename output/dSdr_b_aug_0.m
 
 # all units are SI unless indicated otherwise
 
@@ -91,7 +91,7 @@
 # [3] is conventional as [1] above, but additionally allows you to
 #      specify a mid-mantle interface
 -mixing_length 2
--mixing_length_layer_radius 0.0 # non-dimensional radius
+#-mixing_length_layer_radius 0.0 # non-dimensional radius
 
 # physical parameters
 
