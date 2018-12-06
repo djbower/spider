@@ -45,15 +45,17 @@ ${EXNAME} : ${SRC_O}
 	#${RM} $^
 
 ### Tests ######################################################################
+SPIDER_BASIC_TESTS=blackbody
+
 test :
-	cd tests && ./runTests.py -t bottomUpLiquid && cd ..
+	cd tests && ./runTests.py -t ${SPIDER_BASIC_TESTS} && cd ..
 	@printf "To run more tests"
 	@printf "  make testall\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testcheck\n"
 
 testcheck :
-	cd tests && ./runTests.py -v -t bottomUpLiquid && cd ..
+	cd tests && ./runTests.py -v -t ${SPIDER_BASIC_TESTS} && cd ..
 
 testall :
 	cd tests && ./runTests.py && cd ..
