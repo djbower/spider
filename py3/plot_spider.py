@@ -11,37 +11,13 @@ import sys
 
 logger = su.get_my_logger(__name__)
 
-# global constants are the scalings used in Bower et al. (2018)
-# note that these could change for other models
-radius0 = 6371000.0
-entropy0 = 2993.025100070677
-temperature0 = 4033.6070755893948
-density0 = 4613.109568155063
-dSdr0 = entropy0 / radius0
-flux0 = density0 * (entropy0 * temperature0)**(3.0/2.0)
-
 #====================================================================
-def dep2pres( dep ):
-
-    '''Adams-Williamson EOS used to relate pressure and depth'''
-
-    rho_surface = 4078.95095544
-    gravity = 10.0
-    beta = 1.1115348931000002e-07
-
-    dep *= radius0
-    pres = rho_surface*gravity / beta
-    pres *= np.exp( beta * dep) - 1.0 
-    pres *= 1.0E-9 # to GPa
-    return pres
-
-#====================================================================
-def spiderplot_fig3( times ):
+def spiderplot_fig1( times ):
 
     # article class text width is 4.7747 inches
     # http://tex.stackexchange.com/questions/39383/determine-text-width
 
-    logger.info( 'building spiderplot_fig3' )
+    logger.info( 'building spiderplot_fig1' )
 
     fig_o = su.FigureData( 2, 2, 4.7747, 4.7747, 'spiderplot_basic', times )
 
@@ -185,9 +161,9 @@ def spiderplot_fig3( times ):
     fig_o.savefig(1)
 
 #====================================================================
-def spiderplot_fig4( times ):
+def spiderplot_fig2( times ):
 
-    logger.info( 'building spiderplot_fig4' )
+    logger.info( 'building spiderplot_fig2' )
 
     fig_o = su.FigureData( 2, 2, 4.7747, 4.7747, 'spiderplot_fluxes', times )
 
@@ -269,9 +245,9 @@ def spiderplot_fig4( times ):
     fig_o.savefig(2)
 
 #====================================================================
-def spiderplot_fig5( times ):
+def spiderplot_fig3( times ):
 
-    logger.info( 'building spiderplot_fig5' )
+    logger.info( 'building spiderplot_fig3' )
 
     # keep y the same by scaling (7.1621)
     fig_o = su.FigureData( 3, 2, 4.7747, 7.1621, 'spiderplot_matprop', times )
@@ -401,36 +377,26 @@ def main():
     parser.add_argument('-f1', '--fig1', help='Plot figure 1', action="store_true")
     parser.add_argument('-f2', '--fig2', help='Plot figure 2', action="store_true")
     parser.add_argument('-f3', '--fig3', help='Plot figure 3', action="store_true")
-    parser.add_argument('-f4', '--fig4', help='Plot figure 4', action="store_true")
-    parser.add_argument('-f5', '--fig5', help='Plot figure 5', action="store_true")
     args = parser.parse_args()
 
     # if nothing specified, choose a default set
-    if not (args.fig1 or args.fig2 or args.fig3 or args.fig4 or args.fig5):
+    if not (args.fig1 or args.fig2 or args.fig3):
+        args.fig1 = True;
+        args.fig2 = True;
         args.fig3 = True;
-        args.fig4 = True;
-        args.fig5 = True;
 
-    if args.fig3 or args.fig4 or args.fig5:
-        if not args.times:
-            logger.critical( 'You must specify times in a comma-separated list (no spaces) using -t' )
-            sys.exit(0)
-
-    # simplified model in Bower et al. (2018)
-    # i.e., figs 1,2
-    if args.fig1 :
-        spiderplot_fig1()
-    if args.fig2 :
-        spiderplot_fig2()
+    if not args.times:
+        logger.critical( 'You must specify times in a comma-separated list (no spaces) using -t' )
+        sys.exit(0)
 
     # reproduce staple figures in Bower et al. (2018)
     # i.e., figs 3,4,5,6,7,8
+    if args.fig1 :
+        spiderplot_fig1( times=args.times )
+    if args.fig2 :
+        spiderplot_fig2( times=args.times )
     if args.fig3 :
         spiderplot_fig3( times=args.times )
-    if args.fig4 :
-        spiderplot_fig4( times=args.times )
-    if args.fig5 :
-        spiderplot_fig5( times=args.times )
 
     plt.show()
 
