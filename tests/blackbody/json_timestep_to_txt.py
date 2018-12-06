@@ -6,7 +6,12 @@ import os
 import sys
 import json
 
-timestep = 100
+# Interpret the first argument as a timestep to look for
+if len(sys.argv) < 2 :
+    timestep = 0
+else :
+    timestep = int(sys.argv[1])
+print(timestep)
 
 json_data = open(os.path.join('output',str(timestep)+'.json'))
 data_d = json.load(json_data)

@@ -50,6 +50,7 @@ def main() :
     # The set of tests to run
     rootDir = os.path.join(thisDir,'..') # The SPIDER root directory
     allTests = [
+        blackbody_init_liquid(rootDir), \
         blackbody(rootDir),      \
     ]
 
