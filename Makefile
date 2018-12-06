@@ -47,6 +47,8 @@ ${EXNAME} : ${SRC_O}
 ### Tests ######################################################################
 test :
 	cd tests && ./runTests.py -t bottomUpLiquid && cd ..
+	@printf "To run more tests"
+	@printf "  make testall\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testcheck\n"
 
