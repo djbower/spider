@@ -8,8 +8,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
 {
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
-  PetscBool      test_view = PETSC_FALSE;
-  Vec rhs;
   /* it remains convenient to be able to plot both short and long times together
      on the same plot, and since these are output by different settings in main.c,
      it is easiest if the output files reference the actual time in years, rather
@@ -21,8 +19,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
   long long        nstep = (long long) dtmacro_years * (long long )step;
 
   PetscFunctionBeginUser;
-
-  ierr = PetscOptionsGetBool(NULL,NULL,"-test_view",&test_view,NULL);CHKERRQ(ierr);
 
   /* Info for stdout */
   {
@@ -62,10 +58,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     ierr = PetscFree3(subVecs,maxVals,minVals);CHKERRQ(ierr);
   }
 
-  /* Reevaluate the RHS */
-  ierr = VecDuplicate(sol,&rhs);CHKERRQ(ierr);
-  ierr = RHSFunction(ts,time,sol,rhs,ctx);CHKERRQ(ierr);
-
   /* Ensure that the output directory exists */
   if (!mctx->outputDirectoryExistenceConfirmed) {
     PetscBool exists;
@@ -76,34 +68,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     mctx->outputDirectoryExistenceConfirmed = PETSC_TRUE;
   }
 
-  /* Dump the solution to a file named for the timestep */
-  {
-    PetscViewer viewer;
-    char filename[PETSC_MAX_PATH_LEN],vecname[PETSC_MAX_PATH_LEN];
-    ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/sol_%lld.m",P->outputDirectory,nstep);CHKERRQ(ierr);
-    ierr = PetscSNPrintf(vecname,PETSC_MAX_PATH_LEN,"sol",nstep);CHKERRQ(ierr);
-    ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer);CHKERRQ(ierr);
-    ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr); //Annoyingly, PETSc wants you to use binary output so badly that this is the easiest way to get full-precision ASCII..
-    ierr = PetscObjectSetName((PetscObject)sol,vecname);CHKERRQ(ierr);
-    ierr = VecView(sol,viewer);CHKERRQ(ierr);
-    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
-  }
-
-  if (test_view) {
-    PetscViewer viewer;
-    ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
-    ierr = PetscViewerSetType(viewer,PETSCVIEWERASCII);CHKERRQ(ierr);
-    ierr = PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing sol for testing ---\n",time);CHKERRQ(ierr);
-    ierr = VecView(sol,viewer);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- Printing rhs for testing ---\n",time);CHKERRQ(ierr);
-    ierr = VecView(rhs,viewer);CHKERRQ(ierr);
-    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
-  }
-
-  ierr = VecDestroy(&rhs);CHKERRQ(ierr);
-
-  // TODO: once JSON output stable, remove the above old output (leaving the stdout output!)
   /* Dump a JSON file for this timestep */
   {
     PetscMPIInt rank;
@@ -204,23 +168,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
 
         ierr = DMCompositeRestoreAccessArray(ctx->dm_sol,sol,ctx->numFields,NULL,subVecs);CHKERRQ(ierr);
         ierr = PetscFree(subVecs);CHKERRQ(ierr);
-
-        /* TODO: scalings are incorporated into the outputs below, but
-           keeping these scalings to document at some point */
-        //MASS = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
-        //FAC = C->VOLATILE / 1.0E6;
-        //Msol = A->Msol * MASS;
-        //Mliq = A->Mliq * MASS;
-        // CO2
-        //sol0 = FAC * x0 * CO2->kdist * Msol; // solid
-        //liq0 = FAC * x0 * Mliq; // liquid
-        //atm0 = A->m0 * MASS; // atmosphere
-        //tot0 = FAC * CO2->initial * M->mantle_mass * MASS; // total
-        // H2O
-        //sol1 = FAC * x1 * H2O->kdist * Msol; // solid
-        //liq1 = FAC * x1 * Mliq; // liquid
-        //atm1 = A->m1 * MASS; // atmosphere
-        //tot1 = FAC * H2O->initial * M->mantle_mass * MASS; // total
 
         /* total liquid mass of mantle, kg */
         {
