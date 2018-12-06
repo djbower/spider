@@ -80,7 +80,7 @@
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
 -initial_condition 1
--ic_filename output/dSdr_b_aug_0.m
+#-ic_filename output/dSdr_b_aug_0.m
 # this next value is computed as the entropy at the base of the mantle for the liquidus
 -ic_adiabat_entropy 2593.133034435059 #2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
 -ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
@@ -99,7 +99,7 @@
 #      specify a mid-mantle interface
 
 -mixing_length 1
--mixing_length_layer_radius 0.0 # non-dimensional radius
+#-mixing_length_layer_radius 0.0 # non-dimensional radius
 
 # physical parameters
 
