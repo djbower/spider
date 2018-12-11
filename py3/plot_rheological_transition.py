@@ -21,7 +21,7 @@ def figure9():
     PMIN = 1.0 # GPa
     PMAX = 135.0 # GPa
     PHI = 0.4 # melt fraction contour, or -1 for dynamic
-    TPRIME1_PRESSURE = 20.0 # pressure at which rheological transition is assumed to be at the surface
+    TPRIME1_PRESSURE = 10.0 # pressure at which rheological transition is assumed to be at the surface
     #---------------
 
     width = 4.7747
@@ -190,17 +190,29 @@ def figure9():
     # T0c is the intercept of the critical melt fraction at the surface
     # here, it is actually deduc
     T0c = np.min(rheological_temp_fit)
-    popt, pcov = curve_fit( in_func(T0c), rheological_pres_fit, yy, p0=[100.0] )   
+    #T0c = np.min(yy)
+    popt, pcov = curve_fit( in_func(T0c), rheological_pres_fit, yy, p0=[100.0,1.0] )   
+    print( 'T0c=', T0c )
     print( 'alpha=', popt )
-    ax3.plot( xx, in_func(T0c)(rheological_pres_fit,*popt) )
+    h1 = ax3.plot( xx, in_func(T0c)(rheological_pres_fit,*popt), label='Free fit' )
+    h2 = ax3.plot( xx, in_func2(T0c)(rheological_pres_fit,*popt), label='With T0c fit' )
+    ax3.legend()
 
     fig_o.savefig(9)
 
+#====================================================================
+def in_func2( T0c ):
+    def in_func3( x, *p ):
+        y = T0c + p[0]*x
+        #y = p[1] + p[0]*x
+        return y
+    return in_func3
 
 #====================================================================
 def in_func( T0c ):
     def in_func2( x, *p ):
-        y = T0c + p[0]*x
+        #y = T0c + p[0]*x
+        y = p[1] + p[0]*x
         return y
     return in_func2
 
