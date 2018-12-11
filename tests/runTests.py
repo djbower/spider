@@ -28,9 +28,7 @@ import pyTestHarness.harness as pthharness
 import pyTestHarness.version as pthversion
 
 # Import functions to generate tests
-from bottomUpLiquid.tests import *
-from bottomUpMixed.tests  import *
-from bottomUpSolid.tests  import *
+from blackbody.tests import *
 
 def main() :
 
@@ -52,9 +50,10 @@ def main() :
     # The set of tests to run
     rootDir = os.path.join(thisDir,'..') # The SPIDER root directory
     allTests = [
-        bottomUpSolid(rootDir),  \
-        bottomUpMixed(rootDir),  \
-        bottomUpLiquid(rootDir), \
+        blackbody_init_liquid(rootDir), \
+        blackbody_init_mixed(rootDir), \
+        blackbody_init_solid(rootDir), \
+        blackbody(rootDir),      \
     ]
 
     # Run tests

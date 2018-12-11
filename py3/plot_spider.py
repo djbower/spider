@@ -181,8 +181,8 @@ def spiderplot_fig2( times ):
     for nn, time in enumerate( fig_o.time ):
         # In Bower et al. (2018), just every other line
         # is plotted for visual clarity (uncomment below)
-        if (nn-1) % 2:
-            continue
+        #if (nn-1) % 2:
+        #    continue
 
         # read json
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
@@ -271,8 +271,8 @@ def spiderplot_fig3( times ):
     for nn, time in enumerate( fig_o.time ):
         # In Bower et al. (2018), just every other line
         # is plotted for visual clarity (uncomment below)
-        if (nn-1) % 2:
-            continue
+        #if (nn-1) % 2:
+        #    continue
 
         # read json
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )

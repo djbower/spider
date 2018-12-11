@@ -14,6 +14,10 @@ SRC_C = main.c ctx.c rhs.c ic.c mesh.c lookup.c bc.c util.c twophase.c \
 # Main Target
 all :: ${EXNAME}
 
+### SPIDER Root Directory #####################################################
+# Placement of this line matters. It will only work before any "include"s
+SPIDER_ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
 ### PETSc ######################################################################
 # Include PETSc variables and rules
 include ${PETSC_DIR}/lib/petsc/conf/variables
@@ -29,10 +33,8 @@ CFLAGS+=${CFLAGS_EXTRA}
 # Generate dependency (.d) files as we compile
 CFLAGS+=${C_DEPFLAGS}
 
-# Provide the current directory so that absolute
-# paths to data files can be constructed. Note that this assumes that CURDIR
-# is correct (you can break this with make -f /somewhere/else/to/here/Makefile)
-CFLAGS+=-DSPIDER_ROOT_DIR=${CURDIR}
+# Provide the current directory so that absolute paths to data files can be constructed.
+CFLAGS+=-DSPIDER_ROOT_DIR=${SPIDER_ROOT_DIR}
 
 ### Compiling/Linking  #########################################################
 
@@ -45,23 +47,38 @@ ${EXNAME} : ${SRC_O}
 	#${RM} $^
 
 ### Tests ######################################################################
-test :
-	cd tests && ./runTests.py -t bottomUpLiquid && cd ..
+SPIDER_TEST_DIR=${SPIDER_ROOT_DIR}/test_dir
+SPIDER_TEST_SCRIPT=${SPIDER_ROOT_DIR}/tests/runTests.py
+SPIDER_TEST_CONF=${SPIDER_TEST_DIR}/pth.conf
+
+test_create_output_dir :
+	mkdir -p ${SPIDER_TEST_DIR}
+
+# Basic Tests
+SPIDER_BASIC_TESTS=blackbody
+
+test : test_create_output_dir
+	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t ${SPIDER_BASIC_TESTS} && cd -
+	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
+	@printf "To run more tests"
+	@printf "  make testall\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testcheck\n"
 
-testcheck :
-	cd tests && ./runTests.py -v -t bottomUpLiquid && cd ..
+testcheck : test_create_output_dir
+	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -t ${SPIDER_BASIC_TESTS} && cd -
 
-testall :
-	cd tests && ./runTests.py && cd ..
+# All Tests
+testall : test_create_output_dir
+	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} && cd -
+	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testallcheck\n"
 
-testallcheck :
-	cd tests && ./runTests.py -v && cd ..
+testallcheck : test_create_output_dir
+	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v && cd -
 
-.PHONY: test testall
+.PHONY: test testall test_create_output_dir
 
 ### Dependencies ###############################################################
 SRC_D = ${SRC_C:%.c=%.d}
