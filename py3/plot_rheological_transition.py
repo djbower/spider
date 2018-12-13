@@ -20,7 +20,7 @@ def figure9():
     # pressure cut-offs for curve fitting and plotting
     #PMIN = 1.0 # GPa # TODO: CURRENTLY NOT USED
     #PMAX = 135.0 # GPa # TODO: CURRENTLY NOT USED
-    PHI = 0.4 # melt fraction contour, or -1 for dynamic
+    PHI = -1 #0.4 # melt fraction contour, or -1 for dynamic
     TPRIME1_PRESSURE = 15.0 # pressure at which rheological transition is assumed to be at the surface
     #---------------
 
@@ -125,9 +125,9 @@ def figure9():
     ax1.axvline( tprime1, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax1.text( tprime1, 0.82, '$t^\prime_1$', ha='right', va='bottom', transform = trans )
     title = r'(b) $T0_m(t)$, K'
-    yticks = [1500,2000,2500,3000,3500,4000]
+    yticks = [1300,1400,1500,1600,1700]#2000,2500,3000,3500,4000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$T0_m$', xlabel='$t$ (yrs)', yticks=yticks )
-    ax1.set_ylim( [1000,4500])
+    ax1.set_ylim( [1300,1700])
     ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     ax1.yaxis.set_label_coords(-0.2,0.575)
     # ---- end surface temperature ----
@@ -166,7 +166,9 @@ def figure9():
     print('delta time=', dt )
 
     # linear fit to pressure, using a polynomial
-    deg = 1
+    # TODO: fix P_cmb, and then just fit gradient
+    # TODO: 2nd order fit is better for dynamic criteria - but why?
+    deg = 2
     xx = data_a[tprime0ii:tprime1ii,0]-tprime0
     yy_pres = data_a[tprime0ii:tprime1ii,2]
     rheological_pres_poly = np.polyfit( xx, yy_pres, deg )
@@ -182,8 +184,9 @@ def figure9():
     print( 'maximum for fit=', np.max(rheological_pres_fit) )
     ax2.plot( xx, rheological_pres_fit )
 
-    # linear fit to temperature, not based on a physical model
-    #deg = 1
+    # linear fit to temperature, using a polynomial
+    # TODO: fix Tc_cmb, and then just fit gradient
+    deg = 2
     yy_temp = data_a[tprime0ii:tprime1ii,3]
     rheological_temp_poly = np.polyfit( xx, yy_temp, deg )
     rheological_temp_o = np.poly1d( rheological_temp_poly )
