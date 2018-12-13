@@ -18,10 +18,10 @@ def figure9():
     # flag to enable data output
     EXPORT = True
     # pressure cut-offs for curve fitting and plotting
-    PMIN = 1.0 # GPa
-    PMAX = 135.0 # GPa
+    #PMIN = 1.0 # GPa # TODO: CURRENTLY NOT USED
+    #PMAX = 135.0 # GPa # TODO: CURRENTLY NOT USED
     PHI = 0.4 # melt fraction contour, or -1 for dynamic
-    TPRIME1_PRESSURE = 10.0 # pressure at which rheological transition is assumed to be at the surface
+    TPRIME1_PRESSURE = 15.0 # pressure at which rheological transition is assumed to be at the surface
     #---------------
 
     width = 4.7747
@@ -159,60 +159,78 @@ def figure9():
     ##### fitting #####
     ###################
 
-    # linear fit to pressure
+    print('----times----')
+    print('tprime0=', tprime0 )
+    print('tprime1=', tprime1 )
+    dt = tprime1 - tprime0
+    print('delta time=', dt )
+
+    # linear fit to pressure, using a polynomial
     deg = 1
     xx = data_a[tprime0ii:tprime1ii,0]-tprime0
-    yy = data_a[tprime0ii:tprime1ii,2]
-    rheological_pres_poly = np.polyfit( xx, yy, deg )
+    yy_pres = data_a[tprime0ii:tprime1ii,2]
+    rheological_pres_poly = np.polyfit( xx, yy_pres, deg )
     rheological_pres_o = np.poly1d( rheological_pres_poly )
     rheological_pres_fit = rheological_pres_o( xx )
-    Rval = Rsquared( yy, rheological_pres_fit )
+    Rval = Rsquared( yy_pres, rheological_pres_fit )
+    print('----pressure fit----')
     print( 'R^2 for pressure=', Rval )
     print( 'poly for pressure=', rheological_pres_poly )
-    print( 'minimum for pressure fit=', np.min(rheological_pres_fit) )
-    print( 'maximum for pressure fit=', np.max(rheological_pres_fit) )
+    print( 'gradient=', rheological_pres_poly[0] )
+    print( 'intercept=', rheological_pres_poly[1] )
+    print( 'minimum for fit=', np.min(rheological_pres_fit) )
+    print( 'maximum for fit=', np.max(rheological_pres_fit) )
     ax2.plot( xx, rheological_pres_fit )
 
-    # linear fit to temperature
-    deg = 1
-    yy = data_a[tprime0ii:tprime1ii,3]
-    rheological_temp_poly = np.polyfit( xx, yy, deg )
+    # linear fit to temperature, not based on a physical model
+    #deg = 1
+    yy_temp = data_a[tprime0ii:tprime1ii,3]
+    rheological_temp_poly = np.polyfit( xx, yy_temp, deg )
     rheological_temp_o = np.poly1d( rheological_temp_poly )
     rheological_temp_fit = rheological_temp_o( xx )
-    Rval = Rsquared( yy, rheological_temp_fit )
+    Rval = Rsquared( yy_temp, rheological_temp_fit )
+    print('----temperature fit----')
     print( 'R^2 for temperature=', Rval )
     print( 'poly for temperature=', rheological_temp_poly )
-    print( 'minimum for pressure fit=', np.min(rheological_temp_fit) )
-    print( 'maximum for pressure fit=', np.max(rheological_temp_fit) )
+    print( 'gradient=', rheological_temp_poly[0] )
+    print( 'intercept=', rheological_pres_poly[1] )
+    print( 'minimum for fit=', np.min(rheological_temp_fit) )
+    print( 'maximum for fit=', np.max(rheological_temp_fit) )
+    alpha = - rheological_temp_poly[1] / rheological_pres_poly[1]
+    print( 'alpha=', alpha )
     ax3.plot( xx, rheological_temp_fit )
 
     # plot a linear function of pressure, as per the original analytical model
     # T0c is the intercept of the critical melt fraction at the surface
     # here, it is actually deduc
-    T0c = np.min(rheological_temp_fit)
+    #T1c = np.max(yy_temp)
+    #P1c = np.max(yy_pres)
     #T0c = np.min(yy)
-    popt, pcov = curve_fit( in_func(T0c), rheological_pres_fit, yy, p0=[100.0,1.0] )   
-    print( 'T0c=', T0c )
-    print( 'alpha=', popt )
-    h1 = ax3.plot( xx, in_func(T0c)(rheological_pres_fit,*popt), label='Free fit' )
-    h2 = ax3.plot( xx, in_func2(T0c)(rheological_pres_fit,*popt), label='With T0c fit' )
-    ax3.legend()
+    #popt, pcov = curve_fit( in_func2(T1c,P1c), rheological_pres_fit, yy_temp, p0=[100.0,1.0] )   
+    #popt2, pcov2 = curve_fit( in_func(T1c,P1c), rheological_pres_fit, yy_temp, p0=[100.0,1.0] )
+    #print( 'T1c=', T1c )
+    #print( 'P1c=', P1c )
+    #print( 'popt=', popt )
+    #print( 'popt2=', popt2 )
+    #h1 = ax3.plot( xx, in_func2(T1c,P1c)(rheological_pres_fit,*popt), label='Fit' )
+    #h2 = ax3.plot( xx, in_func(T1c,P1c)(rheological_pres_fit,*popt2), label='Fit2' )
+    #ax3.legend()
 
     fig_o.savefig(9)
 
 #====================================================================
-def in_func2( T0c ):
+def in_func2( T1c, P1c ):
     def in_func3( x, *p ):
-        y = T0c + p[0]*x
+        y = T1c - p[0]*(P1c-x)
         #y = p[1] + p[0]*x
         return y
     return in_func3
 
 #====================================================================
-def in_func( T0c ):
+def in_func( T1c, P1c ):
     def in_func2( x, *p ):
         #y = T0c + p[0]*x
-        y = p[1] + p[0]*x
+        y = p[1] - p[0]*(P1c-x)
         return y
     return in_func2
 
@@ -221,13 +239,13 @@ def Rsquared( ydata, fmodel ):
 
     # sum of squares of residuals
     ybar = np.mean( ydata )
-    print( 'ybar=', ybar )
+    #print( 'ybar=', ybar )
     SSres = np.sum( np.square(ydata-fmodel) )
-    print( 'SSres=', SSres )
+    #print( 'SSres=', SSres )
     SStot = np.sum( np.square(ydata-ybar) )
-    print( 'SStot=', SStot )
+    #print( 'SStot=', SStot )
     Rsquared = 1.0 - SSres/SStot
-    print( 'Rsquared=', Rsquared )
+    #print( 'Rsquared=', Rsquared )
 
     return Rsquared
 
