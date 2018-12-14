@@ -7,7 +7,7 @@ import matplotlib.transforms as transforms
 import numpy as np
 import argparse
 from scipy.optimize import curve_fit
-import os
+import os, sys
 
 #====================================================================
 def figure9():
@@ -53,6 +53,7 @@ def figure9():
             # dynamic criteria
             yy1 = myjson_o.get_scaled_field_values( 'regime_b' )
             yy2 = 1.5
+            print( 'min(yy1)={}, max(yy1)={}'.format(np.min(yy1), np.max(yy1)))
         else:
             # melt fraction criteria
             yy1 = myjson_o.get_scaled_field_values( 'phi_b' )
@@ -74,16 +75,24 @@ def figure9():
         if ind is not None: # before rheological transition reaches CMB
             # save the time at which the rheological transition first
             # reaches the CMB
+            print( 'ind is not None')
             try:
                 tprime0
+                print('try tprime0')
+                #if tprime0:
+                #    print('tprime0 exists')
             except NameError:
+                print('in except block')
+                print('setting tprime0={}'.format(time))
                 tprime0 = time
+                print(tprime0)
                 tprime0ii = ii
             mantle_rheological_pres = xx_pres_b[ind]
             if mantle_rheological_pres < TPRIME1_PRESSURE:
                 try:
                     tprime1
                 except NameError:
+                    print('setting tprime1={}'.format(time))
                     tprime1 = time
                     tprime1ii = ii
             mantle_rheological_temp = mantle_temp[ind]
@@ -95,11 +104,24 @@ def figure9():
         data_l.append( ( time, time, mantle_rheological_pres, mantle_rheological_temp,
             mantle_surface_temp, mantle_surface_flux ) )
 
+    if not tprime0:
+        print('ERROR: tprime0 not set during time loop')
+    if not tprime1:
+        print('ERROR: tprime1 not set during time loop')
+    if not tprime0 or not tprime1:
+        sys.exit(1)
+
     # reshape into numpy array
     data_a = np.reshape( data_l, (-1,6) )
     # tprime0 defines the time at which the rheological front is at the CMB
     #tprime0 = data_a[0,0]
     data_a[:,1] -= tprime0
+
+    print('----times----')
+    print('tprime0=', tprime0 )
+    print('tprime1=', tprime1 )
+    dt = tprime1 - tprime0
+    print('delta time=', dt )
 
     # ---------------------------
     # ---- surface heat flux ----
@@ -158,12 +180,6 @@ def figure9():
     ###################
     ##### fitting #####
     ###################
-
-    print('----times----')
-    print('tprime0=', tprime0 )
-    print('tprime1=', tprime1 )
-    dt = tprime1 - tprime0
-    print('delta time=', dt )
 
     # linear fit to pressure, using a polynomial
     # TODO: fix P_cmb, and then just fit gradient
