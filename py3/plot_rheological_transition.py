@@ -72,7 +72,10 @@ def figure9():
         pres = su.find_xx_for_yy( xx_pres_b, yy1, yy2 )
         ind = su.get_first_non_zero_index( pres )
         print( 'ind=', ind )
-        if ind is not None: # before rheological transition reaches CMB
+        # if the initial condition is not great, then it can 'accidentally' trigger
+        # regimes switches, even though in principle everything super-liquidus should
+        # start out in the inviscid regime.  So ignore the first time.
+        if int(time) is not 0 and ind is not None: # before rheological transition reaches CMB
             # save the time at which the rheological transition first
             # reaches the CMB
             print( 'ind is not None')
