@@ -60,7 +60,7 @@ SPIDER_BASIC_TESTS=blackbody
 test : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t ${SPIDER_BASIC_TESTS} && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
-	@printf "To run more tests"
+	@printf "To run more tests\n"
 	@printf "  make testall\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testcheck\n"

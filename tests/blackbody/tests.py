@@ -22,7 +22,7 @@ def blackbody(rootDir) :
 
   def comparefunc(t) :
       t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
-      t.compareFloatingPointRelative(re.escape('val: '),    1e-10) # likely too tight
+      t.compareFloatingPointRelative(re.escape('val: '),    1e-5)
 
   # Create Test Object
   t = pthtest.Test(testName,ranks,launch,expectedFile)
@@ -50,7 +50,7 @@ def blackbody_init_liquid(rootDir) :
 
   def comparefunc(t) :
       t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
-      t.compareFloatingPointRelative(re.escape('val: '),    1e-10) # likely too tight
+      t.compareFloatingPointRelative(re.escape('val: '),    1e-5)
 
   # Create Test Object
   t = pthtest.Test(testName,ranks,launch,expectedFile)
@@ -78,7 +78,7 @@ def blackbody_init_mixed(rootDir) :
 
   def comparefunc(t) :
       t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
-      t.compareFloatingPointRelative(re.escape('val: '),    1e-10) # likely too tight
+      t.compareFloatingPointRelative(re.escape('val: '),    1e-5)
 
   # Create Test Object
   t = pthtest.Test(testName,ranks,launch,expectedFile)
