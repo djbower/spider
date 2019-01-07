@@ -99,6 +99,8 @@ typedef struct RadiogenicIsotopeParameters_ {
 typedef struct CompositionalParameters_ {
     PetscScalar X0Brg; // user-defined
     PetscScalar muRes_muBrg; // user-defined
+    /* next should really be the same as phi_critical, unless you
+       have a really convincing reason otherwise! */
     PetscScalar rheological_front_phi; // user-defined
     PetscInt rheological_front_index; // dynamically updated by code during time stepping
 } CompositionalParameters;

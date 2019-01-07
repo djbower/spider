@@ -623,7 +623,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->COMPOSITION = PETSC_FALSE;
   Comp->X0Brg = 0.794;
   Comp->muRes_muBrg = 1.2362;
-  Comp->rheological_front_phi = 0.4;
+  /* next should really be the same as phi_critical! */
+  Comp->rheological_front_phi = P->phi_critical;
   Comp->rheological_front_index = 0; // updated by code, but initialise here
   ierr = PetscOptionsGetBool(NULL,NULL,"-COMPOSITION",&P->COMPOSITION,NULL);CHKERRQ(ierr);
   if( P->COMPOSITION ){
