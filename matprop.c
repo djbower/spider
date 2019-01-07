@@ -611,11 +611,12 @@ static PetscErrorCode set_rheological_front_index( Ctx *E )
 
     /* this simple algorithm counts up from the surface towards the
        CMB until the melt fraction at a staggered node is larger than
-       the value used to define the base of the magma ocean.  Once
-       this value is reached, the loop is exited and the index
-       returned.  There are many instances when this algorithm could
-       return nonsense values, but as long as the magma ocean is
-       generally crystalising from the bottom-up, it should be OK */
+       the melt fraction value (rheological_front_phi) used to define
+       the base of the magma ocean.  Once this value is reached, the 
+       loop is exited and the index stored for later use.  There are 
+       many instances when this algorithm could return nonsense 
+       values, but as long as the magma ocean is generally 
+       crystalising from the bottom-up, it should be OK */
 
     for(i=ilo_s; i<ihi_s; ++i){
         phi = arr_phi_s[i];
@@ -628,6 +629,7 @@ static PetscErrorCode set_rheological_front_index( Ctx *E )
 
     ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
 
+    // store in CompositionalParameters structure for later use
     Comp->rheological_front_index = index;
 
     PetscFunctionReturn(0);
