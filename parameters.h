@@ -97,9 +97,10 @@ typedef struct RadiogenicIsotopeParameters_ {
 
 /* compositional differentiation */
 typedef struct CompositionalParameters_ {
-    PetscScalar X0Brg;
-    PetscScalar muRes_muBrg;
-    PetscScalar rheological_front_phi;
+    PetscScalar X0Brg; // user-defined
+    PetscScalar muRes_muBrg; // user-defined
+    PetscScalar rheological_front_phi; // user-defined
+    PetscInt rheological_front_index; // dynamically updated by code during time stepping
 } CompositionalParameters;
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;

@@ -624,6 +624,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Comp->X0Brg = 0.794;
   Comp->muRes_muBrg = 1.2362;
   Comp->rheological_front_phi = 0.4;
+  Comp->rheological_front_index = 0; // updated by code, but initialise here
   ierr = PetscOptionsGetBool(NULL,NULL,"-COMPOSITION",&P->COMPOSITION,NULL);CHKERRQ(ierr);
   if( P->COMPOSITION ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-X0Brg",&Comp->X0Brg,NULL);CHKERRQ(ierr);
