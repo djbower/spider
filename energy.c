@@ -285,6 +285,9 @@ static PetscErrorCode append_Jcond( Ctx *E )
 /* gravitational separation heat flux at basic nodes */
 static PetscErrorCode append_Jgrav( Ctx *E )
 {
+
+    /* FIXME: this needs updating for composition! */
+
     PetscErrorCode ierr;
     Solution *S = &E->solution;
     Vec cond1, cond2, F;

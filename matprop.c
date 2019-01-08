@@ -29,7 +29,7 @@ PetscErrorCode set_capacitance_staggered( Ctx *E )
        even if they do not feedback into the density calculation */
     /* determine values to implement compositional differentiation */
     //if(P->COMPOSITION){
-    ierr = initialise_composition( E ); CHKERRQ(ierr);
+    ierr = set_composition( E ); CHKERRQ(ierr);
     //}
 
     ierr = set_matprop_staggered( E ); CHKERRQ(ierr);
@@ -99,6 +99,8 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     DM                da_s=E->da_s;
     Lookup const      *L;
     Mesh              *M = &E->mesh;
+    Parameters const  *P = &E->parameters;
+    CompositionalParameters const *Comp = &P->compositional_parameters;
     Solution          *S = &E->solution;
     Vec               pres_s = M->pressure_s;
     // material properties that are updated here
@@ -111,8 +113,6 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     PetscScalar       rho_sol, temp_sol, cp_sol;
     PetscScalar       rho_mel, temp_mel, cp_mel;
     PetscScalar       rho_mix, temp_mix, cp_mix;
-
-    Parameters const   *P = &E->parameters;
 
     PetscFunctionBeginUser;
 
@@ -151,8 +151,25 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
         cp_mel = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
 
         /* mixed phase */
-        rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
-        rho_mix = 1.0 / rho_mix;
+        //rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
+        //rho_mix = 1.0 / rho_mix;
+
+        /* TODO: run this past Aaron */
+        if(P->COMPOSITION){
+            rho_mel *= Comp->mass_ratio_liquidus;
+            rho_mix = arr_liquidus_rho_s[i];
+            if(i < Comp->rheological_front_index){
+                rho_mix *= Comp->mo_mass_ratio;
+            }
+            else{
+                rho_mix *= Comp->mass_ratio_liquidus;
+            }
+        }
+        else{
+            rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
+            rho_mix = 1.0 / rho_mix;
+        }
+
         temp_mix = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
         cp_mix = arr_cp_mix_s[i];
 
@@ -222,6 +239,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     Lookup const      *L;
     Mesh              *M = &E->mesh;
     Parameters const  *P = &E->parameters;
+    CompositionalParameters const *Comp = &P->compositional_parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -305,8 +323,25 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       log10visc_mel = get_log10_viscosity_melt( arr_temp[i], arr_pres[i], arr_layer_b[i], P );
 
       /* mixed phase */
-      rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
-      rho_mix = 1.0 / rho_mix;
+      //rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
+      //rho_mix = 1.0 / rho_mix;
+
+      /* TODO: run past Aaron */
+      if(P->COMPOSITION){
+          rho_mel *= Comp->mass_ratio_liquidus;
+          rho_mix = arr_liquidus_rho[i];
+          if(i <= Comp->rheological_front_index){
+              rho_mix *= Comp->mo_mass_ratio;
+          }
+          else{
+              rho_mix *= Comp->mass_ratio_liquidus;
+          }
+      }
+      else{
+          rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
+          rho_mix = 1.0 / rho_mix;
+      }
+
       dTdrs_mix = arr_dTdrs_mix[i];
       cp_mix = arr_cp_mix[i];
       temp_mix = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );

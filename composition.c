@@ -8,6 +8,28 @@ static PetscErrorCode set_magma_ocean_mass_ratio( Ctx * );
 PetscErrorCode initialise_composition( Ctx *E )
 {
     PetscErrorCode   ierr;
+    Parameters *P = &E->parameters;
+    CompositionalParameters *Comp = &P->compositional_parameters;
+
+    PetscFunctionBeginUser;
+
+    /* need to know the mass ratio at the liquidus to scale the
+       pure-bridgmanite lookup data appropriately */
+
+    Comp->mo_crystal_fraction = 0.0;
+    ierr = set_magma_ocean_bridgmanite_fraction( E ); CHKERRQ(ierr);
+    ierr = set_magma_ocean_mass_ratio( E ); CHKERRQ(ierr);
+
+    /* this is static, because we always need this quantity */
+    Comp->mass_ratio_liquidus = Comp->mo_mass_ratio;
+
+    PetscFunctionReturn(0);
+
+}
+
+PetscErrorCode set_composition( Ctx *E )
+{
+    PetscErrorCode   ierr;
 
     PetscFunctionBeginUser;
 
@@ -125,6 +147,15 @@ static PetscErrorCode set_magma_ocean_crystal_fraction( Ctx *E )
 
 static PetscErrorCode set_magma_ocean_bridgmanite_fraction( Ctx *E )
 {
+    /* Derived as follows:
+    *      phi * X_Brg^liq + (1-phi) * X_Brg^sol = X_Brg^0
+    *      where phi is MELT fraction
+    *  since we assume that Brg is the crystallising phase:
+    *      X_Brg^sol = 1
+    *  and rearranging, and noting that CRYSTAL fraction is
+    *  1-MELT fraction, gives the desired expression for X_Brg^liq
+    */
+
     Parameters               *P = &E->parameters;
     CompositionalParameters  *Comp = &P->compositional_parameters;
     PetscScalar              mo_crystal_fraction, XBrg;
@@ -142,6 +173,13 @@ static PetscErrorCode set_magma_ocean_bridgmanite_fraction( Ctx *E )
 
 static PetscErrorCode set_magma_ocean_mass_ratio( Ctx *E )
 {
+    /* Derived as follows:
+    *      M_BSE = X_Brg M_Brg + X_res M_res
+    *      and X_Brg + X_res = 1
+    *  Therefore:
+    *      M_BSE / M_Brg = X_Brg + (1-X_Brg) * (M_res / M_Brg)
+    */
+
     Parameters               *P = &E->parameters;
     CompositionalParameters  *Comp = &P->compositional_parameters;
     PetscScalar              mo_mass_ratio;

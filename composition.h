@@ -3,6 +3,7 @@
 
 #include "ctx.h"
 
+PetscErrorCode set_composition( Ctx * );
 PetscErrorCode initialise_composition( Ctx * );
 
 #endif

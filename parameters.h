@@ -98,6 +98,7 @@ typedef struct RadiogenicIsotopeParameters_ {
 /* compositional differentiation */
 typedef struct CompositionalParameters_ {
     PetscScalar X0Brg; // user-defined
+    PetscScalar mass_ratio_liquidus; // computed by code
     PetscScalar muRes_muBrg; // user-defined
     /* next should really be the same as phi_critical, unless you
        have a really convincing reason otherwise! */

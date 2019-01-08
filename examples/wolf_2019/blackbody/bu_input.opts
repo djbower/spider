@@ -31,6 +31,8 @@
 # number of basic nodes
 -n 200
 
+-COMPOSITION 1
+
 # all units are SI unless indicated otherwise
 
 # primary scaling parameters

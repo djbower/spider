@@ -246,6 +246,22 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
+        /* magma ocean mass ratio at liquidus */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = 1;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"mass_ratio_liquidus");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mass_ratio_liquidus,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
       }
 
       /* atmosphere */
