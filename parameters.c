@@ -631,6 +631,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Comp->mo_crystal_fraction = -1.0; // updated by code, but initialise here
   Comp->mo_bridgmanite_fraction = -1.0; // updated by code, but initialise here
   Comp->mo_mass_ratio = -1.0; // updated by code, but initialise here
+  Comp->mass_ratio_liquidus = -1.0; // initialised to sensible value later
   ierr = PetscOptionsGetBool(NULL,NULL,"-COMPOSITION",&P->COMPOSITION,NULL);CHKERRQ(ierr);
   if( P->COMPOSITION ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-X0Brg",&Comp->X0Brg,NULL);CHKERRQ(ierr);
