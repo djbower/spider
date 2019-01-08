@@ -1,6 +1,6 @@
 pipelines:
   branches:
-    master:
+    '{master,djbower/perturb}':
       - step:
           caches:
             - petsc-double-direct
