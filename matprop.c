@@ -1,10 +1,11 @@
 #include "matprop.h"
 #include "util.h"
 #include "lookup.h"
+#include "twophase.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscErrorCode set_melt_fraction_staggered( Ctx * );
-static PetscErrorCode set_rheological_front_index( Ctx * );
+static PetscErrorCode set_rheological_front( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );
 static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const *);
 static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
@@ -24,9 +25,14 @@ PetscErrorCode set_capacitance_staggered( Ctx *E )
 
     ierr = set_melt_fraction_staggered( E ); CHKERRQ(ierr);
 
-    /* determine base of magma ocean for compositional differentiation */
+    /* always determine location of rheological front based on a
+       critical melt fraction criterion, since why not */
+    ierr = set_rheological_front( E ); CHKERRQ(ierr);
+
+    /* determine values to implement compositional differentiation */
     if(P->COMPOSITION){
-        ierr = set_rheological_front_index( E ); CHKERRQ(ierr);
+        ierr = set_magma_ocean_crystal_fraction( E ); CHKERRQ(ierr);
+        ierr = set_magma_ocean_XBrg( E ); CHKERRQ(ierr);
     }
 
     ierr = set_matprop_staggered( E ); CHKERRQ(ierr);
@@ -589,16 +595,17 @@ static PetscScalar get_viscosity_mix_no_skew( PetscScalar meltf, Parameters cons
 
 }
 
-static PetscErrorCode set_rheological_front_index( Ctx *E )
+static PetscErrorCode set_rheological_front( Ctx *E )
 {
     PetscErrorCode   ierr;
-    PetscInt         i,ilo_s,ihi_s,w_s,index;
+    PetscInt         i,ilo_s,ihi_s,w_s;
     DM               da_s=E->da_s;
+    Mesh             *M = &E->mesh;
     Solution         *S = &E->solution;
     Parameters       *P = &E->parameters;
     CompositionalParameters *Comp = &P->compositional_parameters;
     const PetscScalar *arr_phi_s;
-    PetscScalar phi;
+    PetscScalar phi, radius;
 
     PetscFunctionBeginUser;
 
@@ -606,8 +613,6 @@ static PetscErrorCode set_rheological_front_index( Ctx *E )
     ihi_s = ilo_s + w_s;
 
     ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
-
-    index = 0;
 
     /* this simple algorithm counts up from the surface towards the
        CMB until the melt fraction at a staggered node is larger than
@@ -618,19 +623,27 @@ static PetscErrorCode set_rheological_front_index( Ctx *E )
        values, but as long as the magma ocean is generally 
        crystalising from the bottom-up, it should be OK */
 
+    /* end-member cases:
+           i = 0 if surface is below rheological transition
+           i = ihi_s-1 if all mantle is above rheological transition */
+
+    /* this loop should always return a meaningful value if the cooling
+       sequence can be adequately modelled as bottom-up */
+
     for(i=ilo_s; i<ihi_s; ++i){
         phi = arr_phi_s[i];
-        if( phi > Comp->rheological_front_phi ){
-            index += 1;
-        }
-        else
+        if( phi < Comp->rheological_front_phi )
             break;
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
 
     // store in CompositionalParameters structure for later use
-    Comp->rheological_front_index = index;
+    Comp->rheological_front_index = i;
+
+    // get the depth of the rheological front
+    VecGetValues(M->radius_b,1,&i,&radius);CHKERRQ(ierr);
+    Comp->rheological_front_depth = P->radius - radius;
 
     PetscFunctionReturn(0);
 

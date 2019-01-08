@@ -102,8 +102,10 @@ typedef struct CompositionalParameters_ {
     /* next should really be the same as phi_critical, unless you
        have a really convincing reason otherwise! */
     PetscScalar rheological_front_phi; // user-defined
-    PetscInt rheological_front_index; // dynamically updated by code during time stepping
-    PetscScalar magma_ocean_crystal_fraction; // dynamically updated by code during time stepping
+    PetscInt rheological_front_index; // updated by code during time stepping
+    PetscScalar rheological_front_depth; // updated by code during time stepping
+    PetscScalar mo_crystal_fraction; // updated by code during time stepping
+    PetscScalar mo_XBrg; // updated by code during time stepping
 } CompositionalParameters;
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
