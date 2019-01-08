@@ -106,7 +106,8 @@ typedef struct CompositionalParameters_ {
     PetscScalar rheological_front_depth; // updated by code during time stepping
     PetscScalar rheological_front_pressure; // updated by code during time stepping
     PetscScalar mo_crystal_fraction; // updated by code during time stepping
-    PetscScalar mo_XBrg; // updated by code during time stepping
+    PetscScalar mo_bridgmanite_fraction; // updated by code during time stepping
+    PetscScalar mo_mass_ratio; // updated by code during time stepping
 } CompositionalParameters;
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;

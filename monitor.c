@@ -220,9 +220,9 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           DimensionalisableField dfield;
           PetscScalar scaling = 1;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"mo_XBrg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"mo_bridgmanite_fraction");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
-          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mo_XBrg,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mo_bridgmanite_fraction,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);

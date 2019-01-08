@@ -8,7 +8,5 @@ PetscErrorCode set_gphi_smooth( Ctx * );
 PetscErrorCode set_Mliq( Ctx * );
 PetscErrorCode set_Msol( Ctx * );
 PetscErrorCode set_dMliqdt( Ctx * );
-PetscErrorCode set_magma_ocean_crystal_fraction( Ctx * );
-PetscErrorCode set_magma_ocean_XBrg( Ctx * );
 
 #endif

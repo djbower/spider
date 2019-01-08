@@ -629,7 +629,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Comp->rheological_front_depth = -1.0; // updated by code, but initialise here
   Comp->rheological_front_pressure = -1.0; // updated by code, but initialise here
   Comp->mo_crystal_fraction = -1.0; // updated by code, but initialise here
-  Comp->mo_XBrg = -1.0; // updated by code, but initialise here
+  Comp->mo_bridgmanite_fraction = -1.0; // updated by code, but initialise here
+  Comp->mo_mass_ratio = -1.0; // updated by code, but initialise here
   ierr = PetscOptionsGetBool(NULL,NULL,"-COMPOSITION",&P->COMPOSITION,NULL);CHKERRQ(ierr);
   if( P->COMPOSITION ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-X0Brg",&Comp->X0Brg,NULL);CHKERRQ(ierr);
