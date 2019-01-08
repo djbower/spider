@@ -103,6 +103,7 @@ typedef struct CompositionalParameters_ {
        have a really convincing reason otherwise! */
     PetscScalar rheological_front_phi; // user-defined
     PetscInt rheological_front_index; // dynamically updated by code during time stepping
+    PetscScalar magma_ocean_crystal_fraction; // dynamically updated by code during time stepping
 } CompositionalParameters;
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;

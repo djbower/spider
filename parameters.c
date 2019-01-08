@@ -626,6 +626,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* next should really be the same as phi_critical! */
   Comp->rheological_front_phi = P->phi_critical;
   Comp->rheological_front_index = 0; // updated by code, but initialise here
+  Comp->magma_ocean_crystal_fraction = -1.0; // updated by code, but initialise here
   ierr = PetscOptionsGetBool(NULL,NULL,"-COMPOSITION",&P->COMPOSITION,NULL);CHKERRQ(ierr);
   if( P->COMPOSITION ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-X0Brg",&Comp->X0Brg,NULL);CHKERRQ(ierr);
