@@ -214,7 +214,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
-        /* magma ocean Bridgmanite fraction */
+        /* magma ocean bridgmanite fraction */
         {
           cJSON *item;
           DimensionalisableField dfield;
@@ -223,6 +223,22 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = DimensionalisableFieldSetName(dfield,"mo_bridgmanite_fraction");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
           ierr = VecSetValue(dfield->vecGlobal,0,Comp->mo_bridgmanite_fraction,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* magma ocean mass ratio */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = 1;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"mo_mass_ratio");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mo_mass_ratio,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);

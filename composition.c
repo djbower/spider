@@ -1,6 +1,26 @@
 #include "composition.h"
 
-PetscErrorCode set_rheological_front( Ctx *E )
+static PetscErrorCode set_rheological_front( Ctx * );
+static PetscErrorCode set_magma_ocean_crystal_fraction( Ctx * );
+static PetscErrorCode set_magma_ocean_bridgmanite_fraction( Ctx * );
+static PetscErrorCode set_magma_ocean_mass_ratio( Ctx * );
+
+PetscErrorCode initialise_composition( Ctx *E )
+{
+    PetscErrorCode   ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = set_rheological_front( E ); CHKERRQ(ierr);
+    ierr = set_magma_ocean_crystal_fraction( E ); CHKERRQ(ierr);
+    ierr = set_magma_ocean_bridgmanite_fraction( E ); CHKERRQ(ierr);
+    ierr = set_magma_ocean_mass_ratio( E ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_rheological_front( Ctx *E )
 {
     PetscErrorCode   ierr;
     PetscInt         i,ilo_s,ihi_s,w_s;
@@ -58,8 +78,8 @@ PetscErrorCode set_rheological_front( Ctx *E )
 
 }
 
-PetscErrorCode set_magma_ocean_crystal_fraction( Ctx *E )
-{
+static PetscErrorCode set_magma_ocean_crystal_fraction( Ctx *E )
+{ 
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s;
     DM                da_s = E->da_s;
@@ -103,7 +123,7 @@ PetscErrorCode set_magma_ocean_crystal_fraction( Ctx *E )
 
 }
 
-PetscErrorCode set_magma_ocean_bridgmanite_fraction( Ctx *E )
+static PetscErrorCode set_magma_ocean_bridgmanite_fraction( Ctx *E )
 {
     Parameters               *P = &E->parameters;
     CompositionalParameters  *Comp = &P->compositional_parameters;
@@ -120,3 +140,19 @@ PetscErrorCode set_magma_ocean_bridgmanite_fraction( Ctx *E )
 
 }
 
+static PetscErrorCode set_magma_ocean_mass_ratio( Ctx *E )
+{
+    Parameters               *P = &E->parameters;
+    CompositionalParameters  *Comp = &P->compositional_parameters;
+    PetscScalar              mo_mass_ratio;
+
+    PetscFunctionBeginUser;
+
+    mo_mass_ratio = (1.0-Comp->mo_bridgmanite_fraction) * Comp->muRes_muBrg;
+    mo_mass_ratio += Comp->mo_bridgmanite_fraction;
+
+    Comp->mo_mass_ratio = mo_mass_ratio;
+
+    PetscFunctionReturn(0);
+
+}

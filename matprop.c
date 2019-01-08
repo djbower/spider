@@ -25,16 +25,11 @@ PetscErrorCode set_capacitance_staggered( Ctx *E )
 
     ierr = set_melt_fraction_staggered( E ); CHKERRQ(ierr);
 
-    /* always determine location of rheological front based on a
-       critical melt fraction criterion, since why not */
-    ierr = set_rheological_front( E ); CHKERRQ(ierr);
-
     /* useful to passively compute crystal and Bridgmanite fraction,
        even if they do not feedback into the density calculation */
     /* determine values to implement compositional differentiation */
     //if(P->COMPOSITION){
-    ierr = set_magma_ocean_crystal_fraction( E ); CHKERRQ(ierr);
-    ierr = set_magma_ocean_bridgmanite_fraction( E ); CHKERRQ(ierr);
+    ierr = initialise_composition( E ); CHKERRQ(ierr);
     //}
 
     ierr = set_matprop_staggered( E ); CHKERRQ(ierr);
