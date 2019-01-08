@@ -104,6 +104,7 @@ typedef struct CompositionalParameters_ {
     PetscScalar rheological_front_phi; // user-defined
     PetscInt rheological_front_index; // updated by code during time stepping
     PetscScalar rheological_front_depth; // updated by code during time stepping
+    PetscScalar rheological_front_pressure; // updated by code during time stepping
     PetscScalar mo_crystal_fraction; // updated by code during time stepping
     PetscScalar mo_XBrg; // updated by code during time stepping
 } CompositionalParameters;

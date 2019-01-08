@@ -445,7 +445,7 @@ PetscErrorCode set_magma_ocean_crystal_fraction( Ctx *E )
 
     PetscFunctionBeginUser;
 
-    /* determined by set_rheological_front_index */
+    /* determined by set_rheological_front */
     index = Comp->rheological_front_index;
 
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,0,0,0);CHKERRQ(ierr);
@@ -467,7 +467,8 @@ PetscErrorCode set_magma_ocean_crystal_fraction( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,M->volume_s,&arr_volume_s);CHKERRQ(ierr);
 
-    /* FIXME: this will return 1.0 if index=0? */
+    /* FIXME: this will return 1.0 if index=0, but this might be
+       confusing output to read? */
     Comp->mo_crystal_fraction = 1.0-phi_total;
 
     PetscFunctionReturn(0);

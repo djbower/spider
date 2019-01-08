@@ -626,7 +626,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* next should really be the same as phi_critical! */
   Comp->rheological_front_phi = P->phi_critical;
   Comp->rheological_front_index = -1; // updated by code, but initialise here
-  Comp->rheological_front_depth = -1; // updated by code, but initialise here
+  Comp->rheological_front_depth = -1.0; // updated by code, but initialise here
+  Comp->rheological_front_pressure = -1.0; // updated by code, but initialise here
   Comp->mo_crystal_fraction = -1.0; // updated by code, but initialise here
   Comp->mo_XBrg = -1.0; // updated by code, but initialise here
   ierr = PetscOptionsGetBool(NULL,NULL,"-COMPOSITION",&P->COMPOSITION,NULL);CHKERRQ(ierr);
