@@ -20,8 +20,10 @@ def figure9():
     # pressure cut-offs for curve fitting and plotting
     #PMIN = 1.0 # GPa # TODO: CURRENTLY NOT USED
     #PMAX = 135.0 # GPa # TODO: CURRENTLY NOT USED
-    PHI = -1 #0.4 # melt fraction contour, or -1 for dynamic
+    PHI = 0.4 #-1 #0.4 # melt fraction contour, or -1 for dynamic
     TPRIME1_PRESSURE = 15.0 # pressure at which rheological transition is assumed to be at the surface
+    XMAXFRAC = 1.05 # plot maximum x value this factor beyond TPRIME1
+    # currently not used RADFIT = 1 # fit using radiative cooling model (n=4), otherwise use linear fit
     #---------------
 
     width = 4.7747
@@ -137,7 +139,9 @@ def figure9():
     title = r'(a) $q_0(t)$, W/m$^2$'
     fig_o.set_myaxes( ax0, title=title, ylabel='$q_0$', xlabel='$t$ (yrs)' )
     ax0.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    ax0.yaxis.set_label_coords(-0.2,0.5)
+    ax0.yaxis.set_label_coords(-0.15,0.5)
+    xmax = XMAXFRAC*tprime1
+    ax0.set_xlim( None, xmax )
     # --- end of surface heat flux ----
     # --------------------------------- 
 
@@ -149,12 +153,15 @@ def figure9():
     ax1.text( tprime0, 0.82, '$t^\prime_0$', ha='right', va='bottom', transform = trans )
     ax1.axvline( tprime1, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax1.text( tprime1, 0.82, '$t^\prime_1$', ha='right', va='bottom', transform = trans )
-    title = r'(b) $T0_m(t)$, K'
-    yticks = [1300,1400,1500,1600,1700]#2000,2500,3000,3500,4000]
-    fig_o.set_myaxes( ax1, title=title, ylabel='$T0_m$', xlabel='$t$ (yrs)', yticks=yticks )
-    ax1.set_ylim( [1300,1700])
+    title = r'(b) $Ts(t)$, K'
+    #yticks = [1300,1400,1500,1600,1700]
+    yticks = get_ylabels( data_a[:,4] ) # [1500,2000,2500,3000,3500,4000]
+    fig_o.set_myaxes( ax1, title=title, ylabel='$Ts$', xlabel='$t$ (yrs)', yticks=yticks )
+    #ax1.set_ylim( [1300,1700])
     ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    ax1.yaxis.set_label_coords(-0.2,0.575)
+    #ax1.yaxis.set_label_coords(-0.2,0.575)
+    ax1.yaxis.set_label_coords(-0.15,0.5)
+    ax1.set_xlim( None, xmax )
     # ---- end surface temperature ----
     # ---------------------------------
 
@@ -168,16 +175,17 @@ def figure9():
     yticks = [0,50,100,150]
     fig_o.set_myaxes( ax2, title=title, ylabel='$P_f$', xlabel='$t^\prime$ (yrs)', yticks=yticks )
     ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    ax2.yaxis.set_label_coords(-0.2,0.5)
+    ax2.yaxis.set_label_coords(-0.15,0.5)
     ax2.set_xlim( (0, tprime1-tprime0) )
 
     ax3.plot( data_a[:,1], data_a[:,3], marker='o', markersize=4.0, color='0.8' )
     title = r'(d) $T_f(t^\prime)$, K'
-    yticks = [2000,3000,4000]
+    yticks = [1500,2500,3500,4500]
     fig_o.set_myaxes( ax3, title=title, ylabel='$T_f$', yticks=yticks, xlabel='$t^\prime$ (yrs)' )
     ax3.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     ax3.set_ylim( [1500,4500] )
-    ax3.yaxis.set_label_coords(-0.2,0.575)
+    #ax3.yaxis.set_label_coords(-0.15,0.575)
+    ax3.yaxis.set_label_coords(-0.15,0.5)
     ax3.set_xlim( (0, tprime1-tprime0) )
 
     ###################
@@ -187,7 +195,7 @@ def figure9():
     # linear fit to pressure, using a polynomial
     # TODO: fix P_cmb, and then just fit gradient
     # TODO: 2nd order fit is better for dynamic criteria - but why?
-    deg = 2
+    deg = 1
     xx = data_a[tprime0ii:tprime1ii,0]-tprime0
     yy_pres = data_a[tprime0ii:tprime1ii,2]
     rheological_pres_poly = np.polyfit( xx, yy_pres, deg )
@@ -205,7 +213,7 @@ def figure9():
 
     # linear fit to temperature, using a polynomial
     # TODO: fix Tc_cmb, and then just fit gradient
-    deg = 2
+    deg = 1
     yy_temp = data_a[tprime0ii:tprime1ii,3]
     rheological_temp_poly = np.polyfit( xx, yy_temp, deg )
     rheological_temp_o = np.poly1d( rheological_temp_poly )
@@ -222,39 +230,29 @@ def figure9():
     print( 'alpha=', alpha )
     ax3.plot( xx, rheological_temp_fit )
 
-    # plot a linear function of pressure, as per the original analytical model
-    # T0c is the intercept of the critical melt fraction at the surface
-    # here, it is actually deduc
-    #T1c = np.max(yy_temp)
-    #P1c = np.max(yy_pres)
-    #T0c = np.min(yy)
-    #popt, pcov = curve_fit( in_func2(T1c,P1c), rheological_pres_fit, yy_temp, p0=[100.0,1.0] )   
-    #popt2, pcov2 = curve_fit( in_func(T1c,P1c), rheological_pres_fit, yy_temp, p0=[100.0,1.0] )
-    #print( 'T1c=', T1c )
-    #print( 'P1c=', P1c )
-    #print( 'popt=', popt )
-    #print( 'popt2=', popt2 )
-    #h1 = ax3.plot( xx, in_func2(T1c,P1c)(rheological_pres_fit,*popt), label='Fit' )
-    #h2 = ax3.plot( xx, in_func(T1c,P1c)(rheological_pres_fit,*popt2), label='Fit2' )
-    #ax3.legend()
-
     fig_o.savefig(9)
 
 #====================================================================
-def in_func2( T1c, P1c ):
-    def in_func3( x, *p ):
-        y = T1c - p[0]*(P1c-x)
-        #y = p[1] + p[0]*x
-        return y
-    return in_func3
+def get_ylabels( array_in, roundtonearest=500 ):
+
+    # set the range of the y axis and determine the y labels based
+    # on the data extent in the input array
+
+    minimum = np.min( array_in )
+    maximum = np.max( array_in )
+
+    minimum = np.floor(minimum/roundtonearest) * roundtonearest
+    maximum = np.ceil(maximum/roundtonearest) * roundtonearest
+
+    labels = np.arange( minimum, maximum+1, roundtonearest )
+    labels = labels.tolist()
+
+    return labels
 
 #====================================================================
-def in_func( T1c, P1c ):
-    def in_func2( x, *p ):
-        #y = T0c + p[0]*x
-        y = p[1] - p[0]*(P1c-x)
-        return y
-    return in_func2
+def radiative_function_fit( x, *popt ):
+
+    return (popt[0]*x+popt[1])**(-1.0/3.0) + popt[2]
 
 #====================================================================
 def Rsquared( ydata, fmodel ):
