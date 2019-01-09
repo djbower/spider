@@ -105,6 +105,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   RadiogenicIsotopeParameters *th232 = &P->th232_parameters;
   RadiogenicIsotopeParameters *u235 = &P->u235_parameters;
   RadiogenicIsotopeParameters *u238 = &P->u238_parameters;
+  CompositionalParameters *Comp = &P->compositional_parameters;
 
   PetscFunctionBegin;
 
@@ -617,6 +618,26 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   u238->half_life = 4468E6; // years (Ruedas, 2017)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_half_life",&u238->half_life,NULL);CHKERRQ(ierr);
   u238->half_life /= C->TIMEYRS;
+
+  /* compositional parameters */
+  P->COMPOSITION = PETSC_FALSE;
+  Comp->X0Brg = 0.794;
+  Comp->muRes_muBrg = 1.2362;
+  /* next should really be the same as phi_critical! */
+  Comp->rheological_front_phi = P->phi_critical;
+  Comp->rheological_front_index = -1; // updated by code, but initialise here
+  Comp->rheological_front_depth = -1.0; // updated by code, but initialise here
+  Comp->rheological_front_pressure = -1.0; // updated by code, but initialise here
+  Comp->mo_crystal_fraction = -1.0; // updated by code, but initialise here
+  Comp->mo_bridgmanite_fraction = -1.0; // updated by code, but initialise here
+  Comp->mo_mass_ratio = -1.0; // updated by code, but initialise here
+  Comp->mass_ratio_liquidus = -1.0; // initialised to sensible value later
+  ierr = PetscOptionsGetBool(NULL,NULL,"-COMPOSITION",&P->COMPOSITION,NULL);CHKERRQ(ierr);
+  if( P->COMPOSITION ){
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-X0Brg",&Comp->X0Brg,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-muRes_muBrg",&Comp->muRes_muBrg,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-rheological_front_phi",&Comp->rheological_front_phi,NULL);CHKERRQ(ierr);
+  }
 
   PetscFunctionReturn(0);
 }

@@ -95,6 +95,22 @@ typedef struct RadiogenicIsotopeParameters_ {
     PetscScalar half_life;
 } RadiogenicIsotopeParameters;
 
+/* compositional differentiation */
+typedef struct CompositionalParameters_ {
+    PetscScalar X0Brg; // user-defined
+    PetscScalar mass_ratio_liquidus; // computed by code
+    PetscScalar muRes_muBrg; // user-defined
+    /* next should really be the same as phi_critical, unless you
+       have a really convincing reason otherwise! */
+    PetscScalar rheological_front_phi; // user-defined
+    PetscInt rheological_front_index; // updated by code during time stepping
+    PetscScalar rheological_front_depth; // updated by code during time stepping
+    PetscScalar rheological_front_pressure; // updated by code during time stepping
+    PetscScalar mo_crystal_fraction; // updated by code during time stepping
+    PetscScalar mo_bridgmanite_fraction; // updated by code during time stepping
+    PetscScalar mo_mass_ratio; // updated by code during time stepping
+} CompositionalParameters;
+
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct _Parameters {
 
@@ -137,6 +153,7 @@ typedef struct _Parameters {
     PetscBool HTIDAL;
     PetscBool SOLID_CONVECTION_ONLY; // solid convection only
     PetscBool LIQUID_CONVECTION_ONLY; // liquid convection only
+    PetscBool COMPOSITION; // Brg and Res compositional model
     PetscInt mixing_length;
     PetscScalar mixing_length_layer_radius;
     PetscInt initial_condition;
@@ -187,6 +204,9 @@ typedef struct _Parameters {
     RadiogenicIsotopeParameters th232_parameters;
     RadiogenicIsotopeParameters u235_parameters;
     RadiogenicIsotopeParameters u238_parameters;
+
+    // Composition
+    CompositionalParameters compositional_parameters;
 
 } Parameters;
 

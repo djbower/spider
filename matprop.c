@@ -1,8 +1,11 @@
 #include "matprop.h"
 #include "util.h"
 #include "lookup.h"
+#include "twophase.h"
+#include "composition.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
+static PetscErrorCode set_melt_fraction_staggered( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );
 static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const *);
 static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
@@ -15,9 +18,19 @@ PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
     PetscErrorCode    ierr;
     Mesh              *M = &E->mesh;
+    //Parameters        *P = &E->parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
+
+    ierr = set_melt_fraction_staggered( E ); CHKERRQ(ierr);
+
+    /* useful to passively compute crystal and Bridgmanite fraction,
+       even if they do not feedback into the density calculation */
+    /* determine values to implement compositional differentiation */
+    //if(P->COMPOSITION){
+    ierr = set_composition( E ); CHKERRQ(ierr);
+    //}
 
     ierr = set_matprop_staggered( E ); CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->lhs_s,S->temp_s,S->rho_s); CHKERRQ(ierr);
@@ -42,6 +55,43 @@ static PetscScalar get_melt_fraction_truncated( PetscScalar phi )
       return phi;
 }
 
+static PetscErrorCode set_melt_fraction_staggered( Ctx *E )
+{
+    PetscErrorCode    ierr;
+    PetscInt          i,ilo_s,ihi_s,w_s;
+    DM                da_s=E->da_s;
+    Parameters        *P = &E->parameters;
+    Solution          *S = &E->solution;
+    PetscScalar       *arr_phi_s;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
+
+    // compute melt fraction
+    if(P->SOLID_CONVECTION_ONLY){
+        ierr = VecSet( S->phi_s, 0.0 );CHKERRQ(ierr); // by definition
+    }
+    else if(P->LIQUID_CONVECTION_ONLY){
+        ierr = VecSet( S->phi_s, 1.0 );CHKERRQ(ierr); // by definition
+    }
+    else{
+        ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
+        ierr = VecPointwiseDivide(S->phi_s,S->phi_s,S->fusion_s);CHKERRQ(ierr);
+        ierr = DMDAVecGetArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
+        /* TODO: can we remove this loop and truncate using Petsc Vec
+           operations instead? */
+        for(i=ilo_s; i<ihi_s; ++i){
+            /* truncate melt fraction */
+            arr_phi_s[i] = get_melt_fraction_truncated( arr_phi_s[i] );
+        }
+        ierr = DMDAVecRestoreArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
+    }
+
+    PetscFunctionReturn(0);
+}
+
 static PetscErrorCode set_matprop_staggered( Ctx *E )
 {
     PetscErrorCode    ierr;
@@ -49,12 +99,14 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     DM                da_s=E->da_s;
     Lookup const      *L;
     Mesh              *M = &E->mesh;
+    Parameters const  *P = &E->parameters;
+    CompositionalParameters const *Comp = &P->compositional_parameters;
     Solution          *S = &E->solution;
     Vec               pres_s = M->pressure_s;
     // material properties that are updated here
-    PetscScalar       *arr_phi_s, *arr_rho_s, *arr_temp_s, *arr_cp_s;
+    PetscScalar       *arr_rho_s, *arr_temp_s, *arr_cp_s;
     // material properties used to update above
-    const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_S_s, *arr_liquidus_s, *arr_solidus_s, *arr_fusion_s, *arr_cp_mix_s;
+    const PetscScalar *arr_pres_s, *arr_liquidus_rho_s, *arr_solidus_rho_s, *arr_liquidus_temp_s, *arr_solidus_temp_s, *arr_S_s, *arr_liquidus_s, *arr_solidus_s, *arr_fusion_s, *arr_cp_mix_s, *arr_phi_s;
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_fwtl_s, *arr_fwts_s;
     PetscScalar       fwtl, fwts;
@@ -62,13 +114,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     PetscScalar       rho_mel, temp_mel, cp_mel;
     PetscScalar       rho_mix, temp_mix, cp_mix;
 
-    Parameters const   *P = &E->parameters;
-
     PetscFunctionBeginUser;
-
-    // compute melt fraction (not truncated)
-    ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
-    ierr = VecPointwiseDivide(S->phi_s,S->phi_s,S->fusion_s);CHKERRQ(ierr);
 
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
@@ -80,20 +126,17 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_s,&arr_liquidus_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_s,&arr_solidus_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->rho_s,&arr_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
-
-        /* truncate melt fraction */
-        arr_phi_s[i] = get_melt_fraction_truncated( arr_phi_s[i] );
 
         /* solid phase */
         L = &P->solid_prop;
@@ -108,19 +151,34 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
         cp_mel = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
 
         /* mixed phase */
-        rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
-        rho_mix = 1.0 / rho_mix;
+        //rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
+        //rho_mix = 1.0 / rho_mix;
+
+        /* TODO: run this past Aaron */
+        if(P->COMPOSITION){
+            rho_mel *= Comp->mass_ratio_liquidus;
+            rho_mix = arr_liquidus_rho_s[i];
+            if(i < Comp->rheological_front_index){
+                rho_mix *= Comp->mo_mass_ratio;
+            }
+            else{
+                rho_mix *= Comp->mass_ratio_liquidus;
+            }
+        }
+        else{
+            rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
+            rho_mix = 1.0 / rho_mix;
+        }
+
         temp_mix = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
         cp_mix = arr_cp_mix_s[i];
 
         if(P->SOLID_CONVECTION_ONLY){
-            arr_phi_s[i] = 0.0; // by definition
             arr_rho_s[i] = rho_sol;
             arr_temp_s[i] = temp_sol;
             arr_cp_s[i] = cp_sol;
         }
         else if(P->LIQUID_CONVECTION_ONLY){
-            arr_phi_s[i] = 1.0; // by definition
             arr_rho_s[i] = rho_mel;
             arr_temp_s[i] = temp_mel;
             arr_cp_s[i] = cp_mel;
@@ -149,13 +207,13 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_s,&arr_liquidus_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_s,&arr_solidus_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->rho_s,&arr_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
@@ -181,6 +239,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     Lookup const      *L;
     Mesh              *M = &E->mesh;
     Parameters const  *P = &E->parameters;
+    CompositionalParameters const *Comp = &P->compositional_parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -264,8 +323,25 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       log10visc_mel = get_log10_viscosity_melt( arr_temp[i], arr_pres[i], arr_layer_b[i], P );
 
       /* mixed phase */
-      rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
-      rho_mix = 1.0 / rho_mix;
+      //rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
+      //rho_mix = 1.0 / rho_mix;
+
+      /* TODO: run past Aaron */
+      if(P->COMPOSITION){
+          rho_mel *= Comp->mass_ratio_liquidus;
+          rho_mix = arr_liquidus_rho[i];
+          if(i <= Comp->rheological_front_index){
+              rho_mix *= Comp->mo_mass_ratio;
+          }
+          else{
+              rho_mix *= Comp->mass_ratio_liquidus;
+          }
+      }
+      else{
+          rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
+          rho_mix = 1.0 / rho_mix;
+      }
+
       dTdrs_mix = arr_dTdrs_mix[i];
       cp_mix = arr_cp_mix[i];
       temp_mix = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );

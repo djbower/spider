@@ -144,6 +144,126 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         cJSON_AddItemToArray(data,item);
       }
 
+      /* rheological front and composition */
+      {
+        Parameters           const *P = &ctx->parameters;
+        Constants            const *C  = &P->constants;
+        CompositionalParameters const *Comp = &P->compositional_parameters;
+
+        /* rheological front index */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = 1;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"rheological_front_index");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Comp->rheological_front_index,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* rheological front depth */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = C->RADIUS;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"rheological_front_depth");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"m");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Comp->rheological_front_depth,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* rheological front pressure */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = C->PRESSURE;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"rheological_front_pressure");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"Pa");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Comp->rheological_front_pressure,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* magma ocean crystal fraction */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = 1;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"mo_crystal_fraction");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mo_crystal_fraction,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* magma ocean bridgmanite fraction */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = 1;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"mo_bridgmanite_fraction");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mo_bridgmanite_fraction,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* magma ocean mass ratio */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = 1;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"mo_mass_ratio");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mo_mass_ratio,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* magma ocean mass ratio at liquidus */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = 1;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"mass_ratio_liquidus");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mass_ratio_liquidus,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+      }
+
       /* atmosphere */
       {
         Atmosphere const *A = &ctx->atmosphere;
