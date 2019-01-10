@@ -137,11 +137,18 @@ def figure9():
     ax0.axvline( tprime1, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax0.text( tprime1, 0.82, '$t^\prime_1$', ha='right', va='bottom', transform = trans )
     title = r'(a) $q_0(t)$, W/m$^2$'
+
+    xmax = XMAXFRAC*tprime1
+    ydata_plot = data_a[:,5][np.where(data_a[:,0]<xmax)]
+    yticks = get_yticks( ydata_plot, 1.0E4 )
+    #yticks = get_yticks( ydata_plot, 1.0E5 )
+
     fig_o.set_myaxes( ax0, title=title, ylabel='$q_0$', xlabel='$t$ (yrs)' )
     ax0.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     ax0.yaxis.set_label_coords(-0.15,0.5)
-    xmax = XMAXFRAC*tprime1
     ax0.set_xlim( None, xmax )
+    ax0.set_ylim( yticks[0], yticks[-1] )
+
     # --- end of surface heat flux ----
     # --------------------------------- 
 
@@ -154,8 +161,12 @@ def figure9():
     ax1.axvline( tprime1, ymin=0.1, ymax=0.8, color='0.25', linestyle=':')
     ax1.text( tprime1, 0.82, '$t^\prime_1$', ha='right', va='bottom', transform = trans )
     title = r'(b) $Ts(t)$, K'
+
+    xmax = XMAXFRAC*tprime1
+    ydata_plot = data_a[:,4][np.where(data_a[:,0]<xmax)]
     #yticks = [1300,1400,1500,1600,1700]
-    yticks = get_ylabels( data_a[:,4] ) # [1500,2000,2500,3000,3500,4000]
+    yticks = get_yticks( ydata_plot, 400 ) # [1500,2000,2500,3000,3500,4000]
+
     fig_o.set_myaxes( ax1, title=title, ylabel='$Ts$', xlabel='$t$ (yrs)', yticks=yticks )
     #ax1.set_ylim( [1300,1700])
     ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
@@ -233,7 +244,7 @@ def figure9():
     fig_o.savefig(9)
 
 #====================================================================
-def get_ylabels( array_in, roundtonearest=500 ):
+def get_yticks( array_in, roundtonearest=500 ):
 
     # set the range of the y axis and determine the y labels based
     # on the data extent in the input array
