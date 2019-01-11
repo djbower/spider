@@ -247,6 +247,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 
     PetscFunctionBeginUser;
 
+    /* melt fraction, not truncated (this happens below) */
     ierr = VecWAXPY(S->phi,-1.0,S->solidus,S->S);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->phi,S->phi,S->fusion);CHKERRQ(ierr);
 
