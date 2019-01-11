@@ -313,7 +313,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       temp_sol = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
       alpha_sol = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
       cond_sol = P->cond_sol;
-      log10visc_sol = get_log10_viscosity_solid( arr_temp[i], arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
+      log10visc_sol = get_log10_viscosity_solid( temp_sol, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
 
       /* melt phase */
       L = &P->melt_prop;
@@ -323,7 +323,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       temp_mel = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
       alpha_mel = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
       cond_mel = P->cond_mel;
-      log10visc_mel = get_log10_viscosity_melt( arr_temp[i], arr_pres[i], arr_layer_b[i], P );
+      log10visc_mel = get_log10_viscosity_melt( temp_mel, arr_pres[i], arr_layer_b[i], P );
 
       /* mixed phase */
       rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
