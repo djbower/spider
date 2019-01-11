@@ -95,20 +95,31 @@ typedef struct RadiogenicIsotopeParameters_ {
     PetscScalar half_life;
 } RadiogenicIsotopeParameters;
 
+typedef enum {RHEOLOGICAL_FRONT_TYPE_PHI=1,RHEOLOGICAL_FRONT_TYPE_DYNAMIC} RheologicalFrontType;
+/* rheological front */
+typedef struct RheologicalFront_ {
+    RheologicalFrontType RHEOLOGICAL_FRONT_DEFINITION;
+    PetscScalar phi_critical; // user-defined
+    PetscInt mesh_index; // updated by code during time stepping
+    PetscScalar depth; // updated by code during time stepping
+    PetscScalar pressure; // updated by code during time stepping
+    PetscScalar phi_above_avg; // updated by code during time stepping
+    PetscScalar phi_below_avg;
+    PetscScalar depth_above_avg;
+    PetscScalar depth_below_avg;
+    PetscScalar pressure_above_avg;
+    PetscScalar pressure_below_avg;
+    PetscScalar temperature_above_avg;
+    PetscScalar temperature_below_avg;
+} RheologicalFront;
+
 /* compositional differentiation */
 typedef struct CompositionalParameters_ {
     PetscScalar X0Brg; // user-defined
-    PetscScalar mass_ratio_liquidus; // computed by code
     PetscScalar muRes_muBrg; // user-defined
-    /* next should really be the same as phi_critical, unless you
-       have a really convincing reason otherwise! */
-    PetscScalar rheological_front_phi; // user-defined
-    PetscInt rheological_front_index; // updated by code during time stepping
-    PetscScalar rheological_front_depth; // updated by code during time stepping
-    PetscScalar rheological_front_pressure; // updated by code during time stepping
-    PetscScalar mo_crystal_fraction; // updated by code during time stepping
     PetscScalar mo_bridgmanite_fraction; // updated by code during time stepping
     PetscScalar mo_mass_ratio; // updated by code during time stepping
+    PetscScalar mass_ratio_liquidus; // computed by code
 } CompositionalParameters;
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
@@ -204,6 +215,9 @@ typedef struct _Parameters {
     RadiogenicIsotopeParameters th232_parameters;
     RadiogenicIsotopeParameters u235_parameters;
     RadiogenicIsotopeParameters u238_parameters;
+
+    // Rheological front
+    RheologicalFront rheological_front;
 
     // Composition
     CompositionalParameters compositional_parameters;

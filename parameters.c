@@ -106,6 +106,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   RadiogenicIsotopeParameters *u235 = &P->u235_parameters;
   RadiogenicIsotopeParameters *u238 = &P->u238_parameters;
   CompositionalParameters *Comp = &P->compositional_parameters;
+  RheologicalFront *Rf = &P->rheological_front;
 
   PetscFunctionBegin;
 
@@ -619,16 +620,39 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_half_life",&u238->half_life,NULL);CHKERRQ(ierr);
   u238->half_life /= C->TIMEYRS;
 
+  /* rheological front */
+  Rf->RHEOLOGICAL_FRONT_DEFINITION=RHEOLOGICAL_FRONT_TYPE_PHI;
+  {
+    PetscInt  RHEOLOGICAL_FRONT_DEFINITION = 0;
+    PetscBool RHEOLOGICAL_FRONT_DEFINITIONset = PETSC_FALSE;
+    ierr = PetscOptionsGetInt(NULL,NULL,"-RHEOLOGICAL_FRONT_DEFINITION",&RHEOLOGICAL_FRONT_DEFINITION,&RHEOLOGICAL_FRONT_DEFINITIONset);CHKERRQ(ierr);
+    if( RHEOLOGICAL_FRONT_DEFINITIONset ) Rf->RHEOLOGICAL_FRONT_DEFINITION = RHEOLOGICAL_FRONT_DEFINITION;
+  }
+  if( Rf->RHEOLOGICAL_FRONT_DEFINITION == 1 ){
+      /* TODO: actually, if this is different can switch between global versus local
+         calculation for crystal fraction? */
+      Rf->phi_critical = P->phi_critical; // FIXME: make this a different parameter?
+      //ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_critical",&Rf->phi_critical,NULL);CHKERRQ(ierr);
+  }
+  else{
+      Rf->phi_critical = -1.0;
+  }
+  Rf->mesh_index = -1; // updated by code but initialise here
+  Rf->depth = -1.0; // updated by code but initialise here
+  Rf->pressure = -1.0; //updated by code but initialise here
+  Rf->phi_above_avg = -1.0; // updated by code but initialise here
+  Rf->phi_below_avg = -1.0; // updated by code but initialise here
+  Rf->depth_above_avg = -1.0; // updated by code but initialise here
+  Rf->depth_below_avg = -1.0; // updated by code but initialise here
+  Rf->pressure_above_avg = -1.0; // updated by code but initialise here
+  Rf->pressure_below_avg = -1.0; // updated by code by initialise here
+  Rf->temperature_above_avg = -1.0; // updated by code but initialise here
+  Rf->temperature_below_avg = -1.0; // updated by code but initialise here
+
   /* compositional parameters */
   P->COMPOSITION = PETSC_FALSE;
   Comp->X0Brg = 0.794;
   Comp->muRes_muBrg = 1.2362;
-  /* next should really be the same as phi_critical! */
-  Comp->rheological_front_phi = P->phi_critical;
-  Comp->rheological_front_index = -1; // updated by code, but initialise here
-  Comp->rheological_front_depth = -1.0; // updated by code, but initialise here
-  Comp->rheological_front_pressure = -1.0; // updated by code, but initialise here
-  Comp->mo_crystal_fraction = -1.0; // updated by code, but initialise here
   Comp->mo_bridgmanite_fraction = -1.0; // updated by code, but initialise here
   Comp->mo_mass_ratio = -1.0; // updated by code, but initialise here
   Comp->mass_ratio_liquidus = -1.0; // initialised to sensible value later
@@ -636,7 +660,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   if( P->COMPOSITION ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-X0Brg",&Comp->X0Brg,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetScalar(NULL,NULL,"-muRes_muBrg",&Comp->muRes_muBrg,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-rheological_front_phi",&Comp->rheological_front_phi,NULL);CHKERRQ(ierr);
   }
 
   PetscFunctionReturn(0);

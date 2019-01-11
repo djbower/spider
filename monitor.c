@@ -115,152 +115,261 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         ierr = DimensionalisableFieldDestroy(&rhsDF);CHKERRQ(ierr);
       }
 
+ 
       /* Add data of interest */
       // Note: this is duplicative, but it's too painful to flatten out the Ctx
-      data = cJSON_CreateArray();
-
-      for (i=0; i<NUMMESHVECS_S; ++i) {
-        cJSON *item;
-        DimensionalisableField curr = ctx->mesh.meshFields_s[i];
-        ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
-        cJSON_AddItemToArray(data,item);
-      }
-      for (i=0; i<NUMMESHVECS_B; ++i) {
-        cJSON *item;
-        DimensionalisableField curr = ctx->mesh.meshFields_b[i];
-        ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
-        cJSON_AddItemToArray(data,item);
-      }
-      for (i=0; i<NUMSOLUTIONVECS_S; ++i) {
-        cJSON *item;
-        DimensionalisableField curr = ctx->solution.solutionFields_s[i];
-        ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
-        cJSON_AddItemToArray(data,item);
-      }
-      for (i=0; i<NUMSOLUTIONVECS_B; ++i) {
-        cJSON *item;
-        DimensionalisableField curr = ctx->solution.solutionFields_b[i];
-        ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
-        cJSON_AddItemToArray(data,item);
-      }
-
-      /* rheological front and composition */
       {
+        data = cJSON_CreateArray();
+
+        for (i=0; i<NUMMESHVECS_S; ++i) {
+          cJSON *item;
+          DimensionalisableField curr = ctx->mesh.meshFields_s[i];
+          ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+        }
+        for (i=0; i<NUMMESHVECS_B; ++i) {
+          cJSON *item;
+          DimensionalisableField curr = ctx->mesh.meshFields_b[i];
+          ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+        }
+        for (i=0; i<NUMSOLUTIONVECS_S; ++i) {
+          cJSON *item;
+          DimensionalisableField curr = ctx->solution.solutionFields_s[i];
+          ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+        }
+        for (i=0; i<NUMSOLUTIONVECS_B; ++i) {
+          cJSON *item;
+          DimensionalisableField curr = ctx->solution.solutionFields_b[i];
+          ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(data,item);
+        }
+
+        /* now add all the data array to the output */
+        cJSON_AddItemToObject(json,"data",data);
+      }
+
+
+      /* rheological front */
+      {
+        cJSON                      *Rf_data;
         Parameters           const *P = &ctx->parameters;
         Constants            const *C  = &P->constants;
-        CompositionalParameters const *Comp = &P->compositional_parameters;
+        RheologicalFront const *Rf = &P->rheological_front;
 
-        /* rheological front index */
+        Rf_data = cJSON_CreateArray();
+
+        /* rheological front definition */
         {
           cJSON *item;
           DimensionalisableField dfield;
           PetscScalar scaling = 1;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"rheological_front_index");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"RHEOLOGICAL_FRONT_DEFINITION");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
-          ierr = VecSetValue(dfield->vecGlobal,0,Comp->rheological_front_index,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->RHEOLOGICAL_FRONT_DEFINITION,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
+          cJSON_AddItemToArray(Rf_data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
-        /* rheological front depth */
+        /* phi critical */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = 1;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"phi_critical");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->phi_critical,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(Rf_data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* mesh index */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = 1;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"mesh_index");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->mesh_index,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(Rf_data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* depth */
         {
           cJSON *item;
           DimensionalisableField dfield;
           PetscScalar scaling = C->RADIUS;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"rheological_front_depth");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"depth");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"m");CHKERRQ(ierr);
-          ierr = VecSetValue(dfield->vecGlobal,0,Comp->rheological_front_depth,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->depth,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
+          cJSON_AddItemToArray(Rf_data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
-        /* rheological front pressure */
+        /* pressure */
         {
           cJSON *item;
           DimensionalisableField dfield;
           PetscScalar scaling = C->PRESSURE;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"rheological_front_pressure");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"pressure");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"Pa");CHKERRQ(ierr);
-          ierr = VecSetValue(dfield->vecGlobal,0,Comp->rheological_front_pressure,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->pressure,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
+          cJSON_AddItemToArray(Rf_data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
-        /* magma ocean crystal fraction */
+        /* phi_above_avg */
         {
           cJSON *item;
           DimensionalisableField dfield;
           PetscScalar scaling = 1;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"mo_crystal_fraction");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"phi_above_avg");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
-          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mo_crystal_fraction,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->phi_above_avg,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
+          cJSON_AddItemToArray(Rf_data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
-        /* magma ocean bridgmanite fraction */
+        /* phi_below_avg */
         {
           cJSON *item;
           DimensionalisableField dfield;
           PetscScalar scaling = 1;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"mo_bridgmanite_fraction");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"phi_below_avg");CHKERRQ(ierr);
           ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
-          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mo_bridgmanite_fraction,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->phi_below_avg,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
+          cJSON_AddItemToArray(Rf_data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
-        /* magma ocean mass ratio */
+        /* depth_above_avg */
         {
           cJSON *item;
           DimensionalisableField dfield;
-          PetscScalar scaling = 1;
+          PetscScalar scaling = C->RADIUS;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"mo_mass_ratio");CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
-          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mo_mass_ratio,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"depth_above_avg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"m");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->depth_above_avg,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
+          cJSON_AddItemToArray(Rf_data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
-        /* magma ocean mass ratio at liquidus */
+        /* depth_below_avg */
         {
           cJSON *item;
           DimensionalisableField dfield;
-          PetscScalar scaling = 1;
+          PetscScalar scaling = C->RADIUS;
           ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetName(dfield,"mass_ratio_liquidus");CHKERRQ(ierr);
-          ierr = DimensionalisableFieldSetUnits(dfield,"None");CHKERRQ(ierr);
-          ierr = VecSetValue(dfield->vecGlobal,0,Comp->mass_ratio_liquidus,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"depth_below_avg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"m");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->depth_below_avg,INSERT_VALUES);CHKERRQ(ierr);
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
+          cJSON_AddItemToArray(Rf_data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
+
+        /* pressure_above_avg */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = C->PRESSURE;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"pressure_above_avg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"Pa");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->pressure_above_avg,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(Rf_data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* pressure_below_avg */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = C->PRESSURE;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"pressure_below_avg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"Pa");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->pressure_below_avg,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(Rf_data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* temperature_above_avg */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = C->TEMP;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"temperature_above_avg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"K");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->temperature_above_avg,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(Rf_data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* temperature_below_avg */
+        {
+          cJSON *item;
+          DimensionalisableField dfield;
+          PetscScalar scaling = C->TEMP;
+          ierr = DimensionalisableFieldCreate(&dfield,ctx->da_point,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetName(dfield,"temperature_below_avg");CHKERRQ(ierr);
+          ierr = DimensionalisableFieldSetUnits(dfield,"K");CHKERRQ(ierr);
+          ierr = VecSetValue(dfield->vecGlobal,0,Rf->temperature_below_avg,INSERT_VALUES);CHKERRQ(ierr);
+          ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+          ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+          cJSON_AddItemToArray(Rf_data,item);
+          ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+        }
+
+        /* now add all the data array to the output */
+        cJSON_AddItemToObject(json,"rheological_front",Rf_data);
 
       }
 
@@ -676,7 +785,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       }
 
       /* now add all the data array to the output */
-      cJSON_AddItemToObject(json,"data",data);
+      //cJSON_AddItemToObject(json,"data",data);
 
       /* Print to a string */
       outputString = cJSON_Print(json);
