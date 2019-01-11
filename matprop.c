@@ -237,7 +237,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscScalar       fwtl, fwts;
     PetscScalar       rho_sol, dTdrs_sol, cp_sol, temp_sol, alpha_sol, cond_sol, log10visc_sol;
     PetscScalar       rho_mel, dTdrs_mel, cp_mel, temp_mel, alpha_mel, cond_mel, log10visc_mel;
-    PetscScalar       rho_mix, dTdrs_mix, cp_mix, temp_mix, alpha_mix, cond_mix, log10visc_mix;
+    PetscScalar       rho_mix, dTdrs_mix, cp_mix, temp_mix, alpha_mix, cond_mix, log10visc_mel_mix, log10visc_sol_mix, log10visc_mix;
     Lookup const      *L;
     Mesh              *M = &E->mesh;
     Parameters const  *P = &E->parameters;
@@ -351,7 +351,11 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       temp_mix = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
       alpha_mix = -arr_fusion_rho[i] / arr_fusion_temp[i] / rho_mix;
       cond_mix = combine_matprop( arr_phi[i], P->cond_mel, P->cond_sol );
-      log10visc_mix = get_log10_viscosity_mix( arr_phi[i], log10visc_mel, log10visc_sol, P );
+      /* need to get viscosity of melt and solid phases at the mixed phase temperature, since
+         at thermodynamic equilibrium */
+      log10visc_mel_mix = get_log10_viscosity_melt( temp_mix, arr_pres[i], arr_layer_b[i], P );
+      log10visc_sol_mix = get_log10_viscosity_solid( temp_mix, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
+      log10visc_mix = get_log10_viscosity_mix( arr_phi[i], log10visc_mel_mix, log10visc_sol_mix, P );
 
       if(P->SOLID_CONVECTION_ONLY){
           arr_phi[i] = 0.0; // by definition
