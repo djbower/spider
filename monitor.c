@@ -153,12 +153,12 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
 
       /* rheological front */
       {
-        cJSON                      *Rf_data;
+        cJSON                      *data;
         Parameters           const *P = &ctx->parameters;
         Constants            const *C  = &P->constants;
         RheologicalFront const *Rf = &P->rheological_front;
 
-        Rf_data = cJSON_CreateArray();
+        data = cJSON_CreateArray();
 
         /* rheological front definition */
         {
@@ -172,7 +172,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -188,7 +188,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -204,7 +204,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -220,7 +220,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -236,7 +236,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -252,7 +252,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -268,7 +268,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -284,7 +284,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -300,7 +300,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -316,7 +316,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -332,7 +332,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -348,7 +348,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
@@ -364,18 +364,19 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
           ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(Rf_data,item);
+          cJSON_AddItemToArray(data,item);
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
         /* now add all the data array to the output */
-        cJSON_AddItemToObject(json,"rheological_front",Rf_data);
+        cJSON_AddItemToObject(json,"rheological_front",data);
 
       }
 
       /* atmosphere */
       {
-        Atmosphere const *A = &ctx->atmosphere;
+        cJSON                      *data;
+        Atmosphere           const *A = &ctx->atmosphere;
         Parameters           const *P = &ctx->parameters;
         Constants            const *C  = &P->constants;
         AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -397,6 +398,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
 
         ierr = DMCompositeRestoreAccessArray(ctx->dm_sol,sol,ctx->numFields,NULL,subVecs);CHKERRQ(ierr);
         ierr = PetscFree(subVecs);CHKERRQ(ierr);
+
+        data = cJSON_CreateArray();
 
         /* total liquid mass of mantle, kg */
         {
@@ -782,10 +785,9 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
           ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
         }
 
-      }
+        cJSON_AddItemToObject(json,"atmosphere",data);
 
-      /* now add all the data array to the output */
-      //cJSON_AddItemToObject(json,"data",data);
+      }
 
       /* Print to a string */
       outputString = cJSON_Print(json);
