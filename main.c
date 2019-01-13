@@ -27,17 +27,17 @@ int main(int argc, char ** argv)
   Ctx              ctx;                /* Solver context */
   Parameters const *P=&ctx.parameters;
 
-  PetscMPIInt     size;
-
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
   ierr = PrintSPIDERHeader();CHKERRQ(ierr);
 
   /* We don't want to take the time to debug things in MPI (though the
      problems are likely minor), so don't allow multi-rank runs */
-  ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
-  if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
-
+  {
+    PetscMPIInt size;
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+    if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
+  }
 
   /* Perform all initialization for our problem, allocating data
      Note that this checks all command-line options. */
@@ -60,10 +60,8 @@ int main(int argc, char ** argv)
   /* always use SUNDIALS CVODE (BDF) */
   /* must use direct solver, so requires Patrick's hacks */
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
-  // next seems to be set by default
   ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);
-  //ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_INTERPOLATE);CHKERRQ(ierr);
 
   /* can tighten tolerances for quad */
 #if (defined PETSC_USE_REAL___FLOAT128)
@@ -74,12 +72,6 @@ int main(int argc, char ** argv)
 
   /* Set up the RHS Function */
   ierr = TSSetRHSFunction(ts,NULL,RHSFunction,&ctx);CHKERRQ(ierr);
-
-
-  /* Set a very small initial timestep to prevent problems with
-     challenging initial conditions and adaptive steppers */
-  /* DJB with revised code this probably is not necessary anymore */
-  //ierr = TSSetInitialTimeStep(ts,0.0,1e-10);CHKERRQ(ierr);
 
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
