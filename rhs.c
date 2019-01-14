@@ -71,6 +71,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   ierr = set_melt_fraction_staggered( E ); CHKERRQ(ierr);
 
+  // TODO: move later, end of time step?
   ierr = set_rheological_front( E ); CHKERRQ(ierr);
 
   ierr = set_capacitance_staggered( E );CHKERRQ(ierr);

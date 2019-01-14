@@ -1,6 +1,8 @@
 #include "composition.h"
 #include "util.h"
 
+static PetscErrorCode set_rheological_front_mask_phi( Ctx *, PetscInt *, Vec );
+
 #if 0
 static PetscErrorCode set_magma_ocean_crystal_fraction( Ctx * );
 static PetscErrorCode set_magma_ocean_bridgmanite_fraction( Ctx * );
@@ -47,34 +49,23 @@ PetscErrorCode set_composition( Ctx *E )
 }
 #endif
 
-PetscErrorCode set_rheological_front( Ctx *E )
+static PetscErrorCode set_rheological_front_mask_phi( Ctx *E, PetscInt *index, Vec mask_s )
 {
     PetscErrorCode    ierr;
-    PetscInt          i,ilo_s,ihi_s,w_s;
-    DM                da_s=E->da_s;
-    Mesh              *M = &E->mesh;
-    Solution          *S = &E->solution;
+    DM                da_s = E->da_s;
+    PetscInt          i,ilo_s,ihi_s,w_s,numpts_s;
     Parameters        *P = &E->parameters;
-    RheologicalFront  *RF = &P->rheological_front;
+    Solution          *S = &E->solution;
+    RheologicalFront  *Rf = &P->rheological_front;
     const PetscScalar *arr_phi_s;
-    PetscScalar       phi, radius, pressure, one=1.0, zero=0.0;
-    PetscInt          numpts_s, i_above_avg, i_below_avg;
-    Vec               mask_s;
+    PetscScalar phi;
+    const PetscScalar one=1.0, zero=0.0;
 
     PetscFunctionBeginUser;
 
-    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = DMDAGetInfo(da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
-
-    /* create mask vector */
-    ierr = VecCreate( PETSC_COMM_WORLD, &mask_s ); CHKERRQ(ierr);
-    ierr = VecSetSizes( mask_s, PETSC_DECIDE, numpts_s ); CHKERRQ(ierr);
-    ierr = VecSetFromOptions( mask_s ); CHKERRQ(ierr);
-    ierr = VecSetUp( mask_s ); CHKERRQ(ierr);
-    ierr = VecSet( mask_s, 0.0 ); CHKERRQ(ierr);
-
-    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s); CHKERRQ(ierr);
 
     /* this simple algorithm counts up from the surface towards the
        CMB until the melt fraction at a staggered node is larger than
@@ -92,10 +83,12 @@ PetscErrorCode set_rheological_front( Ctx *E )
     /* this loop should always return a meaningful value if the cooling
        sequence can be adequately modelled as bottom-up */
 
+    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s); CHKERRQ(ierr);
+
     for(i=ilo_s; i<ihi_s; ++i){
         phi = arr_phi_s[i];
         ierr = VecSetValues( mask_s, 1, &i, &one, INSERT_VALUES ); CHKERRQ(ierr);
-        if( phi < RF->phi_critical ){
+        if( phi < Rf->phi_critical ){
             ierr = VecSetValues( mask_s, 1, &i, &zero, INSERT_VALUES ); CHKERRQ(ierr);
             break;
         }
@@ -106,40 +99,76 @@ PetscErrorCode set_rheological_front( Ctx *E )
 
     ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
 
+    *index = i;
+
+    PetscFunctionReturn(0);
+
+}
+
+
+PetscErrorCode set_rheological_front( Ctx *E )
+{
+    PetscErrorCode    ierr;
+    DM                da_s=E->da_s;
+    Mesh              *M = &E->mesh;
+    Solution          *S = &E->solution;
+    Parameters        *P = &E->parameters;
+    RheologicalFront  *Rf = &P->rheological_front;
+    PetscScalar       radius, pressure;
+    PetscInt          numpts_s, i_above_avg, i_below_avg;
+    PetscInt          index;
+    Vec               mask_s;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetInfo(da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    /* create mask vector */
+    ierr = VecCreate( PETSC_COMM_WORLD, &mask_s ); CHKERRQ(ierr);
+    ierr = VecSetSizes( mask_s, PETSC_DECIDE, numpts_s ); CHKERRQ(ierr);
+    ierr = VecSetFromOptions( mask_s ); CHKERRQ(ierr);
+    ierr = VecSetUp( mask_s ); CHKERRQ(ierr);
+    ierr = VecSet( mask_s, 0.0 ); CHKERRQ(ierr);
+
+    /* TODO: this computes the rheological front mask based on the
+       melt fraction, but another option is to compute based on the
+       dynamic criterion instead */
+    ierr = set_rheological_front_mask_phi( E, &index, mask_s ); CHKERRQ(ierr);
+
     // store
-    RF->mesh_index = i;
+    Rf->mesh_index = index;
 
     // set depth of the rheological front
-    ierr = VecGetValues(M->radius_b,1,&i,&radius);CHKERRQ(ierr);
-    RF->depth = P->radius - radius;
+    ierr = VecGetValues(M->radius_b,1,&index,&radius);CHKERRQ(ierr);
+    Rf->depth = P->radius - radius;
 
     // set pressure of the rheological front
-    ierr = VecGetValues(M->pressure_b,1,&i,&pressure);CHKERRQ(ierr);
-    RF->pressure = pressure;
+    ierr = VecGetValues(M->pressure_b,1,&index,&pressure);CHKERRQ(ierr);
+    Rf->pressure = pressure;
 
     // set the mesh index in the middle of the magma ocean
-    i_above_avg = i/2;
+    i_above_avg = index/2;
     ierr = VecGetValues(M->radius_b,1,&i_above_avg,&radius);CHKERRQ(ierr);
-    RF->depth_above_avg = P->radius - radius;
+    Rf->depth_above_avg = P->radius - radius;
     ierr = VecGetValues(M->pressure_b,1,&i_above_avg,&pressure);CHKERRQ(ierr);
-    RF->pressure_above_avg = pressure;
+    Rf->pressure_above_avg = pressure;
     /* mask is one above the rheological front */
-    ierr = average_by_mass_staggered( E, S->phi_s, mask_s, &RF->phi_above_avg ); CHKERRQ(ierr);
-    ierr = average_by_mass_staggered( E, S->temp_s, mask_s, &RF->temperature_above_avg); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, S->phi_s, mask_s, &Rf->phi_above_avg ); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, S->temp_s, mask_s, &Rf->temperature_above_avg); CHKERRQ(ierr);
 
     /* only compute properties in the solid layer once the rheological front
        begins advancing through the mantle */
-    if( i<numpts_s){
+    if( index < numpts_s){
         // set the mesh index in the middle of the solid layer
-        i_below_avg = (numpts_s - i)/2 + i;
+        i_below_avg = (numpts_s - index)/2 + index;
         ierr = VecGetValues(M->radius_b,1,&i_below_avg,&radius);CHKERRQ(ierr);
-        RF->depth_below_avg = P->radius - radius;
+        Rf->depth_below_avg = P->radius - radius;
         ierr = VecGetValues(M->pressure_b,1,&i_below_avg,&pressure);CHKERRQ(ierr);
-        RF->pressure_below_avg = pressure;
+        Rf->pressure_below_avg = pressure;
         ierr = invert_vec_mask( mask_s ); CHKERRQ(ierr);
         /* mask is now one below the rheological front */ 
-        ierr = average_by_mass_staggered( E, S->phi_s, mask_s, &RF->phi_below_avg ); CHKERRQ(ierr);
-        ierr = average_by_mass_staggered( E, S->temp_s, mask_s, &RF->temperature_below_avg); CHKERRQ(ierr);
+        ierr = average_by_mass_staggered( E, S->phi_s, mask_s, &Rf->phi_below_avg ); CHKERRQ(ierr);
+        ierr = average_by_mass_staggered( E, S->temp_s, mask_s, &Rf->temperature_below_avg); CHKERRQ(ierr);
     }
 
     ierr = VecDestroy( &mask_s ); CHKERRQ(ierr);
