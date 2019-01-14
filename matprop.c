@@ -153,6 +153,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
         cp_mel = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
 
         /* mixed phase */
+        /* volume additivity, excluding temperature (since phase effect dominant) */
         rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
         rho_mix = 1.0 / rho_mix;
 
@@ -230,7 +231,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     // material properties that are updated here
     PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
     // material properties used to update above
-    const PetscScalar *arr_dSdr, *arr_S_b, *arr_dSliqdr, *arr_dSsoldr, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b, *arr_radius_b;
+    const PetscScalar *arr_dSdr, *arr_S_b, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b, *arr_radius_b;
     const PetscInt *arr_layer_b;
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_fwtl, *arr_fwts;
@@ -275,8 +276,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->cp,&arr_cp); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->cp_mix,&arr_cp_mix); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSliqdr,&arr_dSliqdr); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSsoldr,&arr_dSsoldr); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->dTdrs,&arr_dTdrs); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->dTdrs_mix,&arr_dTdrs_mix); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->fusion,&arr_fusion); CHKERRQ(ierr);
@@ -351,10 +350,11 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       temp_mix = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
       alpha_mix = -arr_fusion_rho[i] / arr_fusion_temp[i] / rho_mix;
       cond_mix = combine_matprop( arr_phi[i], P->cond_mel, P->cond_sol );
-      /* need to get viscosity of melt and solid phases at the mixed phase temperature, since
-         at thermodynamic equilibrium */
-      log10visc_mel_mix = get_log10_viscosity_melt( temp_mix, arr_pres[i], arr_layer_b[i], P );
-      log10visc_sol_mix = get_log10_viscosity_solid( temp_mix, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
+      /* need to get viscosity of melt and solid phases at the liquidus and solidus temperature,
+         since this is consistent with the notion of ignoring temperature effects in the mixed
+         phase region (e.g., for density) */
+      log10visc_mel_mix = get_log10_viscosity_melt( arr_liquidus_temp[i], arr_pres[i], arr_layer_b[i], P );
+      log10visc_sol_mix = get_log10_viscosity_solid( arr_solidus_temp[i], arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
       log10visc_mix = get_log10_viscosity_mix( arr_phi[i], log10visc_mel_mix, log10visc_sol_mix, P );
 
       if(P->SOLID_CONVECTION_ONLY){
@@ -465,8 +465,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecRestoreArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->cp,&arr_cp); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->cp_mix,&arr_cp_mix); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSliqdr,&arr_dSliqdr); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSsoldr,&arr_dSsoldr); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->dTdrs,&arr_dTdrs); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->dTdrs_mix,&arr_dTdrs_mix); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->fusion,&arr_fusion); CHKERRQ(ierr);
