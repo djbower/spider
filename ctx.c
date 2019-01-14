@@ -3,7 +3,7 @@
 #include "mesh.h"
 #include "twophase.h"
 #include "util.h"
-//#include "composition.h"
+#include "composition.h"
 
 static PetscErrorCode CtxCreateFields(Ctx* ctx);
 
@@ -119,7 +119,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   // FIXME
   //if(P->COMPOSITION){
   //    initialise_composition(ctx);
-  //}
+ // }
 
   PetscFunctionReturn(0);
 }

@@ -4,6 +4,7 @@
 #include "matprop.h"
 #include "twophase.h"
 #include "util.h"
+#include "composition.h"
 
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"
@@ -67,6 +68,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = set_entropy_from_solution( E, sol_in );CHKERRQ(ierr);
 
   ierr = set_gphi_smooth( E );CHKERRQ(ierr);
+
+  ierr = set_melt_fraction_staggered( E ); CHKERRQ(ierr);
+
+  ierr = set_rheological_front( E ); CHKERRQ(ierr);
 
   ierr = set_capacitance_staggered( E );CHKERRQ(ierr);
 

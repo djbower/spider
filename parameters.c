@@ -105,8 +105,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   RadiogenicIsotopeParameters *th232 = &P->th232_parameters;
   RadiogenicIsotopeParameters *u235 = &P->u235_parameters;
   RadiogenicIsotopeParameters *u238 = &P->u238_parameters;
-  CompositionalParameters *Comp = &P->compositional_parameters;
-  RheologicalFront *Rf = &P->rheological_front;
+  Composition                 *Comp = &P->composition;
+  RheologicalFront            *Rf = &P->rheological_front;
 
   PetscFunctionBegin;
 
@@ -641,12 +641,12 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Rf->depth = -1.0; // updated by code but initialise here
   Rf->pressure = -1.0; //updated by code but initialise here
   Rf->phi_above_avg = -1.0; // updated by code but initialise here
-  Rf->phi_below_avg = -1.0; // updated by code but initialise here
   Rf->depth_above_avg = -1.0; // updated by code but initialise here
-  Rf->depth_below_avg = -1.0; // updated by code but initialise here
   Rf->pressure_above_avg = -1.0; // updated by code but initialise here
-  Rf->pressure_below_avg = -1.0; // updated by code by initialise here
   Rf->temperature_above_avg = -1.0; // updated by code but initialise here
+  Rf->phi_below_avg = -1.0; // updated by code but initialise here
+  Rf->depth_below_avg = -1.0; // updated by code but initialise here
+  Rf->pressure_below_avg = -1.0; // updated by code by initialise here
   Rf->temperature_below_avg = -1.0; // updated by code but initialise here
 
   /* compositional parameters */

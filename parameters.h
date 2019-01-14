@@ -104,23 +104,23 @@ typedef struct RheologicalFront_ {
     PetscScalar depth; // updated by code during time stepping
     PetscScalar pressure; // updated by code during time stepping
     PetscScalar phi_above_avg; // updated by code during time stepping
-    PetscScalar phi_below_avg;
     PetscScalar depth_above_avg;
-    PetscScalar depth_below_avg;
     PetscScalar pressure_above_avg;
-    PetscScalar pressure_below_avg;
     PetscScalar temperature_above_avg;
+    PetscScalar phi_below_avg;
+    PetscScalar depth_below_avg;
+    PetscScalar pressure_below_avg;
     PetscScalar temperature_below_avg;
 } RheologicalFront;
 
 /* compositional differentiation */
-typedef struct CompositionalParameters_ {
+typedef struct Composition_ {
     PetscScalar X0Brg; // user-defined
     PetscScalar muRes_muBrg; // user-defined
     PetscScalar mo_bridgmanite_fraction; // updated by code during time stepping
     PetscScalar mo_mass_ratio; // updated by code during time stepping
     PetscScalar mass_ratio_liquidus; // computed by code
-} CompositionalParameters;
+} Composition;
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct _Parameters {
@@ -220,7 +220,7 @@ typedef struct _Parameters {
     RheologicalFront rheological_front;
 
     // Composition
-    CompositionalParameters compositional_parameters;
+    Composition composition;
 
 } Parameters;
 

@@ -274,6 +274,57 @@ PetscScalar** Make2DPetscScalarArray( PetscInt arraySizeX, PetscInt arraySizeY) 
     return theArray;
 }
 
+PetscErrorCode average_by_mass_staggered( Ctx *E, Vec in_vec, Vec in_mask, PetscScalar *out )
+{
+    PetscErrorCode    ierr;
+    Mesh              *M = &E->mesh;
+    Vec               qty_s, mass_s;
+    PetscScalar       mass;
+    PetscInt          numpts_s;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    /* create work vectors */
+    ierr = VecCreate( PETSC_COMM_WORLD, &qty_s ); CHKERRQ(ierr);
+    ierr = VecSetSizes( qty_s, PETSC_DECIDE, numpts_s ); CHKERRQ(ierr);
+    ierr = VecSetFromOptions( qty_s ); CHKERRQ(ierr);
+    ierr = VecSetUp( qty_s ); CHKERRQ(ierr);
+
+    ierr = VecCreate( PETSC_COMM_WORLD, &mass_s ); CHKERRQ(ierr);
+    ierr = VecSetSizes( mass_s, PETSC_DECIDE, numpts_s ); CHKERRQ(ierr);
+    ierr = VecSetFromOptions( mass_s ); CHKERRQ(ierr);
+    ierr = VecSetUp( mass_s ); CHKERRQ(ierr);
+
+    /* compute mass-weighted average */
+    ierr = VecPointwiseMult(qty_s,in_vec,in_mask); CHKERRQ(ierr);
+    ierr = VecPointwiseMult(mass_s,M->mass_s,in_mask); CHKERRQ(ierr);
+    ierr = VecPointwiseMult(qty_s,qty_s,mass_s); CHKERRQ(ierr);
+    ierr = VecSum(qty_s,out); CHKERRQ(ierr);
+    ierr = VecSum(mass_s,&mass); CHKERRQ(ierr);
+    *out = *out / mass;
+
+    ierr = VecDestroy( &qty_s ); CHKERRQ(ierr);
+    ierr = VecDestroy( &mass_s ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+PetscErrorCode invert_vec_mask( Vec in_vec )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = VecShift( in_vec, -1 ); CHKERRQ(ierr);
+    ierr = VecScale( in_vec, -1); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
 
 #if 0
 static PetscErrorCode set_d_dr_quadratic( Ctx *E )

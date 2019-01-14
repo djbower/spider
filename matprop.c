@@ -2,10 +2,9 @@
 #include "util.h"
 #include "lookup.h"
 #include "twophase.h"
-//#include "composition.h"
+#include "composition.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
-static PetscErrorCode set_melt_fraction_staggered( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );
 static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const *);
 static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
@@ -22,8 +21,6 @@ PetscErrorCode set_capacitance_staggered( Ctx *E )
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
-
-    ierr = set_melt_fraction_staggered( E ); CHKERRQ(ierr);
 
     /* useful to passively compute crystal and Bridgmanite fraction,
        even if they do not feedback into the density calculation */
@@ -56,7 +53,7 @@ static PetscScalar get_melt_fraction_truncated( PetscScalar phi )
       return phi;
 }
 
-static PetscErrorCode set_melt_fraction_staggered( Ctx *E )
+PetscErrorCode set_melt_fraction_staggered( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
