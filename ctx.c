@@ -27,10 +27,10 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   ierr = InitializeParametersAndSetFromOptions(&ctx->parameters);CHKERRQ(ierr); /* Note we use ctx->parameters, not P! */
   ierr = PrintParameters(P);CHKERRQ(ierr);
 
-  /* Set up a parallel structured grid as DMComposite with two included DMDAs
+  /* Set up a parallel structured grid as DMComposite with several included DMDAs
      This is used to define vectors which hold the solution. The included
      DMDAs are used to create vectors which hold various properties
-     living on the same primal and staggered nodes.
+     living on primal and staggered nodes as well as on auxiliary domains.
   */
   const PetscInt stencilWidth = 1;
   const PetscInt dof = 1;
