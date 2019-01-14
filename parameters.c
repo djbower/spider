@@ -459,8 +459,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       break;
   }
 
-  Ap->HYBRID = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-HYBRID",&Ap->HYBRID,NULL);CHKERRQ(ierr);
+  Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
 
   /* emissivity is constant for SURFACE_BC != MO_ATMOSPHERE_TYPE_VOLATILES */
   Ap->emissivity0 = 1.0; // non-dimensional

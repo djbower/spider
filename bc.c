@@ -1,9 +1,7 @@
 #include "bc.h"
 #include "util.h"
 
-#if 0
-static PetscScalar hybrid( Ctx *, PetscScalar );
-#endif
+static PetscScalar get_viscous_mantle_cooling_rate( Ctx *, PetscScalar );
 static PetscScalar tsurf_param( PetscScalar, AtmosphereParameters const * );
 static PetscScalar grey_body( Atmosphere const *, AtmosphereParameters const * );
 static PetscScalar isothermal_surface( Ctx const * );
@@ -96,12 +94,11 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
       }
 
-#if 0
-      /* for legacy purposes */
-      if( Ap->HYBRID ){
-          Qout = hybrid( E, Qout );
+      /* smoothly transition the cooling rate to the viscous mantle
+         cooling rate below the rheological transition */
+      if( Ap->VISCOUS_MANTLE_COOLING_RATE ){
+          Qout = get_viscous_mantle_cooling_rate( E, Qout );
       }
-#endif
 
       /* some atmosphere models do not explicitly set an emissivity,
          so we should back-compute it here to always ensure that the
@@ -126,8 +123,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-#if 0
-static PetscScalar hybrid( Ctx *E, PetscScalar Qin )
+static PetscScalar get_viscous_mantle_cooling_rate( Ctx *E, PetscScalar Qin )
 {
     PetscErrorCode ierr;
     PetscScalar    Qout;
@@ -137,15 +133,14 @@ static PetscScalar hybrid( Ctx *E, PetscScalar Qin )
     Parameters     *P = &E->parameters;
     Solution       *S = &E->solution;
 
-    /* for legacy purposes, enable the ability for the magma ocean
-       to cool at a rate dictated by the upper mantle cooling rate,
-       This was originally a hack to prevent a viscous lid from
-       forming at the top */
+    /* enable the ability for the magma ocean to cool at a rate dictated 
+       by the upper mantle cooling rate.  This helps to prevent a viscous
+       lid from forming at the top */
 
     /* for weight of different fluxes */
     ind = 0;
     ierr = VecGetValues(S->phi,1,&ind,&phi0); CHKERRQ(ierr);
-    /* SWIDTH or PHI_WIDTH most appropriate choice here? */
+    /* TODO: SWIDTH or PHI_WIDTH most appropriate choice here? */
     fwt = tanh_weight( phi0, P->phi_critical, P->matprop_smooth_width );
 
     // energy flux from energy gradient
@@ -157,6 +152,8 @@ static PetscScalar hybrid( Ctx *E, PetscScalar Qin )
     ind = 2;
     ierr = VecGetValues(M->radius_b,1,&ind,&R2); CHKERRQ(ierr);
     ierr = VecGetValues(S->Etot,1,&ind,&E2); CHKERRQ(ierr);
+    /* TODO: does not account for spherical geometry, but should
+       not make a noticable difference */
     E0 = E1 - (E2-E1)*(R2-R1)/(R1-R0); // energy at surface
     Q2 = E0 / G0;
     // weight Q1 and Q2 to give total flux
@@ -164,7 +161,6 @@ static PetscScalar hybrid( Ctx *E, PetscScalar Qin )
 
     return Qout;
 }
-#endif
 
 PetscErrorCode set_core_mantle_flux( Ctx *E )
 {
