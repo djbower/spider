@@ -69,7 +69,6 @@ typedef struct RheologicalFrontMantleProperties_ {
 } RheologicalFrontMantleProperties;
 
 typedef struct RheologicalFront_ {
-    PetscScalar phi_critical; // user-defined
     PetscInt mesh_index; // updated by code during time stepping
     PetscScalar depth; // updated by code during time stepping
     PetscScalar pressure; // updated by code during time stepping
