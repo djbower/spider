@@ -1,3 +1,4 @@
+#include "dimensionalisablefield.h"
 #include "twophase.h"
 #include "util.h"
 #include "lookup.h"
@@ -529,6 +530,7 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
 {
     PetscErrorCode ierr;
     DM             da_s = E->da_s;
+    // FIXME: make some of these const?
     Mesh           *M = &E->mesh;
     Parameters     *P = &E->parameters;
     Solution       *S = &E->solution;
@@ -592,4 +594,32 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
 
 }
 
+PetscErrorCode add_rheological_front_to_cJSON( Ctx const *E, RheologicalFront const *Rf, cJSON *json )
+{
+    PetscErrorCode        ierr;
+    cJSON                *data;
+    cJSON             *subdata;
+    Constants          const *C = &E->parameters.constants;
+
+    PetscFunctionBeginUser;
+
+    data = cJSON_CreateArray();
+
+    ierr = AddSingleValueToJSON(E->da_point, 1.0, "mesh_index", "None", Rf->mesh_index, data);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSON(E->da_point, C->RADIUS, "depth", "m", Rf->depth, data);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSON(E->da_point, C->PRESSURE, "pressure", "Pa", Rf->pressure, data);CHKERRQ(ierr);
+
+    /* above rheological front */
+    subdata = cJSON_CreateArray();
+    ierr = AddSingleValueToJSON(E->da_point, 1.0, "phi", "None", Rf->above_middle.phi, subdata);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSON(E->da_point, 1.0, "depth", "m", Rf->above_middle.depth, subdata);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSON(E->da_point, 1.0, "pressure", "Pa", Rf->above_middle.pressure, subdata);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSON(E->da_point, 1.0, "temperature", "K", Rf->above_middle.temperature, subdata);CHKERRQ(ierr);
+    cJSON_AddItemToObject(data,"above_middle",subdata);
+
+    cJSON_AddItemToObject(json,"rheological_front",data);
+
+    PetscFunctionReturn(0);
+
+}
 

@@ -3,6 +3,7 @@
 #include "rhs.h"
 #include "cJSON.h"
 #include "version.h"
+#include "twophase.h"
 
 PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years, PetscInt step, PetscReal time, Vec sol, void *ptr, MonitorCtx *mctx)
 {
@@ -149,6 +150,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         /* now add all the data array to the output */
         cJSON_AddItemToObject(json,"data",data);
       }
+
+      /* rheological front */
+      {
+        RheologicalFront const *Rf = &ctx->rheological_front_phi;
+        add_rheological_front_to_cJSON( ctx, Rf, json );
+      }
+
 
 #if 0
       /* rheological front */

@@ -10,5 +10,6 @@ PetscErrorCode set_Msol( Ctx * );
 PetscErrorCode set_dMliqdt( Ctx * );
 
 PetscErrorCode set_rheological_front_phi( Ctx * );
+PetscErrorCode add_rheological_front_to_cJSON( Ctx const *, RheologicalFront const *, cJSON * );
 
 #endif

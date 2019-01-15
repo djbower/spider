@@ -294,3 +294,24 @@ PetscErrorCode DimensionalisableFieldSetSlotUnits(DimensionalisableField f,Petsc
   f->slotUnits[slot] = units;
   PetscFunctionReturn(0);
 }
+
+PetscErrorCode AddSingleValueToJSON( DM dm, PetscScalar scaling, const char *name, const char *units, const PetscScalar value, cJSON *data )
+{
+  PetscErrorCode         ierr;
+  cJSON                  *item;
+  DimensionalisableField dfield;
+
+  PetscFunctionBeginUser;
+
+  ierr = DimensionalisableFieldCreate(&dfield,dm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+  ierr = DimensionalisableFieldSetName(dfield,name);CHKERRQ(ierr);
+  ierr = DimensionalisableFieldSetUnits(dfield,units);CHKERRQ(ierr);
+  ierr = VecSetValue(dfield->vecGlobal,0,value,INSERT_VALUES);CHKERRQ(ierr);
+  ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
+  ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
+  ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
+  cJSON_AddItemToArray(data,item);
+  ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+}
