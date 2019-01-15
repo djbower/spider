@@ -603,28 +603,29 @@ PetscErrorCode add_rheological_front_to_cJSON( Ctx const *E, RheologicalFront co
 
     PetscFunctionBeginUser;
 
-    data = cJSON_CreateArray();
+    data = cJSON_CreateObject();
 
-    ierr = AddSingleValueToJSON(E->da_point, 1.0, "mesh_index", "None", Rf->mesh_index, data);CHKERRQ(ierr);
-    ierr = AddSingleValueToJSON(E->da_point, C->RADIUS, "depth", "m", Rf->depth, data);CHKERRQ(ierr);
-    ierr = AddSingleValueToJSON(E->da_point, C->PRESSURE, "pressure", "Pa", Rf->pressure, data);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSONArray(E->da_point, 1.0, "mesh_index", "None", Rf->mesh_index, data);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSONArray(E->da_point, C->RADIUS, "depth", "m", Rf->depth, data);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSONArray(E->da_point, C->PRESSURE, "pressure", "Pa", Rf->pressure, data);CHKERRQ(ierr);
 
     /* above rheological front */
     /* middle */
     subdata = cJSON_CreateArray();
-    ierr = AddSingleValueToJSON(E->da_point, 1.0, "phi", "None", Rf->above_middle.phi, subdata);CHKERRQ(ierr);
-    ierr = AddSingleValueToJSON(E->da_point, 1.0, "depth", "m", Rf->above_middle.depth, subdata);CHKERRQ(ierr);
-    ierr = AddSingleValueToJSON(E->da_point, 1.0, "pressure", "Pa", Rf->above_middle.pressure, subdata);CHKERRQ(ierr);
-    ierr = AddSingleValueToJSON(E->da_point, 1.0, "temperature", "K", Rf->above_middle.temperature, subdata);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSONArray(E->da_point, 1.0, "phi", "None", Rf->above_middle.phi, subdata);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSONArray(E->da_point, 1.0, "depth", "m", Rf->above_middle.depth, subdata);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSONArray(E->da_point, 1.0, "pressure", "Pa", Rf->above_middle.pressure, subdata);CHKERRQ(ierr);
+    ierr = AddSingleValueToJSONArray(E->da_point, 1.0, "temperature", "K", Rf->above_middle.temperature, subdata);CHKERRQ(ierr);
     cJSON_AddItemToObject(data,"above_middle",subdata);
 
     /* mass averaged */
-    subdata = cJSON_CreateArray();
+    /*subdata = cJSON_CreateArray();
     ierr = AddSingleValueToJSON(E->da_point, 1.0, "phi", "None", Rf->above_mass_avg.phi, subdata);CHKERRQ(ierr);
     ierr = AddSingleValueToJSON(E->da_point, 1.0, "depth", "m", Rf->above_mass_avg.depth, subdata);CHKERRQ(ierr);
     ierr = AddSingleValueToJSON(E->da_point, 1.0, "pressure", "Pa", Rf->above_mass_avg.pressure, subdata);CHKERRQ(ierr);
     ierr = AddSingleValueToJSON(E->da_point, 1.0, "temperature", "K", Rf->above_mass_avg.temperature, subdata);CHKERRQ(ierr);
     cJSON_AddItemToObject(data,"above_mass_avg",subdata);
+    */
 
     cJSON_AddItemToObject(json,"rheological_front",data);
 
