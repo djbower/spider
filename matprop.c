@@ -2,7 +2,8 @@
 #include "util.h"
 #include "lookup.h"
 #include "twophase.h"
-#include "composition.h"
+// FIXME
+//#include "composition.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );

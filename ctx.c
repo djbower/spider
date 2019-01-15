@@ -3,7 +3,8 @@
 #include "mesh.h"
 #include "twophase.h"
 #include "util.h"
-#include "composition.h"
+// FIXME
+//#include "composition.h"
 
 static PetscErrorCode CtxCreateFields(Ctx* ctx);
 

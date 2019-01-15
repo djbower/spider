@@ -4,7 +4,8 @@
 #include "matprop.h"
 #include "twophase.h"
 #include "util.h"
-#include "composition.h"
+// FIXME
+//#include "composition.h"
 
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"
