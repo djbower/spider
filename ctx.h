@@ -41,6 +41,44 @@ typedef struct Solution_ {
 
 } Solution;
 
+/* atmosphere */
+typedef struct Atmosphere_ {
+    // calculated quantities (14)
+    PetscScalar Mliq; // mass of liquid (kg)
+    PetscScalar Msol; // mass of solid (kg)
+    PetscScalar dMliqdt; // dMliq/dt (kg/yr)
+    PetscScalar tsurf; // surface temperature
+    PetscScalar tau; // aggregate optical depth (dimensionless)
+    PetscScalar p0; // CO2 partial pressure (Pa)
+    PetscScalar dp0dx; // dp0/dx (Pa/mass fraction)
+    PetscScalar m0; // CO2 mass in atmosphere (kg)
+    PetscScalar tau0; // CO2 optical depth (dimensionless)
+    PetscScalar p1; // H2O partial pressure (Pa)
+    PetscScalar dp1dx; // dp1dx (Pa / mass fraction)
+    PetscScalar m1; // H2O mass in atmosphere (kg)
+    PetscScalar tau1; // H20 optical depth (dimensionless)
+    PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
+} Atmosphere;
+
+/* rheological front */
+typedef struct RheologicalFrontMantleProperties_ {
+    PetscScalar phi;
+    PetscScalar depth;
+    PetscScalar pressure;
+    PetscScalar temperature;
+} RheologicalFrontMantleProperties;
+
+typedef struct RheologicalFront_ {
+    PetscScalar phi_critical; // user-defined
+    PetscInt mesh_index; // updated by code during time stepping
+    PetscScalar depth; // updated by code during time stepping
+    PetscScalar pressure; // updated by code during time stepping
+    RheologicalFrontMantleProperties above_middle;
+    RheologicalFrontMantleProperties above_mass_avg;
+    RheologicalFrontMantleProperties below_middle;
+    RheologicalFrontMantleProperties below_mass_avg;
+} RheologicalFront;
+
 /* Some helpers for keeping track of sub-fields
  - To add a new field type, update these three things!
 */
@@ -68,6 +106,8 @@ typedef struct Ctx_ {
   Mat                    qty_at_b, ddr_at_b;
   Parameters             parameters;
   DimensionalisableField solDF; /* The solution and attached scalings */
+  RheologicalFront       rheological_front_phi;
+  RheologicalFront       rheological_front_dynamic;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

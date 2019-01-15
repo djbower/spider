@@ -3,7 +3,7 @@
 
 #include "ctx.h"
 
-PetscErrorCode set_rheological_front( Ctx * );
+PetscErrorCode set_rheological_front_phi( Ctx * );
 
 #if 0
 PetscErrorCode set_composition( Ctx * );

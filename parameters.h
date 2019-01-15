@@ -39,25 +39,6 @@ typedef struct _Constants {
     PetscScalar HEATGEN;
 } Constants;
 
-/* atmosphere */
-typedef struct Atmosphere_ {
-    // calculated quantities (14)
-    PetscScalar Mliq; // mass of liquid (kg)
-    PetscScalar Msol; // mass of solid (kg)
-    PetscScalar dMliqdt; // dMliq/dt (kg/yr)
-    PetscScalar tsurf; // surface temperature
-    PetscScalar tau; // aggregate optical depth (dimensionless)
-    PetscScalar p0; // CO2 partial pressure (Pa)
-    PetscScalar dp0dx; // dp0/dx (Pa/mass fraction)
-    PetscScalar m0; // CO2 mass in atmosphere (kg)
-    PetscScalar tau0; // CO2 optical depth (dimensionless)
-    PetscScalar p1; // H2O partial pressure (Pa)
-    PetscScalar dp1dx; // dp1dx (Pa / mass fraction)
-    PetscScalar m1; // H2O mass in atmosphere (kg)
-    PetscScalar tau1; // H20 optical depth (dimensionless)
-    PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
-} Atmosphere;
-
 typedef struct VolatileParameters_ {
     PetscScalar initial;
     PetscScalar kdist;
@@ -95,24 +76,7 @@ typedef struct RadiogenicIsotopeParameters_ {
     PetscScalar half_life;
 } RadiogenicIsotopeParameters;
 
-typedef enum {RHEOLOGICAL_FRONT_TYPE_PHI=1,RHEOLOGICAL_FRONT_TYPE_DYNAMIC} RheologicalFrontType;
-/* rheological front */
-typedef struct RheologicalFront_ {
-    RheologicalFrontType RHEOLOGICAL_FRONT_DEFINITION;
-    PetscScalar phi_critical; // user-defined
-    PetscInt mesh_index; // updated by code during time stepping
-    PetscScalar depth; // updated by code during time stepping
-    PetscScalar pressure; // updated by code during time stepping
-    PetscScalar phi_above_avg; // updated by code during time stepping
-    PetscScalar depth_above_avg;
-    PetscScalar pressure_above_avg;
-    PetscScalar temperature_above_avg;
-    PetscScalar phi_below_avg;
-    PetscScalar depth_below_avg;
-    PetscScalar pressure_below_avg;
-    PetscScalar temperature_below_avg;
-} RheologicalFront;
-
+/* TODO: move to ctx.h if values are calculated */
 /* compositional differentiation */
 typedef struct Composition_ {
     PetscScalar X0Brg; // user-defined
@@ -216,10 +180,8 @@ typedef struct _Parameters {
     RadiogenicIsotopeParameters u235_parameters;
     RadiogenicIsotopeParameters u238_parameters;
 
-    // Rheological front
-    RheologicalFront rheological_front;
-
     // Composition
+    // FIXME: move to ctx.h
     Composition composition;
 
 } Parameters;

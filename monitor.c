@@ -150,7 +150,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         cJSON_AddItemToObject(json,"data",data);
       }
 
-
+#if 0
       /* rheological front */
       {
         cJSON                      *data;
@@ -372,7 +372,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         cJSON_AddItemToObject(json,"rheological_front",data);
 
       }
-
+#endif
       /* atmosphere */
       {
         cJSON                      *data;

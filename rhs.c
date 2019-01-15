@@ -71,9 +71,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   ierr = set_melt_fraction_staggered( E ); CHKERRQ(ierr);
 
-  // TODO: move later, end of time step?
-  ierr = set_rheological_front( E ); CHKERRQ(ierr);
-
   ierr = set_capacitance_staggered( E );CHKERRQ(ierr);
 
   ierr = set_matprop_basic( E );CHKERRQ(ierr);
@@ -127,6 +124,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
+  // FIXME
+  ierr = set_rheological_front_phi( E ); CHKERRQ(ierr);
 
   /* Transfer back  */
   ierr = DMCompositeGetAccessArray(E->dm_sol,rhs,E->numFields,NULL,subVecs);CHKERRQ(ierr);
