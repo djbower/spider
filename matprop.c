@@ -422,11 +422,11 @@ PetscErrorCode set_matprop_basic( Ctx *E )
         } else if( arr_gsuper[i] > crit ){
           /* inviscid scaling from Vitense (1953) */
           kh = 0.25 * PetscPowScalar(arr_mix_b[i],2) * PetscSqrtScalar(arr_alpha[i]*arr_gsuper[i]);
-          arr_regime[i] = 1.0;
+          arr_regime[i] = 2.0;
         } else{
           /* viscous scaling */
           kh = arr_alpha[i] * arr_gsuper[i] * PetscPowScalar(arr_mix_b[i],4) / (18.0*arr_nu[i]);
-          arr_regime[i] = 2.0;
+          arr_regime[i] = 1.0;
         }
 
         /* thermal eddy diffusivity */

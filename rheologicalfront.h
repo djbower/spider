@@ -28,7 +28,7 @@ typedef struct RheologicalFront_ {
     RheologicalFrontMantleProperties below_mass_avg;
 } RheologicalFront;
 
-//PetscErrorCode set_rheological_front_using_phi_critical( DM, Vec, PetscScalar, PetscInt *, Vec );
 PetscErrorCode JSON_add_rheological_front( DM, Constants *, RheologicalFront *, const char *, cJSON * );
+PetscErrorCode set_rheological_front_mask( DM, Vec, PetscScalar, PetscInt *, Vec );
 
 #endif
