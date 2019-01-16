@@ -295,6 +295,7 @@ PetscErrorCode DimensionalisableFieldSetSlotUnits(DimensionalisableField f,Petsc
   PetscFunctionReturn(0);
 }
 
+#if 0
 PetscErrorCode AddSingleValueToJSONArray( DM dm, PetscScalar scaling, const char *name, const char *units, const PetscScalar value, cJSON *data )
 {
   PetscErrorCode         ierr;
@@ -315,6 +316,7 @@ PetscErrorCode AddSingleValueToJSONArray( DM dm, PetscScalar scaling, const char
 
   PetscFunctionReturn(0);
 }
+#endif
 
 PetscErrorCode AddSingleValueToJSONObject( DM dm, PetscScalar scaling, const char *name, const char *units, const PetscScalar value, cJSON *data )
 {
@@ -331,7 +333,7 @@ PetscErrorCode AddSingleValueToJSONObject( DM dm, PetscScalar scaling, const cha
   ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
   ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
   ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-  cJSON_AddItemToObject(data,"test",item);
+  cJSON_AddItemToObject(data,name,item);
   ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
