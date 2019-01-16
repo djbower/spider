@@ -103,12 +103,9 @@ class MyJSON( object ):
 
     def get_field_data( self, field ):
         '''get all data relating to a particular field'''
-        field_l = self.data_d['data']
-        for ii in range( len(field_l) ):
-            if field_l[ii]['name'] == field:
-                fdata_d = field_l[ii]
+        field_d = self.data_d['data']
         try: 
-            return fdata_d
+            return field_d[field]
         except NameError:
             logger.critical('data for %s does not exist', field )
             sys.exit(1)
