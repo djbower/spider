@@ -120,31 +120,31 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       /* Add data of interest */
       // Note: this is duplicative, but it's too painful to flatten out the Ctx
       {
-        data = cJSON_CreateArray();
+        data = cJSON_CreateObject();
 
         for (i=0; i<NUMMESHVECS_S; ++i) {
           cJSON *item;
           DimensionalisableField curr = ctx->mesh.meshFields_s[i];
           ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
-        }
+          cJSON_AddItemToObject(data,curr->name,item);
+        } 
         for (i=0; i<NUMMESHVECS_B; ++i) {
           cJSON *item;
           DimensionalisableField curr = ctx->mesh.meshFields_b[i];
           ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
+          cJSON_AddItemToObject(data,curr->name,item);
         }
         for (i=0; i<NUMSOLUTIONVECS_S; ++i) {
           cJSON *item;
           DimensionalisableField curr = ctx->solution.solutionFields_s[i];
           ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
+          cJSON_AddItemToObject(data,curr->name,item);
         }
         for (i=0; i<NUMSOLUTIONVECS_B; ++i) {
           cJSON *item;
           DimensionalisableField curr = ctx->solution.solutionFields_b[i];
           ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
-          cJSON_AddItemToArray(data,item);
+          cJSON_AddItemToObject(data,curr->name,item);
         }
 
         /* now add all the data array to the output */
