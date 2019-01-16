@@ -2,6 +2,7 @@
 #include "bc.h"
 #include "energy.h"
 #include "matprop.h"
+#include "rheologicalfront.h"
 #include "twophase.h"
 #include "util.h"
 // FIXME
@@ -126,7 +127,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
   // FIXME
-  ierr = set_rheological_front_phi( E ); CHKERRQ(ierr);
+  //ierr = set_rheological_front_using_phi_critical( E ); CHKERRQ(ierr);
 
   /* Transfer back  */
   ierr = DMCompositeGetAccessArray(E->dm_sol,rhs,E->numFields,NULL,subVecs);CHKERRQ(ierr);

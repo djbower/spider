@@ -318,7 +318,7 @@ PetscErrorCode AddSingleValueToJSONArray( DM dm, PetscScalar scaling, const char
 }
 #endif
 
-PetscErrorCode AddSingleValueToJSONObject( DM dm, PetscScalar scaling, const char *name, const char *units, const PetscScalar value, cJSON *data )
+PetscErrorCode JSON_add_single_value_to_object( DM dm, PetscScalar scaling, const char *name, const char *units, const PetscScalar value, cJSON *data )
 {
   PetscErrorCode         ierr;
   cJSON                  *item;

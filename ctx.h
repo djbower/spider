@@ -4,6 +4,7 @@
 #include "petsc.h"
 #include "parameters.h"
 #include "dimensionalisablefield.h"
+#include "rheologicalfront.h"
 
 /* common structures */
 
@@ -59,24 +60,6 @@ typedef struct Atmosphere_ {
     PetscScalar tau1; // H20 optical depth (dimensionless)
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
 } Atmosphere;
-
-/* rheological front */
-typedef struct RheologicalFrontMantleProperties_ {
-    PetscScalar phi;
-    PetscScalar depth;
-    PetscScalar pressure;
-    PetscScalar temperature;
-} RheologicalFrontMantleProperties;
-
-typedef struct RheologicalFront_ {
-    PetscInt mesh_index; // updated by code during time stepping
-    PetscScalar depth; // updated by code during time stepping
-    PetscScalar pressure; // updated by code during time stepping
-    RheologicalFrontMantleProperties above_middle;
-    RheologicalFrontMantleProperties above_mass_avg;
-    RheologicalFrontMantleProperties below_middle;
-    RheologicalFrontMantleProperties below_mass_avg;
-} RheologicalFront;
 
 /* Some helpers for keeping track of sub-fields
  - To add a new field type, update these three things!

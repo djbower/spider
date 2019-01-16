@@ -30,7 +30,7 @@ PetscErrorCode DimensionalisableFieldSetName(DimensionalisableField,const char*)
 PetscErrorCode DimensionalisableFieldSetUnits(DimensionalisableField,const char*);
 PetscErrorCode DimensionalisableFieldSetSlotName(DimensionalisableField,PetscInt,const char*);
 PetscErrorCode DimensionalisableFieldSetSlotUnits(DimensionalisableField,PetscInt,const char*);
-PetscErrorCode AddSingleValueToJSONArray(DM,PetscScalar,const char *, const char *, PetscScalar const, cJSON *);
-PetscErrorCode AddSingleValueToJSONObject(DM,PetscScalar,const char *, const char *, PetscScalar const, cJSON *);
+// REMOVE ?PetscErrorCode AddSingleValueToJSONArray(DM,PetscScalar,const char *, const char *, PetscScalar const, cJSON *);
+PetscErrorCode JSON_add_single_value_to_object(DM,PetscScalar,const char *, const char *, PetscScalar const, cJSON *);
 
 #endif
