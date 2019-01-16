@@ -525,26 +525,27 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
 
     /* only compute properties in the solid layer once the rheological front
        begins advancing through the mantle */
-    if( index < numpts_s){
-        /* mantle properties in he solid layer (below rheological front) */
+    // FIXME: need to initialise values others valgrind warning!
+    //if( index < numpts_s){
+        /* mantle properties in the solid layer (below rheological front) */
         /* middle of layer */
-        index_below = (numpts_s - index)/2 + index;
-        ierr = VecGetValues(S->phi,1,&index_below,&phi);CHKERRQ(ierr);
-        Rf->below_middle.phi = phi;
-        ierr = VecGetValues(M->radius_b,1,&index_below,&radius);CHKERRQ(ierr);
-        Rf->below_middle.depth = P->radius - radius;
-        ierr = VecGetValues(M->pressure_b,1,&index_below,&pressure);CHKERRQ(ierr);
-        Rf->below_middle.pressure = pressure;
-        ierr = VecGetValues(S->temp,1,&index_below,&temperature);CHKERRQ(ierr);
-        Rf->below_middle.temperature = temperature;
-        /* average by mass */
-        ierr = invert_vec_mask( mask_s ); CHKERRQ(ierr);
-        ierr = average_by_mass_staggered( E, S->phi_s, mask_s, &Rf->below_mass_avg.phi); CHKERRQ(ierr);
-        ierr = average_by_mass_staggered( E, M->radius_s, mask_s, &Rf->below_mass_avg.depth); CHKERRQ(ierr);
-        Rf->below_mass_avg.depth = P->radius - Rf->below_mass_avg.depth;
-        ierr = average_by_mass_staggered( E, M->pressure_s, mask_s, &Rf->below_mass_avg.pressure); CHKERRQ(ierr);
-        ierr = average_by_mass_staggered( E, S->temp_s, mask_s, &Rf->below_mass_avg.temperature); CHKERRQ(ierr);
-    }
+    index_below = (numpts_s - index)/2 + index;
+    ierr = VecGetValues(S->phi,1,&index_below,&phi);CHKERRQ(ierr);
+    Rf->below_middle.phi = phi;
+    ierr = VecGetValues(M->radius_b,1,&index_below,&radius);CHKERRQ(ierr);
+    Rf->below_middle.depth = P->radius - radius;
+    ierr = VecGetValues(M->pressure_b,1,&index_below,&pressure);CHKERRQ(ierr);
+    Rf->below_middle.pressure = pressure;
+    ierr = VecGetValues(S->temp,1,&index_below,&temperature);CHKERRQ(ierr);
+    Rf->below_middle.temperature = temperature;
+    /* average by mass */
+    ierr = invert_vec_mask( mask_s ); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, S->phi_s, mask_s, &Rf->below_mass_avg.phi); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, M->radius_s, mask_s, &Rf->below_mass_avg.depth); CHKERRQ(ierr);
+    Rf->below_mass_avg.depth = P->radius - Rf->below_mass_avg.depth;
+    ierr = average_by_mass_staggered( E, M->pressure_s, mask_s, &Rf->below_mass_avg.pressure); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, S->temp_s, mask_s, &Rf->below_mass_avg.temperature); CHKERRQ(ierr);
+    //}
 
     PetscFunctionReturn(0);
 
