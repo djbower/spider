@@ -1,7 +1,9 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 2000
+-nstepsmacro 20
+# was 2000, but only need one million years for a reasonable
+# test of output
 
 # macro step size in years
 -dtmacro_years 50000
