@@ -5,6 +5,7 @@
 #include "parameters.h"
 #include "dimensionalisablefield.h"
 #include "rheologicalfront.h"
+#include "atmosphere.h"
 
 /* common structures */
 
@@ -42,6 +43,7 @@ typedef struct Solution_ {
 
 } Solution;
 
+#if 0
 /* atmosphere */
 typedef struct Atmosphere_ {
     // calculated quantities (14)
@@ -60,6 +62,7 @@ typedef struct Atmosphere_ {
     PetscScalar tau1; // H20 optical depth (dimensionless)
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
 } Atmosphere;
+#endif
 
 /* Some helpers for keeping track of sub-fields
  - To add a new field type, update these three things!

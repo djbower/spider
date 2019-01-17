@@ -3,7 +3,7 @@
 
 static PetscErrorCode JSON_add_rheological_front_mantle_properties( DM, Constants *, RheologicalFrontMantleProperties *, const char *, cJSON * );
 
-PetscErrorCode set_rheological_front_mask( DM dm, const Vec vec, const PetscScalar value, PetscInt *index, Vec mask )
+PetscErrorCode set_rheological_front_mask( DM dm, const Vec vec, PetscScalar value, PetscInt *index, Vec mask )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo,ihi,w;

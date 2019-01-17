@@ -9,7 +9,7 @@ EXNAME = spider
 SRC_C = main.c ctx.c rhs.c ic.c mesh.c lookup.c bc.c util.c twophase.c \
         monitor.c energy.c matprop.c parameters.c \
         dimensionalisablefield.c rheologicalfront.c \
-				cJSON.c
+	atmosphere.c cJSON.c
 
 # Main Target
 all :: ${EXNAME}

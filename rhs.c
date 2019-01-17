@@ -5,6 +5,7 @@
 #include "rheologicalfront.h"
 #include "twophase.h"
 #include "util.h"
+#include "atmosphere.h"
 // FIXME
 //#include "composition.h"
 
@@ -16,6 +17,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   Ctx                  *E = (Ctx*) ptr;
   Parameters           *P = &E->parameters;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
+  Atmosphere           *A = &E->atmosphere;
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
   PetscScalar          *arr_dSdt_s, *arr_rhs_b;
@@ -83,7 +85,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   /* will populate A->p?, A->dp?dx, and A->m? with zeros if
      x0 and x1 and/or are zero */
-  ierr = set_atmosphere_volatile_content( E, x0, x1 );CHKERRQ(ierr);
+  ierr = set_atmosphere_volatile_content( P, A, x0, x1 );CHKERRQ(ierr);
 
   /* boundary conditions must be after all arrays are set */
   ierr = set_surface_flux( E );CHKERRQ(ierr);

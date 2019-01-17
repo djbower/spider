@@ -115,7 +115,6 @@ static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
-
 static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 {
     /* set initial condition for the extra points */
