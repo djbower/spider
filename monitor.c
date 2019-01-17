@@ -153,7 +153,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       }
 
       /* rheological front */
-      ierr = JSON_add_rheological_front( ctx->da_s, &ctx->parameters.constants, &ctx->rheological_front_phi, "rheological_front_phi", json); CHKERRQ(ierr);
+      ierr = JSON_add_rheological_front( ctx->da_point, &ctx->parameters.constants, &ctx->rheological_front_phi, "rheological_front_phi", json); CHKERRQ(ierr);
 
 #if 0
       /* rheological front */
