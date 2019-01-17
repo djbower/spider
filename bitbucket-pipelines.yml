@@ -1,5 +1,5 @@
 pipelines:
-  branches:
+  custom:
     '{master,djbower/perturb}':
       - step:
           caches:
