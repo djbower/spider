@@ -54,6 +54,7 @@ def main() :
         blackbody_init_mixed(rootDir), \
         blackbody_init_solid(rootDir), \
         blackbody(rootDir),      \
+        atmosphere(rootDir),     \
     ]
 
     # Run tests
