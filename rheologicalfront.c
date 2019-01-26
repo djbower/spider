@@ -68,10 +68,10 @@ PetscErrorCode JSON_add_rheological_front( DM dm, Constants *C, RheologicalFront
     ierr = JSON_add_single_value_to_object(dm, C->RADIUS, "depth", "m", Rf->depth, data);CHKERRQ(ierr);
     ierr = JSON_add_single_value_to_object(dm, C->PRESSURE, "pressure", "Pa", Rf->pressure, data);CHKERRQ(ierr);
 
-    JSON_add_rheological_front_mantle_properties( dm, C, &Rf->above_middle, "above_middle", data );
-    JSON_add_rheological_front_mantle_properties( dm, C, &Rf->above_mass_avg, "above_mass_avg", data );
-    JSON_add_rheological_front_mantle_properties( dm, C, &Rf->below_middle, "below_middle", data );
-    JSON_add_rheological_front_mantle_properties( dm, C, &Rf->below_mass_avg, "below_mass_avg", data );
+    ierr = JSON_add_rheological_front_mantle_properties( dm, C, &Rf->above_middle, "above_middle", data );CHKERRQ(ierr);
+    ierr = JSON_add_rheological_front_mantle_properties( dm, C, &Rf->above_mass_avg, "above_mass_avg", data );CHKERRQ(ierr);
+    ierr = JSON_add_rheological_front_mantle_properties( dm, C, &Rf->below_middle, "below_middle", data );CHKERRQ(ierr);
+    ierr = JSON_add_rheological_front_mantle_properties( dm, C, &Rf->below_mass_avg, "below_mass_avg", data );CHKERRQ(ierr);
 
     cJSON_AddItemToObject(json,name,data);
 
