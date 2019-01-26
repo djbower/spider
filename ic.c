@@ -1,6 +1,7 @@
 #include "ic.h"
 #include "bc.h"
 #include "util.h"
+#include "atmosphere.h"
 
 static PetscErrorCode set_ic_default( Ctx *, Vec );
 static PetscErrorCode set_ic_entropy( Ctx *, Vec );
