@@ -96,8 +96,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
-  VolatileParameters   *H2O = &Ap->H2O_volatile_parameters;
-  VolatileParameters   *CO2 = &Ap->CO2_volatile_parameters;
+  VolatileParameters   *H2O = &Ap->H2O_parameters;
+  VolatileParameters   *CO2 = &Ap->CO2_parameters;
   Constants const      *C  = &P->constants;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
@@ -495,6 +495,11 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->P0 = 101325.0; // Pa (= 1 atm)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-P0",&Ap->P0,NULL);CHKERRQ(ierr);
   Ap->P0 /= C->PRESSURE;
+
+  /* TODO: check with PS as to whether this is the best approach */
+  Ap->gravity_ptr = &P->gravity;
+  Ap->radius_ptr = &P->radius;
+  Ap->VOLATILE_ptr = &C->VOLATILE;
 
   /* H2O volatile */
   H2O->initial = 500.0; // ppm

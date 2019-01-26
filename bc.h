@@ -5,8 +5,9 @@
 
 PetscErrorCode set_core_mantle_flux( Ctx * );
 PetscErrorCode set_surface_flux( Ctx * );
-PetscScalar get_initial_volatile( const Ctx *, const VolatileParameters * );
-PetscScalar get_dx0dt( const Ctx *, PetscScalar );
-PetscScalar get_dx1dt( const Ctx *, PetscScalar );
+// TODO: remove eventually
+//PetscScalar get_dxdt( const Ctx *, const VolatileParameters *, const Volatile * );
+//PetscScalar get_dx0dt( const Ctx *, PetscScalar );
+//PetscScalar get_dx1dt( const Ctx *, PetscScalar );
 
 #endif

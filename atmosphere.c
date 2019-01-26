@@ -1,50 +1,60 @@
 #include "atmosphere.h"
+#include "dimensionalisablefield.h"
 
-static PetscScalar get_partial_pressure_volatile( PetscScalar, const VolatileParameters * );
-static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar, const VolatileParameters * );
-static PetscScalar get_atmosphere_mass( const Parameters *, PetscScalar );
-static PetscScalar get_optical_depth( const Parameters *, PetscScalar, const VolatileParameters * );
+static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *, Volatile * );
+static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *, Volatile * );
+static PetscErrorCode set_atmosphere_mass( const AtmosphereParameters *, Volatile * );
+static PetscErrorCode set_optical_depth(  const AtmosphereParameters *, const VolatileParameters *, Volatile * );
+static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_newton_f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
+static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
 
-static PetscScalar get_partial_pressure_volatile( PetscScalar x, const VolatileParameters *V )
+static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *Vp, Volatile *V )
 {
     /* partial pressure of volatile */
-    PetscScalar p;
 
-    p = PetscPowScalar( x / V->henry, V->henry_pow);
+    PetscFunctionBeginUser;
 
-    return p;
+    V->p = PetscPowScalar( V->x / Vp->henry, Vp->henry_pow);
+
+    PetscFunctionReturn(0);
+
 }
 
-static PetscScalar get_partial_pressure_derivative_volatile( PetscScalar x, const VolatileParameters *V )
+static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *Vp, Volatile *V )
 {
     /* partial pressure derivative of volatile */
-    PetscScalar dpdx;
 
-    dpdx = V->henry_pow / V->henry;
-    dpdx *= PetscPowScalar( x / V->henry, V->henry_pow-1.0 );
+    PetscFunctionBeginUser;
 
-    return dpdx;
+    V->dpdx = Vp->henry_pow / Vp->henry;
+    V->dpdx *= PetscPowScalar( V->x / Vp->henry, Vp->henry_pow-1.0 );
+
+    PetscFunctionReturn(0);
+
 }
 
-static PetscScalar get_atmosphere_mass( const Parameters *P, PetscScalar p )
+static PetscErrorCode set_atmosphere_mass( const AtmosphereParameters *Ap, Volatile *V )
 {
     /* mass of atmosphere */
-    const Constants *C  = &P->constants;
-    PetscScalar mass_atm;
 
-    mass_atm = PetscSqr(P->radius) * p / -P->gravity;
-    mass_atm *= 1.0E6 / C->VOLATILE;
+    PetscFunctionBeginUser;
 
-    return mass_atm;
+    V->m = PetscSqr((*Ap->radius_ptr)) * V->p / -(*Ap->gravity_ptr);
+    V->m *= 1.0E6 / (*Ap->VOLATILE_ptr);
+
+    PetscFunctionReturn(0);
+
 }
 
-PetscErrorCode set_atmosphere_volatile_content( const Parameters *P, Atmosphere *A, PetscScalar x0, PetscScalar x1 )
+PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, Atmosphere *A )
 {
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    VolatileParameters   const *CO2 = &Ap->CO2_volatile_parameters;
-    VolatileParameters   const *H2O = &Ap->H2O_volatile_parameters;
+    PetscErrorCode             ierr;
+    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
+    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
+    Volatile                   *CO2 = &A->CO2;
+    Volatile                   *H2O = &A->H2O;
 
     PetscFunctionBeginUser;
 
@@ -52,14 +62,14 @@ PetscErrorCode set_atmosphere_volatile_content( const Parameters *P, Atmosphere 
        be set to zero */
 
     /* CO2 */
-    A->p0 = get_partial_pressure_volatile( x0, CO2 );
-    A->dp0dx = get_partial_pressure_derivative_volatile( x0, CO2 );
-    A->m0 = get_atmosphere_mass( P, A->p0 );
+    ierr = set_partial_pressure_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
+    ierr = set_partial_pressure_derivative_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
+    ierr = set_atmosphere_mass( Ap, CO2 );CHKERRQ(ierr);
 
     /* H2O */
-    A->p1 = get_partial_pressure_volatile( x1, H2O );
-    A->dp1dx = get_partial_pressure_derivative_volatile( x1, H2O );
-    A->m1 = get_atmosphere_mass( P, A->p1 );
+    ierr = set_partial_pressure_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
+    ierr = set_partial_pressure_derivative_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
+    ierr = set_atmosphere_mass( Ap, H2O );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -100,37 +110,164 @@ PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParam
 
 }
 
-PetscScalar get_emissivity_abe_matsui( const Parameters *P, Atmosphere *A )
+PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *Ap, Atmosphere *A )
 {
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    PetscErrorCode             ierr;
+    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
+    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
+    Volatile                   *CO2 = &A->CO2;
+    Volatile                   *H2O = &A->H2O;
 
     PetscScalar emissivity;
 
     /* CO2 */
-    A->tau0 = get_optical_depth( P, A->m0, &Ap->CO2_volatile_parameters );
+    ierr = set_optical_depth( Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
 
     /* H2O */
-    A->tau1 = get_optical_depth( P, A->m1, &Ap->H2O_volatile_parameters );
+    ierr = set_optical_depth( Ap, H2O_parameters, H2O );CHKERRQ(ierr);
 
     /* total */
-    A->tau = A->tau0 + A->tau1;
+    A->tau = CO2->tau + CO2->tau;
     emissivity = 2.0 / (A->tau + 2.0);
 
     return emissivity;
 
 }
 
-static PetscScalar get_optical_depth( const Parameters *P, PetscScalar mass_atm, const VolatileParameters *V )
+static PetscErrorCode set_optical_depth( const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
 {
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    Constants            const *C  = &P->constants;
-    PetscScalar tau;
+    PetscFunctionBeginUser;
 
     // note negative gravity
-    tau = 3.0/2.0 * C->VOLATILE/1.0E6 * mass_atm / PetscSqr( P->radius );
-    tau *= PetscSqrtScalar( V->kabs * -P->gravity / (3.0*Ap->P0) );
+    V->tau = 3.0/2.0 * (*Ap->VOLATILE_ptr)/1.0E6 * V->m / PetscSqr( (*Ap->radius_ptr) );
+    V->tau *= PetscSqrtScalar( Vp->kabs * -(*Ap->gravity_ptr) / (3.0*Ap->P0) );
 
-    return tau; // dimensionless (by definition)
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere const *A, const char *name, cJSON *json )
+{
+    PetscErrorCode ierr;
+    cJSON          *data;
+    PetscScalar    scaling;
+    Constants      const *C = &P->constants;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+
+    data = cJSON_CreateObject();
+
+    /* total liquid mass of mantle, kg */
+    scaling = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
+    ierr = JSON_add_single_value_to_object(dm, scaling, "mass_liquid", "kg", A->Mliq, data);CHKERRQ(ierr);
+
+    /* total solid mass of mantle, kg */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "mass_solid", "kg", A->Msol, data);CHKERRQ(ierr);
+
+    /* total mass of mantle, kg (for sanity check) */
+    /* FIXME: will probably break due to scope of function */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "mass_mantle", "kg", *Ap->mantle_mass_ptr, data);CHKERRQ(ierr);
+
+    /* surface temperature, K */
+    scaling = C->TEMP;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "temperature_surface", "K", A->tsurf, data);CHKERRQ(ierr);
+
+    /* optical depth, non-dimensional */
+    scaling = 1.0;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "optical_depth", "None", A->tau, data);CHKERRQ(ierr);
+
+    /* (effective) emissivity, non-dimensional */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "emissivity", "None", A->emissivity, data);CHKERRQ(ierr);
+
+    /* CO2 */
+    ierr = JSON_add_volatile(dm, P, &Ap->CO2_parameters, &A->CO2, A, "CO2", data ); CHKERRQ(ierr);
+
+    /* H2O */
+    ierr = JSON_add_volatile(dm, P, &Ap->H2O_parameters, &A->H2O, A, "H2O", data ); CHKERRQ(ierr);
+
+    cJSON_AddItemToObject(json,name,data);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatileParameters const *VP, Volatile const *V, Atmosphere const *A, char const *name, cJSON *json )
+{
+    PetscErrorCode  ierr;
+    cJSON           *data;
+    PetscScalar     scaling;
+    Constants       const *C = &P->constants;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+
+    data = cJSON_CreateObject();
+
+    /* parts-per-million (ppm) */
+    scaling = C->VOLATILE;
+    /* initial volatile (ppm) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_ppm", "ppm", VP->initial, data);CHKERRQ(ierr);
+    /* volatile in liquid mantle (ppm) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_ppm", "ppm", V->x, data);CHKERRQ(ierr);
+    /* volatile in solid mantle (ppm) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "solid_ppm", "ppm", V->x*VP->kdist, data);CHKERRQ(ierr);
+
+    /* kilograms (kg) */
+    scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+    /* initial volatile (kg) */
+    /* FIXME: mass will break here: move or copy M->mantle_mass to Constants? */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_kg", "kg", VP->initial*(*Ap->mantle_mass_ptr), data);CHKERRQ(ierr);
+    /* volatile in liquid mantle (kg) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_kg", "kg", V->x*A->Mliq, data);CHKERRQ(ierr);
+    /* volatile in solid mantle (kg) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "solid_kg", "kg", V->x*VP->kdist*A->Msol, data);CHKERRQ(ierr);
+    /* volatile in atmosphere (kg) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_kg", "kg", V->m, data);CHKERRQ(ierr);
+
+    /* bar (bar) */
+    /* volatile in atmosphere (bar) */
+    scaling = C->PRESSURE / 1.0E5; /* bar */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_bar", "bar", V->p, data);CHKERRQ(ierr);
+
+    /* non-dimensional */
+    /* optical depth (non-dimensional) */
+    scaling = 1.0;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "optical_depth", "None", V->tau, data);CHKERRQ(ierr);
+
+    cJSON_AddItemToObject(json,name,data);
+
+    PetscFunctionReturn(0);
+
+}
+
+PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const VolatileParameters *Vp, const Volatile *V )
+{
+    PetscScalar dxdt;
+    PetscScalar num, den;
+
+    num = V->x * (Vp->kdist-1.0) * A->dMliqdt;
+    den = Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq;
+    den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * V->dpdx / -(*Ap->gravity_ptr);
+
+    dxdt = num / den;
+
+    return dxdt;
+}
+
+PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const VolatileParameters *Vp )
+{
+    /* initial volatile in the aqueous phase */
+
+    PetscScalar fac, x;
+
+    fac = PetscSqr( (*Ap->radius_ptr) );
+    fac /= -(*Ap->gravity_ptr) * (*Ap->mantle_mass_ptr);
+    fac /= PetscPowScalar(Vp->henry,Vp->henry_pow);
+    fac *= 1.0E6 / (*Ap->VOLATILE_ptr);
+
+    x = solve_newton_method( fac, Vp->henry_pow, Vp->initial );
+
+    return x;
 }
 
 /* Newton's method */
@@ -159,7 +296,7 @@ static PetscScalar get_newton_f_prim( PetscScalar x, PetscScalar A, PetscScalar 
 
 }
 
-PetscScalar solve_newton_method( PetscScalar A, PetscScalar B, PetscScalar xinit )
+static PetscScalar solve_newton_method( PetscScalar A, PetscScalar B, PetscScalar xinit )
 {
     PetscInt i=0;
     PetscScalar x;

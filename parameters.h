@@ -63,8 +63,12 @@ typedef struct AtmosphereParameters_ {
     // for volatile ODE
     PetscBool SOLVE_FOR_VOLATILES;
     PetscScalar P0; 
-    VolatileParameters H2O_volatile_parameters;
-    VolatileParameters CO2_volatile_parameters;
+    VolatileParameters H2O_parameters;
+    VolatileParameters CO2_parameters;
+    PetscScalar const * gravity_ptr;
+    PetscScalar const * radius_ptr;
+    PetscScalar const * VOLATILE_ptr;
+    PetscScalar const * mantle_mass_ptr;
 } AtmosphereParameters;
 
 /* radiogenic heating */

@@ -69,6 +69,9 @@ PetscErrorCode set_mesh( Ctx *E)
     /* mass at staggered nodes */
     aw_mass( M );
 
+    /* mantle mass also needed for atmosphere calculations */
+    P->atmosphere_parameters.mantle_mass_ptr = &M->mantle_mass;
+
     PetscFunctionReturn(0);
 }
 

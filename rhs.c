@@ -26,10 +26,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   PetscInt             i,ihi_b,ilo_b,w_b,numpts_b;
   DM                   da_s = E->da_s, da_b=E->da_b;
   Vec                  rhs_b;
-  PetscScalar          S0, dS0dt;
-  PetscScalar          x0, x1;
+  PetscScalar          S0, x0, x1, dS0dt;
   Vec                  *subVecs;
-
   const PetscInt       ind0 = 0;
 
   PetscFunctionBeginUser;
@@ -59,9 +57,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   /* CO2 content of magma ocean (liquid phase) */
   ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],1,&ind0,&x0);CHKERRQ(ierr);
+  A->CO2.x = x0;
 
   /* H2O content of magma ocean (liquid phase) */
   ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],1,&ind0,&x1);CHKERRQ(ierr);
+  A->H2O.x = x1;
 
   ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
@@ -83,9 +83,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   ierr = set_Htot( E, t );CHKERRQ(ierr);
 
-  /* will populate A->p?, A->dp?dx, and A->m? with zeros if
-     x0 and x1 and/or are zero */
-  ierr = set_atmosphere_volatile_content( P, A, x0, x1 );CHKERRQ(ierr);
+  /* will set p, dp/dx, and m to zero if x is zero */
+  ierr = set_atmosphere_volatile_content( Ap, A );CHKERRQ(ierr);
 
   /* boundary conditions must be after all arrays are set */
   ierr = set_surface_flux( E );CHKERRQ(ierr);
@@ -146,8 +145,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* time-dependence of additional quantities */
   if (Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
     PetscScalar dx0dt, dx1dt;
-    dx0dt = get_dx0dt( E, x0 );
-    dx1dt = get_dx1dt( E, x1 );
+    dx0dt = get_dxdt( Ap, A, &Ap->CO2_parameters, &A->CO2 );
+    dx1dt = get_dxdt( Ap, A, &Ap->H2O_parameters, &A->H2O );
+    // TODO: remove below
+    //dx0dt = get_dx0dt( E, x0 );
+    //dx1dt = get_dx1dt( E, x1 );
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,dx0dt,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,dx1dt,INSERT_VALUES);CHKERRQ(ierr);
   }

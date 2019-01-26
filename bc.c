@@ -7,7 +7,6 @@ static PetscScalar tsurf_param( PetscScalar, const AtmosphereParameters * );
 static PetscScalar get_isothermal_surface( const Ctx * );
 static PetscScalar isothermal_or_cooling_cmb( const Ctx *, PetscScalar );
 static PetscScalar get_core_cooling_factor( const Ctx * );
-static PetscScalar get_dxdt( const Ctx *, PetscScalar, PetscScalar, PetscScalar );
 
 PetscErrorCode set_surface_flux( Ctx *E )
 {
@@ -33,8 +32,9 @@ PetscErrorCode set_surface_flux( Ctx *E )
          are initialised and set to zero here.  This should be moved to
          an initialisation module and performed once outside of the
          time loop */
-      A->tau0 = 0.0;
-      A->tau1 = 0.0;
+      /* TODO: should probably initialise elsewhere */
+      A->H2O.tau = 0.0;
+      A->CO2.tau = 0.0;
       A->tau = 0.0;
 
       /* temperature (potential temperature if coarse mesh is used)
@@ -64,7 +64,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
         case 3:
           // atmosphere evolution
-          A->emissivity = get_emissivity_abe_matsui( P, A );
+          A->emissivity = get_emissivity_abe_matsui( Ap, A );
           Qout = get_grey_body_flux( A, Ap );
           break;
         case 4:
@@ -306,8 +306,10 @@ PetscScalar tsurf_param( PetscScalar temp, const AtmosphereParameters *Ap )
     return Ts; 
 }
 
+/* TODO: remove, since below moved to atmosphere.c */
+#if 0
 /* general functions for volatiles */
-static PetscScalar get_dxdt( const Ctx *E, PetscScalar x, PetscScalar dpdx, PetscScalar kdist )
+PetscScalar get_dxdt( const Ctx *E, const VolatileParameters *VP, const Volatile *V )
 {
     Parameters           const *P = &E->parameters;
     Atmosphere           const *A = &E->atmosphere;
@@ -317,9 +319,9 @@ static PetscScalar get_dxdt( const Ctx *E, PetscScalar x, PetscScalar dpdx, Pets
     PetscScalar dxdt;
     PetscScalar num, den;
 
-    num = x * (kdist-1.0) * A->dMliqdt;
-    den = kdist * M->mantle_mass + (1.0-kdist) * A->Mliq;
-    den += (1.0E6 / C->VOLATILE) * PetscSqr(P->radius) * dpdx / -P->gravity;
+    num = V->x * (VP->kdist-1.0) * A->dMliqdt;
+    den = VP->kdist * M->mantle_mass + (1.0-VP->kdist) * A->Mliq;
+    den += (1.0E6 / C->VOLATILE) * PetscSqr(P->radius) * V->dpdx / -P->gravity;
 
     dxdt = num / den;
 
@@ -354,21 +356,19 @@ PetscScalar get_dx1dt( const Ctx *E, PetscScalar x1 )
     return dx1dt;
 }
 
-PetscScalar get_initial_volatile( const Ctx *E, const VolatileParameters *V )
+PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const VolatileParameters *Vp )
 {
     /* initial volatile in the aqueous phase */
-    Parameters           const *P  = &E->parameters;
-    Constants            const *C  = &P->constants;
-    Mesh                 const *M  = &E->mesh;
 
     PetscScalar fac, x;
 
-    fac = PetscSqr( P->radius );
-    fac /= -P->gravity * M->mantle_mass;
-    fac /= PetscPowScalar(V->henry,V->henry_pow);
-    fac *= 1.0E6 / C->VOLATILE;
+    fac = PetscSqr( (*Ap->radius_ptr) );
+    fac /= -(*Ap->gravity_ptr) * (*Ap->mantle_mass_ptr);
+    fac /= PetscPowScalar(Vp->henry,Vp->henry_pow);
+    fac *= 1.0E6 / (*Ap->VOLATILE_ptr);
 
-    x = solve_newton_method( fac, V->henry_pow, V->initial );
+    x = solve_newton_method( fac, Vp->henry_pow, Vp->initial );
 
     return x;
 }
+#endif

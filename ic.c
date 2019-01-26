@@ -124,8 +124,8 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     Vec                        *subVecs;
     Parameters           const *P  = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    VolatileParameters const   *CO2 = &Ap->CO2_volatile_parameters;
-    VolatileParameters const   *H2O = &Ap->H2O_volatile_parameters;
+    VolatileParameters const   *CO2 = &Ap->CO2_parameters;
+    VolatileParameters const   *H2O = &Ap->H2O_parameters;
 
     PetscScalar x0, x1;
 
@@ -139,11 +139,11 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     if(Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
       /* CO2 */
       if( CO2->initial > 0.0 ){
-        x0 = get_initial_volatile( E, CO2 );
+        x0 = get_initial_volatile( Ap, CO2 );
       }
       /* H2O */
       if( H2O->initial > 0.0 ){
-        x1 = get_initial_volatile( E, H2O );
+        x1 = get_initial_volatile( Ap, H2O );
       }
     }
 
