@@ -160,12 +160,9 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere const
     /* total liquid mass of mantle, kg */
     scaling = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
     ierr = JSON_add_single_value_to_object(dm, scaling, "mass_liquid", "kg", A->Mliq, data);CHKERRQ(ierr);
-
     /* total solid mass of mantle, kg */
     ierr = JSON_add_single_value_to_object(dm, scaling, "mass_solid", "kg", A->Msol, data);CHKERRQ(ierr);
-
     /* total mass of mantle, kg (for sanity check) */
-    /* FIXME: will probably break due to scope of function */
     ierr = JSON_add_single_value_to_object(dm, scaling, "mass_mantle", "kg", *Ap->mantle_mass_ptr, data);CHKERRQ(ierr);
 
     /* surface temperature, K */
@@ -175,7 +172,6 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere const
     /* optical depth, non-dimensional */
     scaling = 1.0;
     ierr = JSON_add_single_value_to_object(dm, scaling, "optical_depth", "None", A->tau, data);CHKERRQ(ierr);
-
     /* (effective) emissivity, non-dimensional */
     ierr = JSON_add_single_value_to_object(dm, scaling, "emissivity", "None", A->emissivity, data);CHKERRQ(ierr);
 
@@ -215,7 +211,6 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     /* kilograms (kg) */
     scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
     /* initial volatile (kg) */
-    /* FIXME: mass will break here: move or copy M->mantle_mass to Constants? */
     ierr = JSON_add_single_value_to_object(dm, scaling, "initial_kg", "kg", VP->initial*(*Ap->mantle_mass_ptr), data);CHKERRQ(ierr);
     /* volatile in liquid mantle (kg) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_kg", "kg", V->x*A->Mliq, data);CHKERRQ(ierr);

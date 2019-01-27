@@ -46,8 +46,6 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     C->SIGMA     = C->FLUX * 1.0 / PetscPowScalar( C->TEMP, 4.0 ); // W/m^2.K^4
     C->LHS       = C->MASS * C->TEMP; // kg.K
     C->HEATGEN   = PetscPowScalar( C->ENTROPY*C->TEMP, 3.0/2.0 ) / C->RADIUS; // W/kg
-    /* TODO: add scaling for internal heat generation since this might
-       be required in the internal heat generation functions */
     /* the full rhs vector contains various quantities
        with different units, so we cannot scale simply by multiplying
        by a constant value */
