@@ -127,7 +127,7 @@ PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *Ap, Atmospher
     ierr = set_optical_depth( Ap, H2O_parameters, H2O );CHKERRQ(ierr);
 
     /* total */
-    A->tau = CO2->tau + CO2->tau;
+    A->tau = CO2->tau + H2O->tau;
     emissivity = 2.0 / (A->tau + 2.0);
 
     return emissivity;
