@@ -465,12 +465,12 @@ PetscErrorCode set_rheological_front( Ctx *E )
     ierr = VecSetUp( mask_s ); CHKERRQ(ierr);
 
     /* critical melt fraction */
-    index = get_crossover_index( da_s, S->phi_s, P->phi_critical );
+    index = get_crossover_index( da_s, S->phi_s, P->phi_critical, 1 );
     ierr = set_rheological_front_mask( da_s, index, mask_s ); CHKERRQ(ierr);
     ierr = set_rheological_front_mantle_properties( E, Rfp, index, mask_s );
 
     /* inviscid to viscous regime crossover */
-    index = get_crossover_index( da_b, S->regime, 1.5 );
+    index = get_crossover_index( da_b, S->regime, 1.5, 0 );
     ierr = set_rheological_front_mask( da_b, index, mask_s ); CHKERRQ(ierr);
     ierr = set_rheological_front_mantle_properties( E, Rfd, index, mask_s );
 
