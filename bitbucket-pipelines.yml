@@ -26,13 +26,19 @@ pipelines:
             - make -j
 
             # run valgrind (examine manually!)
-            - valgrind ./spider -nstepsmacro 1 -dtmacro_years 10
+            #- valgrind ./spider -nstepsmacro 1 -dtmacro_years 10
 
+            # run valgrind for atmosphere
+            - valgrind ./spider -options_file examples/bower_2019/atmosphere/bu_input.opts -nstepsmacro 1
+
+            # DJB commmented this out since we can run tests locally and not use up
+            # pipeline minutes.  This is particularly important since valgrind does not
+            # run on Mojave
             # Test
-            - cd tests
-            - git clone https://bitbucket.org/dmay/pythontestharness
-            - ./runTests.py -d # create default config
-            - ./runTests.py -f # Return error code based on test success
+            #- cd tests
+            #- git clone https://bitbucket.org/dmay/pythontestharness
+            #- ./runTests.py -d # create default config
+            #- ./runTests.py -f # Return error code based on test success
 definitions:
    caches:
       petsc-double-direct: petsc-double-direct
