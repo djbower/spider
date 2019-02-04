@@ -471,7 +471,7 @@ PetscErrorCode set_rheological_front( Ctx *E )
 
     /* inviscid to viscous regime crossover */
     index = get_crossover_index( da_b, S->regime, 1.5, 0 );
-    ierr = set_rheological_front_mask( da_b, index, mask_s ); CHKERRQ(ierr);
+    ierr = set_rheological_front_mask( da_s, index, mask_s ); CHKERRQ(ierr);
     ierr = set_rheological_front_mantle_properties( E, Rfd, index, mask_s );
 
     /* destroy mask vector */
