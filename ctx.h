@@ -92,8 +92,7 @@ typedef struct Ctx_ {
   Parameters             parameters;
   DimensionalisableField solDF; /* The solution and attached scalings */
   RheologicalFront       rheological_front_phi;
-  // FIXME
-  //RheologicalFront       rheological_front_dynamic;
+  RheologicalFront       rheological_front_dynamic;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

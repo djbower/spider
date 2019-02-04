@@ -29,6 +29,6 @@ typedef struct RheologicalFront_ {
 } RheologicalFront;
 
 PetscErrorCode JSON_add_rheological_front( DM, Constants *, RheologicalFront *, const char *, cJSON * );
-PetscErrorCode set_rheological_front_mask( DM, Vec, PetscScalar, PetscInt *, Vec );
-
+PetscErrorCode set_rheological_front_mask( DM, PetscInt, Vec );
+PetscInt get_crossover_index( DM, Vec, PetscScalar );
 #endif

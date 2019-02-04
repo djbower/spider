@@ -3,42 +3,82 @@
 
 static PetscErrorCode JSON_add_rheological_front_mantle_properties( DM, Constants *, RheologicalFrontMantleProperties *, const char *, cJSON * );
 
-PetscErrorCode set_rheological_front_mask( DM dm, const Vec vec, PetscScalar value, PetscInt *index, Vec mask )
+PetscInt get_crossover_index( DM dm, const Vec vec, PetscScalar value )
 {
-    PetscErrorCode    ierr;
-    PetscInt          i,ilo,ihi,w;
-    const PetscScalar *arr_vec, one=1.0, zero=0.0;
-    PetscScalar       vec_value;
+    PetscErrorCode     ierr;
+    PetscInt           i,ilo,ihi,w;
+    const PetscScalar  *arr_vec;
+    PetscScalar        vec_value;
 
     PetscFunctionBeginUser;
 
     ierr = DMDAGetCorners(dm,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w;
 
+    /* for the regime field (basic vector), the regime is always = 0 at the
+       top basic node, which messes up this detection algorithm.  So always
+       start from the second node (even for the staggered) */
+    ilo += 1;
+
     /* this simple algorithm counts up from the surface towards the
-       CMB until the melt fraction at a staggered node is larger than
-       the melt fraction value (rheological_front_phi) used to define
-       the base of the magma ocean.  Once this value is reached, the 
-       loop is exited and the index stored for later use.  There are 
+       CMB until the value at a node is larger than a user defined
+       critical value.  The index is then returned.  There are 
        many instances when this algorithm could return nonsense 
        values, but as long as the magma ocean is generally 
        crystalising from the bottom-up, it should be OK */
 
-    /* end-member cases:
-           i = 0 if surface is below rheological transition
-           i = ihi_s-1 if all mantle is above rheological transition */
-
-    /* this loop should always return a meaningful value if the cooling
-       sequence can be adequately modelled as bottom-up */
-
     ierr = DMDAVecGetArrayRead(dm,vec,&arr_vec); CHKERRQ(ierr);
-
-    //VecSetValues( mask, 1, 0, &one, INSERT_VALUES ); CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){
         vec_value = arr_vec[i];
-        ierr = VecSetValues( mask, 1, &i, &one, INSERT_VALUES ); CHKERRQ(ierr);
         if( vec_value < value ){
+            break;
+        }
+    }
+
+    /* end-members:
+         1. i = 0 if surface is below rheological transition
+         2. i = ihi-1 if all mantle is above rheological transition
+
+       set_rheological_front_mask sets (staggered) mask to 0 for
+       i_staggered < index, and 1 for i_staggered >= 0.  Hence we
+       need to adjust the index for end-member 2 to ensure that
+       if the rheological front is not located, all of the mantle
+       is assumed to be above the rheological front */
+
+    /* end-member 1 automatically works */
+
+    /* end-member 2 */
+    /* only actually required for staggered mesh calculation */
+    if( i == ihi-1){
+        i += 1;
+    }
+
+    ierr = DMDAVecRestoreArrayRead(dm,vec,&arr_vec);CHKERRQ(ierr);
+
+    return i;
+
+}
+
+PetscErrorCode set_rheological_front_mask( DM dm, PetscInt index, Vec mask )
+{
+    PetscErrorCode    ierr;
+    PetscInt          i,ilo,ihi,w;
+    const PetscScalar one=1.0, zero=0.0;
+
+    PetscFunctionBeginUser;
+
+    /* assume all mantle is solid */
+    ierr = VecSet( mask, 0.0 ); CHKERRQ(ierr);
+
+    ierr = DMDAGetCorners(dm,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ihi = ilo + w;
+
+    for(i=ilo; i<ihi; ++i){
+        if( i < index ){
+            ierr = VecSetValues( mask, 1, &i, &one, INSERT_VALUES ); CHKERRQ(ierr);
+        }
+        else{
             ierr = VecSetValues( mask, 1, &i, &zero, INSERT_VALUES ); CHKERRQ(ierr);
             break;
         }
@@ -46,10 +86,6 @@ PetscErrorCode set_rheological_front_mask( DM dm, const Vec vec, PetscScalar val
 
     ierr = VecAssemblyBegin(mask);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(mask);CHKERRQ(ierr);
-
-    ierr = DMDAVecRestoreArrayRead(dm,vec,&arr_vec);CHKERRQ(ierr);
-
-    *index = i;
 
     PetscFunctionReturn(0);
 

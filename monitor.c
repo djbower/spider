@@ -153,8 +153,11 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
         cJSON_AddItemToObject(json,"data",data);
       }
 
-      /* rheological front */
+      /* rheological front phi */
       ierr = JSON_add_rheological_front( ctx->da_point, &ctx->parameters.constants, &ctx->rheological_front_phi, "rheological_front_phi", json); CHKERRQ(ierr);
+
+      /* rheological front dynamic */
+      ierr = JSON_add_rheological_front( ctx->da_point, &ctx->parameters.constants, &ctx->rheological_front_dynamic, "rheological_front_dynamic", json); CHKERRQ(ierr);
 
       /* atmosphere */
       ierr = JSON_add_atmosphere( ctx->da_point, &ctx->parameters, &ctx->atmosphere, "atmosphere", json); CHKERRQ(ierr);

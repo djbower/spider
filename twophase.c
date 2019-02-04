@@ -444,13 +444,11 @@ PetscErrorCode set_rheological_front( Ctx *E )
 {
     PetscErrorCode    ierr;
     DM                da_s = E->da_s;
-    // FIXME
-    //DM                da_b = E->da_b;
+    DM                da_b = E->da_b;
     Parameters        *P = &E->parameters;
     Solution          *S = &E->solution;
     RheologicalFront  *Rfp = &E->rheological_front_phi;
-    // FIXME
-    //RheologicalFront  *Rfd = &E->rheological_front_dynamic;
+    RheologicalFront  *Rfd = &E->rheological_front_dynamic;
     PetscInt          numpts_s, index;
     Vec               mask_s;
 
@@ -465,17 +463,16 @@ PetscErrorCode set_rheological_front( Ctx *E )
     ierr = VecSetSizes( mask_s, PETSC_DECIDE, numpts_s ); CHKERRQ(ierr);
     ierr = VecSetFromOptions( mask_s ); CHKERRQ(ierr);
     ierr = VecSetUp( mask_s ); CHKERRQ(ierr);
-    ierr = VecSet( mask_s, 0.0 ); CHKERRQ(ierr);
 
     /* critical melt fraction */
-    ierr = set_rheological_front_mask( da_s, S->phi_s, P->phi_critical, &index, mask_s ); CHKERRQ(ierr);
+    index = get_crossover_index( da_s, S->phi_s, P->phi_critical );
+    ierr = set_rheological_front_mask( da_s, index, mask_s ); CHKERRQ(ierr);
     ierr = set_rheological_front_mantle_properties( E, Rfp, index, mask_s );
 
     /* inviscid to viscous regime crossover */
-    // FIXME
-    //ierr = VecSet( mask_s, 0.0 ); CHKERRQ(ierr);
-    //ierr = set_rheological_front_mask( da_b, S->regime, 1.5, &index, mask_s ); CHKERRQ(ierr);
-    //ierr = set_rheological_front_mantle_properties( E, Rfd, index, mask_s );
+    index = get_crossover_index( da_b, S->regime, 1.5 );
+    ierr = set_rheological_front_mask( da_b, index, mask_s ); CHKERRQ(ierr);
+    ierr = set_rheological_front_mantle_properties( E, Rfd, index, mask_s );
 
     /* destroy mask vector */
     ierr = VecDestroy( &mask_s ); CHKERRQ(ierr);
@@ -484,7 +481,7 @@ PetscErrorCode set_rheological_front( Ctx *E )
 
 }
 
-static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, RheologicalFront *Rf, const PetscInt index, Vec mask_s )
+static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, RheologicalFront *Rf, PetscInt index, Vec mask_s )
 {
     PetscErrorCode   ierr;
     const DM         da_s = E->da_s;
