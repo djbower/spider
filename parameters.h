@@ -80,15 +80,13 @@ typedef struct RadiogenicIsotopeParameters_ {
     PetscScalar half_life;
 } RadiogenicIsotopeParameters;
 
-/* TODO: move to ctx.h if values are calculated */
 /* compositional differentiation */
-typedef struct Composition_ {
-    PetscScalar X0Brg; // user-defined
-    PetscScalar muRes_muBrg; // user-defined
-    PetscScalar mo_bridgmanite_fraction; // updated by code during time stepping
-    PetscScalar mo_mass_ratio; // updated by code during time stepping
-    PetscScalar mass_ratio_liquidus; // computed by code
-} Composition;
+typedef struct CompositionParameters_ {
+    PetscScalar Brg_initial_fraction; // user-defined
+    PetscScalar Res_Brg_mass_ratio; // user-defined
+    /* next scales the density at the liquidus */
+    PetscScalar BSE_Brg_mass_ratio_at_liquidus; // computed by code, but fixed with time
+} CompositionParameters;
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct _Parameters {
@@ -177,6 +175,7 @@ typedef struct _Parameters {
     // Scaling factors / dimensionalising constants
     Constants constants;
 
+    // Radiogenic heating parameters
     RadiogenicIsotopeParameters al26_parameters;
     RadiogenicIsotopeParameters k40_parameters;
     RadiogenicIsotopeParameters fe60_parameters;
@@ -185,8 +184,7 @@ typedef struct _Parameters {
     RadiogenicIsotopeParameters u238_parameters;
 
     // Composition
-    // FIXME: move to ctx.h
-    Composition composition;
+    CompositionParameters composition_parameters;
 
 } Parameters;
 

@@ -8,6 +8,7 @@ Custom PETSc command line options should only ever be parsed here.
 
 #include "parameters.h"
 #include "ctx.h"
+#include "composition.h"
 
 static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
@@ -103,7 +104,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   RadiogenicIsotopeParameters *th232 = &P->th232_parameters;
   RadiogenicIsotopeParameters *u235 = &P->u235_parameters;
   RadiogenicIsotopeParameters *u238 = &P->u238_parameters;
-  Composition                 *Comp = &P->composition;
+  CompositionParameters      *Compp = &P->composition_parameters;
 
   PetscFunctionBegin;
 
@@ -624,16 +625,18 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* compositional parameters */
   P->COMPOSITION = PETSC_FALSE;
-  Comp->X0Brg = 0.794;
-  Comp->muRes_muBrg = 1.2362;
-  Comp->mo_bridgmanite_fraction = -1.0; // updated by code, but initialise here
-  Comp->mo_mass_ratio = -1.0; // updated by code, but initialise here
-  Comp->mass_ratio_liquidus = -1.0; // initialised to sensible value later
+  Compp->Brg_initial_fraction = 0.794;
+  Compp->Res_Brg_mass_ratio = 1.2362;
   ierr = PetscOptionsGetBool(NULL,NULL,"-COMPOSITION",&P->COMPOSITION,NULL);CHKERRQ(ierr);
   if( P->COMPOSITION ){
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-X0Brg",&Comp->X0Brg,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-muRes_muBrg",&Comp->muRes_muBrg,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-Brg_initial_fraction",&Compp->Brg_initial_fraction,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-Res_Brg_mass_ratio",&Compp->Res_Brg_mass_ratio,NULL);CHKERRQ(ierr);
   }
+  Compp->BSE_Brg_mass_ratio_at_liquidus = get_BSE_Brg_mass_ratio( Compp->Brg_initial_fraction, Compp->Res_Brg_mass_ratio);
+
+  /* FIXME below should be initialised elsewhere */
+  //Comp->mo_bridgmanite_fraction = -1.0; // updated by code, but initialise here
+  //Comp->mo_mass_ratio = -1.0; // updated by code, but initialise here
 
   PetscFunctionReturn(0);
 }

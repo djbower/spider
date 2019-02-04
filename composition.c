@@ -1,5 +1,5 @@
 #include "composition.h"
-#include "util.h"
+//#include "util.h"
 
 #if 0
 static PetscErrorCode set_magma_ocean_crystal_fraction( Ctx * );
@@ -118,8 +118,9 @@ static PetscErrorCode set_magma_ocean_bridgmanite_fraction( Ctx *E )
     PetscFunctionReturn(0);
 
 }
+#endif
 
-static PetscErrorCode set_magma_ocean_mass_ratio( Ctx *E )
+PetscScalar get_BSE_Brg_mass_ratio( PetscScalar Brg_fraction, PetscScalar Res_Brg_mass_ratio )
 {
     /* Derived as follows:
     *      M_BSE = X_Brg M_Brg + X_res M_res
@@ -128,18 +129,13 @@ static PetscErrorCode set_magma_ocean_mass_ratio( Ctx *E )
     *      M_BSE / M_Brg = X_Brg + (1-X_Brg) * (M_res / M_Brg)
     */
 
-    Parameters               *P = &E->parameters;
-    CompositionalParameters  *Comp = &P->compositional_parameters;
-    PetscScalar              mo_mass_ratio;
+    PetscScalar mass_ratio;
 
     PetscFunctionBeginUser;
 
-    mo_mass_ratio = (1.0-Comp->mo_bridgmanite_fraction) * Comp->muRes_muBrg;
-    mo_mass_ratio += Comp->mo_bridgmanite_fraction;
+    mass_ratio = (1.0-Brg_fraction) * Res_Brg_mass_ratio;
+    mass_ratio += Brg_fraction;
 
-    Comp->mo_mass_ratio = mo_mass_ratio;
-
-    PetscFunctionReturn(0);
+    return mass_ratio;
 
 }
-#endif
