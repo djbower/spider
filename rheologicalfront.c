@@ -62,6 +62,8 @@ PetscInt get_crossover_index( DM dm, const Vec vec, PetscScalar value, PetscInt 
 
 }
 
+// to remove soon
+#if 0
 PetscErrorCode set_rheological_front_mask( DM dm, PetscInt index, Vec mask )
 {
     PetscErrorCode    ierr;
@@ -92,6 +94,7 @@ PetscErrorCode set_rheological_front_mask( DM dm, PetscInt index, Vec mask )
     PetscFunctionReturn(0);
 
 }
+#endif
 
 PetscErrorCode JSON_add_rheological_front( DM dm, Constants *C, RheologicalFront *Rf, const char *name, cJSON *json )
 {

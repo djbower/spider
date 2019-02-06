@@ -274,6 +274,43 @@ PetscScalar** Make2DPetscScalarArray( PetscInt arraySizeX, PetscInt arraySizeY) 
     return theArray;
 }
 
+Vec make_vec_mask( DM dm, PetscInt index )
+{
+    PetscErrorCode ierr;
+    PetscInt       numpts,i,ilo,ihi,w;
+    Vec            mask;
+    const PetscScalar one=1.0, zero=0.0;
+
+    ierr = DMDAGetInfo(dm,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    /* create mask vector */
+    VecCreate( PETSC_COMM_WORLD, &mask );//; CHKERRQ(ierr);
+    VecSetSizes( mask, PETSC_DECIDE, numpts );//; CHKERRQ(ierr);
+    VecSetFromOptions( mask );//; CHKERRQ(ierr);
+    VecSetUp( mask );//; CHKERRQ(ierr);
+
+    VecSet( mask, 0.0 );//; CHKERRQ(ierr);
+
+    DMDAGetCorners(dm,&ilo,0,0,&w,0,0);//CHKERRQ(ierr);
+    ihi = ilo + w;
+
+    for(i=ilo; i<ihi; ++i){
+        if( i < index ){
+            VecSetValues( mask, 1, &i, &one, INSERT_VALUES );// CHKERRQ(ierr);
+        }
+        else{
+            VecSetValues( mask, 1, &i, &zero, INSERT_VALUES );// CHKERRQ(ierr);
+            break;
+        }
+    }
+
+    VecAssemblyBegin(mask);//CHKERRQ(ierr);
+    VecAssemblyEnd(mask);//CHKERRQ(ierr);
+
+    /* must remember to destroy this vec elsewhere! */
+    return mask;
+}
+
 PetscErrorCode average_by_mass_staggered( Ctx *E, Vec in_vec, Vec in_mask, PetscScalar *out )
 {
     PetscErrorCode    ierr;
