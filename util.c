@@ -279,33 +279,32 @@ PetscErrorCode make_vec_mask( DM dm, PetscInt index, Vec * mask_ptr )
     PetscErrorCode ierr;
     PetscInt       numpts,i,ilo,ihi,w;
     const PetscScalar one=1.0, zero=0.0;
-    Vec mask = *mask_ptr;
 
     ierr = DMDAGetInfo(dm,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* create mask vector */
-    ierr = VecCreate( PETSC_COMM_WORLD, &mask );CHKERRQ(ierr);
-    ierr = VecSetSizes( mask, PETSC_DECIDE, numpts );CHKERRQ(ierr);
-    ierr = VecSetFromOptions( mask );CHKERRQ(ierr);
-    ierr = VecSetUp( mask );CHKERRQ(ierr);
+    ierr = VecCreate( PETSC_COMM_WORLD, mask_ptr );CHKERRQ(ierr);
+    ierr = VecSetSizes( *mask_ptr, PETSC_DECIDE, numpts );CHKERRQ(ierr);
+    ierr = VecSetFromOptions( *mask_ptr );CHKERRQ(ierr);
+    ierr = VecSetUp( *mask_ptr );CHKERRQ(ierr);
 
-    ierr = VecSet( mask, 0.0 );CHKERRQ(ierr);
+    ierr = VecSet( *mask_ptr, 0.0 );CHKERRQ(ierr);
 
     ierr = DMDAGetCorners(dm,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w;
 
     for(i=ilo; i<ihi; ++i){
         if( i < index ){
-            ierr = VecSetValues( mask, 1, &i, &one, INSERT_VALUES );CHKERRQ(ierr);
+            ierr = VecSetValues( *mask_ptr, 1, &i, &one, INSERT_VALUES );CHKERRQ(ierr);
         }
         else{
-            ierr = VecSetValues( mask, 1, &i, &zero, INSERT_VALUES );CHKERRQ(ierr);
+            ierr = VecSetValues( *mask_ptr, 1, &i, &zero, INSERT_VALUES );CHKERRQ(ierr);
             break;
         }
     }
 
-    ierr = VecAssemblyBegin(mask);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(mask);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(*mask_ptr);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(*mask_ptr);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -363,14 +362,14 @@ PetscErrorCode average_by_mass_staggered( Ctx *E, Vec in_vec, Vec * in_mask_ptr,
 
 }
 
-PetscErrorCode invert_vec_mask( Vec in_vec )
+PetscErrorCode invert_vec_mask( Vec * in_vec_ptr )
 {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
 
-    ierr = VecShift( in_vec, -1 ); CHKERRQ(ierr);
-    ierr = VecScale( in_vec, -1); CHKERRQ(ierr);
+    ierr = VecShift( *in_vec_ptr, -1 ); CHKERRQ(ierr);
+    ierr = VecScale( *in_vec_ptr, -1); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
