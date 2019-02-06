@@ -10,9 +10,8 @@ PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
 PetscErrorCode set_d_dr( Ctx * );
 PetscErrorCode set_entropy_from_solution( Ctx *, Vec );
 PetscErrorCode set_solution_from_entropy( Ctx *, Vec );
-PetscErrorCode average_by_mass_staggered( Ctx *, Vec, Vec, PetscScalar * );
+PetscErrorCode average_by_mass_staggered( Ctx *, Vec, Vec *, PetscScalar * );
 PetscErrorCode invert_vec_mask( Vec );
 PetscErrorCode make_vec_mask( DM, PetscInt, Vec * );
-
 
 #endif

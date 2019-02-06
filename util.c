@@ -311,13 +311,14 @@ PetscErrorCode make_vec_mask( DM dm, PetscInt index, Vec * mask_ptr )
 
 }
 
-PetscErrorCode average_by_mass_staggered( Ctx *E, Vec in_vec, Vec in_mask, PetscScalar *out )
+PetscErrorCode average_by_mass_staggered( Ctx *E, Vec in_vec, Vec * in_mask_ptr, PetscScalar *out )
 {
     PetscErrorCode    ierr;
     Mesh              *M = &E->mesh;
     Vec               qty_s, mass_s;
     PetscScalar       mass;
     PetscInt          numpts_s;
+    Vec               in_mask = *in_mask_ptr;
 
     PetscFunctionBeginUser;
 

@@ -10,7 +10,7 @@ static PetscErrorCode set_fusion( Ctx * );
 static PetscErrorCode set_fusion_curve( Ctx * );
 static PetscErrorCode set_mixed_phase( Ctx * );
 
-static PetscErrorCode set_rheological_front_mantle_properties( Ctx *, RheologicalFront *, PetscInt, Vec );
+static PetscErrorCode set_rheological_front_mantle_properties( Ctx *, RheologicalFront *, PetscInt, Vec * );
 
 PetscErrorCode set_twophase( Ctx *E )
 {
@@ -470,7 +470,7 @@ PetscErrorCode set_rheological_front( Ctx *E )
     ierr = make_vec_mask( da_s, index, &mask_s );CHKERRQ(ierr);
     // FIXME: to remove
     //ierr = set_rheological_front_mask( da_s, index, mask_s ); CHKERRQ(ierr);
-    ierr = set_rheological_front_mantle_properties( E, Rfp, index, mask_s );CHKERRQ(ierr);
+    ierr = set_rheological_front_mantle_properties( E, Rfp, index, &mask_s );CHKERRQ(ierr);
     ierr = VecDestroy( &mask_s );CHKERRQ(ierr);
 
     /* inviscid to viscous regime crossover */
@@ -478,14 +478,14 @@ PetscErrorCode set_rheological_front( Ctx *E )
     ierr = make_vec_mask( da_s, index, &mask_s );CHKERRQ(ierr);
     // FIXME: to remove
     //ierr = set_rheological_front_mask( da_s, index, mask_s ); CHKERRQ(ierr);
-    ierr = set_rheological_front_mantle_properties( E, Rfd, index, mask_s );CHKERRQ(ierr);
+    ierr = set_rheological_front_mantle_properties( E, Rfd, index, &mask_s );CHKERRQ(ierr);
     ierr = VecDestroy( &mask_s );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, RheologicalFront *Rf, PetscInt index, Vec mask_s )
+static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, RheologicalFront *Rf, PetscInt index, Vec * mask_ptr_s )
 {
     PetscErrorCode   ierr;
     const DM         da_s = E->da_s;
@@ -494,6 +494,7 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
     const Solution   *S = &E->solution;
     PetscScalar      phi, radius, pressure, temperature;
     PetscInt         numpts_s, index_above, index_below;
+    Vec              mask_s = *mask_ptr_s;
 
     PetscFunctionBeginUser;
 
@@ -518,11 +519,11 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
     ierr = VecGetValues(S->temp,1,&index_above,&temperature);CHKERRQ(ierr);
     Rf->above_middle.temperature = temperature;
     /* average by mass */
-    ierr = average_by_mass_staggered( E, S->phi_s, mask_s, &Rf->above_mass_avg.phi); CHKERRQ(ierr);
-    ierr = average_by_mass_staggered( E, M->radius_s, mask_s, &Rf->above_mass_avg.depth); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, S->phi_s, &mask_s, &Rf->above_mass_avg.phi); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, M->radius_s, &mask_s, &Rf->above_mass_avg.depth); CHKERRQ(ierr);
     Rf->above_mass_avg.depth = P->radius - Rf->above_mass_avg.depth;
-    ierr = average_by_mass_staggered( E, M->pressure_s, mask_s, &Rf->above_mass_avg.pressure); CHKERRQ(ierr);
-    ierr = average_by_mass_staggered( E, S->temp_s, mask_s, &Rf->above_mass_avg.temperature); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, M->pressure_s, &mask_s, &Rf->above_mass_avg.pressure); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, S->temp_s, &mask_s, &Rf->above_mass_avg.temperature); CHKERRQ(ierr);
 
     /* only compute properties in the solid layer once the rheological front
        begins advancing through the mantle */
@@ -541,11 +542,11 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
     Rf->below_middle.temperature = temperature;
     /* average by mass */
     ierr = invert_vec_mask( mask_s ); CHKERRQ(ierr);
-    ierr = average_by_mass_staggered( E, S->phi_s, mask_s, &Rf->below_mass_avg.phi); CHKERRQ(ierr);
-    ierr = average_by_mass_staggered( E, M->radius_s, mask_s, &Rf->below_mass_avg.depth); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, S->phi_s, &mask_s, &Rf->below_mass_avg.phi); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, M->radius_s, &mask_s, &Rf->below_mass_avg.depth); CHKERRQ(ierr);
     Rf->below_mass_avg.depth = P->radius - Rf->below_mass_avg.depth;
-    ierr = average_by_mass_staggered( E, M->pressure_s, mask_s, &Rf->below_mass_avg.pressure); CHKERRQ(ierr);
-    ierr = average_by_mass_staggered( E, S->temp_s, mask_s, &Rf->below_mass_avg.temperature); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, M->pressure_s, &mask_s, &Rf->below_mass_avg.pressure); CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, S->temp_s, &mask_s, &Rf->below_mass_avg.temperature); CHKERRQ(ierr);
     //}
 
     PetscFunctionReturn(0);
