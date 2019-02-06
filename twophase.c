@@ -467,19 +467,19 @@ PetscErrorCode set_rheological_front( Ctx *E )
 
     /* critical melt fraction */
     index = get_crossover_index( da_s, S->phi_s, P->phi_critical, 1 );
-    mask_s = make_vec_mask( da_s, index );
+    ierr = make_vec_mask( da_s, index, &mask_s );CHKERRQ(ierr);
     // FIXME: to remove
     //ierr = set_rheological_front_mask( da_s, index, mask_s ); CHKERRQ(ierr);
-    ierr = set_rheological_front_mantle_properties( E, Rfp, index, mask_s );
-    ierr = VecDestroy( &mask_s ); CHKERRQ(ierr);
+    ierr = set_rheological_front_mantle_properties( E, Rfp, index, mask_s );CHKERRQ(ierr);
+    ierr = VecDestroy( &mask_s );CHKERRQ(ierr);
 
     /* inviscid to viscous regime crossover */
     index = get_crossover_index( da_b, S->regime, 1.5, 0 );
-    mask_s = make_vec_mask( da_s, index );
+    ierr = make_vec_mask( da_s, index, &mask_s );CHKERRQ(ierr);
     // FIXME: to remove
     //ierr = set_rheological_front_mask( da_s, index, mask_s ); CHKERRQ(ierr);
-    ierr = set_rheological_front_mantle_properties( E, Rfd, index, mask_s );
-    ierr = VecDestroy( &mask_s ); CHKERRQ(ierr);
+    ierr = set_rheological_front_mantle_properties( E, Rfd, index, mask_s );CHKERRQ(ierr);
+    ierr = VecDestroy( &mask_s );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
