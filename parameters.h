@@ -80,6 +80,7 @@ typedef struct RadiogenicIsotopeParameters_ {
     PetscScalar half_life;
 } RadiogenicIsotopeParameters;
 
+#if 0
 /* compositional differentiation */
 typedef struct CompositionParameters_ {
     PetscScalar Brg_initial_fraction; // user-defined
@@ -87,6 +88,7 @@ typedef struct CompositionParameters_ {
     /* next scales the density at the liquidus */
     PetscScalar BSE_Brg_mass_ratio_at_liquidus; // computed by code, but fixed with time
 } CompositionParameters;
+#endif
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct _Parameters {
@@ -183,8 +185,9 @@ typedef struct _Parameters {
     RadiogenicIsotopeParameters u235_parameters;
     RadiogenicIsotopeParameters u238_parameters;
 
+    // FIXME
     // Composition
-    CompositionParameters composition_parameters;
+    //CompositionParameters composition_parameters;
 
 } Parameters;
 

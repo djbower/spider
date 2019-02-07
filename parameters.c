@@ -8,7 +8,8 @@ Custom PETSc command line options should only ever be parsed here.
 
 #include "parameters.h"
 #include "ctx.h"
-#include "composition.h"
+// FIXME
+//#include "composition.h"
 
 static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
@@ -104,7 +105,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   RadiogenicIsotopeParameters *th232 = &P->th232_parameters;
   RadiogenicIsotopeParameters *u235 = &P->u235_parameters;
   RadiogenicIsotopeParameters *u238 = &P->u238_parameters;
-  CompositionParameters      *Compp = &P->composition_parameters;
+
+  // FIXME
+  //CompositionParameters      *Compp = &P->composition_parameters;
 
   PetscFunctionBegin;
 
@@ -623,6 +626,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_half_life",&u238->half_life,NULL);CHKERRQ(ierr);
   u238->half_life /= C->TIMEYRS;
 
+#if 0
   /* compositional parameters */
   P->COMPOSITION = PETSC_FALSE;
   Compp->Brg_initial_fraction = 0.794;
@@ -637,6 +641,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* FIXME below should be initialised elsewhere */
   //Comp->mo_bridgmanite_fraction = -1.0; // updated by code, but initialise here
   //Comp->mo_mass_ratio = -1.0; // updated by code, but initialise here
+#endif
 
   PetscFunctionReturn(0);
 }
