@@ -456,28 +456,15 @@ PetscErrorCode set_rheological_front( Ctx *E )
 
     ierr = DMDAGetInfo(da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
-// moved to util.c
-#if 0
-    /* create mask vector */
-    ierr = VecCreate( PETSC_COMM_WORLD, &mask_s ); CHKERRQ(ierr);
-    ierr = VecSetSizes( mask_s, PETSC_DECIDE, numpts_s ); CHKERRQ(ierr);
-    ierr = VecSetFromOptions( mask_s ); CHKERRQ(ierr);
-    ierr = VecSetUp( mask_s ); CHKERRQ(ierr);
-#endif
-
     /* critical melt fraction */
     index = get_crossover_index( da_s, S->phi_s, P->phi_critical, 1 );
     ierr = make_vec_mask( da_s, index, &mask_s );CHKERRQ(ierr);
-    // FIXME: to remove
-    //ierr = set_rheological_front_mask( da_s, index, mask_s ); CHKERRQ(ierr);
     ierr = set_rheological_front_mantle_properties( E, Rfp, index, &mask_s );CHKERRQ(ierr);
     ierr = VecDestroy( &mask_s );CHKERRQ(ierr);
 
     /* inviscid to viscous regime crossover */
     index = get_crossover_index( da_b, S->regime, 1.5, 0 );
     ierr = make_vec_mask( da_s, index, &mask_s );CHKERRQ(ierr);
-    // FIXME: to remove
-    //ierr = set_rheological_front_mask( da_s, index, mask_s ); CHKERRQ(ierr);
     ierr = set_rheological_front_mantle_properties( E, Rfd, index, &mask_s );CHKERRQ(ierr);
     ierr = VecDestroy( &mask_s );CHKERRQ(ierr);
 
@@ -524,12 +511,8 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
     ierr = average_by_mass_staggered( E, M->pressure_s, mask_ptr_s, &Rf->above_mass_avg.pressure); CHKERRQ(ierr);
     ierr = average_by_mass_staggered( E, S->temp_s, mask_ptr_s, &Rf->above_mass_avg.temperature); CHKERRQ(ierr);
 
-    /* only compute properties in the solid layer once the rheological front
-       begins advancing through the mantle */
-    // FIXME: need to initialise values others valgrind warning!
-    //if( index < numpts_s){
-        /* mantle properties in the solid layer (below rheological front) */
-        /* middle of layer */
+    // TODO: need to initialise values?
+    /* middle of layer */
     index_below = (numpts_s - index)/2 + index;
     ierr = VecGetValues(S->phi,1,&index_below,&phi);CHKERRQ(ierr);
     Rf->below_middle.phi = phi;
@@ -546,7 +529,6 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
     Rf->below_mass_avg.depth = P->radius - Rf->below_mass_avg.depth;
     ierr = average_by_mass_staggered( E, M->pressure_s, mask_ptr_s, &Rf->below_mass_avg.pressure); CHKERRQ(ierr);
     ierr = average_by_mass_staggered( E, S->temp_s, mask_ptr_s, &Rf->below_mass_avg.temperature); CHKERRQ(ierr);
-    //}
 
     PetscFunctionReturn(0);
 

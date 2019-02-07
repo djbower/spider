@@ -369,7 +369,7 @@ PetscErrorCode invert_vec_mask( Vec * in_vec_ptr )
     PetscFunctionBeginUser;
 
     ierr = VecShift( *in_vec_ptr, -1 ); CHKERRQ(ierr);
-    ierr = VecScale( *in_vec_ptr, -1); CHKERRQ(ierr);
+    ierr = VecScale( *in_vec_ptr, -1 ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
