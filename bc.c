@@ -57,13 +57,11 @@ PetscErrorCode set_surface_flux( Ctx *E )
           Qout = get_grey_body_flux( A, Ap );
           break;
         case 2:
-          /* trying to pass the Constants struct resulted in a circular
-             dependency, which was easiest to address by just passing
-             in the two required constants instead */
+          // Zahnle steam atmosphere
           Qout = get_steam_atmosphere_zahnle_1988_flux( A, C );
           break;
         case 3:
-          // atmosphere evolution
+          // two stream approximation
           A->emissivity = get_emissivity_abe_matsui( Ap, A );
           Qout = get_grey_body_flux( A, Ap );
           break;
@@ -86,6 +84,9 @@ PetscErrorCode set_surface_flux( Ctx *E )
       if( Ap->VISCOUS_MANTLE_COOLING_RATE ){
           Qout = get_viscous_mantle_cooling_rate( E, Qout );
       }
+
+      /* store the implied atmosphere flux in the atmosphere struct as well */
+      A->Fatm = Qout;
 
       /* some atmosphere models do not explicitly set an emissivity,
          so we should back-compute it here to always ensure that the

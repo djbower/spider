@@ -43,27 +43,6 @@ typedef struct Solution_ {
 
 } Solution;
 
-#if 0
-/* atmosphere */
-typedef struct Atmosphere_ {
-    // calculated quantities (14)
-    PetscScalar Mliq; // mass of liquid (kg)
-    PetscScalar Msol; // mass of solid (kg)
-    PetscScalar dMliqdt; // dMliq/dt (kg/yr)
-    PetscScalar tsurf; // surface temperature
-    PetscScalar tau; // aggregate optical depth (dimensionless)
-    PetscScalar p0; // CO2 partial pressure (Pa)
-    PetscScalar dp0dx; // dp0/dx (Pa/mass fraction)
-    PetscScalar m0; // CO2 mass in atmosphere (kg)
-    PetscScalar tau0; // CO2 optical depth (dimensionless)
-    PetscScalar p1; // H2O partial pressure (Pa)
-    PetscScalar dp1dx; // dp1dx (Pa / mass fraction)
-    PetscScalar m1; // H2O mass in atmosphere (kg)
-    PetscScalar tau1; // H20 optical depth (dimensionless)
-    PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
-} Atmosphere;
-#endif
-
 /* Some helpers for keeping track of sub-fields
  - To add a new field type, update these three things!
 */
@@ -83,6 +62,7 @@ typedef struct Ctx_ {
   Mesh                   mesh;
   Solution               solution;
   DM                     da_b,da_s,da_point; /* DMs for different subdomains */
+  DM                     da_atm; /* DM for outputting atmosphere structure */
   DM                     dm_sol; /* A composite DM for all fields used in the timestepper */
   PetscInt               numFields; /* Number of sub-DMs in dm_sol */
   SpiderSolutionFieldID  *solutionFieldIDs; /* Which fields are in which slot */

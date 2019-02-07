@@ -3,6 +3,7 @@
 #include "mesh.h"
 #include "twophase.h"
 #include "util.h"
+#include "atmosphere.h"
 // FIXME
 //#include "composition.h"
 
@@ -38,6 +39,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,dof,stencilWidth,NULL,&ctx->da_b      );CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,dof,stencilWidth,NULL,&ctx->da_s      );CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1          ,dof,0           ,NULL,&ctx->da_point);CHKERRQ(ierr); // single-point DMDA
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,100        ,dof,0           ,NULL,&ctx->da_atm);CHKERRQ(ierr);
 
   /* Create a composite DM of the basic nodes plus additional quantities.
     This allows us to create a vector to solve for all of these quantities.
@@ -107,7 +109,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
 
 
   /* Continue to initialize context with distributed data */
-  ierr = CtxCreateFields(ctx);
+  ierr = CtxCreateFields(ctx);CHKERRQ(ierr);
 
   /* Create a work vector */
   ierr = DMCreateLocalVector(ctx->da_b,&ctx->work_local_b);CHKERRQ(ierr);
@@ -116,6 +118,8 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   set_mesh(ctx);
   set_d_dr( ctx );
   set_twophase(ctx);
+
+  initialise_atmosphere( ctx->da_atm, &ctx->atmosphere, &ctx->parameters.constants );
 
   // FIXME
   //if(P->COMPOSITION){
@@ -168,6 +172,9 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   for (i=0;i<NUMSOLUTIONVECS_S;++i){
     ierr = DimensionalisableFieldDestroy(&ctx->solution.solutionFields_s[i]);CHKERRQ(ierr);
   }
+
+  ierr = destroy_atmosphere( &ctx->atmosphere );CHKERRQ(ierr);
+
   ierr = PetscFree2(ctx->solutionFieldIDs,ctx->solutionSlots);CHKERRQ(ierr);
   ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
   ierr = MatDestroy(&ctx->qty_at_b);CHKERRQ(ierr);
@@ -176,6 +183,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_point);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->dm_sol);CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->da_atm);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }

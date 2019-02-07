@@ -4,6 +4,7 @@
 #include <petsc.h>
 #include "parameters.h"
 #include "cJSON.h"
+#include "dimensionalisablefield.h"
 
 /* these structures hold calculated quantities */
 /* the parameter equivalents are in parameters.h */
@@ -22,10 +23,19 @@ typedef struct Atmosphere_ {
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tsurf; // surface temperature
     PetscScalar tau; // aggregate optical depth (dimensionless)
+    PetscScalar Fatm; // net upward atmosphere flux
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
     Volatile    CO2; // CO2 volatile quantities
     Volatile    H2O; // H2O volatile quantities
+    DimensionalisableField atm_struct[4];
+    Vec atm_struct_tau;
+    Vec atm_struct_temp;
+    Vec atm_struct_pressure;
+    Vec atm_struct_depth;
 } Atmosphere;
+
+PetscErrorCode initialise_atmosphere( DM, Atmosphere *, const Constants *);
+PetscErrorCode destroy_atmosphere( Atmosphere * );
 
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters * );
 PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const Constants *C );

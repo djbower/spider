@@ -10,6 +10,57 @@ static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscSca
 static PetscScalar get_newton_f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
 
+PetscErrorCode initialise_atmosphere( DM da_atm, Atmosphere *A, const Constants *C )
+{
+    PetscErrorCode ierr;
+    PetscScalar    scaling;
+
+    PetscFunctionBeginUser;
+
+    /* create dimensionalisable fields for outputting atmosphere structure */
+    scaling = 1.0;
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[0],da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[0],&A->atm_struct_tau);
+    ierr = DimensionalisableFieldSetName(A->atm_struct[0],"atm_struct_tau");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(A->atm_struct[0],"None");CHKERRQ(ierr);
+
+    scaling = C->TEMP;
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[1],da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[1],&A->atm_struct_temp);
+    ierr = DimensionalisableFieldSetName(A->atm_struct[1],"atm_struct_temp");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(A->atm_struct[1],"K");CHKERRQ(ierr);
+
+    scaling = C->PRESSURE;
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[2],da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[2],&A->atm_struct_pressure);
+    ierr = DimensionalisableFieldSetName(A->atm_struct[2],"atm_struct_pressure");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(A->atm_struct[2],"Pa");CHKERRQ(ierr);
+
+    scaling = C->RADIUS;
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[3],da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[3],&A->atm_struct_depth);
+    ierr = DimensionalisableFieldSetName(A->atm_struct[3],"atm_struct_depth");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(A->atm_struct[3],"m");CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+PetscErrorCode destroy_atmosphere( Atmosphere *A )
+{
+    PetscErrorCode ierr;
+    PetscInt       i;
+
+    PetscFunctionBeginUser;
+
+    for (i=0;i<4;++i){
+        ierr = DimensionalisableFieldDestroy(&A->atm_struct[i]);CHKERRQ(ierr);
+    }
+
+    PetscFunctionReturn(0);
+}
+
+
 static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *Vp, Volatile *V )
 {
     /* partial pressure of volatile */
@@ -99,6 +150,7 @@ PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const Co
     return Fsurf;
 
 }
+
 PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParameters *Ap, PetscScalar flux )
 {
     PetscScalar emissivity;
@@ -150,6 +202,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere const
     PetscErrorCode ierr;
     cJSON          *data;
     PetscScalar    scaling;
+    PetscInt       i;
     Constants      const *C = &P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
@@ -175,11 +228,22 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere const
     /* (effective) emissivity, non-dimensional */
     ierr = JSON_add_single_value_to_object(dm, scaling, "emissivity", "None", A->emissivity, data);CHKERRQ(ierr);
 
+    /* net upward atmospheric flux */
+    scaling = C->FLUX;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "Fatm", "W m$^{-2}$", A->Fatm, data);CHKERRQ(ierr);
+
     /* CO2 */
     ierr = JSON_add_volatile(dm, P, &Ap->CO2_parameters, &A->CO2, A, "CO2", data ); CHKERRQ(ierr);
 
     /* H2O */
     ierr = JSON_add_volatile(dm, P, &Ap->H2O_parameters, &A->H2O, A, "H2O", data ); CHKERRQ(ierr);
+
+    for (i=0;i<4;++i){
+        cJSON *item;
+        DimensionalisableField curr = A->atm_struct[i];
+        ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
+        cJSON_AddItemToObject(data,curr->name,item);
+    }
 
     cJSON_AddItemToObject(json,name,data);
 
