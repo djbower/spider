@@ -27,6 +27,7 @@ typedef struct Atmosphere_ {
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
     Volatile    CO2; // CO2 volatile quantities
     Volatile    H2O; // H2O volatile quantities
+    DM const *  da_atm_ptr;
     DimensionalisableField atm_struct[4];
     Vec atm_struct_tau;
     Vec atm_struct_temp;
@@ -34,12 +35,13 @@ typedef struct Atmosphere_ {
     Vec atm_struct_depth;
 } Atmosphere;
 
-PetscErrorCode initialise_atmosphere( DM, Atmosphere *, const Constants *);
+PetscErrorCode initialise_atmosphere( DM const *, Atmosphere *, const Constants *);
 PetscErrorCode destroy_atmosphere( Atmosphere * );
 
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters * );
 PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const Constants *C );
 PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *, Atmosphere * );
+PetscErrorCode set_atm_struct( const AtmosphereParameters *, Atmosphere * );
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters *, PetscScalar );
 PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *, Atmosphere * );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, const Atmosphere *, const char *, cJSON *);

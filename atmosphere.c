@@ -9,35 +9,42 @@ static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_newton_f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
+static PetscErrorCode set_atm_struct_tau( Atmosphere * );
+static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParameters * );
 
-PetscErrorCode initialise_atmosphere( DM da_atm, Atmosphere *A, const Constants *C )
+PetscErrorCode initialise_atmosphere( DM const * da_atm_ptr, Atmosphere *A, const Constants *C )
 {
     PetscErrorCode ierr;
     PetscScalar    scaling;
 
     PetscFunctionBeginUser;
 
+    // pointer to da, so we can easily access it within the atmosphere structure
+    A->da_atm_ptr = da_atm_ptr;
+
     /* create dimensionalisable fields for outputting atmosphere structure */
+    /* TODO: this does not really need to be a DimensionalisableField, and PS
+       proposed creating a new structure call a DimenisonalisableValue instead */
     scaling = 1.0;
-    ierr = DimensionalisableFieldCreate(&A->atm_struct[0],da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[0],*da_atm_ptr,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[0],&A->atm_struct_tau);
     ierr = DimensionalisableFieldSetName(A->atm_struct[0],"atm_struct_tau");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[0],"None");CHKERRQ(ierr);
 
     scaling = C->TEMP;
-    ierr = DimensionalisableFieldCreate(&A->atm_struct[1],da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[1],*da_atm_ptr,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[1],&A->atm_struct_temp);
     ierr = DimensionalisableFieldSetName(A->atm_struct[1],"atm_struct_temp");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[1],"K");CHKERRQ(ierr);
 
     scaling = C->PRESSURE;
-    ierr = DimensionalisableFieldCreate(&A->atm_struct[2],da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[2],*da_atm_ptr,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[2],&A->atm_struct_pressure);
     ierr = DimensionalisableFieldSetName(A->atm_struct[2],"atm_struct_pressure");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[2],"Pa");CHKERRQ(ierr);
 
     scaling = C->RADIUS;
-    ierr = DimensionalisableFieldCreate(&A->atm_struct[3],da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[3],*da_atm_ptr,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[3],&A->atm_struct_depth);
     ierr = DimensionalisableFieldSetName(A->atm_struct[3],"atm_struct_depth");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[3],"m");CHKERRQ(ierr);
@@ -53,6 +60,7 @@ PetscErrorCode destroy_atmosphere( Atmosphere *A )
 
     PetscFunctionBeginUser;
 
+    // FIXME: dangerous if more than 4 dimensionalisable fields in atm_struct
     for (i=0;i<4;++i){
         ierr = DimensionalisableFieldDestroy(&A->atm_struct[i]);CHKERRQ(ierr);
     }
@@ -60,6 +68,60 @@ PetscErrorCode destroy_atmosphere( Atmosphere *A )
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
+{
+
+    /* builds an evenly-spaced profile of optical depth from unity at
+       the top to the surface value */
+
+    PetscErrorCode    ierr;
+    DM const          da_atm = *A->da_atm_ptr;
+    PetscScalar const tau_min = 1; // FIXME hard-coded here
+    PetscScalar const tau_max = A->tau; // surface optical depth
+    PetscScalar       tau,dtau;
+    PetscInt          i,ilo,w,ihi,numpts;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetInfo(da_atm,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    ierr = DMDAGetCorners(da_atm,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ihi = ilo + w;
+
+    dtau = (tau_max - tau_min) / (numpts-1);
+
+    for(i=ilo; i<ihi; ++i){
+        tau = tau_min + i*dtau;
+        ierr = VecSetValues( A->atm_struct_tau, 1, &i, &tau, INSERT_VALUES );CHKERRQ(ierr);         
+    }
+
+    ierr = VecAssemblyBegin( A->atm_struct_tau);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd( A->atm_struct_tau);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+    PetscErrorCode ierr;
+    PetscScalar    TO4, Teq4;
+
+    PetscFunctionBeginUser;
+
+    TO4 = A->Fatm / Ap->sigma;
+    Teq4 = PetscPowScalar(Ap->teqm,4.0);
+
+    ierr = VecCopy( A->atm_struct_tau, A->atm_struct_temp ); CHKERRQ(ierr);
+    ierr = VecShift( A->atm_struct_temp, 1.0 ); CHKERRQ(ierr);
+    ierr = VecScale( A->atm_struct_temp, 0.5 ); CHKERRQ(ierr);
+    ierr = VecScale( A->atm_struct_temp, TO4 ); CHKERRQ(ierr);
+    ierr = VecShift( A->atm_struct_temp, Teq4 ); CHKERRQ(ierr); 
+    ierr = VecPow( A->atm_struct_temp, 1.0/4.0 ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
 
 static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *Vp, Volatile *V )
 {
@@ -183,6 +245,19 @@ PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *Ap, Atmospher
     emissivity = 2.0 / (A->tau + 2.0);
 
     return emissivity;
+
+}
+
+PetscErrorCode set_atm_struct( const AtmosphereParameters *Ap, Atmosphere *A )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = set_atm_struct_tau( A );CHKERRQ(ierr);
+    ierr = set_atm_struct_temp( A, Ap );CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
 
 }
 

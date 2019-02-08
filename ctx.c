@@ -119,7 +119,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   set_d_dr( ctx );
   set_twophase(ctx);
 
-  ierr = initialise_atmosphere( ctx->da_atm, &ctx->atmosphere, &ctx->parameters.constants );CHKERRQ(ierr);
+  ierr = initialise_atmosphere( &ctx->da_atm, &ctx->atmosphere, &ctx->parameters.constants );CHKERRQ(ierr);
 
   // FIXME
   //if(P->COMPOSITION){
