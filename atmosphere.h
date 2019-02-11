@@ -11,10 +11,10 @@
 
 typedef struct Volatile_ {
     PetscScalar x; // ppm in liquid mantle
-    PetscScalar p; // partial pressure (Pa)
+    PetscScalar p; // partial pressure at surface (Pa)
     PetscScalar dpdx; // dp/dx (Pa/mass fraction)
     PetscScalar m; // mass in atmosphere (kg)
-    PetscScalar tau; // optical_depth (non-dimensional)
+    PetscScalar tau; // optical_depth at surface (non-dimensional)
 } Volatile;
 
 typedef struct Atmosphere_ {
@@ -22,12 +22,12 @@ typedef struct Atmosphere_ {
     PetscScalar Msol; // mass of solid (kg)
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tsurf; // surface temperature
-    PetscScalar tau; // aggregate optical depth (dimensionless)
+    PetscScalar tau; // aggregate optical depth at surface (dimensionless)
     PetscScalar Fatm; // net upward atmosphere flux
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
     Volatile    CO2; // CO2 volatile quantities
     Volatile    H2O; // H2O volatile quantities
-    DM const *  da_atm_ptr;
+    DM         da_atm; // da for outputing atmosphere structure (below)
     DimensionalisableField atm_struct[4];
     Vec atm_struct_tau;
     Vec atm_struct_temp;
@@ -35,7 +35,7 @@ typedef struct Atmosphere_ {
     Vec atm_struct_depth;
 } Atmosphere;
 
-PetscErrorCode initialise_atmosphere( DM const *, Atmosphere *, const Constants *);
+PetscErrorCode initialise_atmosphere( Atmosphere *, const Constants *);
 PetscErrorCode destroy_atmosphere( Atmosphere * );
 
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters * );

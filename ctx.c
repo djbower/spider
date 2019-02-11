@@ -39,7 +39,6 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,dof,stencilWidth,NULL,&ctx->da_b      );CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,dof,stencilWidth,NULL,&ctx->da_s      );CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1          ,dof,0           ,NULL,&ctx->da_point);CHKERRQ(ierr); // single-point DMDA
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,100        ,dof,0           ,NULL,&ctx->da_atm);CHKERRQ(ierr);
 
   /* Create a composite DM of the basic nodes plus additional quantities.
     This allows us to create a vector to solve for all of these quantities.
@@ -119,7 +118,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   set_d_dr( ctx );
   set_twophase(ctx);
 
-  ierr = initialise_atmosphere( &ctx->da_atm, &ctx->atmosphere, &ctx->parameters.constants );CHKERRQ(ierr);
+  ierr = initialise_atmosphere( &ctx->atmosphere, &ctx->parameters.constants );CHKERRQ(ierr);
 
   // FIXME
   //if(P->COMPOSITION){
@@ -183,7 +182,6 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_point);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->dm_sol);CHKERRQ(ierr);
-  ierr = DMDestroy(&ctx->da_atm);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }

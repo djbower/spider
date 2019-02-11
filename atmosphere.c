@@ -5,14 +5,16 @@ static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *,
 static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_atmosphere_mass( const AtmosphereParameters *, Volatile * );
 static PetscErrorCode set_optical_depth(  const AtmosphereParameters *, const VolatileParameters *, Volatile * );
+static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
 static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_newton_f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParameters * );
+static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmosphereParameters * );
 
-PetscErrorCode initialise_atmosphere( DM const * da_atm_ptr, Atmosphere *A, const Constants *C )
+PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
 {
     PetscErrorCode ierr;
     PetscScalar    scaling;
@@ -20,31 +22,34 @@ PetscErrorCode initialise_atmosphere( DM const * da_atm_ptr, Atmosphere *A, cons
     PetscFunctionBeginUser;
 
     // pointer to da, so we can easily access it within the atmosphere structure
-    A->da_atm_ptr = da_atm_ptr;
+    const PetscInt stencilWidth = 1;
+    const PetscInt dof = 1;
+    const PetscInt numpts = 100; // FIXME hard-coded for atmosphere structure output
+    ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,numpts,dof,stencilWidth,NULL,&A->da_atm);CHKERRQ(ierr);
 
     /* create dimensionalisable fields for outputting atmosphere structure */
     /* TODO: this does not really need to be a DimensionalisableField, and PS
        proposed creating a new structure call a DimenisonalisableValue instead */
     scaling = 1.0;
-    ierr = DimensionalisableFieldCreate(&A->atm_struct[0],*da_atm_ptr,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[0],A->da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[0],&A->atm_struct_tau);
     ierr = DimensionalisableFieldSetName(A->atm_struct[0],"atm_struct_tau");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[0],"None");CHKERRQ(ierr);
 
     scaling = C->TEMP;
-    ierr = DimensionalisableFieldCreate(&A->atm_struct[1],*da_atm_ptr,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[1],A->da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[1],&A->atm_struct_temp);
     ierr = DimensionalisableFieldSetName(A->atm_struct[1],"atm_struct_temp");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[1],"K");CHKERRQ(ierr);
 
-    scaling = C->PRESSURE;
-    ierr = DimensionalisableFieldCreate(&A->atm_struct[2],*da_atm_ptr,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    scaling = C->PRESSURE / 1.0E5; // bar
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[2],A->da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[2],&A->atm_struct_pressure);
     ierr = DimensionalisableFieldSetName(A->atm_struct[2],"atm_struct_pressure");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(A->atm_struct[2],"Pa");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(A->atm_struct[2],"bar");CHKERRQ(ierr);
 
     scaling = C->RADIUS;
-    ierr = DimensionalisableFieldCreate(&A->atm_struct[3],*da_atm_ptr,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&A->atm_struct[3],A->da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[3],&A->atm_struct_depth);
     ierr = DimensionalisableFieldSetName(A->atm_struct[3],"atm_struct_depth");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[3],"m");CHKERRQ(ierr);
@@ -65,6 +70,8 @@ PetscErrorCode destroy_atmosphere( Atmosphere *A )
         ierr = DimensionalisableFieldDestroy(&A->atm_struct[i]);CHKERRQ(ierr);
     }
 
+    ierr = DMDestroy(&A->da_atm);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
@@ -75,7 +82,6 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
        the top to the surface value */
 
     PetscErrorCode    ierr;
-    DM const          da_atm = *A->da_atm_ptr;
     PetscScalar const tau_min = 1; // FIXME hard-coded here
     PetscScalar const tau_max = A->tau; // surface optical depth
     PetscScalar       tau,dtau;
@@ -83,9 +89,9 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
 
     PetscFunctionBeginUser;
 
-    ierr = DMDAGetInfo(da_atm,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = DMDAGetInfo(A->da_atm,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
-    ierr = DMDAGetCorners(da_atm,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(A->da_atm,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w;
 
     dtau = (tau_max - tau_min) / (numpts-1);
@@ -118,6 +124,39 @@ static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParame
     ierr = VecScale( A->atm_struct_temp, TO4 ); CHKERRQ(ierr);
     ierr = VecShift( A->atm_struct_temp, Teq4 ); CHKERRQ(ierr); 
     ierr = VecPow( A->atm_struct_temp, 1.0/4.0 ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+    PetscErrorCode     ierr;
+    PetscScalar        CO2_ratio, CO2_kabs, H2O_ratio, H2O_kabs, kabs;
+
+    PetscFunctionBeginUser;
+
+    /* assume atmosphere is well mixed.  Therefore, ratio of partial pressure is the same
+       everywhere, which equivalently means that the mass ratio is the same.  This is because
+       partial pressure at the surface is proportional to mass, and g and R are constant.
+
+       P_s = (Mg) / (4piR^2)
+
+    */
+
+    CO2_ratio = A->CO2.m / (A->CO2.m + A->H2O.m );
+    H2O_ratio = 1.0 - CO2_ratio;
+
+    /* effective absorption coefficient */
+    CO2_kabs = get_pressure_dependent_kabs( Ap, &Ap->CO2_parameters );
+    H2O_kabs = get_pressure_dependent_kabs( Ap, &Ap->H2O_parameters );
+    kabs = CO2_ratio * CO2_kabs + H2O_ratio * H2O_kabs;
+
+    ierr = VecCopy( A->atm_struct_tau, A->atm_struct_pressure ); CHKERRQ(ierr);
+    ierr = VecScale( A->atm_struct_pressure, -(*Ap->gravity_ptr) ); CHKERRQ(ierr); // note negative gravity
+    ierr = VecScale( A->atm_struct_pressure, 2.0 ); CHKERRQ(ierr);
+    ierr = VecScale( A->atm_struct_pressure, 1.0/3.0 ); CHKERRQ(ierr);
+    ierr = VecScale( A->atm_struct_pressure, 1.0/kabs); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -256,8 +295,25 @@ PetscErrorCode set_atm_struct( const AtmosphereParameters *Ap, Atmosphere *A )
 
     ierr = set_atm_struct_tau( A );CHKERRQ(ierr);
     ierr = set_atm_struct_temp( A, Ap );CHKERRQ(ierr);
+    ierr = set_atm_struct_pressure( A, Ap );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
+
+}
+
+static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *Ap, const VolatileParameters *Vp )
+{
+    /* absorption coefficient in the grey atmosphere is pressure-dependent
+
+       Abe and Matsui (1985), Eq. A21, A22, A23
+
+    */
+
+    PetscScalar kabs;
+
+    kabs = PetscSqrtScalar( Vp->kabs * -(*Ap->gravity_ptr) / (3.0*Ap->P0) );
+
+    return kabs;
 
 }
 
@@ -267,7 +323,7 @@ static PetscErrorCode set_optical_depth( const AtmosphereParameters *Ap, const V
 
     // note negative gravity
     V->tau = 3.0/2.0 * (*Ap->VOLATILE_ptr)/1.0E6 * V->m / PetscSqr( (*Ap->radius_ptr) );
-    V->tau *= PetscSqrtScalar( Vp->kabs * -(*Ap->gravity_ptr) / (3.0*Ap->P0) );
+    V->tau *= get_pressure_dependent_kabs( Ap, Vp );
 
     PetscFunctionReturn(0);
 }
