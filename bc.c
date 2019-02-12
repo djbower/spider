@@ -88,10 +88,6 @@ PetscErrorCode set_surface_flux( Ctx *E )
       /* store the implied atmosphere flux in the atmosphere struct as well */
       A->Fatm = Qout;
 
-      // FIXME: will probably only work for Abe and Matsui atmosphere
-      // should probably also live elsewhere
-      ierr = set_atm_struct( Ap, A );CHKERRQ(ierr);
-
       /* some atmosphere models do not explicitly set an emissivity,
          so we should back-compute it here to always ensure that the
          emissivity is consistent with our chosen atmosphere scenario

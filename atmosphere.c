@@ -11,6 +11,7 @@ static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_newton_f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
+static PetscErrorCode set_atm_struct( Atmosphere *A, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmosphereParameters * );
@@ -308,7 +309,7 @@ PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *Ap, Atmospher
 
 }
 
-PetscErrorCode set_atm_struct( const AtmosphereParameters *Ap, Atmosphere *A )
+static PetscErrorCode set_atm_struct( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     PetscErrorCode ierr;
 
@@ -350,7 +351,7 @@ static PetscErrorCode set_optical_depth( const AtmosphereParameters *Ap, const V
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere const *A, const char *name, cJSON *json )
+PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, const char *name, cJSON *json )
 {
     PetscErrorCode ierr;
     cJSON          *data;
@@ -360,6 +361,11 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere const
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
+
+    /* only compute the 1-D atmosphere structure when outputting data.
+       if this structure feedbacks into the equations, e.g. through
+       atmospheric escape, then it will need to be moved */
+    ierr = set_atm_struct( A, Ap );CHKERRQ(ierr);
 
     data = cJSON_CreateObject();
 
@@ -475,30 +481,32 @@ static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters *Ap, 
     dzdt += PetscPowScalar(Ap->teqm,4.0);
     dzdt = PetscPowScalar(dzdt,1.0/4.0);
     dzdt /= tau;
-    dzdt /= (*Ap->gravity_ptr) * A->mass / Ap->Rgas; // FIXME put gas constant elsewhere
+    dzdt /= (*Ap->gravity_ptr) * A->mass / Ap->Rgas;
 
     return dzdt;
 
 }
 
-static PetscScalar simpson(PetscScalar x, PetscScalar dx, const AtmosphereParameters *Ap, const Atmosphere *A)
+static PetscScalar get_z_from_simpson(PetscScalar x, PetscScalar dx, const AtmosphereParameters *Ap, const Atmosphere *A)
 {
     PetscScalar fa, fb, fm;
 
+    /* Because f=dz/dtau is only a function of tau (not also z),
+       RK4 reduces to Simpson's method */
+
     fa = get_dzdtau( x, Ap, A ); // start
-    fb = get_dzdtau( x+dx, Ap, A); // end
-    fm = get_dzdtau( x+0.5*dx, Ap, A); // midpoint
+    fb = get_dzdtau( x + dx, Ap, A) ; // end
+    fm = get_dzdtau( x + 0.5*dx, Ap, A ); // midpoint
 
     return dx/6.0 * (fa + 4.0*fm + fb );
 
 }
 
-PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParameters *Ap )
+static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     PetscErrorCode ierr;
     PetscScalar    *arr_tau, *arr_depth, tau, dtau, val;
     PetscInt       i, numpts;
-    //PetscInt const n = 1000;
 
     PetscFunctionBeginUser;
 
@@ -507,13 +515,14 @@ PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParameters *
     ierr = DMDAVecGetArrayRead(A->da_atm,A->atm_struct_tau,&arr_tau);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(A->da_atm,A->atm_struct_depth,&arr_depth);CHKERRQ(ierr);
 
+    /* loop backwards, since height above the surface (z=0) occurs 
+       at the largest optical depth */
     arr_depth[numpts-1] = 0.0;
 
     for(i=numpts-1; i>0; --i){
-        
         tau = arr_tau[i];
         dtau = arr_tau[i-1] - arr_tau[i]; // negative
-        val = simpson( tau, dtau, Ap, A );
+        val = get_z_from_simpson( tau, dtau, Ap, A );
         arr_depth[i-1] = arr_depth[i] + val;
     }
 
