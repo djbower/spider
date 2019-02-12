@@ -523,8 +523,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   H2O->henry = 6.8E-2; // ppm/Pa^(1/henry_pow)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
   H2O->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/H2O->henry_pow);
-  H2O->mass = 18.01528 * 1.0e-3; // kg/mol
-  H2O->mass /= C->MASS;
+  H2O->molecular_mass = 18.01528 * 1.0e-3; // kg/mol
+  H2O->molecular_mass /= C->MASS;
 
   /* CO2 volatile */
   CO2->initial = 100.0; // ppm
@@ -541,8 +541,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->henry = 4.4E-6; // ppm/Pa^(1/henry_pow)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
   CO2->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/CO2->henry_pow);
-  CO2->mass = 44.01 * 1.0e-3; // kg/mol
-  CO2->mass /= C->MASS;
+  CO2->molecular_mass = 44.01 * 1.0e-3; // kg/mol
+  CO2->molecular_mass /= C->MASS;
 
   /* radiogenic heating */
   /* aluminium 26 */

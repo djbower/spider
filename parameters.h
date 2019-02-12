@@ -45,7 +45,7 @@ typedef struct VolatileParameters_ {
     PetscScalar kabs;
     PetscScalar henry;
     PetscScalar henry_pow;
-    PetscScalar mass; // molecular mass
+    PetscScalar molecular_mass;
 } VolatileParameters;
 
 /* for storing atmosphere outputs */

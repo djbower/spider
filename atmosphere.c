@@ -68,8 +68,7 @@ PetscErrorCode destroy_atmosphere( Atmosphere *A )
 
     PetscFunctionBeginUser;
 
-    // FIXME: dangerous if more than 4 dimensionalisable fields in atm_struct
-    for (i=0;i<4;++i){
+    for (i=0;i<NUMATMSTRUCTVECS;++i){
         ierr = DimensionalisableFieldDestroy(&A->atm_struct[i]);CHKERRQ(ierr);
     }
 
@@ -83,9 +82,10 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
 
     /* builds an evenly-spaced profile of optical depth from unity at
        the top to the surface value */
+    /* TODO: check with Kitzmann -- best to use a log scale? */
 
     PetscErrorCode    ierr;
-    PetscScalar const tau_min = 1; // FIXME hard-coded here
+    PetscScalar const tau_min = 1E-4; // FIXME hard-coded here
     PetscScalar const tau_max = A->tau; // surface optical depth
     PetscScalar       tau,dtau;
     PetscInt          i,ilo,w,ihi,numpts;
@@ -212,8 +212,8 @@ static PetscErrorCode set_atmosphere_molecular_mass( const AtmosphereParameters 
 
     PetscFunctionBeginUser;
 
-    A->mass = CO2->m*CO2_parameters->mass + H2O->m*H2O_parameters->mass;
-    A->mass /= CO2->m + H2O->m;
+    A->molecular_mass = CO2->m*CO2_parameters->molecular_mass + H2O->m*H2O_parameters->molecular_mass;
+    A->molecular_mass /= CO2->m + H2O->m;
 
     PetscFunctionReturn(0);
 
@@ -355,7 +355,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
 {
     PetscErrorCode ierr;
     cJSON          *data;
-    PetscScalar    scaling;
+    PetscScalar    scaling, val;
     PetscInt       i;
     Constants      const *C = &P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -376,6 +376,10 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     ierr = JSON_add_single_value_to_object(dm, scaling, "mass_solid", "kg", A->Msol, data);CHKERRQ(ierr);
     /* total mass of mantle, kg (for sanity check) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "mass_mantle", "kg", *Ap->mantle_mass_ptr, data);CHKERRQ(ierr);
+
+    /* kg, without 4*pi */
+    val = C->MASS * A->molecular_mass * 1.0E3;
+    ierr = JSON_add_single_value_to_object(dm, 1.0, "molecular_mass", "g/mol", val, data);CHKERRQ(ierr);
 
     /* surface temperature, K */
     scaling = C->TEMP;
@@ -414,7 +418,7 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
 {
     PetscErrorCode  ierr;
     cJSON           *data;
-    PetscScalar     scaling;
+    PetscScalar     scaling, val;
     Constants       const *C = &P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
@@ -441,6 +445,10 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     ierr = JSON_add_single_value_to_object(dm, scaling, "solid_kg", "kg", V->x*VP->kdist*A->Msol, data);CHKERRQ(ierr);
     /* volatile in atmosphere (kg) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_kg", "kg", V->m, data);CHKERRQ(ierr);
+
+    /* kilograms (kg), without 4*pi */
+    val = C->MASS * VP->molecular_mass * 1.0E3;
+    ierr = JSON_add_single_value_to_object(dm, 1.0, "molecular_mass", "g/mol", val, data);CHKERRQ(ierr);
 
     /* bar (bar) */
     /* volatile in atmosphere (bar) */
@@ -481,7 +489,7 @@ static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters *Ap, 
     dzdt += PetscPowScalar(Ap->teqm,4.0);
     dzdt = PetscPowScalar(dzdt,1.0/4.0);
     dzdt /= tau;
-    dzdt /= (*Ap->gravity_ptr) * A->mass / Ap->Rgas;
+    dzdt /= (*Ap->gravity_ptr) * A->molecular_mass / Ap->Rgas;
 
     return dzdt;
 

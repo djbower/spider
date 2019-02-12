@@ -17,6 +17,7 @@ typedef struct Volatile_ {
     PetscScalar tau; // optical_depth at surface (non-dimensional)
 } Volatile;
 
+#define NUMATMSTRUCTVECS 4
 typedef struct Atmosphere_ {
     PetscScalar Mliq; // mass of liquid (kg)
     PetscScalar Msol; // mass of solid (kg)
@@ -27,9 +28,9 @@ typedef struct Atmosphere_ {
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
     Volatile    CO2; // CO2 volatile quantities
     Volatile    H2O; // H2O volatile quantities
-    PetscScalar mass; // mean molecular mass
+    PetscScalar molecular_mass; // mean molecular mass
     DM          da_atm; // da for outputing atmosphere structure (below)
-    DimensionalisableField atm_struct[4];
+    DimensionalisableField atm_struct[NUMATMSTRUCTVECS];
     Vec atm_struct_tau;
     Vec atm_struct_temp;
     Vec atm_struct_pressure;
