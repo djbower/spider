@@ -503,6 +503,11 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->radius_ptr = &P->radius;
   Ap->VOLATILE_ptr = &C->VOLATILE;
 
+  /* FIXME the gas constant above is scaled differently for the viscosity laws added by Rob Spaargaren
+     this one below is for computing the 1-D atmosphere structure.  Should merge together and make consistent */
+  Ap->Rgas = 8.3144598; // gas constant (J/K/mol)
+  Ap->Rgas *= C->TEMP / C->ENERGY;
+
   /* H2O volatile */
   H2O->initial = 500.0; // ppm
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_initial",&H2O->initial,NULL);CHKERRQ(ierr);
@@ -518,6 +523,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   H2O->henry = 6.8E-2; // ppm/Pa^(1/henry_pow)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
   H2O->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/H2O->henry_pow);
+  H2O->mass = 18.01528 * 1.0e-3; // kg/mol
+  H2O->mass /= C->MASS;
 
   /* CO2 volatile */
   CO2->initial = 100.0; // ppm
@@ -534,6 +541,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->henry = 4.4E-6; // ppm/Pa^(1/henry_pow)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
   CO2->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/CO2->henry_pow);
+  CO2->mass = 44.01 * 1.0e-3; // kg/mol
+  CO2->mass /= C->MASS;
 
   /* radiogenic heating */
   /* aluminium 26 */

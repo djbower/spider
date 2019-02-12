@@ -1,5 +1,6 @@
 #include "atmosphere.h"
 #include "dimensionalisablefield.h"
+#include "util.h"
 
 static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *, Volatile * );
@@ -13,6 +14,7 @@ static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParamet
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmosphereParameters * );
+static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParameters * );
 
 PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
 {
@@ -200,6 +202,22 @@ static PetscErrorCode set_atmosphere_mass( const AtmosphereParameters *Ap, Volat
 
 }
 
+static PetscErrorCode set_atmosphere_molecular_mass( const AtmosphereParameters *Ap, Atmosphere *A )
+{
+    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
+    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
+    Volatile                   *CO2 = &A->CO2;
+    Volatile                   *H2O = &A->H2O;
+
+    PetscFunctionBeginUser;
+
+    A->mass = CO2->m*CO2_parameters->mass + H2O->m*H2O_parameters->mass;
+    A->mass /= CO2->m + H2O->m;
+
+    PetscFunctionReturn(0);
+
+}
+
 PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, Atmosphere *A )
 {
     PetscErrorCode             ierr;
@@ -222,6 +240,9 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, 
     ierr = set_partial_pressure_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
     ierr = set_partial_pressure_derivative_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
     ierr = set_atmosphere_mass( Ap, H2O );CHKERRQ(ierr);
+
+    /* molecular mass of atmosphere */
+    ierr = set_atmosphere_molecular_mass( Ap, A );
 
     PetscFunctionReturn(0);
 }
@@ -296,6 +317,7 @@ PetscErrorCode set_atm_struct( const AtmosphereParameters *Ap, Atmosphere *A )
     ierr = set_atm_struct_tau( A );CHKERRQ(ierr);
     ierr = set_atm_struct_temp( A, Ap );CHKERRQ(ierr);
     ierr = set_atm_struct_pressure( A, Ap );CHKERRQ(ierr);
+    ierr = set_atm_struct_depth( A, Ap ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -442,6 +464,64 @@ PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const
     dxdt = num / den;
 
     return dxdt;
+}
+
+static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters *Ap, const Atmosphere *A )
+{
+    PetscScalar dzdt;
+
+    dzdt = A->Fatm / Ap->sigma; // T0**4
+    dzdt *= (tau+1.0)/2.0;
+    dzdt += PetscPowScalar(Ap->teqm,4.0);
+    dzdt = PetscPowScalar(dzdt,1.0/4.0);
+    dzdt /= tau;
+    dzdt /= (*Ap->gravity_ptr) * A->mass / Ap->Rgas; // FIXME put gas constant elsewhere
+
+    return dzdt;
+
+}
+
+static PetscScalar simpson(PetscScalar x, PetscScalar dx, const AtmosphereParameters *Ap, const Atmosphere *A)
+{
+    PetscScalar fa, fb, fm;
+
+    fa = get_dzdtau( x, Ap, A ); // start
+    fb = get_dzdtau( x+dx, Ap, A); // end
+    fm = get_dzdtau( x+0.5*dx, Ap, A); // midpoint
+
+    return dx/6.0 * (fa + 4.0*fm + fb );
+
+}
+
+PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+    PetscErrorCode ierr;
+    PetscScalar    *arr_tau, *arr_depth, tau, dtau, val;
+    PetscInt       i, numpts;
+    //PetscInt const n = 1000;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetInfo(A->da_atm,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    ierr = DMDAVecGetArrayRead(A->da_atm,A->atm_struct_tau,&arr_tau);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(A->da_atm,A->atm_struct_depth,&arr_depth);CHKERRQ(ierr);
+
+    arr_depth[numpts-1] = 0.0;
+
+    for(i=numpts-1; i>0; --i){
+        
+        tau = arr_tau[i];
+        dtau = arr_tau[i-1] - arr_tau[i]; // negative
+        val = simpson( tau, dtau, Ap, A );
+        arr_depth[i-1] = arr_depth[i] + val;
+    }
+
+    ierr = DMDAVecRestoreArrayRead(A->da_atm,A->atm_struct_tau,&arr_tau);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(A->da_atm,A->atm_struct_depth,&arr_depth);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
 }
 
 PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const VolatileParameters *Vp )

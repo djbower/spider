@@ -45,6 +45,7 @@ typedef struct VolatileParameters_ {
     PetscScalar kabs;
     PetscScalar henry;
     PetscScalar henry_pow;
+    PetscScalar mass; // molecular mass
 } VolatileParameters;
 
 /* for storing atmosphere outputs */
@@ -65,6 +66,7 @@ typedef struct AtmosphereParameters_ {
     PetscScalar P0; 
     VolatileParameters H2O_parameters;
     VolatileParameters CO2_parameters;
+    PetscScalar Rgas; // gas constant
     PetscScalar const * gravity_ptr;
     PetscScalar const * radius_ptr;
     PetscScalar const * VOLATILE_ptr;

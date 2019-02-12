@@ -375,7 +375,6 @@ PetscErrorCode invert_vec_mask( Vec * in_vec_ptr )
 
 }
 
-
 #if 0
 static PetscErrorCode set_d_dr_quadratic( Ctx *E )
 {
