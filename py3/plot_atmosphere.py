@@ -141,33 +141,74 @@ def plot_atmosphere():
     fig_o.savefig(6)
 
 #====================================================================
+def output_transmission_spectra():
+
+    time = 0
+
+    myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
+
+    atmos_d = myjson_o.data_d['atmosphere']
+
+    outfile = open('input_transmission_at_{}Myr.dat'.format(time),'w')
+
+    # need to manually add planetary radii from static structure calculation
+
+    radius = 6371000.0
+    outfile.write('planetary radius (m)= {}\n'.format(radius))
+
+    write_value_to_file( outfile, ['molecular_mass'], time, 'atmosphere mean molecular mass' )
+    write_value_to_file( outfile, ['CO2','molecular_mass'], time, 'CO2 molecular mass' )
+    write_value_to_file( outfile, ['H2O','molecular_mass'], time, 'H2O molecular mass' )
+    write_value_to_file( outfile, ['CO2','atmosphere_kg'], time, 'CO2 mass (kg)' )
+    write_value_to_file( outfile, ['H2O','atmosphere_kg'], time, 'H2O mass (kg)' )
+
+    write_value_to_file( outfile, ['atm_struct_temp'], time, 'Temperature (K)' )
+    write_value_to_file( outfile, ['atm_struct_pressure'], time, 'Pressure (bar)' )
+    write_value_to_file( outfile, ['atm_struct_tau'], time, 'Optical depth' )
+    write_value_to_file( outfile, ['atm_struct_depth'], time, 'Height (m)' )
+
+    outfile.close()
+
+#====================================================================
 def get_single_values_for_times( keys, time_l ):
 
     data_l = []
 
     for nn, time in enumerate( time_l ):
 
-        # read json
-        myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
-
-        # all atmosphere-related output is stored here
-        atmos_d = myjson_o.data_d['atmosphere']
-
-        fdata_d = recursive_get(atmos_d,keys)
-        scaling = float(fdata_d['scaling'])
-
-        if len( fdata_d['values'] ) == 1:
-            values_a = float( fdata_d['values'][0] )
-        else:
-            values_a = np.array( [float(value) for value in fdata_d['values']] )
-
-        scaled_values_a = scaling * values_a
-
-        data_l.append( scaled_values_a )
+        data_l.append( get_single_value_at_time( keys, time ) )
 
     data_a = np.array( data_l )
 
     return data_a
+
+#====================================================================
+def write_value_to_file( outfile, keys, time, label ):
+
+    qty = get_single_value_at_time( keys, time )
+
+    outfile.write( '{}= {}\n'.format(label, qty) )
+
+#====================================================================
+def get_single_value_at_time( keys, time ):
+
+    # read json
+    myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
+
+    # all atmosphere-related output is stored here
+    atmos_d = myjson_o.data_d['atmosphere']
+
+    fdata_d = recursive_get(atmos_d,keys)
+    scaling = float(fdata_d['scaling'])
+
+    if len( fdata_d['values'] ) == 1:
+        values_a = float( fdata_d['values'][0] )
+    else:
+        values_a = np.array( [float(value) for value in fdata_d['values']] )
+
+    scaled_values_a = scaling * values_a
+
+    return scaled_values_a
 
 #====================================================================
 def recursive_get(d, keys):
@@ -178,7 +219,8 @@ def recursive_get(d, keys):
 #====================================================================
 def main():
 
-    plot_atmosphere()
+    # plot_atmosphere()
+    output_transmission_spectra()
     plt.show()
 
 #====================================================================
