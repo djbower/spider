@@ -79,6 +79,8 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
       }
 
+      A->Fatm = Qout;
+
       /* smoothly transition the cooling rate to the viscous mantle
          cooling rate below the rheological transition */
       if( Ap->VISCOUS_MANTLE_COOLING_RATE ){
