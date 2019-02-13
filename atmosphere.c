@@ -27,7 +27,7 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
     // pointer to da, so we can easily access it within the atmosphere structure
     const PetscInt stencilWidth = 1;
     const PetscInt dof = 1;
-    const PetscInt numpts = 100; // FIXME hard-coded for atmosphere structure output
+    const PetscInt numpts = 500; // FIXME hard-coded for atmosphere structure output
     ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,numpts,dof,stencilWidth,NULL,&A->da_atm);CHKERRQ(ierr);
 
     /* create dimensionalisable fields for outputting atmosphere structure */
@@ -84,9 +84,9 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
        the top to the surface value */
 
     PetscErrorCode    ierr;
-    PetscScalar const tau_min = 1E-5; // FIXME hard-coded here
-    PetscScalar const tau_max = A->tau; // surface optical depth
-    PetscScalar       tau,dtau;
+    PetscScalar const logtau_min = -6; // FIXME hard-coded here
+    PetscScalar const logtau_max = PetscLog10Real(A->tau); // surface optical depth
+    PetscScalar       tau,logdtau;
     PetscInt          i,ilo,w,ihi,numpts;
 
     PetscFunctionBeginUser;
@@ -96,10 +96,10 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
     ierr = DMDAGetCorners(A->da_atm,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w;
 
-    dtau = (tau_max - tau_min) / (numpts-1);
+    logdtau = (logtau_max - logtau_min) / (numpts-1);
 
     for(i=ilo; i<ihi; ++i){
-        tau = tau_min + i*dtau;
+        tau = PetscPowScalar(10.0,logtau_min + i*logdtau);
         ierr = VecSetValues( A->atm_struct_tau, 1, &i, &tau, INSERT_VALUES );CHKERRQ(ierr);         
     }
 
