@@ -85,8 +85,15 @@ PetscErrorCode set_surface_flux( Ctx *E )
           Qout = get_viscous_mantle_cooling_rate( E, Qout );
       }
 
+      /* TODO: this could be misleading, since if we back-compute the
+         1-D atmosphere structure based on the VISCOUS_MANTLE_COOLING_RATE
+         correction it suggests an increasing optical depth that is
+         unrelated to atmosphere growth from degassing */
+      /* Therefore, at the moment there is a disconnect between the atmosphere
+         flux (which can be large) and the viscous mantle cooling (which
+         is smaller) */
       /* store the implied atmosphere flux in the atmosphere struct as well */
-      A->Fatm = Qout;
+      //A->Fatm = Qout;
 
       /* some atmosphere models do not explicitly set an emissivity,
          so we should back-compute it here to always ensure that the
