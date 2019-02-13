@@ -11,7 +11,7 @@ static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar get_newton_f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
-static PetscErrorCode set_atm_struct( Atmosphere *A, const AtmosphereParameters * );
+static PetscErrorCode JSON_add_atm_struct( Atmosphere *A, const AtmosphereParameters *, cJSON * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmosphereParameters * );
@@ -82,10 +82,9 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
 
     /* builds an evenly-spaced profile of optical depth from unity at
        the top to the surface value */
-    /* TODO: check with Kitzmann -- best to use a log scale? */
 
     PetscErrorCode    ierr;
-    PetscScalar const tau_min = 1E-4; // FIXME hard-coded here
+    PetscScalar const tau_min = 1E-5; // FIXME hard-coded here
     PetscScalar const tau_max = A->tau; // surface optical depth
     PetscScalar       tau,dtau;
     PetscInt          i,ilo,w,ihi,numpts;
@@ -309,16 +308,28 @@ PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *Ap, Atmospher
 
 }
 
-static PetscErrorCode set_atm_struct( Atmosphere *A, const AtmosphereParameters *Ap )
+static PetscErrorCode JSON_add_atm_struct( Atmosphere *A, const AtmosphereParameters *Ap, cJSON *data )
 {
     PetscErrorCode ierr;
+    PetscInt       i;
 
     PetscFunctionBeginUser;
 
+    /* only compute 1-D atmosphere structure for output */
+    /* TODO: if this feedsback into the equations, e.g. through
+       atmospheric escape, it will need moving */
     ierr = set_atm_struct_tau( A );CHKERRQ(ierr);
     ierr = set_atm_struct_temp( A, Ap );CHKERRQ(ierr);
     ierr = set_atm_struct_pressure( A, Ap );CHKERRQ(ierr);
     ierr = set_atm_struct_depth( A, Ap ); CHKERRQ(ierr);
+
+    /* write 1-D structure to JSON */
+    for (i=0;i<NUMATMSTRUCTVECS;++i){
+        cJSON *item;
+        DimensionalisableField curr = A->atm_struct[i];
+        ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
+        cJSON_AddItemToObject(data,curr->name,item);
+    }
 
     PetscFunctionReturn(0);
 
@@ -356,18 +367,17 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     PetscErrorCode ierr;
     cJSON          *data;
     PetscScalar    scaling, val;
-    PetscInt       i;
     Constants      const *C = &P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
 
-    /* only compute the 1-D atmosphere structure when outputting data.
-       if this structure feedbacks into the equations, e.g. through
-       atmospheric escape, then it will need to be moved */
-    ierr = set_atm_struct( A, Ap );CHKERRQ(ierr);
-
     data = cJSON_CreateObject();
+
+    /* atmosphere structure only relevant for Abe and Matsui (1985) */
+    if (Ap->SURFACE_BC==3){
+        ierr = JSON_add_atm_struct( A, Ap, data );CHKERRQ(ierr);
+    }
 
     /* total liquid mass of mantle, kg */
     scaling = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
@@ -400,13 +410,6 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
 
     /* H2O */
     ierr = JSON_add_volatile(dm, P, &Ap->H2O_parameters, &A->H2O, A, "H2O", data ); CHKERRQ(ierr);
-
-    for (i=0;i<4;++i){
-        cJSON *item;
-        DimensionalisableField curr = A->atm_struct[i];
-        ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
-        cJSON_AddItemToObject(data,curr->name,item);
-    }
 
     cJSON_AddItemToObject(json,name,data);
 
