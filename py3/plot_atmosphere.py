@@ -26,32 +26,32 @@ def plot_atmosphere():
     fig_o.time = su.get_all_output_times()
     timeMyr_a = fig_o.time * 1.0E-6 # Myrs
 
-    mass_liquid_a = get_single_values_for_times( 'mass_liquid', fig_o.time )
-    mass_solid_a = get_single_values_for_times( 'mass_solid', fig_o.time )
-    mass_mantle_a = get_single_values_for_times( 'mass_mantle', fig_o.time )
+    mass_liquid_a = get_single_values_for_times( ['mass_liquid'], fig_o.time )
+    mass_solid_a = get_single_values_for_times( ['mass_solid'], fig_o.time )
+    mass_mantle_a = get_single_values_for_times( ['mass_mantle'], fig_o.time )
     mass_mantle = mass_mantle_a[0] # time independent
 
     # compute total mass (kg) in each reservoir
-    CO2_liquid_kg_a = get_single_values_for_times( 'CO2_liquid_kg', fig_o.time ) #su.ppm_to_mass_fraction( CO2_liquid_a ) * mass_liquid_a
-    CO2_solid_kg_a = get_single_values_for_times( 'CO2_solid_kg', fig_o.time ) #su.ppm_to_mass_fraction( CO2_solid_a ) * mass_solid_a
-    CO2_total_kg_a = get_single_values_for_times( 'CO2_initial_kg', fig_o.time ) #su.ppm_to_mass_fraction( CO2_initial_a ) * mass_mantle
+    CO2_liquid_kg_a = get_single_values_for_times( ['CO2','liquid_kg'], fig_o.time ) #su.ppm_to_mass_fraction( CO2_liquid_a ) * mass_liquid_a
+    CO2_solid_kg_a = get_single_values_for_times( ['CO2','solid_kg'], fig_o.time ) #su.ppm_to_mass_fraction( CO2_solid_a ) * mass_solid_a
+    CO2_total_kg_a = get_single_values_for_times( ['CO2','initial_kg'], fig_o.time ) #su.ppm_to_mass_fraction( CO2_initial_a ) * mass_mantle
     CO2_total_kg = CO2_total_kg_a[0] # time-independent
     # TODO: below mass is conserved by definition, but can also
     # compute directly from partial pressure
     CO2_atmos_kg_a = CO2_total_kg - CO2_liquid_kg_a - CO2_solid_kg_a
-    CO2_atmos_a = get_single_values_for_times( 'CO2_atmosphere_bar', fig_o.time )
+    CO2_atmos_a = get_single_values_for_times( ['CO2','atmosphere_bar'], fig_o.time )
 
-    H2O_liquid_kg_a = get_single_values_for_times( 'H2O_liquid_kg', fig_o.time ) # su.ppm_to_mass_fraction( H2O_liquid_a ) * mass_liquid_a
-    H2O_solid_kg_a = get_single_values_for_times( 'H2O_solid_kg', fig_o.time ) # su.ppm_to_mass_fraction( H2O_solid_a ) * mass_solid_a
-    H2O_total_kg_a = get_single_values_for_times( 'H2O_initial_kg', fig_o.time ) #su.ppm_to_mass_fraction( H2O_initial_a ) * mass_mantle
+    H2O_liquid_kg_a = get_single_values_for_times( ['H2O','liquid_kg'], fig_o.time ) # su.ppm_to_mass_fraction( H2O_liquid_a ) * mass_liquid_a
+    H2O_solid_kg_a = get_single_values_for_times( ['H2O','solid_kg'], fig_o.time ) # su.ppm_to_mass_fraction( H2O_solid_a ) * mass_solid_a
+    H2O_total_kg_a = get_single_values_for_times( ['H2O','initial_kg'], fig_o.time ) #su.ppm_to_mass_fraction( H2O_initial_a ) * mass_mantle
     H2O_total_kg = H2O_total_kg_a[0] # time-independent
     # TODO: below mass is conserved by definition, but can also
     # compute directly from partial pressure
     H2O_atmos_kg_a = H2O_total_kg - H2O_liquid_kg_a - H2O_solid_kg_a
-    H2O_atmos_a = get_single_values_for_times( 'H2O_atmosphere_bar', fig_o.time )
+    H2O_atmos_a = get_single_values_for_times( ['H2O','atmosphere_bar'], fig_o.time )
 
-    temperature_surface_a = get_single_values_for_times( 'temperature_surface', fig_o.time )
-    emissivity_a = get_single_values_for_times( 'emissivity', fig_o.time )
+    temperature_surface_a = get_single_values_for_times( ['temperature_surface'], fig_o.time )
+    emissivity_a = get_single_values_for_times( ['emissivity'], fig_o.time )
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
     xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
@@ -114,13 +114,13 @@ def plot_atmosphere():
     ##########
     title = '(c) Surface temperature'
     ylabel = '$T$'
-    yticks = range(1000,2801,200)
+    yticks = range(1400,2601,400)
     ax2.semilogx( timeMyr_a, temperature_surface_a, 'k-' )
     fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks, yticks=yticks )
     ax2.yaxis.set_label_coords(-0.1,0.5)
     #ax2.set_ylim( 1050, 1850 )
     #ax2.set_xlim( 1E-5 , 1 )
-    ax2.set_ylim(1000,2900)
+    ax2.set_ylim(1300,2600)
 
     ##########
     # figure d
@@ -131,7 +131,7 @@ def plot_atmosphere():
     fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks )
     ax3.yaxis.set_label_coords(-0.1,0.55)
     #plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    ax3.set_ylim( 1E-4, 10 )
+    ax3.set_ylim( 1E-7, 1E-2 )
     #ax3.set_xlim( 1E-5, 1 )
 
     # output (effective) emissivity for Bonati et al. (2018), a&a paper
@@ -141,7 +141,7 @@ def plot_atmosphere():
     fig_o.savefig(6)
 
 #====================================================================
-def get_single_values_for_times( field, time_l ):
+def get_single_values_for_times( keys, time_l ):
 
     data_l = []
 
@@ -150,12 +150,30 @@ def get_single_values_for_times( field, time_l ):
         # read json
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
 
-        yy = myjson_o.get_scaled_field_values( field )
-        data_l.append( yy )
+        # all atmosphere-related output is stored here
+        atmos_d = myjson_o.data_d['atmosphere']
+
+        fdata_d = recursive_get(atmos_d,keys)
+        scaling = float(fdata_d['scaling'])
+
+        if len( fdata_d['values'] ) == 1:
+            values_a = float( fdata_d['values'][0] )
+        else:
+            values_a = np.array( [float(value) for value in fdata_d['values']] )
+
+        scaled_values_a = scaling * values_a
+
+        data_l.append( scaled_values_a )
 
     data_a = np.array( data_l )
 
     return data_a
+
+#====================================================================
+def recursive_get(d, keys):
+    if len(keys) == 1:
+        return d[keys[0]]
+    return recursive_get(d[keys[0]], keys[1:])
 
 #====================================================================
 def main():
