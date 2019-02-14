@@ -54,7 +54,7 @@ def plot_atmosphere():
     emissivity_a = get_single_values_for_times( ['emissivity'], fig_o.time )
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
-    xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
+    xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.25E2] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
     xlabel = 'Time (Myr)'
 
     red = fig_o.get_color(3)
@@ -143,13 +143,17 @@ def plot_atmosphere():
 #====================================================================
 def output_transmission_spectra():
 
-    time = 0
+    #time = 0
+    #time = 150000
+    #time = 250000
+    #time = 450000
+    time = 100000000
 
     myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
 
     atmos_d = myjson_o.data_d['atmosphere']
 
-    outfile = open('input_transmission_at_{}Myr.dat'.format(time),'w')
+    outfile = open('input_transmission_at_{}yr.dat'.format(time),'w')
 
     # need to manually add planetary radii from static structure calculation
 
@@ -162,10 +166,31 @@ def output_transmission_spectra():
     write_value_to_file( outfile, ['CO2','atmosphere_kg'], time, 'CO2 mass (kg)' )
     write_value_to_file( outfile, ['H2O','atmosphere_kg'], time, 'H2O mass (kg)' )
 
-    write_value_to_file( outfile, ['atm_struct_temp'], time, 'Temperature (K)' )
-    write_value_to_file( outfile, ['atm_struct_pressure'], time, 'Pressure (bar)' )
-    write_value_to_file( outfile, ['atm_struct_tau'], time, 'Optical depth' )
-    write_value_to_file( outfile, ['atm_struct_depth'], time, 'Height (m)' )
+    outfile.write('Temp (K), Pressure (bar), Optical depth, Height above surface (m)\n')
+
+    # TODO: must manually update number of atmosphere points here
+    outfile.write('npoints= 500\n')
+
+    temp_a = get_single_value_at_time( ['atm_struct_temp'], time )
+    pres_a = get_single_value_at_time( ['atm_struct_pressure'], time )
+    tau_a = get_single_value_at_time( ['atm_struct_tau'], time )
+    depth_a = get_single_value_at_time( ['atm_struct_depth'], time )
+
+    data_a = np.column_stack( (temp_a, pres_a, tau_a, depth_a ) )
+
+    for entry in data_a:
+        col0 = entry[0]
+        col1 = entry[1]
+        col2 = entry[2]
+        col3 = entry[3]
+        outfile.write( '{} {} {} {}\n'.format(col0,col1,col2,col3) )
+
+    #print( data_a)
+
+    #write_value_to_file( outfile, ['atm_struct_temp'], time, 'Temperature (K)' )
+    #write_value_to_file( outfile, ['atm_struct_pressure'], time, 'Pressure (bar)' )
+    #write_value_to_file( outfile, ['atm_struct_tau'], time, 'Optical depth' )
+    #write_value_to_file( outfile, ['atm_struct_depth'], time, 'Height (m)' )
 
     outfile.close()
 
@@ -219,8 +244,8 @@ def recursive_get(d, keys):
 #====================================================================
 def main():
 
-    # plot_atmosphere()
-    output_transmission_spectra()
+    plot_atmosphere()
+    #output_transmission_spectra()
     plt.show()
 
 #====================================================================
