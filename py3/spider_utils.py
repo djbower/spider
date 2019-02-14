@@ -536,6 +536,14 @@ def get_deriv_static_structure( z, r, *args ):
     return [dpdr,dmdr,dgdr]
 
 #====================================================================
+def get_radius_array_static_structure( radius, *myargs ):
+
+    R_core = myargs[1]
+    num = myargs[4]
+
+    return np.linspace(radius,R_core,num)
+
+#====================================================================
 def get_static_structure_for_radius( radius, *myargs ):
 
     '''get static structure (pressure, mass, and gravity) for an
@@ -546,7 +554,7 @@ def get_static_structure_for_radius( radius, *myargs ):
     num = myargs[4]
     g_Earth = gravity( M_earth, radius )
     z0 = [0,M_earth,g_Earth]
-    r = np.linspace(radius,R_core,num)
+    r = get_radius_array_static_structure( radius, *myargs )
     z = odeint( get_deriv_static_structure, z0, r, args=myargs )
 
     return z
@@ -570,17 +578,13 @@ def get_difference_static_structure( radius, *myargs ):
     return g_core-G_core
 
 #====================================================================
-def solve_for_planetary_radius( rho_interp1d ):
-
-    '''simple integrator for static structure equations based on the
-       approach outlined in Valencia et al. (2007)'''
+def get_myargs_static_structure( rho_interp1d ):
 
     # some constants taken from here (not the best reference)
     # https://www.sciencedirect.com/topics/earth-and-planetary-sciences/earth-core
 
     # hard-coded parameters here
     M_earth = 5.972E24 # kg
-    R_earth = 6371000.0 # m
     # we want to match the mass and gravity at the core radius
     # and the core is assumed static and unchanging
     R_core = 3485000.0 # m
@@ -591,6 +595,19 @@ def solve_for_planetary_radius( rho_interp1d ):
 
     # tuple of arguments required for functions
     myargs = (M_earth,R_core,M_core,G_core,num,rho_interp1d)
+
+    return myargs
+
+#====================================================================
+def solve_for_planetary_radius( rho_interp1d ):
+
+    '''simple integrator for static structure equations based on the
+       approach outlined in Valencia et al. (2007)'''
+
+    # initial guess
+    R_earth = 6371000.0 # m
+
+    myargs = get_myargs_static_structure( rho_interp1d )
 
     radius = newton( get_difference_static_structure, R_earth, 
         args=myargs, maxiter=500 )
@@ -608,6 +625,48 @@ def check_static_structure( radius, *myargs ):
     dg = get_difference_static_structure( radius, *myargs )
     reldg = np.abs( dg/G_core )
     print( 'g relative accuracy= {}'.format(reldg) )
+
+#====================================================================
+def plot_static_structure( radius, rho_interp1d ):
+
+    myargs = get_myargs_static_structure( rho_interp1d )
+
+    radius_a = get_radius_array_static_structure( radius, *myargs )
+    radius_a *= 1.0E-3 # to km
+    z = get_static_structure_for_radius( radius, *myargs )
+
+    pressure_a = z[:,0]
+    rho_a = rho_interp1d( pressure_a )
+    pressure_a *= 1.0E-9 # to GPa
+    rho_a *= 1.0E-3 # to g/cc
+    mass_a = z[:,1]
+    gravity_a = z[:,2]
+
+    fig, axs = plt.subplots(2,2,sharex=True, sharey=False)
+    fig.set_figheight(6)
+    fig.set_figwidth(8)
+
+    ax0 = axs[0,0]
+    ax1 = axs[0,1]
+    ax2 = axs[1,0]
+    ax3 = axs[1,1]
+
+    ax0.plot( radius_a, pressure_a, 'k-' )
+    ax0.set_ylabel( 'Pressure (GPa)' )
+    ax1.plot( radius_a, mass_a, 'k-' )
+    ax1.set_ylabel( 'Mass (kg)' )
+    ax2.plot( radius_a, gravity_a, 'k-' )
+    ax2.set_xlabel( 'Radius (km)' )
+    ax2.set_ylabel( 'Gravity (m/s^2)' )
+    ax3.plot( radius_a, rho_a, 'k-' )
+    ax3.set_xlabel( 'Radius (km)' )
+    ax3.set_ylabel( 'Density (g/cc)' )
+
+    radius_title = np.round(radius,0) * 1.0E-3 # to km
+    fig.suptitle('Planetary radius= {} km'.format(radius_title))
+    fig.savefig( "static_structure.pdf", bbox_inches="tight")
+
+    plt.show()
 
 #====================================================================
 
