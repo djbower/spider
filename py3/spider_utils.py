@@ -14,6 +14,21 @@ import logging, os, sys, json
 # constants
 bigG = 6.67408E-11 # m^3 / kg / s^2
 
+# lookup data directories
+# TODO: this is the current model, but could be different depending
+# on what the user is doing
+# FIXME: below will break for other users
+lookupdir = '/Users/dan/Programs/spider-dev/lookup_data/1TPa-dK09-elec-free/'
+# melting curves
+liquidus_file = os.path.join( lookupdir, 'melting_curves/final/liquidus.dat')
+solidus_file = os.path.join( lookupdir, 'melting_curves/final/solidus.dat')
+# melt files
+temperature_melt_file = os.path.join( lookupdir, 'temperature_melt.dat' )
+density_melt_file = os.path.join( lookupdir, 'density_melt.dat' )
+# solid files
+temperature_solid_file = os.path.join( lookupdir, 'temperature_solid.dat' )
+density_solid_file = os.path.join( lookupdir, 'density_solid.dat' )
+
 #===================================================================
 # CLASSES
 #===================================================================
