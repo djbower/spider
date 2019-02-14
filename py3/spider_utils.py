@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 
-import json
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import matplotlib.transforms as transforms
+from scipy.interpolate import RectBivariateSpline, interp1d
+from scipy.integrate import odeint
+from scipy.optimize import newton
 import numpy as np
-import logging
-import os
-import sys
+import logging, os, sys, json
+
+#====================================================================
+# constants
+bigG = 6.67408E-11 # m^3 / kg / s^2
 
 #===================================================================
 # CLASSES
@@ -356,6 +360,66 @@ class FigureData( object ):
 #====================================================================
 # FUNCTIONS
 #====================================================================
+
+#====================================================================
+def get_column_data_from_SPIDER_lookup_file( infile ):
+    '''Load column data from a text file and scale by the specified
+    value (by position)'''
+
+    # this approach prevents reading the whole file into memory
+    # just to extract header information
+    fp = open( infile, 'r' )
+    for ii, line in enumerate( fp ):
+        if ii == 0:
+            splitline = list(map( float, line.lstrip('#').split() ))
+            sline = int(splitline[0])
+            size_a = splitline[1:]
+        elif ii == sline-1:
+            scalings = map( float, line.lstrip('#').split() )
+        elif ii > sline:
+            break
+    fp.close()
+
+    # read files, ignore headers (#), and make a 2-D array
+    data_a = np.loadtxt( infile, ndmin=2 )
+
+    # scale each column in the data array by the respective scaling
+    for nn, scale in enumerate( scalings ):
+        data_a[:,nn] *= scale
+
+    return (data_a, size_a)
+
+#====================================================================
+def get_SPIDER_1D_lookup( infile ):
+
+    ''' return 1-D lookup object using linear interpolation'''
+
+    data_a, size_a = get_column_data_from_SPIDER_lookup_file( infile )
+    xx = data_a[:,0]
+    yy = data_a[:,1]
+    # will not allow extrpolation beyond the bounds without an extra
+    # argument
+    lookup_o = interp1d( xx, yy, kind='linear' )
+    return lookup_o
+
+#====================================================================
+def get_SPIDER_2D_lookup( infile ):
+
+    '''return 2-D lookup object'''
+
+    data_a, size_a = get_column_data_from_SPIDER_lookup_file( infile )
+    xsize = int(size_a[0])
+    ysize = int(size_a[1])
+
+    xx = data_a[:,0][:xsize]
+    yy = data_a[:,1][0::xsize]
+    zz = data_a[:,2]
+    zz = zz.reshape( (xsize, ysize), order='F' )
+    lookup_o = RectBivariateSpline(xx, yy, zz, kx=1, ky=1, s=0 )
+
+    return lookup_o
+
+#====================================================================
 def get_all_output_times( odir='output' ):
 
     '''get all times (in Myrs) from the json files located in the
@@ -431,9 +495,104 @@ def get_my_logger( name ):
     return logger
 
 #====================================================================
-def ppm_to_mass_fraction( ppm ):
+def gravity( m, r ):
 
-    return ppm * 1.0E-6
+    g = bigG*m/r**2
+    return g
+
+#====================================================================
+def get_deriv_static_structure( z, r, *args ):
+
+    '''get derivatives of pressure, mass, and gravity
+       returns dp/dr, dm/dr, and dg/dr'''
+
+    p = z[0] # pressure
+    m = z[1] # mass
+    g = z[2] # gravity
+
+    rho_interp1d = args[5]
+    rho = np.asscalar(rho_interp1d( p ))
+
+    # derivatives
+    dpdr = -rho*g
+    dmdr = 4*np.pi*r**2*rho
+    dgdr = 4*np.pi*bigG*rho - 2*bigG*m/r**3
+
+    return [dpdr,dmdr,dgdr]
+
+#====================================================================
+def get_static_structure_for_radius( radius, *myargs ):
+
+    '''get static structure (pressure, mass, and gravity) for an
+       input radius'''
+
+    M_earth = myargs[0]
+    R_core = myargs[1]
+    num = myargs[4]
+    g_Earth = gravity( M_earth, radius )
+    z0 = [0,M_earth,g_Earth]
+    r = np.linspace(radius,R_core,num)
+    z = odeint( get_deriv_static_structure, z0, r, args=myargs )
+
+    return z
+
+#====================================================================
+def get_difference_static_structure( radius, *myargs ):
+
+    '''return root, difference between computed mass or gravity at
+       the core-mantle boundary and the desired value'''
+
+    # you can either compare mass or gravity
+    z = get_static_structure_for_radius( radius, *myargs )
+    g_core = z[:,2][-1]
+    m_core = z[:,1][-1]
+
+    # if m_core > M_core, then radius is too small
+    # if m_core < M_core, then radius is too large
+    #return m_core-M_core
+    G_core = myargs[3]
+
+    return g_core-G_core
+
+#====================================================================
+def solve_for_planetary_radius( rho_interp1d ):
+
+    '''simple integrator for static structure equations based on the
+       approach outlined in Valencia et al. (2007)'''
+
+    # some constants taken from here (not the best reference)
+    # https://www.sciencedirect.com/topics/earth-and-planetary-sciences/earth-core
+
+    # hard-coded parameters here
+    M_earth = 5.972E24 # kg
+    R_earth = 6371000.0 # m
+    # we want to match the mass and gravity at the core radius
+    # and the core is assumed static and unchanging
+    R_core = 3485000.0 # m
+    M_core = 1.94E24 # kg
+    G_core = gravity( M_core, R_core )
+    # number of layers
+    num = 10000
+
+    # tuple of arguments required for functions
+    myargs = (M_earth,R_core,M_core,G_core,num,rho_interp1d)
+
+    radius = newton( get_difference_static_structure, R_earth, 
+        args=myargs, maxiter=500 )
+
+    check_static_structure( radius, *myargs )
+
+    return radius
+
+#====================================================================
+def check_static_structure( radius, *myargs ):
+
+    '''compute relative accuracy of gravity'''
+
+    G_core = myargs[3]
+    dg = get_difference_static_structure( radius, *myargs )
+    reldg = np.abs( dg/G_core )
+    print( 'g relative accuracy= {}'.format(reldg) )
 
 #====================================================================
 
