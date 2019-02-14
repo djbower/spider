@@ -120,50 +120,54 @@ class MyJSON( object ):
         self.data_d = json.load( json_data )
         json_data.close()
 
-    def get_field_data( self, field ):
+    # was get_field_data
+    def get_dict( self, keys ):
         '''get all data relating to a particular field'''
-        field_d = self.data_d['data']
-        try: 
-            return field_d[field]
+        try:
+            dict_d = recursive_get( self.data_d, keys )
+            return dict_d
         except NameError:
-            logger.critical('data for %s does not exist', field )
+            logger.critical('dictionary for %s does not exist', keys )
             sys.exit(1)
 
-    def get_field_units( self, field ):
+    # was get_field_units
+    def get_dict_units( self, keys ):
         '''get the units (SI) of a particular field'''
-        fdata_d = self.get_field_data( field )
-        units = fdata_d['units']
+        dict_d = recursive_get( self.data_d, keys )
+        units = dict_d['units']
         units = None if units == 'None' else units
         return units
 
-    def get_scaled_field_values( self, field, fmt_o='' ):
-        '''get the scaled values for a particular field'''
-        fdata_d = self.get_field_data( field )
-        scaling = float(fdata_d['scaling'])
-        if len( fdata_d['values'] ) == 1:
-            values_a = float( fdata_d['values'][0] )
+    # was get_scaled_field_values
+    def get_dict_values( self, keys, fmt_o='' ):
+        '''get the scaled values for a particular quantity'''
+        dict_d = recursive_get( self.data_d, keys )
+        scaling = float(dict_d['scaling'])
+        if len( dict_d['values'] ) == 1:
+            values_a = float( dict_d['values'][0] )
         else:
-            values_a = np.array( [float(value) for value in fdata_d['values']] )
+            values_a = np.array( [float(value) for value in dict_d['values']] )
         scaled_values_a = scaling * values_a
         if fmt_o:
             scaled_values_a = fmt_o.ascale( scaled_values_a )
         return scaled_values_a
 
-    def get_scaled_field_values_internal( self, field, fmt_o='' ):
+    # was get_scaled_field_value_internal
+    def get_dict_values_internal( self, keys, fmt_o='' ):
         '''get the scaled values for the internal nodes (ignore top
            and bottom nodes)'''
-        scaled_values_a = self.get_scaled_field_values( field, fmt_o )
+        scaled_values_a = self.get_dict_values( keys, fmt_o )
         return scaled_values_a[1:-1]
 
     def get_mixed_phase_boolean_array( self, nodes='basic' ):
         '''this array enables us to plot different linestyles for 
            mixed phase versus single phase quantities'''
         if nodes == 'basic':
-            phi = self.get_scaled_field_values( 'phi_b' )
+            phi = self.get_dict_values( ['data','phi_b'] )
         elif nodes == 'basic_internal':
-            phi = self.get_scaled_field_values_internal( 'phi_b' )
+            phi = self.get_dict_values_internal( ['data','phi_b'] )
         elif nodes == 'staggered':
-            phi = self.get_scaled_field_values( 'phi_s' )
+            phi = self.get_dict_values( ['data','phi_s'] )
         # define mixed phase by these threshold values
         MIX = (phi<0.999) & (phi>0.001)
         MIX = MIX * 1.0 # convert to float array
@@ -487,6 +491,15 @@ def sign_change( a ):
     s = (np.diff(np.sign(a)) != 0)*1
 
     return s
+
+#====================================================================
+def recursive_get(d, keys):
+
+    '''function to access nested dictionaries'''
+
+    if len(keys) == 1:
+        return d[keys[0]]
+    return recursive_get(d[keys[0]], keys[1:])
 
 #====================================================================
 def get_my_logger( name ):
