@@ -21,6 +21,12 @@ def main():
         radius = su.solve_for_planetary_radius( rho_interp1d )
 
         outfile.write('planetary radius (m)= {}\n'.format(radius))
+        pres_interp1d = myjson_o.get_atm_struct_depth_interp1d()
+        height1mb = pres_interp1d( 1.0E-3 )
+        height10mb = pres_interp1d( 1.0E-2 )
+
+        outfile.write('height of 1mb contour (m)= {}\n'.format( height1mb ) )
+        outfile.write('height of 10mb contour (m)= {}\n'.format( height10mb ) )
         write_value_to_file( myjson_o, outfile, ['atmosphere','molecular_mass'], time, 'atmosphere mean molecular mass' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','molecular_mass'], time, 'CO2 molecular mass' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','molecular_mass'], time, 'H2O molecular mass' )

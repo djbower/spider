@@ -184,6 +184,14 @@ class MyJSON( object ):
             fill_value='extrapolate' )
         return rho_interp1d
 
+    def get_atm_struct_depth_interp1d( self ):
+        '''return interp1d object for determining atmospheric height
+           as a function of pressure for static structure calculations'''
+        apressure_a = self.get_dict_values( ['atmosphere', 'atm_struct_pressure'] )
+        adepth_a = self.get_dict_values( ['atmosphere', 'atm_struct_depth'] )
+        atm_interp1d = interp1d( apressure_a, adepth_a, kind='linear' )
+        return atm_interp1d
+
 #===================================================================
 class FigureData( object ):
 
