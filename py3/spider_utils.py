@@ -502,6 +502,26 @@ def recursive_get(d, keys):
     return recursive_get(d[keys[0]], keys[1:])
 
 #====================================================================
+def get_dict_values_for_times( keys, time_l ):
+
+    data_l = []
+
+    for time in time_l:
+        filename = os.path.join( 'output', '{}.json'.format(time) )
+        myjson_o = MyJSON( filename )
+        values_a = myjson_o.get_dict_values( keys )
+        data_l.append( values_a )
+
+    data_a = np.array( data_l )
+
+    # rows time, cols data
+    data_a.reshape( (len(time_l),-1 ) )
+    # rows data, cols time
+    data_a = data_a.transpose()
+
+    return data_a
+
+#====================================================================
 def get_my_logger( name ):
 
     '''setup logger configuration and handles'''
