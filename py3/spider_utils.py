@@ -173,8 +173,16 @@ class MyJSON( object ):
         MIX = MIX * 1.0 # convert to float array
         # set single phase region to nan to prevent plotting
         MIX[MIX==0] = np.nan
-
         return MIX
+
+    def get_rho_interp1d( self ):
+        '''return interp1d object for determining density as a
+           function of pressure for static structure calculations'''
+        pressure_a = self.get_dict_values( ['data','pressure_s'] )
+        density_a = self.get_dict_values( ['data','rho_s'] )
+        rho_interp1d = interp1d( pressure_a, density_a, kind='linear',
+            fill_value='extrapolate' )
+        return rho_interp1d
 
 #===================================================================
 class FigureData( object ):
