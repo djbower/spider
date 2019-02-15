@@ -8,12 +8,17 @@ def main():
 
     time_l = su.get_all_output_times()
     # FIXME: hack for testing
-    time_l = time_l[0:1]
-    time_l = [0,150000,250000,450000,100000000]
+    #time_l = time_l[0:1]
+    #time_l = [0,150000,250000,450000,100000000]
+
+    # planetary radii estimates
+    outradiusfile = open('radius.dat','w')
+    outradiusfile.write( '# time (yr), radius (m), 10mB height (m), 1mB height (m)\n' )
 
     for time in time_l:
 
         outfilename = 'input_transmission_{}yr.dat'.format(time)
+        print( outfilename )
         outfile = open(outfilename,'w')
 
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
@@ -48,6 +53,11 @@ def main():
         f = open( outfilename, 'ab' ) # must open in binary append mode
         np.savetxt( f, atmos_struct_a )
         f.close()
+
+        # write radius data to file
+        outradiusfile.write( '{} {} {} {}\n'.format( time, radius, radius+height10mb, radius+height1mb ) )
+
+    outradiusfile.close()
 
 #====================================================================
 def write_value_to_file( myjson_o, outfile, keys, time, label ):

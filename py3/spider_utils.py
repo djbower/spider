@@ -673,7 +673,8 @@ def check_static_structure( radius, *myargs ):
     G_core = myargs[3]
     dg = get_difference_static_structure( radius, *myargs )
     reldg = np.abs( dg/G_core )
-    print( 'g relative accuracy= {}'.format(reldg) )
+    if reldg > 1.0e-6:
+        print( 'WARNING: g relative accuracy= {}'.format(reldg) )
 
 #====================================================================
 def plot_static_structure( radius, rho_interp1d ):
