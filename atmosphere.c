@@ -104,8 +104,8 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
         ierr = VecSetValues( A->atm_struct_tau, 1, &i, &tau, INSERT_VALUES );CHKERRQ(ierr);         
     }
 
-    ierr = VecAssemblyBegin( A->atm_struct_tau);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd( A->atm_struct_tau);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin( A->atm_struct_tau );CHKERRQ(ierr);
+    ierr = VecAssemblyEnd( A->atm_struct_tau );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -357,11 +357,6 @@ static PetscErrorCode set_optical_depth( const AtmosphereParameters *Ap, const V
 
     V->tau = (3.0/2.0) * V->p / -(*Ap->gravity_ptr);
     V->tau *= get_pressure_dependent_kabs( Ap, Vp );
-
-    /* TODO: remove.  Below is old, prior to molecular masses being introduced */
-    // note negative gravity
-    //V->tau = 3.0/2.0 * (*Ap->VOLATILE_ptr)/1.0E6 * V->m / PetscSqr( (*Ap->radius_ptr) );
-    //V->tau *= get_pressure_dependent_kabs( Ap, Vp );
 
     PetscFunctionReturn(0);
 }
