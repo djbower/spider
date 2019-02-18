@@ -140,8 +140,9 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmospherePa
     PetscFunctionBeginUser;
 
     /* assume atmosphere is well mixed */
-
-    CO2_ratio = A->CO2.m / (A->CO2.m + A->H2O.m );
+    /* volume mixing ratios */
+    /* TODO: store and output these quantities? */
+    CO2_ratio = A->CO2.p / (A->CO2.p + A->H2O.p );
     H2O_ratio = 1.0 - CO2_ratio;
 
     /* effective absorption coefficient */
@@ -239,7 +240,7 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, 
     /* mean molecular mass of atmosphere */
     ierr = set_atmosphere_molecular_mass( Ap, A );
 
-    /* these terms require mean molecular mass of the atmosphere */
+    /* these terms require the mean molecular mass of the atmosphere */
     ierr = set_atmosphere_mass( A, Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
     ierr = set_atmosphere_mass( A, Ap, H2O_parameters, H2O );CHKERRQ(ierr);
 
@@ -479,7 +480,7 @@ PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const
 
     num = V->x * (Vp->kdist-1.0) * A->dMliqdt;
     den = Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq;
-    den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * V->dpdx / -(*Ap->gravity_ptr) * (Vp->molecular_mass / A->molecular_mass);
+    den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V->dpdx / -(*Ap->gravity_ptr)) * (Vp->molecular_mass / A->molecular_mass);
 
     dxdt = num / den;
 
