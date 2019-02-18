@@ -140,11 +140,15 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     if(Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
       /* CO2 */
       if( CO2->initial > 0.0 ){
-        x0 = get_initial_volatile( Ap, CO2 );
+        // FIXME: below needs replacing with PETSC non-linear solver
+        //x0 = get_initial_volatile( Ap, CO2 );
+        x0 = 0.260143768078712; // FIXME: hard-coded from mathematica script
       }
       /* H2O */
       if( H2O->initial > 0.0 ){
-        x1 = get_initial_volatile( Ap, H2O );
+        // FIXME: below needs replacing with PETSC non-linear solver
+        //x1 = get_initial_volatile( Ap, H2O );
+        x1 = 4.982983236321538; // FIXME: hard-coded from mathematica script
       }
     }
 

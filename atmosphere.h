@@ -46,7 +46,8 @@ PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *, Atmosphere 
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters *, PetscScalar );
 PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *, Atmosphere * );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
-PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const VolatileParameters * );
+// FIXME: needs replacing with PETSc non-linear solver
+//PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const VolatileParameters * );
 PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *, const VolatileParameters *, const Volatile * );
 
 #endif

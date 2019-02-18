@@ -4,18 +4,19 @@
 
 static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *, Volatile * );
-static PetscErrorCode set_atmosphere_mass( const AtmosphereParameters *, Volatile * );
+static PetscErrorCode set_atmosphere_mass( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscErrorCode set_optical_depth(  const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
-static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar get_newton_f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
+// FIXME: need to calculate volatile IC using PETSc non-linear solver
+//static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
+//static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
+//static PetscScalar get_newton_f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
-static PetscErrorCode JSON_add_atm_struct( Atmosphere *A, const AtmosphereParameters *, cJSON * );
+static PetscErrorCode JSON_add_atm_struct( Atmosphere *, const AtmosphereParameters *, cJSON * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
-static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParameters * );
-static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmosphereParameters * );
-static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParameters * );
+static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParameters * );
+static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmosphereParameters * );
+static PetscErrorCode set_atm_struct_depth( Atmosphere *, const AtmosphereParameters * );
 
 PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
 {
@@ -138,13 +139,7 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmospherePa
 
     PetscFunctionBeginUser;
 
-    /* assume atmosphere is well mixed.  Therefore, ratio of partial pressure is the same
-       everywhere, which equivalently means that the mass ratio is the same.  This is because
-       partial pressure at the surface is proportional to mass, and g and R are constant.
-
-       P_s = (Mg) / (4piR^2)
-
-    */
+    /* assume atmosphere is well mixed */
 
     CO2_ratio = A->CO2.m / (A->CO2.m + A->H2O.m );
     H2O_ratio = 1.0 - CO2_ratio;
@@ -189,14 +184,16 @@ static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatilePa
 
 }
 
-static PetscErrorCode set_atmosphere_mass( const AtmosphereParameters *Ap, Volatile *V )
+static PetscErrorCode set_atmosphere_mass( const Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
 {
-    /* mass of atmosphere */
+    /* mass of volatile in atmosphere */
 
     PetscFunctionBeginUser;
 
     V->m = PetscSqr((*Ap->radius_ptr)) * V->p / -(*Ap->gravity_ptr);
     V->m *= 1.0E6 / (*Ap->VOLATILE_ptr);
+    // must weight by molecular mass
+    V->m *= Vp->molecular_mass / A->molecular_mass;
 
     PetscFunctionReturn(0);
 
@@ -211,8 +208,8 @@ static PetscErrorCode set_atmosphere_molecular_mass( const AtmosphereParameters 
 
     PetscFunctionBeginUser;
 
-    A->molecular_mass = CO2->m*CO2_parameters->molecular_mass + H2O->m*H2O_parameters->molecular_mass;
-    A->molecular_mass /= CO2->m + H2O->m;
+    A->molecular_mass = CO2->p*CO2_parameters->molecular_mass + H2O->p*H2O_parameters->molecular_mass;
+    A->molecular_mass /= CO2->p + H2O->p;
 
     PetscFunctionReturn(0);
 
@@ -234,15 +231,17 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, 
     /* CO2 */
     ierr = set_partial_pressure_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
     ierr = set_partial_pressure_derivative_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
-    ierr = set_atmosphere_mass( Ap, CO2 );CHKERRQ(ierr);
 
     /* H2O */
     ierr = set_partial_pressure_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
     ierr = set_partial_pressure_derivative_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
-    ierr = set_atmosphere_mass( Ap, H2O );CHKERRQ(ierr);
 
-    /* molecular mass of atmosphere */
+    /* mean molecular mass of atmosphere */
     ierr = set_atmosphere_molecular_mass( Ap, A );
+
+    /* these terms require mean molecular mass of the atmosphere */
+    ierr = set_atmosphere_mass( A, Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
+    ierr = set_atmosphere_mass( A, Ap, H2O_parameters, H2O );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -355,9 +354,13 @@ static PetscErrorCode set_optical_depth( const AtmosphereParameters *Ap, const V
 {
     PetscFunctionBeginUser;
 
-    // note negative gravity
-    V->tau = 3.0/2.0 * (*Ap->VOLATILE_ptr)/1.0E6 * V->m / PetscSqr( (*Ap->radius_ptr) );
+    V->tau = (3.0/2.0) * V->p / -(*Ap->gravity_ptr);
     V->tau *= get_pressure_dependent_kabs( Ap, Vp );
+
+    /* TODO: remove.  Below is old, prior to molecular masses being introduced */
+    // note negative gravity
+    //V->tau = 3.0/2.0 * (*Ap->VOLATILE_ptr)/1.0E6 * V->m / PetscSqr( (*Ap->radius_ptr) );
+    //V->tau *= get_pressure_dependent_kabs( Ap, Vp );
 
     PetscFunctionReturn(0);
 }
@@ -476,7 +479,7 @@ PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const
 
     num = V->x * (Vp->kdist-1.0) * A->dMliqdt;
     den = Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq;
-    den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * V->dpdx / -(*Ap->gravity_ptr);
+    den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * V->dpdx / -(*Ap->gravity_ptr) * (Vp->molecular_mass / A->molecular_mass);
 
     dxdt = num / den;
 
@@ -544,10 +547,15 @@ static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParam
 
 }
 
+#if 0
 PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const VolatileParameters *Vp )
 {
     /* initial volatile in the aqueous phase */
 
+    /* FIXME: below is old, when it was easy to use Newton's method per individual volatile.
+       Now the volatiles are coupled, and this must be solved as a system of non-linear
+       equations instead */
+    /*
     PetscScalar fac, x;
 
     fac = PetscSqr( (*Ap->radius_ptr) );
@@ -557,9 +565,12 @@ PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const Volatile
 
     x = solve_newton_method( fac, Vp->henry_pow, Vp->initial );
 
-    return x;
+    return x;*/
 }
+#endif
 
+/* FIXME: below needs replacing with PETSc non-linear solver */
+#if 0
 /* Newton's method */
 /* for determining the initial mass fraction of volatiles in the
    melt.  The initial condition can be expressed as:
@@ -598,3 +609,4 @@ static PetscScalar solve_newton_method( PetscScalar A, PetscScalar B, PetscScala
     return x;
 
 }
+#endif
