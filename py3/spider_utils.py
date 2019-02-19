@@ -192,6 +192,15 @@ class MyJSON( object ):
         atm_interp1d = interp1d( apressure_a, adepth_a, kind='linear' )
         return atm_interp1d
 
+    def get_atm_struct_temp_interp1d( self ):
+        '''return interp1d object for determining atmospheric temperature
+           as a function of pressure'''
+        apressure_a = self.get_dict_values( ['atmosphere', 'atm_struct_pressure'] )
+        atemp_a = self.get_dict_values( ['atmosphere', 'atm_struct_temp'] )
+        atm_interp1d = interp1d( apressure_a, atemp_a, kind='linear' )
+        return atm_interp1d
+
+
 #===================================================================
 class FigureData( object ):
 
