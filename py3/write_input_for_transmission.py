@@ -35,6 +35,8 @@ def main():
         write_value_to_file( myjson_o, outfile, ['atmosphere','molecular_mass'], time, 'atmosphere mean molecular mass' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','molecular_mass'], time, 'CO2 molecular mass' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','molecular_mass'], time, 'H2O molecular mass' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','mixing_ratio'], time, 'CO2 mixing ratio' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','mixing_ratio'], time, 'H2O mixing ratio' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','atmosphere_kg'], time, 'CO2 mass (kg)' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','atmosphere_kg'], time, 'H2O mass (kg)' )
 
