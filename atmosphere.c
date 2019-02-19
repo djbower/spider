@@ -7,6 +7,7 @@ static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatilePa
 static PetscErrorCode set_atmosphere_mass( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscErrorCode set_optical_depth(  const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
+static PetscErrorCode set_mixing_ratios( Volatile *, Volatile * );
 // FIXME: need to calculate volatile IC using PETSc non-linear solver
 //static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
 //static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
@@ -209,8 +210,19 @@ static PetscErrorCode set_atmosphere_molecular_mass( const AtmosphereParameters 
 
     PetscFunctionBeginUser;
 
-    A->molecular_mass = CO2->p*CO2_parameters->molecular_mass + H2O->p*H2O_parameters->molecular_mass;
-    A->molecular_mass /= CO2->p + H2O->p;
+    A->molecular_mass =  CO2->mixing_ratio * CO2_parameters->molecular_mass;
+    A->molecular_mass += H2O->mixing_ratio * H2O_parameters->molecular_mass;
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_mixing_ratios( Volatile *CO2, Volatile *H2O )
+{
+    PetscFunctionBeginUser;
+
+    CO2->mixing_ratio = CO2->p / (CO2->p + H2O->p );
+    H2O->mixing_ratio = H2O->p / (CO2->p + H2O->p );
 
     PetscFunctionReturn(0);
 
@@ -236,6 +248,9 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, 
     /* H2O */
     ierr = set_partial_pressure_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
     ierr = set_partial_pressure_derivative_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
+
+    /* mixing ratio */
+    ierr = set_mixing_ratios( CO2, H2O );CHKERRQ(ierr);
 
     /* mean molecular mass of atmosphere */
     ierr = set_atmosphere_molecular_mass( Ap, A );

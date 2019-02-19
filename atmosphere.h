@@ -15,6 +15,7 @@ typedef struct Volatile_ {
     PetscScalar dpdx; // dp/dx (Pa/mass fraction)
     PetscScalar m; // mass in atmosphere (kg)
     PetscScalar tau; // optical_depth at surface (non-dimensional)
+    PetscScalar mixing_ratio;
 } Volatile;
 
 #define NUMATMSTRUCTVECS 4
