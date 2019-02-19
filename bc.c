@@ -39,7 +39,9 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       /* temperature (potential temperature if coarse mesh is used)
          this is taken from the top staggered node */
-      ierr = VecGetValues(S->temp_s,1,&ind0,&temp0); CHKERRQ(ierr);
+      // TODO: from top staggered or top basic node?
+      //ierr = VecGetValues(S->temp_s,1,&ind0,&temp0); CHKERRQ(ierr);
+      ierr = VecGetValues(S->temp,1,&ind0,&temp0); CHKERRQ(ierr);
 
       /* correct for ultra-thin thermal boundary layer at the surface */
       if( Ap->PARAM_UTBL ){
