@@ -9,7 +9,7 @@ def main():
     time_l = su.get_all_output_times()
     # FIXME: hack for testing
     #time_l = time_l[0:1]
-    #time_l = [0,150000,250000,450000,100000000]
+    time_l = [0,150000,250000,450000,100000000]
 
     # planetary radii estimates
     outradiusfile = open('radius.dat','w')

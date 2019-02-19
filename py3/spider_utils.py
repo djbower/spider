@@ -323,7 +323,7 @@ class FigureData( object ):
         self.make_figure()
 
     def set_myaxes( self, ax, title='', xlabel='', xticks='',
-        ylabel='', yticks='', fmt='', xfmt='', xmin='', xmax='', ymin='', ymax='' ):
+        ylabel='', yticks='', yrotation='', fmt='', xfmt='', xmin='', xmax='', ymin='', ymax='' ):
         if title:
             self.set_mytitle( ax, title )
         if xlabel:
@@ -331,7 +331,7 @@ class FigureData( object ):
         if xticks:
             self.set_myxticks( ax, xticks, xmin, xmax, xfmt )
         if ylabel:
-            self.set_myylabel( ax, ylabel )
+            self.set_myylabel( ax, ylabel, yrotation )
         if yticks:
             self.set_myyticks( ax, yticks, ymin, ymax, fmt )
 
@@ -359,12 +359,13 @@ class FigureData( object ):
         label = r'{}'.format( label )
         ax.set_xlabel( label, fontsize=fontsize )
 
-    def set_myylabel( self, ax, label ):
+    def set_myylabel( self, ax, label, yrotation ):
         dd = self.data_d
         fontsize = dd['fontsize_ylabel']
-        rotation = 'horizontal'
+        if not yrotation:
+            yrotation = 'horizontal'
         label = r'{}'.format( label )
-        ax.set_ylabel( label, fontsize=fontsize, rotation=rotation )
+        ax.set_ylabel( label, fontsize=fontsize, rotation=yrotation )
 
     def set_myxticks( self, ax, xticks, xmin, xmax, fmt ):
         dd = self.data_d
