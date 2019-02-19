@@ -184,6 +184,15 @@ class MyJSON( object ):
             fill_value='extrapolate' )
         return rho_interp1d
 
+    def get_temp_interp1d( self ):
+        '''return interp1d object for determining temperature as a
+           function of pressure for static structure calculations'''
+        pressure_a = self.get_dict_values( ['data','pressure_b'] )
+        temp_a = self.get_dict_values( ['data','temp_b'] )
+        temp_interp1d = interp1d( pressure_a, temp_a, kind='linear',
+            fill_value='extrapolate' )
+        return temp_interp1d
+
     def get_atm_struct_depth_interp1d( self ):
         '''return interp1d object for determining atmospheric height
            as a function of pressure for static structure calculations'''
@@ -650,7 +659,9 @@ def get_myargs_static_structure( rho_interp1d ):
     M_core = 1.94E24 # kg
     G_core = gravity( M_core, R_core )
     # number of layers
-    num = 10000
+    # FIXME: for plotting this might explain mismatch between
+    # atmosphere and mantle temperature at the surface?
+    num = 100
 
     # tuple of arguments required for functions
     myargs = (M_earth,R_core,M_core,G_core,num,rho_interp1d)

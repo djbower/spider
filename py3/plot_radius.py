@@ -70,14 +70,19 @@ def plot_interior_atmosphere( times ):
 
     xx_pres = myjson_o.get_dict_values_internal(['data','pressure_b'])
     xx_pres *= 1.0E-9
-
     xx_pres_s = myjson_o.get_dict_values(['data','pressure_s'])
     xx_pres_s *= 1.0E-9
+    xx_radius = myjson_o.get_dict_values_internal(['data','radius_b'])
+    xx_radius *= 1.0E-3
+    xx_depth = xx_radius[0] - xx_radius
+    xx_radius_s = myjson_o.get_dict_values(['data','radius_s'])
+    xx_radius_s *= 1.0E-3
+    xx_depth_s = xx_radius_s[0] - xx_radius_s
 
     # shade grey between liquidus and solidus
-    yy_liqt = myjson_o.get_dict_values_internal(['data','liquidus_temp_b'])
-    yy_solt = myjson_o.get_dict_values_internal(['data','solidus_temp_b'])
-    ax1.fill_betweenx( xx_pres, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
+    #yy_liqt = myjson_o.get_dict_values_internal(['data','liquidus_temp_b'])
+    #yy_solt = myjson_o.get_dict_values_internal(['data','solidus_temp_b'])
+    #ax1.fill_betweenx( xx_pres, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
 
     # dotted lines of constant melt fraction
     #for xx in range( 0, 11, 2 ):
@@ -108,7 +113,7 @@ def plot_interior_atmosphere( times ):
         height_point = hatm_interp1d( 10.0E-3 ) / 1.0E3 # 10 mb
         tatm_interp1d = myjson_o.get_atm_struct_temp_interp1d()
         temp_point = tatm_interp1d( 10.0E-3 ) # 10 mb
-        ax0.plot( temp_point, height_point, color=color, marker='o' )
+        ax0.plot( temp_point, height_point, color=color, marker='o', markersize=4 )
 
         atmos_pres_a = myjson_o.get_dict_values( ['atmosphere','atm_struct_pressure'] )
         atmos_temp_a = myjson_o.get_dict_values( ['atmosphere','atm_struct_temp'] )
@@ -120,34 +125,57 @@ def plot_interior_atmosphere( times ):
         ax0.plot( atmos_temp_a, atmos_height_a, '-', color=color )
 
         # use melt fraction to determine mixed region
-        MIX = myjson_o.get_mixed_phase_boolean_array( 'basic_internal' )
+        rho1D_o = myjson_o.get_rho_interp1d()
+        temp1D_o = myjson_o.get_temp_interp1d()
+        radius = su.solve_for_planetary_radius( rho1D_o )
+        myargs = su.get_myargs_static_structure( rho1D_o )
+        z = su.get_static_structure_for_radius( radius, *myargs )
+        radius_a = su.get_radius_array_static_structure( radius, *myargs )
+        pressure_a = z[:,0]
+        temp_a = temp1D_o( pressure_a )
         label = fig_o.get_legend_label( time )
-        yy = myjson_o.get_dict_values_internal(['data','temp_b'])
-        ax1.plot( yy, xx_pres, '--', color=color )
-        handle, = ax1.plot( yy*MIX, xx_pres*MIX, '-', color=color, label=label )
+        depth_a = radius_a[0] - radius_a
+        depth_a *= 1.0e-3 # to km
+        # FIXME: force temperature at surface for plotting
+        #temp_a[0] = myjson_o.get_dict_values_internal(['data','temp_b'])[0]
+        #handle, = ax1.plot( temp_a[1:], depth_a[1:], color=color, label=label )
+        #print( pressure_a, depth_a, temp_a )
+
+        #MIX = myjson_o.get_mixed_phase_boolean_array( 'basic_internal' )
+        #label = fig_o.get_legend_label( time )
+        yy = myjson_o.get_dict_values(['data','temp_s'])
+        handle, = ax1.plot( yy, xx_depth_s, '-', color=color, label=label )
+
+        print( 'atmos_temp_a[-1]=', atmos_temp_a[-1], 'temp_b[0]=', yy[0] )
+
+        #ax1.plot( yy, xx_pres, '--', color=color )
+        #handle, = ax1.plot( yy*MIX, xx_pres*MIX, '-', color=color, label=label )
         handle_l.append( handle )
 
-    yticks = [10,50,100,135]
-    ymax = 138
+    #yticks = [10,50,100,135]
+    #ymax = 138
+    yticks = [0,1E3,2E3,3E3,3300]
+    ymin = 0.0
+    ymax = 3200.0
     xticks = [200,1000,2000,3000,4000,5000]
 
     title = 'Coupled interior-atmosphere evolution'
-    ylabel = 'Height (km)'
+    ylabel = 'Atmosphere height (km)'
     fig_o.set_myaxes( ax0, ylabel=ylabel, title=title, yrotation=90 )
 
     # titles and axes labels, legends, etc
     units = myjson_o.get_dict_units(['data','temp_b'])
     #title = '(b) Mantle temperature, {}'.format(units)
 
-    ylabel = 'Pressure (GPa)'
-    fig_o.set_myaxes( ax1, ylabel=ylabel, xlabel='$T$ (K)', xticks=xticks, ymin=0.0, ymax=ymax, yticks=yticks, yrotation=90 )
+    #ylabel = 'Pressure (GPa)'
+    ylabel= 'Mantle depth (km)'
+    fig_o.set_myaxes( ax1, ylabel=ylabel, xlabel='$T$ (K)', xticks=xticks, ymin=ymin, ymax=ymax, yticks=yticks, yrotation=90 )
     ax1.yaxis.set_label_coords(-0.2,0.5)
+    ax1.set_ylim( ymin, ymax )
+    ax1.invert_yaxis()
 
     ax0.set_xlim( xticks[0], xticks[-1])
     ax0.set_ylim( 0.0, 300.0 )
-    ax1.set_ylim( 0.0, ymax )
-
-    ax1.invert_yaxis()
 
     fig_o.set_mylegend( ax0, handle_l, loc='upper right' )
 
