@@ -476,6 +476,7 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     /* optical depth (non-dimensional) */
     scaling = 1.0;
     ierr = JSON_add_single_value_to_object(dm, scaling, "optical_depth", "None", V->tau, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "mixing_ratio", "None", V->mixing_ratio, data);CHKERRQ(ierr);
 
     cJSON_AddItemToObject(json,name,data);
 
