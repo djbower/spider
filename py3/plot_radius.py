@@ -4,14 +4,16 @@ import spider_utils as su
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
+from scipy.interpolate import interp1d
 
 #====================================================================
-def plot_radius_evolution():
+def plot_radius_evolution( times ):
 
     figw = 4.7747/2.0
     figh = 4.7747/2.0
 
-    fig_o = su.FigureData( 1, 1, figw, figh, 'radius' )
+    time_l = [0,1,2]
+    fig_o = su.FigureData( 1, 1, figw, figh, 'radius', times )
 
     ax0 = fig_o.ax
 
@@ -32,9 +34,13 @@ def plot_radius_evolution():
     radius_10mb = (radius_10mb-ref)/ref*100.0
     radius_1mb = (radius_1mb-ref)/ref*100.0
 
-    h1, = ax0.plot( time, radius, label='Surface' )
-    h2, = ax0.plot( time, radius_10mb, label='10 mb' )
-    h3, = ax0.plot( time, radius_1mb, label='1 mb' )
+    color0 = fig_o.get_color( 0 )
+    color1 = fig_o.get_color( 1 )
+    color2 = fig_o.get_color( 2 )
+
+    h1, = ax0.plot( time, radius, label='Surface', color=color0 )
+    h2, = ax0.plot( time, radius_10mb, label='10 mb', color=color1 )
+    h3, = ax0.plot( time, radius_1mb, label='1 mb', color=color2 )
     handles_l = [h1,h2,h3]
 
     xticks = [1.0E-6,1.0E-2,1.0E-1,1.0E0,1.0E1,1.0E2]
@@ -61,14 +67,14 @@ def plot_interior_atmosphere( times ):
     ax1 = fig_o.ax[1]
     ax0.axes.xaxis.set_visible(False)
 
-    time = fig_o.time[0] # first timestep since liquidus and solidus
+    time = fig_o.time[2] # first timestep since liquidus and solidus
                          # are time-independent
 
     myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
 
     TIMEYRS = myjson_o.data_d['nstep']
 
-    xx_pres = myjson_o.get_dict_values_internal(['data','pressure_b'])
+    xx_pres = myjson_o.get_dict_values(['data','pressure_b'])
     xx_pres *= 1.0E-9
     xx_pres_s = myjson_o.get_dict_values(['data','pressure_s'])
     xx_pres_s *= 1.0E-9
@@ -78,11 +84,6 @@ def plot_interior_atmosphere( times ):
     xx_radius_s = myjson_o.get_dict_values(['data','radius_s'])
     xx_radius_s *= 1.0E-3
     xx_depth_s = xx_radius_s[0] - xx_radius_s
-
-    # shade grey between liquidus and solidus
-    #yy_liqt = myjson_o.get_dict_values_internal(['data','liquidus_temp_b'])
-    #yy_solt = myjson_o.get_dict_values_internal(['data','solidus_temp_b'])
-    #ax1.fill_betweenx( xx_pres, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
 
     # dotted lines of constant melt fraction
     #for xx in range( 0, 11, 2 ):
@@ -113,7 +114,7 @@ def plot_interior_atmosphere( times ):
         height_point = hatm_interp1d( 10.0E-3 ) / 1.0E3 # 10 mb
         tatm_interp1d = myjson_o.get_atm_struct_temp_interp1d()
         temp_point = tatm_interp1d( 10.0E-3 ) # 10 mb
-        ax0.plot( temp_point, height_point, color=color, marker='o', markersize=4 )
+        ax0.plot( temp_point, height_point, color=color, marker='_', markersize=8 )
 
         atmos_pres_a = myjson_o.get_dict_values( ['atmosphere','atm_struct_pressure'] )
         atmos_temp_a = myjson_o.get_dict_values( ['atmosphere','atm_struct_temp'] )
@@ -136,17 +137,25 @@ def plot_interior_atmosphere( times ):
         label = fig_o.get_legend_label( time )
         depth_a = radius_a[0] - radius_a
         depth_a *= 1.0e-3 # to km
-        # FIXME: force temperature at surface for plotting
-        #temp_a[0] = myjson_o.get_dict_values_internal(['data','temp_b'])[0]
-        #handle, = ax1.plot( temp_a[1:], depth_a[1:], color=color, label=label )
-        #print( pressure_a, depth_a, temp_a )
+        handle, = ax1.plot( temp_a, depth_a, color=color, label=label )
+        ax1.plot( temp_a[-1], depth_a[-1], color=color, marker='_', markersize=8 )
+
+        # shade grey between liquidus and solidus
+        yy_liqt = myjson_o.get_dict_values(['data','liquidus_temp_b'])
+        liqt_interp1d = interp1d( xx_pres, yy_liqt, kind='linear', fill_value='extrapolate' )
+        yy_solt = myjson_o.get_dict_values(['data','solidus_temp_b'])
+        solt_interp1d = interp1d( xx_pres, yy_solt, kind='linear', fill_value='extrapolate' )
+        liqt = liqt_interp1d( pressure_a * 1.0E-9 )
+        solt = solt_interp1d( pressure_a * 1.0E-9 )
+        if nn==3: 
+            ax1.fill_betweenx( depth_a, liqt, solt, facecolor='gray', alpha=0.3, linewidth=0 )
 
         #MIX = myjson_o.get_mixed_phase_boolean_array( 'basic_internal' )
         #label = fig_o.get_legend_label( time )
-        yy = myjson_o.get_dict_values(['data','temp_s'])
-        handle, = ax1.plot( yy, xx_depth_s, '-', color=color, label=label )
+        #yy = myjson_o.get_dict_values(['data','temp_s'])
+        #handle, = ax1.plot( yy, xx_depth_s, '-', color=color, label=label )
 
-        print( 'atmos_temp_a[-1]=', atmos_temp_a[-1], 'temp_b[0]=', yy[0] )
+        print( 'atmos_temp_a[-1]=', atmos_temp_a[-1], 'temp_a[0]=', temp_a[0] )
 
         #ax1.plot( yy, xx_pres, '--', color=color )
         #handle, = ax1.plot( yy*MIX, xx_pres*MIX, '-', color=color, label=label )
@@ -154,9 +163,9 @@ def plot_interior_atmosphere( times ):
 
     #yticks = [10,50,100,135]
     #ymax = 138
-    yticks = [0,1E3,2E3,3E3,3300]
+    yticks = [0,1E3,2E3,3E3,3500]
     ymin = 0.0
-    ymax = 3200.0
+    ymax = 3500.0
     xticks = [200,1000,2000,3000,4000,5000]
 
     title = 'Coupled interior-atmosphere evolution'
@@ -175,7 +184,7 @@ def plot_interior_atmosphere( times ):
     ax1.invert_yaxis()
 
     ax0.set_xlim( xticks[0], xticks[-1])
-    ax0.set_ylim( 0.0, 300.0 )
+    ax0.set_ylim( 0.0, 250.0 )
 
     fig_o.set_mylegend( ax0, handle_l, loc='upper right' )
 
@@ -194,6 +203,6 @@ if __name__ == "__main__":
         logger.critical( 'You must specify times in a comma-separated list (no spaces) using -t' )
         sys.exit(0)
 
-    #plot_radius_evolution()
-    plot_interior_atmosphere( args.times )
+    plot_radius_evolution( args.times )
+    #plot_interior_atmosphere( args.times )
     plt.show()
