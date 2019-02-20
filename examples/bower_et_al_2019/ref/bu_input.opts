@@ -90,13 +90,15 @@
 #     lid from forming at the surface
 # [3] is conventional as [1] above, but additionally allows you to
 #      specify a mid-mantle interface
--mixing_length 2
+-mixing_length 1
 #-mixing_length_layer_radius 0.0 # non-dimensional radius
 
 # physical parameters
 
 # radius of the planet
 -radius 6371000.0 # Earth radius
+
+-VISCOUS_MANTLE_COOLING_RATE 1
 
 # initial condition
 -ic_adiabat_entropy 2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
