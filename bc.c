@@ -81,31 +81,19 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
       }
 
-      A->Fatm = Qout;
-
       /* smoothly transition the cooling rate to the viscous mantle
          cooling rate below the rheological transition */
       if( Ap->VISCOUS_MANTLE_COOLING_RATE ){
           Qout = get_viscous_mantle_cooling_rate( E, Qout );
       }
 
-      /* TODO: this could be misleading, since if we back-compute the
-         1-D atmosphere structure based on the VISCOUS_MANTLE_COOLING_RATE
-         correction it suggests an increasing optical depth that is
-         unrelated to atmosphere growth from degassing */
-      /* Therefore, at the moment there is a disconnect between the atmosphere
-         flux (which can be large) and the viscous mantle cooling (which
-         is smaller) */
-      /* store the implied atmosphere flux in the atmosphere struct as well */
-      //A->Fatm = Qout;
+      /* to ensure conservation of energy at the interface of the
+         interior and atmosphere, the fluxes must be equal */
+      A->Fatm = Qout;
 
-      /* some atmosphere models do not explicitly set an emissivity,
-         so we should back-compute it here to always ensure that the
-         emissivity is consistent with our chosen atmosphere scenario
-         For cases where the emissivity is set, this should yield the
-         same answer of course, and adds little computational overhead
-         in those cases */
-      A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
+      /* always honour the emissivity, so ensure consistency by
+         adjusting the surface temperature */
+      ierr = set_surface_temperature_from_flux( A, Ap ); CHKERRQ(ierr);
 
       // energy flux (Jtot)
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);
