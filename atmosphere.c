@@ -288,6 +288,8 @@ PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const Co
 
 }
 
+#if 0
+// no longer used, but kept in case it is needed in the future
 PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParameters *Ap, PetscScalar flux )
 {
     PetscScalar emissivity;
@@ -296,6 +298,22 @@ PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParam
     emissivity /= PetscPowScalar(A->tsurf,4.0)-PetscPowScalar(Ap->teqm,4.0);
 
     return emissivity;
+
+}
+#endif
+
+PetscErrorCode set_surface_temperature_from_flux( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+    PetscScalar tsurf;
+
+    PetscFunctionBeginUser;
+    
+    tsurf = A->Fatm / ( Ap->sigma * A->emissivity );
+    tsurf += PetscPowScalar( Ap->teqm, 4.0 );
+    tsurf = PetscPowScalar( tsurf, 1.0/4.0 );
+    A->tsurf = tsurf;
+
+    PetscFunctionReturn(0);
 
 }
 

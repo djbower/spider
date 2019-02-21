@@ -44,7 +44,11 @@ PetscErrorCode destroy_atmosphere( Atmosphere * );
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters * );
 PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const Constants *C );
 PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *, Atmosphere * );
+#if 0
+// no longer used, but kept in case it is needed in the future
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters *, PetscScalar );
+#endif
+PetscErrorCode set_surface_temperature_from_flux( Atmosphere *, const AtmosphereParameters * );
 PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *, Atmosphere * );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
 // FIXME: needs replacing with PETSc non-linear solver
