@@ -203,6 +203,6 @@ if __name__ == "__main__":
         logger.critical( 'You must specify times in a comma-separated list (no spaces) using -t' )
         sys.exit(0)
 
-    plot_radius_evolution( args.times )
-    #plot_interior_atmosphere( args.times )
+    #plot_radius_evolution( args.times )
+    plot_interior_atmosphere( args.times )
     plt.show()
