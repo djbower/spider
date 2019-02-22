@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 
-plot_spider.py -t 0,150000,250000,450000,100000000
-plot_atmosphere.py
+TIMES=0,150000,250000,450000,100000000,1000000000,2000000000,3000000000,4000000000,4550000000
+
+plot_spider.py -t $TIMES
+plot_radius.py -t $TIMES
