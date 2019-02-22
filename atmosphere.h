@@ -44,6 +44,7 @@ PetscErrorCode destroy_atmosphere( Atmosphere * );
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters * );
 PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const Constants *C );
 PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *, Atmosphere * );
+PetscScalar get_initial_volatile_abundance( Atmosphere *, const AtmosphereParameters *, const VolatileParameters *,  const Volatile * );
 #if 0
 // no longer used, but kept in case it is needed in the future
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters *, PetscScalar );

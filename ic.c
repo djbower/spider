@@ -8,6 +8,9 @@ static PetscErrorCode set_ic_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_from_solidus( Ctx*, Vec );
+static PetscErrorCode set_initial_volatile( Ctx * );
+// TODO: rename once this works
+static PetscErrorCode FormFunction1( SNES, Vec, Vec, void *);
 
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
@@ -125,8 +128,9 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     Vec                        *subVecs;
     Parameters           const *P  = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    VolatileParameters const   *CO2 = &Ap->CO2_parameters;
-    VolatileParameters const   *H2O = &Ap->H2O_parameters;
+    // below are unused
+    //VolatileParameters const   *CO2 = &Ap->CO2_parameters;
+    //VolatileParameters const   *H2O = &Ap->H2O_parameters;
 
     PetscScalar x0, x1;
 
@@ -138,18 +142,19 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     /* turn on volatiles for these conditions */
     if(Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
+        ierr = set_initial_volatile( E ); CHKERRQ(ierr);
       /* CO2 */
-      if( CO2->initial > 0.0 ){
+      //if( CO2->initial > 0.0 ){
         // FIXME: below needs replacing with PETSC non-linear solver
         //x0 = get_initial_volatile( Ap, CO2 );
-        x0 = 0.260143768078712; // FIXME: hard-coded from mathematica script
-      }
+        //x0 = 0.260143768078712; // FIXME: hard-coded from mathematica script
+      //}
       /* H2O */
-      if( H2O->initial > 0.0 ){
+      //if( H2O->initial > 0.0 ){
         // FIXME: below needs replacing with PETSC non-linear solver
         //x1 = get_initial_volatile( Ap, H2O );
-        x1 = 4.982983236321538; // FIXME: hard-coded from mathematica script
-      }
+      //  x1 = 4.982983236321538; // FIXME: hard-coded from mathematica script
+      //}
     }
 
     if( x0 < 0.0 || x1 < 0 ){
@@ -255,4 +260,89 @@ static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
     ierr = set_solution_from_entropy( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
+}
+
+static PetscErrorCode set_initial_volatile( Ctx *E )
+{   
+    SNES        snes;
+    Vec         x,r;
+    PetscScalar *xx;
+    
+    Atmosphere                 *A = &E->atmosphere;
+    Parameters           const *P = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
+    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
+    Volatile                   *CO2 = &A->CO2;
+    Volatile                   *H2O = &A->H2O;
+    
+    // TODO: add ierr = and CHKERRQ?
+    
+    PetscFunctionBeginUser;
+    
+    SNESCreate( PETSC_COMM_WORLD, &snes );
+    
+    VecCreate( PETSC_COMM_WORLD, &x );
+    VecSetSizes( x, PETSC_DECIDE, 2);
+    VecSetFromOptions(x);
+    VecDuplicate(x,&r);
+    
+    SNESSetFunction(snes,r,FormFunction1,&E);
+    
+    /* initialise vector x with initial guess */
+    VecGetArray(x,&xx);
+    xx[0] = CO2_parameters->initial;
+    xx[1] = H2O_parameters->initial;
+    VecRestoreArray(x,&xx);
+    
+    SNESSolve(snes,NULL,x);
+
+    VecGetArray(x,&xx);
+    CO2->x = xx[0];
+    H2O->x = xx[1];
+    VecRestoreArray(x,&xx);  
+ 
+    VecDestroy(&x);
+    VecDestroy(&r);
+    SNESDestroy(&snes);
+    
+    PetscFunctionReturn(0);
+
+}
+
+/* Non-linear solver for initial volatile abundance */
+static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
+{ 
+    PetscErrorCode    ierr;
+    const PetscScalar *xx;
+    PetscScalar       *ff;
+
+    Ctx *E = (Ctx*) ptr;
+    Atmosphere                 *A = &E->atmosphere;
+    Parameters           const *P = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
+    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
+    Volatile                   *CO2 = &A->CO2;
+    Volatile                   *H2O = &A->H2O;
+
+    VecGetArrayRead(x, &xx);
+    VecGetArray(f,&ff);
+    
+    CO2->x = xx[0];
+    H2O->x = xx[1];      
+    
+    ierr = set_atmosphere_volatile_content( Ap, A ); CHKERRQ(ierr);   
+ 
+    ff[0] = get_initial_volatile_abundance( A, Ap, CO2_parameters, CO2 );
+    ff[1] = get_initial_volatile_abundance( A, Ap, H2O_parameters, H2O );
+    
+    /* Restore vectors */
+    VecRestoreArrayRead(x,&xx);
+    VecRestoreArray(f,&ff);
+    return 0;
+    
+    // no CHKERRQ?
+    // no PetscFunctionBeginUser and PetscFunctionReturn(0)?
+    
 }

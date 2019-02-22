@@ -5,7 +5,7 @@
 static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_atmosphere_mass( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
-static PetscErrorCode set_optical_depth(  const AtmosphereParameters *, const VolatileParameters *, Volatile * );
+static PetscErrorCode set_optical_depth( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
 static PetscErrorCode set_mixing_ratios( Volatile *, Volatile * );
 // FIXME: need to calculate volatile IC using PETSc non-linear solver
@@ -574,6 +574,22 @@ static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParam
     ierr = DMDAVecRestoreArray(A->da_atm,A->atm_struct_depth,&arr_depth);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
+
+}
+
+PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, const Volatile *V )
+{
+    PetscScalar out;
+
+    out = 1.0E6 / *Ap->VOLATILE_ptr;
+    out *= PetscSqr( (*Ap->radius_ptr) ) / -(*Ap->gravity_ptr);
+    out /= (*Ap->mantle_mass_ptr);
+    out *= (Vp->molecular_mass / A->molecular_mass);
+    out *= V->p;
+    out += V->x;
+    out -= Vp->initial;
+
+    return out;
 
 }
 
