@@ -275,7 +275,9 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
     Volatile                   *CO2 = &A->CO2;
     Volatile                   *H2O = &A->H2O;
-    
+   
+    // DJB debugging: Ctx is coming into this function correctly
+ 
     // TODO: add ierr = and CHKERRQ?
     
     PetscFunctionBeginUser;
@@ -283,10 +285,12 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     SNESCreate( PETSC_COMM_WORLD, &snes );
     
     VecCreate( PETSC_COMM_WORLD, &x );
-    VecSetSizes( x, PETSC_DECIDE, 2);
+    VecSetSizes( x, PETSC_DECIDE, 2 );
     VecSetFromOptions(x);
     VecDuplicate(x,&r);
-    
+   
+    // FIXME: something is breaking from this point.  memory addresses of Ctx
+    // are getting scrambled somewhere here I think
     SNESSetFunction(snes,r,FormFunction1,&E);
     
     /* initialise vector x with initial guess */
@@ -317,6 +321,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     const PetscScalar *xx;
     PetscScalar       *ff;
 
+    /* FIXME: the Ctx appears to be messed up. Why? */
     Ctx *E = (Ctx*) ptr;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
@@ -327,19 +332,17 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     Volatile                   *H2O = &A->H2O;
 
     VecGetArrayRead(x, &xx);
-    VecGetArray(f,&ff);
-    
     CO2->x = xx[0];
     H2O->x = xx[1];      
+    VecRestoreArrayRead(x,&xx);
     
     ierr = set_atmosphere_volatile_content( Ap, A ); CHKERRQ(ierr);   
- 
+
+    VecGetArray(f,&ff);
     ff[0] = get_initial_volatile_abundance( A, Ap, CO2_parameters, CO2 );
     ff[1] = get_initial_volatile_abundance( A, Ap, H2O_parameters, H2O );
-    
-    /* Restore vectors */
-    VecRestoreArrayRead(x,&xx);
     VecRestoreArray(f,&ff);
+
     return 0;
     
     // no CHKERRQ?
