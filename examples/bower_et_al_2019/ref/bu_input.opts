@@ -29,7 +29,7 @@
 
 # mesh
 # number of basic nodes
--n 100
+-n 200
 
 # initial condition
 # [1] is set dS/dr to constant everywhere
@@ -56,8 +56,8 @@
 -CONDUCTION 1 # conduction
 -CONVECTION 1 # convection
 -MIXING 1 # mixing (latent heat transport)
--SEPARATION 1 # gravitational separation of solid and melt phase
--HRADIO 0 # radioactive heating
+-SEPARATION 0 # gravitational separation of solid and melt phase
+-HRADIO 1 # radioactive heating
 -HTIDAL 0 # tidal heating (TODO: not currently implemented)
 
 # output directory
@@ -212,6 +212,7 @@
 # K40
 -k40_t0 4.55E9 # years
 -k40_abundance 1.1668E-4 # (40K/K) Ruedas (2017)
+#-k_concentration 560
 -k_concentration 310 # ppm (Turcotte & Schubert, 2014, p. 170)
 -k40_heat_production 2.8761E-5 # W/kg (Ruedas, 2017)
 -k40_half_life 1248E6 # years (Ruedas, 2017)
@@ -226,6 +227,7 @@
 # Th232
 -th232_t0 4.55E9 # years
 -th232_abundance 1.0 # (232Th/Th) Ruedas (2017)
+#-th_concentration 0.029
 -th_concentration 0.124 # ppm (Turcotte & Schubert, 2014, p. 170)
 -th232_heat_production 2.6368E-5 # W/kg (Ruedas, 2017)
 -th232_half_life 14000E6 # years (Ruedas, 2017)
@@ -233,6 +235,7 @@
 # U235
 -u235_t0 4.55E9 # years
 -u235_abundance 0.0072045 # (235U/U) Ruedas (2017)
+#-u_concentration 0.008
 -u_concentration 0.031 # ppm (Turcotte & Schubert, 2014, p. 170)
 -u235_heat_production 5.68402E-4 # W/kg (Ruedas, 2017)
 -u235_half_life 704E6 # years (Ruedas, 2017)
