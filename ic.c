@@ -264,9 +264,10 @@ static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
 
 static PetscErrorCode set_initial_volatile( Ctx *E )
 {   
-    SNES        snes;
-    Vec         x,r;
-    PetscScalar *xx;
+    PetscErrorCode ierr;
+    SNES           snes;
+    Vec            x,r;
+    PetscScalar    *xx;
     
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
@@ -278,37 +279,35 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
    
     // DJB debugging: Ctx is coming into this function correctly
  
-    // TODO: add ierr = and CHKERRQ?
-    
     PetscFunctionBeginUser;
     
-    SNESCreate( PETSC_COMM_WORLD, &snes );
+    ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
     
-    VecCreate( PETSC_COMM_WORLD, &x );
-    VecSetSizes( x, PETSC_DECIDE, 2 );
-    VecSetFromOptions(x);
-    VecDuplicate(x,&r);
+    ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, 2 );CHKERRQ(ierr);
+    ierr = VecSetFromOptions(x);CHKERRQ(ierr);
+    ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
    
     // FIXME: something is breaking from this point.  memory addresses of Ctx
     // are getting scrambled somewhere here I think
     SNESSetFunction(snes,r,FormFunction1,&E);
     
     /* initialise vector x with initial guess */
-    VecGetArray(x,&xx);
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     xx[0] = CO2_parameters->initial;
     xx[1] = H2O_parameters->initial;
-    VecRestoreArray(x,&xx);
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
     
-    SNESSolve(snes,NULL,x);
+    ierr = SNESSolve(snes,NULL,x);CHKERRQ(ierr);
 
-    VecGetArray(x,&xx);
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     CO2->x = xx[0];
     H2O->x = xx[1];
-    VecRestoreArray(x,&xx);  
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
  
-    VecDestroy(&x);
-    VecDestroy(&r);
-    SNESDestroy(&snes);
+    ierr = VecDestroy(&x);CHKERRQ(ierr);
+    ierr = VecDestroy(&r);CHKERRQ(ierr);
+    ierr = SNESDestroy(&snes);CHKERRQ(ierr);
     
     PetscFunctionReturn(0);
 
