@@ -126,11 +126,9 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     PetscErrorCode             ierr;
     PetscInt                   i;
     Vec                        *subVecs;
+    Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P  = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    // below are unused
-    //VolatileParameters const   *CO2 = &Ap->CO2_parameters;
-    //VolatileParameters const   *H2O = &Ap->H2O_parameters;
 
     PetscScalar x0, x1;
 
@@ -143,23 +141,15 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     /* turn on volatiles for these conditions */
     if(Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
         ierr = set_initial_volatile( E ); CHKERRQ(ierr);
-      /* CO2 */
-      //if( CO2->initial > 0.0 ){
-        // FIXME: below needs replacing with PETSC non-linear solver
-        //x0 = get_initial_volatile( Ap, CO2 );
-        //x0 = 0.260143768078712; // FIXME: hard-coded from mathematica script
-      //}
-      /* H2O */
-      //if( H2O->initial > 0.0 ){
-        // FIXME: below needs replacing with PETSC non-linear solver
-        //x1 = get_initial_volatile( Ap, H2O );
-      //  x1 = 4.982983236321538; // FIXME: hard-coded from mathematica script
-      //}
     }
 
-    if( x0 < 0.0 || x1 < 0 ){
-      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Initial volatile content cannot be negative: %d",x0);
-    }
+    x0 = A->CO2.x;
+    x1 = A->H2O.x;
+
+    // TODO: PS to move this into set_initial_volatile()
+    //if( x0 < 0.0 || x1 < 0 ){
+    //  SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Initial volatile content cannot be negative: %d",x0);
+    //}
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
