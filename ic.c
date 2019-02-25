@@ -277,40 +277,55 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     Volatile                   *CO2 = &A->CO2;
     Volatile                   *H2O = &A->H2O;
    
-    // DJB debugging: Ctx is coming into this function correctly
- 
     PetscFunctionBeginUser;
     
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
+
+    /* Use this to address this specific SNES (nonlinear solver) from the command
+       line or options file, e.g. -atmosic_snes_view */
+    ierr = SNESSetOptionsPrefix(snes,"atmosic_");CHKERRQ(ierr);
     
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
     ierr = VecSetSizes( x, PETSC_DECIDE, 2 );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
    
-    // FIXME: something is breaking from this point.  memory addresses of Ctx
-    // are getting scrambled somewhere here I think
-    SNESSetFunction(snes,r,FormFunction1,&E);
+    ierr = SNESSetFunction(snes,r,FormFunction1,E);CHKERRQ(ierr);
     
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     xx[0] = CO2_parameters->initial;
     xx[1] = H2O_parameters->initial;
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
-    
+
+    /* Inform the nonlinear solver to generate a finite-difference approximation
+       to the Jacobian */
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_mf",NULL);CHKERRQ(ierr);
+
+    /* Solve */
+    ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
     ierr = SNESSolve(snes,NULL,x);CHKERRQ(ierr);
+    {
+      SNESConvergedReason reason;
+      ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
+      if (reason < 0) SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+          "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
+    }
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     CO2->x = xx[0];
     H2O->x = xx[1];
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+
+    /* Sanity check on solution (since it's non-unique) */
+    if (CO2->x < 0.0 || H2O->x < 0.0) SETERRQ2(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+        "Unphysical initial volatile concentrations: CO2: %g, H2O: %g",CO2->x,H2O->x);
  
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);
     ierr = SNESDestroy(&snes);CHKERRQ(ierr);
     
     PetscFunctionReturn(0);
-
 }
 
 /* Non-linear solver for initial volatile abundance */
@@ -319,9 +334,8 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     PetscErrorCode    ierr;
     const PetscScalar *xx;
     PetscScalar       *ff;
+    Ctx               *E = (Ctx*) ptr;
 
-    /* FIXME: the Ctx appears to be messed up. Why? */
-    Ctx *E = (Ctx*) ptr;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -330,6 +344,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     Volatile                   *CO2 = &A->CO2;
     Volatile                   *H2O = &A->H2O;
 
+    PetscFunctionBeginUser;
     VecGetArrayRead(x, &xx);
     CO2->x = xx[0];
     H2O->x = xx[1];      
@@ -337,14 +352,10 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     
     ierr = set_atmosphere_volatile_content( Ap, A ); CHKERRQ(ierr);   
 
-    VecGetArray(f,&ff);
+    ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
     ff[0] = get_initial_volatile_abundance( A, Ap, CO2_parameters, CO2 );
     ff[1] = get_initial_volatile_abundance( A, Ap, H2O_parameters, H2O );
-    VecRestoreArray(f,&ff);
+    ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
-    return 0;
-    
-    // no CHKERRQ?
-    // no PetscFunctionBeginUser and PetscFunctionReturn(0)?
-    
+    PetscFunctionReturn(0);
 }
