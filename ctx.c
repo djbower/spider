@@ -99,8 +99,8 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     ierr = DimensionalisableFieldCreate(&ctx->solDF,ctx->dm_sol,sol_scalings,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetName(ctx->solDF,"SPIDER solution");CHKERRQ(ierr);
     for (f=0; f<ctx->numFields; ++f) {
-      ierr = DimensionalisableFieldSetSlotName(ctx->solDF,f,SpiderSolutionFieldDescriptions[ctx->solutionFieldIDs[f]]);CHKERRQ(ierr);
-      ierr = DimensionalisableFieldSetSlotUnits(ctx->solDF,f,SpiderSolutionFieldUnits[ctx->solutionFieldIDs[f]]);CHKERRQ(ierr);
+      ierr = DimensionalisableFieldSetSubdomainName(ctx->solDF,f,SpiderSolutionFieldDescriptions[ctx->solutionFieldIDs[f]]);CHKERRQ(ierr);
+      ierr = DimensionalisableFieldSetSubdomainUnits(ctx->solDF,f,SpiderSolutionFieldUnits[ctx->solutionFieldIDs[f]]);CHKERRQ(ierr);
     }
     ierr = PetscFree(sol_scalings);CHKERRQ(ierr);
   }

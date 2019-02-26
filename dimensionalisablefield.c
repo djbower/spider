@@ -29,23 +29,17 @@ PetscErrorCode DimensionalisableFieldCreate(DimensionalisableField *pf, DM dm, P
     f->scaling[i] = scalings[i];
   }
 
-  f->scaled = isScaled; // Not great design - requires the user to remember (or check) this when setting
+  f->scaled = isScaled;
 
   ierr = DMCreateGlobalVector(f->dm,&f->vecGlobal);CHKERRQ(ierr);
 
   f->name = "Unnamed DimensionalisableField";
-  f->units = "Unknown Units";
 
-  if (f->numDomains == 1) {
-    f->slotNames = NULL;
-    f->slotUnits = NULL;
-  } else {
-    ierr = PetscMalloc1(f->numDomains,&f->slotNames);CHKERRQ(ierr);
-    ierr = PetscMalloc1(f->numDomains,&f->slotUnits);CHKERRQ(ierr);
-    for (i=0; i<f->numDomains; ++i) {
-      f->slotNames[i] = NULL;
-      f->slotUnits[i] = NULL;
-    }
+  ierr = PetscMalloc1(f->numDomains,&f->subdomainNames);CHKERRQ(ierr);
+  ierr = PetscMalloc1(f->numDomains,&f->subdomainUnits);CHKERRQ(ierr);
+  for (i=0; i<f->numDomains; ++i) {
+    f->subdomainNames[i] = "Unnamed Subdomain";
+    f->subdomainUnits[i] = "Unknown Units";
   }
 
   PetscFunctionReturn(0);
@@ -60,8 +54,8 @@ PetscErrorCode DimensionalisableFieldDestroy(DimensionalisableField *pf)
   f = *pf;
   if (f->vecGlobal) {ierr = VecDestroy(&f->vecGlobal);CHKERRQ(ierr);}
   ierr = PetscFree(f->scaling);CHKERRQ(ierr);
-  if (f->slotNames) {ierr = PetscFree(f->slotNames);CHKERRQ(ierr);}
-  if (f->slotUnits) {ierr = PetscFree(f->slotUnits);CHKERRQ(ierr);}
+  ierr = PetscFree(f->subdomainNames);CHKERRQ(ierr);
+  ierr = PetscFree(f->subdomainUnits);CHKERRQ(ierr);
   ierr = PetscFree(*pf);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -70,16 +64,15 @@ PetscErrorCode DimensionalisableFieldDuplicate(DimensionalisableField f,Dimensio
 {
   PetscErrorCode         ierr;
   DimensionalisableField fNew;
+  PetscInt               i;
 
   PetscFunctionBeginUser;
   ierr = DimensionalisableFieldCreate(pfNew,f->dm,f->scaling,f->scaled);CHKERRQ(ierr);
   fNew = *pfNew;
-  if (fNew->numDomains > 1){
-    PetscErrorCode i;
-    for (i=0; i<fNew->numDomains; ++i) {
-      ierr = DimensionalisableFieldSetSlotName(fNew,i,f->slotNames[i]);CHKERRQ(ierr);
-      ierr = DimensionalisableFieldSetSlotUnits(fNew,i,f->slotUnits[i]);CHKERRQ(ierr);
-    }
+  ierr = DimensionalisableFieldSetName(fNew,f->name);CHKERRQ(ierr);
+  for (i=0; i<fNew->numDomains; ++i) {
+    ierr = DimensionalisableFieldSetSubdomainName(fNew,i,f->subdomainNames[i]);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetSubdomainUnits(fNew,i,f->subdomainUnits[i]);CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
 }
@@ -189,9 +182,6 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
   *pjson = cJSON_CreateObject();
   json = *pjson;
   cJSON_AddItemToObject(json,"name",cJSON_CreateString(f->name));
-  if (f->numDomains == 1) {
-    cJSON_AddItemToObject(json,"units",cJSON_CreateString(f->units));
-  }
   cJSON_AddItemToObject(json,"subdomains",cJSON_CreateNumber(f->numDomains));
   if (f->numDomains > 1) {
     valuesArray = cJSON_CreateArray();
@@ -206,12 +196,12 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
     if (f->numDomains > 1) {
       curr = cJSON_CreateObject();
       vecCurr = subVecs[d];
-      cJSON_AddItemToObject(curr,"slot",cJSON_CreateNumber(d));
-      if (f->slotNames[d]) {
-        cJSON_AddItemToObject(curr,"description",cJSON_CreateString(f->slotNames[d]));
+      cJSON_AddItemToObject(curr,"subdomain",cJSON_CreateNumber(d));
+      if (f->subdomainNames[d]) {
+        cJSON_AddItemToObject(curr,"description",cJSON_CreateString(f->subdomainNames[d]));
       }
-      if (f->slotUnits[d]) {
-        cJSON_AddItemToObject(curr,"units",cJSON_CreateString(f->slotUnits[d]));
+      if (f->subdomainUnits[d]) {
+        cJSON_AddItemToObject(curr,"units",cJSON_CreateString(f->subdomainUnits[d]));
       }
     } else {
       curr = json;
@@ -277,21 +267,22 @@ PetscErrorCode DimensionalisableFieldSetName(DimensionalisableField f,const char
 PetscErrorCode DimensionalisableFieldSetUnits(DimensionalisableField f,const char *units)
 {
   PetscFunctionBeginUser;
-  f->units = units;
+  if (f->numDomains != 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONG,"Not supported for multiple-subdomain DimensionalisableField objects. Use DimensionalisableFieldSetSubdomainUnits");
+  f->subdomainUnits[0] = units;
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode DimensionalisableFieldSetSlotName(DimensionalisableField f,PetscInt slot,const char *name)
+PetscErrorCode DimensionalisableFieldSetSubdomainName(DimensionalisableField f,PetscInt subdomain,const char *name)
 {
   PetscFunctionBeginUser;
-  f->slotNames[slot] = name;
+  f->subdomainNames[subdomain] = name;
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode DimensionalisableFieldSetSlotUnits(DimensionalisableField f,PetscInt slot,const char *units)
+PetscErrorCode DimensionalisableFieldSetSubdomainUnits(DimensionalisableField f,PetscInt subdomain,const char *units)
 {
   PetscFunctionBeginUser;
-  f->slotUnits[slot] = units;
+  f->subdomainUnits[subdomain] = units;
   PetscFunctionReturn(0);
 }
 

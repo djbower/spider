@@ -11,9 +11,8 @@ struct _p_DimensionalisableField {
   PetscScalar  *scaling;
   PetscBool    scaled;
   const char   *name;
-  const char   *units;
-  const char   **slotNames;
-  const char   **slotUnits;
+  const char   **subdomainNames;
+  const char   **subdomainUnits;
 };
 typedef struct _p_DimensionalisableField *DimensionalisableField;
 
@@ -28,8 +27,8 @@ PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField);
 PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const,cJSON**);
 PetscErrorCode DimensionalisableFieldSetName(DimensionalisableField,const char*);
 PetscErrorCode DimensionalisableFieldSetUnits(DimensionalisableField,const char*);
-PetscErrorCode DimensionalisableFieldSetSlotName(DimensionalisableField,PetscInt,const char*);
-PetscErrorCode DimensionalisableFieldSetSlotUnits(DimensionalisableField,PetscInt,const char*);
+PetscErrorCode DimensionalisableFieldSetSubdomainName(DimensionalisableField,PetscInt,const char*);
+PetscErrorCode DimensionalisableFieldSetSubdomainUnits(DimensionalisableField,PetscInt,const char*);
 // REMOVE ?PetscErrorCode AddSingleValueToJSONArray(DM,PetscScalar,const char *, const char *, PetscScalar const, cJSON *);
 PetscErrorCode JSON_add_single_value_to_object(DM,PetscScalar,const char *, const char *, PetscScalar const, cJSON *);
 
