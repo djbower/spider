@@ -37,10 +37,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
       A->CO2.tau = 0.0;
       A->tau = 0.0;
 
-      /* temperature (potential temperature if coarse mesh is used)
-         this is taken from the top staggered node */
-      // TODO: from top staggered or top basic node?
-      //ierr = VecGetValues(S->temp_s,1,&ind0,&temp0); CHKERRQ(ierr);
+      /* temperature (potential temperature if coarse mesh is used) */
       ierr = VecGetValues(S->temp,1,&ind0,&temp0); CHKERRQ(ierr);
 
       /* correct for ultra-thin thermal boundary layer at the surface */
