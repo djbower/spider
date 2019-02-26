@@ -166,12 +166,26 @@ PetscErrorCode DimensionalisableFieldUnscale(DimensionalisableField f)
   PetscFunctionReturn(0);
 }
 
+/* Helper function to convert a scalar value to an appropriate string  */
+PetscErrorCode valueToString(PetscScalar val,char *str,int maxLength)
+{
+  PetscErrorCode ierr;
+#if PETSC_USE_REAL___FLOAT128
+  ierr = quadmath_snprintf(str,maxLength,"%32.32Qg",val);
+  if (ierr >= maxLength || ierr < 0) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_LIB,"quadmath_snprintf() failed");
+#else
+  ierr = PetscSNPrintf(str,maxLength,"%16.16g",val);CHKERRQ(ierr);
+#endif
+  return 0;
+}
+
+#define FORMAT_STRING_SIZE 64
 PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON **pjson)
 {
   PetscErrorCode    ierr;
   Vec               vec;
   PetscInt          vecSize,i,d;
-  cJSON             *json,*values,*valuesArray;
+  cJSON             *json,*values,*subdomainArray;
   const PetscScalar *arr;
   Vec               *subVecs;
 
@@ -184,11 +198,14 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
   cJSON_AddItemToObject(json,"name",cJSON_CreateString(f->name));
   cJSON_AddItemToObject(json,"subdomains",cJSON_CreateNumber(f->numDomains));
   if (f->numDomains > 1) {
-    valuesArray = cJSON_CreateArray();
+    subdomainArray = cJSON_CreateArray();
     ierr = PetscMalloc1(f->numDomains,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(f->dm,vec,f->numDomains,NULL,subVecs);CHKERRQ(ierr);
   } else {
-    valuesArray = NULL;
+    if (f->subdomainUnits[0]) {
+      cJSON_AddItemToObject(json,"units",cJSON_CreateString(f->subdomainUnits[0]));
+    }
+    subdomainArray = NULL;
   }
   for (d=0; d<f->numDomains; ++d){
     cJSON *curr;
@@ -210,13 +227,8 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
     ierr = VecGetSize(vecCurr,&vecSize);CHKERRQ(ierr);
     cJSON_AddItemToObject(curr,"size",cJSON_CreateNumber(vecSize));
     {
-      char str[64]; /* hard-coded 64*/
-#if PETSC_USE_REAL___FLOAT128
-      ierr = quadmath_snprintf(str,sizeof(str),"%32.32Qg",*f->scaling);
-      if (ierr >= 64 || ierr < 0) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_LIB,"quadmath_snprintf() failed");
-#else
-      ierr = PetscSNPrintf(str,sizeof(str),"%16.16g",*f->scaling);CHKERRQ(ierr);
-#endif
+      char str[FORMAT_STRING_SIZE];
+      ierr = valueToString(*f->scaling,str,FORMAT_STRING_SIZE);CHKERRQ(ierr);
       cJSON_AddItemToObject(curr,"scaling",cJSON_CreateString(str));
     }
     cJSON_AddItemToObject(curr,"scaled",f->scaled? cJSON_CreateString("true") : cJSON_CreateString("false"));
@@ -232,13 +244,8 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
     values = cJSON_CreateArray();
     {
       for (i=0; i<vecSize; ++i) {
-        char str[64]; /* note hard-coded size */
-#if defined(PETSC_USE_REAL___FLOAT128)
-        ierr = quadmath_snprintf(str,sizeof(str),"%32.32Qg",arr[i]);
-        if (ierr >= 64 || ierr < 0) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_LIB,"quadmath_snprintf() failed");
-#else
-        ierr = PetscSNPrintf(str,sizeof(str),"%16.16g",arr[i]);CHKERRQ(ierr);
-#endif
+        char str[FORMAT_STRING_SIZE];
+        ierr = valueToString(arr[i],str,FORMAT_STRING_SIZE);CHKERRQ(ierr);
         cJSON_AddItemToArray(values,cJSON_CreateString(str));
       }
     }
@@ -246,16 +253,17 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
 
     cJSON_AddItemToObject(curr,"values",values);
     if (f->numDomains > 1) {
-      cJSON_AddItemToArray(valuesArray,curr);
+      cJSON_AddItemToArray(subdomainArray,curr);
     }
   }
   if (f->numDomains > 1 ) {
-    cJSON_AddItemToObject(json,"values array",valuesArray);
+    cJSON_AddItemToObject(json,"subdomain data",subdomainArray);
     ierr = DMCompositeRestoreAccessArray(f->dm,vec,f->numDomains,NULL,subVecs);CHKERRQ(ierr);
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
 }
+#undef FORMAT_STRING_SIZE
 
 PetscErrorCode DimensionalisableFieldSetName(DimensionalisableField f,const char *name)
 {

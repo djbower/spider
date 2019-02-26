@@ -14,11 +14,11 @@ else :
 
 json_data = open(os.path.join('output',str(timestep)+'.json'))
 data_d = json.load(json_data)
-sol_values_array = data_d['solution']['values array']
+subdomain_data_array = data_d['solution']['subdomain data']
 
 outfile = open('out.txt','w')
 
-for e in sol_values_array :
+for e in subdomain_data_array :
     outfile.write('description: ')
     outfile.write(e['description'])
     outfile.write('\n')
