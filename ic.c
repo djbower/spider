@@ -141,15 +141,9 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     /* turn on volatiles for these conditions */
     if(Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
         ierr = set_initial_volatile( E ); CHKERRQ(ierr);
+        x0 = A->CO2.x;
+        x1 = A->H2O.x;
     }
-
-    x0 = A->CO2.x;
-    x1 = A->H2O.x;
-
-    // TODO: PS to move this into set_initial_volatile()
-    //if( x0 < 0.0 || x1 < 0 ){
-    //  SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Initial volatile content cannot be negative: %d",x0);
-    //}
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
