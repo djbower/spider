@@ -29,7 +29,7 @@ PetscErrorCode DimensionalisableFieldSetName(DimensionalisableField,const char*)
 PetscErrorCode DimensionalisableFieldSetUnits(DimensionalisableField,const char*);
 PetscErrorCode DimensionalisableFieldSetSubdomainName(DimensionalisableField,PetscInt,const char*);
 PetscErrorCode DimensionalisableFieldSetSubdomainUnits(DimensionalisableField,PetscInt,const char*);
-// REMOVE ?PetscErrorCode AddSingleValueToJSONArray(DM,PetscScalar,const char *, const char *, PetscScalar const, cJSON *);
+
 PetscErrorCode JSON_add_single_value_to_object(DM,PetscScalar,const char *, const char *, PetscScalar const, cJSON *);
 
 #endif

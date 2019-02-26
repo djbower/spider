@@ -286,29 +286,6 @@ PetscErrorCode DimensionalisableFieldSetSubdomainUnits(DimensionalisableField f,
   PetscFunctionReturn(0);
 }
 
-#if 0
-PetscErrorCode AddSingleValueToJSONArray( DM dm, PetscScalar scaling, const char *name, const char *units, const PetscScalar value, cJSON *data )
-{
-  PetscErrorCode         ierr;
-  cJSON                  *item;
-  DimensionalisableField dfield;
-
-  PetscFunctionBeginUser;
-
-  ierr = DimensionalisableFieldCreate(&dfield,dm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-  ierr = DimensionalisableFieldSetName(dfield,name);CHKERRQ(ierr);
-  ierr = DimensionalisableFieldSetUnits(dfield,units);CHKERRQ(ierr);
-  ierr = VecSetValue(dfield->vecGlobal,0,value,INSERT_VALUES);CHKERRQ(ierr);
-  ierr = VecAssemblyBegin(dfield->vecGlobal);CHKERRQ(ierr);
-  ierr = VecAssemblyEnd(dfield->vecGlobal);CHKERRQ(ierr);
-  ierr = DimensionalisableFieldToJSON(dfield,&item);CHKERRQ(ierr);
-  cJSON_AddItemToArray(data,item);
-  ierr = DimensionalisableFieldDestroy(&dfield);CHKERRQ(ierr);
-
-  PetscFunctionReturn(0);
-}
-#endif
-
 PetscErrorCode JSON_add_single_value_to_object( DM dm, PetscScalar scaling, const char *name, const char *units, const PetscScalar value, cJSON *data )
 {
   PetscErrorCode         ierr;
