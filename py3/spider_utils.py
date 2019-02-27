@@ -373,9 +373,9 @@ class FigureData( object ):
         if yticks:
             self.set_myyticks( ax, yticks, ymin, ymax, fmt )
 
-    def set_mylegend( self, ax, handles, loc=4, ncol=1, TITLE=1 ):
+    def set_mylegend( self, ax, handles, loc=4, ncol=1, TITLE="" ):
         dd = self.data_d
-        if TITLE==1:
+        if not TITLE:
             units = dd['time_units']
             title = r'Time ({0})'.format( units )
         else:
@@ -557,12 +557,12 @@ def recursive_get(d, keys):
     return recursive_get(d[keys[0]], keys[1:])
 
 #====================================================================
-def get_dict_values_for_times( keys, time_l ):
+def get_dict_values_for_times( keys, time_l, indir='output' ):
 
     data_l = []
 
     for time in time_l:
-        filename = os.path.join( 'output', '{}.json'.format(time) )
+        filename = os.path.join( indir, '{}.json'.format(time) )
         myjson_o = MyJSON( filename )
         values_a = myjson_o.get_dict_values( keys )
         data_l.append( values_a )
