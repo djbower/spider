@@ -168,7 +168,7 @@ def plot_interior_atmosphere( times ):
     ymax = 3500.0
     xticks = [200,1000,2000,3000,4000,5000]
 
-    title = 'Coupled interior-atmosphere evolution'
+    title = 'Interior-atmosphere evolution'
     ylabel = 'Atmosphere height (km)'
     fig_o.set_myaxes( ax0, ylabel=ylabel, title=title, yrotation=90 )
 
