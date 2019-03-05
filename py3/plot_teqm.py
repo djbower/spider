@@ -18,7 +18,7 @@ def plot_teqm():
     ax0 = fig_o.ax
 
     # equilibrium temperatures to process
-    teqm_l = [1000,1100,1300,1500,1700,1900,2100]
+    teqm_l = [1000,1100,1300,1500,1600,1700,1750,1800,1850,1900,2100]
 
     time_l = su.get_all_output_times( odir='1000/output' )
     time_myr = time_l * 1.0E-6 # to Myr
