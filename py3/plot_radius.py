@@ -141,14 +141,14 @@ def plot_interior_atmosphere( times ):
         ax1.plot( temp_a[-1], depth_a[-1], color=color, marker='_', markersize=8 )
 
         # shade grey between liquidus and solidus
-        yy_liqt = myjson_o.get_dict_values(['data','liquidus_temp_b'])
-        liqt_interp1d = interp1d( xx_pres, yy_liqt, kind='linear', fill_value='extrapolate' )
-        yy_solt = myjson_o.get_dict_values(['data','solidus_temp_b'])
-        solt_interp1d = interp1d( xx_pres, yy_solt, kind='linear', fill_value='extrapolate' )
-        liqt = liqt_interp1d( pressure_a * 1.0E-9 )
-        solt = solt_interp1d( pressure_a * 1.0E-9 )
-        if nn==3: 
-            ax1.fill_betweenx( depth_a, liqt, solt, facecolor='gray', alpha=0.3, linewidth=0 )
+        #yy_liqt = myjson_o.get_dict_values(['data','liquidus_temp_b'])
+        #liqt_interp1d = interp1d( xx_pres, yy_liqt, kind='linear', fill_value='extrapolate' )
+        #yy_solt = myjson_o.get_dict_values(['data','solidus_temp_b'])
+        #solt_interp1d = interp1d( xx_pres, yy_solt, kind='linear', fill_value='extrapolate' )
+        #liqt = liqt_interp1d( pressure_a * 1.0E-9 )
+        #solt = solt_interp1d( pressure_a * 1.0E-9 )
+        #if nn==3: 
+        #    ax1.fill_betweenx( depth_a, liqt, solt, facecolor='gray', alpha=0.3, linewidth=0 )
 
         #MIX = myjson_o.get_mixed_phase_boolean_array( 'basic_internal' )
         #label = fig_o.get_legend_label( time )

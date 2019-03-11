@@ -16,7 +16,7 @@ def plot_atmosphere():
 
     width = 4.7747
     height = 4.7747
-    fig_o = su.FigureData( 2, 2, width, height, 'atmosphere' )
+    fig_o = su.FigureData( 2, 2, width, height, 'atmosphere', units='Myr' )
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -54,7 +54,7 @@ def plot_atmosphere():
     emissivity_a = su.get_dict_values_for_times( ['atmosphere','emissivity'], fig_o.time )
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
-    xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
+    xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3,5.0E3] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
     xlabel = 'Time (Myr)'
 
     red = fig_o.get_color(3)
@@ -114,13 +114,13 @@ def plot_atmosphere():
     ##########
     title = '(c) Surface temperature'
     ylabel = '$T$'
-    yticks = range(1400,2601,400)
+    yticks = range(200,2601,400)
     ax2.semilogx( timeMyr_a, temperature_surface_a, 'k-' )
     fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks, yticks=yticks )
     ax2.yaxis.set_label_coords(-0.1,0.5)
     #ax2.set_ylim( 1050, 1850 )
     #ax2.set_xlim( 1E-5 , 1 )
-    ax2.set_ylim(1300,2600)
+    ax2.set_ylim(260,2600)
 
     ##########
     # figure d
@@ -131,7 +131,7 @@ def plot_atmosphere():
     fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks )
     ax3.yaxis.set_label_coords(-0.1,0.55)
     #plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    ax3.set_ylim( 1E-7, 1E-2 )
+    ax3.set_ylim( 1E-4, 1E-2 )
     #ax3.set_xlim( 1E-5, 1 )
 
     # output (effective) emissivity for Bonati et al. (2018), a&a paper

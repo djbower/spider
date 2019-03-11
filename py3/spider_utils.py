@@ -220,6 +220,7 @@ class FigureData( object ):
         if times:
             dd['time_l'] = times
             self.process_time_list()
+        if units:
             dd['time_units'] = units
             dd['time_decimal_places'] = 2 # hard-coded
         dd['outname'] = outname
@@ -310,6 +311,16 @@ class FigureData( object ):
                         #(0.4,0.4,0.8),
                         (0.8,0.4,0.4),
                         #(0.7,0.2,0.2),
+                        (0.5,0.1,0.1),
+                        (0.3,0.0,0.0)]
+            colors_l.reverse()
+        elif cmap=='bkr8' and num==6:
+            colors_l = [(0.0,0.0,0.3),
+                        (0.1,0.1,0.5),
+                        (0.2,0.2,0.7),
+                        #(0.4,0.4,0.8),
+                        #(0.8,0.4,0.4),
+                        (0.7,0.2,0.2),
                         (0.5,0.1,0.1),
                         (0.3,0.0,0.0)]
             colors_l.reverse()
