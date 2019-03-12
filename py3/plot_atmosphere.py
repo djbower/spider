@@ -38,7 +38,9 @@ def plot_atmosphere():
     CO2_total_kg = CO2_total_kg_a[0] # time-independent
     # TODO: below mass is conserved by definition, but can also
     # compute directly from partial pressure
-    CO2_atmos_kg_a = CO2_total_kg - CO2_liquid_kg_a - CO2_solid_kg_a
+    #CO2_atmos_kg_a = CO2_total_kg - CO2_liquid_kg_a - CO2_solid_kg_a
+    # for escape, must do this instead
+    CO2_atmos_kg_a = su.get_dict_values_for_times( ['atmosphere','CO2','atmosphere_kg'], fig_o.time )
     CO2_atmos_a = su.get_dict_values_for_times( ['atmosphere','CO2','atmosphere_bar'], fig_o.time )
 
     H2O_liquid_kg_a = su.get_dict_values_for_times( ['atmosphere','H2O','liquid_kg'], fig_o.time )
@@ -47,7 +49,9 @@ def plot_atmosphere():
     H2O_total_kg = H2O_total_kg_a[0] # time-independent
     # TODO: below mass is conserved by definition, but can also
     # compute directly from partial pressure
-    H2O_atmos_kg_a = H2O_total_kg - H2O_liquid_kg_a - H2O_solid_kg_a
+    #H2O_atmos_kg_a = H2O_total_kg - H2O_liquid_kg_a - H2O_solid_kg_a
+    # for escape, must do this instead
+    H2O_atmos_kg_a = su.get_dict_values_for_times( ['atmosphere','H2O','atmosphere_kg'], fig_o.time )
     H2O_atmos_a = su.get_dict_values_for_times( ['atmosphere','H2O','atmosphere_bar'], fig_o.time )
 
     temperature_surface_a = su.get_dict_values_for_times( ['atmosphere','temperature_surface'], fig_o.time )
