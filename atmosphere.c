@@ -169,8 +169,9 @@ static PetscErrorCode set_jeans( const Atmosphere *A, const AtmosphereParameters
 
     PetscFunctionBeginUser;
 
-    // FIXME: placeholder
-    V->jeans = 1;
+    V->jeans = 4.0 * PETSC_PI * (*Ap->VOLATILE_ptr) / 1.0E6; // prefactor
+    V->jeans *= -(*Ap->gravity_ptr) * (*Ap->radius_ptr) * V->m; // note negative gravity
+    V->jeans /= Ap->kB * A->tsurf;
 
     PetscFunctionReturn(0);
 
@@ -181,18 +182,18 @@ static PetscErrorCode set_f_thermal_escape( const Atmosphere *A, const Atmospher
     /* thermal escape prefactor for atmospheric growth rate */
 
     PetscErrorCode ierr;
+    // FIXME: placeholder
+    PetscScalar const R = 40.0;
 
     PetscFunctionBeginUser;
 
+    /* no thermal escape means this is simply unity */
+    V->jeans = 0.0; // since not used
+    V->f_thermal_escape = 1.0;
+
     if(Ap->THERMAL_ESCAPE){
-        // FIXME: placeholder
         ierr = set_jeans( A, Ap, V );CHKERRQ(ierr);
-        V->f_thermal_escape = 1.0;
-    }
-    else{
-        /* no thermal escape means this is simply unity */
-        V->jeans = 0.0; // since not used
-        V->f_thermal_escape = 1.0;
+        V->f_thermal_escape -= R * (1.0+V->jeans) * PetscExpReal(-V->jeans);
     }
 
     PetscFunctionReturn(0);
@@ -529,10 +530,11 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_bar", "bar", V->p, data);CHKERRQ(ierr);
 
     /* non-dimensional */
-    /* optical depth (non-dimensional) */
     scaling = 1.0;
     ierr = JSON_add_single_value_to_object(dm, scaling, "optical_depth", "None", V->tau, data);CHKERRQ(ierr);
     ierr = JSON_add_single_value_to_object(dm, scaling, "mixing_ratio", "None", V->mixing_ratio, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "jeans", "None", V->jeans, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "f_thermal_escape", "None", V->f_thermal_escape, data);CHKERRQ(ierr);
 
     cJSON_AddItemToObject(json,name,data);
 
