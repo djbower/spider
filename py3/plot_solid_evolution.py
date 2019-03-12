@@ -41,18 +41,18 @@ def solid_evolution_fig3( times ):
     #print np.mean(diff[40:])
     #sys.exit(1)
 
-    xx_pres = myjson_o.get_scaled_field_values_internal('pressure_b')
+    xx_pres = myjson_o.get_dict_values_internal(['data','pressure_b'])
     xx_pres *= 1.0E-9
 
-    xx_pres_s = myjson_o.get_scaled_field_values('pressure_s')
+    xx_pres_s = myjson_o.get_dict_values(['data','pressure_s'])
     xx_pres_s *= 1.0E-9
 
     # shade grey between liquidus and solidus
-    yy_liq = myjson_o.get_scaled_field_values_internal('liquidus_b')
-    yy_sol = myjson_o.get_scaled_field_values_internal('solidus_b')
+    yy_liq = myjson_o.get_dict_values_internal(['data','liquidus_b'])
+    yy_sol = myjson_o.get_dict_values_internal(['data','solidus_b'])
     #ax0.fill_between( xx_pres, yy_liq, yy_sol, facecolor='grey', alpha=0.35, linewidth=0 )
-    yy_liqt = myjson_o.get_scaled_field_values_internal('liquidus_temp_b')
-    yy_solt = myjson_o.get_scaled_field_values_internal('solidus_temp_b')
+    yy_liqt = myjson_o.get_dict_values_internal(['data','liquidus_temp_b'])
+    yy_solt = myjson_o.get_dict_values_internal(['data','solidus_temp_b'])
     #ax1.fill_between( xx_pres, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
     # hack to compute some average properties for Bower et al. (2018)
     #print xx_sol
@@ -93,29 +93,29 @@ def solid_evolution_fig3( times ):
         # entropy
         # plot staggered, since this is where entropy is defined
         # cell-wise and we can easily see the CMB boundary condition
-        yy = myjson_o.get_scaled_field_values('S_s')
-        #yy = myjson_o.get_scaled_field_values_internal('S_b')
+        yy = myjson_o.get_dict_values(['data','S_s'])
+        #yy = myjson_o.get_dict_values_internal('S_b')
         ax0.plot( xx_pres_s, yy, '-', color=color )
         handle, = ax0.plot( xx_pres_s*MIX_s, yy*MIX_s, '-', color=color, label=label )
         handle_l.append( handle )
         # temperature
-        yy = myjson_o.get_scaled_field_values_internal('temp_b')
+        yy = myjson_o.get_dict_values_internal(['data','temp_b'])
         ax1.plot( xx_pres, yy, '--', color=color )
         ax1.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # melt fraction
-        yy = myjson_o.get_scaled_field_values_internal('phi_b')
+        yy = myjson_o.get_dict_values_internal(['data','phi_b'])
         ax2.plot( xx_pres, yy, '-', color=color )
         # viscosity
         visc_const = 1 # this is used for the arcsinh scaling
         visc_fmt = su.MyFuncFormatter( visc_const )
-        yy = myjson_o.get_scaled_field_values_internal('visc_b', visc_fmt)
+        yy = myjson_o.get_dict_values_internal(['data','visc_b'], visc_fmt)
         ax3.plot( xx_pres, yy, '-', color=color )
 
     xticks = [0,20,40,60,80,100,120,140]
     xmax = 140
 
     # titles and axes labels, legends, etc
-    units = myjson_o.get_field_units('S_b')
+    units = myjson_o.get_dict_units(['data','S_b'])
     title = '(a) Entropy, {}'.format(units)
     yticks = [400,800,1600,2400,3200]
     # Bower et al. (2018)
@@ -124,7 +124,7 @@ def solid_evolution_fig3( times ):
     #yticks = [300,1000,1600,2000,2400,2800,3200]
     fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, xmax=xmax, yticks=yticks )
     ax0.yaxis.set_label_coords(-0.075,0.59)
-    units = myjson_o.get_field_units('temp_b')
+    units = myjson_o.get_dict_units(['data','temp_b'])
     title = '(b) Temperature, {}'.format(units)
     yticks = [500,1000,1500,2000,2500,3000,3500,4000]
     # Bower et al. (2018)
@@ -142,7 +142,7 @@ def solid_evolution_fig3( times ):
         ylabel='$\phi$', xticks=xticks, xmax=xmax, yticks=yticks )
     ax2.yaxis.set_label_coords(-0.075,0.475)
     ax2.set_ylim( [0, 1] )
-    units = myjson_o.get_field_units('visc_b')
+    units = myjson_o.get_dict_units(['data','visc_b'])
     title = '(d) Viscosity, ' + units
     yticks = [1.0E18,1.0E20,1.0E22,1.0E24,1.0E26,1.0E28]
     fig_o.set_myaxes( ax3, title=title, xlabel='$P$ (GPa)',
@@ -197,25 +197,25 @@ def solid_evolution_fig4( times ):
         label = fig_o.get_legend_label( time )
 
         # pressure for x-axis
-        xx_pres = myjson_o.get_scaled_field_values_internal('pressure_b')
+        xx_pres = myjson_o.get_dict_values_internal(['data','pressure_b'])
         xx_pres *= 1.0E-9
 
         # Jconv_b
-        yy = myjson_o.get_scaled_field_values_internal('Jconv_b', flux_fmt)
+        yy = myjson_o.get_dict_values_internal(['data','Jconv_b'], flux_fmt)
         ax0.plot( xx_pres, yy, '--', color=color )
         handle, = ax0.plot( xx_pres*MIX, yy*MIX, '-', label=label,
             color=color )
         handle_l.append( handle )
         # Jmix_b
-        yy = myjson_o.get_scaled_field_values_internal('Jmix_b', flux_fmt)
+        yy = myjson_o.get_dict_values_internal(['data','Jmix_b'], flux_fmt)
         ax2.plot( xx_pres, yy, '--', color=color )
         ax2.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # Jgrav_b
-        yy = myjson_o.get_scaled_field_values_internal('Jgrav_b', flux_fmt)
+        yy = myjson_o.get_dict_values_internal(['data','Jgrav_b'], flux_fmt)
         ax1.plot( xx_pres, yy, '--', color=color )
         ax1.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # Jtot_b
-        yy = myjson_o.get_scaled_field_values_internal('Jtot_b', flux_fmt)
+        yy = myjson_o.get_dict_values_internal(['data','Jtot_b'], flux_fmt)
         ax3.plot( xx_pres, yy, '--', color=color )
         ax3.plot( xx_pres*MIX, yy*MIX, '-', color=color )
 
@@ -223,23 +223,23 @@ def solid_evolution_fig4( times ):
     xticks = [0,50,100,135]
     xmax = 138
     yticks = [-1E15,-1E12, -1E6, -1E0, 0, 1E0, 1E6, 1E12, 1E15]
-    units = myjson_o.get_field_units('Jconv_b')
+    units = myjson_o.get_dict_units(['data','Jconv_b'])
     title = '(a) Convective flux, {}'.format(units)
     fig_o.set_myaxes( ax0, title=title, ylabel='$F_\mathrm{conv}$',
         yticks=yticks, xticks=xticks, xmax=xmax, fmt=flux_fmt )
     ax0.yaxis.set_label_coords(-0.16,0.54)
     fig_o.set_mylegend( ax0, handle_l, ncol=2 )
-    units = myjson_o.get_field_units('Jmix_b')
+    units = myjson_o.get_dict_units(['data','Jmix_b'])
     title = '(c) Mixing flux, {}'.format(units)
     fig_o.set_myaxes( ax2, title=title, xlabel='$P$ (GPa)',
         ylabel='$F_\mathrm{mix}$', yticks=yticks, xticks=xticks, xmax=xmax, fmt=flux_fmt )
     ax2.yaxis.set_label_coords(-0.16,0.54)
-    units = myjson_o.get_field_units('Jgrav_b')
+    units = myjson_o.get_dict_units(['data','Jgrav_b'])
     title = '(b) Separation flux, {}'.format(units)
     fig_o.set_myaxes( ax1, title=title,
         ylabel='$F_\mathrm{grav}$', yticks=yticks, xticks=xticks, xmax=xmax, fmt=flux_fmt )
     ax1.yaxis.set_label_coords(-0.16,0.54)
-    units = myjson_o.get_field_units('Jtot_b')
+    units = myjson_o.get_dict_units(['data','Jtot_b'])
     title = '(d) Total flux, {}'.format(units)
     fig_o.set_myaxes( ax3, title=title, xlabel='$P$ (GPa)',
         ylabel='$F_\mathrm{tot}$', yticks=yticks, xticks=xticks, xmax=xmax, fmt=flux_fmt )
@@ -287,33 +287,33 @@ def solid_evolution_fig5( times ):
         label = fig_o.get_legend_label( time )
 
         # pressure for x-axis
-        xx_pres = myjson_o.get_scaled_field_values_internal('pressure_b')
+        xx_pres = myjson_o.get_dict_values_internal(['data','pressure_b'])
         xx_pres *= 1.0E-9
 
         # eddy diffusivity
-        yy = myjson_o.get_scaled_field_values_internal('kappah_b', eddy_fmt)
+        yy = myjson_o.get_dict_values_internal(['data','kappah_b'], eddy_fmt)
         ax0.plot( xx_pres, yy, '--', color=color )
         handle, = ax0.plot( xx_pres*MIX, yy*MIX, '-', label=label,
             color=color )
         handle_l.append( handle )
         # density
-        yy = myjson_o.get_scaled_field_values_internal('rho_b')
+        yy = myjson_o.get_dict_values_internal(['data','rho_b'])
         ax1.plot( xx_pres, yy, '--', color=color )
         ax1.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # thermal expansion coefficient
-        yy = myjson_o.get_scaled_field_values_internal('alpha_b', alpha_fmt)
+        yy = myjson_o.get_dict_values_internal(['data','alpha_b'], alpha_fmt)
         ax3.plot( xx_pres, yy, '--', color=color )
         ax3.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # heat capacity
-        yy = myjson_o.get_scaled_field_values_internal('cp_b')
+        yy = myjson_o.get_dict_values_internal(['data','cp_b'])
         ax4.plot( xx_pres, yy, '--', color=color )
         ax4.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # dTdrs
-        yy = myjson_o.get_scaled_field_values_internal('dTdrs_b')
+        yy = myjson_o.get_dict_values_internal(['data','dTdrs_b'])
         ax5.plot( xx_pres, yy, '--', color=color )
         ax5.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # entropy gradient
-        yy = myjson_o.get_scaled_field_values_internal('dSdr_b', dSdr_fmt )
+        yy = myjson_o.get_dict_values_internal(['data','dSdr_b'], dSdr_fmt )
         yy *= -1.0
         ax2.plot( xx_pres, yy, '--', color=color )
         ax2.plot( xx_pres*MIX, yy*MIX, '-', color=color )
@@ -322,14 +322,14 @@ def solid_evolution_fig5( times ):
     xmax = 138
 
     # titles and axes labels, legends, etc.
-    units = myjson_o.get_field_units('kappah_b')
+    units = myjson_o.get_dict_units(['data','kappah_b'])
     title = '(a) Eddy diffusivity, {}'.format(units)
     yticks = [1.0, 1.0E3, 1.0E6, 1.0E9]
     fig_o.set_myaxes( ax0, title=title, ylabel='$\kappa_h$',
         yticks=yticks, fmt=eddy_fmt, xticks=xticks, xmax=xmax )
     ax0.yaxis.set_label_coords(-0.1,0.475)
 
-    units = myjson_o.get_field_units('rho_b')
+    units = myjson_o.get_dict_units(['data','rho_b'])
     title = '(b) Density, {}'.format(units)
     yticks = [2000,3000,4000,5000,6000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$\\rho$',
@@ -337,7 +337,7 @@ def solid_evolution_fig5( times ):
     ax1.yaxis.set_label_coords(-0.1,0.6)
     fig_o.set_mylegend( ax1, handle_l, loc=4, ncol=2 )
 
-    units = myjson_o.get_field_units('dSdr_b')
+    units = myjson_o.get_dict_units(['data','dSdr_b'])
     title = '(c) Entropy grad, {}'.format(units)
     #yticks= [-1.0E-3, -1.0E-6, -1.0E-9, -1.0E-12, -1.0E-15]
     yticks = [1E-15, 1E-12, 1E-9, 1E-6, 1E-3]
@@ -346,21 +346,21 @@ def solid_evolution_fig5( times ):
         ylabel='$-\\frac{\partial S}{\partial r}$', fmt=dSdr_fmt)
     ax2.yaxis.set_label_coords(-0.1,0.565)
 
-    units = myjson_o.get_field_units('alpha_b')
+    units = myjson_o.get_dict_units(['data','alpha_b'])
     title = '(d) Thermal expansion, {}'.format(units)
     yticks = [1.0E-5, 1.0E-4, 1.0E-3, 1.0E-2]
     fig_o.set_myaxes( ax3, title=title, ylabel='$\\alpha$',
         yticks=yticks, fmt=alpha_fmt, xticks=xticks, xmax=xmax )
     ax3.yaxis.set_label_coords(-0.1,0.475)
 
-    units = myjson_o.get_field_units('cp_b')
+    units = myjson_o.get_dict_units(['data','cp_b'])
     title = '(e) Heat capacity, {}'.format(units)
     yticks = [0,5000,10000,15000]
     fig_o.set_myaxes( ax4, title=title, xlabel='$P$ (GPa)', ylabel='$c$',
         yticks=yticks, xticks=xticks, xmax=xmax )
     ax4.yaxis.set_label_coords(-0.1,0.475)
 
-    units = myjson_o.get_field_units('dTdrs_b')
+    units = myjson_o.get_dict_units(['data','dTdrs_b'])
     title = '(f) Adiabatic grad, {}'.format(units)
     yticks = [-3E-3, -2E-3, -1E-3, 0]
     fig_o.set_myaxes( ax5, title=title, xlabel='$P$ (GPa)',
