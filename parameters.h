@@ -54,10 +54,13 @@ typedef struct AtmosphereParameters_ {
     // input parameters
     MagmaOceanAtmosphereType SURFACE_BC;
     PetscBool VISCOUS_MANTLE_COOLING_RATE;
+    PetscBool THERMAL_ESCAPE;
     PetscScalar surface_bc_value;
     // below are standard, also used for grey-body atmosphere
     PetscScalar emissivity0;
     PetscScalar sigma;
+    PetscScalar kB;
+    PetscScalar bigG;
     PetscScalar teqm;
     PetscBool   PARAM_UTBL;
     PetscScalar param_utbl_const;

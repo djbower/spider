@@ -467,6 +467,19 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->emissivity0 = 1.0; // non-dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-emissivity0",&Ap->emissivity0,NULL);CHKERRQ(ierr);
 
+  Ap->THERMAL_ESCAPE = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-THERMAL_ESCAPE",&Ap->THERMAL_ESCAPE,NULL);CHKERRQ(ierr);
+
+  /* Gravitational constant (m^3/kg/s^2) */
+  Ap->bigG = 6.67408E-11;
+  Ap->bigG *= C->DENSITY;
+  Ap->bigG *= PetscPowScalar( C->TIME, 2.0 );
+
+  /* Boltzmann constant (J/kg) */
+  Ap->kB = 1.38064852E-23;
+  Ap->kB /= C->ENERGY;
+  Ap->kB *= C->MASS;
+
   /* Stefan-Boltzmann constant (W/m^2K^4) */
   Ap->sigma = 5.670367e-08;
   Ap->sigma /= C->SIGMA;

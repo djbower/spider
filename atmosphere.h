@@ -16,6 +16,8 @@ typedef struct Volatile_ {
     PetscScalar m; // mass in atmosphere (kg)
     PetscScalar tau; // optical_depth at surface (non-dimensional)
     PetscScalar mixing_ratio;
+    PetscScalar jeans; // surface Jeans parameter
+    PetscScalar f_thermal_escape;
 } Volatile;
 
 #define NUMATMSTRUCTVECS 4
@@ -54,6 +56,6 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *, At
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
 // FIXME: needs replacing with PETSc non-linear solver
 //PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const VolatileParameters * );
-PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *, const VolatileParameters *, const Volatile * );
+PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *, const VolatileParameters *, Volatile * );
 
 #endif

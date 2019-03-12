@@ -8,6 +8,8 @@ static PetscErrorCode set_atmosphere_mass( const Atmosphere *, const AtmosphereP
 static PetscErrorCode set_optical_depth( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
 static PetscErrorCode set_mixing_ratios( Volatile *, Volatile * );
+static PetscErrorCode set_jeans( const Atmosphere *, const AtmosphereParameters *, Volatile * );
+static PetscErrorCode set_f_thermal_escape( const Atmosphere *, const AtmosphereParameters *, Volatile * );
 // FIXME: need to calculate volatile IC using PETSc non-linear solver
 //static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
 //static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
@@ -156,6 +158,42 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmospherePa
     ierr = VecScale( A->atm_struct_pressure, 2.0 ); CHKERRQ(ierr);
     ierr = VecScale( A->atm_struct_pressure, 1.0/3.0 ); CHKERRQ(ierr);
     ierr = VecScale( A->atm_struct_pressure, 1.0/kabs); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_jeans( const Atmosphere *A, const AtmosphereParameters *Ap, Volatile *V )
+{
+    /* surface Jeans parameter */
+
+    PetscFunctionBeginUser;
+
+    // FIXME: placeholder
+    V->jeans = 1;
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_f_thermal_escape( const Atmosphere *A, const AtmosphereParameters *Ap, Volatile *V )
+{
+    /* thermal escape prefactor for atmospheric growth rate */
+
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    if(Ap->THERMAL_ESCAPE){
+        // FIXME: placeholder
+        ierr = set_jeans( A, Ap, V );CHKERRQ(ierr);
+        V->f_thermal_escape = 1.0;
+    }
+    else{
+        /* no thermal escape means this is simply unity */
+        V->jeans = 0.0; // since not used
+        V->f_thermal_escape = 1.0;
+    }
 
     PetscFunctionReturn(0);
 
@@ -502,14 +540,19 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
 
 }
 
-PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const VolatileParameters *Vp, const Volatile *V )
+PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const VolatileParameters *Vp, Volatile *V )
 {
-    PetscScalar dxdt;
-    PetscScalar num, den;
+
+    PetscErrorCode ierr;
+    PetscScalar    dxdt;
+    PetscScalar    num, den;
+
+    /* to update V->f_thermal_escape */
+    ierr = set_f_thermal_escape( A, Ap, V ); CHKERRQ(ierr);
 
     num = V->x * (Vp->kdist-1.0) * A->dMliqdt;
     den = Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq;
-    den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V->dpdx / -(*Ap->gravity_ptr)) * (Vp->molecular_mass / A->molecular_mass);
+    den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V->dpdx / -(*Ap->gravity_ptr)) * (Vp->molecular_mass / A->molecular_mass) * V->f_thermal_escape;
 
     dxdt = num / den;
 
