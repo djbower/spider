@@ -45,7 +45,7 @@ typedef struct VolatileParameters_ {
     PetscScalar kabs;
     PetscScalar henry;
     PetscScalar henry_pow;
-    PetscScalar molecular_mass;
+    PetscScalar molar_mass;
 } VolatileParameters;
 
 /* for storing atmosphere outputs */
@@ -59,6 +59,7 @@ typedef struct AtmosphereParameters_ {
     // below are standard, also used for grey-body atmosphere
     PetscScalar emissivity0;
     PetscScalar sigma;
+    PetscScalar Avogadro;
     PetscScalar kB;
     PetscScalar bigG;
     PetscScalar teqm;

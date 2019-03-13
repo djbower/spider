@@ -31,7 +31,7 @@ typedef struct Atmosphere_ {
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
     Volatile    CO2; // CO2 volatile quantities
     Volatile    H2O; // H2O volatile quantities
-    PetscScalar molecular_mass; // mean molecular mass
+    PetscScalar molar_mass; // mean molar mass
     DM          da_atm; // da for outputing atmosphere structure (below)
     DimensionalisableField atm_struct[NUMATMSTRUCTVECS];
     Vec atm_struct_tau;
