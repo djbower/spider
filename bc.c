@@ -28,15 +28,6 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       ierr = VecGetValues(M->area_b,1,&ind0,&area0);CHKERRQ(ierr);
 
-      /* TODO: these quantities might not get set, so to ensure they
-         are initialised and set to zero here.  This should be moved to
-         an initialisation module and performed once outside of the
-         time loop */
-      /* TODO: should probably initialise elsewhere */
-      A->H2O.tau = 0.0;
-      A->CO2.tau = 0.0;
-      A->tau = 0.0;
-
       /* temperature (potential temperature if coarse mesh is used) */
       ierr = VecGetValues(S->temp,1,&ind0,&temp0); CHKERRQ(ierr);
 
@@ -48,7 +39,11 @@ PetscErrorCode set_surface_flux( Ctx *E )
         A->tsurf = temp0; // surface temperature is potential temperature
       }
 
+      /* must be after A->tsurf is set */
+      ierr = set_atmosphere_volatile_content( Ap, A ); CHKERRQ(ierr);
+
       /* determine surface flux */
+      /* in all cases, compute flux and emissivity consistently */
       switch( Ap->SURFACE_BC ){
         case 1:
           // grey-body with constant emissivity
@@ -58,6 +53,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
         case 2:
           // Zahnle steam atmosphere
           Qout = get_steam_atmosphere_zahnle_1988_flux( A, C );
+          A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
           break;
         case 3:
           // two stream approximation
@@ -67,11 +63,13 @@ PetscErrorCode set_surface_flux( Ctx *E )
         case 4:
           // heat flux
           Qout = Ap->surface_bc_value;
+          A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
           break;
         case 5:
           // isothermal (constant entropy)
           // TODO: is this consistent with A->tsurf?
           Qout = get_isothermal_surface( E );
+          A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
           break;
         default:
           SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
@@ -89,8 +87,16 @@ PetscErrorCode set_surface_flux( Ctx *E )
       A->Fatm = Qout;
 
       /* always honour the emissivity, so ensure consistency by
-         adjusting the surface temperature */
+         adjusting the surface temperature.  This is only relevant
+         if VISCOUS_MANTLE_COOLING_RATE is set and should not change
+         the surface temperature for the other options, since the
+         surface temperature is already consistent with the flux
+         and emissivity */
       ierr = set_surface_temperature_from_flux( A, Ap ); CHKERRQ(ierr);
+
+      /* FIXME: if we want atmospheric escape with VISCOUS_MANTLE_COOLING_RATE,
+         we would need to now update the escape parameters since the surface
+         temperature would have changed */
 
       // energy flux (Jtot)
       ierr = VecSetValue(S->Jtot,0,Qout,INSERT_VALUES);CHKERRQ(ierr);

@@ -69,6 +69,10 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
     ierr = initialise_volatile( &A->CO2 ); CHKERRQ(ierr);
     ierr = initialise_volatile( &A->H2O ); CHKERRQ(ierr);
 
+    /* other variables in struct that otherwise might not get set */
+    /* below is only for Abe and Matsui atmosphere model */
+    A->tau = 0.0;
+
     PetscFunctionReturn(0);
 
 }
@@ -168,20 +172,14 @@ static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParame
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     PetscErrorCode     ierr;
-    PetscScalar        CO2_ratio, CO2_kabs, H2O_ratio, H2O_kabs, kabs;
+    PetscScalar        CO2_kabs, H2O_kabs, kabs;
 
     PetscFunctionBeginUser;
-
-    /* assume atmosphere is well mixed */
-    /* volume mixing ratios */
-    /* TODO: store and output these quantities? */
-    CO2_ratio = A->CO2.p / (A->CO2.p + A->H2O.p );
-    H2O_ratio = 1.0 - CO2_ratio;
 
     /* effective absorption coefficient */
     CO2_kabs = get_pressure_dependent_kabs( Ap, &Ap->CO2_parameters );
     H2O_kabs = get_pressure_dependent_kabs( Ap, &Ap->H2O_parameters );
-    kabs = CO2_ratio * CO2_kabs + H2O_ratio * H2O_kabs;
+    kabs = A->CO2.mixing_ratio * CO2_kabs + A->H2O.mixing_ratio * H2O_kabs;
 
     ierr = VecCopy( A->atm_struct_tau, A->atm_struct_pressure ); CHKERRQ(ierr);
     ierr = VecScale( A->atm_struct_pressure, -(*Ap->gravity_ptr) ); CHKERRQ(ierr); // note negative gravity
@@ -407,8 +405,6 @@ PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const Co
 
 }
 
-#if 0
-// no longer used, but kept in case it is needed in the future
 PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParameters *Ap, PetscScalar flux )
 {
     PetscScalar emissivity;
@@ -419,7 +415,6 @@ PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParam
     return emissivity;
 
 }
-#endif
 
 PetscErrorCode set_surface_temperature_from_flux( Atmosphere *A, const AtmosphereParameters *Ap )
 {
