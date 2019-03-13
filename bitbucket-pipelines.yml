@@ -29,7 +29,7 @@ pipelines:
             - valgrind ./spider -nstepsmacro 1 -dtmacro_years 10
 
             # run valgrind for atmosphere (examine manually!)
-            - valgrind ./spider -options_file examples/bower_2019/atmosphere/bu_input.opts -nstepsmacro 1 -dtmacro_years 0.00001 
+            - valgrind ./spider -options_file examples/bower_2019/atmosphere_jeans/bu_input.opts -nstepsmacro 1 -dtmacro_years 0.00001 
 
             # DJB commmented this out since we can run tests locally and not use up
             # pipeline minutes.  This is particularly important since valgrind does not
