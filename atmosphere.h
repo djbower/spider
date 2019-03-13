@@ -16,8 +16,11 @@ typedef struct Volatile_ {
     PetscScalar m; // mass in atmosphere (kg)
     PetscScalar tau; // optical_depth at surface (non-dimensional)
     PetscScalar mixing_ratio;
+    PetscScalar column_density;
+    PetscScalar Knudsen; // Knudsen number
     PetscScalar jeans; // surface Jeans parameter
     PetscScalar f_thermal_escape;
+    PetscScalar R_thermal_escape;
 } Volatile;
 
 #define NUMATMSTRUCTVECS 4

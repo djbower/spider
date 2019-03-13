@@ -9,6 +9,9 @@ static PetscErrorCode set_optical_depth( const AtmosphereParameters *, const Vol
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
 static PetscErrorCode set_mixing_ratios( Volatile *, Volatile * );
 static PetscErrorCode set_jeans( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
+static PetscErrorCode set_column_density_thermal_escape( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
+static PetscErrorCode set_Knudsen_number( const VolatileParameters *, Volatile * );
+static PetscErrorCode set_R_thermal_escape( Volatile * );
 static PetscErrorCode set_f_thermal_escape( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 // FIXME: need to calculate volatile IC using PETSc non-linear solver
 //static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
@@ -178,13 +181,56 @@ static PetscErrorCode set_jeans( const Atmosphere *A, const AtmosphereParameters
 
 }
 
+static PetscErrorCode set_column_density_thermal_escape( const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
+{
+
+    PetscFunctionBeginUser;
+
+    V->column_density = V->p;
+    V->column_density /= -(*Ap->gravity_ptr) * (Vp->molar_mass/Ap->Avogadro);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_Knudsen_number( const VolatileParameters *Vp, Volatile *V )
+{
+
+    PetscFunctionBeginUser;
+
+    V->Knudsen = V->jeans * Vp->cross_section * V->column_density;
+    V->Knudsen = 1.0 / V->Knudsen;
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_R_thermal_escape( Volatile *V )
+{
+
+    PetscScalar    R1, R2, Rfit;
+
+    PetscFunctionBeginUser;
+
+    R1 = PetscPowScalar( 1.0 / V->Knudsen, 0.09 );
+    R2 = 70 * (V->Knudsen * PetscExpReal(V->jeans)) / PetscPowScalar(V->jeans,2.55);
+
+    Rfit = 1.0 / R1 + 1.0 / R2;
+    Rfit = 1.0 / Rfit;
+
+    V->R_thermal_escape = Rfit;
+
+    PetscFunctionReturn(0);
+
+}
+
 static PetscErrorCode set_f_thermal_escape( const Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
 {
     /* thermal escape prefactor for atmospheric growth rate */
 
     PetscErrorCode ierr;
     // FIXME: placeholder
-    PetscScalar const R = 10.0;
+    PetscScalar const R = 100;
 
     PetscFunctionBeginUser;
 
@@ -194,8 +240,16 @@ static PetscErrorCode set_f_thermal_escape( const Atmosphere *A, const Atmospher
 
     if(Ap->THERMAL_ESCAPE){
         ierr = set_jeans( A, Ap, Vp, V );CHKERRQ(ierr);
+        ierr = set_column_density_thermal_escape( Ap, Vp, V ); CHKERRQ(ierr);
+        ierr = set_Knudsen_number( Vp, V ); CHKERRQ(ierr);
+        ierr = set_R_thermal_escape( V ); CHKERRQ(ierr);
         V->f_thermal_escape += R * (1.0+V->jeans) * PetscExpReal(-V->jeans);
     }
+
+    /* TODO: do we need any extra checks to ensure that the asymptotic behaviour
+       of escape is reasonable?  As jeans-->infty the limit looks OK, but what about
+       as jeans-->0?  In reality, this would denote a switch to hydrodynamic
+       escape */
 
     PetscFunctionReturn(0);
 
@@ -530,11 +584,17 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     scaling = C->PRESSURE / 1.0E5; /* bar */
     ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_bar", "bar", V->p, data);CHKERRQ(ierr);
 
+    /* area */
+    scaling = 1.0 / (C->AREA * 1.0E4); // 1/cm^2
+    ierr = JSON_add_single_value_to_object(dm, scaling, "column_density", "1/cm^2", V->column_density, data);CHKERRQ(ierr);
+
     /* non-dimensional */
     scaling = 1.0;
     ierr = JSON_add_single_value_to_object(dm, scaling, "optical_depth", "None", V->tau, data);CHKERRQ(ierr);
     ierr = JSON_add_single_value_to_object(dm, scaling, "mixing_ratio", "None", V->mixing_ratio, data);CHKERRQ(ierr);
     ierr = JSON_add_single_value_to_object(dm, scaling, "jeans", "None", V->jeans, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "Knudsen", "None", V->Knudsen, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "R_thermal_escape", "None", V->R_thermal_escape, data);CHKERRQ(ierr);
     ierr = JSON_add_single_value_to_object(dm, scaling, "f_thermal_escape", "None", V->f_thermal_escape, data);CHKERRQ(ierr);
 
     cJSON_AddItemToObject(json,name,data);
