@@ -2,6 +2,7 @@
 #include "dimensionalisablefield.h"
 #include "util.h"
 
+static PetscErrorCode initialise_volatile( Volatile * );
 static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_atmosphere_mass( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
@@ -9,7 +10,7 @@ static PetscErrorCode set_optical_depth( const AtmosphereParameters *, const Vol
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
 static PetscErrorCode set_mixing_ratios( Volatile *, Volatile * );
 static PetscErrorCode set_jeans( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
-static PetscErrorCode set_column_density_thermal_escape( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
+static PetscErrorCode set_column_density( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscErrorCode set_Knudsen_number( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_R_thermal_escape( Volatile * );
 static PetscErrorCode set_f_thermal_escape( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
@@ -63,6 +64,32 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[3],&A->atm_struct_depth);
     ierr = DimensionalisableFieldSetName(A->atm_struct[3],"atm_struct_depth");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[3],"m");CHKERRQ(ierr);
+
+    /* initialise volatiles */
+    ierr = initialise_volatile( &A->CO2 ); CHKERRQ(ierr);
+    ierr = initialise_volatile( &A->H2O ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode initialise_volatile( Volatile *V )
+{
+
+    PetscFunctionBeginUser;
+
+    /* these entries should match those in atmosphere.h */
+    V->x = 0.0;
+    V->p = 0.0;
+    V->dpdx = 0.0;
+    V->m = 0.0;
+    V->tau = 0.0;
+    V->mixing_ratio = 0.0;
+    V->column_density = 0.0;
+    V->Knudsen = 0.0;
+    V->jeans = 0.0;
+    V->f_thermal_escape = 0.0;
+    V->R_thermal_escape = 0.0;
 
     PetscFunctionReturn(0);
 
@@ -181,7 +208,7 @@ static PetscErrorCode set_jeans( const Atmosphere *A, const AtmosphereParameters
 
 }
 
-static PetscErrorCode set_column_density_thermal_escape( const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
+static PetscErrorCode set_column_density( const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
 {
 
     PetscFunctionBeginUser;
@@ -228,23 +255,9 @@ static PetscErrorCode set_f_thermal_escape( const Atmosphere *A, const Atmospher
 {
     /* thermal escape prefactor for atmospheric growth rate */
 
-    PetscErrorCode ierr;
-    // FIXME: placeholder
-    PetscScalar const R = 100;
-
     PetscFunctionBeginUser;
 
-    /* no thermal escape means this is simply unity */
-    V->jeans = 0.0; // since not used
-    V->f_thermal_escape = 1.0;
-
-    if(Ap->THERMAL_ESCAPE){
-        ierr = set_jeans( A, Ap, Vp, V );CHKERRQ(ierr);
-        ierr = set_column_density_thermal_escape( Ap, Vp, V ); CHKERRQ(ierr);
-        ierr = set_Knudsen_number( Vp, V ); CHKERRQ(ierr);
-        ierr = set_R_thermal_escape( V ); CHKERRQ(ierr);
-        V->f_thermal_escape += R * (1.0+V->jeans) * PetscExpReal(-V->jeans);
-    }
+    V->f_thermal_escape = 1.0 + V->R_thermal_escape * (1.0+V->jeans) * PetscExpReal(-V->jeans);
 
     /* TODO: do we need any extra checks to ensure that the asymptotic behaviour
        of escape is reasonable?  As jeans-->infty the limit looks OK, but what about
@@ -333,15 +346,27 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, 
     PetscFunctionBeginUser;
 
     /* if x0 and/or x1 are zero, the quantities below will also all
-       be set to zero */
+       be set to zero, except the escape-related parameters that
+       are useful to compute even if the feedback of escape is not
+       actually included in the model */
 
     /* CO2 */
     ierr = set_partial_pressure_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
     ierr = set_partial_pressure_derivative_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
+    ierr = set_column_density( Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
+    ierr = set_jeans( A, Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
+    ierr = set_Knudsen_number( CO2_parameters, CO2 ); CHKERRQ(ierr);
+    ierr = set_R_thermal_escape( CO2 ); CHKERRQ(ierr);
+    ierr = set_f_thermal_escape( A, Ap, CO2_parameters, CO2 ); CHKERRQ(ierr);
 
     /* H2O */
     ierr = set_partial_pressure_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
     ierr = set_partial_pressure_derivative_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
+    ierr = set_column_density( Ap, H2O_parameters, H2O );CHKERRQ(ierr);
+    ierr = set_jeans( A, Ap, H2O_parameters, H2O );CHKERRQ(ierr);
+    ierr = set_Knudsen_number( H2O_parameters, H2O );CHKERRQ(ierr);
+    ierr = set_R_thermal_escape( H2O ); CHKERRQ(ierr);
+    ierr = set_f_thermal_escape( A, Ap, H2O_parameters, H2O ); CHKERRQ(ierr);
 
     /* mixing ratio */
     ierr = set_mixing_ratios( CO2, H2O );CHKERRQ(ierr);
@@ -606,16 +631,21 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
 PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const VolatileParameters *Vp, Volatile *V )
 {
 
-    PetscErrorCode ierr;
     PetscScalar    dxdt;
-    PetscScalar    num, den;
+    PetscScalar    num, den, f_thermal_escape;
 
-    /* to update V->f_thermal_escape */
-    ierr = set_f_thermal_escape( A, Ap, Vp, V ); CHKERRQ(ierr);
+    /* remember that to this point, V->f_thermal_escape is always
+       computed but not necessarily used in the calculation */
+    if(Ap->THERMAL_ESCAPE){
+        f_thermal_escape = V->f_thermal_escape;
+    }
+    else{
+        f_thermal_escape = 1.0;
+    }
 
     num = V->x * (Vp->kdist-1.0) * A->dMliqdt;
     den = Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq;
-    den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V->dpdx / -(*Ap->gravity_ptr)) * (Vp->molar_mass / A->molar_mass) * V->f_thermal_escape;
+    den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V->dpdx / -(*Ap->gravity_ptr)) * (Vp->molar_mass / A->molar_mass) * f_thermal_escape;
 
     dxdt = num / den;
 
