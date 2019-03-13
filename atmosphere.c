@@ -14,10 +14,6 @@ static PetscErrorCode set_column_density( const AtmosphereParameters *, const Vo
 static PetscErrorCode set_Knudsen_number( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_R_thermal_escape( Volatile * );
 static PetscErrorCode set_f_thermal_escape( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
-// FIXME: need to calculate volatile IC using PETSc non-linear solver
-//static PetscScalar solve_newton_method( PetscScalar, PetscScalar, PetscScalar );
-//static PetscScalar get_newton_f( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
-//static PetscScalar get_newton_f_prim( PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
 static PetscErrorCode JSON_add_atm_struct( Atmosphere *, const AtmosphereParameters *, cJSON * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
@@ -723,67 +719,3 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     return out;
 
 }
-
-#if 0
-PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const VolatileParameters *Vp )
-{
-    /* initial volatile in the aqueous phase */
-
-    /* FIXME: below is old, when it was easy to use Newton's method per individual volatile.
-       Now the volatiles are coupled, and this must be solved as a system of non-linear
-       equations instead */
-    /*
-    PetscScalar fac, x;
-
-    fac = PetscSqr( (*Ap->radius_ptr) );
-    fac /= -(*Ap->gravity_ptr) * (*Ap->mantle_mass_ptr);
-    fac /= PetscPowScalar(Vp->henry,Vp->henry_pow);
-    fac *= 1.0E6 / (*Ap->VOLATILE_ptr);
-
-    x = solve_newton_method( fac, Vp->henry_pow, Vp->initial );
-
-    return x;*/
-}
-#endif
-
-/* FIXME: below needs replacing with PETSc non-linear solver */
-#if 0
-/* Newton's method */
-/* for determining the initial mass fraction of volatiles in the
-   melt.  The initial condition can be expressed as:
-
-       x + A * x ** B = C */
-
-static PetscScalar get_newton_f( PetscScalar x, PetscScalar A, PetscScalar B, PetscScalar C ) 
-{
-    PetscScalar result;
-
-    result = x + A * PetscPowScalar( x, B ) - C;
-
-    return result;
-
-}
-
-static PetscScalar get_newton_f_prim( PetscScalar x, PetscScalar A, PetscScalar B, PetscScalar C ) 
-{
-    PetscScalar result;
-
-    result = 1.0 + A*B*PetscPowScalar( x, B-1.0 );
-
-    return result;
-
-}
-
-static PetscScalar solve_newton_method( PetscScalar A, PetscScalar B, PetscScalar xinit )
-{
-    PetscInt i=0;
-    PetscScalar x;
-    x = xinit;
-    while(i < 50){
-        x = x - get_newton_f( x, A, B, xinit ) / get_newton_f_prim( x, A, B, xinit );
-        i++;
-    }   
-    return x;
-
-}
-#endif
