@@ -169,8 +169,9 @@ static PetscErrorCode set_jeans( const Atmosphere *A, const AtmosphereParameters
 
     PetscFunctionBeginUser;
 
-    V->jeans = 4.0 * PETSC_PI * (*Ap->VOLATILE_ptr) / 1.0E6; // prefactor
-    V->jeans *= -(*Ap->gravity_ptr) * (*Ap->radius_ptr) * (Vp->molar_mass/Ap->Avogadro); // note negative gravity
+    // this is wrong below - when volatile gas reservoir is considered (incorrectly!)
+    //V->jeans = 4.0 * PETSC_PI * (*Ap->VOLATILE_ptr) / 1.0E6; // prefactor
+    V->jeans = -(*Ap->gravity_ptr) * (*Ap->radius_ptr) * (Vp->molar_mass/Ap->Avogadro); // note negative gravity
     V->jeans /= Ap->kB * A->tsurf;
 
     PetscFunctionReturn(0);
@@ -183,7 +184,7 @@ static PetscErrorCode set_f_thermal_escape( const Atmosphere *A, const Atmospher
 
     PetscErrorCode ierr;
     // FIXME: placeholder
-    PetscScalar const R = 1.0;
+    PetscScalar const R = 10.0;
 
     PetscFunctionBeginUser;
 
@@ -193,7 +194,7 @@ static PetscErrorCode set_f_thermal_escape( const Atmosphere *A, const Atmospher
 
     if(Ap->THERMAL_ESCAPE){
         ierr = set_jeans( A, Ap, Vp, V );CHKERRQ(ierr);
-        V->f_thermal_escape -= R * (1.0+V->jeans) * PetscExpReal(-V->jeans);
+        V->f_thermal_escape += R * (1.0+V->jeans) * PetscExpReal(-V->jeans);
     }
 
     PetscFunctionReturn(0);

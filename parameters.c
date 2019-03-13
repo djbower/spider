@@ -553,7 +553,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->henry = 4.4E-6; // ppm/Pa^(1/henry_pow)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
   CO2->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/CO2->henry_pow);
-  CO2->molar_mass = 44.01 * 1.0e-3; // kg/mol
+  CO2->molar_mass = 1.0E-3; //44.01 * 1.0e-3; // kg/mol
   CO2->molar_mass /= C->MASS;
 
   /* radiogenic heating */
