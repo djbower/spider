@@ -89,6 +89,7 @@ static PetscErrorCode initialise_volatile( Volatile *V )
     /* these entries should match those in atmosphere.h */
     V->x = 0.0;
     V->p = 0.0;
+    V->dxdt = 0.0;
     V->dpdx = 0.0;
     V->m = 0.0;
     V->tau = 0.0;
@@ -201,8 +202,6 @@ static PetscErrorCode set_jeans( const Atmosphere *A, const AtmosphereParameters
 
     PetscFunctionBeginUser;
 
-    // this is wrong below - when volatile gas reservoir is considered (incorrectly!)
-    //V->jeans = 4.0 * PETSC_PI * (*Ap->VOLATILE_ptr) / 1.0E6; // prefactor
     V->jeans = -(*Ap->gravity_ptr) * (*Ap->radius_ptr) * (Vp->molar_mass/Ap->Avogadro); // note negative gravity
     V->jeans /= Ap->kB * A->tsurf;
 
@@ -212,6 +211,7 @@ static PetscErrorCode set_jeans( const Atmosphere *A, const AtmosphereParameters
 
 static PetscErrorCode set_column_density( const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
 {
+    /* see Johnson et al. (2015), Astrophys. J. */
 
     PetscFunctionBeginUser;
 
@@ -224,6 +224,7 @@ static PetscErrorCode set_column_density( const AtmosphereParameters *Ap, const 
 
 static PetscErrorCode set_Knudsen_number( const VolatileParameters *Vp, Volatile *V )
 {
+    /* see Johnson et al. (2015), Astrophys. J. */
 
     PetscFunctionBeginUser;
 
@@ -236,6 +237,7 @@ static PetscErrorCode set_Knudsen_number( const VolatileParameters *Vp, Volatile
 
 static PetscErrorCode set_R_thermal_escape( Volatile *V )
 {
+    /* see Johnson et al. (2015), Astrophys. J. */
 
     PetscScalar    R1, R2, Rfit;
 
@@ -256,6 +258,7 @@ static PetscErrorCode set_R_thermal_escape( Volatile *V )
 static PetscErrorCode set_f_thermal_escape( const Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
 {
     /* thermal escape prefactor for atmospheric growth rate */
+    /* see Johnson et al. (2015), Astrophys. J. */
 
     PetscFunctionBeginUser;
 
@@ -669,12 +672,9 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     H2O->dxdt = xx[1];
     VecRestoreArrayRead(x,&xx);
 
-    // FIXME
-    /* for xx's, now determine f */
-
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
-    ff[0] = get_dxdt( Ap, A, CO2_parameters, CO2, H2O_parameters, H2O ); // FIXME get_initial_volatile_abundance( A, Ap, CO2_parameters, CO2 );
-    ff[1] = get_dxdt( Ap, A, H2O_parameters, H2O, CO2_parameters, CO2 ); // FIXME get_initial_volatile_abundance( A, Ap, H2O_parameters, H2O );
+    ff[0] = get_dxdt( Ap, A, CO2_parameters, CO2, H2O_parameters, H2O );
+    ff[1] = get_dxdt( Ap, A, H2O_parameters, H2O, CO2_parameters, CO2 );
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -686,9 +686,8 @@ PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const
 {
 
     PetscScalar    value, f_thermal_escape;
-    //PetscScalar    num, den, f_thermal_escape;
 
-    /* remember that to this point, V->f_thermal_escape is always
+    /* remember that to this point, V1->f_thermal_escape is always
        computed but not necessarily used in the calculation */
     if(Ap->THERMAL_ESCAPE){
         f_thermal_escape = V1->f_thermal_escape;
@@ -701,12 +700,6 @@ PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const
     value = V1->dxdt * ( Vp1->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp1->kdist) * A->Mliq);
     value += V1->dxdt * (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V1->dpdx / -(*Ap->gravity_ptr)) * (Vp1->molar_mass / A->molar_mass) * f_thermal_escape;
     value -= V1->x * (Vp1->kdist-1.0) * A->dMliqdt;
-
-    // old below, this is when we could simply rearrange to return dxdt directly.  Now we can't
-    //num = V->x * (Vp->kdist-1.0) * A->dMliqdt;
-    //den = Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq;
-    //den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V->dpdx / -(*Ap->gravity_ptr)) * (Vp->molar_mass / A->molar_mass) * f_thermal_escape;
-    //dxdt = num / den;
 
     return value;
 }
