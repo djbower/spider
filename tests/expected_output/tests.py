@@ -25,6 +25,29 @@ def atmosphere(rootDir) :
   t.setUseSandbox()
   return(t)
 
+def atmosphere_jeans(rootDir) :
+  thisDir = os.path.split(os.path.abspath(__file__))[0]
+  testName = "atmosphere_jeans"
+  ranks = 1
+  launch = [\
+          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','atmosphere_jeans','bu_input.opts'),\
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py 1000000'),
+          #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0,100,200,400,800,1200,1500',\
+          ]
+
+  expectedFile = os.path.join(thisDir,'expected_atmosphere_jeans.txt')
+
+  def comparefunc(t) :
+      t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
+      t.compareFloatingPointRelative(re.escape('val: '),    1e-5)
+
+  t = pthtest.Test(testName,ranks,launch,expectedFile)
+  t.setComparisonFile('out.txt')
+  t.setVerifyMethod(comparefunc)
+  t.setWalltime(10) # minutes
+  t.setUseSandbox()
+  return(t)
+
 def blackbody(rootDir) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "blackbody"

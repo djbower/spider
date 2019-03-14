@@ -28,7 +28,7 @@ import pyTestHarness.harness as pthharness
 import pyTestHarness.version as pthversion
 
 # Import functions to generate tests
-from blackbody.tests import *
+from expected_output.tests import *
 
 def main() :
 
@@ -55,6 +55,7 @@ def main() :
         blackbody_init_solid(rootDir), \
         blackbody(rootDir),      \
         atmosphere(rootDir),     \
+        atmosphere_jeans(rootDir)
     ]
 
     # Run tests

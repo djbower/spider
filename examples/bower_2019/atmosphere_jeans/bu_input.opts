@@ -1,7 +1,7 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 300
+-nstepsmacro 20
 # was 2000, but only need one million years for a reasonable
 # test of output
 
