@@ -711,12 +711,11 @@ PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const
     out *= (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Vp->molar_mass / -(*Ap->gravity_ptr); // note negative gravity
 
     /* thermal escape correction */
-    // FIXME: manually turn off for now
-    //out *= f_thermal_escape;
+    out *= f_thermal_escape;
 
     /* solid and liquid reservoirs */
     out += V->dxdt * ( Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq);
-    out -= V->x * (Vp->kdist-1.0) * A->dMliqdt;
+    out += V->x * (1.0-Vp->kdist) * A->dMliqdt;
 
     return out;
 }
