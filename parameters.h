@@ -45,6 +45,8 @@ typedef struct VolatileParameters_ {
     PetscScalar kabs;
     PetscScalar henry;
     PetscScalar henry_pow;
+    PetscScalar jeans_value; // for thermal escape
+    PetscScalar R_thermal_escape_value; /// for thermal escape
     PetscScalar molar_mass;
     PetscScalar cross_section;
 } VolatileParameters;

@@ -356,18 +356,38 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, 
     ierr = set_partial_pressure_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
     ierr = set_partial_pressure_derivative_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
     ierr = set_column_density( Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
-    ierr = set_jeans( A, Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
+    if(CO2_parameters->jeans_value < 0.0){
+        ierr = set_jeans( A, Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
+    }
+    else{
+        CO2->jeans = CO2_parameters->jeans_value;
+    }
     ierr = set_Knudsen_number( CO2_parameters, CO2 ); CHKERRQ(ierr);
-    ierr = set_R_thermal_escape( CO2 ); CHKERRQ(ierr);
+    if(CO2_parameters->R_thermal_escape_value < 0.0 ){
+        ierr = set_R_thermal_escape( CO2 ); CHKERRQ(ierr);
+    }
+    else{
+        CO2->R_thermal_escape = CO2_parameters->R_thermal_escape_value;
+    }
     ierr = set_f_thermal_escape( A, Ap, CO2_parameters, CO2 ); CHKERRQ(ierr);
 
     /* H2O */
     ierr = set_partial_pressure_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
     ierr = set_partial_pressure_derivative_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
     ierr = set_column_density( Ap, H2O_parameters, H2O );CHKERRQ(ierr);
-    ierr = set_jeans( A, Ap, H2O_parameters, H2O );CHKERRQ(ierr);
+    if(H2O_parameters->jeans_value < 0.0 ){
+        ierr = set_jeans( A, Ap, H2O_parameters, H2O );CHKERRQ(ierr);
+    }
+    else{
+        H2O->jeans = H2O_parameters->jeans_value;
+    }
     ierr = set_Knudsen_number( H2O_parameters, H2O );CHKERRQ(ierr);
-    ierr = set_R_thermal_escape( H2O ); CHKERRQ(ierr);
+    if(H2O_parameters->R_thermal_escape_value < 0.0 ){
+        ierr = set_R_thermal_escape( H2O ); CHKERRQ(ierr);
+    }
+    else{
+        H2O->R_thermal_escape = H2O_parameters->R_thermal_escape_value;
+    }
     ierr = set_f_thermal_escape( A, Ap, H2O_parameters, H2O ); CHKERRQ(ierr);
 
     /* mixing ratio */
