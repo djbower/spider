@@ -77,7 +77,7 @@ testatmos : test_create_output_dir
 	@printf "To run more tests\n"
 	@printf "  make testall\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
-	@printf "  make testcheck\n"
+	@printf "  make testatmoscheck\n"
 
 testatmoscheck : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -t ${SPIDER_ATMOS_TESTS} && cd -
