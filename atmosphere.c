@@ -673,35 +673,52 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     VecRestoreArrayRead(x,&xx);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
-    ff[0] = get_dxdt( Ap, A, CO2_parameters, CO2, H2O_parameters, H2O );
-    ff[1] = get_dxdt( Ap, A, H2O_parameters, H2O, CO2_parameters, CO2 );
+    ff[0] = get_dxdt( Ap, A, CO2_parameters, CO2 );
+    ff[1] = get_dxdt( Ap, A, H2O_parameters, H2O );
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
 }
 
-
-PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const VolatileParameters *Vp1, const Volatile *V1, const VolatileParameters *Vp2, const Volatile *V2 )
+PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const VolatileParameters *Vp, Volatile *V )
 {
 
-    PetscScalar    value, f_thermal_escape;
+    PetscScalar    out, f_thermal_escape;
+    VolatileParameters   const *CO2p = &Ap->CO2_parameters;
+    VolatileParameters   const *H2Op = &Ap->H2O_parameters;
+    Volatile             const *CO2 = &A->CO2;
+    Volatile             const *H2O = &A->H2O;
 
     /* remember that to this point, V1->f_thermal_escape is always
        computed but not necessarily used in the calculation */
     if(Ap->THERMAL_ESCAPE){
-        f_thermal_escape = V1->f_thermal_escape;
+        f_thermal_escape = V->f_thermal_escape;
     }
     else{
         f_thermal_escape = 1.0;
     }
 
-    // function below should be equal to zero
-    value = V1->dxdt * ( Vp1->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp1->kdist) * A->Mliq);
-    value += V1->dxdt * (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V1->dpdx / -(*Ap->gravity_ptr)) * (Vp1->molar_mass / A->molar_mass) * f_thermal_escape;
-    value -= V1->x * (Vp1->kdist-1.0) * A->dMliqdt;
+    /* first part of atmosphere derivative */
+    out = -(V->p / PetscSqr(A->molar_mass)) * (CO2p->molar_mass - H2Op->molar_mass) / PetscSqr( CO2->p+H2O->p );
+    out *= H2O->p * CO2->dpdx * CO2->dxdt - CO2->p * H2O->dpdx * H2O->dxdt;
 
-    return value;
+    /* second part of atmosphere derivative */
+    /* this is the only term I was considering before */
+    out += ( 1.0 / A->molar_mass ) * V->dpdx * V->dxdt;
+
+    /* multiply by prefactors */
+    out *= (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Vp->molar_mass / -(*Ap->gravity_ptr); // note negative gravity
+
+    /* thermal escape correction */
+    // FIXME: manually turn off for now
+    //out *= f_thermal_escape;
+
+    /* solid and liquid reservoirs */
+    out += V->dxdt * ( Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq);
+    out -= V->x * (Vp->kdist-1.0) * A->dMliqdt;
+
+    return out;
 }
 
 static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters *Ap, const Atmosphere *A )
