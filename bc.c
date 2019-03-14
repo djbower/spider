@@ -315,3 +315,71 @@ PetscScalar tsurf_param( PetscScalar temp, const AtmosphereParameters *Ap )
 
     return Ts; 
 }
+
+PetscErrorCode solve_dxdts( Ctx *E )
+{
+    PetscErrorCode ierr;
+    SNES           snes;
+    Vec            x,r;
+    PetscScalar    *xx;
+
+    Atmosphere                 *A = &E->atmosphere;
+    // TODO: seems like below are not used anymore
+    //Parameters           const *P = &E->parameters;
+    //AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    //VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
+    //VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
+    Volatile                   *CO2 = &A->CO2;
+    Volatile                   *H2O = &A->H2O;
+
+    PetscFunctionBeginUser;
+
+    ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
+
+    /* Use this to address this specific SNES (nonlinear solver) from the command
+       line or options file, e.g. -atmosic_snes_view */
+    ierr = SNESSetOptionsPrefix(snes,"atmosts_");CHKERRQ(ierr);
+
+    ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, 2 );CHKERRQ(ierr);
+    ierr = VecSetFromOptions(x);CHKERRQ(ierr);
+    ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
+
+    ierr = SNESSetFunction(snes,r,FormFunction2,E);CHKERRQ(ierr);
+
+    /* initialise vector x with initial guess */
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    xx[0] = 0.0;
+    xx[1] = 0.0;
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+
+    /* Inform the nonlinear solver to generate a finite-difference approximation
+       to the Jacobian */
+    ierr = PetscOptionsSetValue(NULL,"-atmosts_snes_mf",NULL);CHKERRQ(ierr);
+
+    /* Solve */
+    ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
+    ierr = SNESSolve(snes,NULL,x);CHKERRQ(ierr);
+    {
+      SNESConvergedReason reason;
+      ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
+      if (reason < 0) SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+          "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
+    }
+
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    CO2->dxdt = xx[0];
+    H2O->dxdt = xx[1];
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+
+    // FIXME: from copying, but update for this function
+    /* Sanity check on solution (since it's non-unique) */
+    //if (CO2->x < 0.0 || H2O->x < 0.0) SETERRQ2(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+    //    "Unphysical initial volatile concentrations: CO2: %g, H2O: %g",CO2->x,H2O->x);
+
+    ierr = VecDestroy(&x);CHKERRQ(ierr);
+    ierr = VecDestroy(&r);CHKERRQ(ierr);
+    ierr = SNESDestroy(&snes);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}

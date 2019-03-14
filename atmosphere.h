@@ -12,6 +12,7 @@
 typedef struct Volatile_ {
     PetscScalar x; // ppm in liquid mantle
     PetscScalar p; // partial pressure at surface (Pa)
+    PetscScalar dxdt;
     PetscScalar dpdx; // dp/dx (Pa/mass fraction)
     PetscScalar m; // mass in atmosphere (kg)
     PetscScalar tau; // optical_depth at surface (non-dimensional)
@@ -54,8 +55,7 @@ PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParame
 PetscErrorCode set_surface_temperature_from_flux( Atmosphere *, const AtmosphereParameters * );
 PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *, Atmosphere * );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
-// FIXME: needs replacing with PETSc non-linear solver
-//PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const VolatileParameters * );
-PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *, const VolatileParameters *, Volatile * );
+PetscErrorCode FormFunction2( SNES, Vec, Vec, void * );
+PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *, const VolatileParameters *, const Volatile *, const VolatileParameters *, const Volatile * );
 
 #endif

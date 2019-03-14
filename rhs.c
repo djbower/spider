@@ -147,14 +147,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   /* time-dependence of additional quantities */
   if (Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
-    PetscScalar dx0dt, dx1dt;
-    dx0dt = get_dxdt( Ap, A, &Ap->CO2_parameters, &A->CO2 );
-    dx1dt = get_dxdt( Ap, A, &Ap->H2O_parameters, &A->H2O );
-    // TODO: remove below
-    //dx0dt = get_dx0dt( E, x0 );
-    //dx1dt = get_dx1dt( E, x1 );
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,dx0dt,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,dx1dt,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = solve_dxdts( E );
+    // remove below, previous (old)
+    //dx0dt = get_dxdt( Ap, A, &Ap->CO2_parameters, &A->CO2 );
+    //dx1dt = get_dxdt( Ap, A, &Ap->H2O_parameters, &A->H2O );
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,A->CO2.dxdt,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,A->H2O.dxdt,INSERT_VALUES);CHKERRQ(ierr);
   }
   else{
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,0.0,INSERT_VALUES);CHKERRQ(ierr);

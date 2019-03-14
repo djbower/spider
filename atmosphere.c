@@ -647,28 +647,68 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
 
 }
 
-PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const VolatileParameters *Vp, Volatile *V )
+PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
+{
+    PetscErrorCode    ierr;
+    const PetscScalar *xx;
+    PetscScalar       *ff;
+    Ctx               *E = (Ctx*) ptr;
+
+    Atmosphere                 *A = &E->atmosphere;
+    Parameters           const *P = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
+    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
+    Volatile                   *CO2 = &A->CO2;
+    Volatile                   *H2O = &A->H2O;
+
+    PetscFunctionBeginUser;
+
+    VecGetArrayRead(x, &xx);
+    CO2->dxdt = xx[0];
+    H2O->dxdt = xx[1];
+    VecRestoreArrayRead(x,&xx);
+
+    // FIXME
+    /* for xx's, now determine f */
+
+    ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
+    ff[0] = get_dxdt( Ap, A, CO2_parameters, CO2, H2O_parameters, H2O ); // FIXME get_initial_volatile_abundance( A, Ap, CO2_parameters, CO2 );
+    ff[1] = get_dxdt( Ap, A, H2O_parameters, H2O, CO2_parameters, CO2 ); // FIXME get_initial_volatile_abundance( A, Ap, H2O_parameters, H2O );
+    ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+
+PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const VolatileParameters *Vp1, const Volatile *V1, const VolatileParameters *Vp2, const Volatile *V2 )
 {
 
-    PetscScalar    dxdt;
-    PetscScalar    num, den, f_thermal_escape;
+    PetscScalar    value, f_thermal_escape;
+    //PetscScalar    num, den, f_thermal_escape;
 
     /* remember that to this point, V->f_thermal_escape is always
        computed but not necessarily used in the calculation */
     if(Ap->THERMAL_ESCAPE){
-        f_thermal_escape = V->f_thermal_escape;
+        f_thermal_escape = V1->f_thermal_escape;
     }
     else{
         f_thermal_escape = 1.0;
     }
 
-    num = V->x * (Vp->kdist-1.0) * A->dMliqdt;
-    den = Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq;
-    den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V->dpdx / -(*Ap->gravity_ptr)) * (Vp->molar_mass / A->molar_mass) * f_thermal_escape;
+    // function below should be equal to zero
+    value = V1->dxdt * ( Vp1->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp1->kdist) * A->Mliq);
+    value += V1->dxdt * (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V1->dpdx / -(*Ap->gravity_ptr)) * (Vp1->molar_mass / A->molar_mass) * f_thermal_escape;
+    value -= V1->x * (Vp1->kdist-1.0) * A->dMliqdt;
 
-    dxdt = num / den;
+    // old below, this is when we could simply rearrange to return dxdt directly.  Now we can't
+    //num = V->x * (Vp->kdist-1.0) * A->dMliqdt;
+    //den = Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq;
+    //den += (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr( (*Ap->radius_ptr)) * (V->dpdx / -(*Ap->gravity_ptr)) * (Vp->molar_mass / A->molar_mass) * f_thermal_escape;
+    //dxdt = num / den;
 
-    return dxdt;
+    return value;
 }
 
 static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters *Ap, const Atmosphere *A )
