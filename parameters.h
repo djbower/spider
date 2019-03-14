@@ -45,7 +45,10 @@ typedef struct VolatileParameters_ {
     PetscScalar kabs;
     PetscScalar henry;
     PetscScalar henry_pow;
-    PetscScalar molecular_mass;
+    PetscScalar jeans_value; // for thermal escape
+    PetscScalar R_thermal_escape_value; /// for thermal escape
+    PetscScalar molar_mass;
+    PetscScalar cross_section;
 } VolatileParameters;
 
 /* for storing atmosphere outputs */
@@ -54,10 +57,14 @@ typedef struct AtmosphereParameters_ {
     // input parameters
     MagmaOceanAtmosphereType SURFACE_BC;
     PetscBool VISCOUS_MANTLE_COOLING_RATE;
+    PetscBool THERMAL_ESCAPE;
     PetscScalar surface_bc_value;
     // below are standard, also used for grey-body atmosphere
     PetscScalar emissivity0;
     PetscScalar sigma;
+    PetscScalar Avogadro;
+    PetscScalar kB;
+    PetscScalar bigG;
     PetscScalar teqm;
     PetscBool   PARAM_UTBL;
     PetscScalar param_utbl_const;

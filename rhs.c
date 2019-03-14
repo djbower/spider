@@ -83,8 +83,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   ierr = set_Htot( E, t );CHKERRQ(ierr);
 
-  /* will set p, dp/dx, and m to zero if x is zero */
-  ierr = set_atmosphere_volatile_content( Ap, A );CHKERRQ(ierr);
+  /* TODO: this updates quantities that will always return zero if
+     the volatile content of the (liquid) mantle is zero, but could
+     be moved within a switch */
+  // below moved within bc.c
+  //ierr = set_atmosphere_volatile_content( Ap, A );CHKERRQ(ierr);
 
   /* boundary conditions must be after all arrays are set */
   ierr = set_surface_flux( E );CHKERRQ(ierr);

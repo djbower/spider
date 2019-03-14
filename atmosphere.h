@@ -16,6 +16,11 @@ typedef struct Volatile_ {
     PetscScalar m; // mass in atmosphere (kg)
     PetscScalar tau; // optical_depth at surface (non-dimensional)
     PetscScalar mixing_ratio;
+    PetscScalar column_density;
+    PetscScalar Knudsen; // Knudsen number
+    PetscScalar jeans; // surface Jeans parameter
+    PetscScalar f_thermal_escape;
+    PetscScalar R_thermal_escape;
 } Volatile;
 
 #define NUMATMSTRUCTVECS 4
@@ -29,7 +34,7 @@ typedef struct Atmosphere_ {
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
     Volatile    CO2; // CO2 volatile quantities
     Volatile    H2O; // H2O volatile quantities
-    PetscScalar molecular_mass; // mean molecular mass
+    PetscScalar molar_mass; // mean molar mass
     DM          da_atm; // da for outputing atmosphere structure (below)
     DimensionalisableField atm_struct[NUMATMSTRUCTVECS];
     Vec atm_struct_tau;
@@ -45,15 +50,12 @@ PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters *
 PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const Constants *C );
 PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *, Atmosphere * );
 PetscScalar get_initial_volatile_abundance( Atmosphere *, const AtmosphereParameters *, const VolatileParameters *,  const Volatile * );
-#if 0
-// no longer used, but kept in case it is needed in the future
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters *, PetscScalar );
-#endif
 PetscErrorCode set_surface_temperature_from_flux( Atmosphere *, const AtmosphereParameters * );
 PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *, Atmosphere * );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
 // FIXME: needs replacing with PETSc non-linear solver
 //PetscScalar get_initial_volatile( const AtmosphereParameters *Ap, const VolatileParameters * );
-PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *, const VolatileParameters *, const Volatile * );
+PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *, const VolatileParameters *, Volatile * );
 
 #endif

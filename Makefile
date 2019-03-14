@@ -55,7 +55,7 @@ test_create_output_dir :
 	mkdir -p ${SPIDER_TEST_DIR}
 
 # Basic Tests
-SPIDER_BASIC_TESTS=blackbody
+SPIDER_BASIC_TESTS=blackbody_init_liquid,blackbody_init_mixed,blackbody_init_solid,blackbody
 
 test : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t ${SPIDER_BASIC_TESTS} && cd -
@@ -68,9 +68,11 @@ test : test_create_output_dir
 testcheck : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -t ${SPIDER_BASIC_TESTS} && cd -
 
-# Atmosphere test
+# Atmosphere tests
+SPIDER_ATMOS_TESTS=atmosphere,atmosphere_jeans
+
 testatmos : test_create_output_dir
-	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t atmosphere && cd -
+	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t ${SPIDER_ATMOS_TESTS} && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "To run more tests\n"
 	@printf "  make testall\n"
@@ -78,7 +80,7 @@ testatmos : test_create_output_dir
 	@printf "  make testcheck\n"
 
 testatmoscheck : test_create_output_dir
-	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -t atmosphere && cd -
+	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -t ${SPIDER_ATMOS_TESTS} && cd -
 
 # All Tests
 testall : test_create_output_dir

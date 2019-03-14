@@ -467,6 +467,14 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->emissivity0 = 1.0; // non-dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-emissivity0",&Ap->emissivity0,NULL);CHKERRQ(ierr);
 
+  Ap->THERMAL_ESCAPE = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-THERMAL_ESCAPE",&Ap->THERMAL_ESCAPE,NULL);CHKERRQ(ierr);
+
+  /* Gravitational constant (m^3/kg/s^2) */
+  Ap->bigG = 6.67408E-11;
+  Ap->bigG *= C->DENSITY;
+  Ap->bigG *= PetscPowScalar( C->TIME, 2.0 );
+
   /* Stefan-Boltzmann constant (W/m^2K^4) */
   Ap->sigma = 5.670367e-08;
   Ap->sigma /= C->SIGMA;
@@ -508,6 +516,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->Rgas = 8.3144598; // gas constant (J/K/mol)
   Ap->Rgas *= C->TEMP / C->ENERGY;
 
+  /* Boltzmann constant (J/K) */
+  Ap->Avogadro = 6.02214076E23; // 1/mol
+  Ap->kB = Ap->Rgas / Ap->Avogadro;
+
   /* H2O volatile */
   H2O->initial = 500.0; // ppm
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_initial",&H2O->initial,NULL);CHKERRQ(ierr);
@@ -523,8 +535,15 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   H2O->henry = 6.8E-2; // ppm/Pa^(1/henry_pow)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
   H2O->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/H2O->henry_pow);
-  H2O->molecular_mass = 18.01528 * 1.0e-3; // kg/mol
-  H2O->molecular_mass /= C->MASS;
+  // -1.0 means compute, otherwise take the value as constant
+  H2O->jeans_value = -1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_jeans_value",&H2O->jeans_value,NULL);CHKERRQ(ierr);
+  H2O->R_thermal_escape_value = -1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_R_thermal_escape_value",&H2O->R_thermal_escape_value,NULL);CHKERRQ(ierr);
+  H2O->molar_mass = 18.01528 * 1.0e-3; // kg/mol
+  H2O->molar_mass /= C->MASS;
+  H2O->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
+  H2O->cross_section /= C->AREA;
 
   /* CO2 volatile */
   CO2->initial = 100.0; // ppm
@@ -541,8 +560,15 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->henry = 4.4E-6; // ppm/Pa^(1/henry_pow)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
   CO2->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/CO2->henry_pow);
-  CO2->molecular_mass = 44.01 * 1.0e-3; // kg/mol
-  CO2->molecular_mass /= C->MASS;
+  // -1.0 means compute, otherwise take the value as constant
+  CO2->jeans_value = -1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_jeans_value",&CO2->jeans_value,NULL);CHKERRQ(ierr);
+  CO2->R_thermal_escape_value = -1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_R_thermal_escape_value",&CO2->R_thermal_escape_value,NULL);CHKERRQ(ierr);
+  CO2->molar_mass = 44.01 * 1.0e-3; // kg/mol
+  CO2->molar_mass /= C->MASS;
+  CO2->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
+  CO2->cross_section /= C->AREA;
 
   /* radiogenic heating */
   /* aluminium 26 */
