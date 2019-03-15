@@ -451,7 +451,7 @@ PetscErrorCode set_rheological_front( Ctx *E )
     RheologicalFront  *Rfd = &E->rheological_front_dynamic;
     PetscInt          numpts_s, index;
     Vec               mask_s;
-    PetscScalar       global_phi;
+    PetscScalar       phi_global;
 
     PetscFunctionBeginUser;
 
@@ -471,10 +471,10 @@ PetscErrorCode set_rheological_front( Ctx *E )
 
     /* global melt fraction */
     ierr = make_vec_mask( da_s, numpts_s, &mask_s );CHKERRQ(ierr);
-    ierr = average_by_mass_staggered( E, S->phi_s, &mask_s, &global_phi );CHKERRQ(ierr);
+    ierr = average_by_mass_staggered( E, S->phi_s, &mask_s, &phi_global );CHKERRQ(ierr);
     /* store to both rheological structs */
-    Rfp->global_phi = global_phi;
-    Rfd->global_phi = global_phi;
+    Rfp->phi_global = phi_global;
+    Rfd->phi_global = phi_global;
     ierr = VecDestroy( &mask_s );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

@@ -108,7 +108,7 @@ PetscErrorCode JSON_add_rheological_front( DM dm, Constants *C, RheologicalFront
     ierr = JSON_add_single_value_to_object(dm, 1, "mesh_index", "None", Rf->mesh_index, data);CHKERRQ(ierr);
     ierr = JSON_add_single_value_to_object(dm, C->RADIUS, "depth", "m", Rf->depth, data);CHKERRQ(ierr);
     ierr = JSON_add_single_value_to_object(dm, C->PRESSURE, "pressure", "Pa", Rf->pressure, data);CHKERRQ(ierr);
-    ierr = JSON_add_single_value_to_object(dm, 1.0, "global_phi", "None", Rf->global_phi, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, 1.0, "phi_global", "None", Rf->phi_global, data);CHKERRQ(ierr);
 
     ierr = JSON_add_rheological_front_mantle_properties( dm, C, &Rf->above_middle, "above_middle", data );CHKERRQ(ierr);
     ierr = JSON_add_rheological_front_mantle_properties( dm, C, &Rf->above_mass_avg, "above_mass_avg", data );CHKERRQ(ierr);
