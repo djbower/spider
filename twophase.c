@@ -501,6 +501,8 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
     Rf->depth = P->radius - radius;
     ierr = VecGetValues(M->pressure_b,1,&index,&pressure);CHKERRQ(ierr);
     Rf->pressure = pressure;
+    ierr = VecGetValues(S->temp,1,&index,&temperature);CHKERRQ(ierr);
+    Rf->temperature = temperature;
 
     /* mantle properties in magma ocean (above rheological front) */
     /* middle of layer */

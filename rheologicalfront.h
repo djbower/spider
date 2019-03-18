@@ -16,6 +16,7 @@ typedef struct RheologicalFront_ {
     PetscInt mesh_index;
     PetscScalar depth;
     PetscScalar pressure;
+    PetscScalar temperature;
     PetscScalar phi_global;
     /* next are different ways of computing the average mantle
        properties above and below the rheological front
