@@ -588,6 +588,36 @@ def get_dict_values_for_times( keys, time_l, indir='output' ):
     return data_a
 
 #====================================================================
+def get_dict_surface_values_for_times( keys_t, time_l, indir='output'):
+
+    '''Similar to above, but only loop over all times once and get
+       all requested (surface / zero index) data in one go'''
+
+    data_l = []
+
+    for time in time_l:
+        filename = os.path.join( indir, '{}.json'.format(time) )
+        myjson_o = MyJSON( filename )
+        keydata_l = []
+        for key in keys_t:
+            values_a = myjson_o.get_dict_values( key )
+            try:
+                value = values_a[0]
+            except TypeError:
+                value = values_a
+            keydata_l.append( value )
+        data_l.append( keydata_l )
+
+    data_a = np.array( data_l )
+
+    # rows time, cols data
+    data_a.reshape( (len(time_l),-1 ) )
+    # rows data, cols time
+    data_a = data_a.transpose()
+
+    return data_a
+
+#====================================================================
 def get_my_logger( name ):
 
     '''setup logger configuration and handles'''
