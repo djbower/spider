@@ -17,7 +17,7 @@ def figure9():
     #---------------
     # flag to enable data output
     EXPORT = True
-    DYNAMIC = True # dynamic criterion, otherwise critical melt fraction
+    DYNAMIC = False # dynamic criterion, otherwise critical melt fraction
     # pressure cut-offs for curve fitting and plotting
     #PMIN = 1.0 # GPa # TODO: CURRENTLY NOT USED
     #PMAX = 135.0 # GPa # TODO: CURRENTLY NOT USED
@@ -25,6 +25,10 @@ def figure9():
     XMAXFRAC = 1.05 # plot maximum x value this factor beyond TPRIME1
     # currently not used RADFIT = 1 # fit using radiative cooling model (n=4), otherwise use linear fit
     markersize = 3.0
+    alpha = 0.05
+    color1 = (0,0,0.3)
+    color2 = (0.4,0.4,0.8)
+    color3 = (0.5,0.1,0.1)
     #---------------
 
     name = 'rheological_front_'
@@ -58,6 +62,10 @@ def figure9():
     keys_t = ( ('rheological_front_phi','depth'),
                ('rheological_front_phi', 'pressure'),
                ('rheological_front_phi', 'temperature'),
+               #('rheological_front_phi', 'below_middle', 'pressure' ),
+               #('rheological_front_phi', 'below_middle', 'temperature' ),
+               #('rheological_front_phi', 'above_middle', 'pressure' ),
+               #('rheological_front_phi', 'above_middle', 'temperature' ),
                ('rheological_front_phi', 'below_mass_avg', 'pressure' ),
                ('rheological_front_phi', 'below_mass_avg', 'temperature' ),
                ('rheological_front_phi', 'above_mass_avg', 'pressure' ),
@@ -65,6 +73,10 @@ def figure9():
                ('rheological_front_dynamic', 'depth'),
                ('rheological_front_dynamic', 'pressure'),
                ('rheological_front_dynamic', 'temperature'),
+               #('rheological_front_dynamic', 'below_middle', 'pressure' ),
+               #('rheological_front_dynamic', 'below_middle', 'temperature' ),
+               #('rheological_front_dynamic', 'above_middle', 'pressure' ),
+               #('rheological_front_dynamic', 'above_middle', 'temperature' ),
                ('rheological_front_dynamic', 'below_mass_avg', 'pressure' ),
                ('rheological_front_dynamic', 'below_mass_avg', 'temperature' ),
                ('rheological_front_dynamic', 'above_mass_avg', 'pressure' ),
@@ -84,7 +96,7 @@ def figure9():
         mo_pressure = data_a[10,:] * 1.0E-9 # to GPa
         mo_temperature = data_a[11,:]
         so_pressure = data_a[12,:] * 1.0E-9 # to GPa
-        so_temperature = data_a[13:,]
+        so_temperature = data_a[13,:]
     else:
         # rheological front based on critical melt fraction
         rf_depth = data_a[0,:]
@@ -93,7 +105,7 @@ def figure9():
         mo_pressure = data_a[3,:] * 1.0E-9 # to GPa
         mo_temperature = data_a[4,:]
         so_pressure = data_a[5,:] * 1.0E-9 # to GPa
-        so_temperature = data_a[6:,]
+        so_temperature = data_a[6,:]
 
     # compute start time and end time of rheological front moving through the mantle
     (t0,n0,t1,n1) = get_t0_t1( fig_o.time, rf_pressure, xx_pres_b[-1], TPRIME1_PRESSURE )
@@ -105,8 +117,6 @@ def figure9():
     mo_temperature_shift = mo_temperature[n0:n1]
     so_pressure_shift = so_pressure[n0:n1]
     so_temperature_shift = so_temperature[n0:n1]
-
-    print( so_temperature )
 
     # ---------------------------
     # ---- surface heat flux ----
@@ -161,9 +171,9 @@ def figure9():
     #if EXPORT:
     #    np.savetxt( 'Pr.dat', np.column_stack((time_a,pres_a)))
     #    np.savetxt( 'Tr.dat', np.column_stack((time_a,temp_a)))
-    ax2.plot( time_yrs_shift, rf_pressure_shift, marker='o', markersize=markersize, color='green' )
-    ax2.plot( time_yrs_shift, mo_pressure_shift, marker='o', markersize=markersize, color='red' )
-    ax2.plot( time_yrs_shift, so_pressure_shift, marker='o', markersize=markersize, color='blue' )
+    ax2.plot( time_yrs_shift, rf_pressure_shift, marker='o', markersize=markersize, alpha=alpha, color=color1 )
+    ax2.plot( time_yrs_shift, mo_pressure_shift, marker='o', markersize=markersize, alpha=alpha, color=color2 )
+    ax2.plot( time_yrs_shift, so_pressure_shift, marker='o', markersize=markersize, alpha=alpha, color=color3 )
     title = r'(c) $P_f(t^\prime)$, GPa'
     yticks = [0,50,100,150]
     fig_o.set_myaxes( ax2, title=title, ylabel='$P_f$', xlabel='$t^\prime$ (yrs)', yticks=yticks )
@@ -171,14 +181,14 @@ def figure9():
     ax2.yaxis.set_label_coords(-0.15,0.5)
     ax2.set_xlim( (0, t1-t0) )
 
-    ax3.plot( time_yrs_shift, rf_temperature_shift, marker='o', markersize=markersize, color='green' )
-    ax3.plot( time_yrs_shift, mo_temperature_shift, marker='o', markersize=markersize, color='red' )
-    ax3.plot( time_yrs_shift, so_temperature_shift, marker='o', markersize=markersize, color='blue' )
+    ax3.plot( time_yrs_shift, rf_temperature_shift, marker='o', markersize=markersize, alpha=alpha, color=color1 )
+    ax3.plot( time_yrs_shift, mo_temperature_shift, marker='o', markersize=markersize, alpha=alpha, color=color2 )
+    ax3.plot( time_yrs_shift, so_temperature_shift, marker='o', markersize=markersize, alpha=alpha, color=color3 )
     title = r'(d) $T_f(t^\prime)$, K'
     yticks = [1500,2500,3500,4500]
     fig_o.set_myaxes( ax3, title=title, ylabel='$T_f$', xlabel='$t^\prime$ (yrs)', yticks=yticks )
     ax3.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    ax3.set_ylim( [1500,4500] )
+    ax3.set_ylim( [1500,4600] )
     #ax3.yaxis.set_label_coords(-0.15,0.575)
     ax3.yaxis.set_label_coords(-0.15,0.5)
     ax3.set_xlim( (0,t1-t0) )
@@ -192,43 +202,42 @@ def figure9():
     else:
         deg = 1
 
-    # linear fit to pressure, using a polynomial
-    # TODO: fix P_cmb, and then just fit gradient
-    # TODO: 2nd order fit is better for dynamic criteria - but why?
-    xx = time_yrs_shift # data_a[tprime0ii:tprime1ii,0]-tprime0
-    yy_pres = mo_pressure_shift #data_a[tprime0ii:tprime1ii,2]
-    rheological_pres_poly = np.polyfit( xx, yy_pres, deg )
-    rheological_pres_o = np.poly1d( rheological_pres_poly )
-    rheological_pres_fit = rheological_pres_o( xx )
-    Rval = Rsquared( yy_pres, rheological_pres_fit )
-    print('----pressure fit----')
-    print( 'R^2 for pressure=', Rval )
-    print( 'poly for pressure=', rheological_pres_poly )
-    print( 'gradient=', rheological_pres_poly[0] )
-    print( 'intercept=', rheological_pres_poly[1] )
-    print( 'minimum for fit=', np.min(rheological_pres_fit) )
-    print( 'maximum for fit=', np.max(rheological_pres_fit) )
-    ax2.plot( xx, rheological_pres_fit )
+    # fit rheological front
+    rf_pressure_fit = fit_data( time_yrs_shift, rf_pressure_shift, deg )
+    ax2.plot( time_yrs_shift, rf_pressure_fit, color=color1 )
+    rf_temperature_fit = fit_data( time_yrs_shift, rf_temperature_shift, deg )
+    ax3.plot( time_yrs_shift, rf_temperature_fit, color=color1 )
 
-    # linear fit to temperature, using a polynomial
-    # TODO: fix Tc_cmb, and then just fit gradient
-    yy_temp = mo_temperature_shift # data_a[tprime0ii:tprime1ii,3]
-    rheological_temp_poly = np.polyfit( xx, yy_temp, deg )
-    rheological_temp_o = np.poly1d( rheological_temp_poly )
-    rheological_temp_fit = rheological_temp_o( xx )
-    Rval = Rsquared( yy_temp, rheological_temp_fit )
-    print('----temperature fit----')
-    print( 'R^2 for temperature=', Rval )
-    print( 'poly for temperature=', rheological_temp_poly )
-    print( 'gradient=', rheological_temp_poly[0] )
-    print( 'intercept=', rheological_pres_poly[1] )
-    print( 'minimum for fit=', np.min(rheological_temp_fit) )
-    print( 'maximum for fit=', np.max(rheological_temp_fit) )
-    #alpha = - rheological_temp_poly[1] / rheological_pres_poly[1]
-    #print( 'alpha=', alpha )
-    ax3.plot( xx, rheological_temp_fit )
+    # fit magma ocean
+    mo_pressure_fit = fit_data( time_yrs_shift, mo_pressure_shift, deg )
+    ax2.plot( time_yrs_shift, mo_pressure_fit, color=color2 )
+    mo_temperature_fit = fit_data( time_yrs_shift, mo_temperature_shift, deg )
+    ax3.plot( time_yrs_shift, mo_temperature_fit, color=color2 )
+
+    # fit solid
+    so_pressure_fit = fit_data( time_yrs_shift, so_pressure_shift, deg )
+    ax2.plot( time_yrs_shift, so_pressure_fit, color=color3 )
+    so_temperature_fit = fit_data( time_yrs_shift, so_temperature_shift, deg )
+    ax3.plot( time_yrs_shift, so_temperature_fit, color=color3 )
 
     fig_o.savefig(9)
+
+#====================================================================
+def fit_data( xx, yy, deg ):
+
+    poly = np.polyfit( xx, yy, deg )
+    poly_o = np.poly1d( poly )
+    yy_fit = poly_o( xx )
+    Rval = Rsquared( yy, yy_fit )
+    print('----fit----')
+    print( 'R^2=', Rval )
+    print( 'poly=', poly )
+    print( 'gradient=', poly[0] )
+    print( 'intercept=', poly[1] )
+    print( 'minimum for fit=', np.min(yy_fit) )
+    print( 'maximum for fit=', np.max(yy_fit) )
+
+    return yy_fit
 
 #====================================================================
 def get_t0_t1( time_l, pres_l, val_t0, val_t1 ):
