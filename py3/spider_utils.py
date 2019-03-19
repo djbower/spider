@@ -384,16 +384,18 @@ class FigureData( object ):
         if yticks:
             self.set_myyticks( ax, yticks, ymin, ymax, fmt )
 
-    def set_mylegend( self, ax, handles, loc=4, ncol=1, TITLE="" ):
+    def set_mylegend( self, ax, handles, loc=4, ncol=1, TITLE=None ):
         dd = self.data_d
+        fontsize = self.data_d['fontsize_legend']
+        # FIXME
         if not TITLE:
-            units = dd['time_units']
-            title = r'Time ({0})'.format( units )
+            legend = ax.legend(handles=handles, loc=loc, ncol=ncol, fontsize=fontsize)
+            #units = dd['time_units']
+            #title = r'Time ({0})'.format( units )
         else:
             title = TITLE
-        fontsize = self.data_d['fontsize_legend']
-        legend = ax.legend(title=title, handles=handles, loc=loc,
-            ncol=ncol, fontsize=fontsize)
+            legend = ax.legend(title=title, handles=handles, loc=loc,
+                ncol=ncol, fontsize=fontsize)
         plt.setp(legend.get_title(),fontsize=fontsize)
 
     def set_mytitle( self, ax, title ):

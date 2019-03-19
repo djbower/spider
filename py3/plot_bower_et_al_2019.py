@@ -19,13 +19,16 @@ def spiderplot_fig1( times ):
 
     logger.info( 'building spiderplot_fig1' )
 
-    figw = 4.7747 / 2.0
-    figh = 4.7747
+    figw = (4.7747 / 2.0) * 1.1
+    figh = (4.7747 / 2.0) * 1.1
 
-    fig_o = su.FigureData( 2, 1, figw, figh, 'boweretal2019_fig1', times, units='Myr' )
+    # record of times for plotting
+    #times=(0,150000,500000,575000000,4550000000)
 
-    ax0 = fig_o.ax[0]
-    ax1 = fig_o.ax[1]
+    fig_o = su.FigureData( 1, 1, figw, figh, 'boweretal2019_fig1', times, units='Myr' )
+
+    #ax0 = fig_o.ax[0]
+    ax1 = fig_o.ax #1]
     #ax2 = fig_o.ax[1][0]
     #ax3 = fig_o.ax[1][1]
 
@@ -53,7 +56,7 @@ def spiderplot_fig1( times ):
     # shade grey between liquidus and solidus
     yy_liq = myjson_o.get_dict_values_internal(['data','liquidus_b'])
     yy_sol = myjson_o.get_dict_values_internal(['data','solidus_b'])
-    ax0.fill_between( xx_pres, yy_liq, yy_sol, facecolor='grey', alpha=0.35, linewidth=0 )
+    #ax0.fill_between( xx_pres, yy_liq, yy_sol, facecolor='grey', alpha=0.35, linewidth=0 )
     yy_liqt = myjson_o.get_dict_values_internal(['data','liquidus_temp_b'])
     yy_solt = myjson_o.get_dict_values_internal(['data','solidus_temp_b'])
     ax1.fill_between( xx_pres, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
@@ -63,22 +66,24 @@ def spiderplot_fig1( times ):
     #sys.exit(1)
 
     # dotted lines of constant melt fraction
-    for xx in range( 0, 11, 2 ):
-        yy_b = xx/10.0 * (yy_liq - yy_sol) + yy_sol
-        if xx == 0:
+    #for xx in range( 0, 11, 2 ):
+    #    yy_b = xx/10.0 * (yy_liq - yy_sol) + yy_sol
+    #    if xx == 0:
             # solidus
-            ax0.plot( xx_pres, yy_b, '-', linewidth=0.5, color='black' )
-        elif xx == 3:
+    #        ax0.plot( xx_pres, yy_b, '-', linewidth=0.5, color='black' )
+    #    elif xx == 3:
             # typically, the approximate location of the rheological transition
-            ax0.plot( xx_pres, yy_b, '-', linewidth=1.0, color='white')
-        elif xx == 10:
+    #        ax0.plot( xx_pres, yy_b, '-', linewidth=1.0, color='white')
+    #    elif xx == 10:
             # liquidus
-            ax0.plot( xx_pres, yy_b, '-', linewidth=0.5, color='black' )
-        else:
+    #        ax0.plot( xx_pres, yy_b, '-', linewidth=0.5, color='black' )
+    #    else:
             # dashed constant melt fraction lines
-            ax0.plot( xx_pres, yy_b, '--', linewidth=1.0, color='white' )
+    #        ax0.plot( xx_pres, yy_b, '--', linewidth=1.0, color='white' )
 
     handle_l = [] # handles for legend
+
+    labelsuff = ['(1)','(0.75)','(0.25)','(0.01)','(0)']
 
     for nn, time in enumerate( fig_o.time ):
         # read json
@@ -94,12 +99,12 @@ def spiderplot_fig1( times ):
         # entropy
         # plot staggered, since this is where entropy is defined
         # cell-wise and we can easily see the CMB boundary condition
-        yy = myjson_o.get_dict_values(['data','S_s'])
-        print( np.min(yy) )
+        #yy = myjson_o.get_dict_values(['data','S_s'])
+        #print( np.min(yy) )
         #yy = myjson_o.get_dict_values_internal('S_b')
-        ax0.plot( xx_pres_s, yy, '--', color=color )
-        handle, = ax0.plot( xx_pres_s*MIX_s, yy*MIX_s, '-', color=color, label=label )
-        handle_l.append( handle )
+        #ax0.plot( xx_pres_s, yy, '--', color=color )
+        #handle, = ax0.plot( xx_pres_s*MIX_s, yy*MIX_s, '-', color=color, label=label )
+        #handle_l.append( handle )
         # temperature
         #yy = myjson_o.get_dict_values_internal(['data','temp_b'])
         #ax1.plot( xx_pres, yy, '--', color=color )
@@ -107,8 +112,9 @@ def spiderplot_fig1( times ):
         # temperature
         yy = myjson_o.get_dict_values(['data','temp_s'])
         ax1.plot( xx_pres_s, yy, '--', color=color )
-        ax1.plot( xx_pres_s*MIX_s, yy*MIX_s, '-', color=color )
-
+        labelo = label + ' ' + labelsuff[nn]
+        handle, = ax1.plot( xx_pres_s*MIX_s, yy*MIX_s, '-', color=color, label=labelo )
+        handle_l.append( handle )
 
         # melt fraction
         #yy = myjson_o.get_dict_values_internal(['data','phi_b'])
@@ -123,25 +129,25 @@ def spiderplot_fig1( times ):
     xmax = 138
 
     # titles and axes labels, legends, etc
-    units = myjson_o.get_dict_units(['data','S_b'])
-    title = '(a) Entropy, {}'.format(units)
-    yticks = [300,800,1200,1600,2000,2400,2800]
+    #units = myjson_o.get_dict_units(['data','S_b'])
+    #title = '(a) Entropy, {}'.format(units)
+    #yticks = [400,1200,2000,2800]
     # Bower et al. (2018)
     #yticks = [1600,2000,2400,2800,3200]
     # DJB used this next range for work with Bayreuth
     #yticks = [300,1000,1600,2000,2400,2800,3200]
-    fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, xmax=xmax, yticks=yticks )
-    ax0.yaxis.set_label_coords(-0.075,0.65)
+    #fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, xmax=xmax, yticks=yticks )
+    #ax0.yaxis.set_label_coords(-0.075,0.5)
     units = myjson_o.get_dict_units(['data','temp_b'])
-    title = '(b) Temperature, {}'.format(units)
+    title = 'Mantle temperature, {}'.format(units)
     # Bower et al. (2018)
     yticks= [250,1000,2000,3000,4000,5000]
     # DJB used this next range for work with Bayreuth
     #yticks= [300,1000,2000,3000,4000,5000]
-    fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xticks=xticks, xlabel='$P$ (GPa)', xmax=xmax, yticks=yticks )
+    fig_o.set_myaxes( ax1, title=title, ylabel='$T$ (K)', xticks=xticks, xlabel='$P$ (GPa)', xmax=xmax, yticks=yticks )
     ax1.set_xlim( xticks[0], 138 )
-    ax1.yaxis.set_label_coords(-0.075,0.65)
-    fig_o.set_mylegend( ax1, handle_l, loc=4, ncol=2 )
+    ax1.yaxis.set_label_coords(-0.1,0.45)
+    fig_o.set_mylegend( ax1, handle_l, loc=4, ncol=2, TITLE='Time, Myr ($\phi_g$)' )
     #fig_o.set_mylegend( ax0, handle_l, loc=2, ncol=2 )
     #title = '(c) Melt fraction'
     #yticks = [0,0.2,0.4,0.6,0.8,1.0]
