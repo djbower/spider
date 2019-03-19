@@ -26,30 +26,48 @@ def plot_atmosphere():
     fig_o.time = su.get_all_output_times()
     timeMyr_a = fig_o.time * 1.0E-6 # Myrs
 
-    mass_liquid_a = su.get_dict_values_for_times( ['atmosphere','mass_liquid'], fig_o.time )
-    mass_solid_a = su.get_dict_values_for_times( ['atmosphere','mass_solid'], fig_o.time )
-    mass_mantle_a = su.get_dict_values_for_times( ['atmosphere','mass_mantle'], fig_o.time )
+    keys_t = ( ('atmosphere','mass_liquid'),
+               ('atmosphere','mass_solid'),
+               ('atmosphere','mass_mantle'),
+               ('atmosphere','CO2','liquid_kg'),
+               ('atmosphere','CO2','solid_kg'),
+               ('atmosphere','CO2','initial_kg'),
+               ('atmosphere','CO2','atmosphere_kg'),
+               ('atmosphere','CO2','atmosphere_bar'),
+               ('atmosphere','H2O','liquid_kg'),
+               ('atmosphere','H2O','solid_kg'),
+               ('atmosphere','H2O','initial_kg'),
+               ('atmosphere','H2O','atmosphere_kg'),
+               ('atmosphere','H2O','atmosphere_bar'),
+               ('atmosphere','temperature_surface'),
+               ('atmosphere','emissivity') )
+
+    data_a = su.get_dict_surface_values_for_times( keys_t, fig_o.time )
+
+    mass_liquid_a = data_a[0,:]
+    mass_solid_a = data_a[1,:]
+    mass_mantle_a = data_a[2,:]
     mass_mantle = mass_mantle_a[0] # time independent
 
     # compute total mass (kg) in each reservoir
-    CO2_liquid_kg_a = su.get_dict_values_for_times( ['atmosphere','CO2','liquid_kg'], fig_o.time )
-    CO2_solid_kg_a = su.get_dict_values_for_times( ['atmosphere','CO2','solid_kg'], fig_o.time )
-    CO2_total_kg_a = su.get_dict_values_for_times( ['atmosphere','CO2','initial_kg'], fig_o.time )
+    CO2_liquid_kg_a = data_a[3,:]
+    CO2_solid_kg_a = data_a[4,:]
+    CO2_total_kg_a = data_a[5,:]
     CO2_total_kg = CO2_total_kg_a[0] # time-independent
-    CO2_atmos_kg_a = su.get_dict_values_for_times( ['atmosphere','CO2','atmosphere_kg'], fig_o.time )
-    CO2_atmos_a = su.get_dict_values_for_times( ['atmosphere','CO2','atmosphere_bar'], fig_o.time )
+    CO2_atmos_kg_a = data_a[6,:]
+    CO2_atmos_a = data_a[7,:]
     CO2_escape_kg_a = CO2_total_kg - CO2_liquid_kg_a - CO2_solid_kg_a - CO2_atmos_kg_a
 
-    H2O_liquid_kg_a = su.get_dict_values_for_times( ['atmosphere','H2O','liquid_kg'], fig_o.time )
-    H2O_solid_kg_a = su.get_dict_values_for_times( ['atmosphere','H2O','solid_kg'], fig_o.time )
-    H2O_total_kg_a = su.get_dict_values_for_times( ['atmosphere','H2O','initial_kg'], fig_o.time )
+    H2O_liquid_kg_a = data_a[8,:]
+    H2O_solid_kg_a = data_a[9,:]
+    H2O_total_kg_a = data_a[10,:]
     H2O_total_kg = H2O_total_kg_a[0] # time-independent
-    H2O_atmos_kg_a = su.get_dict_values_for_times( ['atmosphere','H2O','atmosphere_kg'], fig_o.time )
-    H2O_atmos_a = su.get_dict_values_for_times( ['atmosphere','H2O','atmosphere_bar'], fig_o.time )
+    H2O_atmos_kg_a = data_a[11,:]
+    H2O_atmos_a = data_a[12,:]
     H2O_escape_kg_a = H2O_total_kg - H2O_liquid_kg_a - H2O_solid_kg_a - H2O_atmos_kg_a
 
-    temperature_surface_a = su.get_dict_values_for_times( ['atmosphere','temperature_surface'], fig_o.time )
-    emissivity_a = su.get_dict_values_for_times( ['atmosphere','emissivity'], fig_o.time )
+    temperature_surface_a = data_a[13,:] #su.get_dict_values_for_times( ['atmosphere','temperature_surface'], fig_o.time )
+    emissivity_a = data_a[14,:] #su.get_dict_values_for_times( ['atmosphere','emissivity'], fig_o.time )
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
     xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3,5.0E3] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
