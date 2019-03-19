@@ -28,7 +28,7 @@ typedef struct Mesh_ {
 
 } Mesh;
 
-#define NUMSOLUTIONVECS_B 42
+#define NUMSOLUTIONVECS_B 43
 #define NUMSOLUTIONVECS_S 30
 typedef struct Solution_ {
 
@@ -36,7 +36,7 @@ typedef struct Solution_ {
     DimensionalisableField solutionFields_s[NUMSOLUTIONVECS_S];
 
     // TODO: eventually get rid of these
-    Vec alpha, alpha_mix, cond, cp, cp_mix, dfusdr, dfusdr_temp, dSdr, dSliqdr, dSsoldr, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, fwtl, fwts, gphi, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, regime, rho, S, solidus, solidus_rho, solidus_temp, temp, visc;
+    Vec alpha, alpha_mix, cond, cp, cp_mix, dfusdr, dfusdr_temp, dSdr, dSliqdr, dSsoldr, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, fwtl, fwts, gphi, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, Ra, regime, rho, S, solidus, solidus_rho, solidus_temp, temp, visc;
 
     // TODO: eventually get rid of these
     Vec cp_s, cp_mix_s, dSdt_s, fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, fwtl_s, fwts_s, gphi_s, Hradio_s, Htidal_s, Htot_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s, Hal26_s, Hk40_s, Hfe60_s, Hth232_s, Hu235_s, Hu238_s;
