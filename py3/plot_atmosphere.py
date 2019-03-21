@@ -14,15 +14,15 @@ def plot_atmosphere():
 
     logger.info( 'building atmosphere' )
 
-    width = 4.7747
-    height = 4.7747
-    fig_o = su.FigureData( 2, 2, width, height, 'atmosphere', units='Myr' )
+    width = 4.7747 * 3.0/2.0
+    height = 4.7747 / 2.0
+    fig_o = su.FigureData( 1, 3, width, height, 'atmosphere', units='Myr' )
     fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.3)
 
-    ax0 = fig_o.ax[0][0]
-    ax1 = fig_o.ax[0][1]
-    ax2 = fig_o.ax[1][0]
-    ax3 = fig_o.ax[1][1]
+    ax0 = fig_o.ax[0]#[0]
+    ax1 = fig_o.ax[1]#[1]
+    ax2 = fig_o.ax[2]#[0]
+    #ax3 = fig_o.ax[1][1]
 
     fig_o.time = su.get_all_output_times()
     timeMyr_a = fig_o.time * 1.0E-6 # Myrs
@@ -101,8 +101,8 @@ def plot_atmosphere():
     # figure a
     ##########
     if 1:
-        title = '(a) Partial pressure (bar)'
-        ylabel = '$p$'
+        title = '(a) Pressure and global melt fraction'
+        ylabel = '$p$ (bar)'
         trans = transforms.blended_transform_factory(
             ax0.transData, ax0.transAxes)
         #for cc, cont in enumerate(phi_cont_l):
@@ -113,11 +113,11 @@ def plot_atmosphere():
         h1, = ax0.semilogx( timeMyr_a, CO2_atmos_a, color=red, linestyle='-', label=r'CO$_2$')
         h2, = ax0.semilogx( timeMyr_a, H2O_atmos_a, color=blue, linestyle='-', label=r'H$_2$O')
         ax0b = ax0.twinx()
-        h3, = ax0b.semilogx( timeMyr_a, phi_global, color=black, linestyle='--', label=r'$\phi_g$')
+        h3, = ax0b.semilogx( timeMyr_a, phi_global, color=black, linestyle='--', label=r'Melt, $\phi_g$')
         handle_l = [h1,h2,h3]
-        fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xticks=xticks )
+        fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xlabel=xlabel, xticks=xticks )
         fig_o.set_mylegend( ax0, handle_l, loc='upper center', ncol=1 )
-        ax0.yaxis.set_label_coords(-0.1,0.5)
+        ax0.yaxis.set_label_coords(-0.15,0.5)
         ax0b.set_ylabel( r'$\phi_g$', rotation=0 )
         ax0b.yaxis.set_label_coords(1.1,0.525)
 
@@ -125,42 +125,49 @@ def plot_atmosphere():
     # figure b
     ##########
     if 1:
-        title = '(b) Volatile reservoirs'
+        title = '(b) Reservoir mass fraction'
         #h5, = ax1.semilogx( timeMyr_a, mass_liquid_a / mass_mantle, 'k--', label='melt' )
-        h1, = ax1.semilogx( timeMyr_a, (CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg, color=red, linestyle='-', label=r'CO$_2$ liq' )
-        h2, = ax1.semilogx( timeMyr_a, CO2_atmos_kg_a / CO2_total_kg, color=red, linestyle='--', label=r'CO$_2$ atm' )
+        h1, = ax1.semilogx( timeMyr_a, (CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg, color=red, linestyle='-', label=r'CO$_2$ interior' )
+        h2, = ax1.semilogx( timeMyr_a, CO2_atmos_kg_a / CO2_total_kg, color=red, linestyle='--', label=r'CO$_2$ atmos' )
         #h2b, = ax1.semilogx( timeMyr_a, CO2_escape_kg_a / CO2_total_kg, color=red, linestyle=':', label='Escape' )
-        h3, = ax1.semilogx( timeMyr_a, (H2O_liquid_kg_a+H2O_solid_kg_a) / H2O_total_kg, color=blue, linestyle='-', label=r'H$_2$O liq' )
-        h4, = ax1.semilogx( timeMyr_a, H2O_atmos_kg_a / H2O_total_kg, color=blue, linestyle='--', label=r'H$_2$O atm')
+        h3, = ax1.semilogx( timeMyr_a, (H2O_liquid_kg_a+H2O_solid_kg_a) / H2O_total_kg, color=blue, linestyle='-', label=r'H$_2$O interior' )
+        h4, = ax1.semilogx( timeMyr_a, H2O_atmos_kg_a / H2O_total_kg, color=blue, linestyle='--', label=r'H$_2$O atmos')
         #h4b, = ax1.semilogx( timeMyr_a, H2O_escape_kg_a / H2O_total_kg, color=blue, linestyle=':', label='Atmos' )
-        fig_o.set_myaxes( ax1, title=title, ylabel='$x$', xticks=xticks )
+        fig_o.set_myaxes( ax1, title=title, ylabel='$x$', xlabel=xlabel,xticks=xticks )
         handle_l = [h1,h2,h3,h4]#,h2b]
         fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1 )
-        ax1.yaxis.set_label_coords(-0.1,0.46)
+        ax1.yaxis.set_label_coords(-0.1,0.47)
 
     ##########
     # figure c
     ##########
-    title = '(c) Surface temperature'
-    ylabel = '$T$'
+    title = '(c) Surface temp and emissivity'
+    ylabel = '$T_s$ (K)'
     yticks = range(200,2701,500)
-    ax2.semilogx( timeMyr_a, temperature_surface_a, 'k-' )
+    h1, = ax2.semilogx( timeMyr_a, temperature_surface_a, 'k-', label=r'Surface temp, $T_s$' )
+    ax2b = ax2.twinx()
+    h2, = ax2b.loglog( timeMyr_a, emissivity_a, 'k--', label=r'Emissivity, $\epsilon$' )
     fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks, yticks=yticks )
-    ax2.yaxis.set_label_coords(-0.1,0.5)
+    ax2.yaxis.set_label_coords(-0.175,0.48)
     #ax2.set_ylim( 1050, 1850 )
     #ax2.set_xlim( 1E-5 , 1 )
     ax2.set_ylim(200,2700)
+    ax2b.set_ylim( 4E-4, 2E-3 )
+    handle_l = [h1,h2]
+    fig_o.set_mylegend( ax2, handle_l, loc='upper right', ncol=1 )
+    ax2b.set_ylabel( r'$\epsilon$', rotation=0)
+    ax2b.yaxis.set_label_coords(1.1,0.52)
 
     ##########
     # figure d
     ##########
-    title = '(d) Emissivity'
-    ylabel = '$\epsilon$'
-    ax3.loglog( timeMyr_a, emissivity_a, 'k-' )
-    fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks )
-    ax3.yaxis.set_label_coords(-0.1,0.55)
+    #title = '(d) Emissivity'
+    #ylabel = '$\epsilon$'
+    #ax3.loglog( timeMyr_a, emissivity_a, 'k-' )
+    #fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks )
+    #ax3.yaxis.set_label_coords(-0.1,0.55)
     #plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    ax3.set_ylim( 1E-4, 1E-2 )
+    #ax3.set_ylim( 1E-4, 1E-2 )
     #ax3.set_xlim( 1E-5, 1 )
 
     # output (effective) emissivity for Bonati et al. (2018), a&a paper

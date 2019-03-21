@@ -11,6 +11,9 @@ def main():
     #time_l = time_l[0:1]
     #time_l = [0,150000,250000,450000,100000000]
 
+    # times for reference model in paper
+    time_l = [0,150000,500000,575000000,4550000000]
+
     # planetary radii estimates
     outradiusfile = open('radius.dat','w')
     outradiusfile.write( '# time (yr), radius (m), 10mB height (m), 1mB height (m)\n' )
@@ -32,9 +35,9 @@ def main():
 
         outfile.write('height of 1mb contour (m)= {}\n'.format( height1mb ) )
         outfile.write('height of 10mb contour (m)= {}\n'.format( height10mb ) )
-        write_value_to_file( myjson_o, outfile, ['atmosphere','molecular_mass'], time, 'atmosphere mean molecular mass' )
-        write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','molecular_mass'], time, 'CO2 molecular mass' )
-        write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','molecular_mass'], time, 'H2O molecular mass' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','molar_mass'], time, 'atmosphere mean molar mass' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','molar_mass'], time, 'CO2 molar mass' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','molar_mass'], time, 'H2O molar mass' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','mixing_ratio'], time, 'CO2 mixing ratio' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','mixing_ratio'], time, 'H2O mixing ratio' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','atmosphere_kg'], time, 'CO2 mass (kg)' )

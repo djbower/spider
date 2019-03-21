@@ -12,7 +12,6 @@ def plot_radius_evolution( times ):
     figw = 4.7747/2.0
     figh = 4.7747/2.0
 
-    time_l = [0,1,2]
     fig_o = su.FigureData( 1, 1, figw, figh, 'radius', times )
 
     ax0 = fig_o.ax
