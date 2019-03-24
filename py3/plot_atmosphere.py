@@ -46,7 +46,7 @@ def plot_atmosphere():
 
     data_a = su.get_dict_surface_values_for_times( keys_t, fig_o.time )
 
-    out_a = np.column_stack( (timeMyr_a,data_a[15,:]) )
+    out_a = np.column_stack( (timeMyr_a,data_a[15,:],data_a[12,:]) )
     np.savetxt( 'out.dat', out_a )
 
     mass_liquid_a = data_a[0,:]
