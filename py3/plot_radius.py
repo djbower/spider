@@ -66,7 +66,7 @@ def plot_interior_atmosphere( times ):
     ax1 = fig_o.ax[1]
     ax0.axes.xaxis.set_visible(False)
 
-    time = fig_o.time[2] # first timestep since liquidus and solidus
+    time = fig_o.time[0] # first timestep since liquidus and solidus
                          # are time-independent
 
     myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
@@ -124,6 +124,9 @@ def plot_interior_atmosphere( times ):
         atmos_temp_a = atmos_temp_a[indices]
         ax0.plot( atmos_temp_a, atmos_height_a, '-', color=color )
 
+        # get H2O surface partial pressure to check against vapour pressure curve
+        H2O_partial_p = myjson_o.get_dict_values( ['atmosphere','H2O','atmosphere_bar'] )
+
         # use melt fraction to determine mixed region
         rho1D_o = myjson_o.get_rho_interp1d()
         temp1D_o = myjson_o.get_temp_interp1d()
@@ -154,7 +157,10 @@ def plot_interior_atmosphere( times ):
         #yy = myjson_o.get_dict_values(['data','temp_s'])
         #handle, = ax1.plot( yy, xx_depth_s, '-', color=color, label=label )
 
-        print( 'atmos_temp_a[-1]=', atmos_temp_a[-1], 'temp_a[0]=', temp_a[0] )
+        print( 'time=', time, 'atmos_temp_a[-1]=', atmos_temp_a[-1], 'temp_a[0]=', temp_a[0], 'H2O_partial_p=', H2O_partial_p )
+        # issue warning if above vapour pressure curve
+        if( atmos_temp_a[-1] < 647.096 and H2O_partial_p > 220.64 ):
+            print( 'WARNING: above vapour pressure curve' )
 
         #ax1.plot( yy, xx_pres, '--', color=color )
         #handle, = ax1.plot( yy*MIX, xx_pres*MIX, '-', color=color, label=label )

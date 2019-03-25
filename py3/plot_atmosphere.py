@@ -6,6 +6,7 @@ import matplotlib.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import matplotlib.ticker as ticker
 
 logger = su.get_my_logger(__name__)
 
@@ -76,8 +77,9 @@ def plot_atmosphere():
     phi_global = data_a[15,:]
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
-    xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3,5.0E3] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
+    xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
     xlabel = 'Time (Myr)'
+    xlim = (1.0E-2, 4550)
 
     red = (0.5,0.1,0.1)
     blue = (0.1,0.1,0.5)
@@ -86,10 +88,10 @@ def plot_atmosphere():
     # to plot melt fraction contours on figure (a)
     # compute time at which desired melt fraction is reached
     #phi_a = mass_liquid_a / mass_mantle
-    #phi_cont_l = [0.2, 0.8] # 20% and 80% melt fraction
+    #phi_cont_l = [0.75, 0.5,0.25,0.1,0.01]
     #phi_time_l = [] # contains the times for each contour
     #for cont in phi_cont_l:
-    #    time_temp_l = su.find_xx_for_yy( timeMyr_a, phi_a, cont )
+    #    time_temp_l = su.find_xx_for_yy( timeMyr_a, phi_global, cont )
     #    index = su.get_first_non_zero_index( time_temp_l )
     #    if index is None:
     #        out = 0.0
@@ -101,14 +103,14 @@ def plot_atmosphere():
     # figure a
     ##########
     if 1:
-        title = '(a) Pressure and global melt fraction'
+        title = r'\textbf{(a) Pressure and global melt fraction}'
         ylabel = '$p$ (bar)'
         trans = transforms.blended_transform_factory(
             ax0.transData, ax0.transAxes)
         #for cc, cont in enumerate(phi_cont_l):
-        #    ax0.axvline( phi_time_l[cc], ymin=0.1, ymax=0.9, color='0.25', linestyle=':' )
-        #    label = int(cont*100) # as percent
-        #    ax0.text( phi_time_l[cc], 0.9, '{:2d}'.format(label), va='bottom', ha='center', transform=trans )
+        #    ax0.axvline( phi_time_l[cc], ymin=0.05, ymax=0.7, color='0.25', linestyle=':' )
+        #    label = cont #int(cont*100) # as percent
+        #    ax0.text( phi_time_l[cc], 0.40, '{:2d}'.format(label), va='bottom', ha='center', rotation=90, bbox=dict(facecolor='white'), transform=trans )
         #ax0.text( 0.1, 0.9, '$\phi (\%)$', ha='center', va='bottom', transform=ax0.transAxes )
         h1, = ax0.semilogx( timeMyr_a, CO2_atmos_a, color=red, linestyle='-', label=r'CO$_2$')
         h2, = ax0.semilogx( timeMyr_a, H2O_atmos_a, color=blue, linestyle='-', label=r'H$_2$O')
@@ -117,6 +119,10 @@ def plot_atmosphere():
         handle_l = [h1,h2,h3]
         fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xlabel=xlabel, xticks=xticks )
         fig_o.set_mylegend( ax0, handle_l, loc='upper center', ncol=1 )
+        ax0.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
+        ax0.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
+        ax0.xaxis.set_minor_formatter(ticker.NullFormatter())
+        ax0.set_xlim( *xlim )
         ax0.yaxis.set_label_coords(-0.15,0.5)
         ax0b.set_ylabel( r'$\phi_g$', rotation=0 )
         ax0b.yaxis.set_label_coords(1.1,0.525)
@@ -125,7 +131,7 @@ def plot_atmosphere():
     # figure b
     ##########
     if 1:
-        title = '(b) Reservoir mass fraction'
+        title = r'\textbf{(b) Reservoir mass fraction}'
         #h5, = ax1.semilogx( timeMyr_a, mass_liquid_a / mass_mantle, 'k--', label='melt' )
         h1, = ax1.semilogx( timeMyr_a, (CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg, color=red, linestyle='-', label=r'CO$_2$ interior' )
         h2, = ax1.semilogx( timeMyr_a, CO2_atmos_kg_a / CO2_total_kg, color=red, linestyle='--', label=r'CO$_2$ atmos' )
@@ -134,6 +140,10 @@ def plot_atmosphere():
         h4, = ax1.semilogx( timeMyr_a, H2O_atmos_kg_a / H2O_total_kg, color=blue, linestyle='--', label=r'H$_2$O atmos')
         #h4b, = ax1.semilogx( timeMyr_a, H2O_escape_kg_a / H2O_total_kg, color=blue, linestyle=':', label='Atmos' )
         fig_o.set_myaxes( ax1, title=title, ylabel='$x$', xlabel=xlabel,xticks=xticks )
+        ax1.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
+        ax1.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
+        ax1.xaxis.set_minor_formatter(ticker.NullFormatter())
+        ax1.set_xlim( *xlim )
         handle_l = [h1,h2,h3,h4]#,h2b]
         fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1 )
         ax1.yaxis.set_label_coords(-0.1,0.47)
@@ -141,13 +151,17 @@ def plot_atmosphere():
     ##########
     # figure c
     ##########
-    title = '(c) Surface temp and emissivity'
+    title = r'\textbf{(c) Surface temp and emissivity}'
     ylabel = '$T_s$ (K)'
     yticks = range(200,2701,500)
     h1, = ax2.semilogx( timeMyr_a, temperature_surface_a, 'k-', label=r'Surface temp, $T_s$' )
     ax2b = ax2.twinx()
     h2, = ax2b.loglog( timeMyr_a, emissivity_a, 'k--', label=r'Emissivity, $\epsilon$' )
     fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks, yticks=yticks )
+    ax2.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
+    ax2.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
+    ax2.xaxis.set_minor_formatter(ticker.NullFormatter())
+    ax2.set_xlim( *xlim )
     ax2.yaxis.set_label_coords(-0.175,0.48)
     #ax2.set_ylim( 1050, 1850 )
     #ax2.set_xlim( 1E-5 , 1 )

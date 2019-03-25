@@ -27,6 +27,9 @@ def spiderplot_fig1( times ):
     #times='0,150000,500000,575000000,4550000000'
     # these times are for case7
     times='0,250000,750000,573000000,4550000000'
+    # these times are for case1
+    times='0,3850000,12050000,802000000,4550000000'
+
 
     fig_o = su.FigureData( 1, 1, figw, figh, 'boweretal2019_fig1', times, units='Myr' )
 
@@ -128,7 +131,7 @@ def spiderplot_fig1( times ):
         #yy = myjson_o.get_dict_values_internal(['data','visc_b'], visc_fmt)
         #ax3.plot( xx_pres, yy, '-', color=color )
 
-    xticks = [0,50,100,135]
+    xticks = [0,25,50,75,100,135]
     xmax = 138
 
     # titles and axes labels, legends, etc
@@ -142,7 +145,7 @@ def spiderplot_fig1( times ):
     #fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, xmax=xmax, yticks=yticks )
     #ax0.yaxis.set_label_coords(-0.075,0.5)
     units = myjson_o.get_dict_units(['data','temp_b'])
-    title = 'Mantle temperature (Case 7)'.format(units)
+    title = r'\textbf{Mantle temperature (Case 7)}' #.format(units)
     # Bower et al. (2018)
     yticks= [250,1000,2000,3000,4000,5000]
     # DJB used this next range for work with Bayreuth
