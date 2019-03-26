@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 from scipy.interpolate import interp1d
+import logging
 
 #====================================================================
 def plot_radius_evolution( times ):
@@ -16,7 +17,7 @@ def plot_radius_evolution( times ):
 
     ax0 = fig_o.ax
 
-    data_a = np.loadtxt( 'radius.dat', unpack=True )
+    data_a = np.loadtxt( 'case9_evolving_radius.dat', unpack=True )
 
     arcsinhscale = 1.0E3
     time_fmt = su.MyFuncFormatter( arcsinhscale )
@@ -42,7 +43,7 @@ def plot_radius_evolution( times ):
     h3, = ax0.plot( time, radius_1mb, label='1 mb', color=color2 )
     handles_l = [h1,h2,h3]
 
-    xticks = [1.0E-6,1.0E-2,1.0E-1,1.0E0,1.0E1,1.0E2]
+    xticks = [1.0E-6,1.0E-2,1.0E-1,1.0E0,1.0E1,1.0E2,1E3,4550]
     yticks = [-5,-4,-3,-2,-1,0,1,2,3,4]
 
     title = 'Evolution of radius'
@@ -58,6 +59,12 @@ def plot_interior_atmosphere( times ):
 
     figw = 4.7747 / 2.0
     figh = 4.7747
+
+    # Bower et al. (2019), Case 1
+    times='0,94400,5450000,560000000,4550000000'
+
+    # Bower et al. (2019), Case 9
+    #times='0,3850000,12050000,802000000,4550000000'
 
     fig_o = su.FigureData( 2, 1, figw, figh, 'interior_atmosphere', times, units='Myr' )
     plt.subplots_adjust(hspace=0.0)
@@ -208,6 +215,6 @@ if __name__ == "__main__":
         logger.critical( 'You must specify times in a comma-separated list (no spaces) using -t' )
         sys.exit(0)
 
-    #plot_radius_evolution( args.times )
-    plot_interior_atmosphere( args.times )
+    plot_radius_evolution( args.times )
+    #plot_interior_atmosphere( args.times )
     plt.show()
