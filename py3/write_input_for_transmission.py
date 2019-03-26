@@ -6,26 +6,34 @@ import spider_utils as su
 #====================================================================
 def main():
 
-    time_l = su.get_all_output_times()
-    # FIXME: hack for testing
-    #time_l = time_l[0:1]
-    #time_l = [0,150000,250000,450000,100000000]
+    casenum = 1
+    strcase = 'case' + str(casenum)
 
-    # times for reference model in paper
-    #time_l = [0,150000,500000,575000000,4550000000]
-    # case 1
-    # phi - 1, 0.75, 0.25, 0.1, 0.01, 0
-    time_l = [0,3850000,12050000,141000000,802000000,4550000000]
-    # case 9
-    time_l = [0,94400,5450000,78400000,560000000,4550000000]
+    # this is for short-cutting to generate data for transmission
+    # and emission spectra
+    if 0:
+        if casenum == 1:
+            # Bower et al. (2019), case 1
+            time_l = [0,94400,5450000,78400000,560000000,4550000000]
+        elif casenum == 9:
+            # Bower et al. (2019), case 9
+            time_l = [0,3850000,12050000,141000000,802000000,4550000000]
+
+    else:
+        # this is for looping over all date to compute the static structure
+        # as a function of time
+        time_l = su.get_all_output_times()
 
     # planetary radii estimates
-    outradiusfile = open('radius.dat','w')
+    outradiusfile = open(strcase+'_evolving_radius.dat','w')
     outradiusfile.write( '# time (yr), radius (m), 10mB height (m), 1mB height (m)\n' )
 
-    for time in time_l:
+    nn_total = len(time_l)
 
-        outfilename = 'input_transmission_{}yr.dat'.format(time)
+    for nn, time in enumerate(time_l):
+
+        print( 'processing output {} of {}'.format( nn, nn_total ) )
+        outfilename = strcase + '_input_transmission_{}yr.dat'.format(time)
         print( outfilename )
         outfile = open(outfilename,'w')
 
