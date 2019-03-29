@@ -19,19 +19,27 @@ def spiderplot_fig1( times ):
 
     logger.info( 'building spiderplot_fig1' )
 
+    # must be 1.1 for legend to fit
     figw = (4.7747 / 2.0) * 1.1
     figh = (4.7747 / 2.0) * 1.1
 
     # record of times for plotting
     # these times are for a previous test case
     #times='0,150000,500000,575000000,4550000000'
-    # CASES UPDATED TO NEW CONVENTION
+    # with 0.25 contour
     # these times are for case3
-    times='0,250000,750000,573000000,4550000000'
+    #times='0,250000,750000,573000000,4550000000'
     # these times are for case9
     #times='0,3850000,12050000,802000000,4550000000'
     # these times are for case1
     #times='0,94400,5450000,560000000,4550000000'
+    # with 0.3 contour
+    # these times are for case3
+    times='0,250000,650000,573000000,4550000000'
+    # these times are for case9
+    #times='0,3850000,10950000,802000000,4550000000'
+    # these times are for case1
+    #times='0,94400,250000,560000000,4550000000'
 
     fig_o = su.FigureData( 1, 1, figw, figh, 'boweretal2019_fig1', times, units='Myr' )
 
@@ -91,7 +99,7 @@ def spiderplot_fig1( times ):
 
     handle_l = [] # handles for legend
 
-    labelsuff = ['(1)','(0.75)','(0.25)','(0.01)','(0)']
+    labelsuff = ['(1)','(0.75)','(0.3)','(0.01)','(0)']
 
     for nn, time in enumerate( fig_o.time ):
         # read json

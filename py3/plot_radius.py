@@ -17,7 +17,7 @@ def plot_radius_evolution( times ):
 
     ax0 = fig_o.ax
 
-    data_a = np.loadtxt( 'case9_evolving_radius.dat', unpack=True )
+    data_a = np.loadtxt( 'case1_evolving_radius.dat', unpack=True )
 
     arcsinhscale = 1.0E3
     time_fmt = su.MyFuncFormatter( arcsinhscale )

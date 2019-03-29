@@ -6,7 +6,7 @@ import spider_utils as su
 #====================================================================
 def main():
 
-    casenum = 1
+    casenum = 'X'
     strcase = 'case' + str(casenum)
 
     # this is for short-cutting to generate data for transmission
@@ -33,6 +33,8 @@ def main():
     for nn, time in enumerate(time_l):
 
         print( 'processing output {} of {}'.format( nn, nn_total ) )
+        percent = np.around( float(nn)/float(nn_total)*100.0, decimals=2 )
+        print( '{} percent complete'.format(percent) )
         outfilename = strcase + '_input_transmission_{}yr.dat'.format(time)
         print( outfilename )
         outfile = open(outfilename,'w')
