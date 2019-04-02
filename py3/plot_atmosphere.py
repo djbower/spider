@@ -15,15 +15,15 @@ def plot_atmosphere():
 
     logger.info( 'building atmosphere' )
 
-    width = 4.7747 * 3.0/2.0
-    height = 4.7747 / 2.0
-    fig_o = su.FigureData( 1, 3, width, height, 'atmosphere', units='Myr' )
+    width = 4.7747 #* 3.0/2.0
+    height = 4.7747 #/ 2.0
+    fig_o = su.FigureData( 2, 2, width, height, 'atmosphere', units='Myr' )
     fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.3)
 
-    ax0 = fig_o.ax[0]#[0]
-    ax1 = fig_o.ax[1]#[1]
-    ax2 = fig_o.ax[2]#[0]
-    #ax3 = fig_o.ax[1][1]
+    ax0 = fig_o.ax[0][0]
+    ax1 = fig_o.ax[0][1]
+    ax2 = fig_o.ax[1][0]
+    ax3 = fig_o.ax[1][1]
 
     fig_o.time = su.get_all_output_times()
     timeMyr_a = fig_o.time * 1.0E-6 # Myrs
@@ -43,7 +43,8 @@ def plot_atmosphere():
                ('atmosphere','H2O','atmosphere_bar'),
                ('atmosphere','temperature_surface'),
                ('atmosphere','emissivity'),
-               ('rheological_front_phi','phi_global'))
+               ('rheological_front_phi','phi_global'),
+               ('atmosphere','Fatm'))
 
     data_a = su.get_dict_surface_values_for_times( keys_t, fig_o.time )
 
@@ -75,11 +76,14 @@ def plot_atmosphere():
     temperature_surface_a = data_a[13,:]
     emissivity_a = data_a[14,:]
     phi_global = data_a[15,:]
+    Fatm = data_a[16,:]
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
-    xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
+    #xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
+    xticks = (1E-6,1E-5,1E-4,1E-3,1E-2,1E-1,1E0)
     xlabel = 'Time (Myr)'
-    xlim = (1.0E-2, 4550)
+    #xlim = (1.0E-2, 4550)
+    xlim = (1e-6,1e0)
 
     red = (0.5,0.1,0.1)
     blue = (0.1,0.1,0.5)
@@ -153,10 +157,10 @@ def plot_atmosphere():
     ##########
     title = r'\textbf{(c) Surface temp and emissivity}'
     ylabel = '$T_s$ (K)'
-    yticks = range(200,2701,500)
+    yticks = range(500,4001,500)
     h1, = ax2.semilogx( timeMyr_a, temperature_surface_a, 'k-', label=r'Surface temp, $T_s$' )
-    ax2b = ax2.twinx()
-    h2, = ax2b.loglog( timeMyr_a, emissivity_a, 'k--', label=r'Emissivity, $\epsilon$' )
+    #ax2b = ax2.twinx()
+    #h2, = ax2b.loglog( timeMyr_a, emissivity_a, 'k--', label=r'Emissivity, $\epsilon$' )
     fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks, yticks=yticks )
     ax2.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
     ax2.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
@@ -165,16 +169,26 @@ def plot_atmosphere():
     ax2.yaxis.set_label_coords(-0.175,0.48)
     #ax2.set_ylim( 1050, 1850 )
     #ax2.set_xlim( 1E-5 , 1 )
-    ax2.set_ylim(200,2700)
-    ax2b.set_ylim( 4E-4, 2E-3 )
+    ax2.set_ylim(200,4100)
+    #ax2b.set_ylim( 4E-4, 2E-3 )
     handle_l = [h1,h2]
     fig_o.set_mylegend( ax2, handle_l, loc='upper right', ncol=1 )
-    ax2b.set_ylabel( r'$\epsilon$', rotation=0)
-    ax2b.yaxis.set_label_coords(1.1,0.52)
+    #ax2b.set_ylabel( r'$\epsilon$', rotation=0)
+    #ax2b.yaxis.set_label_coords(1.1,0.52)
 
     ##########
     # figure d
     ##########
+    if 1:
+        title = r'\textbf{(d) Fatm}'
+        ylabel = '$F_{atm}$'
+        yticks = (1.0E3,1.0E4,1.0E5)
+        h1, = ax3.loglog( timeMyr_a, Fatm,'k', )
+        fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks, yticks=yticks )
+        ax3.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
+        ax3.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
+        ax3.set_xlim( *xlim )
+
     #title = '(d) Emissivity'
     #ylabel = '$\epsilon$'
     #ax3.loglog( timeMyr_a, emissivity_a, 'k-' )
