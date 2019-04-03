@@ -724,7 +724,7 @@ def get_myargs_static_structure( rho_interp1d ):
     # number of layers
     # FIXME: for plotting this might explain mismatch between
     # atmosphere and mantle temperature at the surface?
-    num = 100
+    num = 1000
 
     # tuple of arguments required for functions
     myargs = (M_earth,R_core,M_core,G_core,num,rho_interp1d)
