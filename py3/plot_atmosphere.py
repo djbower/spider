@@ -18,7 +18,7 @@ def plot_atmosphere():
     width = 4.7747 #* 3.0/2.0
     height = 4.7747 #/ 2.0
     fig_o = su.FigureData( 2, 2, width, height, 'atmosphere', units='Myr' )
-    fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.3)
+    fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.5)
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -80,10 +80,10 @@ def plot_atmosphere():
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
     #xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
-    xticks = (1E-6,1E-5,1E-4,1E-3,1E-2,1E-1,1E0)
+    #xticks = (1E-6,1E-5,1E-4,1E-3,1E-2,1E-1,1E0)
     xlabel = 'Time (Myr)'
     #xlim = (1.0E-2, 4550)
-    xlim = (1e-6,1e0)
+    xlim = (1e-4,1e2)
 
     red = (0.5,0.1,0.1)
     blue = (0.1,0.1,0.5)
@@ -121,12 +121,13 @@ def plot_atmosphere():
         ax0b = ax0.twinx()
         h3, = ax0b.semilogx( timeMyr_a, phi_global, color=black, linestyle='--', label=r'Melt, $\phi_g$')
         handle_l = [h1,h2,h3]
-        fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xlabel=xlabel, xticks=xticks )
+        fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xlabel=xlabel )#, xticks=xticks )
         fig_o.set_mylegend( ax0, handle_l, loc='upper center', ncol=1 )
         ax0.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax0.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax0.xaxis.set_minor_formatter(ticker.NullFormatter())
         ax0.set_xlim( *xlim )
+        ax0.set_ylim( 0, 350 )
         ax0.yaxis.set_label_coords(-0.15,0.5)
         ax0b.set_ylabel( r'$\phi_g$', rotation=0 )
         ax0b.yaxis.set_label_coords(1.1,0.525)
@@ -143,7 +144,7 @@ def plot_atmosphere():
         h3, = ax1.semilogx( timeMyr_a, (H2O_liquid_kg_a+H2O_solid_kg_a) / H2O_total_kg, color=blue, linestyle='-', label=r'H$_2$O interior' )
         h4, = ax1.semilogx( timeMyr_a, H2O_atmos_kg_a / H2O_total_kg, color=blue, linestyle='--', label=r'H$_2$O atmos')
         #h4b, = ax1.semilogx( timeMyr_a, H2O_escape_kg_a / H2O_total_kg, color=blue, linestyle=':', label='Atmos' )
-        fig_o.set_myaxes( ax1, title=title, ylabel='$x$', xlabel=xlabel,xticks=xticks )
+        fig_o.set_myaxes( ax1, title=title, ylabel='$x$', xlabel=xlabel) #,xticks=xticks )
         ax1.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax1.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax1.xaxis.set_minor_formatter(ticker.NullFormatter())
@@ -161,7 +162,7 @@ def plot_atmosphere():
     h1, = ax2.semilogx( timeMyr_a, temperature_surface_a, 'k-', label=r'Surface temp, $T_s$' )
     #ax2b = ax2.twinx()
     #h2, = ax2b.loglog( timeMyr_a, emissivity_a, 'k--', label=r'Emissivity, $\epsilon$' )
-    fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks, yticks=yticks )
+    fig_o.set_myaxes( ax2, title=title, xlabel=xlabel, ylabel=ylabel, yticks=yticks )#, xticks=xticks )
     ax2.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
     ax2.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
     ax2.xaxis.set_minor_formatter(ticker.NullFormatter())
@@ -184,7 +185,7 @@ def plot_atmosphere():
         ylabel = '$F_{atm}$'
         yticks = (1.0E3,1.0E4,1.0E5)
         h1, = ax3.loglog( timeMyr_a, Fatm,'k', )
-        fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, xticks=xticks, yticks=yticks )
+        fig_o.set_myaxes( ax3, title=title, xlabel=xlabel, ylabel=ylabel, yticks=yticks)#, xticks=xticks )
         ax3.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax3.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax3.set_xlim( *xlim )
