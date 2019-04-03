@@ -33,9 +33,13 @@ def spiderplot_fig1( times ):
     #times='0,3850000,12050000,802000000,4550000000'
     # these times are for case1
     #times='0,94400,5450000,560000000,4550000000'
+    # these times are for case1m
+    times = '0,94400,300000,550000,3900000'
     # with 0.3 contour
     # these times are for case3
-    times='0,250000,650000,573000000,4550000000'
+    #times='0,250000,650000,573000000,4550000000'
+    # these times are for case3m5
+    #times = '0,250000,650000,1050000,3050000'
     # these times are for case9
     #times='0,3850000,10950000,802000000,4550000000'
     # these times are for case1
@@ -99,7 +103,8 @@ def spiderplot_fig1( times ):
 
     handle_l = [] # handles for legend
 
-    labelsuff = ['(1)','(0.75)','(0.3)','(0.01)','(0)']
+    #labelsuff = ['(1)','(0.75)','(0.3)','(0.1)','(0.01)']
+    labelsuff = ['(1.00)','(0.75)','(0.30)','(0.01)','(0.00)']
 
     for nn, time in enumerate( fig_o.time ):
         # read json
@@ -155,7 +160,7 @@ def spiderplot_fig1( times ):
     #fig_o.set_myaxes( ax0, title=title, ylabel='$S$', xticks=xticks, xmax=xmax, yticks=yticks )
     #ax0.yaxis.set_label_coords(-0.075,0.5)
     units = myjson_o.get_dict_units(['data','temp_b'])
-    title = r'\textbf{Mantle temperature (Case 3)}' #.format(units)
+    title = r'\textbf{Mantle temperature (Case 3v)}' #.format(units)
     # Bower et al. (2018)
     yticks= [250,1000,2000,3000,4000,5000]
     # DJB used this next range for work with Bayreuth
