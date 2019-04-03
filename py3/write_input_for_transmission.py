@@ -6,18 +6,21 @@ import spider_utils as su
 #====================================================================
 def main():
 
-    casenum = 'X'
+    #casenum = '1m'
+    casenum = '9m'
     strcase = 'case' + str(casenum)
 
     # this is for short-cutting to generate data for transmission
     # and emission spectra
     if 0:
-        if casenum == 1:
+        if casenum == '1m':
             # Bower et al. (2019), case 1
-            time_l = [0,94400,5450000,78400000,560000000,4550000000]
-        elif casenum == 9:
+            #time_l = [0,94400,5450000,78400000,560000000,4550000000]
+            time_l = [0,94300,250000,500000,2250000]
+        elif casenum == '9m':
             # Bower et al. (2019), case 9
-            time_l = [0,3850000,12050000,141000000,802000000,4550000000]
+            #time_l = [0,3850000,12050000,141000000,802000000,4550000000]
+            time_l = [0,3850000,11150000,16300000,21250000]
 
     else:
         # this is for looping over all date to compute the static structure
@@ -26,7 +29,7 @@ def main():
 
     # planetary radii estimates
     outradiusfile = open(strcase+'_evolving_radius.dat','w')
-    outradiusfile.write( '# time (yr), radius (m), 10mB height (m), 1mB height (m)\n' )
+    outradiusfile.write( '# time (yr), radius (m), 10mB height (m), 1mB height (m), surface temp (K), phi_g\n' )
 
     nn_total = len(time_l)
 
@@ -65,6 +68,9 @@ def main():
         opticaldepth_a = myjson_o.get_dict_values( ['atmosphere','atm_struct_tau'] )
         height_a = myjson_o.get_dict_values( ['atmosphere','atm_struct_depth'] )
         npoints = np.size( temperature_a ) # number of points in the atmosphere
+        surface_temperature = temperature_a[-1]
+
+        phi_g = myjson_o.get_dict_values( ['rheological_front_phi','phi_global'] )
 
         outfile.write('npoints= {}\n'.format(npoints))
         outfile.close()
@@ -75,7 +81,7 @@ def main():
         f.close()
 
         # write radius data to file
-        outradiusfile.write( '{} {} {} {}\n'.format( time, radius, radius+height10mb, radius+height1mb ) )
+        outradiusfile.write( '{} {} {} {} {} {}\n'.format( time, radius, radius+height10mb, radius+height1mb, surface_temperature, phi_g ) )
 
     outradiusfile.close()
 
