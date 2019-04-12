@@ -83,15 +83,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   ierr = set_Htot( E, t );CHKERRQ(ierr);
 
-  /* TODO: this updates quantities that will always return zero if
-     the volatile content of the (liquid) mantle is zero, but could
-     be moved within a switch */
-  // below moved within bc.c
-  //ierr = set_atmosphere_volatile_content( Ap, A );CHKERRQ(ierr);
-
   /* boundary conditions must be after all arrays are set */
   ierr = set_surface_flux( E );CHKERRQ(ierr);
-
   ierr = set_core_mantle_flux( E );CHKERRQ(ierr);
 
   /* loop over basic nodes except last node */
@@ -148,9 +141,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* time-dependence of additional quantities */
   if (Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
     ierr = solve_dxdts( E );
-    // remove below, previous (old)
-    //dx0dt = get_dxdt( Ap, A, &Ap->CO2_parameters, &A->CO2 );
-    //dx1dt = get_dxdt( Ap, A, &Ap->H2O_parameters, &A->H2O );
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,A->CO2.dxdt,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,A->H2O.dxdt,INSERT_VALUES);CHKERRQ(ierr);
   }

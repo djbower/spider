@@ -324,11 +324,6 @@ PetscErrorCode solve_dxdts( Ctx *E )
     PetscScalar    *xx;
 
     Atmosphere                 *A = &E->atmosphere;
-    // TODO: seems like below are not used anymore
-    //Parameters           const *P = &E->parameters;
-    //AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    //VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
-    //VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
     Volatile                   *CO2 = &A->CO2;
     Volatile                   *H2O = &A->H2O;
 

@@ -704,7 +704,6 @@ PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const
     out *= H2O->p * CO2->dpdx * CO2->dxdt - CO2->p * H2O->dpdx * H2O->dxdt;
 
     /* second part of atmosphere derivative */
-    /* this is the only term I was considering before */
     out += ( 1.0 / A->molar_mass ) * V->dpdx * V->dxdt;
 
     /* multiply by prefactors */
