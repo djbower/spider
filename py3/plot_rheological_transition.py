@@ -197,28 +197,31 @@ def figure9():
     ##### fitting #####
     ###################
 
-    if DYNAMIC:
-        deg = 2
-    else:
-        deg = 1
+    # fitting can break if the motion of the rheological transition is complicated
+    if 0:
 
-    # fit rheological front
-    rf_pressure_fit = fit_data( time_yrs_shift, rf_pressure_shift, deg )
-    ax2.plot( time_yrs_shift, rf_pressure_fit, color=color1 )
-    rf_temperature_fit = fit_data( time_yrs_shift, rf_temperature_shift, deg )
-    ax3.plot( time_yrs_shift, rf_temperature_fit, color=color1 )
+        if DYNAMIC:
+            deg = 2
+        else:
+            deg = 1
 
-    # fit magma ocean
-    mo_pressure_fit = fit_data( time_yrs_shift, mo_pressure_shift, deg )
-    ax2.plot( time_yrs_shift, mo_pressure_fit, color=color2 )
-    mo_temperature_fit = fit_data( time_yrs_shift, mo_temperature_shift, deg )
-    ax3.plot( time_yrs_shift, mo_temperature_fit, color=color2 )
+        # fit rheological front
+        rf_pressure_fit = fit_data( time_yrs_shift, rf_pressure_shift, deg )
+        ax2.plot( time_yrs_shift, rf_pressure_fit, color=color1 )
+        rf_temperature_fit = fit_data( time_yrs_shift, rf_temperature_shift, deg )
+        ax3.plot( time_yrs_shift, rf_temperature_fit, color=color1 )
 
-    # fit solid
-    so_pressure_fit = fit_data( time_yrs_shift, so_pressure_shift, deg )
-    ax2.plot( time_yrs_shift, so_pressure_fit, color=color3 )
-    so_temperature_fit = fit_data( time_yrs_shift, so_temperature_shift, deg )
-    ax3.plot( time_yrs_shift, so_temperature_fit, color=color3 )
+        # fit magma ocean
+        mo_pressure_fit = fit_data( time_yrs_shift, mo_pressure_shift, deg )
+        ax2.plot( time_yrs_shift, mo_pressure_fit, color=color2 )
+        mo_temperature_fit = fit_data( time_yrs_shift, mo_temperature_shift, deg )
+        ax3.plot( time_yrs_shift, mo_temperature_fit, color=color2 )
+
+        # fit solid
+        so_pressure_fit = fit_data( time_yrs_shift, so_pressure_shift, deg )
+        ax2.plot( time_yrs_shift, so_pressure_fit, color=color3 )
+        so_temperature_fit = fit_data( time_yrs_shift, so_temperature_shift, deg )
+        ax3.plot( time_yrs_shift, so_temperature_fit, color=color3 )
 
     fig_o.savefig(9)
 
