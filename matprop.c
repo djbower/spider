@@ -410,6 +410,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       arr_gsuper[i] = P->gravity * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
 
       /* Rayleigh number */
+      /* FIXME: should use domain size not mixing length */
       arr_Ra[i] = arr_gsuper[i];
       arr_Ra[i] *= arr_alpha[i] * PetscPowScalar(arr_mix_b[i],4) * arr_rho[i] * arr_cp[i];
       arr_Ra[i] /= arr_nu[i] * arr_cond[i];
