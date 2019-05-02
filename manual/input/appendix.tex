@@ -1,0 +1,17 @@
+\section{Useful mathematics}
+\subsection{Finite Differences}
+Second order accurate central finite differences for an even regular mesh give the following relationships.\\ \\ First derivative:
+\begin{equation}
+\frac{dS}{dr} \approx \frac{dS_{\rm{i}}}{dr} = \frac{S_{\rm{i+1}}-S_{\rm{i-1}}}{2 \Delta r}
+\end{equation}
+Second derivative:
+\begin{equation}
+\label{eqn:dsq}
+\frac{d^2S}{dr^2} \approx \frac{d^2S_{\rm{i}}}{dr^2} = \frac{S_{\rm{i+1}}-2S_{\rm{i}}+S_{\rm{i-1}}}{\Delta r^2}
+\end{equation}
+Derivative of a spatially-dependent coefficient multiplying a gradient:
+\begin{equation}
+\label{eqn:selfadjoint}
+\frac{d}{dr} \left( \alpha \frac{dS}{dr}\right) \approx \frac{d}{dr} \left( \alpha_i \frac{dS_i}{dr} \right) = \frac{1}{2 \Delta r^2} \left[ (\alpha_{\rm{i-1}}+\alpha_{\rm{i}})(S_{\rm{i-1}}-S_{\rm{i}}) + (\alpha_{\rm{i+1}}+\alpha_{\rm{i}})(S_{\rm{i+1}}-S_{\rm{i}})  \right]
+\end{equation}
+Eq.~\ref{eqn:selfadjoint} reduces to Eq.~\ref{eqn:dsq} for constant $\alpha$.

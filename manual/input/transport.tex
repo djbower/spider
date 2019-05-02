@@ -1,0 +1,276 @@
+%[\textbf{Notation: Uppercase quantities ($U$, $J$) represents quantities relative to a fixed reference frame.  Lower case quantities are relative to a moving reference frame.}]\\
+%\begin{table}[!h]
+%\begin{center}
+%\begin{tabular}{|l|l|}
+%\hline
+%Symbol & Description\\
+%\hline
+%$\vec{J}^\ast$ & Mass flux relative to a fixed reference frame\\
+%$\vec{J}$ & Mass flux relative to the barycentric velocity\\
+%$\vec{U}$ & Velocity of barycentre (relative to a fixed reference frame)\\
+%$\vec{u}$ & Velocity relative to the barycentric velocity\\
+%\hline
+%\end{tabular}
+%\end{center}
+%\end{table}
+%\noindent
+\awnote{Subtle, is the fact that we should be able to relate the change in melt fraction to the divergence of the melt flux:
+$\frac{\partial \phi}{\partial t} \sim \frac{1}{\rho} \nabla \cdot \vec{J_m} + {\rm heating\ terms}$.  It may be that this is fully adequately accounted for by the divergence of total heat term, which includes latent heat, but I am not sure.}
+
+\subsection{Conservation of mass}
+
+\fbox{\parbox{\textwidth}{Eulerian and Lagrangian forms of mass conservation.}}\\
+
+\noindent
+Eulerian:
+\begin{equation}
+\frac{\partial \rho}{\partial t} + \nabla \cdot ( \rho \vec{U} ) = 0
+\end{equation}
+Lagrangian (e.g., A1 in \cite{ABE95}):
+\begin{equation}
+\frac{D \rho}{Dt} + \rho \nabla \cdot \vec{U} = 0
+\end{equation}
+Material derivative:
+\begin{equation}
+\frac{D}{Dt} \equiv \frac{\partial}{\partial t} + \vec{U} \cdot \nabla
+\end{equation}
+where $\rho$ is density, $U$ velocity, $t$ time.  There are no sources or sinks of mass for global mass conservation.
+
+\subsection{Barycentric velocity}
+
+\fbox{\parbox{\textwidth}{Description of the barycentric velocity and measuring the velocity of chemical species relative to it.}}\\
+
+\noindent
+The total number of moles in a unit volume $n_t$, is obtained by summing over all the contributions of the \textbf{number of moles per unit volume} of each species, $n_i$:
+\begin{equation}
+n_t = \sum_i n_i
+\end{equation}
+The density of the fluid is given by summation over the partial densities of all the species:
+\begin{equation}
+\rho = \sum_i \rho_i
+\end{equation}
+where:
+\begin{equation}
+\rho_i = n_i \mathcal{M}_i
+\end{equation}
+where $\mathcal{M}_i$ is the molecular weight of species $i$.  The molecular weight of the mixture is:
+\begin{equation}
+\overline{\mathcal{M}} = \sum_i x_i \mathcal{M}_i
+\end{equation}
+where $x_i=n_i/n_t$ is mole fraction of species $i$.  So the density of the mixture is:
+\begin{equation}
+\rho = n_t \overline{\mathcal{M}}
+\end{equation}
+The mass fraction of species $i$, $\omega_i$:
+\begin{equation}
+\omega_i = \frac{\rho_i}{\rho} = \frac{n_i \mathcal{M}_i}{\rho}
+\label{eq:rhoi}
+\end{equation}
+The absolute molar flux of species $i$ with respect to \textbf{fixed spatial coordinate} is given by:
+\begin{equation}
+n_i \vec{U}_i
+\end{equation}
+hence the mass flux of species $i$ with respect to \textbf{fixed spatial coordinate} is given by:
+\begin{equation}
+\vec{J}^\ast_i = n_i \mathcal{M}_i \vec{U}_i = \rho \omega_i \vec{U}_i = \rho_i \vec{U}_i
+\label{eq:Jast}
+\end{equation}
+The mass-weighted average velocity of the fluid $\vec{U}$ (also know as the stream velocity or \textbf{barycentric velocity}) is:
+\begin{equation}
+\rho \vec{U} = \sum_i \vec{J}^\ast_i = \sum_i \rho_i \vec{U}_i
+\end{equation}
+\begin{equation}
+\vec{U} = \frac{1}{\rho} \sum_i \rho_i \vec{U}_i = \frac{1}{\rho} \sum_i n_i \mathcal{M}_i \vec{U}_i = \sum_i \omega_i \vec{U}_i
+\label{eq:barycentric}
+\end{equation}
+The velocity of species $i$ \textbf{relative to the barycentric velocity} (sometimes called the diffusion or streaming velocity) is:
+\begin{equation}
+\vec{u}_i = \vec{U}_i - \vec{U}
+\label{eq:diffusionvelocity}
+\end{equation}
+We can now define the \textbf{relative or diffusion flux vector}:
+\begin{equation}
+\vec{J}_i = \rho_i ( \vec{U}_i - \vec{U}) = \rho_i \vec{u}_i
+\label{eq:diffusionflux}
+\end{equation}
+Note that the mass-weighted average of the diffusion velocity is zero as follows:
+\begin{align}
+\frac{1}{\rho} \sum_i \rho_i \vec{u}_i &= \frac{1}{\rho} \sum_i \rho_i \vec{U}_i - \frac{1}{\rho} \sum_i \rho_i \vec{U}\\
+&= \frac{1}{\rho} (\rho \vec{U}) - \frac{\vec{U}}{\rho} (\rho) = 0
+\end{align}
+Consequently we can write:
+\begin{equation}
+\sum_i \vec{J}_i = \sum_i \rho_i \vec{u}_i = 0
+\end{equation}
+%%%%%%%%%%%
+%%% Eulerian %%%
+%%%%%%%%%%%
+\subsection{Eulerian description with barycentric velocity}
+\fbox{\parbox{\textwidth}{Eulerian description for the conservation of mass fraction of species $i$ in terms of the barycentric velocity and fluxes relative to the barycentric velocity.}}\\
+
+\noindent
+Conservation of species $i$ in terms of moles per unit volume:
+\begin{equation}
+\frac{\partial n_i}{\partial t} + \nabla \cdot n_i \vec{U}_i = \dot{M}_i
+\end{equation}
+where $\dot{M}_i$ is net molar production of species $i$ per unit volume by chemical reaction.  Equivalently:
+\begin{equation}
+\frac{\partial \rho_i}{\partial t} + \nabla \cdot \vec{J}^\ast_i = \rho \dot{w}_i
+\end{equation}
+where the chemical source function $\dot{w}$ represents the mass rate of production of species $i$ by chemical reaction \textbf{per unit mass} and may be determined from chemical kinetics.  \textbf{$\vec{J}^\ast_i$ is relative to a fixed reference frame}.  Substitute in expression for $\vec{J}^\ast_i$ using Eqs.~\ref{eq:Jast} and \ref{eq:diffusionvelocity} to eliminate $\vec{U}_i$:
+\begin{equation}
+\frac{\partial \rho_i}{\partial t} + \nabla \cdot \rho_i (\vec{U} + \vec{u}_i)= \rho \dot{w}_i
+\end{equation}
+Expand $\nabla$ and substitute in $\rho_i= \rho \omega_i$ (Eq.~\ref{eq:rhoi}):
+\begin{equation}
+\frac{\partial (\rho \omega_i)}{\partial t}  + \nabla \cdot \rho \omega_i \vec{U} + \nabla \cdot \rho_i \vec{u}_i = \rho \dot{w}_i
+\end{equation}
+Substitute in $\vec{J}_i$ (Eq.~\ref{eq:diffusionflux}) (\textbf{recall this is relative to the barycentre}):
+\begin{align}
+\frac{\partial (\rho \omega_i)}{\partial t} + \nabla \cdot \rho \omega_i \vec{U} &= - \nabla \cdot \vec{J}_i + \rho \dot{w}_i\\
+\rho \frac{\partial \omega_i}{\partial t} + \omega_i \frac{\partial \rho}{\partial t} + \rho \omega_i \nabla \cdot \vec{U} + \vec{U} \cdot \nabla (\rho \omega_i) &= - \nabla \cdot \vec{J}_i + \rho \dot{w}_i \label{eq:eulerianworking}
+\end{align}
+Global mass conservation (no sources or sinks of mass):
+\begin{equation}
+\frac{\partial \rho}{\partial t} = - \nabla \cdot (\rho \vec{U} ) = -\rho \nabla \cdot \vec{U} - \vec{U} \cdot \nabla \rho
+\end{equation}
+Substitute in Eq.~\ref{eq:eulerianworking}:
+\begin{equation}
+\rho \frac{\partial \omega_i}{\partial t} - \omega_i \vec{U} \cdot \nabla \rho + \vec{U} \cdot \nabla (\rho \omega_i) = - \nabla \cdot \vec{J}_i + \rho \dot{w}_i
+\end{equation}
+Expand remaining $\nabla$:
+\begin{equation}
+\vec{U} \cdot \nabla(\rho \omega_i) = \omega_i \vec{U} \cdot \nabla \rho + \rho \vec{U} \cdot \nabla \omega_i
+\label{eq:eulerianworking2}
+\end{equation}
+Substitute in Eq.~\ref{eq:eulerianworking2}:
+\begin{equation}
+\rho \frac{\partial \omega_i}{\partial t} + \rho \vec{U} \cdot \nabla \omega_i = - \nabla \cdot \vec{J}_i + \rho \dot{w}_i
+\end{equation}
+\boxedeq{eq:eulerianfinal}{\frac{\partial \omega_i}{\partial t} + \vec{U} \cdot \nabla \omega_i = -\frac{1}{\rho} \nabla \cdot \vec{J}_i + \dot{w}_i}
+%%%%%%%%%%%%
+%%% Lagrangian %%%
+%%%%%%%%%%%%
+\subsection{Lagrangian description with barycentric velocity}
+\fbox{\parbox{\textwidth}{Lagrangian description for the conservation of mass fraction of species $i$ in terms of the barycentric velocity and fluxes relative to the barycentric velocity.}}\\
+
+\noindent
+Use the material derivative, where $U$ is the centre of mass velocity or equivalently the velocity of fluid element moving with the local barycentre:
+\begin{equation}
+\frac{D}{D t} \equiv \frac{\partial}{\partial t} + \vec{U} \cdot \nabla
+\end{equation}
+Substitute in Eq.~\ref{eq:eulerianfinal} (agrees with Eq.~A2 in \cite{ABE95}):
+\boxedeq{eq:lagrangianfinal}{\rho \frac{D \omega_i}{Dt} = -\nabla \cdot \vec{J}_i + \rho \dot{w}_i}
+%%%%
+%%%%
+%%%%
+\subsection{Melt transport with barycentric velocity}
+\fbox{\parbox{\textwidth}{Lagrangian description for the conservation of melt fraction and expressions for the mass flux of melt and solid relative to the barycentric velocity.}}\\
+
+\noindent
+Analogous to chemical species transport (Eq.~\ref{eq:lagrangianfinal}), we can consider the evolution of melt fraction $\phi$ (Eq.~2 in \cite{ABE95}):
+\boxedeq{}{\rho \frac{D \phi}{D t} = - \nabla \cdot \vec{J}_m + \rho M}
+where $\phi$ is melt fraction, $\vec{J}_m$ is the mass flux of melt with \textbf{respect to local barycentric motion} (the motion of the local barycentre of a fluid element composed of melt-solid mixture), and $M$ the melting rate per unit mass.  When we consider an $n$-component system, only $n-1$ equations are independent because the sum of mass fraction is unity.  Therefore, for the simple case of a melt--solid mixture (2 components) we only need one equation for melt fraction.  \myemph{SPIDER actually determines the melt fraction directly from a lookup table using the current pressure and entropy and the predefined melting curves, rather than explicitly tracking its evolution.} For a mixture of melt and solid, the \textbf{barycentric velocity} $U$ (Eq.~\ref{eq:barycentric}) is:
+\begin{equation}
+\vec{U} = \phi \vec{U}_m + (1-\phi) \vec{U}_s
+\label{eq:U_barycentre}
+\end{equation}
+where $U_m$ and $U_s$ are the velocity of the melt and solid phase, respectively.  Now consider fluxes:
+\begin{align}
+\vec{J}_m &= \rho \phi (\vec{U}_m - \vec{U}) = -\vec{J}_s \label{eq:Jm}\\
+\vec{J}_s &= \rho (1-\phi) (\vec{U}_s - \vec{U}) = -\vec{J}_m \label{eq:Js}
+\end{align}
+where $\vec{J}_m$ and $\vec{J}_s$ are the mass flux of melt and solid, respectively, \textbf{relative to the barycentre}.  Since the mass flux of melt or solid is caused by the differential motion of the solid and the melt phases, the mass flux is given as a function of relative velocity between the solid and the melt phases and melt fraction.  Eliminating $U$ in Eq.~\ref{eq:Jm} using Eq.~\ref{eq:U_barycentre}:
+\begin{equation}
+\vec{J}_m=-\vec{J}_s=\rho \phi (1-\phi) (\vec{U}_m-\vec{U}_s)
+\end{equation}
+\subsection{Melt and chemical species transport}
+\fbox{\parbox{\textwidth}{Lagrangian description for the conservation of chemical species assuming partitioning between melt and solid phase at thermodynamic equilibrium.}}\\
+
+\noindent
+Following \cite{ABE95}, we now introduce $i$ components, which are chemical species that we wish to track, and each component can exist in the melt or the solid phase.  We have two equations that describe the mass fraction of each component in the melt or solid phase:
+
+\begin{equation}
+\rho \frac{D}{Dt} (\phi \omega_{mi} ) = -\nabla \cdot \vec{J}_{mi} + \rho M_i \qquad (i=1,n)
+\label{eq:cons_omega_mi}
+\end{equation}
+
+\begin{equation}
+\rho \frac{D}{Dt} ((1-\phi) \omega_{si} ) = -\nabla \cdot \vec{J}_{si} - \rho M_i \qquad (i=1,n)
+\label{eq:cons_omega_si}
+\end{equation}
+where $\omega_{mi}$, $\omega_{si}$, $\vec{J}_{mi}$, and $\vec{J}_{si}$ are the mass fraction and mass flux of component $i$ in melt and solid phases, respectively, and $M_i$ is the mass melting rate of chemical component $i$ per unit mass.  From the definition of mass flux relative to the barycentre (e.g., analogous to Eqs.~\ref{eq:Jm} and \ref{eq:Js}), $\vec{J}_{mi}$ and $\vec{J}_{si}$ are:
+\dbnote{some of this included further up now}
+%%%
+\begin{subequations}
+\begin{align}
+\vec{J}_{mi}&= \rho \phi \omega_{mi} (\vec{U}_{mi} - \vec{U} )\\
+&= \rho \phi \omega_{mi} (\vec{U}_{mi} - \vec{U}_{m} + \vec{U}_m - \vec{U} )\\
+&= \rho \phi \omega_{mi} (\vec{U}_{mi} - \vec{U}_{m} ) + \rho \phi \omega_{mi} ( \vec{U}_m - \vec{U} )\\
+&= \vec{j}_{mi} + \omega_{mi} \vec{J}_m
+\end{align}
+\label{eq:J_mi2}
+\end{subequations}
+%%%
+\begin{subequations}
+\begin{align}
+\vec{J}_{si}&= \rho (1-\phi) \omega_{si} (\vec{U}_{si} - \vec{U} )\\
+&= \rho (1-\phi) \omega_{si} (\vec{U}_{si} - \vec{U}_s + \vec{U}_s - \vec{U} )\\
+&= \rho (1-\phi) \omega_{si} (\vec{U}_{si} - \vec{U}_s) + \rho (1-\phi) \omega_{si} (\vec{U}_{s} - \vec{U})\\
+&= \vec{j}_{si} + \omega_{si} \vec{J}_s\\
+&= \vec{j}_{si} - \omega_{si} \vec{J}_m
+\end{align}
+\label{eq:J_si2}
+\end{subequations}
+where:
+\begin{equation}
+\vec{j}_{mi} \equiv \rho \phi \omega_{mi} ( \vec{U}_{mi}-\vec{U}_m ), \qquad \vec{j}_{si} \equiv \rho (1-\phi) \omega_{mi} (\vec{U}_{si}-\vec{U}_s)
+\end{equation}
+$\vec{j}_{mi}$ and $\vec{j}_{si}$ are the mass fluxes of component $i$ in melt and solid phases, respectively, \textbf{caused by mechanisms other than melt--solid relative motion}.  Now add Eq.~\ref{eq:cons_omega_mi} and Eq.~\ref{eq:cons_omega_si}, and using Eq.~\ref{eq:J_mi} and Eq.~\ref{eq:J_si} and additionally introducing the mass fraction of component $i$ in the mixture, $\omega_i$ gives: \dbnote{Note that $j_{mi}$ and $j_{si}$ are zero for a one component system!  So at this stage we must be assuming at least two components.  And this formulation in terms of component transport is confusing since it hides the origin of the phase mixing that results in the convective mixing term.}
+\begin{equation}
+\rho \frac{D\omega_i}{Dt} = -\nabla \cdot \left[ (\omega_{mi}-\omega_{si}) \vec{J}_m + \vec{j}_{mi} + \vec{j}_{si} \right]
+\label{eq:Domegai}
+\end{equation}
+\begin{equation}
+\omega_i \equiv \phi \omega_{mi} + (1-\phi) \omega_{si} \qquad (i=1,\ n)
+\end{equation}
+Sum of mass fractions is unity, so only $n-1$ equations are independent.  Next, consider the case in which solid and melt phases are in chemical equilibrium:
+\begin{equation}
+\left( \frac{\omega_{si}}{\omega_{mi}} \right)_{at\ equilibrium} = K_{ei}
+\end{equation}
+Can now rewrite Eq.~\ref{eq:Domegai} using $K_{ei}$:
+\begin{equation}
+\rho \frac{D \omega_i}{D t} = - \nabla \cdot \left[ \frac{1-K_{ei}}{\phi_e+(1-\phi_e)K_{ei}} \omega_i \vec{J}_{m} + \vec{j}_{mi} + \vec{j}_{si} \right]
+\label{eq:Domegai2}
+\end{equation}
+where $\phi_e$ is the melt fraction at the equilibrium.  We can approximate the convective mass transport by turbulent diffusion in a vigorously convecting layer.  Then vertical mass flux of component $i$ due to convection is given by Fick's law \dbnote{flux of component $i$ in the melt relative to the melt, and similarly for the solid.  Again, breaks for one component!  Only makes sense if components have a velocity relative to the bulk motion of melt and solid.  Here Abe is really talking about the diffusion of chemical species.}:
+\begin{equation}
+\vec{j}_{mi} = -\kappa_c \rho \frac{\partial \phi \omega_{mi}}{\partial r}, \qquad \vec{j}_{si} = -\kappa_c \rho \frac{\partial (1-\phi) \omega_{si}}{\partial r}
+\end{equation}
+where $\omega_{mi}$, $\omega_{si}$ and $\kappa_c$ are the mass fraction of component $i$ within melt and solid phases, and the eddy diffusivity for convective mass transport, respectively.  Then the net convective transport is:
+\begin{equation}
+\vec{j}_{mi} + \vec{j}_{si} = -\kappa_c \rho \frac{\partial \omega_i}{\partial r}
+\end{equation}
+So now we can express Eq.~\ref{eq:Domegai2} as:
+\boxedeq{}{\rho \frac{D \omega_i}{D t} = - \nabla \cdot \left[ \frac{1-K_{ei}}{\phi_e+(1-\phi_e)K_{ei}} \omega_i \vec{J}_{m} - \rho \kappa_c \frac{\partial \omega_i}{\partial r} \right]}
+On the RHS the first term is due to melt--solid relative motion and the second term is due to other mechanisms.
+
+\subsection{Energy transport}
+\fbox{\parbox{\textwidth}{Energy conservation in terms of entropy.}}\\
+
+\noindent
+Eq. 27 in \cite{ABE95}:
+\begin{equation}
+\rho T \frac{Ds}{Dt} = -\nabla \cdot \left[ \vec{J}_q + \Delta h \vec{J}_m + \sum_{i=1}^n (h_{mi} \vec{j}_{mi} + h_{si}\vec{j}_{si}) \right]
+\end{equation}
+Analyse the last term on the RHS:
+\begin{align}
+\sum_{i=1}^n (h_{mi} \vec{j}_{mi} + h_{si}\vec{j}_{si}) &= -\kappa_c \rho \sum_{i=1}^n \left(h_{mi} \frac{\partial \phi \omega_{mi}}{\partial r} + h_{si} \frac{\partial (1-\phi) \omega_{si}}{\partial r} \right)\\
+&= -\kappa_c \rho \sum_{i=1}^n \left[ (h_{mi} \omega_{mi} - h_{si} \omega_{si})\frac{\partial \phi}{\partial r} + h_{mi} \phi \frac{\partial \omega_{mi}}{\partial r} + h_{si} (1-\phi) \frac{\partial \omega_{si}}{\partial r} \right]\\
+&= -\kappa_c \rho \sum_{i=1}^n \left[ (h_{mi} \omega_{mi} - h_{si} \omega_{si})\frac{\partial \phi}{\partial r} \right]\\
+&= -\kappa_c \rho \Delta h \frac{\partial \phi}{\partial r} \equiv \Delta h \vec{J}_{cm}
+\end{align}
+ \dbnote{Above includes approximations, which Abe eludes to at the beginning of the section in his 1995 paper.  He's also jumped from thinking about diffusion of chemical species to diffusion of melt (i.e., phase) fraction.  It's interesting that by taking the definition of $j_{mi}$ and $j_{si}$ you end up with a derivative for phase fraction, and one for chemical species diffusion.  Abe must ignore the effect of chemical species transport in order to ignore the second term!  That is, the phase enthalpy is independent of composition.}
+
+\textbf{The convective (phase) mixing term can probably be incorporated into the heat flux(?) if we modify the form of $\kappa_h$.  Or maybe if we decompose the velocities relative to the barycentre differently.  So rather than considering a term associated with melt--solid separation and another, we wrap them both up in the same formulation.  But combining with the convective heat flux seems to make the most sense since these are two terms, opposite in sign for $dS_{liq}/dr<0$ that nearly cancel.  The precision issue arises because this cancellation goes away for $dS_{liq}/dr>0$ and hence $dS/dr$ is driven to a tiny value.}
+\boxedeq{}{\rho T \frac{Ds}{Dt} = -\nabla \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]}

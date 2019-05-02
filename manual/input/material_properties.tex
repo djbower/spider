@@ -1,0 +1,235 @@
+\subsection{Mantle EOS}
+A simple approximation is made to calculate the thermodynamic properties of the mantle silicates, representing them as a pseudo-single-component system.
+We consider a mantle that is everywhere in local thermodynamic equilibrium, resulting in uniform compositional profiles.  Driven by buoyancy differences, crystals that form are displaced from their point of crystallization, instantaneously removing heat as they are resorbed by the magma ocean (according to Clausius Clapeyron).  Crystal-melt separation should cause chemical differentiation, however if the timescales for turbulent mixing are sufficiently fast, the mantle will remain homogenous.  Furthermore, persistent differentiation (which is expected for the later stages of crystallization as viscosity rises and timescales lengthen) represents a second-order correction on top of the first order energetics represented by convection, heat dissipation, and crystallization of a uniform composition magma ocean.
+
+We represent the thermodynamics of mantle melting using a pseudo-one-component model, which retains the simplicity of a standard one-component model, while introducing the important multi-component characteristic of a finite temperature interval for melting.  We develop this model in response to the arguments of \cite{SA07}, which shows how many of the most important aspects of mantle melting can be reasonably-represented by a simple one-component model when viewed in pressure-entropy space.  Besides its lack of chemical evolution, the primary shortcoming of this approach is the absence of a thermal melting interval, which arises due to differential chemical partitioning between solid and melt phases, as demonstrated by simple systems with binary loops.  It is a useful first approximation to consider a crystallizing magma ocean as a chemically homogenous system, where the evolving chemistries of its constituent phases are assumed to remain in thermodynamic equilibrium maintaining constant bulk composition.  We can therefore approximate the energetics of this system by modifying a standard one-component system, replacing the univariant melting curve in P-T space $T_{\rm fus}(P)$ by a melting interval.
+The single-component melting curve is given by $T_{\rm fus}(P)$ and $S_{\rm fus}(P)$, and is defined by the condition of equilibrium, where the solid and melt phases have equal Gibbs energies at the melting temperature for each pressure.
+The modified melting interval is centered on the fusion curve, bounded by the liquidus above and solidus below:
+\begin{eqnarray}
+T_{\rm liq}(P) = T_{\rm fus}(P) + \Delta T_{\rm fus}(P) \big/ 2\\
+T_{\rm sol}(P) = T_{\rm fus}(P) - \Delta T_{\rm fus}(P) \big/ 2
+\end{eqnarray}
+where the melting interval width is defined by \mbox{$\Delta T_{\rm fus}(P)=\delta T \cdot T_{\rm fus}(P)$} with $\delta T \approx 0.07$ throughout the mantle \citep{SKS09}.
+%%%%
+\subsection{Solid EOS}
+For the Mosenfelder MgSiO3 model, we use the EOS for MgSiO3 melt and Mg-endmember bridgmanite as given by the global fit to shock wave and diamond anvil cell data in \cite{M09}.  Since this paper does not fully define all of the needed EOS parameters, we rely upon the estimated melting region (bounded by solidus and liquidus profiles) for the mantle given by \cite{SKS09}.  It is important to recognize that \cite{M09} does not present a thermodynamically consistent model of this system, due to its  use of the Mie-Gr\"{u}neisen formulation, which assumes that the gr\"{u}neisen parameter is independent of temperature together with its model for the heat capacity of the melt, which induces temperature dependence to the adiabatic compression curves.
+
+The primary thermodynamic property controlling magma ocean evolution is the gr\"{u}neisen parameter, $\gamma$, which controls the adiabatic thermal profile through a convecting system:
+\begin{equation}
+\frac{dT}{dP}\bigg|_S = \gamma \left( \frac{T}{K_S} \right)
+\label{eq:adiabatprof}
+\end{equation}
+The {\it thermodynamic} definition of the gr\"{u}neisen parameter is given by:
+\begin{equation}
+  \gamma \equiv -\frac{\partial \log_e{T}}{\partial \log_e{V}}\bigg|_S =
+  \frac{\alpha K_S V}{C_P}
+  \label{eq:gamThermo}
+\end{equation}
+where $\alpha$ is the thermal expansion, $K_S$ is the adiabatic bulk modulus, and $C_P$ is the constant pressure heat capacity.  In the case of solids, the gr\"{u}neisen parameter is approximately independent of temperature at low to moderate temperatures, as a consequence of nearly harmonic atomic vibrations for small vibrational amplitudes (as described by the quasi-harmonic approximation,~QHA).  This allows us to integrate Equation~\ref{eq:gamThermo} above to obtain an expression for the temperature along the reference adiabat, $T_{0S}(V)$:
+\begin{equation}
+  T_{0S}(V) = T_0 \exp \left[ -\int_{V_0}^{V} \frac{\gamma(V)}{V} dV \right]
+  \label{eq:adiabatTempGen}
+\end{equation}
+where $T_0$ is the reference adiabatic temperature at 0~GPa.
+%This expression can be extended to define the potential temperature, $\tilde{T}$, which gives the temperature after adiabatic decompression to 0~GPa from the current state:
+%\begin{equation}
+%  \tilde{T}(V) = T_0 \left( \frac{T}{T_{0S}(V)} \right)
+%  \label{eq:adiabatTemp}
+%\end{equation}
+The standard power-law expression gives a simple and reasonable representation over wide compression ranges:
+\begin{equation}
+  \gamma(V) = \gamma_0 \left(\frac{V}{V_0}\right)^q
+  \label{eq:gamPowLaw}
+\end{equation}
+where $\gamma_0$ and $q$ give the value at the reference state and the compression dependence.
+In this form, the reference adiabatic temperature simplifies to:
+\begin{equation}
+  T_{0S}(V) = T_0 \exp \left[ -(\gamma - \gamma_0)/q \right]
+  \label{eq:adiabatTemp}
+\end{equation}
+Though this temperature-independent form of the gr\"{u}neisen parameter is often used in shock wave experiments, the underlying assumptions of QHA are strongly violated at significant fractions of the melting temperature.
+The most dramatic consequence of the strong anharmonicity present at high temperatures is that thermal expansions are overestimated by 30-100\% near melting \cite{WW09}, challenging the ability to accurately model melting phase relations.
+
+To maintain a physically reasonable model, we apply lowest-order perturbation theory to account for anharmonicity (e.g. \cite{ZK71,OD03}).
+Under near-melting conditions, the gr\"{u}neisen parameter is no longer independent of temperature, and thus we first describe the reference adiabat for the solid, $T_{0S}^{\rm sol}$ (Equation~\ref{eq:adiabatTemp}), by defining the gr\"{u}neisen parameter evolution along a reference adiabatic compression curve, $\gamma_{0S}^{\rm sol}$ (Equation~\ref{eq:gamPowLaw}).
+Since magma ocean modeling is concerned only with temperatures near or above the solidus, we are free to choose a zero-pressure reference temperature of $T_0^{\rm sol}$=1000~K to ensure that we are in the classical Dulong-Petit limit, yielding a constant heat capacity.
+The lowest-order anharmonic correction yields a temperature-dependent heat capacity:
+\begin{equation}
+  C_V^{\rm sol} = 3N k_B (1 - aT)
+  \label{Cv}
+\end{equation}
+where $k_B$ is Boltzmann's constant, $N$ is the number of atoms per formula unit, $a$ is the volume-dependent anharmonic correction factor.
+We assume a power-law dependence for the anharmonicity factor
+\begin{equation}
+  a(V) = a_0 \left( \frac{V}{V_0} \right)^m
+  \label{anhPowLaw}
+\end{equation}
+where the reference value $a_0$ and its compression dependence $m$ must be determined empirically.
+The entropy gain relative to the reference adiabat is obtained by integration:
+\begin{equation}
+  \Delta S_0^{\rm sol}(V,T) = \int_{T_{0S}^{\rm sol}}^T  \frac{C_V^{\rm sol}}{T} dT = 3N k_B \left[ \log_e (T/T_{0S}^{\rm sol}) - a(T - T_{0S}^{\rm sol}) \right]
+  \label{anhEntropy}
+\end{equation}
+where $T_{0S}^{\rm sol}(V)$ is given by Equation~\eqref{eq:adiabatTemp}.
+By taking partial derivatives with respect to $V$ and $T$, we obtain the total differential:
+\begin{equation}
+  \frac{dS^{\rm sol}}{3N k_B} = \left[ \frac{1}{T} - a \right] dT + \left[ - \frac{1}{T_{0S}^{\rm sol}}\frac{d T_{0S}^{\rm sol}}{dV} -\frac{da}{dV}(T-T_{0S}^{\rm sol}) + a \frac{dT_{0S}^{\rm sol}}{dV}\right]dV
+\end{equation}
+By setting $dS^{\rm sol}=0$ and rearranging, we obtain the expression for the gr\"{u}neisen parameter allowing in the presence of anharmonic effects:
+\begin{equation}
+  \gamma^{\rm sol}(V,T) = \frac{(1-a T_{0S}^{\rm sol})\gamma_{0S}^{\rm sol} - (T-T_{0S}^{\rm sol})ma}{1-aT}
+  \label{anhGam}
+\end{equation}
+where if we assume zero anharmonicity ($a=0$) or restrict ourselves to the reference adiabat ($T=T_{0S}^{\rm sol}$), we recover the reference gr\"{u}neisen evolution given by $\gamma_{0S}^{\rm sol}(V)$.
+
+The internal energy expression is similarly determined by integration along a pathway up the reference adiabat and then up to the target temperature $(V_0,T_0) \rightarrow (V,T_{0S}) \rightarrow (V,T)$:
+\begin{equation}
+  \begin{split}
+    \Delta E_0^{\rm sol}(V,T) &= -\int_{V_0}^V  P_S^{\rm sol}(V) dV + \int_{T_{0S}}^{T} C_V^{\rm sol} dT \\
+    &= -\int_{V_0}^V  P_S^{\rm sol}(V) dV + 3N k_B [ (T-T_{0S}^{\rm sol}) - a/2(T^2 - {T_{0S}^{\rm sol}}^2) ]
+  \end{split}
+  \label{anhEint}
+\end{equation}
+where $P_S^{\rm sol}(V)$ describes the compression curve of the reference adiabat, described using the Vinet EOS:
+\begin{equation}
+  \begin{split}
+    P_S(V) &= 3K_{0S}(1-x)x^{-2}\exp\left[\nu(1-x)\right]\\
+    & {\rm where} \;\;\; x=(V/V_0)^{\frac13} \;\;\; {\rm and} \;\;\; \nu=\frac{3}{2}(K'_{0S}-1)
+  \end{split}
+  \label{eq:vinet}
+\end{equation}
+where $V_0$, $K_{0S}$, and $K'_{0S}$, are the zero pressure volume, adiabatic bulk modulus, and its pressure derivative.
+The total pressure is given by the volume derivative of Equation~\eqref{anhEint}:
+\begin{equation}
+  \begin{split}
+  P^{\rm sol}(V,T)  = & P_S^{\rm sol} + 3N k_B\left[(1-aT)\frac{dT}{dV}\bigg|_S -  (1-aT_{0S}^{\rm sol})\frac{dT_{0S}^{\rm sol}}{dV} \right]\\
+  & + \frac{3}{2}N k_B \frac{da}{dV}(T^2 - {T_{0S}^{\rm sol}}^2)
+  \end{split}
+\end{equation}
+%\awnote{
+%  It is possible that we might be able to use the standard power law expression as long as we only expect to accurately model the EOS in the local neighborhood of the melting curve.
+%  Thus we would NOT use parameter values appropriate to low temperature experiments, and instead need to tweak values signifcantly in order to get sensible results.
+%  The problem with this approach is that the melting curve spans a large entropy range over the mantle, and this form will likely NOT accurately capture entropy or heat capacity values.
+%  I therefore worry that it is going to seriously impact the energetics of crystallization throughout the mantle.
+%}
+%To improve the accuracy of the solid model and properly capture its thermal properties over the entire mantle P-T range, we must rely on an anharmonic correction, which accounts for the direct temperature dependence of the internal energy.
+%
+%Though this same expression is also often used to represent liquids (e.g., \cite{Asimow2012}), $\gamma$ for liquids generally exhibits considerable temperature-dependence \cite{Wolf2015}, and therefore we use this form to express the values along the reference melt adiabat $\gamma_0^{\rm melt}(V)$, and rely upon the thermodynamic definition (Equation~\ref{eq:gamThermo}) to obtain values elsewhere.
+%%%
+\subsection{Liquid EOS}
+To represent the thermodynamics of mantle material in a simple and flexible way, we derive a new parameterization high pressure melt EOS which captures melt behavior while retaining physically meaningful parameters that are easily interpreted in the context of magma ocean crystallization \citep{WB18}.
+%%%
+\subsection{Solution}
+%%% volume-mass proportionality
+\subsubsection{Density: Volume--mass proportionality}
+\dbnote{Need to relate this to formulation using partial densities further down}
+For each component $i$:
+\begin{equation}
+\rho_i = \frac{m_i}{v_i}
+\end{equation}
+For solution:
+\begin{equation}
+\rho_{sol}=\frac{m_{sol}}{v_{sol}} = \frac{\sum_i m_i}{v_{sol}} = \sum_i \frac{m_i}{v_{sol}} = \sum_i \frac{m_i}{v_i} \frac{v_i}{v_{sol}} = \sum_i \rho_i \left( \frac{v_i}{v_{sol}} \right)
+\end{equation}
+\textbf{Assume volume is proportional to mass}, for both the solution and the pure phase:
+\begin{equation}
+v \propto m
+\end{equation}
+Now \textbf{assume proportionality constant $c$ is the same for both the solution and the pure phase}.  This means the two substances have similar pure densities:
+\begin{equation}
+v = c m
+\end{equation}
+Therefore, continuing from above by substituting in the assumptions:
+\begin{equation}
+\rho_{sol}=\sum_i \rho_i \left( \frac{v_i}{v_{sol}} \right) = \sum_i \rho_i \left( \frac{c m_i}{c \sum_i m_i} \right) = \sum_i \rho_i \omega_i
+\end{equation}
+where $\omega_i$ is mass fraction of component $i$:
+\begin{equation}
+\omega_i = \frac{m_i}{\sum_i m_i} = \frac{m_i}{M}
+\end{equation}
+This is perhaps the most used and ``intuitive'' description of the density of a solution.  It conveniently means that the density of a solution is the addition of the mass-weighted (pure) densities of the components:
+\begin{equation}
+\rho_{sol}=\sum_i \rho_i \omega_i
+\end{equation}
+%%% volume additivity
+\subsubsection{Density: Volume additivity}
+\dbnote{Need to relate this to formulation using partial densities further down}
+\begin{equation}
+\omega_i = \frac{m_i}{M}
+\end{equation}
+\begin{equation}
+\frac{\omega_i}{\rho_i} = \frac{m_i}{M} \frac{v_i}{m_i} = \frac{v_i}{M}
+\end{equation}
+From above:
+\begin{equation}
+\therefore \sum_i \left( \frac{\omega_i}{\rho_i} \right) = \frac{1}{M} \sum_i v_i
+\end{equation}
+Now \textbf{assume volumes are additive}.  Typically true for ideal solutions and immiscible, non-reacting mixtures:
+\begin{equation}
+\frac{1}{M} \sum_i v_i = \frac{V}{M} = \frac{1}{\rho} \implies \frac{1}{\rho} = \sum_i \left( \frac{\omega_i}{\rho_i} \right)
+\end{equation}
+where, as before, $\omega$ is the mass fraction of component $i$ in the mixture.  This is what we currently use in SPIDER to calculate the density of the mixture based on the end-member densities of MgSiO$_3$ melt and solid.
+%%%%
+\subsubsection{Solution properties}
+We modify the single-component silicate (bridgmanite) model to accommodate a partially-molten (mixed-phase) region to reasonably approximate the behaviour of a multi-component mantle.  This relies on 2 approximations: 
+\begin{enumerate}
+\item Chemical differentiation is negligible (second order effect, at least energetically)
+\item The thermal range of the partially molten region ($\sim$200~K) is small compared to the temperature difference across the mantle ($\sim$2500~K). Values from \cite{SKS09}.
+\end{enumerate}
+This is achieved by fitting a single-component fusion curve to the 50\% solidus line for a realistic mantle chemistry.  Then we define a melting interval centred about the fusion curve to ensure solidus and liquidus enthalpy/entropy bounds that match the ``true'' mantle system:
+\begin{equation}
+\begin{split}
+S_{\rm liq}(P) &= S_{\rm fus}(P) + \Delta S_{\rm fus}(P) / 2 \\
+S_{\rm sol}(P) &= S_{\rm fus}(P) - \Delta S_{\rm fus}(P) / 2
+\end{split}
+\label{eqn:fusion_curve}
+\end{equation}
+where $S$ is entropy, $P$ pressure, and $S_{\rm fus}$ is the fusion curve.  Subscripts ``liq'' and ``sol'' denote that the quantity is determined at the liquidus and solidus, respectively.  The entropy of fusion, $\Delta S_{\rm fus}$ is computed to ensure the liquidus and solidus approximate those for a multi-component mantle.  [\textbf{Side note}: the melting curve used by \cite{ABE93} is from Ohtani (1983), although it may be slightly adjusted(?).  Ohtani appears to assume a constant entropy change on melting (fairly reasonable assumption) of 8.03 cal/mol/K for MgSiO3 melt.  The enthalpy change in \cite{ABE93} is likely calculated from this value, $\Delta h = T \Delta S$.]
+
+
+
+  To obtain the properties of the two phase aggregate, we represent the entropy of the system as a linear mixture of the solid and liquid values, thus providing a simple estimate of the melt fraction as a function of total entropy:
+\begin{equation}
+\phi=
+\begin{cases}
+  1 & \text{for } S>S_{\rm liq} \\
+  (S-S_{\rm sol}) / \Delta S_{\rm fus} & \text{for } S_{\rm sol}<S<S_{\rm liq} \\  
+  0 & \text{for }  S<S_{\rm sol}
+\end{cases}
+\end{equation}
+\dbnote{Next sentence to improve with ASW input}   An advantage of expressing melt fraction in terms of entropy, rather than temperature, is that heat capacity is self-consistently calculated in the mixed-phase region rather than implicitly assuming that the heat capacity is equal for coexisting melt and solid.  The properties of the melt-solid aggregate are dominantly determined by melt fraction so we approximate temperature, $T$ in the mixed-phase region as a linearly weighted mixture of melt and solid endmembers:
+
+\begin{equation}
+T=
+\begin{cases}
+\label{eqn:temperature_agg}
+  T_m & \text{for } S>S_{\rm liq} \\
+  \phi T_{\rm liq} + (1-\phi) T_{\rm sol} & \text{for } S_{\rm sol}<S<S_{\rm liq} \\  
+  T_s & \text{for } S<S_{\rm sol}
+\end{cases}
+\end{equation}
+Herein subscripts ``m'' and ``s'' denote that the quantity is determined exclusively by the melt or solid equation of state, respectively.  Density, $\rho$ is:
+
+\begin{equation}
+\label{eqn:density_agg}
+\dfrac{1}{\rho} = \dfrac{1-\phi}{\rho_{\rm sol}} + \frac{\phi}{\rho_{\rm liq}}% \quad \quad \text{for } S_{\rm sol}<S<S_{\rm liq}
+\end{equation}
+Heat capacity, $c_p$ \citep[e.g.,][]{SOLO07} is:
+
+\begin{equation}
+\label{eqn:heat_capacity_agg}
+c_p = T_{\rm fus} \dfrac{\Delta S_{\rm fus}}{\Delta T_{\rm fus}} \quad \quad \text{for } S_{\rm sol}<S<S_{\rm liq}
+\end{equation}
+where $T_{\rm fus}$ is temperature of the fusion curve and $\Delta T_{\rm fus} = T_{\rm liq}-T_{\rm sol}$ is the temperature difference between the liquidus and solidus.  Thermal expansion coefficient, $\alpha$ is:
+
+\begin{equation}
+\label{eqn:thermal_exp_agg}
+\alpha = -\dfrac{\Delta \rho_{\rm fus}}{\rho \Delta T_{\rm fus}} \quad \quad \text{for } S_{\rm sol}<S<S_{\rm liq}
+\end{equation}
+where $\Delta \rho_{\rm fus} = \rho_{\rm liq} - \rho_{\rm sol}$.  Adiabatic temperature gradient, $dT/dP|_S$ is:
+
+\begin{equation}
+\label{eqn:adiabatic_temp_grad}
+\left. \dfrac{dT}{dP} \right|_S = \dfrac{dT_{\rm fus}}{dP} - \dfrac{\Delta T_{\rm fus}}{\Delta S_{\rm fus}} \dfrac{d S_{\rm fus}}{dP} \quad \quad \text{for } S_{\rm sol}<S<S_{\rm liq}
+\end{equation}
+Together, these expressions represent a thermodynamically consistent metastable combination of solid and melt phases, chosen to best mimic the behavior of the multicomponent mantle over the melting interval.  Outside of the mixed-phase region the quantities in Eqns.~\ref{eqn:density_agg}--\ref{eqn:adiabatic_temp_grad} are equal to their melt and solid values exclusively, as for temperature (Eqn.~\ref{eqn:temperature_agg}).  This model provides thermodynamic properties as a function of pressure and entropy for the melt, solid, and mixed phase that are input to the evolution model i.e., $\phi$, $T$, $\rho$, $c_p$, $\alpha$, and $dT/dP|_S$.

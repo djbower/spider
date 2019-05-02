@@ -1,0 +1,28 @@
+\subsection{Mixing Length Theory}
+1-D thermal evolution can be effectively modeled using mixing length theory to approximate the radially averaged results of full 3-D convective simulations.
+The physical picture is that convective heat transport at a distance $l$ from the nearest boundary is dominated by fluid parcels of size $l$, which transport heat vertically over a distance equal to their size before the dissipate, spanning the current position (from $r-l/2$ below to $r+l/2$).
+The sensible heat flux is expressed as a sum of conductive and convective terms:
+\begin{equation}
+  J_q = +\rho C_p \kappa \frac{\partial T}{\partial z} + \rho C_p \kappa_{\rm conv}\Delta(\delta_z T)_S
+\end{equation}
+where $z=R-r$ is the depth below the surface, $\kappa$ is the thermal diffusivity,$\kappa_{\rm conv}$ is the effective convective diffusivity, and $\Delta(\delta_z T)_S = \partial T/\partial z - (\partial T/\partial z)_S$ is the thermal gradient relative to the adiabat.
+The effective convective diffusivity is expressed in a form identical to Fourier's law (formerly called the eddy diffusivity according to Abe 1993), is determined from the mean free path by $\kappa \sim v l$:
+\begin{equation}
+  \kappa_{\rm conv} = \begin{cases}
+  0 & \Delta(\delta_z T)_S \leq 0 \\
+  v_{\rm vis}l & 0 < {Re}_{\rm loc} < 9/8 \\
+  v_{\rm invis}l &  9/8 \leq { Re}_{\rm loc}
+\end{cases}
+\label{eq:convdiff}
+\end{equation}
+where stable stratification prevents convection when the temperature gradient is not as steep as the adiabat ($\Delta(\delta_z T)_S \leq 0$), and otherwise the local Reynolds number $Re_{\rm loc} = v_{\rm vis} l / \nu$ determines the importance of viscosity to the resulting convection.
+The convective velocities are given by a balance of the buoyancy force on each fluid parcel against the viscous drag or pressure drag forces, in the viscous and inviscid cases, respectively:
+\begin{equation}
+  v_{\rm vis} = \frac{\alpha |g| l^3}{18\nu}  \Delta(\delta_z T)_S \\
+\end{equation}
+\begin{equation}
+  v_{\rm invis} = \sqrt{\frac{\alpha |g| l^2}{16}  \Delta(\delta_z T)_S} \\
+\end{equation}
+For viscous convection, the parcel velocity is given by Stokes settling for a sphere of diameter $l$. The inviscid case can be determined up to a constant by equating the dynamic pressure force $\sim$$\rho v^2$ with the buoyancy force \aswnote{though the exact source of the proportionality constant is unknown}.
+
+

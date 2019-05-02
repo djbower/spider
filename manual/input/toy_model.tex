@@ -1,0 +1,252 @@
+\subsection{Finite element method}
+
+\fbox{\parbox{\textwidth}{FEM representation of the toy model.}}\\
+
+\subsubsection{Analytical form}
+Following \cite{BSW18} we look to derive an FEM (weak) form of the toy model.
+%In the following, $\nabla=\partial / \partial r$ since we are considering a single spatial dimension $r$ (i.e., 1-D geometry).  So for example, we represent the divergence of a vector field with one component as a (scalar) gradient since the sign of the gradient determines the energy transport direction.
+Energy conservation is:
+\begin{equation}
+- \nabla \cdot \vec{F} = 0
+\end{equation}
+Flux is:
+\begin{equation}
+\vec{F} = - \kappa_h (2 \nabla S - \nabla S_{\rm liq})
+\end{equation}
+where $\nabla S_{\rm liq}$ is known \emph{a priori} and corresponds to the gradient of the melting curve (liquidus).  Note on sign: $\kappa_h$ is by definition zero or positive (Eq.~\ref{eqn:pm_kh}), so the term in brackets must be negative for positive flux $\vec{F}$.  This condition is stated in \citet[Eq. 27a,][]{BSW18}.  \citet[Fig.~1,][]{BSW18} shows that the equation accommodates negative flux solutions, but for the physically-relevant case the flux $F$ is positive because the planetary surface is cooling (radiating energy to space).  $F>0$ means that there is net transport of energy from the centre to the surface of the planet, i.e. $F$ is positive in the positive (outward) radial direction.  The eddy diffusivity for 1-D geometry ($\hat{r}$ is the radial unit vector pointing outwards) is:
+\begin{subnumcases}{\kappa_h=\frac{1}{64}\label{eqn:pm_kh}}
+  \sqrt{-\nabla S \cdot \hat{r}} & \text{for } $\nabla S \cdot \hat{r}<0$ \label{eqn:pm_khconv} \\
+  0 & \text{for } $\nabla S \cdot \hat{r} \ge 0$ \label{eqn:pm_khnone}
+\end{subnumcases}
+The objective is to determine $S$ (or $\nabla S$ if it helps us to retain precision) for a (prescribed) non-zero $F$ (zero flux gives the trivial solution).  Hence the boundary conditions are constant non-zero flux $F$.
+
+\subsubsection{Integration by parts}
+\begin{equation}
+\int u\ dv = uv - \int  v\ du
+\end{equation}
+
+\subsubsection{Weak form}
+\dbnote{I hadn't noticed until doing this analysis that there is an example in the fenics tutorial that is similar to what we want (and indeed gives the same answer that I derive).  See fenics tutorial, 4.4.2 ``PDE problem''}
+Note that I retain a source function $f$ for direct comparison with the examples in the fenics tutorial, but in our case $f=0$.  Multiply our equation by a test function $v$:
+\begin{equation}
+- \nabla \cdot \vec{F}\ v = f\ v
+\end{equation}
+Integrate over $\Omega$:
+\begin{equation}
+- \int_\Omega \nabla \cdot \vec{F}\ v\ dx = \int_\Omega f\ v\ dx
+\end{equation}
+Integration by parts:
+\begin{equation}
+- \int_\Omega \nabla \cdot \vec{F}\ v\ dx = \int_\Omega \vec{F} \cdot \nabla v\ dx - \int_{\partial \Omega} \vec{F} \cdot \hat{n}\ v\ ds
+\end{equation}
+where $n$ is the outward normal direction on the boundary.  If you sub in $F=\nabla u$ you recover the Poisson equation example in the fenics tutorial, Eq.~2.5.  If you sub in $F=q(u) \nabla u$ you recover the nonlinear Poisson equation example in the fenics tutorial, Eq. 3.16, Eq. 3.18.  Therefore:
+\begin{equation}
+\int_\Omega \vec{F} \cdot \nabla v\ dx - \int_{\partial \Omega} \vec{F} \cdot \hat{n}\ v\ ds = \int_\Omega f\ v dx
+\end{equation}
+Or equivalently:
+\begin{equation}
+\int_\Omega (\vec{F} \cdot \nabla v - f\ v) dx = \int_{\partial \Omega} \vec{F} \cdot \hat{n}\ v\ ds
+\end{equation}
+\dbnote{I think this is as far as we can go without saying something about the form of $\vec{F}$?  The weak form above implies we are looking for a solution to $F$, when in fact we want to solve for a variable that is used to determine $F$.}
+
+\subsubsection{Form of the flux}
+Let's slightly reformulate the equation using different variable choices:
+%In the equations for both linear and nonlinear Poisson in the fenics tutorial the term on the RHS is zero due to the requirement that the test function must vanish on the parts of the boundary where the solution is known.  This means for Dirichlet boundary conditions that $v=0$ on the whole boundary $\partial \Omega$.
+%\subsection{Weak form (nonlinear Poisson equation)}
+%We can recast our equation in the form of a nonlinear Poisson equation.  At the same time, let's try a change of variables to simplify the formulation a little:
+\begin{equation}
+-\nabla \cdot \vec{F} = 0
+\end{equation}
+\begin{equation}
+-\nabla \cdot (- \kappa_h (2 \nabla S - \nabla S_{\rm liq})) = 0
+\end{equation}
+\begin{equation}
+-\nabla \cdot (- \kappa_h \nabla \tilde{S}) = 0
+\end{equation}
+where:
+\begin{equation}
+\nabla \tilde{S}=2 \nabla S - \nabla S_{\rm liq}
+\end{equation}
+We can think of $\nabla \tilde{S}$ as a ``relative gradient'' or ``gradient perturbation'' relative to a reference state.  This is perhaps a new insight, since we always considered the reference state to be adiabatic.  But in fact the natural reference state may be a combination of convection and mixing.  Here, the reference state is given by the non-zero (negative) $\nabla S$ that gives zero flux ($F=0$).  Physically, the net transport of energy upwards by convection is exactly balanced by the net downwards transport of energy by mixing.  See \citet[Eq.~27 and Fig.~1]{BSW18}  Therefore:
+\begin{equation}
+\nabla \tilde{S}<0 \implies \vec{F}>0 \qquad \text{Eq. 27a, \cite{BSW18}}
+\end{equation}
+This is because the super-adiabatic temperature gradient is sufficiently (negatively) large that heat is transported upwards at a faster rate than heat is transported downwards by mixing.  Remember that there is always a cap on the energy that can be transported downwards because it depends on the availability of latent heat, whereas there is nothing to stop the toy model transporting an infinite amount of energy upwards by simply driving $\nabla S$ to a larger value.
+\begin{equation}
+\nabla \tilde{S}>0 \implies \vec{F}<0 \qquad \text{Eq. 27b, \cite{BSW18}}
+\end{equation}
+In this case the entropy gradient is sufficiently small that convective mixing can transport more energy downwards.  Finally, the reference state is given by:
+\begin{equation}
+\nabla \tilde{S}=0 \implies \vec{F}=0 \qquad \text{Eq. 27c, \cite{BSW18}}
+\end{equation}
+We have perhaps under-appreciated that $\nabla \tilde{S}$ is a natural variable for us to work with, since it pivots about the reference state where convection and mixing are exactly in balance.  We know that these two terms can be large and nearly exactly cancel \citep[Fig.~4a, 4c,][]{BSW18}.  But now we have an ``adjusted'' or ``relative'' gradient ($\nabla \tilde{S}$) that gives us a perturbation relative to a physically-meaningful reference state.  Nevertheless, we still need to be able to recover $S$ from our solution variable $\tilde{S}$ since $S$ is used to determine the thermophysical properties of melt and solid phases:
+\begin{equation}
+\int \nabla \tilde{S} dx = 2 \int \nabla S dx- \int \nabla S_{\rm liq} dx
+\end{equation}
+\begin{equation}
+\tilde{S} = 2 S - S_{\rm liq} + C, \quad \text{where $C$ is a constant}
+\end{equation}
+We already know that the dynamics are driven by relative entropy differences (i.e., entropy gradients), so the absolute entropy is not important in this regard.  However, in the full model the absolute entropy (relative to a chosen tie-point) is important since it is used to determine the thermophysical properties of the melt and solid phase which then feed back into the dynamic equations.  At the moment I am not sure if the exact choice of $C$ matters above, but it's clear that there is a very simple relationship between our solution variable $\tilde{S}$ and entropy $S$.  We can now express $\kappa_h$ as:
+\begin{subnumcases}{\kappa_h=\frac{1}{64}\label{eqn:pm_kh2}}
+  \sqrt{- 0.5(\nabla \tilde{S} + \nabla S_{\rm liq}) \cdot \hat{r}} & \text{for } $0.5(\nabla \tilde{S} + \nabla S_{\rm liq}) \cdot \hat{r}<0$ \label{eqn:pm_khconv2} \\
+  0 & \text{for } $\nabla S \cdot \hat{r} \ge 0$ \label{eqn:pm_khnone2}
+\end{subnumcases}
+So let's just treat $\kappa_h$ as a non-linear function of $\hat{S}$ and some other known parameters ($\nabla S_{\rm liq}$ in the case of the toy model above; other parameters appear in the full model).  
+\subsubsection{Nonlinear Poisson equation}
+Let's return to the fenics tutorial example of a nonlinear Poisson equation and cast our equation into the same form (Sect.~3.2.1, Eq. 3.16, Eq. 3.18).  In our case:
+\begin{equation}
+q(u) = -\kappa_h
+\end{equation}
+\begin{equation}
+\nabla u = \nabla \tilde{S}
+\end{equation}
+The variational form of the problem is :
+\begin{equation}
+\int_\Omega \left(-\kappa_h \nabla \tilde{S} \right) \cdot \nabla v\ dx - \int_{\partial \Omega} \left(-\kappa_h \nabla \tilde{S}\right) \cdot \hat{n}\ v\ ds = \int_\Omega f\ v dx
+\end{equation}
+Or equivalently:
+\begin{equation}
+\int_\Omega \left( \left(-\kappa_h \nabla \tilde{S}\right) \cdot \nabla v - f\ v\right) dx = \int_{\partial \Omega} \left( -\kappa_h \nabla \tilde{S} \right) \cdot \hat{n}\ v\ ds
+\end{equation}
+Brackets are used to easily identify the flux $\vec{F}= -\kappa_h \nabla \tilde{S}$ and I've shifted the boundary condition part to the RHS in the later equation because that requires some additional work.  This is because we cannot eliminate the boundary integral because we need to prescribe a flux boundary condition (Neumann condition) rather than a Dirichlet condition.  Note again that $f$ is included for comparison with the fenics examples but is zero in our case.
+\subsubsection{Boundary conditions}
+The test function $v$ is required to vanish on the parts of the boundary where the solution $\tilde{S}$ is known.  In our case, this corresponds to prescribing constant entropy boundary conditions.  However, we want to prescribe a known flux on the boundary so we cannot eliminate the term involving $\partial \Omega$ as we could have if we implemented Dirichlet conditions.  Express the Neumann condition as \dbnote{Following the example in the fenics tutorial and keeping the same sign convention, but I'm not sure why they choose to define the term as negative}:
+\begin{equation}
+\kappa_h \nabla \tilde{S} \cdot \hat{n} = g \qquad \text{ on } \Gamma_N
+\end{equation}
+Therefore (compare with fenics tutorial, Eq. 4.4 or Eq.~4.12.):
+\begin{equation}
+\int_\Omega \left(-\kappa_h \nabla \tilde{S} \right) \cdot \nabla v dx = \int_\Omega f v dx -  \int_{\Gamma_N} g v ds
+\end{equation}
+Now express in standard notation $a(u,v)=L(v)$ (compare with fenics tutorial Eq.~4.13 and Eq.~4.14), where $\nabla u= \nabla \tilde{S}$:
+\begin{equation}
+a(u,v) = \int_\Omega -\kappa_h \nabla u \cdot \nabla v dx
+\end{equation}
+\begin{equation}
+L(v) = \int_\Omega f v dx - \int_{\Gamma_N} g v ds
+\end{equation}
+\dbnote{There might be some signs to confirm.  The boundary fluxes are defined outward of the surface, so presumably the bc values at the top surface (positive $F$?) and bottom surface (negative $F$?) have different values?  Also, in my formulation $\nabla \tilde{S}<0$ so an extra negative sign appears in front of $\kappa_h$.}
+%%%%
+%%%%
+%%%%
+\subsection{Variable substitution}
+
+\fbox{\parbox{\textwidth}{Address the cancellation of the convective and mixing fluxes by solving for a solution variable that is the difference of the entropy (gradient) from a constructed state.  \textbf{This sounds similar to a well-balanced formulation, but I think it is (subtly) different---a well-balanced approach is presented after this section.}}}\\
+
+\begin{equation}
+F = F_{\rm conv} + F_{\rm mix} 
+\end{equation}
+\begin{equation}
+ = \kappa_h(S_r)(S_r) + \kappa_h(S_r)(S_r - S^{\rm liq}_r)
+\end{equation}
+\begin{equation}
+ = \kappa_h(S_r)(2S_r - S^{\rm liq}_r)
+\end{equation}
+We see that often the two terms are close to cancelling, so define $\bar S$ such that:
+\begin{equation}
+S = (1/2)S^{\rm liq} + \bar S + C
+\label{eq:toy_model_Sbar}
+\end{equation}
+Here we can choose C (a constant) to shift the entropy; an obvious choice is to shift the entropy closer to the liquidus which is where our problems first arise for a cooling magma ocean.  Hence $C \approx (1/2) S^{\rm liq}$, i.e. some constant that shifts the profile closer to the liquidus.
+We expect then, that $|\bar S_r| \ll | (1/2)S^{\rm liq}_r |$, and by construction,
+\begin{equation}
+2S_r - S^{\rm liq}_r = 2\bar S_r
+\end{equation}
+Then
+\begin{equation}
+F = \kappa_h((1/2)S^{\rm liq}_r + \bar S_r) (2 \bar S_r)
+\end{equation}
+This now doesn't have any obvious cancellation.  Also note that from Eq.~\ref{eq:toy_model_Sbar}:
+\begin{equation}
+\frac{\partial S}{\partial t} = \frac{\partial \bar S}{\partial t}
+\end{equation}
+So this approach appears to be promising.  We can transform the equation to use the new variable $\bar{S}$ without much effort.  It does require however that (for the full model):
+\begin{equation}
+\frac{d S_{liq}}{dr} = \frac{d S_{sol}}{dr}
+\end{equation}
+which should be true with the new data tables because we are going to compute the liquidus and then shift it by a constant entropy to obtain the solidus.  \textbf{The challenge is how to deal with the transition from mixed phase to single phase}.  Currently, we smoothly blend in the convective mixing term, but with this variable substitution we are `always' including the mixing since it is wrapped up in our new solution variable.  So maybe we need to remove the mixing flux for the single phase?  The goal, of course, is to retain a single formulation in which we treat both single and mixed phases in one domain.
+%%%
+%%%
+%%%
+\subsection{A well-balanced scheme}
+
+\fbox{\parbox{\textwidth}{Address the cancellation of the convective and mixing fluxes by adopting a well-balanced scheme.}}\\
+
+I base the approach on \cite{GK19} and just consider the toy model to establish a basic sketch algorithm.  A well-balanced scheme includes the concept of an equilibrium state that is free to define and is exactly recovered (to machine precision) when there is no perturbation to the system.  \cite{GK19} outline an approach for the Euler equations, in which a hydrostatic state is exactly recovered when there is no initial (pressure) perturbation.
+
+The first major step is for us to define, and then solve for, an appropriate equilibrium state.  From \cite{BSW18}, we know that our dynamic model maintains a net total flux that is very close to the applied surface boundary condition, which is constraining the amount of energy that can be radiated to space according to a grey-body radiative law.  So a natural choice for an equilibrium state is an entropy profile that gives constant heat flux---a constant heat flux defined by the surface boundary condition.  We already solve for this in the toy model, and can momentarily disregard the added complication of solving for the gradient of entropy rather than the entropy itself, since this is trivial to deal with at a later stage.  For the full model we probably want to solve for the entropy profile that gives constant (total) energy flux, since for reasons that become apparent it is convenient if the gradient of the flux (or energy) is zero.
+
+Sketch algorithm / workflow follows:
+
+\begin{itemize}
+\item Use the surface heat flux boundary condition (at a given entropy, $S$) $F_{top}$, to solve for the steady-state (equilibrium) entropy profile, $S_{eqm}$.  We already do this for the toy-model in the mathematica script, and can do the same for the full model, i.e.:
+\begin{equation}
+F_{eqm} = F(S_{eqm}(r)) = F_{top} \qquad \text{solve for}\ S_{eqm}(r)
+\label{eq:WB_F}
+\end{equation}
+Note that $F_{eqm}$ is constant by definition, but clearly the equilibrium entropy profile is a function of $r$.
+\item We can now consider the entropy, our solution variable, as being comprised of two parts:
+\begin{equation}
+S(r,t) = S_{eqm}(r) + \delta S(r,t)
+\end{equation}
+where $\delta S(r,t)$ is an entropy perturbation relative to the reference state.  To avoid complication, I assume a time-independent equilibrium state (time-dependence is discussed later) and just use entropy ($S$) even though in reality (for the discrete case) we can still solve for $dS/dr$ and then recover $S$.  By construction, it's apparent that with no entropy perturbation we exactly recover a constant heat flux, since:
+\begin{equation}
+F(r,t) = F ( S(r,t) ) = F( S_{eqm}(r) + \delta S(r,t) )
+\end{equation}
+if $\delta S(r,t)=0$ then:
+\begin{equation}
+F(r,t) = F ( S(r,t) ) = F( S_{eqm}(r) ) \equiv F_{top} \qquad \text{by construction}
+\end{equation}
+\item I think the above formulation encapsulates the key aspect of a well-balanced scheme; an equilibrium state that is exactly recovered to machine precision and a perturbation term.  The entropy perturbation is: 
+\begin{equation}
+\delta S(r,t) = S(r,t) - S_{eqm}(r)
+\label{eq:WB_dS}
+\end{equation}
+\item The evolution equation for the toy model is \citep[Eq.~24,][]{BSW18}:
+\begin{equation}
+\frac{\partial S}{\partial t} = - \frac{\partial F}{\partial r}
+\label{eq:WB_evo}
+\end{equation}
+Determine the LHS of Eq.~\ref{eq:WB_evo} by Substituting in Eq.~\ref{eq:WB_dS}:
+\begin{equation}
+\frac{\partial S}{\partial t} = \frac{\partial (S_{eqm}(r)+\delta S(r,t))}{\partial t} = \frac{\partial (\delta S(r,t))}{\partial t}
+\end{equation}
+This is promising, since we can now just consider the evolution of the entropy perturbation $\delta S$, rather than the evolution of entropy $S$.
+\item Now consider the flux, and using Eq.~\ref{eq:WB_dS}:
+\begin{equation}
+F(r,t) = F(S(r,t)) = F(S_{eqm}(r)+\delta S(r,t))
+\end{equation}
+\item We are free to define a flux perturbation (or simply a shifted flux):
+\begin{equation}
+\delta F(S(r,t)) = F(S(r,t)) - F(S_{eqm}(r))
+\label{eq:WB_dF}
+\end{equation}
+Note the flux is non-linear so:
+\begin{equation}
+\delta F(S(r,t)) \neq F(\delta S(r,t))
+\end{equation}
+\item We can substitute in Eq.~\ref{eq:WB_dF} to compute the RHS of Eq.~\ref{eq:WB_evo}:
+\begin{equation}
+- \frac{\partial F}{\partial r} = -\frac{\partial (\delta F(S)+F(S_{eqm}))}{\partial r} = -\frac{\partial (\delta F(S))}{\partial r} - \frac{\partial F(S_{eqm})}{\partial r}
+\end{equation}
+And recognise that the last term is zero by construction (Eq.~\ref{eq:WB_F}).
+\item So the evolution equation (Eq.~\ref{eq:WB_evo}) reduces to:
+\begin{equation}
+\frac{\partial (\delta S(r,t))}{\partial t} = -\frac{\partial (\delta F(S(r,t)))}{\partial r}
+\label{eq:WB_final}
+\end{equation}
+\item Some clarifying (emphasis) comments regarding Eq.~\ref{eq:WB_final}:
+\begin{itemize}
+\item The LHS considers the entropy perturbation since the equilibrium state ($S_{eqm}$) is only a function of $r$.  But of course, we could choose to effectively `remesh' the equilibrium state after a certain number of time steps.  This is because unlike the typical situation considered for an atmosphere (hydrostatic equilibrium), our `preferred' equilibrium also evolves with time since the radiative heat flux from the surface decays.  For the full model, we could therefore choose to re-solve for a new equilibrium state once our perturbation becomes an appreciable fraction of the previous equilibrium state (for example).
+\item The RHS retains the full non-linear form of the flux.  We are simply using the fact that a consequence of our equilibrium state, as defined by $S_{eqm}$, is that the flux gradient as given by the equilibrium state is exactly zero.  This is a trivial consequence of the fact that we are just shifted the flux by a constant value (independent of $r$).  But recall that we still need the `total' entropy $S$ to determine the flux.
+\item It is trivial to recover (total) $S$ and $F$ by simple addition using the equilibrium state.
+\end{itemize}
+\end{itemize}
+
+\subsection{Variable substitution or well-balanced scheme?}
+\begin{itemize}
+\item I think variable substitution can only work (for the full model) if $dS_{liq}/dr = dS_{sol}/dr$, because otherwise there are extra factors of entropy $S$ that are wrapped up in the variable substitution.  This would therefore introduce a non-linearity and prevent us from utilising the fact that we can shift our solution variable (which is actually a gradient) by a predefined and time-independent gradient associated with the melting curve.  \textbf{In general, we probably don't want to be tied to this condition being true.}
+\item Furthermore, if we solve for the substituted variable, we are implicitly including the mixing flux term.  Yet this term is not relevant for the single phase regions (fully molten or fully solid).  So we must presumably remove this contribution from the single phase.  At present we basically do the opposite---only including the mixing flux when we need it, rather than removing it when we don't.  So perhaps this isn't much of an issue if we do it the other way instead.
+\item There isn't an obvious disadvantage with the well-balanced scheme, although I don't think I can prove \emph{a priori} that it will actually improve the precision.  It somewhat adds another level of complexity that might be more difficult to deal with for a growing planet scenario, but perhaps it's still worth a go.
+
+\end{itemize}

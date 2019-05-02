@@ -1,0 +1,50 @@
+The concentration $X_i$ of a given isotope $i$ is:
+\cite[Eq.~4.7,][]{TS14}
+\begin{equation}
+X_i(t_\mathrm{age})= X_{i0} \exp{\left( \frac{t_\mathrm{age} \ln2}{T_{i1/2}} \right)}
+\end{equation}
+where $X_{i0}$ is present-day concentration, $t_\mathrm{age}$ age (time before present), $T_{i1/2}$ half-life.
+
+\begin{equation}
+t_\mathrm{age} = t_{i0} - t
+\end{equation}
+where $t$ the time after the starting time of the protoplanetary system and $t_{i0}$ refers to the time at which the concentration is known or inferred ($X_{i0}$).  For example, $t_{i0}=4.54$ Byrs for isotope concentrations that are measured at present day.  So we can write:
+
+\begin{equation}
+X_i(t) = X_{i0} \exp{\left( \frac{(t_{i0}-t) \ln2}{T_{i1/2}} \right)}
+\end{equation}
+
+This is useful because the concentration of extant radionuclides are usually defined at present day.  But for extinct radionuclides the present-day abundance is zero so instead we need to be able to define the initial concentration earlier in history.  Often the isotope concentration is defined as:
+
+\begin{equation}
+X_i(t=t_{i0})=X_{i0} = x_{i0} C_0
+\end{equation}
+where $x_{i0}$ is the fractional abundance of the isotope in the naturally occurring element and $C_0$ is the concentration (abundance) of the element, both defined at $t=t_{i0}$.  The rock type under consideration determines $C_0$ at present-day for Earth rocks, meteorites, etc.  The heat production rate for isotope $i$ is thus:
+\begin{equation}
+H_i(t)=H_i x_{i0} C_0 \exp{\left( \frac{(t_{i0}-t) \ln2}{T_{i1/2}} \right)}
+\end{equation}
+%%%
+\begin{table}[htbp]
+\centering
+\begin{tabular}{l c c c}
+\hline
+& T$_{i1/2}$ (Myr) & $x_{i0}$ & $H_i$ (W/kg)\\
+\hline
+$^{26}$Al & 0.717 & 0 & 0.3583\\
+$^{40}$K & 1248 & $1.1668\times10^{-4}$ & $2.8761\times10^{-5}$\\
+K & & & $3.4302\times10^{-9}$\\
+$^{60}$Fe & 2.62 & 0 & $3.6579\times10^{-2}$\\
+$^{232}$Th & 14000 & 1 & $2.6368\times10^{-5}$\\
+$^{235}$U & 704 & 0.0072045 & $5.68402\times10^{-4}$\\
+$^{238}$U & 4468 & 0.9927955 & $9.4946\times10^{-5}$\\
+U & & & $9.8314\times10^{-5}$
+\end{tabular}
+\caption[Physical constants for radionuclides]{Physical constants for radionuclides.  $x_{i0}$ is the fractional present-day isotopic abundance ($t_{i0}=4.55\times10^9$ yrs).  Reproduced from \cite{RUE17}.}
+\label{table:radionuclides}
+\end{table}
+%%%
+The total heating rate is the sum of heating from all isotopes:
+\begin{equation}
+H(t) = \sum_i H_i(t)
+\end{equation}
+This equation is the same as \cite[Eq.~4.8][]{TS14}.  Note that \cite{RUE17} computes bulk element power ensuring internal consistency \citep[Sect.~3.7][]{RUE17}.

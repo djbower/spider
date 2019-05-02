@@ -1,0 +1,139 @@
+\fbox{\parbox{\textwidth}{Understand the origin of the energy transport associated with the enthalpy of chemical/phase components.  This derives the energy equation for a multi-component system that appears in the appendix of \cite{ABE95}.}}\\
+
+\noindent
+\dbnote{After re-reading the literature referenced in this section, I am content that both of the referenced works are talking about thermodynamic components --- but it remains to be determined how Abe then switches to talking about phases.}
+In the following section, I combine the notation from \cite{DM62} and \cite{ABE95} so beware of notation changes compared to the original papers.  Where a choice can be made, I typically stick to the notation of \cite{ABE95}.  Conservation of mass fraction \cite[Eq.~II.13,][]{DM62}, \cite[also Eq.~A2,][]{ABE95}, \myemph{where $i$ is a thermodynamic (chemical) component and $j$ refers to a reaction}:
+\begin{equation}
+\rho \frac{D \omega_i}{Dt} = -\nabla \cdot \vec{J}_i + \rho \sum_{j=1}^r \nu_{ij} \mathcal{J}_j \qquad (i=1,\ n)
+\label{eq:ABE95_A2}
+\end{equation}
+Here I define \myemph{$\mathcal{J}_j$ as the rate of reaction $j$ per unit mass} (same as $w_j$ in \cite{ABE95} but this notation may be confused with mass fraction $\omega$ which is why I change the symbol).  \cite{ABE95} defines \myemph{$\nu_{ij}$ as the mass of component $i$ formed by reaction $j$}.  Note that \cite{DM62} use slightly different definitions of these quantities, since they define $\mathcal{J}$ as a mass per unit volume and unit time and omit the leading $\rho$ term.  \dbnote{Note that this equation does not provide information about how the component is partitioned between phases!  Rather, it is just a mass balance for the component.  So whilst it is correct, it's perhaps not the best starting point since ultimately Abe derives equations assuming a single component but two phase system.}  Entropy balance \cite[Eq.~III.12,][]{DM62}, \cite[also Eq.~A4,][]{ABE95}:
+\begin{equation}
+\rho \frac{Ds}{Dt} = - \nabla \cdot \vec{J}_s + \sigma
+\label{DM62_ch3_eq12}
+\end{equation}
+where the entropy flux $\vec{J}_s$ is the difference between the total entropy flux $\vec{J}_{s,\ tot}$ and a convective term $\rho s v$ \cite[Eq.~III.13,][]{DM62}:
+\begin{equation}
+\vec{J}_s = \vec{J}_{s,\ tot} - \rho s v
+\end{equation}
+The entropy balance, \myemph{excluding viscous dissipation and external forces}, is \cite[Eq.~III.19,][]{DM62}:
+\begin{equation}
+\rho \frac{Ds}{Dt} = - \nabla \cdot \left( \frac{\vec{J}_q - \sum_i \mu_i \vec{J}_i}{T} \right) - \frac{1}{T^2} \vec{J}_q \cdot \nabla T - \frac{1}{T} \sum_{i=1}^n \vec{J}_i \cdot T \nabla \left( \frac{\mu_i}{T} \right) - \frac{\rho}{T} \sum_{i=1}^n \sum_{j=1}^r \nu_{ij} \mu_i \mathcal{J}_j 
+\end{equation}
+Where entropy flux is \cite[Eq.~III.20,][]{DM62}:
+\begin{equation}
+\vec{J}_s = \frac{1}{T} \left( \vec{J}_q - \sum_{i=1}^n \mu_i \vec{J}_i \right)
+\end{equation}
+and entropy production is \cite[Eq.~III.21,][]{DM62}:
+\begin{equation}
+\sigma = - \frac{1}{T^2} \vec{J}_q \cdot \nabla T - \frac{1}{T} \sum_{i=1}^n \vec{J}_i \cdot T \nabla \left( \frac{\mu_i}{T} \right)
+- \frac{\rho}{T} \sum_{i=1}^n \sum_{j=1}^r \nu_{ij} \mu_i \mathcal{J}_j
+\end{equation}
+By using the thermodynamic relation \cite[Eq.~III.23,][]{DM62}:
+\begin{equation}
+T d \left( \frac{\mu_i}{T} \right) = \left( d \mu_i \right)_T - \frac{h_i}{T} dT
+\end{equation}
+We can define a new flux as \cite[Eq.~III.24,][]{DM62}:
+\begin{equation}
+\vec{J}_q^\prime = \vec{J}_q - \sum_{i=1}^n h_i \vec{J}_i
+\label{eq:Jqprime}
+\end{equation}
+\myemph{Eq.~\ref{eq:Jqprime} is the definition of heat flux used by \cite{ABE95} and therefore it removes the energetic contribution associated with the transport of enthalpy by the components.  This term then reappears as an entropy source term, since of course the physics must remain the same!}. \dbnote{This might be in part because Abe uses a mixing length scaling for the heat flux, and the scaling doesn't include.a consideration of enthalpy transport?}
+Then entropy flow is \cite[Eq.~III.26,][]{DM62}, \cite[also Eq.~A5,][]{ABE95}:
+\begin{equation}
+\vec{J}_s = \frac{1}{T} \vec{J}_q^\prime + \sum_{i=1}^n s_i \vec{J}_i
+\label{DM62_ch3_eq26}
+\end{equation}
+where $s_i = -(\mu_i-h_i)/T$ is the partial specific entropy of component $i$.  \myemph{Written in this way the entropy flux contains the heat flow $\vec{J}_q^\prime$ and a transport of partial entropies with respect to the barycentric velocity $v$}.  The entropy production associated with this definition can be written as \cite[Eq.~III.25,][]{DM62}, \cite[also Eq.~A6,][]{ABE95}:
+\begin{equation}
+\sigma = - \frac{1}{T^2} \vec{J}_q^\prime \cdot \nabla T - \frac{1}{T} \sum_{i=1}^n \vec{J}_i \cdot \left( \nabla \mu_i \right)_T - \frac{\rho}{T} \sum_{i=1}^n \sum_{j=1}^r \nu_{ij} \mu_i \mathcal{J}_j
+\label{eq:DM62_ch3_eq25}
+\end{equation}
+%%%
+Quoting from \cite{DM62}:\\
+
+\emph{``It is clear that the difference between $\vec{J}_q$ and $\vec{J}_q^\prime$ (Eq.~\ref{eq:Jqprime}) represents a transfer of heat due to diffusion. Therefore the quantity $\vec{J}_q^\prime$ also represents an irreversible heat flow. In fact in diffusing mixtures the concept of heat flow can be defined in different ways. Obviously a different definition of the notion of heat flux leaves all physical results unchanged. But to any particular choice corresponds a special form of the entropy production $\sigma$. It is a matter of expediency which choice is the most suitable in a particular application of the theory. The freedom of defining the heat flow in various ways, of which the possibility was indicated here in the framework of a macroscopic treatment, exists also in the microscopic theories of transport phenomena in mixtures.''}\\
+
+Abe chooses to model $J_q^\prime$ as a convective heat flux using mixing length theory.  In this regard, \cite[Eq.~47,][]{ABE95} \myemph{excludes the energetic contribution of the enthalpy transport of the components (but remember it appears later in Abe's formulation)}.  Now, using the above equations we can derive \cite[Eq.~A10,][]{ABE95} using several vector identities:
+%%%
+\begin{align}
+\rho \frac{Ds}{Dt} &= -\nabla \cdot \left(  \frac{1}{T} \vec{J}_q^\prime + \sum_{i=1}^n s_i \vec{J_i} \right) + \sigma \\
+&= - \frac{1}{T} \nabla \cdot \vec{J}_q^\prime + \frac{1}{T^2} \vec{J}_q^\prime \cdot \nabla T - \sum_{i=1}^n \nabla s_i \cdot \vec{J}_i - \sum_{i=1}^n s_i \nabla \cdot \vec{J}_i + \sigma
+\end{align}
+Sub in $\sigma$ (Eq.~\ref{eq:DM62_ch3_eq25}) and immediately see that the $1/T^2$ term cancels leaving:
+\begin{equation}
+\rho \frac{Ds}{Dt} = - \frac{1}{T} \nabla \cdot \vec{J}_q^\prime - \sum_{i=1}^n \nabla s_i \cdot \vec{J}_i - \sum_{i=1}^n s_i \nabla \cdot \vec{J}_i - \frac{1}{T} \sum_{i=1}^n \vec{J}_i \cdot (\nabla \mu_i)_T - \frac{\rho}{T} \sum_{i=1}^n \sum_{j=1}^r \nu_{ij} \mu_i \mathcal{J}_j
+\end{equation}
+Now use Eq.~\ref{eq:ABE95_A2} to eliminate the chemical reaction term:
+\begin{equation}
+\rho \frac{Ds}{Dt} = - \frac{1}{T} \nabla \cdot \vec{J}_q^\prime - \sum_{i=1}^n \nabla s_i \cdot \vec{J}_i - \sum_{i=1}^n s_i \nabla \cdot \vec{J}_i - \frac{1}{T} \sum_{i=1}^n \vec{J}_i \cdot (\nabla \mu_i)_T - \frac{1}{T} \sum_{i=1}^n \left( \mu_i \rho \frac{D\omega_i}{Dt} +\mu_i \nabla \cdot \vec{J}_i \right)
+\end{equation}
+Collect terms.  \myemph{\cite{ABE95} missing $\rho$ on the RHS}:
+\begin{equation}
+\rho \frac{Ds}{Dt} = - \frac{1}{T} \nabla \cdot \vec{J}_q^\prime - \sum_{i=1}^n \nabla \cdot (s_i \vec{J}_i ) - \frac{1}{T} \sum_{i=1}^n \nabla \cdot (\mu_i \vec{J}_i) - \frac{\rho}{T} \sum_{i=1}^n \mu_i  \frac{D\omega_i}{Dt}
+\end{equation}
+Now use $h_i = \mu_i + T s_i$:
+\begin{equation}
+\rho \frac{Ds}{Dt} = - \frac{1}{T} \nabla \cdot \vec{J}_q^\prime - \frac{1}{T} \sum_{i=1}^n \nabla \cdot (h_i \vec{J}_i ) - \frac{\rho}{T} \sum_{i=1}^n \mu_i  \frac{D\omega_i}{Dt}
+\end{equation}
+Leading to \cite[Eq.~A10,][]{ABE95}, \myemph{\cite[Eq.~A10,][]{ABE95} missing $\rho$}:
+\boxedeq{}{\rho \frac{Ds}{Dt} = - \frac{1}{T} \nabla \cdot \left( \vec{J}_q^\prime + \sum_{i=1}^n h_i \vec{J}_i \right) - \frac{\rho}{T} \sum_{i=1}^n \mu_i  \frac{D\omega_i}{Dt}}
+How \cite[Eq.~4][]{ABE95} is derived from this point is confusing.  It appears that if you literally swap out components and replace them with phases, where the two phases are melt and solid, you can reproduce \cite[Eq.~4][]{ABE95}.  But then later, \cite{ABE95} states that this equation must be \emph{``modified for multi-component systems, because energy transport due to mass transport must be taken into account''}.  He then goes onto to derive the following equation, which makes sense based on \cite[Eq.~A10,][]{ABE95}.  The transport of thermodynamic components can be divided between a melt and solid phase.  \myemph{This is how the notion of phases is introduced into the formulation}.
+\begin{equation}
+\sum_{i=1}^n h_i\vec{J}_i = \sum_{i=1}^n h_i^m \vec{J}_i^m + h_i^s \vec{J}_i^s
+\end{equation}
+where $h_i^m$ and $h_i^s$ are the partial specific enthalpy of component $i$ in melt and solid phases, respectively.  Now recognise that the following holds, since the we can split the flux into a part relative to the velocity of the melt:
+\begin{subequations}
+\begin{align}
+\vec{J}_i^m&= \rho \phi \omega_i^m (\vec{U}_i^m - \vec{U} )\\
+&= \rho \phi \omega_i^m (\vec{U}_i^m - \vec{U}_{m} + \vec{U}_m - \vec{U} )\\
+&= \rho \phi \omega_i^m (\vec{U}_i^m - \vec{U}_{m} ) + \rho \phi \omega_i^m ( \vec{U}_m - \vec{U} )\\
+&= \vec{j}_i^m + \omega_i^m \vec{J}_m
+\end{align}
+\label{eq:J_mi}
+\end{subequations}
+and similarly:
+%%%
+\begin{subequations}
+\begin{align}
+\vec{J}_i^s&= \rho (1-\phi) \omega_i^s (\vec{U}_i^s - \vec{U} )\\
+&= \rho (1-\phi) \omega_i^s (\vec{U}_i^s - \vec{U}_s + \vec{U}_s - \vec{U} )\\
+&= \rho (1-\phi) \omega_i^s (\vec{U}_i^s - \vec{U}_s) + \rho (1-\phi) \omega_i^s (\vec{U}_{s} - \vec{U})\\
+&= \vec{j}_i^s + \omega_i^s \vec{J}_s\\
+&= \vec{j}_i^s - \omega_i^s \vec{J}_m
+\end{align}
+\label{eq:J_si}
+\end{subequations}
+where $\omega_i^m$, $\omega_i^s$, $\vec{J}_i^m$, and $\vec{J}_i^s$ are the mass fraction and mass flux of component $i$ in melt and solid phases, respectively.  $j_i^m$ and $j_i^s$ are the mass fluxes of component $i$ in melt and solid phases, respectively, caused by mechanisms other than melt-solid relative motion.  Substitute in Eqs.~\ref{eq:J_mi} and \ref{eq:J_si}:
+\begin{equation}
+\sum_{i=1}^n h_i\vec{J}_i = \sum_{i=1}^n h_i^m \vec{J}_i^m + h_i^s \vec{J}_i^s =  \sum_{i=1}^n h_i^m \left( \vec{j}_i^m + \omega_i^m \vec{J}_m \right) + h_i^s \left( \vec{j}_i^s - \omega_i^s \vec{J}_m \right)
+\end{equation}
+and collect terms:
+\begin{align}
+\sum_{i=1}^n h_i\vec{J}_i &= \vec{J}_m \sum_{i=1}^n \left( h_i^m \omega_i^m - h_i^s \omega_i^s \right) + \sum_{i=1}^n h_i^m \vec{j}_i^m + h_i^s \vec{j}_i^s\\
+&= \vec{J}_m \left( h^m - h^s \right) + \sum_{i=1}^n h_i^m \vec{j}_i^m + h_i^s \vec{j}_i^s\\
+&= \Delta h \vec{J}_m + \sum_{i=1}^n h_i^m \vec{j}_i^m + h_i^s \vec{j}_i^s
+\end{align}
+This is helpful because the gravitational separation term (first term) can be parameterised simply based on Stokes' law.  The second term within the summation ultimately becomes the ``mixing term'' (see below), which represents energy transport due to mechanisms other than relative melt--solid separation.
+
+\dbnote{Cannot just switch from components to phases here!}
+For two phases ($n=2$) and $J_m=-J_s$, \myemph{\cite[Eq.~4,][]{ABE95} missing $\rho$}:
+\boxedeq{eq:entropy_twophase}{\rho \frac{Ds}{Dt} = - \frac{1}{T} \nabla \cdot \left( \vec{J}_q^\prime + (h_m-h_s) \vec{J}_m \right) - \frac{\rho}{T} (\mu_m-\mu_s) \frac{D\phi}{Dt}}
+Note this contains a latent heat ($\Delta h$) associated with melt--solid separation ($\vec{J}_m$).  At chemical equilibrium, which we always assume, $\mu_m=\mu_s$ and hence the last term is zero.  Now, for multi-component systems, energy transport due to mass transport must be taken into account \myemph{\cite[Eq.~20,][]{ABE95} missing $\rho$}:
+\begin{align}
+\begin{split}
+\rho \frac{Ds}{Dt} &= -\frac{1}{T} \nabla \cdot \left[ \vec{J}_q^\prime + \Delta h \vec{J}_m + \sum_{i=1}^n (h_{mi} \vec{j}_{mi} + h_{si} \vec{j}_{si} ) \right]\\
+&\qquad -\frac{\rho}{T} \left[ \Delta \mu \frac{D\phi}{Dt} + \sum_{i=1}^n \left( \phi \mu_{mi}\frac{D\omega_{mi}}{Dt} + (1-\phi) \mu_{si} \frac{D\omega_{si}}{Dt} \right) \right]
+\end{split}
+\end{align}
+Under the assumption of chemical equilibrium, the final term of Eq.~\ref{eq:entropy_twophase} is zero.  We then arrive at the fundamental equation that we solve in the SPIDER code.
+\boxedeq{eq:entropy_twophase_chemeq}{\rho \frac{Ds}{Dt} = - \frac{1}{T} \nabla \cdot \left( \vec{J}_q^\prime + (h_m-h_s) \vec{J}_m \right)}
+
+\noindent The two major steps that we now need to perform are:
+\begin{enumerate}
+\item Recast the velocities in terms of relative velocities, often relative to the centre of mass (barycentric velocity).
+\item Parameterise the resulting fluxes that originate from considering relative velocities.
+\end{enumerate}
+
+
+% In the multi-component case, terms relating to $\mu_{mi}$ and $\mu_{si}$ go away under the assumption of chemical equilibrium \dbnote{Although not obvious to me why the term involving derivatives goes away.}
