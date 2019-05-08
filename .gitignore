@@ -30,3 +30,13 @@ output/
 
 # test working directory (should agree with SPIDER_TEST_DIR in Makefile)
 test_dir/
+manual/manual.aux
+manual/manual.bbl
+manual/manual.blg
+manual/manual.fdb_latexmk
+manual/manual.fls
+manual/manual.lof
+manual/manual.lot
+manual/manual.synctex.gz
+manual/manual.toc
+manual/figs/mesh.aux
