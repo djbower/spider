@@ -52,7 +52,7 @@ typedef struct VolatileParameters_ {
 } VolatileParameters;
 
 /* for storing atmosphere outputs */
-typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY} MagmaOceanAtmosphereType;
+typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY,MO_ATMOSPHERE_TYPE_SOCRATES} MagmaOceanAtmosphereType;
 typedef struct AtmosphereParameters_ {
     // input parameters
     MagmaOceanAtmosphereType SURFACE_BC;
@@ -70,7 +70,7 @@ typedef struct AtmosphereParameters_ {
     PetscScalar param_utbl_const;
     // for volatile ODE
     PetscBool SOLVE_FOR_VOLATILES;
-    PetscScalar P0; 
+    PetscScalar P0;
     VolatileParameters H2O_parameters;
     VolatileParameters CO2_parameters;
     PetscScalar Rgas; // gas constant

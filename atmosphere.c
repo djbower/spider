@@ -73,7 +73,7 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
        functions for setting atmosphere-related quantities. Therefore
        ensure that A->tsurf is non-zero so that the escape-related
        functions do not return an uninitialised value warning
-       (valgrind).  During the time loop, A->tsurf is updated to a 
+       (valgrind).  During the time loop, A->tsurf is updated to a
        meaningful value before it is actually used. */
     A->tsurf = 1.0;
 
@@ -143,7 +143,7 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
 
     for(i=ilo; i<ihi; ++i){
         tau = PetscPowScalar(10.0,logtau_min + i*logdtau);
-        ierr = VecSetValues( A->atm_struct_tau, 1, &i, &tau, INSERT_VALUES );CHKERRQ(ierr);         
+        ierr = VecSetValues( A->atm_struct_tau, 1, &i, &tau, INSERT_VALUES );CHKERRQ(ierr);
     }
 
     ierr = VecAssemblyBegin( A->atm_struct_tau );CHKERRQ(ierr);
@@ -167,7 +167,7 @@ static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParame
     ierr = VecShift( A->atm_struct_temp, 1.0 ); CHKERRQ(ierr);
     ierr = VecScale( A->atm_struct_temp, 0.5 ); CHKERRQ(ierr);
     ierr = VecScale( A->atm_struct_temp, TO4 ); CHKERRQ(ierr);
-    ierr = VecShift( A->atm_struct_temp, Teq4 ); CHKERRQ(ierr); 
+    ierr = VecShift( A->atm_struct_temp, Teq4 ); CHKERRQ(ierr);
     ierr = VecPow( A->atm_struct_temp, 1.0/4.0 ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -448,7 +448,7 @@ PetscErrorCode set_surface_temperature_from_flux( Atmosphere *A, const Atmospher
     PetscScalar tsurf;
 
     PetscFunctionBeginUser;
-    
+
     tsurf = A->Fatm / ( Ap->sigma * A->emissivity );
     tsurf += PetscPowScalar( Ap->teqm, 4.0 );
     tsurf = PetscPowScalar( tsurf, 1.0/4.0 );
@@ -547,8 +547,8 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
 
     data = cJSON_CreateObject();
 
-    /* atmosphere structure only relevant for Abe and Matsui (1985) */
-    if (Ap->SURFACE_BC==3){
+    /* atmosphere structure relevant for case Abe and Matsui (1985) */
+    if (Ap->SURFACE_BC==3 || Ap->SURFACE_BC==6){
         ierr = JSON_add_atm_struct( A, Ap, data );CHKERRQ(ierr);
     }
 
@@ -762,7 +762,7 @@ static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParam
     ierr = DMDAVecGetArrayRead(A->da_atm,A->atm_struct_tau,&arr_tau);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(A->da_atm,A->atm_struct_depth,&arr_depth);CHKERRQ(ierr);
 
-    /* loop backwards, since height above the surface (z=0) occurs 
+    /* loop backwards, since height above the surface (z=0) occurs
        at the largest optical depth */
     arr_depth[numpts-1] = 0.0;
 

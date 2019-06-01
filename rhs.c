@@ -139,7 +139,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,dS0dt,INSERT_VALUES);CHKERRQ(ierr);
 
   /* time-dependence of additional quantities */
-  if (Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
+  if (Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3 || Ap->SURFACE_BC==6){
     ierr = solve_dxdts( E );
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,A->CO2.dxdt,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,A->H2O.dxdt,INSERT_VALUES);CHKERRQ(ierr);

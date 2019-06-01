@@ -71,6 +71,11 @@ PetscErrorCode set_surface_flux( Ctx *E )
           Qout = get_isothermal_surface( E );
           A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
           break;
+        case 6:
+          // SOCRATES derived heat flux
+          Qout = Ap->surface_bc_value;
+          A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
+          break;
         default:
           SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
           break;
@@ -123,7 +128,7 @@ static PetscScalar get_viscous_mantle_cooling_rate( Ctx *E, PetscScalar Qin )
     Parameters     *P = &E->parameters;
     Solution       *S = &E->solution;
 
-    /* enable the ability for the magma ocean to cool at a rate dictated 
+    /* enable the ability for the magma ocean to cool at a rate dictated
        by the upper mantle cooling rate.  This helps to prevent a viscous
        lid from forming at the top */
 
@@ -313,7 +318,7 @@ PetscScalar tsurf_param( PetscScalar temp, const AtmosphereParameters *Ap )
     // surface temperature
     Ts = num / den;
 
-    return Ts; 
+    return Ts;
 }
 
 PetscErrorCode solve_dxdts( Ctx *E )

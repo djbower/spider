@@ -139,7 +139,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     x1 = 0.0;
 
     /* turn on volatiles for these conditions */
-    if(Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
+    if(Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3 || Ap->SURFACE_BC==6){
         ierr = set_initial_volatile( E ); CHKERRQ(ierr);
         x0 = A->CO2.x;
         x1 = A->H2O.x;
@@ -247,12 +247,12 @@ static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
 }
 
 static PetscErrorCode set_initial_volatile( Ctx *E )
-{   
+{
     PetscErrorCode ierr;
     SNES           snes;
     Vec            x,r;
     PetscScalar    *xx;
-    
+
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -260,22 +260,22 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
     Volatile                   *CO2 = &A->CO2;
     Volatile                   *H2O = &A->H2O;
-   
+
     PetscFunctionBeginUser;
-    
+
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
 
     /* Use this to address this specific SNES (nonlinear solver) from the command
        line or options file, e.g. -atmosic_snes_view */
     ierr = SNESSetOptionsPrefix(snes,"atmosic_");CHKERRQ(ierr);
-    
+
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
     ierr = VecSetSizes( x, PETSC_DECIDE, 2 );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
-   
+
     ierr = SNESSetFunction(snes,r,FormFunction1,E);CHKERRQ(ierr);
-    
+
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     xx[0] = CO2_parameters->initial;
@@ -304,17 +304,17 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     /* Sanity check on solution (since it's non-unique) */
     if (CO2->x < 0.0 || H2O->x < 0.0) SETERRQ2(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
         "Unphysical initial volatile concentrations: CO2: %g, H2O: %g",CO2->x,H2O->x);
- 
+
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);
     ierr = SNESDestroy(&snes);CHKERRQ(ierr);
-    
+
     PetscFunctionReturn(0);
 }
 
 /* Non-linear solver for initial volatile abundance */
 static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
-{ 
+{
     PetscErrorCode    ierr;
     const PetscScalar *xx;
     PetscScalar       *ff;
@@ -331,10 +331,10 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     PetscFunctionBeginUser;
     VecGetArrayRead(x, &xx);
     CO2->x = xx[0];
-    H2O->x = xx[1];      
+    H2O->x = xx[1];
     VecRestoreArrayRead(x,&xx);
-    
-    ierr = set_atmosphere_volatile_content( Ap, A ); CHKERRQ(ierr);   
+
+    ierr = set_atmosphere_volatile_content( Ap, A ); CHKERRQ(ierr);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
     ff[0] = get_initial_volatile_abundance( A, Ap, CO2_parameters, CO2 );

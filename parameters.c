@@ -70,9 +70,9 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
     ierr = SetConstants(C,1.0,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
   } else {
     PetscScalar RADIUS0 = 6371000.0; // m
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-radius0",&RADIUS0,NULL);CHKERRQ(ierr);  
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-radius0",&RADIUS0,NULL);CHKERRQ(ierr);
     PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-entropy0",&ENTROPY0,NULL);CHKERRQ(ierr);  
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-entropy0",&ENTROPY0,NULL);CHKERRQ(ierr);
     PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
     ierr = PetscOptionsGetScalar(NULL,NULL,"-temperature0",&TEMPERATURE0,NULL);CHKERRQ(ierr);
     PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
@@ -208,7 +208,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   if ( P->mixing_length==3 ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_layer_radius",&P->mixing_length_layer_radius,NULL);CHKERRQ(ierr);
   }
-    
+
   P->Mg_Si0 = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si0",&P->Mg_Si0,NULL);CHKERRQ(ierr);
   P->Mg_Si1 = 0.0;
@@ -393,7 +393,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       ierr = PetscOptionsGetScalar(NULL,NULL,"-lid_thickness",&P->lid_thickness,NULL);CHKERRQ(ierr);
       P->lid_thickness /= C->RADIUS;
   }
-    
+
   /* core boundary condition */
   P->CORE_BC=MO_CORE_TYPE_COOLING;
   {
@@ -455,6 +455,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy
          do nothing */
       break;
+    case 6:
+      // MO_ATMOSPHERE_TYPE_SOCRATES: heat flux (read-in through COUPLER)
+      // Ap->surface_bc_value /= C->FLUX;
+      break;
     default:
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
       break;
@@ -512,7 +516,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->VOLATILE_ptr = &C->VOLATILE;
 
   /* FIXME the gas constant above is scaled differently for the viscosity laws added by Rob Spaargaren
-     this one below is for computing the 1-D atmosphere structure.  Should merge together and make consistent */
+     this one below is for computing the 1-D atmosphere structure. Should merge together and make consistent */
   Ap->Rgas = 8.3144598; // gas constant (J/K/mol)
   Ap->Rgas *= C->TEMP / C->ENERGY;
 
