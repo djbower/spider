@@ -10,6 +10,10 @@ static PetscScalar get_core_cooling_factor( const Ctx * );
 
 PetscErrorCode set_surface_flux( Ctx *E )
 {
+
+    /* This is called every time step, so can easily be used to couple
+       with an external code such as SOCRATES (case 6) */
+
     PetscErrorCode       ierr;
     PetscMPIInt          rank;
     PetscScalar          temp0,Qout,area0;
@@ -72,8 +76,18 @@ PetscErrorCode set_surface_flux( Ctx *E )
           A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
           break;
         case 6:
-          // SOCRATES derived heat flux
-          Qout = Ap->surface_bc_value;
+          /* SOCRATES derived heat flux
+             Qout is the OLR determined by SOCRATES.  You could either
+             pass this in directly, or this function here could read an
+             intermediate text file that contains the flux.  I believe
+             reading a text file is the preferred approach so far */
+          /* FIXME: below is a placeholder, Qout shoud come from SOCRATES
+             TODO: add logic to read value from text file?
+             TODO: if we use JSON, there are functions available in cJSON.c */
+          Qout = Ap->surface_bc_value; // placeholder
+          // TODO: if OLR is dimensional, you must non-dimensionalise as below
+          Qout /= C->FLUX;
+          // for consistency, back-compute the implied grey emissivity
           A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
           break;
         default:
