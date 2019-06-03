@@ -84,7 +84,15 @@ PetscErrorCode set_surface_flux( Ctx *E )
           /* FIXME: below is a placeholder, Qout shoud come from SOCRATES
              TODO: add logic to read value from text file?
              TODO: if we use JSON, there are functions available in cJSON.c */
-          Qout = Ap->surface_bc_value; // placeholder
+          /* TODO: formally, we should not store a changing (time-dependent)
+             quantity in the Atmosphere parameters struct, but rather in
+             Atmosphere.  Therefore, may need to add a new value in Atmosphere
+             struct that is used to store the value of the OLR from SOCRATES.
+             This value is not updated every time step, but only occasionally
+             based on some criteria (user-defined fractional change of magma
+             ocean volatile content?) */
+          Qout = Ap->surface_bc_value; // placeholder, but better to create
+             // new value in Atmosphere struct instead
           // TODO: if OLR is dimensional, you must non-dimensionalise as below
           Qout /= C->FLUX;
           // for consistency, back-compute the implied grey emissivity
