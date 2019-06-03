@@ -94,7 +94,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
           Qout = Ap->surface_bc_value; // placeholder, but better to create
              // new value in Atmosphere struct instead
           // TODO: if OLR is dimensional, you must non-dimensionalise as below
-          Qout /= C->FLUX;
+          //Qout /= C->FLUX;
           // for consistency, back-compute the implied grey emissivity
           A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
           break;
