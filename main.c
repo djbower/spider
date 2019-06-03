@@ -92,6 +92,15 @@ int main(int argc, char ** argv)
     /* This code proceeds by performing multiple solves with a TS object,
        pausing to optionally produce output before updating the "final" time
        and proceeding again */
+
+    /* TODO: presumably somewhere in this block, we need a new criteria to couple SPIDER with SOCRATES
+       now, the time stepper should also stop once a criteria is met, such as when the magma ocean
+       volatile abundance (for H2O or CO2) changes by some fraction relative to the previous
+       known values.  The time at which this occurs cannot be computed beforehand, and it is important
+       that the solver doesn't overstep (significantly).  This might be where event handling is preferred,
+       since then the timestepper would zoom in on the transition point */
+
+
     ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f = %f years\n",
         P->nstepsmacro,(double) P->dtmacro, (double) P->dtmacro_years);CHKERRQ(ierr);
     ierr = TSMonitorSet(ts,TSMonitorWalltimed,&mctx,NULL);CHKERRQ(ierr);
