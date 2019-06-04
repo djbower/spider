@@ -166,6 +166,8 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 {
     /* reads an initial condition from a previously output JSON file
        to enable restarting */
+    /* TODO: also need to read in current time and pass to time
+       stepper, but currently this is not output */
 
     PetscErrorCode   ierr;
     Parameters const *P  = &E->parameters;
@@ -240,9 +242,10 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
         for (i=0 ; i<cJSON_GetArraySize(values) ; i++ ){     
             item = cJSON_GetArrayItem( values, i );
             item_str = cJSON_Print(item);
-/* TODO: quad precision logic here not checked! */
-/* the format specifiers look a bit weird, but accommodate
-   the string output of values */
+        /* the format specifiers look a bit weird, but accommodate
+           the fact that the values in the array are output as strings
+           in the JSON to enable quad precision as well as double 
+           precision output */
 #if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( item_str, "\"%s\"", val_str );
             val = strtoflt128(val_str, NULL);
@@ -255,6 +258,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 
     }
 
+    /* all vec assembly is done here */
     for (i=0; i<E->numFields; ++i) {
       ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
       ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
