@@ -139,8 +139,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     x0 = 0.0;
     x1 = 0.0;
 
-    /* turn on volatiles for these conditions */
-    if(Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
+    if(Ap->SOLVE_FOR_VOLATILES){
         ierr = set_initial_volatile( E ); CHKERRQ(ierr);
         x0 = A->CO2.x;
         x1 = A->H2O.x;
