@@ -245,7 +245,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
    the string output of values */
 #if (defined PETSC_USE_REAL___FLOAT128)
             sscanf( item_str, "\"%s\"", val_str );
-            val = strtofloat128(val_str, NULL);
+            val = strtoflt128(val_str, NULL);
 #else
             sscanf( item_str, "\"%lf\"", &val );
 #endif
