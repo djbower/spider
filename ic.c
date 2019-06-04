@@ -165,55 +165,28 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
 static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 {
-
-    /* FIXME: currently broken since change to new output format (json) */
-
-    /* reads in the output from sol_[timestep].m to use as the
-       initial condition to enable restarting
-
-       Warning: this assumes a particular ordering of the fields in the solution
-       vector, so can only assumed to be valid when the file is generated
-       by this exact version of SPIDER.
-       */
+    /* reads an initial condition from a previously output JSON file
+       to enable restarting */
 
     PetscErrorCode   ierr;
-    Vec              *subVecs;
     Parameters const *P  = &E->parameters;
     FILE             *fp;
-    cJSON            *json;
-    cJSON            *solution;
-    cJSON            *subdomain;
-    cJSON            *values;
-    cJSON            *data;
-    Vec              invec;
-    //PetscInt         i=0, j=0;
-    //char             string[PETSC_MAX_PATH_LEN];
-//#if (defined PETSC_USE_REAL___FLOAT128)
-    //char             xtemp[30];
-//#endif
-    //PetscScalar      x;
-    //const PetscInt   head=3;
-
-    char * buffer = 0;
-    long length;
-
-    char *string,*string2;
-    PetscInt i;
-
-    PetscInt subdomain_num;
-
-
+    cJSON            *json, *solution, *subdomain, *values, *data, *item;
+    long             length;
+    char             *subdomain_str,*item_str;
+    PetscInt         i, subdomain_num;
+    PetscScalar      val;
+    Vec              invec, *subVecs;
+    char             *buffer = 0;
 #if (defined PETSC_USE_REAL___FLOAT128)
-    char valtemp[30];
+    char             val_str[30];
 #endif
 
-    PetscScalar val;
-
     PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_file:\n");CHKERRQ(ierr);
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-
 
     fp = fopen( P->ic_filename, "r" );
 
@@ -237,22 +210,16 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
     }
 
     json = cJSON_Parse( buffer );
-
     solution = cJSON_GetObjectItem(json,"solution");
-
     subdomain = cJSON_GetObjectItem(solution,"subdomain data");
 
     /* loop over subdomains and extract values */
     cJSON_ArrayForEach( data, subdomain )
     {
-        cJSON *subdomain_str = cJSON_GetObjectItem( data, "subdomain" );
-        cJSON *values = cJSON_GetObjectItem( data, "values" );
-        /* if you print out string using LLDB you can see that we are
-           accessing the desired values */
-        string = cJSON_Print(values);
-
-        string = cJSON_Print(subdomain_str);
-        sscanf( string, "%d", &subdomain_num );
+        subdomain = cJSON_GetObjectItem( data, "subdomain" );
+        values = cJSON_GetObjectItem( data, "values" );
+        subdomain_str = cJSON_Print(subdomain);
+        sscanf( subdomain_str, "%d", &subdomain_num );
 
         /* FIXME: could break if ordering of subdomains changes */
         if (subdomain_num == 0){
@@ -267,44 +234,27 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
         else if (subdomain_num == 3){
             invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]];
         }
+        else {
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"unexpected number of subdomains");
+        }
 
         for (i=0 ; i<cJSON_GetArraySize(values) ; i++ ){     
-            cJSON *item = cJSON_GetArrayItem( values, i );
-            string2 = cJSON_Print(item);
+            item = cJSON_GetArrayItem( values, i );
+            item_str = cJSON_Print(item);
 /* TODO: quad precision logic here not checked! */
 /* the format specifiers look a bit weird, but accommodate
    the string output of values */
 #if (defined PETSC_USE_REAL___FLOAT128)
-            sscanf( string2, "\"%s\"", valtemp );
-            val = strtofloat128(valtemp, NULL);
+            sscanf( item_str, "\"%s\"", val_str );
+            val = strtofloat128(val_str, NULL);
 #else
-            sscanf( string2, "\"%lf\"", &val );
+            sscanf( item_str, "\"%lf\"", &val );
 #endif
-
             /* add value to vec */
-            VecSetValues( invec, 1, &i, &val, INSERT_VALUES ); CHKERRQ(ierr);
-
+            VecSetValue( invec, i, val, INSERT_VALUES );CHKERRQ(ierr);
         }
 
-        VecAssemblyBegin( invec );
-        VecAssemblyEnd( invec );
-
     }
-
-    //while(fgets(string, sizeof(string), fp) != NULL) {
-   //     if( (i>=head) && (i<=P->numpts_b+head+2) ){ /* 3 header lines in sol_[timestep].m */
-//#if (defined PETSC_USE_REAL___FLOAT128)
- //           sscanf( string, "%s", xtemp );
- //           x = strtoflt128(xtemp, NULL);
-//#else
- //           sscanf(string, "%lf", &x );
-//#endif
- //           j = i-3;
-  //          ierr = VecSetValue(sol,j,x,INSERT_VALUES); CHKERRQ(ierr);
-   //     }
- //       ++i;
-  //  }
-
 
     for (i=0; i<E->numFields; ++i) {
       ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
@@ -313,8 +263,6 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
-    ierr = PetscFree(invec);CHKERRQ(ierr);
-
     cJSON_Delete( json );
     free( buffer );
 
