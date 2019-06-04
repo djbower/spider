@@ -37,7 +37,7 @@
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
 -initial_condition 1
-#-ic_filename output/dSdr_b_aug_0.m
+-ic_filename 500000.json
 
 # all units are SI unless indicated otherwise
 
@@ -152,7 +152,7 @@
 # [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
 # [4] heat flux (prescribe value using surface_bc_value)
 # [5] entropy
--SURFACE_BC 4
+-SURFACE_BC 1
 # dimensional, ordinarily will need to be read from SOCRATES each timestep
 -surface_bc_value 1.0E4
 
@@ -168,7 +168,7 @@
 -param_utbl_const 1.0E-7 # value of parameterisation
 
 # track time-dependence of volatile content in atmosphere and magma ocean
-# can be done passively (with SURFACE_BC=1 or 2 above), or self-consistently
+# can be done passively or self-consistently
 # with SURFACE_BC=3 above (where the volatile content feeds back into determining
 # the emissivity of the atmosphere)
 # [0] off

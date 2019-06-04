@@ -226,7 +226,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->initial_condition = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-initial_condition",&P->initial_condition,NULL);CHKERRQ(ierr);
 
-  ierr = PetscStrcpy(P->ic_filename,"output/dSdr_b_aug_0.m"); CHKERRQ(ierr);
+  ierr = PetscStrcpy(P->ic_filename,"restart.json"); CHKERRQ(ierr);
   if ( (P->initial_condition==2) || (P->initial_condition==3) ){
     ierr = PetscOptionsGetString(NULL,NULL,"-ic_filename",P->ic_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
   }
@@ -428,6 +428,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       break;
   }
 
+  Ap->SOLVE_FOR_VOLATILES = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-SOLVE_FOR_VOLATILES",&Ap->SOLVE_FOR_VOLATILES,NULL);CHKERRQ(ierr);
+
   /* (top) surface boundary condition */
   Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
   {
@@ -452,6 +455,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
            with CO2 and H2O volatile using plane-parallel radiative equilibrium model
            of Abe and Matsui (1985)
          do nothing */
+      Ap->SOLVE_FOR_VOLATILES = PETSC_TRUE;
       break;
     case 4:
       // MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed)
@@ -460,17 +464,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     case 5:
       /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy
          do nothing */
-      break;
-    case 6:
-      // MO_ATMOSPHERE_TYPE_SOCRATES: heat flux (read-in through COUPLER)
-      // TODO: remember that the input flux must be non-dimensionalised
-      // according to C->FLUX.  You might want to do this within the python
-      // coupler, in which case consider writing C->FLUX to the coupling
-      // text file as well.  Or you could get the dimensional flux (W/m^2)
-      // from SOCRATES and then non-dimensionalise within BC.  Either way,
-      // add a note with what you decide to do
-      // For the time being, let's populate this value as with case 4
-      Ap->surface_bc_value /= C->FLUX;
       break;
     default:
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
@@ -512,9 +505,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   } else {
       Ap->param_utbl_const = 0.0;
   }
-
-  Ap->SOLVE_FOR_VOLATILES = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-SOLVE_FOR_VOLATILES",&Ap->SOLVE_FOR_VOLATILES,NULL);CHKERRQ(ierr);
 
   /* below here are only used for SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES */
 

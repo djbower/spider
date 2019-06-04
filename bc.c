@@ -11,9 +11,6 @@ static PetscScalar get_core_cooling_factor( const Ctx * );
 PetscErrorCode set_surface_flux( Ctx *E )
 {
 
-    /* This is called every time step, so can easily be used to couple
-       with an external code such as SOCRATES (case 6) */
-
     PetscErrorCode       ierr;
     PetscMPIInt          rank;
     PetscScalar          temp0,Qout,area0;
@@ -73,29 +70,6 @@ PetscErrorCode set_surface_flux( Ctx *E )
           // isothermal (constant entropy)
           // TODO: is this consistent with A->tsurf?
           Qout = get_isothermal_surface( E );
-          A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
-          break;
-        case 6:
-          /* SOCRATES derived heat flux
-             Qout is the OLR determined by SOCRATES.  You could either
-             pass this in directly, or this function here could read an
-             intermediate text file that contains the flux.  I believe
-             reading a text file is the preferred approach so far */
-          /* FIXME: below is a placeholder, Qout shoud come from SOCRATES
-             TODO: add logic to read value from text file?
-             TODO: if we use JSON, there are functions available in cJSON.c */
-          /* TODO: formally, we should not store a changing (time-dependent)
-             quantity in the Atmosphere parameters struct, but rather in
-             Atmosphere.  Therefore, may need to add a new value in Atmosphere
-             struct that is used to store the value of the OLR from SOCRATES.
-             This value is not updated every time step, but only occasionally
-             based on some criteria (user-defined fractional change of magma
-             ocean volatile content?) */
-          Qout = Ap->surface_bc_value; // placeholder, but better to create
-             // new value in Atmosphere struct instead
-          // TODO: if OLR is dimensional, you must non-dimensionalise as below
-          //Qout /= C->FLUX;
-          // for consistency, back-compute the implied grey emissivity
           A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
           break;
         default:
