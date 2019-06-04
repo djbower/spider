@@ -152,8 +152,7 @@
 # [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
 # [4] heat flux (prescribe value using surface_bc_value)
 # [5] entropy
-# [6] SOCRATES heat flux
--SURFACE_BC 6
+-SURFACE_BC 4
 # dimensional, ordinarily will need to be read from SOCRATES each timestep
 -surface_bc_value 1.0E4
 
