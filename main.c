@@ -15,6 +15,8 @@ See example input files in examples/ for many more available options\n\
 #include "monitor.h"
 #include "rhs.h"
 #include "version.h"
+#include "rollback.h"
+#include "poststep.h"
 
 static PetscErrorCode PrintSPIDERHeader();
 static PetscErrorCode PrintFields(Ctx*);
@@ -76,6 +78,19 @@ int main(int argc, char ** argv)
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
 
+  /* Set Up */
+  ierr = TSSetUp(ts);CHKERRQ(ierr);
+
+  /* Activate rollback capability and PostStep logic */
+  if (P->rollBackActive) {
+    ierr = TSRollBackGenericActivate(ts);CHKERRQ(ierr);
+  }
+  if (P->postStepActive) {
+    ierr = TSSetApplicationContext(ts,&ctx);CHKERRQ(ierr);
+    ierr = PostStepDataInitialize(&ctx,sol);CHKERRQ(ierr); /* use initial condition here */
+    ierr = TSSetPostStep(ts,PostStep);CHKERRQ(ierr);
+  }
+
   /* Solve macro steps. We have our own outer loop which repeatedly calls TSSolve
      and then calls a custom monitor. We also provide a special monitor to the
      TS object, to output periodically within our macro steps, useful if a
@@ -118,6 +133,10 @@ int main(int argc, char ** argv)
       if (P->monitor) {
         ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
       }
+      if (ctx.stopEarly) {
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"Stopping macro timestepping loop early!\n");CHKERRQ(ierr); // FIXME not sure if we want this output
+        break;
+      }
       nexttime = (stepmacro + 1) * P->dtmacro; // non-dim
       ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     }
@@ -125,6 +144,9 @@ int main(int argc, char ** argv)
 
   /* Free allocated data and clean up */
   ierr = DestroyCtx(&ctx);CHKERRQ(ierr);
+  if (P->rollBackActive) {
+    ierr = TSRollBackGenericDestroy(ts);CHKERRQ(ierr);
+  }
   ierr = TSDestroy(&ts);CHKERRQ(ierr);
   ierr = PetscFinalize();CHKERRQ(ierr);
 
