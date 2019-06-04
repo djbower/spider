@@ -4,6 +4,5 @@
 #include <petscts.h>
 
 PetscErrorCode TSRollBackGenericActivate(TS);
-PetscErrorCode TSRollBackGenericDestroy(TS);
 
 #endif
