@@ -29,6 +29,17 @@
 -ts_sundials_atol 1.0e-11
 -ts_sundials_rtol 1.0e-11
 
+#-atmosts_snes_atol 1.0E-11
+#-atmosts_snes_rtol 1.0E-11
+
+#-atmosts_ksp_atol 1.0E-11
+#-atmosts_ksp_rtol 1.0E-11
+
+#-atmosts_snes_view 
+#-atmosts_snes_converged_reason
+
+#-atmos_snes_monitor
+
 # mesh
 # number of basic nodes
 -n 100
