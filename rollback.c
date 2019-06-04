@@ -27,6 +27,7 @@ static PetscErrorCode PreStep_RollBackGeneric(TS ts)
   if (!Xprev) {
     ierr = VecDuplicate(X,&Xprev);CHKERRQ(ierr);
     ierr = PetscObjectCompose((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject)Xprev);CHKERRQ(ierr);
+    ierr = PetscObjectDereference((PetscObject)Xprev);CHKERRQ(ierr);
   }
   ierr = VecCopy(X,Xprev);CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -44,17 +45,3 @@ PetscErrorCode TSRollBackGenericActivate(TS ts)
   ts->ops->rollback = TSRollBack_Generic;
   PetscFunctionReturn(0);
 }
-
-PetscErrorCode TSRollBackGenericDestroy(TS ts)
-{
-  PetscErrorCode ierr;
-  Vec            Xprev;
-
-  ierr = PetscObjectQuery((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject*)(&Xprev));CHKERRQ(ierr);
-  if (Xprev) {
-    ierr = VecDestroy(&Xprev);CHKERRQ(ierr);
-    ierr = PetscObjectCompose((PetscObject)ts,"RollBackGeneric_Xprev",NULL);CHKERRQ(ierr);
-  }
-  PetscFunctionReturn(0);
-}
-
