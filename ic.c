@@ -204,8 +204,8 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
         fseek(fp,0,SEEK_SET);
         buffer = malloc(length+1);
         if (buffer){
-            fread(buffer,1,length,fp);
-        }
+            if(fread(buffer,1,length,fp) != length) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_FILE_READ,"fread() error");
+        } else SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MEM,"malloc error");
         fclose(fp);
         buffer[length] = '\0';
     }
@@ -221,6 +221,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
         values = cJSON_GetObjectItem( data, "values" );
         subdomain_str = cJSON_Print(subdomain);
         sscanf( subdomain_str, "%d", &subdomain_num );
+        free(subdomain_str);
 
         /* FIXME: could break if ordering of subdomains changes */
         if (subdomain_num == 0){
@@ -252,6 +253,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 #else
             sscanf( item_str, "\"%lf\"", &val );
 #endif
+            free(item_str);
             /* add value to vec */
             VecSetValue( invec, i, val, INSERT_VALUES );CHKERRQ(ierr);
         }
