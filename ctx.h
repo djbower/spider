@@ -76,6 +76,12 @@ typedef struct Ctx_ {
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
 
+  /* Pointer for PostStep reference data */
+  void *postStepData;
+
+  /* Control flags */
+  PetscBool stopEarly;
+
   // TODO: there is no real reason that we have some data here and some in Solution and some in Mesh.
   //       it could all be flattened out (and probably would be in a re-implementation)
 } Ctx;

@@ -109,6 +109,9 @@ typedef struct _Parameters {
     PetscReal   t0; /* Initial time */
     PetscInt    numpts_b,numpts_s;
 
+    // Rollback / Post-step logic parameters
+    PetscBool   rollBackActive,postStepActive;
+
     // Output Parameters
     PetscBool monitor;
     char outputDirectory[PETSC_MAX_PATH_LEN];

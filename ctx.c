@@ -125,6 +125,12 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   //    initialise_composition(ctx);
  // }
 
+  /* Initialize PostStep reference data */
+  ctx->postStepData = NULL;
+
+  /* Initialize control flags */
+  ctx->stopEarly = PETSC_FALSE;
+
   PetscFunctionReturn(0);
 }
 
@@ -182,6 +188,11 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_point);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->dm_sol);CHKERRQ(ierr);
+
+  /* Destroy PostStep data */
+  if (ctx->postStepData) { 
+    ierr = PetscFree(ctx->postStepData);CHKERRQ(ierr);
+  }
 
   PetscFunctionReturn(0);
 }

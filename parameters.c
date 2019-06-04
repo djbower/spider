@@ -171,6 +171,12 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_b,NULL);CHKERRQ(ierr);
   P->numpts_s = P->numpts_b - 1;
 
+  /* RollBack and PostStep options */
+  P->rollBackActive = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-activate_rollback",&P->rollBackActive,NULL);CHKERRQ(ierr);
+  P->postStepActive = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-activate_poststep",&P->postStepActive,NULL);CHKERRQ(ierr);
+
   /* Output Options */
   P->monitor = PETSC_TRUE;
   ierr = PetscStrcpy(P->outputDirectory,"output");CHKERRQ(ierr);
@@ -749,6 +755,10 @@ PetscErrorCode PrintParameters(Parameters const *P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"           ,P->rhoMelFilename                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"          ,P->tempSolFilename                           );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"          ,P->tempMelFilename                           );CHKERRQ(ierr);
+  if (P->postStepActive) {
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"PostStep logic active\n"                                                                             );CHKERRQ(ierr);
+  }
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"Output Directory"           ,P->outputDirectory                           );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
