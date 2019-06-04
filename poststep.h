@@ -4,7 +4,8 @@
 #include <petscts.h>
 
 typedef struct {
-  PetscReal ref_concentration;
+  PetscReal x_CO2; // CO2 concentration in melt
+  PetscReal x_H2O; // H2O concentration in melt
 } PostStepData;
 
 PetscErrorCode PostStepDataInitialize(Ctx *,Vec);

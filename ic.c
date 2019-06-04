@@ -170,13 +170,14 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
        stepper, but currently this is not output */
 
     PetscErrorCode   ierr;
-    Parameters const *P  = &E->parameters;
+    Parameters *P  = &E->parameters;
+    AtmosphereParameters *Ap = &P->atmosphere_parameters;
     FILE             *fp;
     cJSON            *json, *solution, *subdomain, *values, *data, *item;
     long             length;
     char             *subdomain_str,*item_str;
     PetscInt         i, subdomain_num;
-    PetscScalar      val;
+    PetscScalar      val = 0;
     Vec              invec, *subVecs;
     char             *buffer = 0;
 #if (defined PETSC_USE_REAL___FLOAT128)
@@ -258,6 +259,14 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
             VecSetValue( invec, i, val, INSERT_VALUES );CHKERRQ(ierr);
         }
 
+        /* must also populate initial volatile concentrations */
+        if (subdomain_num == 2){
+            Ap->CO2_parameters.initial = val;
+        }
+        else if (subdomain_num == 3){
+            Ap->H2O_parameters.initial = val;
+        }
+
     }
 
     /* all vec assembly is done here */
@@ -265,8 +274,10 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
       ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
       ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
     }
-
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
+    /* TODO: must also update initial H2O and CO2 concentrations in volatile structure */
+
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
     cJSON_Delete( json );
     free( buffer );
