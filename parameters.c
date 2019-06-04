@@ -455,17 +455,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy
          do nothing */
       break;
-    case 6:
-      // MO_ATMOSPHERE_TYPE_SOCRATES: heat flux (read-in through COUPLER)
-      // TODO: remember that the input flux must be non-dimensionalised
-      // according to C->FLUX.  You might want to do this within the python
-      // coupler, in which case consider writing C->FLUX to the coupling
-      // text file as well.  Or you could get the dimensional flux (W/m^2)
-      // from SOCRATES and then non-dimensionalise within BC.  Either way,
-      // add a note with what you decide to do
-      // For the time being, let's populate this value as with case 4
-      Ap->surface_bc_value /= C->FLUX;
-      break;
     default:
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
       break;

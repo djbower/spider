@@ -36,7 +36,7 @@
 # initial condition
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
--initial_condition 2
+-initial_condition 1
 -ic_filename 500000.json
 
 # all units are SI unless indicated otherwise
@@ -153,7 +153,7 @@
 # [4] heat flux (prescribe value using surface_bc_value)
 # [5] entropy
 # [6] SOCRATES heat flux
--SURFACE_BC 6
+-SURFACE_BC 1
 # dimensional, ordinarily will need to be read from SOCRATES each timestep
 -surface_bc_value 1.0E4
 

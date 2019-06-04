@@ -548,7 +548,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     data = cJSON_CreateObject();
 
     /* atmosphere structure relevant for case Abe and Matsui (1985) */
-    if (Ap->SURFACE_BC==3 || Ap->SURFACE_BC==6){
+    if (Ap->SURFACE_BC==3){
         ierr = JSON_add_atm_struct( A, Ap, data );CHKERRQ(ierr);
     }
 
