@@ -220,7 +220,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->initial_condition = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-initial_condition",&P->initial_condition,NULL);CHKERRQ(ierr);
 
-  ierr = PetscStrcpy(P->ic_filename,"output/dSdr_b_aug_0.m"); CHKERRQ(ierr);
+  ierr = PetscStrcpy(P->ic_filename,"restart.json"); CHKERRQ(ierr);
   if ( (P->initial_condition==2) || (P->initial_condition==3) ){
     ierr = PetscOptionsGetString(NULL,NULL,"-ic_filename",P->ic_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
   }

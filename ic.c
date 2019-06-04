@@ -1,5 +1,6 @@
 #include "ic.h"
 #include "bc.h"
+#include "cJSON.h"
 #include "util.h"
 #include "atmosphere.h"
 
@@ -178,37 +179,86 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
     PetscErrorCode   ierr;
     Parameters const *P  = &E->parameters;
     FILE             *fp;
-    PetscInt         i=0, j=0;
-    char             string[PETSC_MAX_PATH_LEN];
-#if (defined PETSC_USE_REAL___FLOAT128)
-    char             xtemp[30];
-#endif
-    PetscScalar      x;
-    const PetscInt   head=3;
+    cJSON            *json;
+    cJSON            *solution;
+    cJSON            *subdomain;
+    cJSON            *values;
+    cJSON            *data;
+    //PetscInt         i=0, j=0;
+    //char             string[PETSC_MAX_PATH_LEN];
+//#if (defined PETSC_USE_REAL___FLOAT128)
+    //char             xtemp[30];
+//#endif
+    //PetscScalar      x;
+    //const PetscInt   head=3;
+
+    char * buffer = 0;
+    long length;
+
+    char *string
 
     PetscFunctionBeginUser;
+
     fp = fopen( P->ic_filename, "r" );
 
     if(fp==NULL) {
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",P->ic_filename);
     }
 
-    while(fgets(string, sizeof(string), fp) != NULL) {
-        if( (i>=head) && (i<=P->numpts_b+head+2) ){ /* 3 header lines in sol_[timestep].m */
-#if (defined PETSC_USE_REAL___FLOAT128)
-            sscanf( string, "%s", xtemp );
-            x = strtoflt128(xtemp, NULL);
-#else
-            sscanf(string, "%lf", &x );
-#endif
-            j = i-3;
-            ierr = VecSetValue(sol,j,x,INSERT_VALUES); CHKERRQ(ierr);
+    /* read file to zero terminated string */
+    /* TODO: can this be improved? */
+    // https://stackoverflow.com/questions/174531/how-to-read-the-content-of-a-file-to-a-string-in-c
+    if (fp){
+        fseek(fp,0,SEEK_END);
+        length = ftell(fp);
+        fseek(fp,0,SEEK_SET);
+        buffer = malloc(length+1);
+        if (buffer){
+            fread(buffer,1,length,fp);
         }
-        ++i;
+        fclose(fp);
+        buffer[length] = '\0';
     }
 
-    VecAssemblyBegin( sol );
-    VecAssemblyEnd( sol );
+    json = cJSON_Parse( buffer );
+
+    solution = cJSON_GetObjectItem(json,"solution");
+
+    subdomain = cJSON_GetObjectItem(solution,"subdomain data");
+
+    /* loop over subdomains and extract values */
+    cJSON_ArrayForEach( data, subdomain )
+    {
+        cJSON *values = cJSON_GetObjectItem( data, "values" );
+        /* if you print out string using LLDB you can see that we are
+           accessing the desired values */
+        string = cJSON_Print(values);
+        /* TODO: write to array */
+
+        /* make cJSON *values to array */
+
+    }
+
+
+    //while(fgets(string, sizeof(string), fp) != NULL) {
+   //     if( (i>=head) && (i<=P->numpts_b+head+2) ){ /* 3 header lines in sol_[timestep].m */
+//#if (defined PETSC_USE_REAL___FLOAT128)
+ //           sscanf( string, "%s", xtemp );
+ //           x = strtoflt128(xtemp, NULL);
+//#else
+ //           sscanf(string, "%lf", &x );
+//#endif
+ //           j = i-3;
+  //          ierr = VecSetValue(sol,j,x,INSERT_VALUES); CHKERRQ(ierr);
+   //     }
+ //       ++i;
+  //  }
+
+    //VecAssemblyBegin( sol );
+    //VecAssemblyEnd( sol );
+
+    cJSON_Delete( json );
+    free( buffer );
 
     PetscFunctionReturn(0);
 }
