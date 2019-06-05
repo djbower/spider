@@ -126,6 +126,7 @@ int main(int argc, char ** argv)
       }
       if (ctx.stopEarly) {
         ierr = PetscPrintf(PETSC_COMM_WORLD,"Stopping macro timestepping loop early!\n");CHKERRQ(ierr); // FIXME not sure if we want this output
+        ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
         break;
       }
       nexttime = (stepmacro + 1) * P->dtmacro;
