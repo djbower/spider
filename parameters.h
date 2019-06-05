@@ -46,9 +46,10 @@ typedef struct VolatileParameters_ {
     PetscScalar henry;
     PetscScalar henry_pow;
     PetscScalar jeans_value; // for thermal escape
-    PetscScalar R_thermal_escape_value; /// for thermal escape
+    PetscScalar R_thermal_escape_value; // for thermal escape
     PetscScalar molar_mass;
     PetscScalar cross_section;
+    PetscReal   poststep_change; // allowable fractional change (only for -activate_poststep)
 } VolatileParameters;
 
 /* for storing atmosphere outputs */

@@ -551,6 +551,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   H2O->molar_mass /= C->MASS;
   H2O->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
   H2O->cross_section /= C->AREA;
+  // maximum allowable fractional change in interior melt abundance for poststep (only for -activate_poststep)
+  H2O->poststep_change = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_poststep_change",&H2O->poststep_change,NULL);CHKERRQ(ierr);
 
   /* CO2 volatile */
   CO2->initial = 100.0; // ppm
@@ -576,6 +579,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->molar_mass /= C->MASS;
   CO2->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
   CO2->cross_section /= C->AREA;
+  // maximum allowable fractional change in interior melt abundance for poststep (only for -activate_poststep)
+  CO2->poststep_change = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_poststep_change",&CO2->poststep_change,NULL);CHKERRQ(ierr);
 
   /* radiogenic heating */
   /* aluminium 26 */

@@ -40,6 +40,7 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
         ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
     }
     else if(IC==2){
+        // this sets everything, including the atmosphere
         ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
     }
     else if(IC==3){
@@ -47,6 +48,8 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
         ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
     }
 
+    /* TODO: move this code block to a conform_boundary_conditions
+       function */
     /* FIXME: will break in parallel */
     if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
         ierr = set_entropy_from_solution( E, sol );
@@ -171,7 +174,6 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 
     PetscErrorCode   ierr;
     Parameters *P  = &E->parameters;
-    AtmosphereParameters *Ap = &P->atmosphere_parameters;
     FILE             *fp;
     cJSON            *json, *solution, *subdomain, *values, *data, *item;
     long             length;
@@ -259,14 +261,6 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
             VecSetValue( invec, i, val, INSERT_VALUES );CHKERRQ(ierr);
         }
 
-        /* must also populate initial volatile concentrations */
-        if (subdomain_num == 2){
-            Ap->CO2_parameters.initial = val;
-        }
-        else if (subdomain_num == 3){
-            Ap->H2O_parameters.initial = val;
-        }
-
     }
 
     /* all vec assembly is done here */
@@ -275,8 +269,6 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
       ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
     }
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-
-    /* TODO: must also update initial H2O and CO2 concentrations in volatile structure */
 
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
     cJSON_Delete( json );
