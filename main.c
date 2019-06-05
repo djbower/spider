@@ -144,9 +144,6 @@ int main(int argc, char ** argv)
 
   /* Free allocated data and clean up */
   ierr = DestroyCtx(&ctx);CHKERRQ(ierr);
-  if (P->rollBackActive) {
-    ierr = TSRollBackGenericDestroy(ts);CHKERRQ(ierr);
-  }
   ierr = TSDestroy(&ts);CHKERRQ(ierr);
   ierr = PetscFinalize();CHKERRQ(ierr);
 
