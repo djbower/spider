@@ -19,6 +19,11 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
      be annoying, but in terms of plotting and analysis it is a non-issue since nothing
      is happening at timescales less than a year */
   Parameters const *P = &ctx->parameters;
+  Constants  const *C = &P->constants;
+
+  // FIXME: nstep is ugly, but was designed to always give an integer values
+  // of years for naming the output json file
+  // FIXME: to remove once filename output sorted out
   long long        nstep = (long long) dtmacro_years * (long long )step;
 
   PetscFunctionBeginUser;
@@ -93,8 +98,12 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       cJSON_AddItemToObject(json,"SPIDER patch version",cJSON_CreateString(SPIDER_PATCH_VERSION));
       // TODO: some of these variable names lack clear meaning (e.g., nstep)
       cJSON_AddItemToObject(json,"step",cJSON_CreateNumber(step));
-      cJSON_AddItemToObject(json,"dtmacro_years",cJSON_CreateNumber(dtmacro_years));
-      cJSON_AddItemToObject(json,"nstep",cJSON_CreateNumber(nstep));
+      cJSON_AddItemToObject(json,"dtmacro",cJSON_CreateNumber(dtmacro));
+      cJSON_AddItemToObject(json,"dtmacro_years",cJSON_CreateNumber(dtmacro*C->TIMEYRS));
+      // FIXME: remove nstep eventually
+      //cJSON_AddItemToObject(json,"nstep",cJSON_CreateNumber(nstep));
+      cJSON_AddItemToObject(json,"time",cJSON_CreateNumber(time));
+      cJSON_AddItemToObject(json,"time_years",cJSON_CreateNumber(time*C->TIMEYRS));
       // TODO : add other stuff we might like in the header
 
       /* Add solution to file */

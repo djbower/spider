@@ -3,9 +3,7 @@ static char help[] =
 -n : specify the number of staggered points\n\
 -monitor : use custom monitor to dump output\n\
 -nstepsmacro : specify the number of macro (output dump) steps\n\
--dtmacro : specify the macro (output dump) time step, in nondimensionalised time (will not be exact!)\n\
--dtmacro_years : specify the macro (output dump) time step, in years\n\
--early, -middle, -late : shortcuts to set -dtmacro and -nstepsmacro (overrides these)\n\
+-dtmacro : specify the macro (output dump) time step, in years\n\
 See example input files in examples/ for many more available options\n\
 ";
 
@@ -104,22 +102,15 @@ int main(int argc, char ** argv)
     mctx.walltimeprev = mctx.walltime0;
     mctx.outputDirectoryExistenceConfirmed = PETSC_FALSE;
     PetscInt stepmacro=0;
+
     /* This code proceeds by performing multiple solves with a TS object,
        pausing to optionally produce output before updating the "final" time
        and proceeding again */
 
-    /* TODO: presumably somewhere in this block, we need a new criteria to couple SPIDER with SOCRATES
-       now, the time stepper should also stop once a criteria is met, such as when the magma ocean
-       volatile abundance (for H2O or CO2) changes by some fraction relative to the previous
-       known values.  The time at which this occurs cannot be computed beforehand, and it is important
-       that the solver doesn't overstep (significantly).  This might be where event handling is preferred,
-       since then the timestepper would zoom in on the transition point */
-
-
     ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f = %f years\n",
         P->nstepsmacro,(double) P->dtmacro, (double) P->dtmacro_years);CHKERRQ(ierr);
     ierr = TSMonitorSet(ts,TSMonitorWalltimed,&mctx,NULL);CHKERRQ(ierr);
-    nexttime = P->dtmacro; // non-dim time
+    nexttime = P->dtmacro; 
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     if (P->monitor) {
       ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
@@ -137,7 +128,7 @@ int main(int argc, char ** argv)
         ierr = PetscPrintf(PETSC_COMM_WORLD,"Stopping macro timestepping loop early!\n");CHKERRQ(ierr); // FIXME not sure if we want this output
         break;
       }
-      nexttime = (stepmacro + 1) * P->dtmacro; // non-dim
+      nexttime = (stepmacro + 1) * P->dtmacro;
       ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     }
   }

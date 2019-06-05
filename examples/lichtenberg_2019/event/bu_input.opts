@@ -6,17 +6,7 @@
 # test of output
 
 # macro step size in years
--dtmacro_years 50000
-
-# for default time ranges
-# if one of these is set, then the above time stepping
-# parameters are ignored
-# 0 - 10 kyr
-#-early
-# 0 - 100 Myr
-#-middle
-# 0 - 4.55 Byr
-#-late
+-dtmacro 50000
 
 # for the PETSc interface to SUNDIALS, matchstep is not
 # allowed, and in testing it doesn't appear that interpolate

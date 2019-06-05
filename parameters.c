@@ -128,7 +128,24 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* Time frame parameters */
   P->maxsteps    = 100000000; /* Effectively infinite */
-  P->t0          = 0.0;
+
+  P->nstepsmacro = 18;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,NULL);CHKERRQ(ierr);
+
+  P->t0 = 0.0; // start time (years)
+  ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&P->t0,NULL);CHKERRQ(ierr);
+  P->t0_years = P->t0; // dimensional stored for convenience
+  P->t0 /= C->TIMEYRS; // non-dimensional for time stepping
+
+  P->dtmacro = 100; // step time (years)
+  ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&P->dtmacro,NULL);CHKERRQ(ierr);
+  P->dtmacro_years = P->dtmacro; // dimensional stored for convenience
+  P->dtmacro /= C->TIMEYRS; // non-dimensional for time stepping
+
+#if 0
+// FIXME: remove all below
+/* TODO: this time loop has always been a bit clunk, and frankly I haven't used the 'early', 'middle',
+   'late' convention as much as I thought I would */
   {
     PetscBool dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
               early = PETSC_FALSE, middle=PETSC_FALSE, late = PETSC_FALSE;
@@ -165,6 +182,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     // P->dtmacro is non-dimensional
     P->dtmacro = P->dtmacro_years / C->TIMEYRS;
   }
+#endif
 
   /* Grid parameters */
   P->numpts_b = 200;
