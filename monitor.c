@@ -7,24 +7,12 @@
 #include "atmosphere.h"
 #include "twophase.h"
 
-PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years, PetscInt step, PetscReal time, Vec sol, void *ptr, MonitorCtx *mctx)
+PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscReal time, Vec sol, void *ptr, MonitorCtx *mctx)
 {
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
-  /* it remains convenient to be able to plot both short and long times together
-     on the same plot, and since these are output by different settings in main.c,
-     it is easiest if the output files reference the actual time in years, rather
-     than timestep.  But the consequence of this approach is that small output
-     times (less than a year) will overwrite each other.  For debugging this could
-     be annoying, but in terms of plotting and analysis it is a non-issue since nothing
-     is happening at timescales less than a year */
   Parameters const *P = &ctx->parameters;
   Constants  const *C = &P->constants;
-
-  // FIXME: nstep is ugly, but was designed to always give an integer values
-  // of years for naming the output json file
-  // FIXME: to remove once filename output sorted out
-  long long        nstep = (long long) dtmacro_years * (long long )step;
 
   PetscFunctionBeginUser;
 
@@ -82,12 +70,16 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
 
     if (rank==0) {
-      cJSON       *json,*data;
-      char        *outputString;
-      char        filename[PETSC_MAX_PATH_LEN];
-      PetscInt    i;
+      cJSON         *json,*data;
+      char          *outputString;
+      char          filename[PETSC_MAX_PATH_LEN];
+      PetscInt      i;
+      long long int time_years_int;
 
-      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/%lld.json",P->outputDirectory,nstep);CHKERRQ(ierr);
+      // New here
+      time_years_int = (long long) ( time * C->TIMEYRS);
+
+      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/%lld.json",P->outputDirectory,time_years_int);CHKERRQ(ierr);
 
       /* Create a new JSON object */
       json = cJSON_CreateObject();
@@ -96,7 +88,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscReal dtmacro_years
       cJSON_AddItemToObject(json,"SPIDER major version",cJSON_CreateString(SPIDER_MAJOR_VERSION));
       cJSON_AddItemToObject(json,"SPIDER minor version",cJSON_CreateString(SPIDER_MINOR_VERSION));
       cJSON_AddItemToObject(json,"SPIDER patch version",cJSON_CreateString(SPIDER_PATCH_VERSION));
-      // TODO: some of these variable names lack clear meaning (e.g., nstep)
       cJSON_AddItemToObject(json,"step",cJSON_CreateNumber(step));
       cJSON_AddItemToObject(json,"dtmacro",cJSON_CreateNumber(dtmacro));
       cJSON_AddItemToObject(json,"dtmacro_years",cJSON_CreateNumber(dtmacro*C->TIMEYRS));

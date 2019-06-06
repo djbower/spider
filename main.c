@@ -113,7 +113,7 @@ int main(int argc, char ** argv)
     nexttime = P->dtmacro; 
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     if (P->monitor) {
-      ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
+      ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
     }
     for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
       ierr = TSSolve(ts,sol);CHKERRQ(ierr);
@@ -122,11 +122,11 @@ int main(int argc, char ** argv)
       }
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (P->monitor) {
-        ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
       }
       if (ctx.stopEarly) {
         ierr = PetscPrintf(PETSC_COMM_WORLD,"Stopping macro timestepping loop early!\n");CHKERRQ(ierr); // FIXME not sure if we want this output
-        ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
         break;
       }
       nexttime = (stepmacro + 1) * P->dtmacro;
