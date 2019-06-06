@@ -46,4 +46,14 @@
 # general preference is to let the coupler / external python scripts duplicate and copy files rather than asking
 # SPIDER to do it.
 
+# main restart example is here:
 spider -options_file bu_input.opts -initial_condition 2 -ic_filename 50001.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -nstepsmacro 1 -dtmacro 30000
+
+# this example is to demonstrate the over-stepping over the time stepper.  This isn't really a problem, but worth remembering
+# in terms of file naming.  Here, although we ask for 30000 years, the time-stepper oversteps to 30141, thus producing final
+# output in output/80141.json.  Nevertheless, output/80141.json records dtmacro_years of 30000, even though this was over-stepped by 141
+# Over-stepping is our only option using Sundials, but other time-steppers in PETSc may support interpolation.
+
+# uncomment line below for this example
+#spider -options_file bu_input.opts -initial_condition 2 -ic_filename 50001.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -nstepsmacro 1 -dtmacro 30000
+
