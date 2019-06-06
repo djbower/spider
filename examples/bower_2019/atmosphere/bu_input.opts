@@ -6,7 +6,7 @@
 # test of output
 
 # macro step size in years
--dtmacro_years 50000
+-dtmacro 50000
 
 # for default time ranges
 # if one of these is set, then the above time stepping

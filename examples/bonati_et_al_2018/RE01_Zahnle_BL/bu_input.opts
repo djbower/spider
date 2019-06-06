@@ -4,7 +4,7 @@
 -nstepsmacro 230
 
 # macro step size in years
--dtmacro_years 1000
+-dtmacro 1000
 
 # for default time ranges
 # if one of these is set, then the above time stepping

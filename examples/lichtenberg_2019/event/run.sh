@@ -9,7 +9,7 @@
 # -options_file bu_input.opts:     reads the options file to provide the parameters for SPIDER
 #                                  subsequent options on the command line over-ride these defaults
 # -initial_condition 2:            read in ic from file
-# -ic_filename 0.json:             JSON file to read in initial condition
+# -ic_filename 50000.json:         JSON file to read in initial condition
 # -SURFACE_BC 4:                   constant heat flux boundary condition
 # -surface_bc_value 1.0E4:         prescribed surface heat flux (e.g., 10^4 W/m^2)
 # -SOLVE_FOR_VOLATILES 1:          track evolution of volatiles (CO2 and H2O) in interior/atmosphere reservoirs
@@ -27,4 +27,4 @@
 # -nstepsmacro 1:                  make a single timestep
 # -dtmacro 30000:                  delta time to advance by, here is 30,000 years
 
-spider -options_file bu_input.opts -initial_condition 2 -ic_filename 0.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -nstepsmacro 1 -dtmacro 30000
+spider -options_file bu_input.opts -initial_condition 2 -ic_filename 50000.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -nstepsmacro 1 -dtmacro 30000
