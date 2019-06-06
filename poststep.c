@@ -42,6 +42,7 @@ PetscErrorCode PostStep(TS ts)
   PetscScalar    x_CO2, x_H2O, rel_CO2, rel_H2O, max_CO2, max_H2O;
   Vec            *subVecs;
   PetscInt const ind0 = 0;
+  PetscBool      EVENT = PETSC_FALSE;
 
   PetscFunctionBeginUser;
   ierr = TSGetTimeStepNumber(ts,&stepNumber);CHKERRQ(ierr);
@@ -69,9 +70,7 @@ PetscErrorCode PostStep(TS ts)
   if ( rel_CO2 > max_CO2 ){
     //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, rolling back solution and setting flags\n",__func__,__FILE__,__LINE__);
     ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"CO2 change exceeded (= %f, max= %f)\n",rel_CO2,max_CO2);
-    ierr = TSRollBack(ts);CHKERRQ(ierr);
-    ierr = TSSetConvergedReason(ts,TS_CONVERGED_USER);CHKERRQ(ierr);
-    E->stopEarly = PETSC_TRUE;
+    EVENT = PETSC_TRUE;
   }
 
   /* check H2O */
@@ -80,6 +79,10 @@ PetscErrorCode PostStep(TS ts)
   if ( rel_H2O > max_H2O ){
     //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, rolling back solution and setting flags\n",__func__,__FILE__,__LINE__);
     ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"H2O change exceeded (= %f, max= %f)\n",rel_H2O,max_H2O);
+    EVENT = PETSC_TRUE;
+  }
+
+  if (EVENT){
     ierr = TSRollBack(ts);CHKERRQ(ierr);
     ierr = TSSetConvergedReason(ts,TS_CONVERGED_USER);CHKERRQ(ierr);
     E->stopEarly = PETSC_TRUE;
