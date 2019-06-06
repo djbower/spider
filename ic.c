@@ -175,9 +175,9 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
     PetscErrorCode   ierr;
     Parameters *P  = &E->parameters;
     FILE             *fp;
-    cJSON            *json, *solution, *subdomain, *values, *data, *item;
+    cJSON            *json, *solution, *subdomain, *values, *data, *item, *time;
     long             length;
-    char             *subdomain_str,*item_str;
+    char             *item_str;
     PetscInt         i, subdomain_num;
     PetscScalar      val = 0;
     Vec              invec, *subVecs;
@@ -214,6 +214,12 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
     }
 
     json = cJSON_Parse( buffer );
+
+    /* time from this restart JSON must be passed to the time stepper
+       to continue the integration and keep track of absolute time */
+    time = cJSON_GetObjectItem(json,"time");
+    P->t0 = time->valuedouble;
+
     solution = cJSON_GetObjectItem(json,"solution");
     subdomain = cJSON_GetObjectItem(solution,"subdomain data");
 
@@ -221,10 +227,8 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
     cJSON_ArrayForEach( data, subdomain )
     {
         subdomain = cJSON_GetObjectItem( data, "subdomain" );
+        subdomain_num = subdomain->valueint;
         values = cJSON_GetObjectItem( data, "values" );
-        subdomain_str = cJSON_Print(subdomain);
-        sscanf( subdomain_str, "%d", &subdomain_num );
-        free(subdomain_str);
 
         /* FIXME: could break if ordering of subdomains changes */
         if (subdomain_num == 0){
@@ -243,20 +247,15 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"unexpected number of subdomains");
         }
 
-        for (i=0 ; i<cJSON_GetArraySize(values) ; i++ ){     
+        for (i=0; i<cJSON_GetArraySize(values); i++ ){     
             item = cJSON_GetArrayItem( values, i );
-            item_str = cJSON_Print(item);
-        /* the format specifiers look a bit weird, but accommodate
-           the fact that the values in the array are output as strings
-           in the JSON to enable quad precision as well as double 
-           precision output */
+            item_str = item->valuestring;
 #if (defined PETSC_USE_REAL___FLOAT128)
-            sscanf( item_str, "\"%s\"", val_str );
+            sscanf( item_str, "%s", val_str );
             val = strtoflt128(val_str, NULL);
 #else
-            sscanf( item_str, "\"%lf\"", &val );
+            sscanf( item_str, "%lf", &val );
 #endif
-            free(item_str);
             /* add value to vec */
             VecSetValue( invec, i, val, INSERT_VALUES );CHKERRQ(ierr);
         }
