@@ -76,8 +76,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       PetscInt      i;
       long long int time_years_int;
 
-      // New here
-      time_years_int = (long long) ( time * C->TIMEYRS);
+      // JSON output filename uses the current age in integer number of years
+      time_years_int = (long long) ( time * C->TIMEYRS );
 
       ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/%lld.json",P->outputDirectory,time_years_int);CHKERRQ(ierr);
 
@@ -91,8 +91,6 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       cJSON_AddItemToObject(json,"step",cJSON_CreateNumber(step));
       cJSON_AddItemToObject(json,"dtmacro",cJSON_CreateNumber(dtmacro));
       cJSON_AddItemToObject(json,"dtmacro_years",cJSON_CreateNumber(dtmacro*C->TIMEYRS));
-      // FIXME: remove nstep eventually
-      //cJSON_AddItemToObject(json,"nstep",cJSON_CreateNumber(nstep));
       cJSON_AddItemToObject(json,"time",cJSON_CreateNumber(time));
       cJSON_AddItemToObject(json,"time_years",cJSON_CreateNumber(time*C->TIMEYRS));
       // TODO : add other stuff we might like in the header

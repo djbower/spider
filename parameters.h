@@ -106,9 +106,7 @@ typedef struct _Parameters {
     // Discretization parameters
     PetscInt    nstepsmacro,maxsteps;
     PetscReal   dtmacro;
-    PetscReal   dtmacro_years;
-    PetscReal   t0; /* Initial time */
-    PetscReal   t0_years;
+    PetscReal   t0; /* initial time */
     PetscInt    numpts_b,numpts_s;
 
     // Rollback / Post-step logic parameters

@@ -108,7 +108,7 @@ int main(int argc, char ** argv)
        and proceeding again */
 
     ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f = %f years\n",
-        P->nstepsmacro,(double) P->dtmacro, (double) P->dtmacro_years);CHKERRQ(ierr);
+        P->nstepsmacro,(double) P->dtmacro, (double) (P->dtmacro*P->constants.TIMEYRS) );CHKERRQ(ierr);
     ierr = TSMonitorSet(ts,TSMonitorWalltimed,&mctx,NULL);CHKERRQ(ierr);
     nexttime = P->dtmacro; 
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);

@@ -132,57 +132,15 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->nstepsmacro = 18;
   ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,NULL);CHKERRQ(ierr);
 
-  P->t0 = 0.0; // start time (years)
+  /* start time (years) */
+  P->t0 = 0.0;
   ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&P->t0,NULL);CHKERRQ(ierr);
-  P->t0_years = P->t0; // dimensional stored for convenience
   P->t0 /= C->TIMEYRS; // non-dimensional for time stepping
 
-  P->dtmacro = 100; // step time (years)
+  /* step time (years) */
+  P->dtmacro = 100;
   ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&P->dtmacro,NULL);CHKERRQ(ierr);
-  P->dtmacro_years = P->dtmacro; // dimensional stored for convenience
   P->dtmacro /= C->TIMEYRS; // non-dimensional for time stepping
-
-#if 0
-// FIXME: remove all below
-/* TODO: this time loop has always been a bit clunk, and frankly I haven't used the 'early', 'middle',
-   'late' convention as much as I thought I would */
-  {
-    PetscBool dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
-              early = PETSC_FALSE, middle=PETSC_FALSE, late = PETSC_FALSE;
-    P->nstepsmacro = 18;
-    P->dtmacro_years = 100;
-    ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,&nstepsmacro_set);CHKERRQ(ierr);
-    ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&P->dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
-    ierr = PetscOptionsGetBool(NULL,NULL,"-early",&early,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetBool(NULL,NULL,"-middle",&middle,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetBool(NULL,NULL,"-late",&late,NULL);CHKERRQ(ierr);
-    if (early || middle || late ){
-      if(dtmacro_years_set || nstepsmacro_set){
-        ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -early, -middle, or -late provided. Ignoring -nstepsmacro and/or -dtmacro_years\n");CHKERRQ(ierr);
-      }
-      if ((int)early + (int)middle + (int)late > 1) {
-        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"only one of -early, -middle, or -late may be provided");
-      }
-      dtmacro_years_set = PETSC_TRUE;
-      if (early) {
-        /* early evolution to 10 kyr */
-        P->nstepsmacro = 1E2;
-        P->dtmacro_years = 1E2; // years
-      } else if (middle) {
-        /* middle evolution to 100 Myr */
-        P->nstepsmacro = 1E2;
-        P->dtmacro_years = 1E6; //years
-      } else if (late) {
-        /* late evolution to 4.55 Byr */
-        P->nstepsmacro = 455;
-        P->dtmacro_years = 1E9; // years
-      }
-    }
-
-    // P->dtmacro is non-dimensional
-    P->dtmacro = P->dtmacro_years / C->TIMEYRS;
-  }
-#endif
 
   /* Grid parameters */
   P->numpts_b = 200;
