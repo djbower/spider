@@ -119,9 +119,11 @@ int main(int argc, char ** argv)
       ierr = TSSetPostStep(ts,PostStep);CHKERRQ(ierr);
     }
 
+    /* output first time step (initial condition) */
     if (P->monitor) {
       ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
     }
+
     for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
       ierr = TSSolve(ts,sol);CHKERRQ(ierr);
       if (stepmacro == 1) {
