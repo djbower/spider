@@ -86,7 +86,7 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, const char * id_string)
+static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, const char * id_string, const Constants *C)
 {
   PetscErrorCode ierr;
   char           buf[1024]; /* max size */
@@ -95,18 +95,28 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   /* Accept -id_string_YYY to populate vp->YYY */
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_initial");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial,NULL);CHKERRQ(ierr);
+  vp->initial /= C->VOLATILE;
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_kdist");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kdist,NULL);CHKERRQ(ierr);
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_kabs");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kabs,NULL);CHKERRQ(ierr);
+  vp->kabs *= C->DENSITY * C->RADIUS;
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_henry_pow");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry_pow,NULL);CHKERRQ(ierr);
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_henry");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry,NULL);CHKERRQ(ierr);
+  vp->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/vp->henry_pow);
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_jeans_value");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,NULL);CHKERRQ(ierr);
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_R_thermal_escape_value");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->R_thermal_escape_value,NULL);CHKERRQ(ierr);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_molar_mass");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,NULL);CHKERRQ(ierr);
+  vp->molar_mass /= C->MASS;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_cross_section");CHKERRQ(ierr);
+  vp->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->cross_section,NULL);CHKERRQ(ierr);
+  vp->cross_section /= C->AREA;
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_poststep_change");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->poststep_change,NULL);CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -125,8 +135,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
-  VolatileParameters   *H2O = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
-  VolatileParameters   *CO2 = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
+  // TODO: remove once new volatile array working
+  //VolatileParameters   *H2O = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
+  //VolatileParameters   *CO2 = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
   Constants const      *C  = &P->constants;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
@@ -533,6 +544,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->Avogadro = 6.02214076E23; // 1/mol
   Ap->kB = Ap->Rgas / Ap->Avogadro;
 
+// TODO: remove once volatile array working
+#if 0
   /* H2O volatile */
   H2O->initial = 500.0; // ppm
   H2O->initial /= C->VOLATILE;
@@ -572,10 +585,11 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   CO2->cross_section /= C->AREA;
   // maximum allowable fractional change in interior melt abundance for poststep (only for -activate_poststep)
   CO2->poststep_change = 0.0;
+#endif
 
   /* Get command-line values for all volatiles species */
   for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
-    ierr = VolatileParametersSetFromOptions(&Ap->volatile_parameters[v],volatiles_id_strings[v]);
+    ierr = VolatileParametersSetFromOptions(&Ap->volatile_parameters[v],volatiles_id_strings[v], C );
   }
 
   /* radiogenic heating */
