@@ -48,6 +48,7 @@ typedef enum {
   SPIDER_VOLATILE_H2O         = 1,
   SPIDER_MAX_VOLATILE_SPECIES = 2
 } SpiderVolatileSpeciesID;
+const char *volatiles_id_strings[SPIDER_MAX_VOLATILE_SPECIES]; /* defined in parameters.c, must agree with enum */
 
 typedef struct VolatileParameters_ {
     PetscScalar initial;

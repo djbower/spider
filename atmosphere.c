@@ -544,6 +544,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     PetscScalar    scaling, val;
     Constants      const *C = &P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    PetscInt       v;
 
     PetscFunctionBeginUser;
 
@@ -580,11 +581,10 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     scaling = C->FLUX;
     ierr = JSON_add_single_value_to_object(dm, scaling, "Fatm", "W m$^{-2}$", A->Fatm, data);CHKERRQ(ierr);
 
-    /* CO2 */
-    ierr = JSON_add_volatile(dm, P, &Ap->volatile_parameters[SPIDER_VOLATILE_CO2], &A->volatiles[SPIDER_VOLATILE_CO2], A, "CO2", data ); CHKERRQ(ierr);
-
-    /* H2O */
-    ierr = JSON_add_volatile(dm, P, &Ap->volatile_parameters[SPIDER_VOLATILE_H2O], &A->volatiles[SPIDER_VOLATILE_H2O], A, "H2O", data ); CHKERRQ(ierr);
+    /* Volatiles */
+    for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
+      ierr = JSON_add_volatile(dm, P, &Ap->volatile_parameters[v], &A->volatiles[v], A, volatiles_id_strings[v], data ); CHKERRQ(ierr);
+    }
 
     cJSON_AddItemToObject(json,name,data);
 
