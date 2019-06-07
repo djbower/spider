@@ -39,6 +39,16 @@ typedef struct _Constants {
     PetscScalar HEATGEN;
 } Constants;
 
+/* Volatiles: define a maximum number of species, to define fixed-sized
+   arrays, and name indices into these arrays. The general objective is to use
+   loops over all the species, when the logic is identical for each. That is,
+   one should avoid using the names of the slots when possible! */
+typedef enum {
+  SPIDER_VOLATILE_CO2         = 0,
+  SPIDER_VOLATILE_H2O         = 1,
+  SPIDER_MAX_VOLATILE_SPECIES = 2
+} SpiderVolatileSpeciesID;
+
 typedef struct VolatileParameters_ {
     PetscScalar initial;
     PetscScalar kdist;
@@ -72,8 +82,7 @@ typedef struct AtmosphereParameters_ {
     // for volatile ODE
     PetscBool SOLVE_FOR_VOLATILES;
     PetscScalar P0;
-    VolatileParameters H2O_parameters;
-    VolatileParameters CO2_parameters;
+    VolatileParameters volatile_parameters[SPIDER_MAX_VOLATILE_SPECIES];
     PetscScalar Rgas; // gas constant
     PetscScalar const * gravity_ptr;
     PetscScalar const * radius_ptr;

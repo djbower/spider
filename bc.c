@@ -325,8 +325,8 @@ PetscErrorCode solve_dxdts( Ctx *E )
     PetscScalar    *xx;
 
     Atmosphere                 *A = &E->atmosphere;
-    Volatile                   *CO2 = &A->CO2;
-    Volatile                   *H2O = &A->H2O;
+    Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
+    Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
 
     PetscFunctionBeginUser;
 

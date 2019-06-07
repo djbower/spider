@@ -65,7 +65,7 @@ PetscErrorCode PostStep(TS ts)
   ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
   /* check CO2 */
-  max_CO2 = P->atmosphere_parameters.CO2_parameters.poststep_change;
+  max_CO2 = P->atmosphere_parameters.volatile_parameters[SPIDER_VOLATILE_CO2].poststep_change;
   rel_CO2 = PetscAbsReal( (x_CO2-data->x_CO2) / data->x_CO2);
   if ( rel_CO2 > max_CO2 ){
     //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, rolling back solution and setting flags\n",__func__,__FILE__,__LINE__);
@@ -74,7 +74,7 @@ PetscErrorCode PostStep(TS ts)
   }
 
   /* check H2O */
-  max_H2O = P->atmosphere_parameters.H2O_parameters.poststep_change;
+  max_H2O = P->atmosphere_parameters.volatile_parameters[SPIDER_VOLATILE_H2O].poststep_change;
   rel_H2O = PetscAbsReal( (x_H2O-data->x_H2O) / data->x_H2O);
   if ( rel_H2O > max_H2O ){
     //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, rolling back solution and setting flags\n",__func__,__FILE__,__LINE__);

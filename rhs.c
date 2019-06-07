@@ -57,11 +57,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   /* CO2 content of magma ocean (liquid phase) */
   ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],1,&ind0,&x0);CHKERRQ(ierr);
-  A->CO2.x = x0;
+  A->volatiles[SPIDER_VOLATILE_CO2].x = x0;
 
   /* H2O content of magma ocean (liquid phase) */
   ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],1,&ind0,&x1);CHKERRQ(ierr);
-  A->H2O.x = x1;
+  A->volatiles[SPIDER_VOLATILE_H2O].x = x1;
 
   ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
@@ -141,8 +141,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* time-dependence of additional quantities */
   if (Ap->SOLVE_FOR_VOLATILES){
     ierr = solve_dxdts( E );
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,A->CO2.dxdt,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,A->H2O.dxdt,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,A->volatiles[SPIDER_VOLATILE_CO2].dxdt,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,A->volatiles[SPIDER_VOLATILE_H2O].dxdt,INSERT_VALUES);CHKERRQ(ierr);
   }
   else{
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,0.0,INSERT_VALUES);CHKERRQ(ierr);

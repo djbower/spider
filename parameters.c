@@ -96,8 +96,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
-  VolatileParameters   *H2O = &Ap->H2O_parameters;
-  VolatileParameters   *CO2 = &Ap->CO2_parameters;
+  VolatileParameters   *H2O = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
+  VolatileParameters   *CO2 = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
   Constants const      *C  = &P->constants;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;

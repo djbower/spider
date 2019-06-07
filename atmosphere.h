@@ -33,8 +33,7 @@ typedef struct Atmosphere_ {
     PetscScalar tau; // aggregate optical depth at surface (dimensionless)
     PetscScalar Fatm; // net upward atmosphere flux
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
-    Volatile    CO2; // CO2 volatile quantities
-    Volatile    H2O; // H2O volatile quantities
+    Volatile    volatiles[SPIDER_MAX_VOLATILE_SPECIES]; // volatile quantities
     PetscScalar molar_mass; // mean molar mass
     DM          da_atm; // da for outputing atmosphere structure (below)
     DimensionalisableField atm_struct[NUMATMSTRUCTVECS];

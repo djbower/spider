@@ -25,6 +25,7 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
 {
     PetscErrorCode ierr;
     PetscScalar    scaling;
+    PetscInt       v;
 
     PetscFunctionBeginUser;
 
@@ -62,8 +63,9 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[3],"m");CHKERRQ(ierr);
 
     /* initialise volatiles */
-    ierr = initialise_volatile( &A->CO2 ); CHKERRQ(ierr);
-    ierr = initialise_volatile( &A->H2O ); CHKERRQ(ierr);
+    for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
+      ierr = initialise_volatile(&A->volatiles[v]);CHKERRQ(ierr);
+    }
 
     /* other variables in struct that otherwise might not get set */
     /* below is only for Abe and Matsui atmosphere model */
@@ -182,9 +184,9 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmospherePa
     PetscFunctionBeginUser;
 
     /* effective absorption coefficient */
-    CO2_kabs = get_pressure_dependent_kabs( Ap, &Ap->CO2_parameters );
-    H2O_kabs = get_pressure_dependent_kabs( Ap, &Ap->H2O_parameters );
-    kabs = A->CO2.mixing_ratio * CO2_kabs + A->H2O.mixing_ratio * H2O_kabs;
+    CO2_kabs = get_pressure_dependent_kabs( Ap, &Ap->volatile_parameters[SPIDER_VOLATILE_CO2] );
+    H2O_kabs = get_pressure_dependent_kabs( Ap, &Ap->volatile_parameters[SPIDER_VOLATILE_H2O] );
+    kabs = A->volatiles[SPIDER_VOLATILE_CO2].mixing_ratio * CO2_kabs + A->volatiles[SPIDER_VOLATILE_H2O].mixing_ratio * H2O_kabs;
 
     ierr = VecCopy( A->atm_struct_tau, A->atm_struct_pressure ); CHKERRQ(ierr);
     ierr = VecScale( A->atm_struct_pressure, -(*Ap->gravity_ptr) ); CHKERRQ(ierr); // note negative gravity
@@ -315,10 +317,10 @@ static PetscErrorCode set_atmosphere_mass( const Atmosphere *A, const Atmosphere
 
 static PetscErrorCode set_atmosphere_molar_mass( const AtmosphereParameters *Ap, Atmosphere *A )
 {
-    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
-    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
-    Volatile                   *CO2 = &A->CO2;
-    Volatile                   *H2O = &A->H2O;
+    VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
+    VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
+    Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
+    Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
 
     PetscFunctionBeginUser;
 
@@ -343,10 +345,10 @@ static PetscErrorCode set_mixing_ratios( Volatile *CO2, Volatile *H2O )
 PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, Atmosphere *A )
 {
     PetscErrorCode             ierr;
-    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
-    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
-    Volatile                   *CO2 = &A->CO2;
-    Volatile                   *H2O = &A->H2O;
+    VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
+    VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
+    Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
+    Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
 
     PetscFunctionBeginUser;
 
@@ -461,10 +463,10 @@ PetscErrorCode set_surface_temperature_from_flux( Atmosphere *A, const Atmospher
 PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *Ap, Atmosphere *A )
 {
     PetscErrorCode             ierr;
-    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
-    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
-    Volatile                   *CO2 = &A->CO2;
-    Volatile                   *H2O = &A->H2O;
+    VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
+    VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
+    Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
+    Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
 
     PetscScalar emissivity;
 
@@ -579,10 +581,10 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     ierr = JSON_add_single_value_to_object(dm, scaling, "Fatm", "W m$^{-2}$", A->Fatm, data);CHKERRQ(ierr);
 
     /* CO2 */
-    ierr = JSON_add_volatile(dm, P, &Ap->CO2_parameters, &A->CO2, A, "CO2", data ); CHKERRQ(ierr);
+    ierr = JSON_add_volatile(dm, P, &Ap->volatile_parameters[SPIDER_VOLATILE_CO2], &A->volatiles[SPIDER_VOLATILE_CO2], A, "CO2", data ); CHKERRQ(ierr);
 
     /* H2O */
-    ierr = JSON_add_volatile(dm, P, &Ap->H2O_parameters, &A->H2O, A, "H2O", data ); CHKERRQ(ierr);
+    ierr = JSON_add_volatile(dm, P, &Ap->volatile_parameters[SPIDER_VOLATILE_H2O], &A->volatiles[SPIDER_VOLATILE_H2O], A, "H2O", data ); CHKERRQ(ierr);
 
     cJSON_AddItemToObject(json,name,data);
 
@@ -660,10 +662,10 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
-    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
-    Volatile                   *CO2 = &A->CO2;
-    Volatile                   *H2O = &A->H2O;
+    VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
+    VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
+    Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
+    Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
 
     PetscFunctionBeginUser;
 
@@ -685,10 +687,10 @@ PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const
 {
 
     PetscScalar    out, f_thermal_escape;
-    VolatileParameters   const *CO2p = &Ap->CO2_parameters;
-    VolatileParameters   const *H2Op = &Ap->H2O_parameters;
-    Volatile             const *CO2 = &A->CO2;
-    Volatile             const *H2O = &A->H2O;
+    VolatileParameters   const *CO2p = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
+    VolatileParameters   const *H2Op = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
+    Volatile             const *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
+    Volatile             const *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
 
     /* remember that to this point, V1->f_thermal_escape is always
        computed but not necessarily used in the calculation */
