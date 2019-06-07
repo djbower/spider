@@ -36,16 +36,14 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   */
   const PetscInt stencilWidth = 1;
   const PetscInt dof = 1;
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,dof,stencilWidth,NULL,&ctx->da_b      );CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,dof,stencilWidth,NULL,&ctx->da_s      );CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1          ,dof,0           ,NULL,&ctx->da_point);CHKERRQ(ierr); // single-point DMDA
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,                dof,stencilWidth,NULL,&ctx->da_b        );CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,                dof,stencilWidth,NULL,&ctx->da_s        );CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1,                          dof,0,           NULL,&ctx->da_point    );CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,SPIDER_MAX_VOLATILE_SPECIES,dof,0           ,NULL,&ctx->da_volatiles);CHKERRQ(ierr); /* A collection of 0-dimensional bulk quantities */
 
   /* Create a composite DM of the basic nodes plus additional quantities.
-    This allows us to create a vector to solve for all of these quantities.
-
-     */
+    This allows us to create a vector to solve for all of these quantities.  */
   ierr = DMCompositeCreate(PETSC_COMM_WORLD,&ctx->dm_sol);CHKERRQ(ierr);
-
 
   /* Define some more-descriptive names for the solution fields, for output */
 
@@ -79,14 +77,8 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     sol_scalings[f] = C->ENTROPY;
     ++f;
 
-    ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_point);CHKERRQ(ierr);
-    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_CO2;
-    ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
-    sol_scalings[f] = C->VOLATILE;
-    ++f;
-
-    ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_point);CHKERRQ(ierr);
-    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_H2O;
+    ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_volatiles);CHKERRQ(ierr);
+    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_VOLATILES;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
     sol_scalings[f] = C->VOLATILE;
     ++f;
@@ -187,6 +179,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_point);CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->da_volatiles);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->dm_sol);CHKERRQ(ierr);
 
   /* Destroy PostStep data */

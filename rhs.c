@@ -23,12 +23,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   PetscScalar          *arr_dSdt_s, *arr_rhs_b;
   const PetscScalar    *arr_Etot, *arr_lhs_s, *arr_temp_s, *arr_Htot_s, *arr_radius_s, *arr_radius_b;
   PetscMPIInt          rank,size;
-  PetscInt             i,ihi_b,ilo_b,w_b,numpts_b;
+  PetscInt             i,v,ihi_b,ilo_b,w_b,numpts_b;
   DM                   da_s = E->da_s, da_b=E->da_b;
   Vec                  rhs_b;
   PetscScalar          S0, x0, x1, dS0dt;
   Vec                  *subVecs;
-  const PetscInt       ind0 = 0;
 
   PetscFunctionBeginUser;
   ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
@@ -53,14 +52,23 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
      we are not explicitly using volatiles in a model run */
 
   /* Get first staggered node value (stored as S0) */
-  ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],1,&ind0,&S0);CHKERRQ(ierr);
+  {
+    const PetscInt       ind = 0;
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],1,&ind,&S0);CHKERRQ(ierr);
+  }
 
   /* CO2 content of magma ocean (liquid phase) */
-  ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],1,&ind0,&x0);CHKERRQ(ierr);
+  {
+    const PetscInt ind = SPIDER_VOLATILE_CO2;
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],1,&ind,&x0);CHKERRQ(ierr);
+  }
   A->volatiles[SPIDER_VOLATILE_CO2].x = x0;
 
   /* H2O content of magma ocean (liquid phase) */
-  ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],1,&ind0,&x1);CHKERRQ(ierr);
+  {
+    const PetscInt ind = SPIDER_VOLATILE_H2O;
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],1,&ind,&x1);CHKERRQ(ierr);
+  }
   A->volatiles[SPIDER_VOLATILE_H2O].x = x1;
 
   ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
@@ -141,12 +149,14 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* time-dependence of additional quantities */
   if (Ap->SOLVE_FOR_VOLATILES){
     ierr = solve_dxdts( E );
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,A->volatiles[SPIDER_VOLATILE_CO2].dxdt,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,A->volatiles[SPIDER_VOLATILE_H2O].dxdt,INSERT_VALUES);CHKERRQ(ierr);
+    for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
+      ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,A->volatiles[v].dxdt,INSERT_VALUES);CHKERRQ(ierr);
+    }
   }
   else{
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,0.0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,0.0,INSERT_VALUES);CHKERRQ(ierr);
+    for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
+      ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,0.0,INSERT_VALUES);CHKERRQ(ierr);
+    }
   }
   for (i=1; i<E->numFields; ++i) {
     ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);

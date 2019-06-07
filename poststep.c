@@ -6,7 +6,6 @@ PetscErrorCode PostStepDataInitialize(Ctx *E, Vec sol_in)
   PetscErrorCode   ierr;
   PostStepData     *data;
   Vec              *subVecs;
-  PetscInt const   ind0 = 0;
   PetscScalar      x0, x1;
 
   PetscFunctionBeginUser;
@@ -19,16 +18,21 @@ PetscErrorCode PostStepDataInitialize(Ctx *E, Vec sol_in)
 
   /* concentration of volatiles in melt
      currently these are the only criteria that are used to halt the code */
-  ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],1,&ind0,&x0);CHKERRQ(ierr);
+  {
+    const PetscInt ind = SPIDER_VOLATILE_CO2;
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],1,&ind,&x0);CHKERRQ(ierr);
+  }
   data->x_CO2 = x0;
-  ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],1,&ind0,&x1);CHKERRQ(ierr);
+  {
+    const PetscInt ind = SPIDER_VOLATILE_H2O;
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],1,&ind,&x1);CHKERRQ(ierr);
+  }
   data->x_H2O = x1;
 
   ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
   ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
-
 }
 
 PetscErrorCode PostStep(TS ts)
@@ -41,7 +45,6 @@ PetscErrorCode PostStep(TS ts)
   Vec            sol_in;
   PetscScalar    x_CO2, x_H2O, rel_CO2, rel_H2O, max_CO2, max_H2O;
   Vec            *subVecs;
-  PetscInt const ind0 = 0;
   PetscBool      EVENT = PETSC_FALSE;
 
   PetscFunctionBeginUser;
@@ -59,8 +62,14 @@ PetscErrorCode PostStep(TS ts)
 
   ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
   ierr = DMCompositeGetAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-  ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],1,&ind0,&x_CO2);CHKERRQ(ierr);
-  ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],1,&ind0,&x_H2O);CHKERRQ(ierr);
+  {
+    const PetscInt ind = SPIDER_VOLATILE_CO2;
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],1,&ind,&x_CO2);CHKERRQ(ierr);
+  }
+  {
+    const PetscInt ind = SPIDER_VOLATILE_H2O;
+    ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],1,&ind,&x_H2O);CHKERRQ(ierr);
+  }
 
   ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 

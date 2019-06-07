@@ -203,9 +203,7 @@ val:                0
 description: S at surface
 scaling: 0.0004697889028520918
 val: 0.6348092436495549
-description: Magma Ocean CO2 content
+description: Magma ocean volatile content
 scaling: 0.0004697889028520918
 val:                0
-description: Magma Ocean H2O content
-scaling: 0.0004697889028520918
 val:                0

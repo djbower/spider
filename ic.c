@@ -151,8 +151,8 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,x0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,x1,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],SPIDER_VOLATILE_CO2,x0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],SPIDER_VOLATILE_H2O,x1,INSERT_VALUES);CHKERRQ(ierr);
 
     for (i=0; i<E->numFields; ++i) {
       ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
@@ -238,10 +238,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
             invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]];
         }
         else if (subdomain_num == 2){
-            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]];
-        }
-        else if (subdomain_num == 3){
-            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]];
+            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]];
         }
         else {
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"unexpected number of subdomains");
