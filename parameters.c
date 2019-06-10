@@ -141,9 +141,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
-  // TODO: remove once new volatile array working
-  //VolatileParameters   *H2O = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
-  //VolatileParameters   *CO2 = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
   Constants const      *C  = &P->constants;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
@@ -549,49 +546,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* Boltzmann constant (J/K) */
   Ap->Avogadro = 6.02214076E23; // 1/mol
   Ap->kB = Ap->Rgas / Ap->Avogadro;
-
-// TODO: remove once volatile array working
-#if 0
-  /* H2O volatile */
-  H2O->initial = 500.0; // ppm
-  H2O->initial /= C->VOLATILE;
-  H2O->kdist = 1.0E-4; // non-dimensional
-  // TODO: water saturation limit of 10 ppm?
-  H2O->kabs = 0.01; // m^2/kg
-  H2O->kabs *= C->DENSITY * C->RADIUS;
-  H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
-  H2O->henry = 6.8E-2; // ppm/Pa^(1/henry_pow)
-  H2O->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/H2O->henry_pow);
-  // -1.0 means compute, otherwise take the value as constant
-  H2O->jeans_value = -1.0;
-  H2O->R_thermal_escape_value = -1.0;
-  H2O->molar_mass = 18.01528 * 1.0e-3; // kg/mol
-  H2O->molar_mass /= C->MASS;
-  H2O->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
-  H2O->cross_section /= C->AREA;
-  // maximum allowable fractional change in interior melt abundance for poststep (only for -activate_poststep)
-  H2O->poststep_change = 0.0;
-
-  /* CO2 volatile */
-  CO2->initial = 100.0; // ppm
-  CO2->initial /= C->VOLATILE;
-  CO2->kdist = 5.0E-4; // non-dimensional
-  // TODO: water saturation limit of 0.03 ppm
-  CO2->kabs = 0.05; // m^2/kg
-  CO2->kabs *= C->DENSITY * C->RADIUS;
-  CO2->henry_pow = 1.0;
-  CO2->henry = 4.4E-6; // ppm/Pa^(1/henry_pow)
-  CO2->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/CO2->henry_pow);
-  // -1.0 means compute, otherwise take the value as constant
-  CO2->jeans_value = -1.0;
-  CO2->R_thermal_escape_value = -1.0;
-  CO2->molar_mass = 44.01 * 1.0e-3; // kg/mol
-  CO2->molar_mass /= C->MASS;
-  CO2->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
-  CO2->cross_section /= C->AREA;
-  // maximum allowable fractional change in interior melt abundance for poststep (only for -activate_poststep)
-  CO2->poststep_change = 0.0;
-#endif
 
   /* Get command-line values for all volatiles species */
   for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
