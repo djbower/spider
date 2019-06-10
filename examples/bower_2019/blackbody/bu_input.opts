@@ -189,6 +189,7 @@
 -CO2_kabs 0.05 # absorption (m^2/kg)
 -CO2_henry 4.4E-6 # ppm/Pa (Lebrun et al., 2013)
 -CO2_henry_pow 1.0 # power for Henry's law (Lebrun et al., 2013)
+-CO2_molar_mass 0.04401 # kg/mol
 
 # parameters relating to H2O volatile
 #-H2O_initial 0.0 # ppm
@@ -199,6 +200,7 @@
 -H2O_kabs 0.01 # absorption (m^2/kg)
 -H2O_henry 6.8E-2 # ppm/Pa (Lebrun et al., 2013)
 -H2O_henry_pow 1.4285714285714286 # power for Henry's law (1.0/0.7) (Lebrun et al., 2013)
+-H2O_molar_mass 0.01801528 # kg/mol
 
 # internal heat sources
 # Al26 (extinct at present day)
