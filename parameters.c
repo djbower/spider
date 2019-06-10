@@ -93,6 +93,12 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
 
   PetscFunctionBeginUser;
   /* Accept -id_string_YYY to populate vp->YYY */
+  /* TODO: given that this is now general for any number of volatiles,
+     it is not possible to prescribe generic meaningful default values.
+     Instead, all values must be prescribed in the input value.  Perhaps
+     there is a potential here for a bug if these parameters are not
+     specified in the input file?  Will the following produce an error
+     or read meaningless data from another part of memory? */
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_initial");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial,NULL);CHKERRQ(ierr);
   vp->initial /= C->VOLATILE;
