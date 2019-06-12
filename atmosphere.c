@@ -5,10 +5,10 @@
 static PetscErrorCode initialise_volatile( Volatile * );
 static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *, Volatile * );
-static PetscErrorCode set_atmosphere_mass( Atmosphere *, const AtmosphereParameters * );// TODO: DELETE, const VolatileParameters *, Volatile * );
+static PetscErrorCode set_atmosphere_mass( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_optical_depth( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
-static PetscErrorCode set_mixing_ratios( Atmosphere *); // TODO: DELETE Volatile *, Volatile * );
+static PetscErrorCode set_mixing_ratios( Atmosphere *);
 static PetscErrorCode set_jeans( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscErrorCode set_column_density( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscErrorCode set_Knudsen_number( const VolatileParameters *, Volatile * );
@@ -300,7 +300,7 @@ static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatilePa
 
 }
 
-static PetscErrorCode set_atmosphere_mass( Atmosphere *A, const AtmosphereParameters *Ap ) //, const VolatileParameters *Vp, Volatile *V )
+static PetscErrorCode set_atmosphere_mass( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     /* mass of volatile in atmosphere */
 
@@ -315,23 +315,12 @@ static PetscErrorCode set_atmosphere_mass( Atmosphere *A, const AtmosphereParame
         A->volatiles[i].m *= Ap->volatile_parameters[i].molar_mass / A->molar_mass;
     }
 
-#if 0
-    V->m = PetscSqr((*Ap->radius_ptr)) * V->p / -(*Ap->gravity_ptr);
-    V->m *= 1.0E6 / (*Ap->VOLATILE_ptr);
-    // must weight by molar mass
-    V->m *= Vp->molar_mass / A->molar_mass;
-#endif
-
     PetscFunctionReturn(0);
 
 }
 
 static PetscErrorCode set_atmosphere_molar_mass( const AtmosphereParameters *Ap, Atmosphere *A )
 {
-    //VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
-    //VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
-    //Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
-    //Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
     PetscInt i;
 
     PetscFunctionBeginUser;
@@ -342,15 +331,11 @@ static PetscErrorCode set_atmosphere_molar_mass( const AtmosphereParameters *Ap,
         A->molar_mass += Ap->volatile_parameters[i].molar_mass * A->volatiles[i].mixing_ratio;
     }
 
-    // TODO: DELETE
-    //A->molar_mass =  CO2->mixing_ratio * CO2_parameters->molar_mass;
-    //A->molar_mass += H2O->mixing_ratio * H2O_parameters->molar_mass;
-
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_mixing_ratios( Atmosphere *A ) //Volatile *CO2, Volatile *H2O )
+static PetscErrorCode set_mixing_ratios( Atmosphere *A )
 {
     PetscInt i;
     PetscScalar p_tot; // total pressure (sum of partials)
@@ -368,29 +353,20 @@ static PetscErrorCode set_mixing_ratios( Atmosphere *A ) //Volatile *CO2, Volati
         A->volatiles[i].mixing_ratio = A->volatiles[i].p / p_tot;
     }
 
-    // TODO: DELETE
-    //CO2->mixing_ratio = CO2->p / (CO2->p + H2O->p );
-    //H2O->mixing_ratio = H2O->p / (CO2->p + H2O->p );
-
     PetscFunctionReturn(0);
 
 }
 
 PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, Atmosphere *A )
 {
-    PetscErrorCode             ierr;
-    //VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
-    //VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
-    //Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
-    //Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
-
+    PetscErrorCode           ierr;
     VolatileParameters const *Vp;
     Volatile                 *V;
     PetscInt                 i;
 
     PetscFunctionBeginUser;
 
-    /* if x0 and/or x1 are zero, the quantities below will also all
+    /* if x is zero, the quantities below will also all
        be set to zero, except the escape-related parameters that
        are useful to compute even if the feedback of escape is not
        actually included in the model */
@@ -417,56 +393,14 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, 
         ierr = set_f_thermal_escape( A, Ap, Vp, V ); CHKERRQ(ierr);
     }
 
-// TODO: DELETE BELOW ONCE TESTS PASS
-#if 0
-    /* CO2 */
-    ierr = set_partial_pressure_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
-    ierr = set_partial_pressure_derivative_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
-    ierr = set_column_density( Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
-    if(CO2_parameters->jeans_value < 0.0){
-        ierr = set_jeans( A, Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
-    }
-    else{
-        CO2->jeans = CO2_parameters->jeans_value;
-    }
-    ierr = set_Knudsen_number( CO2_parameters, CO2 ); CHKERRQ(ierr);
-    if(CO2_parameters->R_thermal_escape_value < 0.0 ){
-        ierr = set_R_thermal_escape( CO2 ); CHKERRQ(ierr);
-    }
-    else{
-        CO2->R_thermal_escape = CO2_parameters->R_thermal_escape_value;
-    }
-    ierr = set_f_thermal_escape( A, Ap, CO2_parameters, CO2 ); CHKERRQ(ierr);
-
-    /* H2O */
-    ierr = set_partial_pressure_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
-    ierr = set_partial_pressure_derivative_volatile( H2O_parameters, H2O );CHKERRQ(ierr);
-    ierr = set_column_density( Ap, H2O_parameters, H2O );CHKERRQ(ierr);
-    if(H2O_parameters->jeans_value < 0.0 ){
-        ierr = set_jeans( A, Ap, H2O_parameters, H2O );CHKERRQ(ierr);
-    }
-    else{
-        H2O->jeans = H2O_parameters->jeans_value;
-    }
-    ierr = set_Knudsen_number( H2O_parameters, H2O );CHKERRQ(ierr);
-    if(H2O_parameters->R_thermal_escape_value < 0.0 ){
-        ierr = set_R_thermal_escape( H2O ); CHKERRQ(ierr);
-    }
-    else{
-        H2O->R_thermal_escape = H2O_parameters->R_thermal_escape_value;
-    }
-    ierr = set_f_thermal_escape( A, Ap, H2O_parameters, H2O ); CHKERRQ(ierr);
-#endif
-
     /* mixing ratio */
-    ierr = set_mixing_ratios( A );CHKERRQ(ierr); //CO2, H2O );CHKERRQ(ierr);
+    ierr = set_mixing_ratios( A );CHKERRQ(ierr);
 
     /* mean molar mass of atmosphere */
     ierr = set_atmosphere_molar_mass( Ap, A );
 
     /* these terms require the mean molar mass of the atmosphere */
-    ierr = set_atmosphere_mass( A, Ap );CHKERRQ(ierr); //, CO2_parameters, CO2 );CHKERRQ(ierr);
-    // TODO: DELETE ierr = set_atmosphere_mass( A, Ap, H2O_parameters, H2O );CHKERRQ(ierr);
+    ierr = set_atmosphere_mass( A, Ap );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
