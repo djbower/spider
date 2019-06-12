@@ -5,10 +5,10 @@
 static PetscErrorCode initialise_volatile( Volatile * );
 static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *, Volatile * );
 static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *, Volatile * );
-static PetscErrorCode set_atmosphere_mass( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
+static PetscErrorCode set_atmosphere_mass( Atmosphere *, const AtmosphereParameters * );// TODO: DELETE, const VolatileParameters *, Volatile * );
 static PetscErrorCode set_optical_depth( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
-static PetscErrorCode set_mixing_ratios( Volatile *, Volatile * );
+static PetscErrorCode set_mixing_ratios( Atmosphere *); // TODO: DELETE Volatile *, Volatile * );
 static PetscErrorCode set_jeans( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscErrorCode set_column_density( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
 static PetscErrorCode set_Knudsen_number( const VolatileParameters *, Volatile * );
@@ -300,16 +300,27 @@ static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatilePa
 
 }
 
-static PetscErrorCode set_atmosphere_mass( const Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
+static PetscErrorCode set_atmosphere_mass( Atmosphere *A, const AtmosphereParameters *Ap ) //, const VolatileParameters *Vp, Volatile *V )
 {
     /* mass of volatile in atmosphere */
 
+    PetscInt i;
+
     PetscFunctionBeginUser;
 
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        A->volatiles[i].m = PetscSqr((*Ap->radius_ptr)) * A->volatiles[i].p / -(*Ap->gravity_ptr);
+        A->volatiles[i].m *= 1.0E6 / (*Ap->VOLATILE_ptr);
+        /* must weight by molar mass */
+        A->volatiles[i].m *= Ap->volatile_parameters[i].molar_mass / A->molar_mass;
+    }
+
+#if 0
     V->m = PetscSqr((*Ap->radius_ptr)) * V->p / -(*Ap->gravity_ptr);
     V->m *= 1.0E6 / (*Ap->VOLATILE_ptr);
     // must weight by molar mass
     V->m *= Vp->molar_mass / A->molar_mass;
+#endif
 
     PetscFunctionReturn(0);
 
@@ -317,26 +328,49 @@ static PetscErrorCode set_atmosphere_mass( const Atmosphere *A, const Atmosphere
 
 static PetscErrorCode set_atmosphere_molar_mass( const AtmosphereParameters *Ap, Atmosphere *A )
 {
-    VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
-    VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
-    Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
-    Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
+    //VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
+    //VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
+    //Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
+    //Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
+    PetscInt i;
 
     PetscFunctionBeginUser;
 
-    A->molar_mass =  CO2->mixing_ratio * CO2_parameters->molar_mass;
-    A->molar_mass += H2O->mixing_ratio * H2O_parameters->molar_mass;
+    A->molar_mass = 0.0;
+
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        A->molar_mass += Ap->volatile_parameters[i].molar_mass * A->volatiles[i].mixing_ratio;
+    }
+
+    // TODO: DELETE
+    //A->molar_mass =  CO2->mixing_ratio * CO2_parameters->molar_mass;
+    //A->molar_mass += H2O->mixing_ratio * H2O_parameters->molar_mass;
 
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_mixing_ratios( Volatile *CO2, Volatile *H2O )
+static PetscErrorCode set_mixing_ratios( Atmosphere *A ) //Volatile *CO2, Volatile *H2O )
 {
+    PetscInt i;
+    PetscScalar p_tot; // total pressure (sum of partials)
+
     PetscFunctionBeginUser;
 
-    CO2->mixing_ratio = CO2->p / (CO2->p + H2O->p );
-    H2O->mixing_ratio = H2O->p / (CO2->p + H2O->p );
+    /* compute total pressure */
+    p_tot = 0.0;
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        p_tot += A->volatiles[i].p;
+    }
+ 
+    /* now compute mixing ratios */
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        A->volatiles[i].mixing_ratio = A->volatiles[i].p / p_tot;
+    }
+
+    // TODO: DELETE
+    //CO2->mixing_ratio = CO2->p / (CO2->p + H2O->p );
+    //H2O->mixing_ratio = H2O->p / (CO2->p + H2O->p );
 
     PetscFunctionReturn(0);
 
@@ -345,10 +379,14 @@ static PetscErrorCode set_mixing_ratios( Volatile *CO2, Volatile *H2O )
 PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, Atmosphere *A )
 {
     PetscErrorCode             ierr;
-    VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
-    VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
-    Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
-    Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
+    //VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
+    //VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
+    //Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
+    //Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
+
+    VolatileParameters const *Vp;
+    Volatile                 *V;
+    PetscInt                 i;
 
     PetscFunctionBeginUser;
 
@@ -357,6 +395,30 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, 
        are useful to compute even if the feedback of escape is not
        actually included in the model */
 
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) { 
+        Vp = &Ap->volatile_parameters[i];
+        V = &A->volatiles[i];
+        ierr = set_partial_pressure_volatile( Vp, V );CHKERRQ(ierr);
+        ierr = set_partial_pressure_derivative_volatile( Vp, V );CHKERRQ(ierr);
+        ierr = set_column_density( Ap, Vp, V );CHKERRQ(ierr);
+        if(Vp->jeans_value < 0.0){
+            ierr = set_jeans( A, Ap, Vp, V );CHKERRQ(ierr);
+        }
+        else{
+            V->jeans = Vp->jeans_value;
+        }
+        ierr = set_Knudsen_number( Vp, V ); CHKERRQ(ierr);
+        if(Vp->R_thermal_escape_value < 0.0 ){
+            ierr = set_R_thermal_escape( V ); CHKERRQ(ierr);
+        }
+        else{
+            V->R_thermal_escape = Vp->R_thermal_escape_value;
+        }
+        ierr = set_f_thermal_escape( A, Ap, Vp, V ); CHKERRQ(ierr);
+    }
+
+// TODO: DELETE BELOW ONCE TESTS PASS
+#if 0
     /* CO2 */
     ierr = set_partial_pressure_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
     ierr = set_partial_pressure_derivative_volatile( CO2_parameters, CO2 );CHKERRQ(ierr);
@@ -394,16 +456,17 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, 
         H2O->R_thermal_escape = H2O_parameters->R_thermal_escape_value;
     }
     ierr = set_f_thermal_escape( A, Ap, H2O_parameters, H2O ); CHKERRQ(ierr);
+#endif
 
     /* mixing ratio */
-    ierr = set_mixing_ratios( CO2, H2O );CHKERRQ(ierr);
+    ierr = set_mixing_ratios( A );CHKERRQ(ierr); //CO2, H2O );CHKERRQ(ierr);
 
     /* mean molar mass of atmosphere */
     ierr = set_atmosphere_molar_mass( Ap, A );
 
     /* these terms require the mean molar mass of the atmosphere */
-    ierr = set_atmosphere_mass( A, Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
-    ierr = set_atmosphere_mass( A, Ap, H2O_parameters, H2O );CHKERRQ(ierr);
+    ierr = set_atmosphere_mass( A, Ap );CHKERRQ(ierr); //, CO2_parameters, CO2 );CHKERRQ(ierr);
+    // TODO: DELETE ierr = set_atmosphere_mass( A, Ap, H2O_parameters, H2O );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
