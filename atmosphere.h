@@ -30,6 +30,7 @@ typedef struct Atmosphere_ {
     PetscScalar Msol; // mass of solid (kg)
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tsurf; // surface temperature
+    PetscScalar psurf; // surface pressure
     PetscScalar tau; // aggregate optical depth at surface (dimensionless)
     PetscScalar Fatm; // net upward atmosphere flux
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
@@ -48,11 +49,11 @@ PetscErrorCode destroy_atmosphere( Atmosphere * );
 
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters * );
 PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const Constants *C );
-PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *, Atmosphere * );
+PetscScalar get_emissivity_abe_matsui( Atmosphere *, const AtmosphereParameters *);
 PetscScalar get_initial_volatile_abundance( Atmosphere *, const AtmosphereParameters *, const VolatileParameters *,  const Volatile * );
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters *, PetscScalar );
 PetscErrorCode set_surface_temperature_from_flux( Atmosphere *, const AtmosphereParameters * );
-PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *, Atmosphere * );
+PetscErrorCode set_atmosphere_volatile_content( Atmosphere *, const AtmosphereParameters * );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
 PetscErrorCode FormFunction2( SNES, Vec, Vec, void * );
 PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *, const VolatileParameters *, Volatile * );

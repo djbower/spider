@@ -2,7 +2,7 @@
 #include "atmosphere.h"
 #include "util.h"
 
-static PetscScalar get_viscous_mantle_cooling_rate( Ctx *, PetscScalar );
+static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
 static PetscScalar tsurf_param( PetscScalar, const AtmosphereParameters * );
 static PetscScalar get_isothermal_surface( const Ctx * );
 static PetscScalar isothermal_or_cooling_cmb( const Ctx *, PetscScalar );
@@ -41,7 +41,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
       }
 
       /* must be after A->tsurf is set */
-      ierr = set_atmosphere_volatile_content( Ap, A ); CHKERRQ(ierr);
+      ierr = set_atmosphere_volatile_content( A, Ap ); CHKERRQ(ierr);
 
       /* determine surface flux */
       /* in all cases, compute flux and emissivity consistently */
@@ -58,7 +58,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
         case 3:
           // two stream approximation
-          A->emissivity = get_emissivity_abe_matsui( Ap, A );
+          A->emissivity = get_emissivity_abe_matsui( A, Ap );
           Qout = get_grey_body_flux( A, Ap );
           break;
         case 4:
@@ -114,15 +114,15 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar get_viscous_mantle_cooling_rate( Ctx *E, PetscScalar Qin )
+static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qin )
 {
     PetscErrorCode ierr;
     PetscScalar    Qout;
     PetscScalar    G0, R0, R1, R2, E0, E1, E2, Q2, fwt, phi0;
     PetscInt       ind;
-    Mesh           *M = &E->mesh;
-    Parameters     *P = &E->parameters;
-    Solution       *S = &E->solution;
+    Mesh           const *M = &E->mesh;
+    Parameters     const *P = &E->parameters;
+    Solution       const *S = &E->solution;
 
     /* enable the ability for the magma ocean to cool at a rate dictated
        by the upper mantle cooling rate.  This helps to prevent a viscous

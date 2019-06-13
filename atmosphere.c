@@ -2,30 +2,29 @@
 #include "dimensionalisablefield.h"
 #include "util.h"
 
-static PetscErrorCode initialise_volatile( Volatile * );
-static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *, Volatile * );
-static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *, Volatile * );
-static PetscErrorCode set_atmosphere_mass( Atmosphere *, const AtmosphereParameters * );
-static PetscErrorCode set_optical_depth( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
+static PetscErrorCode initialise_volatiles( Atmosphere * );
+static PetscErrorCode set_atmosphere_pressures( Atmosphere *, const AtmosphereParameters * );
+static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters * );
+static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters * );
+static PetscErrorCode set_escape( Atmosphere *, const AtmosphereParameters * );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
-static PetscErrorCode set_mixing_ratios( Atmosphere *);
-static PetscErrorCode set_jeans( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
-static PetscErrorCode set_column_density( const AtmosphereParameters *, const VolatileParameters *, Volatile * );
-static PetscErrorCode set_Knudsen_number( const VolatileParameters *, Volatile * );
-static PetscErrorCode set_R_thermal_escape( Volatile * );
-static PetscErrorCode set_f_thermal_escape( const Atmosphere *, const AtmosphereParameters *, const VolatileParameters *, Volatile * );
+static PetscErrorCode set_jeans( Atmosphere *, const AtmosphereParameters *, PetscInt );
+static PetscErrorCode set_column_density_volatile( Atmosphere *, const AtmosphereParameters *, PetscInt );
+static PetscErrorCode set_Knudsen_number( Atmosphere *, const AtmosphereParameters *, PetscInt );
+static PetscErrorCode set_R_thermal_escape( Atmosphere *, const AtmosphereParameters *, PetscInt );
+static PetscErrorCode set_f_thermal_escape( Atmosphere *, PetscInt );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
 static PetscErrorCode JSON_add_atm_struct( Atmosphere *, const AtmosphereParameters *, cJSON * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_depth( Atmosphere *, const AtmosphereParameters * );
+/* these are for an individual volatile */
 
 PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
 {
     PetscErrorCode ierr;
     PetscScalar    scaling;
-    PetscInt       v;
 
     PetscFunctionBeginUser;
 
@@ -63,9 +62,7 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[3],"m");CHKERRQ(ierr);
 
     /* initialise volatiles */
-    for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
-      ierr = initialise_volatile(&A->volatiles[v]);CHKERRQ(ierr);
-    }
+    ierr = initialise_volatiles( A );
 
     /* other variables in struct that otherwise might not get set */
     /* below is only for Abe and Matsui atmosphere model */
@@ -79,31 +76,36 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
        meaningful value before it is actually used. */
     A->tsurf = 1.0;
 
+    /* FIXME */
+    A->psurf = 0.0; // to update with partial pressure sum
+
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode initialise_volatile( Volatile *V )
+static PetscErrorCode initialise_volatiles( Atmosphere *A )
 {
+    PetscInt i;
 
     PetscFunctionBeginUser;
 
-    /* these entries should match those in atmosphere.h */
-    V->x = 0.0;
-    V->p = 0.0;
-    V->dxdt = 0.0;
-    V->dpdx = 0.0;
-    V->m = 0.0;
-    V->tau = 0.0;
-    V->mixing_ratio = 0.0;
-    V->column_density = 0.0;
-    V->Knudsen = 0.0;
-    V->jeans = 0.0;
-    V->f_thermal_escape = 0.0;
-    V->R_thermal_escape = 0.0;
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        /* these entries should match those in atmosphere.h */
+        A->volatiles[i].x = 0.0;
+        A->volatiles[i].p = 0.0;
+        A->volatiles[i].dxdt = 0.0;
+        A->volatiles[i].dpdx = 0.0;
+        A->volatiles[i].m = 0.0;
+        A->volatiles[i].tau = 0.0;
+        A->volatiles[i].mixing_ratio = 0.0;
+        A->volatiles[i].column_density = 0.0;
+        A->volatiles[i].Knudsen = 0.0;
+        A->volatiles[i].jeans = 0.0;
+        A->volatiles[i].f_thermal_escape = 0.0;
+        A->volatiles[i].R_thermal_escape = 0.0;
+    }
 
     PetscFunctionReturn(0);
-
 }
 
 PetscErrorCode destroy_atmosphere( Atmosphere *A )
@@ -198,24 +200,35 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmospherePa
 
 }
 
-static PetscErrorCode set_jeans( const Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
+static PetscErrorCode set_jeans( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i )
 {
     /* surface Jeans parameter */
 
+    Volatile                  *V = &A->volatiles[i];
+    VolatileParameters const *Vp = &Ap->volatile_parameters[i];
+
     PetscFunctionBeginUser;
 
-    V->jeans = -(*Ap->gravity_ptr) * (*Ap->radius_ptr) * (Vp->molar_mass/Ap->Avogadro); // note negative gravity
-    V->jeans /= Ap->kB * A->tsurf;
+    if(Vp->jeans_value < 0.0){
+        V->jeans = -(*Ap->gravity_ptr) * (*Ap->radius_ptr) * (Vp->molar_mass/Ap->Avogadro); // note negative gravity
+        V->jeans /= Ap->kB * A->tsurf;
+    }
+    else{
+        V->jeans = Vp->jeans_value;
+    }
 
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_column_density( const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
+static PetscErrorCode set_column_density_volatile( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i )
 {
     /* see Johnson et al. (2015), Astrophys. J. */
 
     PetscFunctionBeginUser;
+
+    Volatile                 *V = &A->volatiles[i];
+    VolatileParameters const *Vp = &Ap->volatile_parameters[i];
 
     V->column_density = V->p;
     V->column_density /= -(*Ap->gravity_ptr) * (Vp->molar_mass/Ap->Avogadro);
@@ -224,9 +237,12 @@ static PetscErrorCode set_column_density( const AtmosphereParameters *Ap, const 
 
 }
 
-static PetscErrorCode set_Knudsen_number( const VolatileParameters *Vp, Volatile *V )
+static PetscErrorCode set_Knudsen_number( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i )
 {
     /* see Johnson et al. (2015), Astrophys. J. */
+
+    Volatile                  *V = &A->volatiles[i];
+    VolatileParameters const *Vp = &Ap->volatile_parameters[i];
 
     PetscFunctionBeginUser;
 
@@ -237,30 +253,37 @@ static PetscErrorCode set_Knudsen_number( const VolatileParameters *Vp, Volatile
 
 }
 
-static PetscErrorCode set_R_thermal_escape( Volatile *V )
+static PetscErrorCode set_R_thermal_escape( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i )
 {
     /* see Johnson et al. (2015), Astrophys. J. */
 
-    PetscScalar    R1, R2, Rfit;
+    PetscScalar              R1, R2, Rfit;
+    Volatile                 *V = &A->volatiles[i];
+    VolatileParameters const *Vp = &Ap->volatile_parameters[i];
 
     PetscFunctionBeginUser;
 
-    R1 = PetscPowScalar( 1.0 / V->Knudsen, 0.09 );
-    R2 = 70 * (V->Knudsen * PetscExpReal(V->jeans)) / PetscPowScalar(V->jeans,2.55);
-
-    Rfit = 1.0 / R1 + 1.0 / R2;
-    Rfit = 1.0 / Rfit;
-
-    V->R_thermal_escape = Rfit;
+    if(Vp->R_thermal_escape_value < 0.0 ){
+        R1 = PetscPowScalar( 1.0 / V->Knudsen, 0.09 );
+        R2 = 70 * (V->Knudsen * PetscExpReal(V->jeans)) / PetscPowScalar(V->jeans,2.55);
+        Rfit = 1.0 / R1 + 1.0 / R2;
+        Rfit = 1.0 / Rfit;
+        V->R_thermal_escape = Rfit;
+    }
+    else{
+        V->R_thermal_escape = Vp->R_thermal_escape_value;
+    }
 
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_f_thermal_escape( const Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
+static PetscErrorCode set_f_thermal_escape( Atmosphere *A, PetscInt i )
 {
     /* thermal escape prefactor for atmospheric growth rate */
     /* see Johnson et al. (2015), Astrophys. J. */
+
+    Volatile    *V = &A->volatiles[i];
 
     PetscFunctionBeginUser;
 
@@ -275,34 +298,35 @@ static PetscErrorCode set_f_thermal_escape( const Atmosphere *A, const Atmospher
 
 }
 
-static PetscErrorCode set_partial_pressure_volatile( const VolatileParameters *Vp, Volatile *V )
+static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereParameters *Ap )
 {
-    /* partial pressure of volatile */
+    PetscInt                  i;
+    Volatile                 *V;
+    VolatileParameters const *Vp;
 
     PetscFunctionBeginUser;
 
-    V->p = PetscPowScalar( V->x / Vp->henry, Vp->henry_pow);
+    /* total surface pressure */
+    A->psurf = 0.0;
+
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        /* partial pressure of volatile */
+        V = &A->volatiles[i];
+        Vp = &Ap->volatile_parameters[i];
+        V->p = PetscPowScalar( V->x / Vp->henry, Vp->henry_pow );
+        /* derivative of partial pressure of volatile */
+        V->dpdx = Vp->henry_pow / Vp->henry;
+        V->dpdx *= PetscPowScalar( V->x / Vp->henry, Vp->henry_pow-1.0 );
+        /* total pressure by Dalton's law */
+        A->psurf += V->p;
+    }
 
     PetscFunctionReturn(0);
-
 }
 
-static PetscErrorCode set_partial_pressure_derivative_volatile( const VolatileParameters *Vp, Volatile *V )
+static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap )
 {
-    /* partial pressure derivative of volatile */
-
-    PetscFunctionBeginUser;
-
-    V->dpdx = Vp->henry_pow / Vp->henry;
-    V->dpdx *= PetscPowScalar( V->x / Vp->henry, Vp->henry_pow-1.0 );
-
-    PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode set_atmosphere_mass( Atmosphere *A, const AtmosphereParameters *Ap )
-{
-    /* mass of volatile in atmosphere */
+    /* mass of volatiles in atmosphere */
 
     PetscInt i;
 
@@ -311,7 +335,6 @@ static PetscErrorCode set_atmosphere_mass( Atmosphere *A, const AtmosphereParame
     for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
         A->volatiles[i].m = PetscSqr((*Ap->radius_ptr)) * A->volatiles[i].p / -(*Ap->gravity_ptr);
         A->volatiles[i].m *= 1.0E6 / (*Ap->VOLATILE_ptr);
-        /* must weight by molar mass */
         A->volatiles[i].m *= Ap->volatile_parameters[i].molar_mass / A->molar_mass;
     }
 
@@ -319,7 +342,7 @@ static PetscErrorCode set_atmosphere_mass( Atmosphere *A, const AtmosphereParame
 
 }
 
-static PetscErrorCode set_atmosphere_molar_mass( const AtmosphereParameters *Ap, Atmosphere *A )
+static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     PetscInt i;
 
@@ -327,7 +350,11 @@ static PetscErrorCode set_atmosphere_molar_mass( const AtmosphereParameters *Ap,
 
     A->molar_mass = 0.0;
 
+    /* now compute mixing ratios */
     for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        /* mixing ratio */
+        A->volatiles[i].mixing_ratio = A->volatiles[i].p / A->psurf;
+        /* atmosphere molar mass */
         A->molar_mass += Ap->volatile_parameters[i].molar_mass * A->volatiles[i].mixing_ratio;
     }
 
@@ -335,34 +362,12 @@ static PetscErrorCode set_atmosphere_molar_mass( const AtmosphereParameters *Ap,
 
 }
 
-static PetscErrorCode set_mixing_ratios( Atmosphere *A )
-{
-    PetscInt i;
-    PetscScalar p_tot; // total pressure (sum of partials)
-
-    PetscFunctionBeginUser;
-
-    /* compute total pressure */
-    p_tot = 0.0;
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
-        p_tot += A->volatiles[i].p;
-    }
- 
-    /* now compute mixing ratios */
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
-        A->volatiles[i].mixing_ratio = A->volatiles[i].p / p_tot;
-    }
-
-    PetscFunctionReturn(0);
-
-}
-
-PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, Atmosphere *A )
+PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     PetscErrorCode           ierr;
-    VolatileParameters const *Vp;
-    Volatile                 *V;
-    PetscInt                 i;
+    //VolatileParameters const *Vp;
+    //Volatile                 *V;
+    //PetscInt                 i;
 
     PetscFunctionBeginUser;
 
@@ -371,36 +376,38 @@ PetscErrorCode set_atmosphere_volatile_content( const AtmosphereParameters *Ap, 
        are useful to compute even if the feedback of escape is not
        actually included in the model */
 
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) { 
-        Vp = &Ap->volatile_parameters[i];
-        V = &A->volatiles[i];
-        ierr = set_partial_pressure_volatile( Vp, V );CHKERRQ(ierr);
-        ierr = set_partial_pressure_derivative_volatile( Vp, V );CHKERRQ(ierr);
-        ierr = set_column_density( Ap, Vp, V );CHKERRQ(ierr);
-        if(Vp->jeans_value < 0.0){
-            ierr = set_jeans( A, Ap, Vp, V );CHKERRQ(ierr);
-        }
-        else{
-            V->jeans = Vp->jeans_value;
-        }
-        ierr = set_Knudsen_number( Vp, V ); CHKERRQ(ierr);
-        if(Vp->R_thermal_escape_value < 0.0 ){
-            ierr = set_R_thermal_escape( V ); CHKERRQ(ierr);
-        }
-        else{
-            V->R_thermal_escape = Vp->R_thermal_escape_value;
-        }
-        ierr = set_f_thermal_escape( A, Ap, Vp, V ); CHKERRQ(ierr);
+    /* order of these functions is very important! */
+    ierr = set_atmosphere_pressures( A, Ap );CHKERRQ(ierr);
+
+    ierr = set_volume_mixing_ratios( A, Ap );CHKERRQ(ierr);
+
+    ierr = set_volatile_masses_in_atmosphere( A, Ap );CHKERRQ(ierr);
+
+    /* escape is always set, since then we can easily see the
+       variables, regardless of whether the feedback is actually
+       included for the volatile evolution */
+    ierr = set_escape( A, Ap );CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode set_escape( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+    PetscErrorCode ierr;
+    PetscInt       i;
+
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+
+        ierr = set_column_density_volatile( A, Ap, i );CHKERRQ(ierr);
+
+        ierr = set_jeans( A, Ap, i );CHKERRQ(ierr);
+
+        ierr = set_Knudsen_number( A, Ap, i ); CHKERRQ(ierr);
+
+        ierr = set_R_thermal_escape( A, Ap, i ); CHKERRQ(ierr);
+
+        ierr = set_f_thermal_escape( A, i ); CHKERRQ(ierr);
     }
-
-    /* mixing ratio */
-    ierr = set_mixing_ratios( A );CHKERRQ(ierr);
-
-    /* mean molar mass of atmosphere */
-    ierr = set_atmosphere_molar_mass( Ap, A );
-
-    /* these terms require the mean molar mass of the atmosphere */
-    ierr = set_atmosphere_mass( A, Ap );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -457,24 +464,25 @@ PetscErrorCode set_surface_temperature_from_flux( Atmosphere *A, const Atmospher
 
 }
 
-PetscScalar get_emissivity_abe_matsui( const AtmosphereParameters *Ap, Atmosphere *A )
+PetscScalar get_emissivity_abe_matsui( Atmosphere *A, const AtmosphereParameters *Ap )
 {
-    PetscErrorCode             ierr;
-    VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
-    VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
-    Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
-    Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
-
+    PetscInt    i;
     PetscScalar emissivity;
 
-    /* CO2 */
-    ierr = set_optical_depth( Ap, CO2_parameters, CO2 );CHKERRQ(ierr);
+    A->tau = 0.0; // total surface optical depth
 
-    /* H2O */
-    ierr = set_optical_depth( Ap, H2O_parameters, H2O );CHKERRQ(ierr);
+    /* now compute mixing ratios */
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        Volatile                 *V = &A->volatiles[i];
+        VolatileParameters const *Vp = &Ap->volatile_parameters[i]; 
+        /* optical depth at surface for this volatile */
+        V->tau = (3.0/2.0) * V->p / -(*Ap->gravity_ptr);
+        V->tau *= get_pressure_dependent_kabs( Ap, Vp );
+        /* total optical depth at surface */
+        A->tau += V->tau;
 
-    /* total */
-    A->tau = CO2->tau + H2O->tau;
+    }
+
     emissivity = 2.0 / (A->tau + 2.0);
 
     return emissivity;
@@ -524,16 +532,6 @@ static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *Ap, 
 
 }
 
-static PetscErrorCode set_optical_depth( const AtmosphereParameters *Ap, const VolatileParameters *Vp, Volatile *V )
-{
-    PetscFunctionBeginUser;
-
-    V->tau = (3.0/2.0) * V->p / -(*Ap->gravity_ptr);
-    V->tau *= get_pressure_dependent_kabs( Ap, Vp );
-
-    PetscFunctionReturn(0);
-}
-
 PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, const char *name, cJSON *json )
 {
     PetscErrorCode ierr;
@@ -567,6 +565,10 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     /* surface temperature, K */
     scaling = C->TEMP;
     ierr = JSON_add_single_value_to_object(dm, scaling, "temperature_surface", "K", A->tsurf, data);CHKERRQ(ierr);
+
+    /* surface pressure, bar */
+    scaling = C->PRESSURE / 1.0E5; /* bar */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "pressure_surface", "bar", A->psurf, data);CHKERRQ(ierr);
 
     /* optical depth, non-dimensional */
     scaling = 1.0;

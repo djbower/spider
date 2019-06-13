@@ -391,7 +391,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     }
     VecRestoreArrayRead(x,&xx);
 
-    ierr = set_atmosphere_volatile_content( Ap, A ); CHKERRQ(ierr);
+    ierr = set_atmosphere_volatile_content( A, Ap ); CHKERRQ(ierr);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
 

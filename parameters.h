@@ -53,7 +53,7 @@ const char *volatiles_id_strings[SPIDER_MAX_VOLATILE_SPECIES]; /* defined in par
 typedef struct VolatileParameters_ {
     PetscScalar initial;
     PetscScalar kdist;
-    PetscScalar kabs;
+    PetscScalar kabs; // note this is without pressure-dependence
     PetscScalar henry;
     PetscScalar henry_pow;
     PetscScalar jeans_value; // for thermal escape
