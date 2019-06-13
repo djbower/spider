@@ -249,6 +249,10 @@ Looks simpler when you substitute in the total surface pressure $P_s$ and break 
 \begin{equation}
 \frac{\partial \hat{\mu}_{\rm t}}{\partial t} = \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right]
 \end{equation}
+Putting it all together:
+\begin{equation}
+\frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = -\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+\end{equation}
 %%%%
 %%%%
 \subsubsection{Returning to the evolution equation}
@@ -263,8 +267,12 @@ Therefore, we can now just express in terms of the total mantle mass and the mas
 + \hat{X}^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
 &\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
 \left[
--\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{dt} - \hat{p}_C \frac{d\hat{p}_H}{dt} \right) + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+-\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
 \right]+ \nonumber \\
+% for two species only
+%\left[
+%-\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{dt} - \hat{p}_C \frac{d\hat{p}_H}{dt} \right) + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+%\right]+ \nonumber \\
 & \qquad \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm o}}{dt} = 0
 \end{align}
 This cannot be separated into the form of the time derivative equal to a RHS, so the time derivative must instead be numerically calculated within the time stepper.
@@ -288,7 +296,7 @@ We already computed the growth rate of the atmosphere, i.e. the source rate, and
 \begin{align}
 \frac{d \hat{m}_{\rm v}^{\rm esc}}{dt} &= \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
 \left[
--\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{dt} - \hat{p}_C \frac{d\hat{p}_H}{dt} \right) + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+-\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
 \right]\\
 & \times \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) 
 \end{align}
