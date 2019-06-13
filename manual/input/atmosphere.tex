@@ -201,10 +201,12 @@ The second term can be calculated using the chain rule:
 \begin{equation}
 \frac{1}{\hat{\mu}_{\rm t}} \frac{d}{dt} \left( \hat{p}(\hat{X}^{\rm l}) \right) = \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
 \end{equation}
-To deal with the first term, recall that (Eq.~\ref{eq:atmosphere_molar_mass}):
+%%% two species only %%%
+\subsubsection{Two volatile species}
+To deal with the first term, recall that for two species (Eq.~\ref{eq:atmosphere_molar_mass}):
 \begin{equation}
 \hat{\mu}_{\rm t} = \left( \frac{\hat{p}_C}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_C + \left( \frac{\hat{p}_H}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_H
-\end{equation}
+\end{equation}1
 where subscript $C$ denotes CO$_2$ and $H$ denotes H$_2$O, and $\hat{p}$ is partial pressure and $\hat{\mu}$ is molar mass.  Taking the time derivative of $\hat{\mu}_{\rm t}$ noting that only the $\mu$'s are independent of time:
 \begin{equation}
 \frac{d}{dt} \left( \frac{1}{\hat{\mu}_{\rm t}} \right) = -\hat{\mu}_{\rm t}^{-2} \frac{d}{dt} \hat{\mu}_{\rm t}
@@ -226,6 +228,27 @@ Putting it all together (i.e., returning to Eq.~\ref{eq:atmos_evo}):
 \frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = -\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{dt} - \hat{p}_C \frac{d\hat{p}_H}{dt} \right) + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
 \end{equation}
 To recap, we are considering the concentration of a given volatile $\hat{X}^{\rm l}$, which can either be CO$_2$ or H$_2$O, and we need to know the time derivative of this quantity.  \myemph{Through the mean molar mass of the atmosphere, the volatiles are now coupled, and we can no longer determine the time derivative of either volatile independently of the other.  Rather we must solve a coupled system of equations at each time step to give us the time update of all the volatiles under consideration.}
+\subsubsection{$n$ volatile species}
+For $n$ species, where $(t)$ is used to emphasise the time-dependent quantities, we just need to derive a general expression for the rate-of-change of the mean molar mass of the atmosphere:
+\begin{equation}
+\hat{\mu}_{\rm t}(t) = \sum_i^n \left( \frac{\hat{p}_i(t) \hat{\mu}_i}{\sum_j^n \hat{p}_j(t)} \right)
+\end{equation}
+Time derivative:
+\begin{equation}
+\frac{\partial \hat{\mu}_{\rm t}}{\partial t} = \sum_i^n \hat{\mu}_i \frac{\partial}{\partial t} \left( \frac{\hat{p}_i(t)}{\sum_j^n \hat{p}_j(t)} \right)
+\end{equation}
+Note that the term within the time derivative is the volume mixing ratio of each volatile species.  Break apart the derivative using the product rule:
+\begin{equation}
+\frac{\partial \hat{\mu}_{\rm t}}{\partial t} = \sum_i^n \hat{\mu}_i \left[ \hat{p}_i \frac{\partial}{\partial t} \left( \frac{1}{\sum_j^n \hat{p}_j} \right) + \frac{1}{\sum_j^n \hat{p}_j} \frac{\partial \hat{p}_i}{\partial t} \right]
+\end{equation}
+Evaluate:
+\begin{equation}
+\frac{\partial \hat{\mu}_{\rm t}}{\partial t} = \sum_i^n \hat{\mu}_i \left[ \frac{-\hat{p}_i}{\left( \sum_j^n \hat{p}_j \right)^2} \sum_j^n \frac{\partial \hat{p}_j}{\partial t} + \frac{1}{\sum_j^n \hat{p}_j} \frac{\partial \hat{p}_i}{\partial t} \right]
+\end{equation}
+Looks simpler when you substitute in the total surface pressure $P_s$ and break apart some terms to show the symmetry (and confirm that the units are correct):
+\begin{equation}
+\frac{\partial \hat{\mu}_{\rm t}}{\partial t} = \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right]
+\end{equation}
 %%%%
 %%%%
 \subsubsection{Returning to the evolution equation}
