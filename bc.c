@@ -323,10 +323,11 @@ PetscErrorCode solve_dxdts( Ctx *E )
     SNES           snes;
     Vec            x,r;
     PetscScalar    *xx;
-
-    Atmosphere                 *A = &E->atmosphere;
-    Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
-    Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
+    PetscInt       i;
+    Atmosphere     *A = &E->atmosphere;
+    // FIXME: DELETE
+    //Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
+    //Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
 
     PetscFunctionBeginUser;
 
@@ -337,7 +338,7 @@ PetscErrorCode solve_dxdts( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"atmosts_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    ierr = VecSetSizes( x, PETSC_DECIDE, 2 );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, SPIDER_MAX_VOLATILE_SPECIES );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
@@ -345,8 +346,9 @@ PetscErrorCode solve_dxdts( Ctx *E )
 
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    xx[0] = 0.0;
-    xx[1] = 0.0;
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        xx[i] = 0.0;
+    }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
@@ -364,8 +366,9 @@ PetscErrorCode solve_dxdts( Ctx *E )
     }
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    CO2->dxdt = xx[0];
-    H2O->dxdt = xx[1];
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        A->volatiles[i].dxdt = xx[i];
+    }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     // FIXME: from copying, but update for this function

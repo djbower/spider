@@ -657,49 +657,84 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     const PetscScalar *xx;
     PetscScalar       *ff;
     Ctx               *E = (Ctx*) ptr;
-
+    PetscInt          i;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
-    VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
-    Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
-    Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
+    // TODO: DELETE
+    //VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
+    //VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
+    //Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
+    //Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
 
     PetscFunctionBeginUser;
 
-    VecGetArrayRead(x, &xx);
-    CO2->dxdt = xx[0];
-    H2O->dxdt = xx[1];
-    VecRestoreArrayRead(x,&xx);
+    ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        A->volatiles[i].dxdt = xx[i];
+    }
+    ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
-    ff[0] = get_dxdt( Ap, A, CO2_parameters, CO2 );
-    ff[1] = get_dxdt( Ap, A, H2O_parameters, H2O );
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        ff[i] = get_dxdt( A, Ap, i );
+    }
+    ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
+
+    // TODO: delete
+    //ff[0] = get_dxdt( Ap, A, CO2_parameters, CO2 );
+    //ff[1] = get_dxdt( Ap, A, H2O_parameters, H2O );
+
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
 }
 
-PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const VolatileParameters *Vp, Volatile *V )
+PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i )
 {
 
-    PetscScalar    out, f_thermal_escape;
-    VolatileParameters   const *CO2p = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
-    VolatileParameters   const *H2Op = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
-    Volatile             const *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
-    Volatile             const *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
+    PetscScalar               out, out2, dpsurfdt, f_thermal_escape;
+    PetscInt                  j,k;
 
-    /* remember that to this point, V1->f_thermal_escape is always
+    /* remember that to this point, V->f_thermal_escape is always
        computed but not necessarily used in the calculation */
     if(Ap->THERMAL_ESCAPE){
-        f_thermal_escape = V->f_thermal_escape;
+        f_thermal_escape = A->volatiles[i].f_thermal_escape;
     }
     else{
         f_thermal_escape = 1.0;
     }
 
+    out2 = 0.0;
+
+    /* dPsurf/dt */
+    dpsurfdt = 0.0;
+    for (k=0; k<SPIDER_MAX_VOLATILE_SPECIES; ++k) {
+        dpsurfdt += A->volatiles[k].dpdx * A->volatiles[k].dxdt;
+    }
+
+    for (j=0; j<SPIDER_MAX_VOLATILE_SPECIES; ++j) {
+        out = 0.0;
+        out = -dpsurfdt * A->volatiles[j].p / A->psurf;
+        out += A->volatiles[j].dpdx * A->volatiles[j].dxdt;
+        out *= Ap->volatile_parameters[j].molar_mass;
+        out2 += out;
+    }
+
+    out2 *= -A->volatiles[i].p / (A->psurf * PetscSqr(A->molar_mass));
+
+    /* second part of atmosphere derivative */
+    out2 += ( 1.0 / A->molar_mass ) * A->volatiles[i].dpdx * A->volatiles[i].dxdt;
+
+    /* multiply by prefactors */
+    out2 *= (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Ap->volatile_parameters[i].molar_mass / -(*Ap->gravity_ptr); // note negative gravity
+
+    /* thermal escape correction */
+    out2 *= f_thermal_escape;
+
+// TODO: delete old for two species only below
+#if 0
     /* first part of atmosphere derivative */
     out = -(V->p / PetscSqr(A->molar_mass)) * (CO2p->molar_mass - H2Op->molar_mass) / PetscSqr( CO2->p+H2O->p );
     out *= H2O->p * CO2->dpdx * CO2->dxdt - CO2->p * H2O->dpdx * H2O->dxdt;
@@ -712,12 +747,13 @@ PetscScalar get_dxdt( const AtmosphereParameters *Ap, const Atmosphere *A, const
 
     /* thermal escape correction */
     out *= f_thermal_escape;
+#endif
 
     /* solid and liquid reservoirs */
-    out += V->dxdt * ( Vp->kdist * (*Ap->mantle_mass_ptr) + (1.0-Vp->kdist) * A->Mliq);
-    out += V->x * (1.0-Vp->kdist) * A->dMliqdt;
+    out2 += A->volatiles[i].dxdt * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
+    out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i].kdist) * A->dMliqdt;
 
-    return out;
+    return out2;
 }
 
 static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters *Ap, const Atmosphere *A )
