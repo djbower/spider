@@ -140,8 +140,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   }
 
   ierr = DMCompositeRestoreAccessArray(E->dm_sol,rhs,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-  ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
+  ierr = PetscFree(subVecs);CHKERRQ(ierr);
   ierr = VecDestroy(&rhs_b);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);

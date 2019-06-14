@@ -1,11 +1,11 @@
 #if !defined(POSTSTEP_H_)
 #define POSTSTEP_H_
 #include "ctx.h"
+#include "parameters.h"
 #include <petscts.h>
 
 typedef struct {
-  PetscReal x_CO2; // CO2 concentration in melt
-  PetscReal x_H2O; // H2O concentration in melt
+  PetscReal volatile_abundances[SPIDER_MAX_VOLATILE_SPECIES];
 } PostStepData;
 
 PetscErrorCode PostStepDataInitialize(Ctx *,Vec);
