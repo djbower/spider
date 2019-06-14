@@ -33,12 +33,12 @@
 # Overview of result
 # ==================
 # data is read from 50001.json, and the time-stepper runs until the H2O concentration in the mantle exceed a
-# 5% change.  Two files are output in the output/ directory.  The first, output/50001.json is the first output
+# 5% change.  Two files are output in the output/ directory.  The first, output/50002.json is the first output
 # that reflects the new state of the system computed from the restart data.  Hence the current state vector
-# (solution) is identical to that in 50001.json in the uppermost level.  But other quantities have changed since,
-# for example, the boundary conditions are different for the restart.  The second file output is 58007.json.
+# (solution) is identical to that in 50002.json in the uppermost level.  But other quantities have changed since,
+# for example, the boundary conditions are different for the restart.  The second file output is 58009.json.
 # This output is triggered by the fact that H2O concentration now exceeds a 5% change, relative to the value
-# that was read in from 50001.json (you can easily see this by manually checking the values in the JSONs).
+# that was read in from 50002.json (you can easily see this by manually checking the values in the JSONs).
 
 # Now, the coupler could either search for the last time output, and use this to restart, or we could generate
 # a generically named restart file which is a clone of the last output.  Basically, this would allow us to have
@@ -47,7 +47,7 @@
 # SPIDER to do it.
 
 # main restart example is here:
-spider -options_file bu_input.opts -initial_condition 2 -ic_filename 50001.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -nstepsmacro 1 -dtmacro 30000
+spider -options_file bu_input.opts -initial_condition 2 -ic_filename 50002.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -nstepsmacro 1 -dtmacro 30000
 
 # this example is to demonstrate the over-stepping over the time stepper.  This isn't really a problem, but worth remembering
 # in terms of file naming.  Here, although we ask for 30000 years, the time-stepper oversteps to 30141, thus producing final
