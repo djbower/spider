@@ -325,9 +325,6 @@ PetscErrorCode solve_dxdts( Ctx *E )
     PetscScalar    *xx;
     PetscInt       i;
     Atmosphere     *A = &E->atmosphere;
-    // FIXME: DELETE
-    //Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
-    //Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
 
     PetscFunctionBeginUser;
 
@@ -370,11 +367,6 @@ PetscErrorCode solve_dxdts( Ctx *E )
         A->volatiles[i].dxdt = xx[i];
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
-
-    // FIXME: from copying, but update for this function
-    /* Sanity check on solution (since it's non-unique) */
-    //if (CO2->x < 0.0 || H2O->x < 0.0) SETERRQ2(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
-    //    "Unphysical initial volatile concentrations: CO2: %g, H2O: %g",CO2->x,H2O->x);
 
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);

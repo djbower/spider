@@ -38,13 +38,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ihi_b = ilo_b + w_b;
 
   /* allocate memory for RHS vector */
-  /* FIXME: this is quite laborious and should be cleaned up */
-  //ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
-  //ierr = DMCompositeGetAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-  //ierr = VecDuplicate(subVecs[0],&rhs_b);CHKERRQ(ierr);
-  //ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol_in,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-
-  /* this has the same number of lines, but does not need to access the sol_in vec */
   ierr = VecCreate( PETSC_COMM_WORLD, &rhs_b );
   ierr = VecSetSizes( rhs_b, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
   ierr = VecSetFromOptions( rhs_b );CHKERRQ(ierr);

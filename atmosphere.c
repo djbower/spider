@@ -7,7 +7,7 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *, const AtmospherePa
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_escape( Atmosphere *, const AtmosphereParameters * );
-static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, const VolatileParameters * );
+static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, PetscInt );
 static PetscErrorCode set_jeans( Atmosphere *, const AtmosphereParameters *, PetscInt );
 static PetscErrorCode set_column_density_volatile( Atmosphere *, const AtmosphereParameters *, PetscInt );
 static PetscErrorCode set_Knudsen_number( Atmosphere *, const AtmosphereParameters *, PetscInt );
@@ -181,20 +181,25 @@ static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParame
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     PetscErrorCode     ierr;
-    PetscScalar        CO2_kabs, H2O_kabs, kabs;
+    PetscInt           i;
+    PetscScalar        kabs_tot,kabs;
 
     PetscFunctionBeginUser;
 
     /* effective absorption coefficient */
-    CO2_kabs = get_pressure_dependent_kabs( Ap, &Ap->volatile_parameters[SPIDER_VOLATILE_CO2] );
-    H2O_kabs = get_pressure_dependent_kabs( Ap, &Ap->volatile_parameters[SPIDER_VOLATILE_H2O] );
-    kabs = A->volatiles[SPIDER_VOLATILE_CO2].mixing_ratio * CO2_kabs + A->volatiles[SPIDER_VOLATILE_H2O].mixing_ratio * H2O_kabs;
+    /* TODO: this was formulated for 2 species, and presumably extends for n species as follows,
+       but should check */
+    kabs_tot = 0.0;
+    for( i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        kabs = get_pressure_dependent_kabs( Ap, i );
+        kabs_tot += A->volatiles[i].mixing_ratio * kabs;
+    }
 
     ierr = VecCopy( A->atm_struct_tau, A->atm_struct_pressure ); CHKERRQ(ierr);
     ierr = VecScale( A->atm_struct_pressure, -(*Ap->gravity_ptr) ); CHKERRQ(ierr); // note negative gravity
     ierr = VecScale( A->atm_struct_pressure, 2.0 ); CHKERRQ(ierr);
     ierr = VecScale( A->atm_struct_pressure, 1.0/3.0 ); CHKERRQ(ierr);
-    ierr = VecScale( A->atm_struct_pressure, 1.0/kabs); CHKERRQ(ierr);
+    ierr = VecScale( A->atm_struct_pressure, 1.0/kabs_tot); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -365,9 +370,6 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
 PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     PetscErrorCode           ierr;
-    //VolatileParameters const *Vp;
-    //Volatile                 *V;
-    //PetscInt                 i;
 
     PetscFunctionBeginUser;
 
@@ -474,10 +476,9 @@ PetscScalar get_emissivity_abe_matsui( Atmosphere *A, const AtmosphereParameters
     /* now compute mixing ratios */
     for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
         Volatile                 *V = &A->volatiles[i];
-        VolatileParameters const *Vp = &Ap->volatile_parameters[i]; 
         /* optical depth at surface for this volatile */
         V->tau = (3.0/2.0) * V->p / -(*Ap->gravity_ptr);
-        V->tau *= get_pressure_dependent_kabs( Ap, Vp );
+        V->tau *= get_pressure_dependent_kabs( Ap, i );
         /* total optical depth at surface */
         A->tau += V->tau;
 
@@ -516,7 +517,7 @@ static PetscErrorCode JSON_add_atm_struct( Atmosphere *A, const AtmosphereParame
 
 }
 
-static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *Ap, const VolatileParameters *Vp )
+static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *Ap, PetscInt i )
 {
     /* absorption coefficient in the grey atmosphere is pressure-dependent
 
@@ -526,7 +527,7 @@ static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *Ap, 
 
     PetscScalar kabs;
 
-    kabs = PetscSqrtScalar( Vp->kabs * -(*Ap->gravity_ptr) / (3.0*Ap->P0) );
+    kabs = PetscSqrtScalar( Ap->volatile_parameters[i].kabs * -(*Ap->gravity_ptr) / (3.0*Ap->P0) );
 
     return kabs;
 
@@ -661,11 +662,6 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    // TODO: DELETE
-    //VolatileParameters   const *CO2_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_CO2];
-    //VolatileParameters   const *H2O_parameters = &Ap->volatile_parameters[SPIDER_VOLATILE_H2O];
-    //Volatile                   *CO2 = &A->volatiles[SPIDER_VOLATILE_CO2];
-    //Volatile                   *H2O = &A->volatiles[SPIDER_VOLATILE_H2O];
 
     PetscFunctionBeginUser;
 
@@ -679,12 +675,6 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
         ff[i] = get_dxdt( A, Ap, i );
     }
-    ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
-
-    // TODO: delete
-    //ff[0] = get_dxdt( Ap, A, CO2_parameters, CO2 );
-    //ff[1] = get_dxdt( Ap, A, H2O_parameters, H2O );
-
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
