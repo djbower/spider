@@ -6,7 +6,8 @@ static PetscErrorCode set_d_dr_linear( Ctx * );
 PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 {
     /* Set entropy at the basic (S_b) and staggered (S_s) nodes
-       using the solution fields SPIDER_SOLUTION_FIELD_S0 and
+       as well as the entropy gradient at the basic nodes using 
+       the solution fields SPIDER_SOLUTION_FIELD_S0 and
        SPIDER_SOLUTION_FIELD_DSDR_B */
 
     PetscErrorCode ierr;
@@ -17,7 +18,8 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     PetscInt       i, ihi_b, ilo_b, w_b;
     PetscMPIInt    size;
     DM             da_s = E->da_s, da_b=E->da_b;
-    Vec            *subVecs, dSdr_b;
+    Vec            *subVecs;
+
     const PetscInt ind0 = 0;
 
     PetscFunctionBeginUser;
@@ -26,8 +28,8 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-    /* get dS/dr at basic nodes */
-    dSdr_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]];
+    /* set S->dS/dr at basic nodes */
+    ierr = VecCopy( subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]], S->dSdr );CHKERRQ(ierr);
     /* get first staggered node value (store as S0) */
     ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],1,&ind0,&S0);CHKERRQ(ierr);
 
@@ -37,7 +39,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
@@ -69,7 +71,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
@@ -78,6 +80,34 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     PetscFunctionReturn(0);
 }
+
+PetscErrorCode set_volatile_abundances_from_solution( Ctx *E, Vec sol )
+{
+    PetscErrorCode ierr;
+    Atmosphere     *A = &E->atmosphere;
+    PetscInt       i;
+    PetscMPIInt    size;
+    Vec            *subVecs;
+
+    PetscFunctionBeginUser;
+
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+    if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
+
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
+    for( i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],1,&i,&A->volatiles[i].x);CHKERRQ(ierr);
+    }
+
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    PetscFree(subVecs);
+
+    PetscFunctionReturn(0);
+
+}
+
 
 PetscErrorCode set_solution_from_entropy( Ctx *E, Vec sol )
 {
