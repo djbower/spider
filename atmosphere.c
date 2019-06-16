@@ -67,17 +67,12 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
     /* other variables in struct that otherwise might not get set */
     /* below is only for Abe and Matsui atmosphere model */
     A->tau = 0.0;
-    /* the function to set the initial condition for the volatiles
-       calls set_atmosphere_volatile_content, which contains several
-       functions for setting atmosphere-related quantities. Therefore
-       ensure that A->tsurf is non-zero so that the escape-related
+    /* Ensure that A->tsurf is non-zero so that the escape-related
        functions do not return an uninitialised value warning
        (valgrind).  During the time loop, A->tsurf is updated to a
-       meaningful value before it is actually used. */
+       meaningful value before it is actually used (as is A->psurf) */
     A->tsurf = 1.0;
-
-    /* FIXME */
-    A->psurf = 0.0; // to update with partial pressure sum
+    A->psurf = 0.0;
 
     PetscFunctionReturn(0);
 
