@@ -8,7 +8,7 @@ def atmosphere(rootDir) :
   ranks = 1
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','atmosphere','bu_input.opts'),\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py 1000152'),
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py 1000122'),
           #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0,100,200,400,800,1200,1500',\
           ]
 
@@ -31,7 +31,7 @@ def atmosphere_jeans(rootDir) :
   ranks = 1
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','atmosphere_jeans','bu_input.opts'),\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py 1000026'),
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py 1000091'),
           #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0,100,200,400,800,1200,1500',\
           ]
 

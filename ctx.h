@@ -44,24 +44,23 @@ typedef struct Solution_ {
 } Solution;
 
 /* Some helpers for keeping track of sub-fields
- - To add a new field type, update these three things!
-*/
-static const PetscInt SPIDER_NUM_FIELD_IDS=5;
+ - To add a new field type, update these three things! 
+ - Note that these need to start with 0 to match the arrays underneath */
+static const PetscInt SPIDER_NUM_FIELD_IDS = 3;
 typedef enum {
-  SPIDER_SOLUTION_FIELD_UNDEFINED=0,
-  SPIDER_SOLUTION_FIELD_DSDR_B,
-  SPIDER_SOLUTION_FIELD_S0,
-  SPIDER_SOLUTION_FIELD_MO_CO2,
-  SPIDER_SOLUTION_FIELD_MO_H2O
+  SPIDER_SOLUTION_FIELD_UNDEFINED     = 0,
+  SPIDER_SOLUTION_FIELD_DSDR_B        = 1,
+  SPIDER_SOLUTION_FIELD_S0            = 2,
+  SPIDER_SOLUTION_FIELD_MO_VOLATILES  = 3
 } SpiderSolutionFieldID;
-static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr (basic nodes)","S at surface","Magma Ocean CO2 content","Magma Ocean H2O content"}; /* Order must match the enum! */
-static const char * const SpiderSolutionFieldUnits[] = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "ppm", "ppm"}; // Order must match the enum! */
+static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr (basic nodes)","S at surface","Magma ocean volatile content"}; /* Order must match the enum! */
+static const char * const SpiderSolutionFieldUnits[]        = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "ppm"}; /* Order must match the enum! */
 
 /* A Context for the Solver */
 typedef struct Ctx_ {
   Mesh                   mesh;
   Solution               solution;
-  DM                     da_b,da_s,da_point; /* DMs for different subdomains */
+  DM                     da_b,da_s,da_point,da_volatiles; /* DMs for different subdomains */
   DM                     dm_sol; /* A composite DM for all fields used in the timestepper */
   PetscInt               numFields; /* Number of sub-DMs in dm_sol */
   SpiderSolutionFieldID  *solutionFieldIDs; /* Which fields are in which slot */

@@ -11,6 +11,8 @@ Custom PETSc command line options should only ever be parsed here.
 // FIXME
 //#include "composition.h"
 
+const char *volatiles_id_strings[SPIDER_MAX_VOLATILE_SPECIES] = {"CO2","H2O"}; /* must agree with enum in parameters.h */
+
 static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
     PetscScalar SQRTST;
@@ -84,6 +86,48 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, const char * id_string, const Constants *C)
+{
+  PetscErrorCode ierr;
+  char           buf[1024]; /* max size */
+
+  PetscFunctionBeginUser;
+  /* Accept -id_string_YYY to populate vp->YYY */
+  /* TODO: given that this is now general for any number of volatiles,
+     it is not possible to prescribe generic meaningful default values.
+     Instead, all values must be prescribed in the input value.  Perhaps
+     there is a potential here for a bug if these parameters are not
+     specified in the input file?  Will the following produce an error
+     or read meaningless data from another part of memory? */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_initial");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial,NULL);CHKERRQ(ierr);
+  vp->initial /= C->VOLATILE;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_kdist");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kdist,NULL);CHKERRQ(ierr);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_kabs");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kabs,NULL);CHKERRQ(ierr);
+  vp->kabs *= C->DENSITY * C->RADIUS;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_henry_pow");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry_pow,NULL);CHKERRQ(ierr);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_henry");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry,NULL);CHKERRQ(ierr);
+  vp->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/vp->henry_pow);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_jeans_value");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,NULL);CHKERRQ(ierr);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_R_thermal_escape_value");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->R_thermal_escape_value,NULL);CHKERRQ(ierr);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_molar_mass");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,NULL);CHKERRQ(ierr);
+  vp->molar_mass /= C->MASS;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_cross_section");CHKERRQ(ierr);
+  vp->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->cross_section,NULL);CHKERRQ(ierr);
+  vp->cross_section /= C->AREA;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_poststep_change");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->poststep_change,NULL);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
 /*
 This function (and subfunctions) should be the only place that
 custom command-line parameters (those not defined by PETSc) should be accessed.
@@ -92,12 +136,11 @@ Parameters are specified by the user in dimensional (unscaled) form,
 but they are all stored in non-dimensional (scaled) form.
 
  */
+
 PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
-  VolatileParameters   *H2O = &Ap->H2O_parameters;
-  VolatileParameters   *CO2 = &Ap->CO2_parameters;
   Constants const      *C  = &P->constants;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
@@ -105,6 +148,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   RadiogenicIsotopeParameters *th232 = &P->th232_parameters;
   RadiogenicIsotopeParameters *u235 = &P->u235_parameters;
   RadiogenicIsotopeParameters *u238 = &P->u238_parameters;
+  PetscInt             v;
 
   // FIXME
   //CompositionParameters      *Compp = &P->composition_parameters;
@@ -503,61 +547,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->Avogadro = 6.02214076E23; // 1/mol
   Ap->kB = Ap->Rgas / Ap->Avogadro;
 
-  /* H2O volatile */
-  H2O->initial = 500.0; // ppm
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_initial",&H2O->initial,NULL);CHKERRQ(ierr);
-  H2O->initial /= C->VOLATILE;
-  H2O->kdist = 1.0E-4; // non-dimensional
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kdist",&H2O->kdist,NULL);CHKERRQ(ierr);
-  // TODO: water saturation limit of 10 ppm?
-  H2O->kabs = 0.01; // m^2/kg
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kabs",&H2O->kabs,NULL);CHKERRQ(ierr);
-  H2O->kabs *= C->DENSITY * C->RADIUS;
-  H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry_pow",&H2O->henry_pow,NULL);CHKERRQ(ierr);
-  H2O->henry = 6.8E-2; // ppm/Pa^(1/henry_pow)
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
-  H2O->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/H2O->henry_pow);
-  // -1.0 means compute, otherwise take the value as constant
-  H2O->jeans_value = -1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_jeans_value",&H2O->jeans_value,NULL);CHKERRQ(ierr);
-  H2O->R_thermal_escape_value = -1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_R_thermal_escape_value",&H2O->R_thermal_escape_value,NULL);CHKERRQ(ierr);
-  H2O->molar_mass = 18.01528 * 1.0e-3; // kg/mol
-  H2O->molar_mass /= C->MASS;
-  H2O->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
-  H2O->cross_section /= C->AREA;
-  // maximum allowable fractional change in interior melt abundance for poststep (only for -activate_poststep)
-  H2O->poststep_change = 0.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_poststep_change",&H2O->poststep_change,NULL);CHKERRQ(ierr);
-
-  /* CO2 volatile */
-  CO2->initial = 100.0; // ppm
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_initial",&CO2->initial,NULL);CHKERRQ(ierr);
-  CO2->initial /= C->VOLATILE;
-  CO2->kdist = 5.0E-4; // non-dimensional
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kdist",&CO2->kdist,NULL);CHKERRQ(ierr);
-  // TODO: water saturation limit of 0.03 ppm
-  CO2->kabs = 0.05; // m^2/kg
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kabs",&CO2->kabs,NULL);CHKERRQ(ierr);
-  CO2->kabs *= C->DENSITY * C->RADIUS;
-  CO2->henry_pow = 1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
-  CO2->henry = 4.4E-6; // ppm/Pa^(1/henry_pow)
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
-  CO2->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/CO2->henry_pow);
-  // -1.0 means compute, otherwise take the value as constant
-  CO2->jeans_value = -1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_jeans_value",&CO2->jeans_value,NULL);CHKERRQ(ierr);
-  CO2->R_thermal_escape_value = -1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_R_thermal_escape_value",&CO2->R_thermal_escape_value,NULL);CHKERRQ(ierr);
-  CO2->molar_mass = 44.01 * 1.0e-3; // kg/mol
-  CO2->molar_mass /= C->MASS;
-  CO2->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
-  CO2->cross_section /= C->AREA;
-  // maximum allowable fractional change in interior melt abundance for poststep (only for -activate_poststep)
-  CO2->poststep_change = 0.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_poststep_change",&CO2->poststep_change,NULL);CHKERRQ(ierr);
+  /* Get command-line values for all volatiles species */
+  for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
+    ierr = VolatileParametersSetFromOptions(&Ap->volatile_parameters[v],volatiles_id_strings[v], C );
+  }
 
   /* radiogenic heating */
   /* aluminium 26 */
