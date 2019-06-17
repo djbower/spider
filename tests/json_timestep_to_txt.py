@@ -12,23 +12,18 @@ if len(sys.argv) < 2 :
 else :
     timestep = int(sys.argv[1])
 
-json_data = open(os.path.join('output',str(timestep)+'.json'))
-data_d = json.load(json_data)
-subdomain_data_array = data_d['solution']['subdomain data']
-
-outfile = open('out.txt','w')
-
-for e in subdomain_data_array :
-    outfile.write('description: ')
-    outfile.write(e['description'])
-    outfile.write('\n')
-    outfile.write('scaling: ')
-    outfile.write(e['scaling'])
-    outfile.write('\n')
-    for ee in e['values'] :
-        outfile.write('val: ')
-        outfile.write(ee)
-        outfile.write('\n')
-
-outfile.close()
-json_data.close()
+with open(os.path.join('output',str(timestep)+'.json')) as json_data :
+    data_d = json.load(json_data)
+    subdomain_data_array = data_d['solution']['subdomain data']
+    with open('out.txt','w') as outfile :
+        for e in subdomain_data_array :
+            outfile.write('description: ')
+            outfile.write(e['description'])
+            outfile.write('\n')
+            outfile.write('scaling: ')
+            outfile.write(e['scaling'])
+            outfile.write('\n')
+            for ee in e['values'] :
+                outfile.write('val: ')
+                outfile.write(ee)
+                outfile.write('\n')
