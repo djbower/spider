@@ -1,20 +1,12 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 455
+-nstepsmacro 20
+# was 2000, but only need one million years for a reasonable
+# test of output
 
 # macro step size in years
--dtmacro 10000000
-
-# for default time ranges
-# if one of these is set, then the above time stepping
-# parameters are ignored
-# 0 - 10 kyr
-#-early
-# 0 - 100 Myr
-#-middle
-# 0 - 4.55 Byr
-#-late
+-dtmacro 50000
 
 # for the PETSc interface to SUNDIALS, matchstep is not
 # allowed, and in testing it doesn't appear that interpolate
@@ -24,18 +16,18 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-8
--ts_sundials_rtol 1.0e-8
+-ts_sundials_atol 1.0e-11
+-ts_sundials_rtol 1.0e-11
 
 # mesh
 # number of basic nodes
--n 200
+-n 100
 
 # initial condition
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
--initial_condition 3
--ic_filename output/dSdr_b_aug_0.m
+-initial_condition 1
+-ic_filename 500000.json
 
 # all units are SI unless indicated otherwise
 
@@ -43,24 +35,21 @@
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
--radius0 63710.0 # Earth radius
+-radius0 6371000.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
 -volatile0 1.0E2
 
-# only consider solid-state convection
--SOLID_CONVECTION_ONLY 1
-
 # energy fluxes and sources to include
 # [0] is off
 # [1] is on
 -CONDUCTION 1 # conduction
 -CONVECTION 1 # convection
--MIXING 0 # mixing (latent heat transport)
+-MIXING 1 # mixing (latent heat transport)
 -SEPARATION 0 # gravitational separation of solid and melt phase
--HRADIO 1 # radioactive heating
+-HRADIO 0 # radioactive heating
 -HTIDAL 0 # tidal heating (TODO: not currently implemented)
 
 # output directory
@@ -68,22 +57,22 @@
 
 # melting curves
 # for bottom-up crystallisation (double precision OK)
--liquidus_filename_rel_to_src lookup_data/RTmelt/liquidus_andrault2011.dat
--solidus_filename_rel_to_src lookup_data/RTmelt/solidus_andrault2011.dat
+-liquidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/liquidus_A11_H13.dat
+-solidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
 
 # melt lookup data
--alphaMel_filename_rel_to_src lookup_data/RTmelt/thermal_exp_melt.dat
--cpMel_filename_rel_to_src lookup_data/RTmelt/heat_capacity_melt.dat
--dtdpsMel_filename_rel_to_src lookup_data/RTmelt/adiabat_temp_grad_melt.dat
--rhoMel_filename_rel_to_src lookup_data/RTmelt/density_melt.dat
--tempMel_filename_rel_to_src lookup_data/RTmelt/temperature_melt.dat
+-alphaMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
+-cpMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_melt.dat
+-dtdpsMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_melt.dat
+-rhoMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_melt.dat
+-tempMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_melt.dat
 
 # solid lookup data
--alphaSol_filename_rel_to_src lookup_data/RTmelt/thermal_exp_solid.dat
--cpSol_filename_rel_to_src lookup_data/RTmelt/heat_capacity_solid.dat
--dtdpsSol_filename_rel_to_src lookup_data/RTmelt/adiabat_temp_grad_solid.dat
--rhoSol_filename_rel_to_src lookup_data/RTmelt/density_solid.dat
--tempSol_filename_rel_to_src lookup_data/RTmelt/temperature_solid.dat
+-alphaSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_solid.dat
+-cpSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_solid.dat
+-dtdpsSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_solid.dat
+-rhoSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_solid.dat
+-tempSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_solid.dat
 
 # mixing length
 # [1] is conventional, i.e. distance from the nearest boundary
@@ -93,9 +82,8 @@
 #     lid from forming at the surface
 # [3] is conventional as [1] above, but additionally allows you to
 #      specify a mid-mantle interface
-
--mixing_length 1
--mixing_length_layer_radius 0.7 # non-dimensional radius
+-mixing_length 2
+#-mixing_length_layer_radius 0.0 # non-dimensional radius
 
 # physical parameters
 
@@ -103,11 +91,11 @@
 -radius 6371000.0 # Earth radius
 
 # initial condition
--ic_adiabat_entropy 1400
--ic_dsdr -4.6978890285209187e-05 # initial dS/dr everywhere
+-ic_adiabat_entropy 2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
+-ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
--ic_surface_entropy 403.0
--ic_core_entropy 2091.6144510705185
+-ic_surface_entropy = -1
+-ic_core_entropy = -1
 
 # static pressure profile derived from Adams-Williamson equation of state
 # these parameters are from fitting PREM in the lower mantle (for Earth)
@@ -118,7 +106,7 @@
 # eddy diffusivity
 # if negative, this value is adopted (units m^2/s)
 # if positive, this value is used to scale the internally calculated eddy diffusivity
--eddy_diffusivity_thermal 1.0
+-eddy_diffusivity_thermal 1.0 
 -eddy_diffusivity_chemical 1.0 
 
 # material properties
@@ -131,24 +119,17 @@
 -matprop_smooth_width 1.0E-2
 
 # viscosity
--activation_energy_sol 300000.0 # J/mol
--activation_volume_sol 4.0E-6 # J/mol/Pa or m^3/mol
--log10visc_sol 9.0 # solid viscosity (log10)
+-log10visc_sol 21.0 # solid viscosity (log10)
 -log10visc_mel 2.0 # melt viscosity (log10)
 -phi_critical 0.4 # transition melt fraction (non-dimensional)
 -phi_width 0.15 # transition width (non-dimensional)
--Mg_Si0 0.0
--Mg_Si1 0.0
-
--log10visc_max 24
--log10visc_min -1.0
 
 # core-mantle boundary condition
 # [1] core-cooling
 # [2] heat flux (prescribe value using core_bc_value)
 # [3] entropy
 -CORE_BC 1
--core_bc_value 0.0
+-core_bc_value 0.0 
 
 # core parameters for CORE_BC=1
 -coresize 0.55 # fractional radius of core-mantle boundary
@@ -161,8 +142,9 @@
 # [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
 # [4] heat flux (prescribe value using surface_bc_value)
 # [5] entropy
--SURFACE_BC 5
--surface_bc_value 0.0
+-SURFACE_BC 1
+# dimensional, ordinarily will need to be read from SOCRATES each timestep
+-surface_bc_value 1.0E4
 
 # if SURFACE_BC=1 or 2, the following constant emissivity is used
 -emissivity0 1.0
@@ -176,12 +158,12 @@
 -param_utbl_const 1.0E-7 # value of parameterisation
 
 # track time-dependence of volatile content in atmosphere and magma ocean
-# can be done passively (with SURFACE_BC=1 or 2 above), or self-consistently
+# can be done passively or self-consistently
 # with SURFACE_BC=3 above (where the volatile content feeds back into determining
 # the emissivity of the atmosphere)
 # [0] off
 # [1] on
--SOLVE_FOR_VOLATILES 0
+-SOLVE_FOR_VOLATILES 1
 
 # below is for SURFACE_BC=3, see Abe and Matsui (1986) and Elkins-Tanton (2008)
 # for the grey-body atmosphere formulation.  The expressions for the partial
@@ -199,6 +181,7 @@
 -CO2_kabs 0.05 # absorption (m^2/kg)
 -CO2_henry 4.4E-6 # ppm/Pa (Lebrun et al., 2013)
 -CO2_henry_pow 1.0 # power for Henry's law (Lebrun et al., 2013)
+-CO2_molar_mass 0.04401 # kg/mol
 
 # parameters relating to H2O volatile
 #-H2O_initial 0.0 # ppm
@@ -209,6 +192,7 @@
 -H2O_kabs 0.01 # absorption (m^2/kg)
 -H2O_henry 6.8E-2 # ppm/Pa (Lebrun et al., 2013)
 -H2O_henry_pow 1.4285714285714286 # Power for Henry's law (1.0/0.7) (Lebrun et al., 2013)
+-H2O_molar_mass 0.01801528 # kg/mol
 
 # internal heat sources
 # Al26 (extinct at present day)

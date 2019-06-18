@@ -31,7 +31,10 @@ def spiderplot_fig1( times ):
 
     myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
 
-    TIMEYRS = myjson_o.data_d['nstep']
+    try:
+        TIMEYRS = myjson_o.data_d['nstep']
+    except KeyError:
+        TIMEYRS = 0
 
     # hack to compute some average properties for Bower et al. (2018)
     #xx_liq, yy_liq = fig_o.get_xy_data( 'liquidus_rho', time )

@@ -1,7 +1,9 @@
 #include "ic.h"
 #include "bc.h"
+#include "cJSON.h"
 #include "util.h"
 #include "atmosphere.h"
+#include "parameters.h"
 
 static PetscErrorCode set_ic_default( Ctx *, Vec );
 static PetscErrorCode set_ic_entropy( Ctx *, Vec );
@@ -36,16 +38,19 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 
     if(IC==1){
         ierr = set_ic_default( E, sol ); CHKERRQ(ierr);
+        ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
     }
     else if(IC==2){
+        // this sets everything, including the atmosphere
         ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
     }
     else if(IC==3){
         ierr = set_ic_from_solidus( E, sol ); CHKERRQ(ierr);
+        ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
     }
 
-    ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
-
+    /* TODO: move this code block to a conform_boundary_conditions
+       function */
     /* FIXME: will break in parallel */
     if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
         ierr = set_entropy_from_solution( E, sol );
@@ -121,35 +126,33 @@ static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
 
 static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 {
-    /* set initial condition for the extra points */
 
     PetscErrorCode             ierr;
     PetscInt                   i;
+    PetscScalar                x0;
     Vec                        *subVecs;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P  = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
-    PetscScalar x0, x1;
-
     PetscFunctionBeginUser;
-
-    /* initial volatile content */
-    x0 = 0.0;
-    x1 = 0.0;
-
-    /* turn on volatiles for these conditions */
-    if(Ap->SOLVE_FOR_VOLATILES || Ap->SURFACE_BC==3){
-        ierr = set_initial_volatile( E ); CHKERRQ(ierr);
-        x0 = A->CO2.x;
-        x1 = A->H2O.x;
-    }
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_CO2]],0,x0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_H2O]],0,x1,INSERT_VALUES);CHKERRQ(ierr);
+    if(Ap->SOLVE_FOR_VOLATILES){
+        ierr = set_initial_volatile( E ); CHKERRQ(ierr);
+        for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+            x0 = A->volatiles[i].x;
+            ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
+        }
+    }
+    else{
+        for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+            x0 = 0.0;
+            ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
+        }
+    }
 
     for (i=0; i<E->numFields; ++i) {
       ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
@@ -164,51 +167,106 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
 static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 {
-
-    /* FIXME: currently broken since change to new output format (json) */
-
-    /* reads in the output from sol_[timestep].m to use as the
-       initial condition to enable restarting
-
-       Warning: this assumes a particular ordering of the fields in the solution
-       vector, so can only assumed to be valid when the file is generated
-       by this exact version of SPIDER.
-       */
+    /* reads an initial condition from a previously output JSON file
+       to enable restarting */
 
     PetscErrorCode   ierr;
-    Parameters const *P  = &E->parameters;
+    Parameters *P  = &E->parameters;
     FILE             *fp;
-    PetscInt         i=0, j=0;
-    char             string[PETSC_MAX_PATH_LEN];
+    cJSON            *json, *solution, *subdomain, *values, *data, *item, *time;
+    long             length;
+    char             *item_str;
+    PetscInt         i, subdomain_num;
+    PetscScalar      val = 0;
+    Vec              invec, *subVecs;
+    char             *buffer = 0;
 #if (defined PETSC_USE_REAL___FLOAT128)
-    char             xtemp[30];
+    char             val_str[30];
 #endif
-    PetscScalar      x;
-    const PetscInt   head=3;
 
     PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_file:\n");CHKERRQ(ierr);
+
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
     fp = fopen( P->ic_filename, "r" );
 
     if(fp==NULL) {
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",P->ic_filename);
     }
 
-    while(fgets(string, sizeof(string), fp) != NULL) {
-        if( (i>=head) && (i<=P->numpts_b+head+2) ){ /* 3 header lines in sol_[timestep].m */
-#if (defined PETSC_USE_REAL___FLOAT128)
-            sscanf( string, "%s", xtemp );
-            x = strtoflt128(xtemp, NULL);
-#else
-            sscanf(string, "%lf", &x );
-#endif
-            j = i-3;
-            ierr = VecSetValue(sol,j,x,INSERT_VALUES); CHKERRQ(ierr);
-        }
-        ++i;
+    /* read file to zero terminated string */
+    /* TODO: can this be improved? */
+    // https://stackoverflow.com/questions/174531/how-to-read-the-content-of-a-file-to-a-string-in-c
+    if (fp){
+        fseek(fp,0,SEEK_END);
+        length = ftell(fp);
+        fseek(fp,0,SEEK_SET);
+        buffer = malloc(length+1);
+        if (buffer){
+            if(fread(buffer,1,length,fp) != length) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_FILE_READ,"fread() error");
+        } else SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MEM,"malloc error");
+        fclose(fp);
+        buffer[length] = '\0';
     }
 
-    VecAssemblyBegin( sol );
-    VecAssemblyEnd( sol );
+    json = cJSON_Parse( buffer );
+
+    /* time from this restart JSON must be passed to the time stepper
+       to continue the integration and keep track of absolute time */
+    time = cJSON_GetObjectItem(json,"time");
+    P->t0 = time->valuedouble;
+
+    solution = cJSON_GetObjectItem(json,"solution");
+    subdomain = cJSON_GetObjectItem(solution,"subdomain data");
+
+    /* loop over subdomains and extract values */
+    cJSON_ArrayForEach( data, subdomain )
+    {
+        subdomain = cJSON_GetObjectItem( data, "subdomain" );
+        subdomain_num = subdomain->valueint;
+        values = cJSON_GetObjectItem( data, "values" );
+
+        /* FIXME: could break if ordering of subdomains changes */
+        if (subdomain_num == 0){
+            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]];
+        }
+        else if (subdomain_num == 1){
+            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]];
+        }
+        else if (subdomain_num == 2){
+            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]];
+        }
+        else {
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"unexpected number of subdomains");
+        }
+
+        for (i=0; i<cJSON_GetArraySize(values); i++ ){     
+            item = cJSON_GetArrayItem( values, i );
+            item_str = item->valuestring;
+#if (defined PETSC_USE_REAL___FLOAT128)
+            sscanf( item_str, "%s", val_str );
+            val = strtoflt128(val_str, NULL);
+#else
+            sscanf( item_str, "%lf", &val );
+#endif
+            /* add value to vec */
+            VecSetValue( invec, i, val, INSERT_VALUES );CHKERRQ(ierr);
+        }
+
+    }
+
+    /* all vec assembly is done here */
+    for (i=0; i<E->numFields; ++i) {
+      ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
+      ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
+    }
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
+    cJSON_Delete( json );
+    free( buffer );
 
     PetscFunctionReturn(0);
 }
@@ -247,39 +305,36 @@ static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
 }
 
 static PetscErrorCode set_initial_volatile( Ctx *E )
-{   
+{
     PetscErrorCode ierr;
     SNES           snes;
     Vec            x,r;
     PetscScalar    *xx;
-    
+    PetscInt       i;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
-    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
-    Volatile                   *CO2 = &A->CO2;
-    Volatile                   *H2O = &A->H2O;
-   
+
     PetscFunctionBeginUser;
-    
+
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
 
     /* Use this to address this specific SNES (nonlinear solver) from the command
        line or options file, e.g. -atmosic_snes_view */
     ierr = SNESSetOptionsPrefix(snes,"atmosic_");CHKERRQ(ierr);
-    
+
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    ierr = VecSetSizes( x, PETSC_DECIDE, 2 );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, SPIDER_MAX_VOLATILE_SPECIES );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
-   
+
     ierr = SNESSetFunction(snes,r,FormFunction1,E);CHKERRQ(ierr);
-    
+
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    xx[0] = CO2_parameters->initial;
-    xx[1] = H2O_parameters->initial;
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        xx[i] = Ap->volatile_parameters[i].initial;
+    }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
@@ -297,48 +352,53 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     }
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    CO2->x = xx[0];
-    H2O->x = xx[1];
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        if( A->volatiles[i].x < 0.0 ){
+            /* Sanity check on solution (since it's non-unique) */
+            SETERRQ2(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+                "Unphysical initial volatile concentration: volatile %d, x: %g",i,A->volatiles[i].x);
+        }
+        else{
+            A->volatiles[i].x = xx[i];
+        }
+    }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
-    /* Sanity check on solution (since it's non-unique) */
-    if (CO2->x < 0.0 || H2O->x < 0.0) SETERRQ2(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
-        "Unphysical initial volatile concentrations: CO2: %g, H2O: %g",CO2->x,H2O->x);
- 
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);
     ierr = SNESDestroy(&snes);CHKERRQ(ierr);
-    
+
     PetscFunctionReturn(0);
 }
 
 /* Non-linear solver for initial volatile abundance */
 static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
-{ 
-    PetscErrorCode    ierr;
-    const PetscScalar *xx;
-    PetscScalar       *ff;
-    Ctx               *E = (Ctx*) ptr;
-
+{
+    PetscErrorCode             ierr;
+    const PetscScalar          *xx;
+    PetscScalar                *ff;
+    PetscInt                   i;
+    Ctx                        *E = (Ctx*) ptr;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    VolatileParameters   const *CO2_parameters = &Ap->CO2_parameters;
-    VolatileParameters   const *H2O_parameters = &Ap->H2O_parameters;
-    Volatile                   *CO2 = &A->CO2;
-    Volatile                   *H2O = &A->H2O;
 
     PetscFunctionBeginUser;
+
     VecGetArrayRead(x, &xx);
-    CO2->x = xx[0];
-    H2O->x = xx[1];      
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        A->volatiles[i].x = xx[i];
+    }
     VecRestoreArrayRead(x,&xx);
-    
-    ierr = set_atmosphere_volatile_content( Ap, A ); CHKERRQ(ierr);   
+
+    ierr = set_atmosphere_volatile_content( A, Ap ); CHKERRQ(ierr);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
-    ff[0] = get_initial_volatile_abundance( A, Ap, CO2_parameters, CO2 );
-    ff[1] = get_initial_volatile_abundance( A, Ap, H2O_parameters, H2O );
+
+    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i] );
+    }
+
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

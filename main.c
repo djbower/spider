@@ -3,9 +3,7 @@ static char help[] =
 -n : specify the number of staggered points\n\
 -monitor : use custom monitor to dump output\n\
 -nstepsmacro : specify the number of macro (output dump) steps\n\
--dtmacro : specify the macro (output dump) time step, in nondimensionalised time (will not be exact!)\n\
--dtmacro_years : specify the macro (output dump) time step, in years\n\
--early, -middle, -late : shortcuts to set -dtmacro and -nstepsmacro (overrides these)\n\
+-dtmacro : specify the macro (output dump) time step, in years\n\
 See example input files in examples/ for many more available options\n\
 ";
 
@@ -15,6 +13,8 @@ See example input files in examples/ for many more available options\n\
 #include "monitor.h"
 #include "rhs.h"
 #include "version.h"
+#include "rollback.h"
+#include "poststep.h"
 
 static PetscErrorCode PrintSPIDERHeader();
 static PetscErrorCode PrintFields(Ctx*);
@@ -76,30 +76,54 @@ int main(int argc, char ** argv)
   /* Accept command line options */
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
 
+
   /* Solve macro steps. We have our own outer loop which repeatedly calls TSSolve
      and then calls a custom monitor. We also provide a special monitor to the
      TS object, to output periodically within our macro steps, useful if a
      macro step takes a longer amount of time. */
   {
     PetscReal  time,nexttime;
+    PetscInt   stepmacro;
     MonitorCtx mctx;
 
-    time = P->t0;
+    /* Monitor to output periodically, based on wall time */
     mctx.walltime0 = MPI_Wtime();
     mctx.walltimeprev = mctx.walltime0;
     mctx.outputDirectoryExistenceConfirmed = PETSC_FALSE;
-    PetscInt stepmacro=0;
-    /* This code proceeds by performing multiple solves with a TS object,
+    ierr = TSMonitorSet(ts,TSMonitorWalltimed,&mctx,NULL);CHKERRQ(ierr);
+
+    /* Proceed by performing multiple solves with a TS object,
        pausing to optionally produce output before updating the "final" time
        and proceeding again */
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Will perform %D macro (output) steps of length %f = %f years\n",
-        P->nstepsmacro,(double) P->dtmacro, (double) P->dtmacro_years);CHKERRQ(ierr);
-    ierr = TSMonitorSet(ts,TSMonitorWalltimed,&mctx,NULL);CHKERRQ(ierr);
-    nexttime = P->dtmacro; // non-dim time
+
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Starting at t0 = %f, Will perform %D macro (output) steps of length %f = %f years\n",
+        P->t0,P->nstepsmacro,(double) P->dtmacro, (double) (P->dtmacro*P->constants.TIMEYRS) );CHKERRQ(ierr);
+    time = P->t0;
+    ierr = TSSetTime(ts,time);CHKERRQ(ierr);
+    nexttime = P->t0 + P->dtmacro;
+    stepmacro = 0; /* Macro steps always start from 0, regardless of physical starting time */
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
-    if (P->monitor) {
-      ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
+
+
+    /* Final setup logic (needs to be here because some things, like TSSetTime(),
+       won't work properly for the SUNDIALS implementation if called after TSSetUp()) */
+    ierr = TSSetUp(ts);CHKERRQ(ierr);
+
+    /* Activate rollback capability and PostStep logic (needs to happen post-SetUp()) */
+    if (P->rollBackActive) {
+      ierr = TSRollBackGenericActivate(ts);CHKERRQ(ierr);
     }
+    if (P->postStepActive) {
+      ierr = TSSetApplicationContext(ts,&ctx);CHKERRQ(ierr);
+      ierr = PostStepDataInitialize(&ctx,sol);CHKERRQ(ierr); /* use initial condition here */
+      ierr = TSSetPostStep(ts,PostStep);CHKERRQ(ierr);
+    }
+
+    /* output first time step (initial condition) */
+    if (P->monitor) {
+      ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
+    }
+
     for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
       ierr = TSSolve(ts,sol);CHKERRQ(ierr);
       if (stepmacro == 1) {
@@ -107,9 +131,14 @@ int main(int argc, char ** argv)
       }
       ierr = TSGetTime(ts,&time);CHKERRQ(ierr);
       if (P->monitor) {
-        ierr = TSCustomMonitor(ts,P->dtmacro,P->dtmacro_years,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
       }
-      nexttime = (stepmacro + 1) * P->dtmacro; // non-dim
+      if (ctx.stopEarly) {
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"Stopping macro timestepping loop early!\n");CHKERRQ(ierr); // FIXME not sure if we want this output
+        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
+        break;
+      }
+      nexttime = P->t0 + ((stepmacro + 1) * P->dtmacro);
       ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     }
   }

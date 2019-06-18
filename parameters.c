@@ -11,6 +11,8 @@ Custom PETSc command line options should only ever be parsed here.
 // FIXME
 //#include "composition.h"
 
+const char *volatiles_id_strings[SPIDER_MAX_VOLATILE_SPECIES] = {"CO2","H2O"}; /* must agree with enum in parameters.h */
+
 static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
     PetscScalar SQRTST;
@@ -70,9 +72,9 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
     ierr = SetConstants(C,1.0,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
   } else {
     PetscScalar RADIUS0 = 6371000.0; // m
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-radius0",&RADIUS0,NULL);CHKERRQ(ierr);  
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-radius0",&RADIUS0,NULL);CHKERRQ(ierr);
     PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-entropy0",&ENTROPY0,NULL);CHKERRQ(ierr);  
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-entropy0",&ENTROPY0,NULL);CHKERRQ(ierr);
     PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
     ierr = PetscOptionsGetScalar(NULL,NULL,"-temperature0",&TEMPERATURE0,NULL);CHKERRQ(ierr);
     PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
@@ -84,6 +86,48 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, const char * id_string, const Constants *C)
+{
+  PetscErrorCode ierr;
+  char           buf[1024]; /* max size */
+
+  PetscFunctionBeginUser;
+  /* Accept -id_string_YYY to populate vp->YYY */
+  /* TODO: given that this is now general for any number of volatiles,
+     it is not possible to prescribe generic meaningful default values.
+     Instead, all values must be prescribed in the input value.  Perhaps
+     there is a potential here for a bug if these parameters are not
+     specified in the input file?  Will the following produce an error
+     or read meaningless data from another part of memory? */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_initial");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial,NULL);CHKERRQ(ierr);
+  vp->initial /= C->VOLATILE;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_kdist");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kdist,NULL);CHKERRQ(ierr);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_kabs");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kabs,NULL);CHKERRQ(ierr);
+  vp->kabs *= C->DENSITY * C->RADIUS;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_henry_pow");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry_pow,NULL);CHKERRQ(ierr);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_henry");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry,NULL);CHKERRQ(ierr);
+  vp->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/vp->henry_pow);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_jeans_value");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,NULL);CHKERRQ(ierr);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_R_thermal_escape_value");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->R_thermal_escape_value,NULL);CHKERRQ(ierr);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_molar_mass");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,NULL);CHKERRQ(ierr);
+  vp->molar_mass /= C->MASS;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_cross_section");CHKERRQ(ierr);
+  vp->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->cross_section,NULL);CHKERRQ(ierr);
+  vp->cross_section /= C->AREA;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_poststep_change");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->poststep_change,NULL);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
 /*
 This function (and subfunctions) should be the only place that
 custom command-line parameters (those not defined by PETSc) should be accessed.
@@ -92,12 +136,11 @@ Parameters are specified by the user in dimensional (unscaled) form,
 but they are all stored in non-dimensional (scaled) form.
 
  */
+
 PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
-  VolatileParameters   *H2O = &Ap->H2O_parameters;
-  VolatileParameters   *CO2 = &Ap->CO2_parameters;
   Constants const      *C  = &P->constants;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
@@ -105,6 +148,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   RadiogenicIsotopeParameters *th232 = &P->th232_parameters;
   RadiogenicIsotopeParameters *u235 = &P->u235_parameters;
   RadiogenicIsotopeParameters *u238 = &P->u238_parameters;
+  PetscInt             v;
 
   // FIXME
   //CompositionParameters      *Compp = &P->composition_parameters;
@@ -128,48 +172,30 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* Time frame parameters */
   P->maxsteps    = 100000000; /* Effectively infinite */
-  P->t0          = 0.0;
-  {
-    PetscBool dtmacro_years_set = PETSC_FALSE, nstepsmacro_set = PETSC_FALSE,
-              early = PETSC_FALSE, middle=PETSC_FALSE, late = PETSC_FALSE;
-    P->nstepsmacro = 18;
-    P->dtmacro_years = 100;
-    ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,&nstepsmacro_set);CHKERRQ(ierr);
-    ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro_years",&P->dtmacro_years,&dtmacro_years_set);CHKERRQ(ierr);
-    ierr = PetscOptionsGetBool(NULL,NULL,"-early",&early,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetBool(NULL,NULL,"-middle",&middle,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetBool(NULL,NULL,"-late",&late,NULL);CHKERRQ(ierr);
-    if (early || middle || late ){
-      if(dtmacro_years_set || nstepsmacro_set){
-        ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -early, -middle, or -late provided. Ignoring -nstepsmacro and/or -dtmacro_years\n");CHKERRQ(ierr);
-      }
-      if ((int)early + (int)middle + (int)late > 1) {
-        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"only one of -early, -middle, or -late may be provided");
-      }
-      dtmacro_years_set = PETSC_TRUE;
-      if (early) {
-        /* early evolution to 10 kyr */
-        P->nstepsmacro = 1E2;
-        P->dtmacro_years = 1E2; // years
-      } else if (middle) {
-        /* middle evolution to 100 Myr */
-        P->nstepsmacro = 1E2;
-        P->dtmacro_years = 1E6; //years
-      } else if (late) {
-        /* late evolution to 4.55 Byr */
-        P->nstepsmacro = 455;
-        P->dtmacro_years = 1E9; // years
-      }
-    }
 
-    // P->dtmacro is non-dimensional
-    P->dtmacro = P->dtmacro_years / C->TIMEYRS;
-  }
+  P->nstepsmacro = 18;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,NULL);CHKERRQ(ierr);
+
+  /* start time (years) */
+  P->t0 = 0.0;
+  ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&P->t0,NULL);CHKERRQ(ierr);
+  P->t0 /= C->TIMEYRS; // non-dimensional for time stepping
+
+  /* step time (years) */
+  P->dtmacro = 100;
+  ierr = PetscOptionsGetReal(NULL,NULL,"-dtmacro",&P->dtmacro,NULL);CHKERRQ(ierr);
+  P->dtmacro /= C->TIMEYRS; // non-dimensional for time stepping
 
   /* Grid parameters */
   P->numpts_b = 200;
   ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_b,NULL);CHKERRQ(ierr);
   P->numpts_s = P->numpts_b - 1;
+
+  /* RollBack and PostStep options */
+  P->rollBackActive = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-activate_rollback",&P->rollBackActive,NULL);CHKERRQ(ierr);
+  P->postStepActive = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-activate_poststep",&P->postStepActive,NULL);CHKERRQ(ierr);
 
   /* Output Options */
   P->monitor = PETSC_TRUE;
@@ -208,7 +234,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   if ( P->mixing_length==3 ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_layer_radius",&P->mixing_length_layer_radius,NULL);CHKERRQ(ierr);
   }
-    
+
   P->Mg_Si0 = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si0",&P->Mg_Si0,NULL);CHKERRQ(ierr);
   P->Mg_Si1 = 0.0;
@@ -220,7 +246,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->initial_condition = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-initial_condition",&P->initial_condition,NULL);CHKERRQ(ierr);
 
-  ierr = PetscStrcpy(P->ic_filename,"output/dSdr_b_aug_0.m"); CHKERRQ(ierr);
+  ierr = PetscStrcpy(P->ic_filename,"restart.json"); CHKERRQ(ierr);
   if ( (P->initial_condition==2) || (P->initial_condition==3) ){
     ierr = PetscOptionsGetString(NULL,NULL,"-ic_filename",P->ic_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
   }
@@ -393,7 +419,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       ierr = PetscOptionsGetScalar(NULL,NULL,"-lid_thickness",&P->lid_thickness,NULL);CHKERRQ(ierr);
       P->lid_thickness /= C->RADIUS;
   }
-    
+
   /* core boundary condition */
   P->CORE_BC=MO_CORE_TYPE_COOLING;
   {
@@ -422,6 +448,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       break;
   }
 
+  Ap->SOLVE_FOR_VOLATILES = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-SOLVE_FOR_VOLATILES",&Ap->SOLVE_FOR_VOLATILES,NULL);CHKERRQ(ierr);
+
   /* (top) surface boundary condition */
   Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
   {
@@ -446,6 +475,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
            with CO2 and H2O volatile using plane-parallel radiative equilibrium model
            of Abe and Matsui (1985)
          do nothing */
+      Ap->SOLVE_FOR_VOLATILES = PETSC_TRUE;
       break;
     case 4:
       // MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed)
@@ -496,9 +526,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       Ap->param_utbl_const = 0.0;
   }
 
-  Ap->SOLVE_FOR_VOLATILES = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-SOLVE_FOR_VOLATILES",&Ap->SOLVE_FOR_VOLATILES,NULL);CHKERRQ(ierr);
-
   /* below here are only used for SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES */
 
   /* atmosphere reference pressure (Pa) */
@@ -512,7 +539,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->VOLATILE_ptr = &C->VOLATILE;
 
   /* FIXME the gas constant above is scaled differently for the viscosity laws added by Rob Spaargaren
-     this one below is for computing the 1-D atmosphere structure.  Should merge together and make consistent */
+     this one below is for computing the 1-D atmosphere structure. Should merge together and make consistent */
   Ap->Rgas = 8.3144598; // gas constant (J/K/mol)
   Ap->Rgas *= C->TEMP / C->ENERGY;
 
@@ -520,55 +547,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->Avogadro = 6.02214076E23; // 1/mol
   Ap->kB = Ap->Rgas / Ap->Avogadro;
 
-  /* H2O volatile */
-  H2O->initial = 500.0; // ppm
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_initial",&H2O->initial,NULL);CHKERRQ(ierr);
-  H2O->initial /= C->VOLATILE;
-  H2O->kdist = 1.0E-4; // non-dimensional
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kdist",&H2O->kdist,NULL);CHKERRQ(ierr);
-  // TODO: water saturation limit of 10 ppm?
-  H2O->kabs = 0.01; // m^2/kg
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_kabs",&H2O->kabs,NULL);CHKERRQ(ierr);
-  H2O->kabs *= C->DENSITY * C->RADIUS;
-  H2O->henry_pow = 1.4285714285714286; // (1.0/0.7)
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry_pow",&H2O->henry_pow,NULL);CHKERRQ(ierr);
-  H2O->henry = 6.8E-2; // ppm/Pa^(1/henry_pow)
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_henry",&H2O->henry,NULL);CHKERRQ(ierr);
-  H2O->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/H2O->henry_pow);
-  // -1.0 means compute, otherwise take the value as constant
-  H2O->jeans_value = -1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_jeans_value",&H2O->jeans_value,NULL);CHKERRQ(ierr);
-  H2O->R_thermal_escape_value = -1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-H2O_R_thermal_escape_value",&H2O->R_thermal_escape_value,NULL);CHKERRQ(ierr);
-  H2O->molar_mass = 18.01528 * 1.0e-3; // kg/mol
-  H2O->molar_mass /= C->MASS;
-  H2O->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
-  H2O->cross_section /= C->AREA;
-
-  /* CO2 volatile */
-  CO2->initial = 100.0; // ppm
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_initial",&CO2->initial,NULL);CHKERRQ(ierr);
-  CO2->initial /= C->VOLATILE;
-  CO2->kdist = 5.0E-4; // non-dimensional
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kdist",&CO2->kdist,NULL);CHKERRQ(ierr);
-  // TODO: water saturation limit of 0.03 ppm
-  CO2->kabs = 0.05; // m^2/kg
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_kabs",&CO2->kabs,NULL);CHKERRQ(ierr);
-  CO2->kabs *= C->DENSITY * C->RADIUS;
-  CO2->henry_pow = 1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry_pow",&CO2->henry_pow,NULL);CHKERRQ(ierr);
-  CO2->henry = 4.4E-6; // ppm/Pa^(1/henry_pow)
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_henry",&CO2->henry,NULL);CHKERRQ(ierr);
-  CO2->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/CO2->henry_pow);
-  // -1.0 means compute, otherwise take the value as constant
-  CO2->jeans_value = -1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_jeans_value",&CO2->jeans_value,NULL);CHKERRQ(ierr);
-  CO2->R_thermal_escape_value = -1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-CO2_R_thermal_escape_value",&CO2->R_thermal_escape_value,NULL);CHKERRQ(ierr);
-  CO2->molar_mass = 44.01 * 1.0e-3; // kg/mol
-  CO2->molar_mass /= C->MASS;
-  CO2->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
-  CO2->cross_section /= C->AREA;
+  /* Get command-line values for all volatiles species */
+  for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
+    ierr = VolatileParametersSetFromOptions(&Ap->volatile_parameters[v],volatiles_id_strings[v], C );
+  }
 
   /* radiogenic heating */
   /* aluminium 26 */
@@ -738,6 +720,10 @@ PetscErrorCode PrintParameters(Parameters const *P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"           ,P->rhoMelFilename                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"          ,P->tempSolFilename                           );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"          ,P->tempMelFilename                           );CHKERRQ(ierr);
+  if (P->postStepActive) {
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"PostStep logic active\n"                                                                             );CHKERRQ(ierr);
+  }
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"Output Directory"           ,P->outputDirectory                           );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
