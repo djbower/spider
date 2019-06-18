@@ -208,7 +208,7 @@ This example is a prototype, because the transition from melt to solid at the su
 1. `cd examples/bower_2019/atmosphere`
 1. `mkdir output`
 1. `spider -options_file bu_input.opts`
-1. `plot_spider.py  -t 0,200000,500000,1000000,5000000,10000000`
+1. `plot_spider.py -t 0,201313,500030,1000122`
 1. `plot_atmosphere.py`
 
 ## Note on Python scripts
