@@ -28,6 +28,9 @@ Bower, D.J., P. Sanan, and A.S. Wolf (2018), Numerical solution of a non-linear 
 ### 2. Use of MgSiO3 melt data tables (RTpress) within SPIDER
 Wolf, A.S. and D.J. Bower (2018), An equation of state for high pressure-temperature liquids (RTpress) with application to MgSiO3 melt, Phys. Earth Planet. Inter., 278, 59-74, doi: 10.1016/j.pepi.2018.02.004.
 
+### 3. Use of volatiles / atmosphere coupling
+Bower, D.J., Kitzmann, D., Wolf, A.S., Sanan, P., Dorn, C., Oza, A.V. (2019), Linking the evolution of terrestrial interiors and an early outgassed atmosphere to astrophysical observations, Astron. Astrophys., in revision, url: https://arxiv.org/abs/1904.08300
+
 ## Building
 
 1. Provide a working C compiler
