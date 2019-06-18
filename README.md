@@ -176,9 +176,13 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc")
         make clean
         make -j
 
-3. Test (TODO WIP)
+3. Test basic functionality:
 
-       make test
+        make test
+
+4. Test atmosphere module:
+
+        make testatmos
 
 You should now be ready to use the code!
 
@@ -193,7 +197,7 @@ Add the installation directory to your `$PATH` so you can call the `spider` bina
 1. `cd examples/bower_2019/blackbody`
 1. `mkdir output`
 1. `spider -options_file bu_input.opts`
-1. `plot_spider.py -t 0,100,200,400,800,1200,1500`
+1. `plot_spider.py -t 0,100,200,400,804,1200,1500`
 
 where `-t` is the argument to specify output times (in years) that exist in the output directory (`output/`) of the model in JSON format.  Note that the output JSON format can be read by a simple text (ascii) reader.
 
