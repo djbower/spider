@@ -186,6 +186,25 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc")
 
 You should now be ready to use the code!
 
+### 4. Make your own working branch
+
+You should prototype/develop your models using your own branch (not master).  So once you have verified that the code passes the inbuilt tests (above), you should immediately create and switch to your own working branch.  You can find information about how to create your own branch here:
+
+https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging
+
+The best naming strategy is to set up a branch called [username]/[feature] where username is your bitbucket account username and feature is the feature you are working on.  So for example, I could use:
+
+        git checkout -b djbower/alieninvasion
+
+Note that you create your branch locally, but then need to push the branch to the remote repository.  The guide above, and helpful onscreen messages, will help you with this process (if you are unsure, ask Dan).  In essence, you should only commit changes to your own branch.  Once you are happy that your branch is working and wish to contribute your feature to the mainline of the code, please issue a pull request (or ask Dan for advice).
+
+### 5. Code development tips
+
+1. Ensure all previous tests pass (i.e., you haven't broken a part of the code that was previously working)
+2. Include a template input file in the ```examples/``` directory
+3. Use valgrind to confirm that your code is free of memory leaks (or alternatively, we will do this before merging your branch with master)
+4. Most importantly, comment comment comment!  And try to predict potential bugs as you code and add a commment about those as well!
+
 ## Running the code
 
 Add the installation directory to your `$PATH` so you can call the `spider` binary without requiring the absolute path.  Typically, you will set up a project folder elsewhere to store your models, i.e., outside the installation directory where the SPIDER source code resides.  You can run `spider` without an argument and standard parameters will be used for a simple magma ocean cooling model.  But in general, you will add an argument, i.e. `spider -options_file input.opts` to use the parameters specified in `input.opts` (this input filename is an example).  There are example input files in the `examples/` directory.
