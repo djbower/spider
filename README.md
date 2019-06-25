@@ -198,7 +198,11 @@ The best naming strategy is to set up a branch called [username]/[feature] where
 
 Note that you create your branch locally, but then need to push the branch to the remote repository.  The guide above, and helpful onscreen messages, will help you with this process (if you are unsure, ask Dan).  In essence, you should only commit changes to your own branch.  Once you are happy that your branch is working and wish to contribute your feature to the mainline of the code, please issue a pull request (or ask Dan for advice).
 
-### 5. Code development tips
+### 5. SPIDER manual
+
+There is a manual located in ```manual/```, and you are strongly encouraged to update this manual with new features and notes as you use and/or develop the code.  The document is very much a work in progress, so if needs be just create a new section or subsection for your work and consolidate your writing there.  Over time, I will continue to merge the material into consistent chapters.
+
+### 6. Code development tips
 
 1. Ensure all previous tests pass (i.e., you haven't broken a part of the code that was previously working)
 2. Include a template input file in the ```examples/``` directory
