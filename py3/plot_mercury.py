@@ -118,7 +118,7 @@ def spiderplot_fig1( times ):
     # titles and axes labels, legends, etc
     units = myjson_o.get_dict_units(['data','S_b'])
     title = '(a) Entropy, {}'.format(units)
-    yticks = [1200,1600,2000,2400,2800]
+    yticks = [800,1200,1600,2000,2400,2800]
     # Bower et al. (2018)
     #yticks = [1600,2000,2400,2800,3200]
     # DJB used this next range for work with Bayreuth
@@ -128,7 +128,7 @@ def spiderplot_fig1( times ):
     units = myjson_o.get_dict_units(['data','temp_b'])
     title = '(b) Temperature, {}'.format(units)
     # Bower et al. (2018)
-    yticks= [1000,2000,3000,4000,5000]
+    yticks= [500,1000,2000,3000,4000,5000]
     # DJB used this next range for work with Bayreuth
     #yticks= [300,1000,2000,3000,4000,5000]
     fig_o.set_myaxes( ax1, title=title, ylabel='$T$', xticks=xticks, xmax=xmax, yticks=yticks )

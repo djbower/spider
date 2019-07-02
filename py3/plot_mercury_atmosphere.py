@@ -86,7 +86,7 @@ def plot_atmosphere():
     #xticks = (1E-6,1E-5,1E-4,1E-3,1E-2,1E-1,1E0)
     xlabel = 'Time (yr)'
     #xlim = (1.0E-2, 4550)
-    xlim = (0,750)
+    xlim = (0,3E5)
 
     red = (0.5,0.1,0.1)
     blue = (0.1,0.1,0.5)
@@ -130,7 +130,7 @@ def plot_atmosphere():
         #ax0.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         #ax0.xaxis.set_minor_formatter(ticker.NullFormatter())
         ax0.set_xlim( *xlim )
-        ax0.set_ylim( 0, 350 )
+        ax0.set_ylim( 0, 25 )
         ax0.yaxis.set_label_coords(-0.15,0.5)
         ax0b.set_ylabel( r'$\phi_g$', rotation=0 )
         ax0b.yaxis.set_label_coords(1.1,0.525)
