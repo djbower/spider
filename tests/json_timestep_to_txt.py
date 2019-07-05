@@ -6,13 +6,13 @@ import os
 import sys
 import json
 
-# Interpret the first argument as a timestep to look for
+# Interpret the first argument as a JSON file to look for
 if len(sys.argv) < 2 :
-    timestep = 0
+    filename = 'output/0.json'
 else :
-    timestep = int(sys.argv[1])
+    filename = sys.argv[1]
 
-with open(os.path.join('output',str(timestep)+'.json')) as json_data :
+with open(filename) as json_data :
     data_d = json.load(json_data)
     subdomain_data_array = data_d['solution']['subdomain data']
     with open('out.txt','w') as outfile :

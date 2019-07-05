@@ -8,7 +8,8 @@ def atmosphere(rootDir) :
   ranks = 1
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','atmosphere','bu_input.opts'),\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py 1000122'),
+          os.path.join(rootDir,'tests','copy_one_of.py') + ' output/1000121.json output/1000122.json output/1000123.json -o to_check.json',\
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py to_check.json'),
           #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0,100,200,400,800,1200,1500',\
           ]
 
@@ -31,7 +32,8 @@ def atmosphere_jeans(rootDir) :
   ranks = 1
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','atmosphere_jeans','bu_input.opts'),\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py 1000091'),
+          os.path.join(rootDir,'tests','copy_one_of.py') + ' output/1000090.json output/1000091.json output/1000092.json output/1000093.json output/1000094.json output/1000095.json output/1000096.json -o to_check.json',\
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py to_check.json'),
           #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0,100,200,400,800,1200,1500',\
           ]
 
@@ -54,7 +56,7 @@ def blackbody(rootDir) :
   ranks = 1
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','blackbody','bu_input.opts'),\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py 100'),
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/100.json'),
           #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0,100,200,400,800,1200,1500',\
           ]
 
@@ -62,7 +64,7 @@ def blackbody(rootDir) :
 
   def comparefunc(t) :
       t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
-      t.compareFloatingPointRelative(re.escape('val: '),    1e-5)
+      t.compareFloatingPointRelative(re.escape('val: '),    1e-4)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
   t.setComparisonFile('out.txt')
