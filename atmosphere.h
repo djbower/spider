@@ -44,7 +44,7 @@ typedef struct Atmosphere_ {
     Vec atm_struct_depth;
 } Atmosphere;
 
-PetscErrorCode initialise_atmosphere( Atmosphere *, const Constants *);
+PetscErrorCode initialise_atmosphere( Atmosphere *, const AtmosphereParameters *, const Constants *);
 PetscErrorCode destroy_atmosphere( Atmosphere * );
 
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters * );

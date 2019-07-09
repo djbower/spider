@@ -11,8 +11,6 @@ Custom PETSc command line options should only ever be parsed here.
 // FIXME
 //#include "composition.h"
 
-const char *volatiles_id_strings[SPIDER_MAX_VOLATILE_SPECIES] = {"CO2","H2O"}; /* must agree with enum in parameters.h */
-
 static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
     PetscScalar SQRTST;
@@ -86,45 +84,62 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, const char * id_string, const Constants *C)
+static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, const Constants *C)
 {
   PetscErrorCode ierr;
   char           buf[1024]; /* max size */
+  PetscBool      set;
 
   PetscFunctionBeginUser;
-  /* Accept -id_string_YYY to populate vp->YYY */
-  /* TODO: given that this is now general for any number of volatiles,
-     it is not possible to prescribe generic meaningful default values.
-     Instead, all values must be prescribed in the input value.  Perhaps
-     there is a potential here for a bug if these parameters are not
-     specified in the input file?  Will the following produce an error
-     or read meaningless data from another part of memory? */
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_initial");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial,NULL);CHKERRQ(ierr);
+  /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
+     if they are missing. Note that this code has a lot of duplication */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial,&set);CHKERRQ(ierr);
+  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
   vp->initial /= C->VOLATILE;
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_kdist");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kdist,NULL);CHKERRQ(ierr);
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_kabs");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kabs,NULL);CHKERRQ(ierr);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_kdist");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kdist,&set);CHKERRQ(ierr);
+  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_kabs");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kabs,&set);CHKERRQ(ierr);
+  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
   vp->kabs *= C->DENSITY * C->RADIUS;
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_henry_pow");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry_pow,NULL);CHKERRQ(ierr);
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_henry");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry,NULL);CHKERRQ(ierr);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry_pow");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry_pow,&set);CHKERRQ(ierr);
+  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry");CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry,&set);CHKERRQ(ierr);
+  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
   vp->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/vp->henry_pow);
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_jeans_value");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,NULL);CHKERRQ(ierr);
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_R_thermal_escape_value");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->R_thermal_escape_value,NULL);CHKERRQ(ierr);
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_molar_mass");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,NULL);CHKERRQ(ierr);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
+  // TODO DJB: add better default
+  vp->jeans_value = 0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,&set);CHKERRQ(ierr);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_R_thermal_escape_value");CHKERRQ(ierr);
+  // TODO DJB: add better default
+  vp->R_thermal_escape_value = 0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->R_thermal_escape_value,&set);CHKERRQ(ierr);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
+  // TODO DJB: add better default
+  vp->molar_mass = 0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,&set);CHKERRQ(ierr);
   vp->molar_mass /= C->MASS;
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_cross_section");CHKERRQ(ierr);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_cross_section");CHKERRQ(ierr);
   vp->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->cross_section,NULL);CHKERRQ(ierr);
   vp->cross_section /= C->AREA;
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",id_string,"_poststep_change");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->poststep_change,NULL);CHKERRQ(ierr);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_poststep_change");CHKERRQ(ierr);
+  vp->poststep_change = -1;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->poststep_change,&set);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -547,9 +562,29 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->Avogadro = 6.02214076E23; // 1/mol
   Ap->kB = Ap->Rgas / Ap->Avogadro;
 
+  /* Look for command-line option to determine number of volatiles
+     and options prefix for each, e.g -volatile_names CO2,H2O */
+  Ap->n_volatiles = 0;
+  {
+    char      *prefixes[SPIDER_MAX_VOLATILE_SPECIES];
+    PetscInt  n_volatiles = SPIDER_MAX_VOLATILE_SPECIES;
+    PetscBool set;
+
+    ierr = PetscOptionsGetStringArray(NULL,NULL,"-volatile_names",prefixes,&n_volatiles,&set);CHKERRQ(ierr);
+    if (set) {
+      PetscInt v;
+
+      Ap->n_volatiles = n_volatiles;
+      for (v=0; v<Ap->n_volatiles; ++v) {
+        ierr = PetscStrncpy(Ap->volatile_parameters[v].prefix,prefixes[v],sizeof(Ap->volatile_parameters[v].prefix));CHKERRQ(ierr);
+        ierr = PetscFree(prefixes[v]);CHKERRQ(ierr);
+      }
+    }
+  }
+
   /* Get command-line values for all volatiles species */
-  for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
-    ierr = VolatileParametersSetFromOptions(&Ap->volatile_parameters[v],volatiles_id_strings[v], C );
+  for (v=0; v<Ap->n_volatiles; ++v) {
+    ierr = VolatileParametersSetFromOptions(&Ap->volatile_parameters[v], C);CHKERRQ(ierr);
   }
 
   /* radiogenic heating */
@@ -702,11 +737,12 @@ PetscErrorCode PrintParameters(Parameters const *P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"                                                                                                    );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15s %s\n"    ,"[Parameter]","Non-dim. Value","Dim. Value"                 ,"Units"       );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","dtmacro"    ,(double)P->dtmacro     ,(double)(P->dtmacro*C->TIME)  ,"s"           );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","dtmacro"    ,(double)P->dtmacro     ,(double)(P->dtmacro*C->TIME)  ,"s"   );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"nstepsmacro",P->nstepsmacro                                               );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"numpts_b"   ,P->numpts_b                                                  );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"numpts_s"   ,P->numpts_s                                                  );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","ic_adiabat_entropy"     ,(double)P->ic_adiabat_entropy       ,(double)(P->ic_adiabat_entropy*C->ENTROPY) ,"J/kg-K"      );CHKERRQ(ierr);
+  // TODO print out the parameters for each volatile (important since not all are always used)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"liquidus data file"         ,P->liquidusFilename                          );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"solidus data file"          ,P->solidusFilename                           );CHKERRQ(ierr);
