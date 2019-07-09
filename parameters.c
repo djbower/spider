@@ -117,17 +117,14 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   vp->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/vp->henry_pow);
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
-  // TODO DJB: add better default
   vp->jeans_value = 0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,&set);CHKERRQ(ierr);
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_R_thermal_escape_value");CHKERRQ(ierr);
-  // TODO DJB: add better default
   vp->R_thermal_escape_value = 0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->R_thermal_escape_value,&set);CHKERRQ(ierr);
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
-  // TODO DJB: add better default
   vp->molar_mass = 0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,&set);CHKERRQ(ierr);
   vp->molar_mass /= C->MASS;
