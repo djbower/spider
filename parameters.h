@@ -39,18 +39,15 @@ typedef struct _Constants {
     PetscScalar HEATGEN;
 } Constants;
 
-/* Volatiles: define a maximum number of species, to define fixed-sized
-   arrays, and name indices into these arrays. The general objective is to use
-   loops over all the species, when the logic is identical for each. That is,
-   one should avoid using the names of the slots when possible! */
-typedef enum {
-  SPIDER_VOLATILE_CO2         = 0,
-  SPIDER_VOLATILE_H2O         = 1,
-  SPIDER_MAX_VOLATILE_SPECIES = 2
-} SpiderVolatileSpeciesID;
-const char *volatiles_id_strings[SPIDER_MAX_VOLATILE_SPECIES]; /* defined in parameters.c, must agree with enum */
-
+/* Volatiles: each has an options_prefix, set with a particular option
+   and used to look for additional options to populate the other data.
+   SPIDER itself is agnostic to which set of volatiles you use or how many.
+   There is a hard-coded number of "slots". If it ever became important,
+   this could be changed to dynamically allocate and deallocate, everywhere
+   this constant is used: */
+#define SPIDER_MAX_VOLATILE_SPECIES 16
 typedef struct VolatileParameters_ {
+    char        prefix[128];  /* Maximum prefix length */
     PetscScalar initial;
     PetscScalar kdist;
     PetscScalar kabs; // note this is without pressure-dependence
@@ -83,6 +80,7 @@ typedef struct AtmosphereParameters_ {
     // for volatile ODE
     PetscBool SOLVE_FOR_VOLATILES;
     PetscScalar P0;
+    PetscInt           n_volatiles;
     VolatileParameters volatile_parameters[SPIDER_MAX_VOLATILE_SPECIES];
     PetscScalar Rgas; // gas constant
     PetscScalar const * gravity_ptr;

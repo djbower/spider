@@ -113,12 +113,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* volatiles */
   if (Ap->SOLVE_FOR_VOLATILES){
     ierr = solve_dxdts( E );
-    for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
+    for (v=0; v<Ap->n_volatiles; ++v) {
       ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,A->volatiles[v].dxdt,INSERT_VALUES);CHKERRQ(ierr);
     }
   }
   else{
-    for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
+    for (v=0; v<Ap->n_volatiles; ++v) {
       ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,0.0,INSERT_VALUES);CHKERRQ(ierr);
     }
   }

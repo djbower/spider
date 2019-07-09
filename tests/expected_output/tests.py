@@ -30,9 +30,11 @@ def atmosphere_jeans(rootDir) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "atmosphere_jeans"
   ranks = 1
+  # Long range of acceptable files (probably better to check earlier)
+  acceptable_files = ' '.join(['output/'+str(i)+'.json' for i in range(1000000,1000097)])
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','bower_2019','atmosphere_jeans','bu_input.opts'),\
-          os.path.join(rootDir,'tests','copy_one_of.py') + ' output/1000090.json output/1000091.json output/1000092.json output/1000093.json output/1000094.json output/1000095.json output/1000096.json -o to_check.json',\
+          os.path.join(rootDir,'tests','copy_one_of.py') + ' ' + acceptable_files + ' -o to_check.json',\
           os.path.join(rootDir,'tests','json_timestep_to_txt.py to_check.json'),
           #os.path.join(rootDir,'tests','timeout.sh') + ' -t 6 ' + os.path.join(rootDir,'py3','plot_spider.py') + ' -t 0,100,200,400,800,1200,1500',\
           ]

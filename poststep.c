@@ -4,10 +4,12 @@
 
 PetscErrorCode PostStepDataInitialize(Ctx *E, Vec sol_in)
 {
-  PetscErrorCode   ierr;
-  Atmosphere       *A = &E->atmosphere;
-  PostStepData     *data;
-  PetscInt         i;
+  PetscErrorCode             ierr;
+  Atmosphere                 *A = &E->atmosphere;
+  Parameters const           *P = &E->parameters;
+  AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+  PostStepData               *data;
+  PetscInt                   i;
 
   PetscFunctionBeginUser;
   ierr = PetscMalloc(sizeof(PostStepData),&(E->postStepData));CHKERRQ(ierr);
@@ -18,7 +20,7 @@ PetscErrorCode PostStepDataInitialize(Ctx *E, Vec sol_in)
   ierr = set_volatile_abundances_from_solution( E, sol_in );CHKERRQ(ierr);
 
   /* store volatile abundances to the poststep data struct */
-  for( i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+  for( i=0; i<Ap->n_volatiles; ++i) {
      data->volatile_abundances[i] = A->volatiles[i].x;
   }
 
@@ -27,22 +29,24 @@ PetscErrorCode PostStepDataInitialize(Ctx *E, Vec sol_in)
 
 PetscErrorCode PostStep(TS ts)
 {
-  PetscErrorCode ierr;
-  PetscInt       stepNumber;
-  Ctx            *E;
-  PostStepData   *data;
-  Atmosphere     *A;
-  Parameters     *P;
-  Vec            sol_in;
-  PetscScalar    maxx, relx;
-  PetscInt       i;
-  PetscBool      EVENT = PETSC_FALSE;
+  PetscErrorCode       ierr;
+  PetscInt             stepNumber;
+  Ctx                  *E;
+  PostStepData         *data;
+  Atmosphere           *A;
+  Parameters           *P;
+  AtmosphereParameters *Ap;
+  Vec                  sol_in;
+  PetscScalar          maxx, relx;
+  PetscInt             i;
+  PetscBool            EVENT = PETSC_FALSE;
 
   PetscFunctionBeginUser;
   ierr = TSGetTimeStepNumber(ts,&stepNumber);CHKERRQ(ierr);
   ierr = TSGetApplicationContext(ts,&E);CHKERRQ(ierr);
   A = &E->atmosphere;
   P = &E->parameters;
+  Ap = &P->atmosphere_parameters;
   if (!E->parameters.rollBackActive) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_SUP,"You must run with -activate_rollback");
   data = (PostStepData*) E->postStepData;
   //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, x_CO2 is %g\n",__func__,__FILE__,__LINE__,data->x_CO2);
@@ -53,7 +57,7 @@ PetscErrorCode PostStep(TS ts)
   /* update the volatile abundances in the atmosphere struct */
   ierr = set_volatile_abundances_from_solution( E, sol_in );CHKERRQ(ierr);
 
-  for( i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+  for( i=0; i<Ap->n_volatiles; ++i) {
      Volatile *V = &A->volatiles[i];
      maxx = P->atmosphere_parameters.volatile_parameters[i].poststep_change;
      relx = PetscAbsReal( (V->x-data->volatile_abundances[i]) / data->volatile_abundances[i] );

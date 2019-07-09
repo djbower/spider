@@ -319,12 +319,14 @@ PetscScalar tsurf_param( PetscScalar temp, const AtmosphereParameters *Ap )
 
 PetscErrorCode solve_dxdts( Ctx *E )
 {
-    PetscErrorCode ierr;
-    SNES           snes;
-    Vec            x,r;
-    PetscScalar    *xx;
-    PetscInt       i;
-    Atmosphere     *A = &E->atmosphere;
+    PetscErrorCode             ierr;
+    SNES                       snes;
+    Vec                        x,r;
+    PetscScalar                *xx;
+    PetscInt                   i;
+    Atmosphere                 *A  = &E->atmosphere;
+    Parameters const           *P  = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
 
@@ -335,7 +337,7 @@ PetscErrorCode solve_dxdts( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"atmosts_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    ierr = VecSetSizes( x, PETSC_DECIDE, SPIDER_MAX_VOLATILE_SPECIES );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
@@ -343,7 +345,7 @@ PetscErrorCode solve_dxdts( Ctx *E )
 
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         xx[i] = 0.0;
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
@@ -363,7 +365,7 @@ PetscErrorCode solve_dxdts( Ctx *E )
     }
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].dxdt = xx[i];
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);

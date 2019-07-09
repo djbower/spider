@@ -12,8 +12,9 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx);
 /* Set up the Context */
 PetscErrorCode SetupCtx(Ctx* ctx)
 {
-  PetscErrorCode   ierr;
-  Parameters const *P = &ctx->parameters;
+  PetscErrorCode             ierr;
+  Parameters const           *P = &ctx->parameters;
+  AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
   PetscFunctionBeginUser;
 
@@ -36,10 +37,10 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   */
   const PetscInt stencilWidth = 1;
   const PetscInt dof = 1;
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,                dof,stencilWidth,NULL,&ctx->da_b        );CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,                dof,stencilWidth,NULL,&ctx->da_s        );CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1,                          dof,0,           NULL,&ctx->da_point    );CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,SPIDER_MAX_VOLATILE_SPECIES,dof,0           ,NULL,&ctx->da_volatiles);CHKERRQ(ierr); /* A collection of 0-dimensional bulk quantities */
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,    dof,stencilWidth,NULL,&ctx->da_b        );CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,    dof,stencilWidth,NULL,&ctx->da_s        );CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1,              dof,0,           NULL,&ctx->da_point    );CHKERRQ(ierr);
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,Ap->n_volatiles,dof,0           ,NULL,&ctx->da_volatiles);CHKERRQ(ierr); /* A collection of 0-dimensional bulk quantities */
 
   /* Create a composite DM of the basic nodes plus additional quantities.
     This allows us to create a vector to solve for all of these quantities.  */
@@ -110,7 +111,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   set_d_dr( ctx );
   set_twophase(ctx);
 
-  ierr = initialise_atmosphere( &ctx->atmosphere, &ctx->parameters.constants );CHKERRQ(ierr);
+  ierr = initialise_atmosphere( &ctx->atmosphere, &ctx->parameters.atmosphere_parameters, &ctx->parameters.constants );CHKERRQ(ierr);
 
   // FIXME
   //if(P->COMPOSITION){
