@@ -679,8 +679,8 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i )
 {
 
-    PetscScalar               out, out2, dpsurfdt, f_thermal_escape;
-    PetscInt                  j,k;
+    PetscScalar               out, out2, Q, sn, X, dpsurfdt, f_thermal_escape;
+    PetscInt                  j,k,n;
 
     /* remember that to this point, V->f_thermal_escape is always
        computed but not necessarily used in the calculation */
@@ -692,6 +692,30 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i 
     }
 
     out2 = 0.0;
+    Q = 1.0;
+    /* Reaction Coupling*/
+    for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
+        Q *= PetscPowScalar(A->volatiles[n].p, Ap->volatile_parameters[n].sign * Ap->volatile_parameters[n].coeff) ;
+    }
+    PetscPrintf(PETSC_COMM_SELF, "%s", Q);
+    if(Q > 1.9E-7){ /*AP->Keq_H2O){ */
+        sn = -1* Ap->volatile_parameters[i].coeff;
+    }
+    else{
+        sn = Ap->volatile_parameters[i].coeff ;
+    }
+    
+    /* Calculate X: for what difference does Q=K  */ 
+    X = 0;
+    while (Q - 1.9E-7 > 1.0E-8){
+        X += 1.0E-7;
+        Q = 1.0;
+            for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
+                Q *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
+            }
+    }
+
+    out2 += sn*Ap->volatile_parameters[i].coeff*X; 
 
     /* dPsurf/dt */
     dpsurfdt = 0.0;
