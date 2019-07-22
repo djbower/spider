@@ -11,7 +11,7 @@ Custom PETSc command line options should only ever be parsed here.
 // FIXME
 //#include "composition.h"
 
-const char *volatiles_id_strings[SPIDER_MAX_VOLATILE_SPECIES] = {"CO2","H2O"}; /* must agree with enum in parameters.h */
+const char *volatiles_id_strings[SPIDER_MAX_VOLATILE_SPECIES] = {"CO2","H2O","H2","O2"}; /* must agree with enum in parameters.h */
 
 static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {

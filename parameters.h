@@ -46,7 +46,9 @@ typedef struct _Constants {
 typedef enum {
   SPIDER_VOLATILE_CO2         = 0,
   SPIDER_VOLATILE_H2O         = 1,
-  SPIDER_MAX_VOLATILE_SPECIES = 2
+  SPIDER_VOLATILE_H2          = 2,
+  SPIDER_VOLATILE_O2          = 3,
+  SPIDER_MAX_VOLATILE_SPECIES = 4
 } SpiderVolatileSpeciesID;
 const char *volatiles_id_strings[SPIDER_MAX_VOLATILE_SPECIES]; /* defined in parameters.c, must agree with enum */
 
@@ -60,6 +62,8 @@ typedef struct VolatileParameters_ {
     PetscScalar R_thermal_escape_value; // for thermal escape
     PetscScalar molar_mass;
     PetscScalar cross_section;
+    PetscScalar coeff; //Added
+    PetscScalar sign ; //Added
     PetscReal   poststep_change; // allowable fractional change (only for -activate_poststep)
 } VolatileParameters;
 
