@@ -142,13 +142,13 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     if(Ap->SOLVE_FOR_VOLATILES){
         ierr = set_initial_volatile( E ); CHKERRQ(ierr);
-        for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        for (i=0; i<Ap->n_volatiles; ++i) {
             x0 = A->volatiles[i].x;
             ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
         }
     }
     else{
-        for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+        for (i=0; i<Ap->n_volatiles; ++i) {
             x0 = 0.0;
             ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
         }
@@ -324,7 +324,7 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"atmosic_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    ierr = VecSetSizes( x, PETSC_DECIDE, SPIDER_MAX_VOLATILE_SPECIES );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
@@ -332,7 +332,7 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
 
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         xx[i] = Ap->volatile_parameters[i].initial;
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
@@ -352,7 +352,7 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     }
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         if( A->volatiles[i].x < 0.0 ){
             /* Sanity check on solution (since it's non-unique) */
             SETERRQ2(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
@@ -386,7 +386,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     PetscFunctionBeginUser;
 
     VecGetArrayRead(x, &xx);
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].x = xx[i];
     }
     VecRestoreArrayRead(x,&xx);
@@ -395,7 +395,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
 
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i] );
     }
 

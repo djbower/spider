@@ -2,7 +2,7 @@
 #include "dimensionalisablefield.h"
 #include "util.h"
 
-static PetscErrorCode initialise_volatiles( Atmosphere * );
+static PetscErrorCode initialise_volatiles( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atmosphere_pressures( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters * );
@@ -21,7 +21,7 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmospherePar
 static PetscErrorCode set_atm_struct_depth( Atmosphere *, const AtmosphereParameters * );
 /* these are for an individual volatile */
 
-PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
+PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
     PetscErrorCode ierr;
     PetscScalar    scaling;
@@ -62,7 +62,7 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[3],"m");CHKERRQ(ierr);
 
     /* initialise volatiles */
-    ierr = initialise_volatiles( A );
+    ierr = initialise_volatiles( A, Ap );
 
     /* other variables in struct that otherwise might not get set */
     /* below is only for Abe and Matsui atmosphere model */
@@ -78,13 +78,13 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const Constants *C )
 
 }
 
-static PetscErrorCode initialise_volatiles( Atmosphere *A )
+static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParameters *Ap)
 {
     PetscInt i;
 
     PetscFunctionBeginUser;
 
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         /* these entries should match those in atmosphere.h */
         A->volatiles[i].x = 0.0;
         A->volatiles[i].p = 0.0;
@@ -185,7 +185,7 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmospherePa
     /* TODO: this was formulated for 2 species, and presumably extends for n species as follows,
        but should check */
     kabs_tot = 0.0;
-    for( i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for( i=0; i<Ap->n_volatiles; ++i) {
         kabs = get_pressure_dependent_kabs( Ap, i );
         kabs_tot += A->volatiles[i].mixing_ratio * kabs;
     }
@@ -309,7 +309,7 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
     /* total surface pressure */
     A->psurf = 0.0;
 
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         /* partial pressure of volatile */
         V = &A->volatiles[i];
         Vp = &Ap->volatile_parameters[i];
@@ -332,7 +332,7 @@ static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *A, const At
 
     PetscFunctionBeginUser;
 
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].m = PetscSqr((*Ap->radius_ptr)) * A->volatiles[i].p / -(*Ap->gravity_ptr);
         A->volatiles[i].m *= 1.0E6 / (*Ap->VOLATILE_ptr);
         A->volatiles[i].m *= Ap->volatile_parameters[i].molar_mass / A->molar_mass;
@@ -351,7 +351,7 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
     A->molar_mass = 0.0;
 
     /* now compute mixing ratios */
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         /* mixing ratio */
         A->volatiles[i].mixing_ratio = A->volatiles[i].p / A->psurf;
         /* atmosphere molar mass */
@@ -393,7 +393,7 @@ PetscErrorCode set_escape( Atmosphere *A, const AtmosphereParameters *Ap )
     PetscErrorCode ierr;
     PetscInt       i;
 
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
 
         ierr = set_column_density_volatile( A, Ap, i );CHKERRQ(ierr);
 
@@ -469,7 +469,7 @@ PetscScalar get_emissivity_abe_matsui( Atmosphere *A, const AtmosphereParameters
     A->tau = 0.0; // total surface optical depth
 
     /* now compute mixing ratios */
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         Volatile                 *V = &A->volatiles[i];
         /* optical depth at surface for this volatile */
         V->tau = (3.0/2.0) * V->p / -(*Ap->gravity_ptr);
@@ -577,14 +577,13 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     ierr = JSON_add_single_value_to_object(dm, scaling, "Fatm", "W m$^{-2}$", A->Fatm, data);CHKERRQ(ierr);
 
     /* Volatiles */
-    for (v=0; v<SPIDER_MAX_VOLATILE_SPECIES; ++v) {
-      ierr = JSON_add_volatile(dm, P, &Ap->volatile_parameters[v], &A->volatiles[v], A, volatiles_id_strings[v], data ); CHKERRQ(ierr);
+    for (v=0; v<Ap->n_volatiles; ++v) {
+      ierr = JSON_add_volatile(dm, P, &Ap->volatile_parameters[v], &A->volatiles[v], A, Ap->volatile_parameters[v].prefix, data ); CHKERRQ(ierr);
     }
 
     cJSON_AddItemToObject(json,name,data);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatileParameters const *VP, Volatile const *V, Atmosphere const *A, char const *name, cJSON *json )
@@ -661,13 +660,13 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     PetscFunctionBeginUser;
 
     ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].dxdt = xx[i];
     }
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
-    for (i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for (i=0; i<Ap->n_volatiles; ++i) {
         ff[i] = get_dxdt( A, Ap, i );
     }
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
@@ -679,8 +678,8 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i )
 {
 
-    PetscScalar               out, out2, Q, sn, X, dpsurfdt, f_thermal_escape;
-    PetscInt                  j,k,n;
+    PetscScalar               out, out2, dpsurfdt, f_thermal_escape;
+    PetscInt                  j,k;
 
     /* remember that to this point, V->f_thermal_escape is always
        computed but not necessarily used in the calculation */
@@ -692,38 +691,14 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i 
     }
 
     out2 = 0.0;
-    Q = 1.0;
-    /* Reaction Coupling*/
-    for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
-        Q *= PetscPowScalar(A->volatiles[n].p, Ap->volatile_parameters[n].sign * Ap->volatile_parameters[n].coeff) ;
-    }
-    PetscPrintf(PETSC_COMM_SELF, "%s", Q);
-    if(Q > 1.9E-7){ /*AP->Keq_H2O){ */
-        sn = -1* Ap->volatile_parameters[i].coeff;
-    }
-    else{
-        sn = Ap->volatile_parameters[i].coeff ;
-    }
-    
-    /* Calculate X: for what difference does Q=K  */ 
-    X = 0;
-    while (Q - 1.9E-7 > 1.0E-8){
-        X += 1.0E-7;
-        Q = 1.0;
-            for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
-                Q *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
-            }
-    }
-
-    out2 += sn*Ap->volatile_parameters[i].coeff*X; 
 
     /* dPsurf/dt */
     dpsurfdt = 0.0;
-    for (k=0; k<SPIDER_MAX_VOLATILE_SPECIES; ++k) {
+    for (k=0; k<Ap->n_volatiles; ++k) {
         dpsurfdt += A->volatiles[k].dpdx * A->volatiles[k].dxdt;
     }
 
-    for (j=0; j<SPIDER_MAX_VOLATILE_SPECIES; ++j) {
+    for (j=0; j<Ap->n_volatiles; ++j) {
         out = 0.0;
         out = -dpsurfdt * A->volatiles[j].p / A->psurf;
         out += A->volatiles[j].dpdx * A->volatiles[j].dxdt;

@@ -84,7 +84,9 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 PetscErrorCode set_volatile_abundances_from_solution( Ctx *E, Vec sol )
 {
     PetscErrorCode ierr;
-    Atmosphere     *A = &E->atmosphere;
+    Atmosphere                 *A = &E->atmosphere;
+    Parameters                 *P = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     PetscInt       i;
     PetscMPIInt    size;
     Vec            *subVecs;
@@ -97,7 +99,7 @@ PetscErrorCode set_volatile_abundances_from_solution( Ctx *E, Vec sol )
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
-    for( i=0; i<SPIDER_MAX_VOLATILE_SPECIES; ++i) {
+    for( i=0; i<Ap->n_volatiles; ++i) {
         ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],1,&i,&A->volatiles[i].x);CHKERRQ(ierr);
     }
 
