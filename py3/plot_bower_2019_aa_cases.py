@@ -501,8 +501,8 @@ def plot_atmosphere_comparison():
     # models with conventional mixing length
     #case_l = [1,3,5,7,9]
     # models with constant mixing length
-    case_l = ['1m','3m5','5m','7m','9m']
-    label_l = ['1c','3c','5c','7c','9c']
+    case_l = ['3','1m','3m5','5m','7m','9m']
+    label_l = ['3v','1c','3c','5c','7c','9c']
 
     #case_l = [3,'3w',7,'7w']
 
@@ -539,16 +539,29 @@ def plot_atmosphere_comparison():
         mix = data_d[strcase]['mix']
         #label = str(case) + ' (' + str(mix)[0:4] + ')'
         label = label_l[nn] + ' (' + str(mix)[0:4] + ')'
-        color = fig_o.get_color(nn)
+        if nn == 0:
+            color = 'grey'
+            linestyle = '--'
+        else:
+            color = fig_o.get_color(nn-1)
+            linestyle = '-'
         MASK = phi > 0.01
         # must convert to float array otherwise np.nan masking does not work!
         MASK = MASK*1.0 # convert to float array
         MASK[MASK==0] = np.nan
-        h1, = ax0.semilogx( time_myrs, phi, label=label, color=color )
-        h2, = ax1.semilogx( time_myrs, CO2_mixing_ratio, label=label, color=color )
-        h3, = ax2.loglog( time_myrs, MASK*CO2_liquid_ppm, label=label, color=color )
-        h4, = ax3.loglog( time_myrs, MASK*H2O_liquid_ppm, label=label, color=color )
-        h_l.append( h1 )
+        h1, = ax0.semilogx( time_myrs, phi, label=label, color=color, linestyle=linestyle )
+        h2, = ax1.semilogx( time_myrs, CO2_mixing_ratio, label=label, color=color, linestyle=linestyle )
+        h3, = ax2.loglog( time_myrs, MASK*CO2_liquid_ppm, label=label, color=color, linestyle=linestyle )
+        h4, = ax3.loglog( time_myrs, MASK*H2O_liquid_ppm, label=label, color=color, linestyle=linestyle )
+        # hacky, but this reorders the legend so that the 3v model appears immediately after the
+        # equivalent case but for constant mixing length, i.e., 3c
+        if nn==0:
+            h1_keep = h1
+        elif nn==2:
+            h_l.append( h1 )
+            h_l.append( h1_keep )
+        else:
+            h_l.append( h1 )
 
     # let's just say times are same for all models
     time_l = data_d['case'+str(case_l[0])]['time'][1:]
@@ -887,9 +900,9 @@ def plot_atmosphere( casenum ):
 
     # write out phi_global versus time, since this is useful
     # to know the mapping for other plotting scripts
-    out_a = np.column_stack( (phi_global, time) )
-    header = '# phi_global, time'
-    np.savetxt(strcase+'_phi_time.dat', out_a )
+    out_a = np.column_stack( (phi_global, time, temperature_surface_a ) )
+    header = '# phi_global, time, surface temperature'
+    np.savetxt(strcase+'_phi_time_temp.dat', out_a )
 
     xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3]
     xlabel = 'Time (Myr)'
@@ -1838,12 +1851,12 @@ def plot_flux_ratio_spectra_for_case( casenum, star, fig_o, ax ):
 
     if star=='g':
         # visible (0.5 mu m)
-        teff=5800.0 # K
+        teff = 5800.0 # K
         Rstar = 695510 # km 
         ylim = (0, 1.0E3)
     elif star=='m':
         # infra-red (1.1 mu m)
-        teff=2560.0 # K
+        teff = 2560.0 # K
         Rstar = 0.12 * 695510 # km 
         ylim = (0, 1.0E3)
 
@@ -2069,12 +2082,12 @@ if __name__ == "__main__":
     #plot_mantle_temperature_at_end()
 
     # loop over all cases to generate atmosphere PDFs
-    #for casenum in ['3m5']:# (1,2,3,'3w',4,5,6,7,'7w',8,9):
-    #    plot_atmosphere( casenum )
+    for casenum in ['7m']:# ['3m5']:# (1,2,3,'3w',4,5,6,7,'7w',8,9):
+        plot_atmosphere( casenum )
 
     #plot_right_versus_wrong()
 
-    plot_atmosphere_right_wrong()
+    #plot_atmosphere_right_wrong()
 
     #plot_interior_atmosphere()
 
