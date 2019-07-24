@@ -1,6 +1,14 @@
 bu_input.opts
 default 
 
+CO2H2O_varML.opts
+mixing length: 1(variable)
+volatiles tracked: CO2,H2O
+
+CO2H2O_constML.opts 
+mixing length: 2(constant)
+volatiles tracked: CO2,H2O
+
 constMK.opts
 mixing length: 2(constant)
 volatiles tracked: CO2,H2O,H2
