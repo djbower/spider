@@ -1,12 +1,12 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 10000
+-nstepsmacro 50000
 # was 2000, but only need one million years for a reasonable
 # test of output
 
 # macro step size in years
--dtmacro 50000
+-dtmacro 5000
 
 # for default time ranges
 # if one of these is set, then the above time stepping
@@ -74,7 +74,7 @@
 -HTIDAL 0 # tidal heating (TODO: not currently implemented)
 
 # output directory
--outputDirectory output
+-outputDirectory varML
 
 # melting curves
 # for bottom-up crystallisation (double precision OK)
