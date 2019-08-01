@@ -9,11 +9,11 @@ CO2H2O_constML.opts
 mixing length: 2(constant)
 volatiles tracked: CO2,H2O
 
-constMK.opts
+constML.opts
 mixing length: 2(constant)
 volatiles tracked: CO2,H2O,H2
 
-varMK.opts
+varML.opts
 mixing length: 1(variable)
 volatiles tracked: CO2,H2O,H2
 
@@ -26,3 +26,8 @@ constML_0kabs.opts
 mixing length: 2(constant)
 volatiles tracked: CO2,H2O,H2
 H2_kabs = 0.0
+
+constML_coupled.opts
+mixing length: 2(constant)
+volatiles tracked: CO2, H2O, H2
+coefficients for coupling: added 
