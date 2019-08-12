@@ -7,12 +7,15 @@ import spider_utils as su
 def main():
 
     #casenum = '1m'
-    casenum = '9m'
+    #casenum = '9m'
+    # for Mercury models
+    #casenum = 'S3'
+    casenum = 'L3'
     strcase = 'case' + str(casenum)
 
     # this is for short-cutting to generate data for transmission
     # and emission spectra
-    if 0:
+    if 1:
         if casenum == '1m':
             # Bower et al. (2019), case 1
             #time_l = [0,94400,5450000,78400000,560000000,4550000000]
@@ -21,6 +24,11 @@ def main():
             # Bower et al. (2019), case 9
             #time_l = [0,3850000,12050000,141000000,802000000,4550000000]
             time_l = [0,3850000,11150000,16300000,21250000]
+        elif casenum == 'S3':
+            # for Mercury models
+            time_l = [9437]
+        elif casenum == 'L3':
+            time_l = [34397]
 
     else:
         # this is for looping over all date to compute the static structure

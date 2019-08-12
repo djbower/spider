@@ -501,8 +501,8 @@ def plot_atmosphere_comparison():
     # models with conventional mixing length
     #case_l = [1,3,5,7,9]
     # models with constant mixing length
-    case_l = ['1m','3m5','5m','7m','9m']
-    label_l = ['1c','3c','5c','7c','9c']
+    case_l = ['3','1m','3m5','5m','7m','9m']
+    label_l = ['3v','1c','3c','5c','7c','9c']
 
     #case_l = [3,'3w',7,'7w']
 
@@ -539,16 +539,29 @@ def plot_atmosphere_comparison():
         mix = data_d[strcase]['mix']
         #label = str(case) + ' (' + str(mix)[0:4] + ')'
         label = label_l[nn] + ' (' + str(mix)[0:4] + ')'
-        color = fig_o.get_color(nn)
+        if nn == 0:
+            color = 'grey'
+            linestyle = '--'
+        else:
+            color = fig_o.get_color(nn-1)
+            linestyle = '-'
         MASK = phi > 0.01
         # must convert to float array otherwise np.nan masking does not work!
         MASK = MASK*1.0 # convert to float array
         MASK[MASK==0] = np.nan
-        h1, = ax0.semilogx( time_myrs, phi, label=label, color=color )
-        h2, = ax1.semilogx( time_myrs, CO2_mixing_ratio, label=label, color=color )
-        h3, = ax2.loglog( time_myrs, MASK*CO2_liquid_ppm, label=label, color=color )
-        h4, = ax3.loglog( time_myrs, MASK*H2O_liquid_ppm, label=label, color=color )
-        h_l.append( h1 )
+        h1, = ax0.semilogx( time_myrs, phi, label=label, color=color, linestyle=linestyle )
+        h2, = ax1.semilogx( time_myrs, CO2_mixing_ratio, label=label, color=color, linestyle=linestyle )
+        h3, = ax2.loglog( time_myrs, MASK*CO2_liquid_ppm, label=label, color=color, linestyle=linestyle )
+        h4, = ax3.loglog( time_myrs, MASK*H2O_liquid_ppm, label=label, color=color, linestyle=linestyle )
+        # hacky, but this reorders the legend so that the 3v model appears immediately after the
+        # equivalent case but for constant mixing length, i.e., 3c
+        if nn==0:
+            h1_keep = h1
+        elif nn==2:
+            h_l.append( h1 )
+            h_l.append( h1_keep )
+        else:
+            h_l.append( h1 )
 
     # let's just say times are same for all models
     time_l = data_d['case'+str(case_l[0])]['time'][1:]
@@ -580,7 +593,7 @@ def plot_atmosphere_comparison():
     ax1.yaxis.set_label_coords(-0.15,0.45)
     ax1.set_ylim( 0, 1.05 )
 
-    title = r'\textbf{(c) CO$_2$ in interior (ppm)}'
+    title = r'\textbf{(c) CO$_2$ in melt (ppm)}'
     ylabel = r'$X_{CO_2}$'
     fig_o.set_myaxes( ax2, title=title, ylabel=ylabel, yrotation=0, xlabel=xlabel)# xticks=xticks )
     ax2.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
@@ -592,7 +605,7 @@ def plot_atmosphere_comparison():
     ax2.yaxis.set_label_coords(-0.15,0.55)
     ax2.set_xlim( *xlim )
 
-    title = r'\textbf{(d) H$_2$O in interior (ppm)}'
+    title = r'\textbf{(d) H$_2$O in melt (ppm)}'
     ylabel = r'$X_{H_2O}$'
     fig_o.set_myaxes( ax3, title=title, ylabel=ylabel, yrotation=0, xlabel=xlabel)#, xticks=xticks )
     ax3.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
@@ -675,7 +688,7 @@ def plot_right_versus_wrong():
             rightphi = phi
             label += ' (' + str(mix)[0:4] + ')'
         else:
-            label += r', \textbf{incorrect}'
+            label += r', \textbf{previous}'
             wrong = H2O_dep
             wrongphi = phi
             rw = right - wrong
@@ -718,7 +731,7 @@ def plot_right_versus_wrong():
     ax0.yaxis.set_label_coords(-0.15,0.45)
     ax0.set_ylim( 0, 1.05 )
 
-    title = r'\textbf{(b) CO$_2$ in interior (ppm)}'
+    title = r'\textbf{(b) CO$_2$ in melt (ppm)}'
     ylabel = r'$X_{CO_2}$'
     fig_o.set_myaxes( ax1, title=title, ylabel=ylabel, yrotation=0, xlabel=xlabel)# xticks=xticks )
     ax1.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
@@ -887,9 +900,9 @@ def plot_atmosphere( casenum ):
 
     # write out phi_global versus time, since this is useful
     # to know the mapping for other plotting scripts
-    out_a = np.column_stack( (phi_global, time) )
-    header = '# phi_global, time'
-    np.savetxt(strcase+'_phi_time.dat', out_a )
+    out_a = np.column_stack( (phi_global, time, temperature_surface_a ) )
+    header = '# phi_global, time, surface temperature'
+    np.savetxt(strcase+'_phi_time_temp.dat', out_a )
 
     xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3]
     xlabel = 'Time (Myr)'
@@ -990,7 +1003,7 @@ def plot_atmosphere_right_wrong():
 
     width = 4.7747 * 3.0 / 2.0
     height = 4.7747 / 2.0
-    fig_o = su.FigureData( 1, 3, width, height, 'atmosphere_right_wrong', units='Myr' )
+    fig_o = su.FigureData( 1, 3, width, height, 'caseN_right_wrong', units='Myr' )
     fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.3)
 
     ax0 = fig_o.ax[0]#[0]
@@ -1030,12 +1043,12 @@ def plot_atmosphere_right_wrong():
     # figure a
     ##########
     if 1:
-        title = r'\textbf{(a) Partial pressure}'
+        title = r'\textbf{(a) Partial pressure (bar)}'
         ylabel = r'$p$ (bar)'
         #trans = transforms.blended_transform_factory(
         #    ax0.transData, ax0.transAxes)
-        h1, = ax0.semilogx( wtimeMyr_a, wCO2_atmos_a, color=red, linestyle='--', label=r'CO$_2$ \textbf{incorrect}')
-        h2, = ax0.semilogx( wtimeMyr_a, wH2O_atmos_a, color=blue, linestyle='--', label=r'H$_2$O \textbf{incorrect}')
+        h1, = ax0.semilogx( wtimeMyr_a, wCO2_atmos_a, color=red, linestyle='--', label=r'CO$_2$ \textbf{previous}')
+        h2, = ax0.semilogx( wtimeMyr_a, wH2O_atmos_a, color=blue, linestyle='--', label=r'H$_2$O \textbf{previous}')
         h3, = ax0.semilogx( rtimeMyr_a, rCO2_atmos_a, color=red, linestyle='-', label=r'CO$_2$')
         h4, = ax0.semilogx( rtimeMyr_a, rH2O_atmos_a, color=blue, linestyle='-', label=r'H$_2$O')
         ax0.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
@@ -1052,10 +1065,10 @@ def plot_atmosphere_right_wrong():
     # figure b
     ##########
     if 1:
-        title = r'\textbf{(b) Mixing ratio}'
-        ylabel = r'Mixing ratio'
-        h5, = ax1.loglog( wtimeMyr_a, wCO2_mixing_ratio_a, color=red, linestyle='--', label=r'CO$_2$ \textbf{incorrect}')
-        h6, = ax1.loglog( wtimeMyr_a, wH2O_mixing_ratio_a, color=blue, linestyle='--', label=r'H$_2$O \textbf{incorrect}')
+        title = r'\textbf{(b) Volume mixing ratio}'
+        ylabel = r'Volume mixing ratio'
+        h5, = ax1.loglog( wtimeMyr_a, wCO2_mixing_ratio_a, color=red, linestyle='--', label=r'CO$_2$ \textbf{previous}')
+        h6, = ax1.loglog( wtimeMyr_a, wH2O_mixing_ratio_a, color=blue, linestyle='--', label=r'H$_2$O \textbf{previous}')
         h7, = ax1.loglog( rtimeMyr_a, rCO2_mixing_ratio_a, color=red, linestyle='-', label=r'CO$_2$')
         h8, = ax1.loglog( rtimeMyr_a, rH2O_mixing_ratio_a, color=blue, linestyle='-', label=r'H$_2$O')
         ax1.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
@@ -1518,8 +1531,9 @@ def plot_radius_evolution():
     ax0b = ax0.twinx()
     #title = r'\textbf{(a) Case 1, Radius}'
     title = r'\textbf{(a) Case 1c }' + r'($\bf{r_{f,CO_2}=0.1}$)'
-    ylabel = 'Radius (km)'
-    ylabel2 = r'Difference to molten mantle (\%)'
+    ylabel = 'Radius, R (km)'
+    #ylabel2 = r'Difference to molten mantle (\%)'
+    ylabel2 = r'$\Delta$R (\%)'
 
     fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xlabel=xlabel, yrotation = 90 )
     ax0.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
@@ -1556,6 +1570,7 @@ def plot_radius_evolution():
     #ax0b.set_yticks([-4.5,-3.5,-2.5,-1.5,-0.5,0.5,1.5,2.5], minor=True )
     ax0.set_xlim( 1.0E-2,1.0E1 )
     ax0b.set_ylabel( ylabel2 )
+    ax0b.yaxis.set_label_coords(1.05,0.52)
     #ax0.yaxis.set_label_coords(-0.2,0.5)
     #ax0b.yaxis.set_label_coords( -0.2, 0.5 )
     fig_o.set_mylegend( ax0, handles_l, loc='upper right', ncol=1, facecolor='white',framealpha=1 )#, TITLE=TITLE )
@@ -1573,11 +1588,12 @@ def plot_radius_evolution():
     ax1b = ax1.twinx()
 
     #title = r'\textbf{(b) Case 9, Radius}'
-    title = r'\textbf{(a) Case 9c }' + r'($\bf{r_{f,CO_2}=0.9}$)'
+    title = r'\textbf{(b) Case 9c }' + r'($\bf{r_{f,CO_2}=0.9}$)'
     fig_o.set_myaxes( ax1, title=title, ylabel=ylabel, xlabel=xlabel, yrotation=90 )
     ax1b.set_yticks(diffmajyticks )
     ax1b.set_ylim( case9_lower, case9_upper )
     ax1b.set_ylabel( ylabel2 )
+    ax1b.yaxis.set_label_coords(1.05,0.52)
     ax1.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
     ax1.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
 
@@ -1835,12 +1851,12 @@ def plot_flux_ratio_spectra_for_case( casenum, star, fig_o, ax ):
 
     if star=='g':
         # visible (0.5 mu m)
-        teff=5800.0 # K
+        teff = 5800.0 # K
         Rstar = 695510 # km 
         ylim = (0, 1.0E3)
     elif star=='m':
         # infra-red (1.1 mu m)
-        teff=2560.0 # K
+        teff = 2560.0 # K
         Rstar = 0.12 * 695510 # km 
         ylim = (0, 1.0E3)
 
@@ -2066,8 +2082,8 @@ if __name__ == "__main__":
     #plot_mantle_temperature_at_end()
 
     # loop over all cases to generate atmosphere PDFs
-    #for casenum in ['3m5']:# (1,2,3,'3w',4,5,6,7,'7w',8,9):
-    #    plot_atmosphere( casenum )
+    for casenum in ['7m']:# ['3m5']:# (1,2,3,'3w',4,5,6,7,'7w',8,9):
+        plot_atmosphere( casenum )
 
     #plot_right_versus_wrong()
 
@@ -2083,7 +2099,7 @@ if __name__ == "__main__":
 
     #plot_transmission_spectra()
 
-    plot_mstar_spectra()
+    #plot_mstar_spectra()
 
     #plot_partial_pressure_versus_depletion()
 
