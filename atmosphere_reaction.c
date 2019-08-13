@@ -702,24 +702,24 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i 
     /*fputs(Q, fp);
     fclose(fp);*/
 
-    /*if(Q > 1.9E-7){ *//*AP->Keq_H2O){ */
-    /*    sn = -1* Ap->volatile_parameters[i].coeff;
+    if(Q > 0.01){    /*AP->Keq_H2O){ This is for when the equilibrium constant isnt hard coded */
+        sn = -1* Ap->volatile_parameters[i].coeff;
     }
     else{
         sn = Ap->volatile_parameters[i].coeff ;
     }
-    */
+    
     /* Calculate X: for what difference does Q=K  */ 
-    /*X = 0;
-    while (Q - 1.9E-7 > 1.0E-8){
-        X += 1.0E-7;
+    X = 0;
+    while (Q - 0.01 > 0.001){
+        X += 0.0001;
         Q = 1.0;
             for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
                 Q *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
             }
     }
 
-    out2 += sn*Ap->volatile_parameters[i].coeff*X; */
+    out2 += sn*Ap->volatile_parameters[i].coeff*X; 
 
 
     /* dPsurf/dt */

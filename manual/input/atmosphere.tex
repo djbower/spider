@@ -5,11 +5,11 @@
 \subsection{Volatile Mass Balance}
 The mass balance of a given volatile in the interior of a SPIDER model \citep[e.g.,][]{LMC13} is:
 \begin{equation}
-m_{\rm v}^{\rm s} + m_{\rm v}^{\rm l} + m_{\rm v}^{\rm g} + m_{\rm v}^{\rm e} + m_{\rm v}^{\rm o} = m_{\rm v}^{\rm t}
+m_{\rm v}^{\rm s} + m_{\rm v}^{\rm l} + m_{\rm v}^{\rm g} + m_{\rm v}^{\rm e} + m_{\rm v}^{\rm o} + m_{\rm v}^r= m_{\rm v}^{\rm t}
 \end{equation}
-where subscript $v$ denotes a particular volatile and superscripts $s$, $l$, $g$, $t$, $o$ indicates the volatile's mass in the solid, liquid (i.e., melt), gas, and surface liquid ocean, as well as the total mass, respectively.  Superscript $e$ represents the reservoir (lost) due to escape, and superscript $o$ accounts for ocean formation (this is just a placeholder and is not currently implemented).  We can now express these masses as follows:
+where subscript $v$ denotes a particular volatile and superscripts $s$, $l$, $g$, $o$, $t$ indicates the volatile's mass in the solid, liquid (i.e., melt), gas, and surface liquid ocean, as well as the total mass, respectively.  Superscript $e$ represents the reservoir (lost) due to escape, superscript $o$ accounts for ocean formation (this is just a placeholder and is not currently implemented), and superscript $r$ accounts for the amount of the volatile added by chemical reactions.  We can now express these masses as follows:
 \begin{equation}
-X_{\rm v}^{\rm s} M^{\rm s} + X_{\rm v}^{\rm l} M^{\rm l} + X_{\rm v}^{\rm g} M^{\rm g} + m_{\rm v}^{\rm e} + m_{\rm v}^{\rm o} = X_{\rm v}^{\rm init} M^{\rm m}
+X_{\rm v}^{\rm s} M^{\rm s} + X_{\rm v}^{\rm l} M^{\rm l} + X_{\rm v}^{\rm g} M^{\rm g} + m_{\rm v}^{\rm e} + m_{\rm v}^{\rm o} + m_{\rm v}^r = X_{\rm v}^{\rm init} M^{\rm m}
 \end{equation}
 where $X$ are mass fractions of volatile in each phase (solid, liquid, and gas), relative to the respective \myemph{physical} reservoir size of solid, liquid, and gas.  \myemph{In SPIDER we actually work with scaled volume or mass, i.e. the $4 \pi$ prefactor associated with spherical geometry is omitted for all spherical volume and mass quantities (except for output, where the $4 \pi$ is reintroduced).  Nevertheless, the above equation is valid for physical or scaled masses.}. The total mass of the mantle:
 \begin{equation}
@@ -52,7 +52,7 @@ m_{\rm v}^{\rm g} = X_{\rm v}^{\rm g} M^{\rm g} = \frac{4 \pi R_{\rm p}^2}{g} \l
 p( X_{\rm v}^{\rm l} ) = \left( \frac{X_{\rm v}^{\rm l}}{\alpha} \right)^\beta, \qquad \frac{dp}{d X_{\rm v}^{\rm l}} = \frac{\beta}{\alpha} \left( \frac{X_{\rm v}^{\rm l}}{\alpha} \right)^{\beta-1}
 \end{equation}
 where $\alpha$ and $\beta$ are parameters for each volatile.  The ``standard'' Henry's law is recovered when $\beta=1$, but allowing a power-law form provides more flexibility for volatiles that do not follow Henry's law exactly ($\beta \neq 1$).  \myemph{From now on we will only consider the scaled mass which omits the $4 \pi$ factor associated with spherical geometry:}
-\boxedeq{eq:dimvolatile}{X_{\rm v}^{\rm l} (k_{\rm v} M^{\rm s} + M^{\rm l}) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{\rm v}^{\rm g}}{\mu_{\rm t}} \right) p (X_{\rm v}^{\rm l}) + m_{\rm v}^{\rm e} + m_{\rm v}^{\rm o} = X_{\rm v}^{\rm init} M^{\rm m}}
+\boxedeq{eq:dimvolatile}{X_{\rm v}^{\rm l} (k_{\rm v} M^{\rm s} + M^{\rm l}) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{\rm v}^{\rm g}}{\mu_{\rm t}} \right) p (X_{\rm v}^{\rm l}) + m_{\rm v}^{\rm e} + m_{\rm v}^{\rm o} + m_{\rm v}^r = X_{\rm v}^{\rm init} M^{\rm m}}
 And note, importantly, that we solve for the volatile mass fraction in the liquid phase, from which we can subsequently compute the volatile mass in the solid and gas phase.  The above equation also shows that the volatile abundances are coupled through the mean molecular weight:
 \begin{equation}
 \mu_{\rm t} = \frac{1}{N} \sum_q \mu_q n_q = \frac{1}{P_s} \sum_q \mu_q p_q \qquad P_s = \sum_q p_q
@@ -60,9 +60,74 @@ And note, importantly, that we solve for the volatile mass fraction in the liqui
 \end{equation}
 %%%%
 %%%%
+\subsection{Chemical Reactions}
+We use a chemical model similar to \citep{GS14}, wherein we assume chemical reactions are at equilibrium at each time step and then we calculate the change in concentration of reactants and products based off the how much of any volatile is added to the system. For the reaction that produces water:
+\begin{equation}
+    O_2 + 2H_2 \leftrightarrow 2H_2O
+\end{equation}
+The equilibrium constant for this reaction is: 
+\begin{equation}
+    K = \frac{([H_2O])^2}{[H_2]^2[O_2]}
+\end{equation}
+Which can also be rewritten in terms of the oxygen fugacity, $fO_2$, as: 
+\begin{equation}
+    \frac{[H_2O]}{[H_2]} = K_{eq}fO_2^{1/2}
+\end{equation}
+The equilibrium constant for this reaction can be calculated based off the surface temperature using data from \citep{RBF78}, and a fit from \citep{OS19}: 
+\begin{equation}
+    log_{10}K_{eq} = 7.39\times 10^5T_s^{-1.61}.
+\end{equation}
+The oxygen fugacity, which is determined by the iron-wustite buffer, can be calculated using the interior pressure and temperature using either: 
+\begin{equation}
+    log_{10}fO_2 = 6.899 - \frac{27714}{T} + \frac{0.05(P-1)}{T}
+\end{equation}
+from \citep{O87} or
+\begin{equation}
+    log_{10}fO_2 = 6.702-\frac{27489}{T} + \frac{0.055(P-1)}{T}
+\end{equation}
+from \citep{F91}. Neither of these are currently implemented. Instead, I have averaged over the temperature domain and set $K_{eq}fO_2^{1/2} = 0.01$, for simplicity. 
+If the reaction is not in equilibrium, we can use the same expression to calculate the reaction quotient, Q. We can compare Q to K to tell whether the system is in equilibrium and if it is not, how it will shift to go back into equilibrium. If the reaction quotient is not equal to the equilibrium constant, the concentrations of products will change by some amount, $x$: 
+\begin{equation}\label{eq:diff}
+K = 
+     \begin{dcases}
+        \frac{([H_2O] + 2x)^2}{([H_2] - 2x)^2([O_2] - x)} & Q < K \\
+        \frac{([H_2O] - 2x)^2}{([H_2] + 2x)^2([O_2] + x)} & Q > K\\
+        \frac{([H_2O])^2}{([H_2])^2([O_2])} & Q = K \\
+    \end{dcases}
+\end{equation}
+If $Q < K$, there are more products and less reactants than what is required for equilibrium and therefore the concentration of reactants decreases and products increase. If $Q > K$, reactants are produced and if $Q = K$ the system is still in equilibrium. At each time step, we will calculate Q, compare to K and then adjust the concentrations of the volatiles to maintain equilibrium before continuing. 
+
+\subsubsection{Generalized Expressions}
+More generally, a chemical reaction: 
+\begin{equation}
+    aA + bB \leftrightarrow cC + dD
+\end{equation}
+Where $a,b,c,d$ are constants and $A,B,C,D$ are volatiles, the equilibrium constant is: 
+\begin{equation}
+    K = \frac{X_C^c X_D^d}{X_A^a X_B^b}
+\end{equation}
+and we will calculate the difference in concentration using: 
+\begin{equation}
+K = 
+     \begin{dcases}
+        \frac{(X_C + C_Cx)^{C_C} (X_D + C_Dx)^{C_D}}{(X_A-C_Ax)^{C_A} (X_B-C_Bx)^{C_B}} & Q < K \\
+        \frac{(X_C - C_Cx)^{C_C} (X_D - C_Dx)^{C_D}}{(X_A+C_Ax)^{C_A} (X_B+C_Bx)^{C_B}} & Q > K\\
+        \frac{X_C^{C_C} X_D^{C_D}}{X_A^{C_A} X_B^{C_B}} & Q = K \\
+    \end{dcases}
+\end{equation}
+
+The relationship between the concentration of a given volatile and it's mass concentration evolution is: 
+\begin{equation}
+    \frac{dm_{\rm v}^r}{dt} = sn_{\rm v}C_{\rm v}x
+\end{equation}
+
+Where the sign, $sn$, is determined depending on whether the volatile is a reactant or product and the comparison of K and Q, and C is the coefficient from the chemical reaction. 
+
+%%%%
 %%%%
 \subsection{Non-dimensionalisation}
 \subsubsection{Mass}
+TK: TODO non-dimensionalization for chemical reactions. 
 In the code, we non-dimensionalise all masses as:
 \begin{equation}
 M = \rho_0 R_0^3 \hat{M} = M_0 \hat{M}
