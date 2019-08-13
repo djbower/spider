@@ -2,7 +2,7 @@
 #define ATMOSPHERE_H_
 
 #include <petsc.h>
-#include "parameters.h"
+#include "parameters_reaction.h"
 #include "cJSON.h"
 #include "dimensionalisablefield.h"
 
@@ -13,7 +13,6 @@ typedef struct Volatile_ {
     PetscScalar x; // ppm in liquid mantle
     PetscScalar p; // partial pressure at surface (Pa)
     PetscScalar dxdt;
-    PetscScalar Keq;
     PetscScalar dpdx; // dp/dx (Pa/mass fraction)
     PetscScalar m; // mass in atmosphere (kg)
     PetscScalar tau; // optical_depth at surface (non-dimensional)
@@ -57,6 +56,6 @@ PetscErrorCode set_surface_temperature_from_flux( Atmosphere *, const Atmosphere
 PetscErrorCode set_atmosphere_volatile_content( Atmosphere *, const AtmosphereParameters * );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
 PetscErrorCode FormFunction2( SNES, Vec, Vec, void * );
-PetscScalar get_dxdt( Atmosphere *, const AtmosphereParameters *Ap, PetscInt, PetscScalar);
+PetscScalar get_dxdt( Atmosphere *, const AtmosphereParameters *Ap, PetscInt);
 
 #endif

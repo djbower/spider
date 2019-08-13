@@ -1,4 +1,4 @@
-#include "atmosphere.h"
+#include "atmosphere_reaction.h"
 #include "dimensionalisablefield.h"
 #include "util.h"
 
@@ -694,13 +694,13 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i 
 
         Q = 1.0;
 
-    fp = fopen("Q.txt", "a");
+    /*fp = fopen("Q.txt", "a");*/
     /* Reaction Coupling*/
     for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
         Q *= PetscPowScalar(A->volatiles[n].p, Ap->volatile_parameters[n].sign * Ap->volatile_parameters[n].coeff) ;
     }
-    fputs(Q, fp);
-    fclose(fp);
+    /*fputs(Q, fp);
+    fclose(fp);*/
 
     /*if(Q > 1.9E-7){ *//*AP->Keq_H2O){ */
     /*    sn = -1* Ap->volatile_parameters[i].coeff;
