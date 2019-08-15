@@ -1,4 +1,4 @@
-#include "atmosphere_reaction.h"
+f#include "atmosphere_reaction.h"
 #include "dimensionalisablefield.h"
 #include "util.h"
 
@@ -702,24 +702,32 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i 
     /*fputs(Q, fp);
     fclose(fp);*/
 
-    if(Q > 0.01){    /*AP->Keq_H2O){ This is for when the equilibrium constant isnt hard coded */
+    if(Q > 0.016347){    /*AP->Keq_H2O){ This is for when the equilibrium constant isnt hard coded */
         sn = -1* Ap->volatile_parameters[i].coeff;
+        X = 0;
+        while (Q - 0.016347 > 0.001){     /* Calculate X: for what difference is Q close to K ... or Q-K<0.001  */ 
+            X += 0.0001;
+            Q = 1.0;
+                for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
+                    Q *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
+                }
+        }
     }
     else{
         sn = Ap->volatile_parameters[i].coeff ;
+        X = 0;
+        while ( 0.016347 - Q > 0.001){     /* Calculate X: for what difference is Q close to K ... or Q-K<0.001  */ 
+            X += 0.0001;
+            Q = 1.0;
+                for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
+                    Q *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
+                }
+        }
     }
     
-    /* Calculate X: for what difference does Q=K  */ 
-    X = 0;
-    while (Q - 0.01 > 0.001){
-        X += 0.0001;
-        Q = 1.0;
-            for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
-                Q *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
-            }
-    }
 
-    out2 += sn*Ap->volatile_parameters[i].coeff*X; 
+
+    out2 += sn*Ap->volatile_parameters[i].coeff* (X /A->psurf) * (Ap->volatile_parameters[i].molar_mass/A->molar_mass) * A->Mliq; 
 
 
     /* dPsurf/dt */
