@@ -114,9 +114,9 @@ K =
         \frac{X_C^{C_C} X_D^{C_D}}{X_A^{C_A} X_B^{C_B}} & Q = K \\
     \end{dcases}
 \end{equation}
-The relationship between the concentration of a given volatile and its mass concentration evolution is: 
-\boxedeq{}{\frac{dm_{\rm v}^r}{dt} = sn_{\rm v}C_{\rm v}x}
-where the sign, $sn$, is determined depending on whether the volatile is a reactant or product and the comparison of K and Q, and C is the coefficient from the chemical reaction. 
+Whichever value of $x$ gives $Q=K$ determines the amount that the concentrations will change in the timestep. The value of $x$ will be a partial pressure, which must be converted to a mass fraction. The relationship between the partial pressure of a volatile added or subtracted due to chemical reactions and its mass evolution is: 
+\boxedeq{}{\frac{dm_{\rm v}^r}{dt} = \plusminus C_{\rm v}\frac{x}{P_{T}} \frac{\mu_{\rm v}}{\mu_{T}}M^l }
+where the sign is determined through the comparison of Q and K and whether the volatile is a product or reactant. $C$ is the coefficient from the chemical reaction and is also dimensionless.  
 
 %%%%
 %%%%
