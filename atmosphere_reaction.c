@@ -1,4 +1,4 @@
-f#include "atmosphere_reaction.h"
+#include "atmosphere_reaction.h"
 #include "dimensionalisablefield.h"
 #include "util.h"
 
@@ -678,7 +678,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i )
 {
 
-    PetscScalar               out, out2, Q, sn, X, dpsurfdt, f_thermal_escape;
+    PetscScalar               out, out2, Q, sn, X, Keq, fO2, RHS, dpsurfdt, f_thermal_escape;
     PetscInt                  j,k,n;
 
     /* remember that to this point, V->f_thermal_escape is always
@@ -692,42 +692,42 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i 
 
     out2 = 0.0;
 
-        Q = 1.0;
+    /* calculate fugacity and equilibrium constant from surface temperature using Olson and Sharp 2019 */ 
+    fO2 = PetscPowScalar(10, -2.75*PetscPowScalar(10, 6) * PetscPowScalar(A->tsurf, -1.7));
+
+    Keq = PetscPowScalar(10, 7.39*PetscPowScalar(10, 5) * PetscPowScalar(A->tsurf, -1.61));
+
+    /*Calculate RHS of eq. 252 -- this depends on your assumed stoichiometry*/
+    RHS = Keq * PetscPowScalar(fO2, 0.5);
 
     /*fp = fopen("Q.txt", "a");*/
-    /* Reaction Coupling*/
+    
+    /* Chemical Reactions*/
+    Q = 1.0;
     for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
         Q *= PetscPowScalar(A->volatiles[n].p, Ap->volatile_parameters[n].sign * Ap->volatile_parameters[n].coeff) ;
     }
     /*fputs(Q, fp);
     fclose(fp);*/
 
-    if(Q > 0.016347){    /*AP->Keq_H2O){ This is for when the equilibrium constant isnt hard coded */
-        sn = -1* Ap->volatile_parameters[i].coeff;
-        X = 0;
-        while (Q - 0.016347 > 0.001){     /* Calculate X: for what difference is Q close to K ... or Q-K<0.001  */ 
-            X += 0.0001;
-            Q = 1.0;
-                for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
-                    Q *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
-                }
-        }
+    if(Q > RHS){ 
+        sn = -1* Ap->volatile_parameters[i].sign;
     }
     else{
-        sn = Ap->volatile_parameters[i].coeff ;
-        X = 0;
-        while ( 0.016347 - Q > 0.001){     /* Calculate X: for what difference is Q close to K ... or Q-K<0.001  */ 
-            X += 0.0001;
-            Q = 1.0;
-                for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
-                    Q *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
-                }
-        }
+        sn = Ap->volatile_parameters[i].sign;
     }
     
+    /* Calculate X: for what difference does Q=K  */ 
+    X = 0;
+    while (Q - RHS > 0.001){
+        X += 0.0001;
+        Q = 1.0;
+            for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
+                Q *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
+            }
+    }
 
-
-    out2 += sn*Ap->volatile_parameters[i].coeff* (X /A->psurf) * (Ap->volatile_parameters[i].molar_mass/A->molar_mass) * A->Mliq; 
+    out2 += sn*Ap->volatile_parameters[i].coeff* (X /A->psurf) * (Ap->volatile_parameters[i].molar_mass/A->molar_mass) * A->Mliq ; 
 
 
     /* dPsurf/dt */
