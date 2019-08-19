@@ -61,45 +61,58 @@ And note, importantly, that we solve for the volatile mass fraction in the liqui
 %%%%
 %%%%
 \subsection{Chemical Reactions}
-We use a chemical model similar to \cite{GS14}, wherein we assume chemical reactions are at equilibrium at each time step and then we calculate the change in concentration of reactants and products based on how much of any volatile is added to the system.  For the reaction that produces water: \dbnote{These reactions are occuring in the gas phase---correct?}
-\tknote{Yes, I believe so. They are dissolved in the MO but still in the gas phase.}
+We use a chemical model similar to \cite{GS14}, wherein we assume chemical reactions are at equilibrium at each time step and then we calculate the change in concentration of reactants and products based on how much of any volatile is added to the system.  \textbf{Here, we are considering reactions between volatiles (i.e., gas phases) that are dissolved in a liquid phase (i.e., the melt, the magma ocean with 100\% melt fraction)}.  For the reaction that produces water:
 \begin{equation}
-    O_2^{\rm (g)} + 2H_2^{\rm (g)} \leftrightarrow 2H_2O^{\rm (g)}
+    {O_2} + 2H_2 \leftrightarrow 2H_2O
 \end{equation}
-The equilibrium constant for this reaction, expressed in terms of the surface partial pressures is:
+The equilibrium constant for this reaction, \textbf{expressed in terms of concentrations (i.e., square brackets)} is:
 \begin{equation}
-    %K = \frac{([H_2O])^2}{[H_2]^2[O_2]}
-    K_{eq} = \frac{(P_{H_2O})^2}{\left(P_{H_2}\right)^2 P_{O_2}}
+    K = \frac{[H_2O]^2}{[H_2]^2[O_2]}
+    %K_{eq} = \frac{(P_{H_2O})^2}{\left(P_{H_2}\right)^2 P_{O_2}}
 \end{equation}
-\dbnote{Note that equilibrium constants should be unitless!  But are often not in the geophysical and astrophysical literature.}
+Note that the equilibrium constant should be unitless, although often this is not the case in the geophysical and astrophysical literature.
 This is rewritten in terms of the oxygen fugacity $fO_2$, as: 
 \begin{equation}
-    \frac{P_{H_2O}}{P_{H_2}} = \sqrt{K_{eq}} \left(fO_2\right)^{1/2}
+    \frac{[H_2O]}{[H_2]} = \sqrt{K_{eq}} \left(fO_2\right)^{1/2}
+    %\frac{P_{H_2O}}{P_{H_2}} = \sqrt{K_{eq}} \left(fO_2\right)^{1/2}
 \end{equation}
-Note that the stoichiometry is important for defining the equilibrium constant!  If we had instead considered the reaction:
+Note that the stoichiometry is important for defining the equilibrium constant.  If instead we consider the reaction:
 \begin{equation}
-    \frac{1}{2} O_2^{\rm (g)} + H_2^{\rm (g)} \leftrightarrow H_2O^{\rm (g)}
+    \frac{1}{2} O_2 + H_2 \leftrightarrow H_2O
 \end{equation}
-We would instead have derived:
+We instead derive:
 \begin{equation}
-     K_{eq} = \frac{P_{H_2O}}{P_{H_2} \left(P_{O_2}\right)^{1/2}} = \frac{P_{H_2O}}{P_{H_2} \left(fO_2\right)^{1/2}}
-    \label{eq:Keq}    
+     K_{eq} = \frac{[H_2O]}{[H_2] [O_2]^{1/2}} = \frac{[H_2O]}{[H_2] \left(fO_2\right)^{1/2}}
+    \label{eq:Keq}
 \end{equation}
 %and therefore by rearranging:
 %\begin{equation}
 %    \frac{P_{H_2O}}{P_{H_2}} = K_{eq} \left(fO_2\right)^{1/2}
 %\end{equation}
-The equilibrium constant for this reaction is calculated based on the surface temperature using data from \cite{RBF78}, and a fit from \cite{OS19}: \dbnote{Olson and Sharp seem to be inconsistent between their assumed stoichiometry and the equilibrium constant within the main body of the text, but in Table 3 they clarify their definition.  Again, formally the equilibrium constant should not have units.} 
-\tknote{I checked this because I also noticed the inconsistency with the reaction equation and expression of the equilibrium constant. Turns out that for the surface temperature rage necessary(between 500 and 4000K is what I checked because it is the bounds of the model runs that I did before), both expressions give the same thing. Converting their expressions for $K_eq$(Eq. 246 here) and $fO_2$(Eq 40 in Olson \& Sharp) into exponential form and putting them back into the chemical equilibrium expression gives: 
-$K_{eq}(fO_2) ^{1/2} = 10^{\textbf{7.39}\times10^5T_s^{-1.61} - 1.39\times10^6T_s^{-1.7}}$  \\
-or \\
-$(K_{eq} fO_2) ^{1/2} = 10^{\textbf{3.695}\times10^5T_s^{-1.61} - 1.39\times10^6T_s^{-1.7}}$\\
-The difference between the two is only a factor of 1/2 in an exponent that is of order $10^5$, so it doesn't change anything significantly--I can send you the plot but there also isn't much to see (because the lines overlap entirely). We can use either Eq 241 or 244.}
-
+The equilibrium constant for this reaction is calculated based on the surface temperature using data from \cite{RBF78} and a fit from \cite{OS19}.  Note that there seems to be an inconsistency between the assumed stoichiometry and the equilibrium constant within the main body of the text in \cite{OS19}, but this appears to be clarified in their Table~3.  \textbf{Therefore, let's continue using $K_{eq}$ (Eq.~\ref{eq:Keq_OS19}), $fO_2$ (Eq.~\ref{eq:fO2_OS19}) and Eq.~\ref{eq:Keq}}.
+%\tknote{I checked this because I also noticed the inconsistency with the reaction equation and expression of the equilibrium constant. Turns out that for the surface temperature range necessary (between 500 and 4000K is what I checked because it is the bounds of the model runs that I did before), both expressions give values that are very close. Converting their expressions for $K_{eq}$ (Eq. 246 here) and $fO_2$ (Eq 40 in Olson \& Sharp) into exponential form and putting them back into the chemical equilibrium expression gives: 
+%$K_{eq}(fO_2) ^{1/2} = 10^{\textbf{7.39}\times10^5T_s^{-1.61} - 1.39\times10^6T_s^{-1.7}}$  \\
+%or \\
+%$(K_{eq} fO_2) ^{1/2} = 10^{\textbf{3.695}\times10^5T_s^{-1.61} - 1.39\times10^6T_s^{-1.7}}$\\
+%The difference between the two is only a factor of 1/2 in an exponent that is of order $10^5$, so it doesn't change anything significantly--I can send you the plot but there also isn't much to see (because the lines overlap entirely). We can use either Eq 241 or 244.}
+The equilibrium constant depends on the surface temperature \citep[Eq.~41,][]{OS19}:
 \begin{equation}
-    \log_{10} K_{eq} = 7.39\times 10^5T_s^{-1.61}.
+    \log_{10} K_{eq} = 7.39\times 10^5T_s^{-1.61}
+    \label{eq:Keq_OS19}
 \end{equation}
-The oxygen fugacity, which is determined by the iron-w\"{u}stite buffer, can be calculated using the interior pressure and temperature using either \citep{O87}: 
+The oxygen fugacity depends on the surface temperature \citep[Eq.~40,][]{OS19}:
+\begin{equation}
+\log_{10} fO_2 = -2.75 \times 10^6 T_s^{-1.7}
+\label{eq:fO2_OS19}
+\end{equation}
+Combining Eq.~\ref{eq:Keq_OS19} and \ref{eq:fO2_OS19}:
+\begin{equation}
+K_{eq} (fO_2)^{1/2} = 10^{7.39 \times 10^5 T_s^{-1.61}-1.375 \times 10^6 T_s^{-1.7}}
+\label{eq:Keq_fO2_OS19}
+\end{equation}
+We can compute the \dbnote{arithmetic or geometric?} average of Eq.~\ref{eq:Keq_fO2_OS19} over the surface temperature range from 500 to 4000 K to eliminate $T_s$ \dbnote{is this what you do?  Note that we don't have to eliminate $T_s$ since we know if from the code}:
+\boxedeq{}{K_{eq}\left(fO_2\right)^{1/2} = 0.01 \label{eq:Keq_fO2_approx}}
+There are other expressions that we could adopt in the future to determine $fO_2$.  The oxygen fugacity, which is determined by the iron-w\"{u}stite buffer, can be calculated using the interior pressure and temperature using either \citep{O87}: 
 \begin{equation}
     \log_{10}\left(fO_2\right) = 6.899 - \frac{27714}{T} + \frac{0.05(P-1)}{T}
 \end{equation}
@@ -107,30 +120,26 @@ or \citep{F91}:
 \begin{equation}
     \log_{10}\left(fO_2\right) = 6.702-\frac{27489}{T} + \frac{0.055(P-1)}{T}
 \end{equation}
-Expressions 246, 247 and 248 are not currently implemented. Instead, for simplicity we average over the temperature domain \dbnote{you do this in the code?  Or you mean you ignore temperature?  Is there a reference for this value of 0.01?} \tknote{No, I did this in a python script where I was checking how the stoichiometry changes $K_{eq}$--where I realized how/why the two expressions for $K_{eq}$ give the same values, and then I just averaged over the temperature interval that I was using (500-4000K) to get a rough estimate. } and set:
-\begin{equation}
-K_{eq}\left(fO_2\right)^{1/2} = 0.01
-\label{eq:fO2}
-\end{equation}
-So simply, now at equilibrium we have:
-\begin{equation}
-\frac{P_{H_2O}}{P_{H_2}} = K_{eq} \left(fO_2\right)^{1/2}=0.01
-\end{equation}
-\dbnote{OK, so now we can easily compute $(fO_2)^{1/2}$ for any surface temperature, since it only depends on $K_{eq}$}\tknote{$fO_2$ is set by the pressure and temperature within the mantle and so should eventually be calculated using expression 247 or 248. $K_{eq}$ is presumably also determined by the interior temperature and pressure, because that is what changes the iron-wustite buffer, but for now 246 is the best expression I have found. }\\
-\dbnote{But this above expression is not explicitly used, since we instead compute $Q$ and compare to $K$, as described below?} \tknote{Eq. 250 is used to establish chemical equilibrium in the MO at every timestep. } \\
-\dbnote{Currently, this condition is not at all enforced in the volatile evolution.  I.e., outgassing is driven by over-saturation of the melt phase, and this results in changes in the partial pressure of species in the atmosphere.  The partial pressures are coupled through the fact that partial pressure of one species can change as a consequence of other species outgassing.  But there are no chemical reactions by default.} \\
+However, for simplicity at the present time we use Eq.~\ref{eq:Keq_fO2_approx}.  Therefore, at equilibrium we have:
+\boxedeq{}{\frac{[H_2O]}{[H_2]} = K_{eq} \left(fO_2\right)^{1/2}=0.01}
+\dbnote{My understanding now is that, given our simplifications, the concentration of H$_2$O to H$_2$ is fixed in the mantle.  Note that it would be trivial to reinstate the surface temperature $T_s$ as a controlling parameter, since we compute this every time step within the code.  So you don't need to average over the surface temperature range if you don't want to.}
+%\dbnote{OK, so now we can easily compute $(fO_2)^{1/2}$ for any surface temperature, since it only depends on $K_{eq}$}\tknote{$fO_2$ is set by the pressure and temperature within the mantle and so should eventually be calculated using expression 247 or 248. $K_{eq}$ is presumably also determined by the interior temperature and pressure, because that is what changes the iron-wustite buffer, but for now 246 is the best expression I have found. }\\
+%\dbnote{But this above expression is not explicitly used, since we instead compute $Q$ and compare to $K$, as described below?} \tknote{Eq. 250 is used to establish chemical equilibrium in the MO at every timestep. } \\
+%\dbnote{Currently, this condition is not at all enforced in the volatile evolution.  I.e., outgassing is driven by over-saturation of the melt phase, and this results in changes in the partial pressure of species in the atmosphere.  The partial pressures are coupled through the fact that partial pressure of one species can change as a consequence of other species outgassing.  But there are no chemical reactions by default.} \\
 If the reaction is not in equilibrium, we use Eq.~\ref{eq:Keq} to calculate the reaction quotient Q:
 \begin{equation}
-Q = \frac{P_{H_2O}^\ast}{P_{H_2}^\ast \left(fO_2\right)^{1/2}}
+Q = \frac{[H_2O]^\ast}{[H_2]^\ast \left(fO_2\right)^{1/2}}
 \end{equation}
-That is, \textbf{we use the current values of the partial pressures of $P_{H_2O}^\ast$ and $P_{H_2}^\ast$ to compute $Q$, where $(fO_2)^{1/2}$ is known from Eq.~\ref{eq:fO2}}.  \dbnote{Basically, the partial pressures here are after outgassing, atmospheric escape etc., but before we do any chemistry}\tknote{Yes, they are the partial pressures within the mantle.}.  We can compare Q to K$_{eq}$ to determine if the system is in equilibrium and if it is not, how it will shift to go back into equilibrium. If the reaction quotient is not equal to the equilibrium constant, the concentrations of products will change by some amount, $\delta p$:
-
-\dbnote{Dan's revised version with partial pressures and preferred stoichiometry.  I've kept $fO_2$ as a variable, but in the current formulation (as far as I understand), the $fO_2$ is fixed.  In which case $(fO_2 \pm \frac{1}{2} \delta p)^{1/2}=(fO_2)^{1/2}$}
-\begin{equation}\label{eq:diff}
-K_{eq} = \frac{(P_{H_2O}^\ast + \delta p)}{(P_{H_2}^\ast - \delta p) (fO_2)^{1/2}}
+That is, \textbf{we use the current values of the concentrations of $H_2O$ and $H_2$ (denoted by $^\ast$) to compute $Q$}.  \dbnote{Now how do we know $(fO_2)^{1/2}$?  It is inconsistent to average over surface temperature as above and then use $K_{eq}$ with its $T_s$ dependence to back-compute $(fO_2)^{1/2}$. Now I think you are only averaging the $T_s$ for the $fO_2$ equation and retaining $K_{eq}$ with its full surface temperature dependence.  Please clarify.}.
+%, where $(fO_2)^{1/2}$ is known from Eq.~\ref{eq:fO2}  \dbnote{Basically, the partial pressures here are after outgassing, atmospheric escape etc., but before we do any chemistry}\tknote{Yes, they are the partial pressures within the mantle.}.
+We can compare Q to K$_{eq}$ to determine if the system is in equilibrium and if it is not, how it will shift to go back into equilibrium. If the reaction quotient is not equal to the equilibrium constant, the concentrations of products will change by some amount, $\delta x$:
+\begin{equation}
+K_{eq} = \frac{([H_2O]^\ast + \delta x)}{([H_2]^\ast - \delta x) (fO_2)^{1/2}}
+\label{eq:Keq_diff}
 \end{equation}
-\dbnote{Note that we don't need these three cases here.  $\delta p$ encapsulates sign information, to show whether we need more products or more reactants.  We just have to pick a convention.} \tknote{Set the forward reaction to be the default (i.e. converting hydrogen to water). I also had mixed up the comparison before, if $Q<K$ we produce products and if $Q>K$ we produce reactants. }
-If $Q < K_{eq}$, there are more reactants and less products than what is required for equilibrium and therefore the concentration of reactants decreases and products increase. In this case, the $\delta p$ in expression 252 is positive. If $Q > K_{eq}$, reactants are produced and $\delta p$ is negative. If $Q = K_{eq}$ the system is still in equilibrium. At each time step, we will calculate $Q$, compare to $K_{eq}$, and then adjust the concentrations of the volatiles to maintain equilibrium before continuing.  \dbnote{Agreed.  We want to solve for $\delta p$ and update the partial pressures accordingly.  Now because the partial pressures of each species relates to the concentration in the interior, the interior concentration is affected by these reactions.  I think to avoid time-reversing our reactions we have to do all the chemistry at the end of the time loop.  This might prevent us from including the chemistry as part of the same ODE that deals with the outgassing and escape.  I will have to think more about this.  Also, since we are dealing directly with partial pressures, maybe we can add a correction or extra term to an existing reservoir rather than add a new linear term in the mass balance.}
+%\dbnote{Note that we don't need these three cases here.  $\delta x$ encapsulates sign information, to show whether we need more products or more reactants.  We just have to pick a convention.} \tknote{Set the forward reaction to be the default (i.e. converting hydrogen to water). I also had mixed up the comparison before, if $Q<K$ we produce products and if $Q>K$ we produce reactants.}. \dbnote{But this remains consistent with the text below, where $Q<K_{eq}$ means that there are more reactants and less products than what equilibrium wants---right?}
+If $Q < K_{eq}$, there are more reactants and less products than what is required for equilibrium and therefore the concentration of reactants decreases and products increase. In this case, the $\delta x$ in Eq.~\ref{eq:Keq_diff} is positive. If $Q > K_{eq}$, reactants are produced and $\delta x$ is negative. If $Q = K_{eq}$ the system is still in equilibrium. At each time step, we will calculate $Q$, compare to $K_{eq}$, and then adjust the concentrations of the volatiles to maintain equilibrium before continuing.
+%\dbnote{Agreed.  We want to solve for $\delta p$ and update the partial pressures accordingly.  Now because the partial pressures of each species relates to the concentration in the interior, the interior concentration is affected by these reactions.  I think to avoid time-reversing our reactions we have to do all the chemistry at the end of the time loop.  This might prevent us from including the chemistry as part of the same ODE that deals with the outgassing and escape.  I will have to think more about this.  Also, since we are dealing directly with partial pressures, maybe we can add a correction or extra term to an existing reservoir rather than add a new linear term in the mass balance.}
 %%%%
 %%%%
 \subsubsection{Generalized Expressions}
