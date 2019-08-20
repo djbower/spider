@@ -57,7 +57,10 @@ typedef struct VolatileParameters_ {
     PetscScalar R_thermal_escape_value; // for thermal escape
     PetscScalar molar_mass;
     PetscScalar cross_section;
+    /* sign is really controlling whether the volatile is a product (sign=1)
+       or a reactant (sign=-1) */
     PetscScalar sign; // for chemical reactions, TODO: make variable name more explicit
+    /* coeff is given by the stoichiometry */
     PetscScalar coeff; // for chemical reactions, TODO: make variable name more explicit
     PetscReal   poststep_change; // allowable fractional change (only for -activate_poststep)
 } VolatileParameters;

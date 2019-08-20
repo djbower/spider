@@ -61,7 +61,9 @@ And note, importantly, that we solve for the volatile mass fraction in the liqui
 %%%%
 %%%%
 \subsection{Chemical Reactions}
-We use a chemical model similar to \cite{GS14}, wherein we assume chemical reactions are at equilibrium at each time step and then we calculate the change in concentration of reactants and products based on how much of any volatile is added to the system.  \textbf{Here, we are considering reactions between volatiles (i.e., gas phases) that are dissolved in a liquid phase (i.e., the melt, the magma ocean with 100\% melt fraction)}.  For the reaction that produces water:
+We use a chemical model similar to \cite{GS14}, wherein we assume chemical reactions are at equilibrium at each time step and then we calculate the change in concentration of reactants and products based on how much of any volatile is added to the system.  \textbf{Here, we are considering reactions between volatiles (i.e., gas phases) that are dissolved in a liquid phase (i.e., the melt, the magma ocean with 100\% melt fraction)}.
+\subsubsection{Water production in the magma ocean}
+For the reaction that produces water:
 \begin{equation}
     {O_2} + 2H_2 \leftrightarrow 2H_2O
 \end{equation}
@@ -149,7 +151,8 @@ If $Q(fO_2)^{1/2} < K_{eq}(fO_2)^{1/2}$, there are more reactants and less produ
 
 As a technical detail, we probably need to compute the chemical reactions after other physical processes such as outgassing (if solidification of the magma ocean is being considered) and atmospheric escape.  Otherwise, there's a possibility we will simply remain locked at thermodynamic equilibrium and nothing interesting will happen (i.e., volatiles will not evolve).  \dbnote{Whether this is an issue or not will probably become more apparent later.}
 
-\dbnote{OK.  I think this (previous) section is now much clearer than before.}
+\dbnote{TODO: add notes on ``sign'' and ``coefficient'' as used in the code.  ``coefficient'' relates to the exponent as determined from stoichiometry?  Previously ``sign=2'' for both H2O and H2, but with the new stoichiometry it equals 1 instead?}
+
 %%%%
 %%%%
 \subsubsection{Generalized Expressions}
