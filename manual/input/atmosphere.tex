@@ -67,6 +67,7 @@ We use a chemical model similar to \cite{GS14}, wherein we assume chemical react
 For the reaction that produces water:
 \begin{equation}
     {O_2} + 2H_2 \leftrightarrow 2H_2O
+    \label{eq:altreaction}
 \end{equation}
 The equilibrium constant for this reaction, \textbf{expressed in terms of concentrations (i.e., square brackets)} is:
 \begin{equation}
@@ -82,6 +83,7 @@ This is rewritten in terms of the oxygen fugacity $fO_2$, as:
 Note that the stoichiometry is important for defining the equilibrium constant.  If instead we consider the reaction:
 \begin{equation}
     \frac{1}{2} O_2 + H_2 \leftrightarrow H_2O
+    \label{eq:reaction}
 \end{equation}
 We instead derive:
 \begin{equation}
@@ -130,7 +132,7 @@ or \citep{F91}:
 \end{equation}
 However, for simplicity at the present time we use Eq.~\ref{eq:Keq_fO2_approx}.  Therefore, at equilibrium we have:
 \boxedeq{}{\frac{[H_2O]}{[H_2]} = K_{eq} \left(fO_2\right)^{1/2}=0.01}
-%\dbnote{My understanding now is that, given our simplifications, the concentration of H$_2$O to H$_2$ is fixed in the mantle.  Note that it would be trivial to reinstate the surface temperature $T_s$ as a controlling parameter, since we compute this every time step within the code.  So you don't need to average over the surface temperature range if you don't want to.}\tknote{Doing this now.}
+%\dbnote{My understanding now is that, given our simplifications, the concentration of H$_2$O to H$_2$ is fixed in the mantle.  Note that it would be trivial to reinstate the surface temperature $T_s$ as a controlling parameter, since we compute this every time step within the code.  So you don't need to average over the surface temperature range if you don't want to.}
 %\dbnote{OK, so now we can easily compute $(fO_2)^{1/2}$ for any surface temperature, since it only depends on $K_{eq}$}\tknote{$fO_2$ is set by the pressure and temperature within the mantle and so should eventually be calculated using expression 247 or 248. $K_{eq}$ is presumably also determined by the interior temperature and pressure, because that is what changes the iron-wustite buffer, but for now 246 is the best expression I have found. }\\
 %\dbnote{But this above expression is not explicitly used, since we instead compute $Q$ and compare to $K$, as described below?} \tknote{Eq. 250 is used to establish chemical equilibrium in the MO at every timestep. } \\
 %\dbnote{Currently, this condition is not at all enforced in the volatile evolution.  I.e., outgassing is driven by over-saturation of the melt phase, and this results in changes in the partial pressure of species in the atmosphere.  The partial pressures are coupled through the fact that partial pressure of one species can change as a consequence of other species outgassing.  But there are no chemical reactions by default.} \\
@@ -152,7 +154,11 @@ If $Q(fO_2)^{1/2} < K_{eq}(fO_2)^{1/2}$, there are more reactants and less produ
 
 As a technical detail, we probably need to compute the chemical reactions after other physical processes such as outgassing (if solidification of the magma ocean is being considered) and atmospheric escape.  Otherwise, there's a possibility we will simply remain locked at thermodynamic equilibrium and nothing interesting will happen (i.e., volatiles will not evolve).  \dbnote{Whether this is an issue or not will probably become more apparent later.}
 
-\dbnote{TODO: add notes on ``sign'' and ``coefficient'' as used in the code.  ``coefficient'' relates to the exponent as determined from stoichiometry?  Previously ``sign=2'' for both H2O and H2, but with the new stoichiometry it equals 1 instead?}
+\dbnote{TODO: add notes on ``sign'' and ``coefficient'' as used in the code.  ``coefficient'' relates to the exponent as determined from stoichiometry?  Previously ``sign=2'' for both H2O and H2, but with the new stoichiometry it equals 1 instead?} The volatile parameters \texttt{sign} and \texttt{coeff} are determined by the stoichiometry of the chemical reaction. The sign of the exponent indicates whether the volatile is a reactant (for which $\texttt{sign}=-1$) or a product ($\texttt{sign}=1$) in order to correctly compute equation \ref{eq:Keq}. The coefficient is the constant of the chemical reaction. For example, in the reaction with water using equation \ref{eq:reaction} $\texttt{coeff}=1$ for hydrogen and water. However if we chose to use \ref{eq:altreaction} instead, $\texttt{coeff}=2$ for hydrogen and water. 
+
+The relationship between the partial pressure of a volatile added or subtracted due to chemical reactions and its mass evolution is: 
+\boxedeq{}{\frac{dm_{\rm v}^r}{dt} = \pm C_{\rm v} \left( \frac{\delta p}{P_T} \right) \left( \frac{\mu_{\rm v}}{\mu_T} \right) M^l }
+where the sign is determined through the comparison of Q and K and whether the volatile is a product or reactant. $C$ is the coefficient from the chemical reaction and is also dimensionless.  
 
 %%%%
 %%%%
@@ -213,9 +219,7 @@ K =
         \frac{X_C^{C_C} X_D^{C_D}}{X_A^{C_A} X_B^{C_B}} & Q = K \\
     \end{dcases}
 \end{equation}
-Whichever value of $x$ gives $Q=K$ determines the amount that the concentrations will change in the timestep. The value of $x$ is usually a partial pressure, which must be converted to a mass fraction. The relationship between the partial pressure of a volatile added or subtracted due to chemical reactions and its mass evolution is: 
-\boxedeq{}{\frac{dm_{\rm v}^r}{dt} = \pm C_{\rm v} \left( \frac{\delta p}{P_T} \right) \left( \frac{\mu_{\rm v}}{\mu_T} \right) M^l }
-where the sign is determined through the comparison of Q and K and whether the volatile is a product or reactant. $C$ is the coefficient from the chemical reaction and is also dimensionless.  
+Whichever value of $x$ gives $Q=K$ determines the amount that the concentrations will change in the timestep. 
 
 %%%%
 %%%%
