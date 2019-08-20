@@ -193,20 +193,22 @@
 -P0 101325.0 # Pa (= 1 atm)
 
 # Define the volatiles
--volatile_names CO2,H2O,H2
+# for easy testing, let's turn off CO2 until we have H2 and H2O working
+#-volatile_names CO2,H2O,H2
+-volatile_names H2O,H2
 
 # parameters relating to CO2 volatile
 #-CO2_initial 0.0 # ppm
 #-CO2_initial 1000.0 # ppm, Elkins-Tanton (2008) case 1 
--CO2_initial 100.0 # ppm, Elkins-Tanton (2008) case 2 
+#-CO2_initial 100.0 # ppm, Elkins-Tanton (2008) case 2 
 #-CO2_initial 6000.0 # ppm, Elkins-Tanton (2008) case 3
--CO2_kdist 5.0E-4 # distribution coefficient between solid and melt (non-dimensional)
--CO2_kabs 0.05 # absorption (m^2/kg)
--CO2_henry 4.4E-6 # ppm/Pa (Lebrun et al., 2013)
--CO2_henry_pow 1.0 # power for Henry's law (Lebrun et al., 2013)
--CO2_molar_mass 0.04401 # kg/mol
--CO2_coeff 0.0
--CO2_sign 1
+#-CO2_kdist 5.0E-4 # distribution coefficient between solid and melt (non-dimensional)
+#-CO2_kabs 0.05 # absorption (m^2/kg)
+#-CO2_henry 4.4E-6 # ppm/Pa (Lebrun et al., 2013)
+#-CO2_henry_pow 1.0 # power for Henry's law (Lebrun et al., 2013)
+#-CO2_molar_mass 0.04401 # kg/mol
+#-CO2_coeff 0.0
+#-CO2_sign 1
 
 # parameters relating to H2O volatile
 #-H2O_initial 0.0 # ppm
@@ -218,8 +220,8 @@
 -H2O_henry 6.8E-2 # ppm/Pa (Lebrun et al., 2013)
 -H2O_henry_pow 1.4285714285714286 # Power for Henry's law (1.0/0.7) (Lebrun et al., 2013)
 -H2O_molar_mass 0.01801528 # kg/mol
--H2O_coeff 1
--H2O_sign 1
+-H2O_coeff 1 # current stoichiometry
+-H2O_sign 1 # a product, numerator
 
 # parameters relating to H2 volatile
 -H2_initial 100 # ppm from https://doi.org/10.1016/j.epsl.2012.06.031
@@ -228,8 +230,9 @@
 -H2_henry 1.0 # ppm/Pa--- what is this for hydrogen? 
 -H2_henry_pow 1.0 # Power for Henry's law
 -H2_molar_mass 0.002 # kg/mol
--H2_coeff 1
--H2_sign -1
+# FIXME: should these next two be with an H2 prefix?  If the variable names are the same as above, these values will override the ones above
+-H2_coeff 1 # current stoichiometry
+-H2_sign -1 # a reactant, denominator
 
 # internal heat sources
 # Al26 (extinct at present day)

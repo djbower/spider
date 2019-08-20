@@ -678,7 +678,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i )
 {
 
-    PetscScalar               out, out2, Q, sn, X, Keq, fO2, RHS, dpsurfdt, f_thermal_escape;
+    PetscScalar               out, out2, QfO2, sn, X, Keq, fO2, KeqfO2, dpsurfdt, f_thermal_escape;
     PetscInt                  j,k,n;
 
     /* remember that to this point, V->f_thermal_escape is always
@@ -692,40 +692,74 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i 
 
     out2 = 0.0;
 
-    /* calculate fugacity and equilibrium constant from surface temperature using Olson and Sharp 2019 */ 
+    /* TODO: we might need to move chemical reactions to the end of this routine, or even
+       elsewhere in the code */
+
+    /* TODO: eventually we will wrap all chemical reactions within a FLAG, so the user can
+       decide whether to include them or not */
+
+    /* TODO: can also have an option here of including Ts dependence or not */
+
+    /* calculate fugacity and equilibrium constant from surface temperature using Olson and Sharp 2019 */
     fO2 = PetscPowScalar(10, -2.75*PetscPowScalar(10, 6) * PetscPowScalar(A->tsurf, -1.7));
 
+    /* this Keq is specifically for H2O to H2 */
     Keq = PetscPowScalar(10, 7.39*PetscPowScalar(10, 5) * PetscPowScalar(A->tsurf, -1.61));
 
-    /*Calculate RHS of eq. 252 -- this depends on your assumed stoichiometry*/
-    RHS = Keq * PetscPowScalar(fO2, 0.5);
+    /* calculate RHS of eq. 252; this depends on your assumed stoichiometry
+       this is also tied to H2O to H2 equilibration through Keq above
+       this includes dependence on the surface temperature through A->tsurf */
+    KeqfO2 = Keq * PetscPowScalar(fO2, 0.5);
+
+    /* for easy testing, instead we can eliminate Ts by computing the mean from
+       500 to 4000 K, in which case (approximately): */
+    //RHS = 0.01;
 
     /*fp = fopen("Q.txt", "a");*/
     
-    /* Chemical Reactions*/
-    Q = 1.0;
+    /* chemical reactions */
+    /* FIXME: this will probably break for more than 2 volatiles */
+    /* note: this is simply computing the (partial pressure) ratio of H2O to H2 in the magma ocean */
+    QfO2 = 1.0; // initialise
     for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
-        Q *= PetscPowScalar(A->volatiles[n].p, Ap->volatile_parameters[n].sign * Ap->volatile_parameters[n].coeff) ;
+        QfO2 *= PetscPowScalar(A->volatiles[n].p, Ap->volatile_parameters[n].sign * Ap->volatile_parameters[n].coeff);
     }
+
     /*fputs(Q, fp);
     fclose(fp);*/
 
-    if(Q > RHS){ 
-        sn = -1* Ap->volatile_parameters[i].sign;
+    /* now compare QfO2 to KeqfO2 */
+
+    /* TODO: eventually this might need fixing for more than one reaction, but again,
+       let's just get H2 -> H2O working first */
+    if(QfO2 > KeqfO2){
+        //sn = -1* Ap->volatile_parameters[i].sign;
+        sn = -1.0; // reactants are produced
     }
     else{
-        sn = Ap->volatile_parameters[i].sign;
+        //sn = Ap->volatile_parameters[i].sign;
+        sn = 1.0; // products are produced
     }
     
     /* Calculate X: for what difference does Q=K  */ 
     X = 0;
-    while (Q - RHS > 0.001){
-        X += 0.0001;
-        Q = 1.0;
+    /* Dan added absolute here */
+    /* this is a simple algorithm to determine the change in concentration, here expressed as a partial pressure,
+       that will bring the chemical reaction back to equilibrium */
+    /* TODO: this algorithm is quite inefficient.  Implement Newton's method or something direct using pre-existing
+       PETSC infrastructure */
+    while (PetscAbsReal(QfO2 - KeqfO2) > 1.0E-3){
+        X += 1.0E-4;
+        QfO2 = 1.0;
             for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
-                Q *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
+                QfO2 *= PetscPowScalar(A->volatiles[n].p+sn*Ap->volatile_parameters[n].coeff*X, Ap->volatile_parameters[n].sign*Ap->volatile_parameters[n].coeff) ;
             }
     }
+
+    /* so now we have the change in concentration (X), as a partial pressure, necessary to reach chemical equilibrium */
+
+    /* it seems like we can directly use Henry's law now for each of the volatile species, and thereby simplify
+       the following mass change term */
 
     out2 += sn*Ap->volatile_parameters[i].coeff* (X /A->psurf) * (Ap->volatile_parameters[i].molar_mass/A->molar_mass) * A->Mliq ; 
 
