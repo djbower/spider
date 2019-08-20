@@ -692,21 +692,29 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i 
 
     out2 = 0.0;
 
-    /* calculate fugacity and equilibrium constant from surface temperature using Olson and Sharp 2019 */ 
+    /* calculate fugacity and equilibrium constant from surface temperature using Olson and Sharp 2019 */
     fO2 = PetscPowScalar(10, -2.75*PetscPowScalar(10, 6) * PetscPowScalar(A->tsurf, -1.7));
 
+    /* this Keq is specifically for H2O to H2 */
     Keq = PetscPowScalar(10, 7.39*PetscPowScalar(10, 5) * PetscPowScalar(A->tsurf, -1.61));
 
-    /*Calculate RHS of eq. 252 -- this depends on your assumed stoichiometry*/
+    /* calculate RHS of eq. 252; this depends on your assumed stoichiometry
+       this is also tied to H2O to H2 equilibration through Keq above
+       this includes dependence on the surface temperature through A->tsurf */
     RHS = Keq * PetscPowScalar(fO2, 0.5);
+
+    /* for easy testing, instead we can eliminate Ts by computing the mean from
+       500 to 4000 K, in which case (approximately): */
+    //RHS = 0.01;
 
     /*fp = fopen("Q.txt", "a");*/
     
-    /* Chemical Reactions*/
+    /* Chemical Reactions */
     Q = 1.0;
     for (n=0; n<SPIDER_MAX_VOLATILE_SPECIES; ++n) {
-        Q *= PetscPowScalar(A->volatiles[n].p, Ap->volatile_parameters[n].sign * Ap->volatile_parameters[n].coeff) ;
+        Q *= PetscPowScalar(A->volatiles[n].p, Ap->volatile_parameters[n].sign * Ap->volatile_parameters[n].coeff);
     }
+
     /*fputs(Q, fp);
     fclose(fp);*/
 
