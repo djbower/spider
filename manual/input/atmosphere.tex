@@ -50,6 +50,7 @@ m_{\rm v}^{\rm g} = X_{\rm v}^{\rm g} M^{\rm g} = \frac{4 \pi R_{\rm p}^2}{g} \l
 \myemph{We must exclude the factor of $4 \pi$ for scaled mass!}.  $p(X_{\rm v}^{\rm l})$ is the partial pressure of the volatile which is a function of the mass fraction in the liquid phase, i.e., by a modified (power-law form) of Henry's law:
 \begin{equation}
 p( X_{\rm v}^{\rm l} ) = \left( \frac{X_{\rm v}^{\rm l}}{\alpha} \right)^\beta, \qquad \frac{dp}{d X_{\rm v}^{\rm l}} = \frac{\beta}{\alpha} \left( \frac{X_{\rm v}^{\rm l}}{\alpha} \right)^{\beta-1}
+\label{eq:Henry_mod}
 \end{equation}
 where $\alpha$ and $\beta$ are parameters for each volatile.  The ``standard'' Henry's law is recovered when $\beta=1$, but allowing a power-law form provides more flexibility for volatiles that do not follow Henry's law exactly ($\beta \neq 1$).  \myemph{From now on we will only consider the scaled mass which omits the $4 \pi$ factor associated with spherical geometry:}
 \boxedeq{eq:dimvolatile}{X_{\rm v}^{\rm l} (k_{\rm v} M^{\rm s} + M^{\rm l}) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{\rm v}^{\rm g}}{\mu_{\rm t}} \right) p (X_{\rm v}^{\rm l}) + m_{\rm v}^{\rm e} + m_{\rm v}^{\rm o} + m_{\rm v}^r = X_{\rm v}^{\rm init} M^{\rm m}}
@@ -158,6 +159,44 @@ As a technical detail, we probably need to compute the chemical reactions after 
 The relationship between the partial pressure of a volatile added or subtracted due to chemical reactions and its mass evolution is: 
 \boxedeq{}{\frac{dm_{\rm v}^r}{dt} = \pm C_{\rm v} \left( \frac{\delta p}{P_T} \right) \left( \frac{\mu_{\rm v}}{\mu_T} \right) M^l }
 where the sign is determined through the comparison of Q and K and whether the volatile is a product or reactant. $C$ is the coefficient from the chemical reaction and is also dimensionless.  
+
+%%%%
+%%%%
+\subsubsection{Additional notes on \cite{OS19}}
+An aspect I hadn't fully appreciated until now, is that in some sense H$_2$O is not a ``free'' volatile for \cite{OS19}.  Basically, the only way that H$_2$O can be produced is through chemical reactions involving H$_2$.  This means that the concentration of H$_2$O at the surface is solely dependent on the concentration of H$_2$ \citep[Eq.~39,][]{OS19}.  This addresses a source of confusion I was having, which is how you can ``independently'' evolve H$_2$ and H$_2$O according to their own solubility criteria when thermodynamic considerations of the interior demand that the concentrations are linked.  In this regard, I'm not sure we can honour the existing independent evolution of all volatiles in SPIDER whilst at the same time enforcing the thermodynamic condition.  Basically, there are too many (inconsistent) constraints.
+
+Following \cite[Eq.~35,][]{OS19} (i.e., Dalton's law):
+\begin{equation}
+P_s = P_{H_2} + P_{He} + P_{H_2O}
+\end{equation}
+And the equilibrium condition \citep[Eq.~36,][]{OS19}:
+\begin{equation}
+\frac{P_{H_2O}}{P_{H_2}} = \epsilon
+\end{equation}
+Therefore:
+\begin{equation}
+P_s = P_{H_2} + P_{H_2O} + P_{He} = (1+\epsilon) P_{H_2} + P_{He}
+\end{equation}
+%where $P_{H_2,H_2O}$ is an effective partial pressure that accounts for both H$_2$ and H$_2$O (i.e., taking account of reactions).  This must relate directly to the total number of moles of H$_2$ in the atmosphere $x_{H_2}$ (again, including the contribution from H$_2$O):
+%\begin{equation}
+%P_{H_2}^\ast = x_{H_2} P_s
+%\end{equation}
+%Therefore:
+%\begin{equation}
+%P_{H_2} = \left( \frac{x_{H_2} P_s}{1+\epsilon} \right)
+%\end{equation}
+%Finally, $P_{H_2}$ is the partial pressure of $H_2$ in the absence of reactions, which is given by our modified Henry's law (Eq.~\ref{eq:Henry_mod}):
+%\begin{equation}
+%X_{H_2}^l = \alpha \left( \frac{x_{H_2} P_s}{1+\epsilon} \right) ^ {1/\beta}
+%\end{equation}
+%This completes the derivation of \cite[Eq.~37,][]{OS19} and \textbf{suggests that we can accommodate reactions by simply modifying (again) the form of Henry's law to account for an extra factor of $\epsilon$.}. \dbnote{but how to deal with $x_{H_2}$ since usually we don't consider this since it relates directly to the partial pressure of Henry's law (in the absence of chemical reactions).}
+
+Now, importantly \cite{OS19} have a standard Henry's law for noble gases, but the concentration of H$_2$O is directly tied to H$_2$:
+\begin{equation}
+X_{H_2O}^l = 1.1 ( \epsilon X_{H_2}^l )^{1/2}
+\end{equation}
+
+You can consider this to be a type of Henry's law, in that the partial pressure of H$_2$O appears on the RHS, but the important point is that it is explicitly tied to the partial pressure of H$_2$ through the equilibrium reaction.
 
 %%%%
 %%%%
