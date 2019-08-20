@@ -169,21 +169,28 @@ And the equilibrium condition \citep[Eq.~36,][]{OS19}:
 \end{equation}
 Therefore:
 \begin{equation}
-P_s = (1+\epsilon) P_{H_2} + P_{He} = P_{H_2}^\ast + P_{He}
+P_s = P_{H_2} + P_{H_2O} + P_{He} = (1+\epsilon) P_{H_2} + P_{He}
 \end{equation}
-where $P_{H_2}^\ast$ is the effective partial pressure of H$_2$ taking account of reactions.  This must relate directly to the number of moles of H$_2$ in the atmosphere $x_{H_2}$:
+%where $P_{H_2,H_2O}$ is an effective partial pressure that accounts for both H$_2$ and H$_2$O (i.e., taking account of reactions).  This must relate directly to the total number of moles of H$_2$ in the atmosphere $x_{H_2}$ (again, including the contribution from H$_2$O):
+%\begin{equation}
+%P_{H_2}^\ast = x_{H_2} P_s
+%\end{equation}
+%Therefore:
+%\begin{equation}
+%P_{H_2} = \left( \frac{x_{H_2} P_s}{1+\epsilon} \right)
+%\end{equation}
+%Finally, $P_{H_2}$ is the partial pressure of $H_2$ in the absence of reactions, which is given by our modified Henry's law (Eq.~\ref{eq:Henry_mod}):
+%\begin{equation}
+%X_{H_2}^l = \alpha \left( \frac{x_{H_2} P_s}{1+\epsilon} \right) ^ {1/\beta}
+%\end{equation}
+%This completes the derivation of \cite[Eq.~37,][]{OS19} and \textbf{suggests that we can accommodate reactions by simply modifying (again) the form of Henry's law to account for an extra factor of $\epsilon$.}. \dbnote{but how to deal with $x_{H_2}$ since usually we don't consider this since it relates directly to the partial pressure of Henry's law (in the absence of chemical reactions).}
+
+Now, importantly \cite{OS19} have a standard Henry's law for noble gases, but the concentration of H$_2$O is directly tied to H$_2$:
 \begin{equation}
-P_{H_2}^\ast = x_{H_2} P_s
+X_{H_2O}^l = 1.1 ( \epsilon X_{H_2}^l )^{1/2}
 \end{equation}
-Therefore:
-\begin{equation}
-P_{H_2} = \left( \frac{x_{H_2} P_s}{1+\epsilon} \right)
-\end{equation}
-Finally, $P_{H_2}$ is the partial pressure of $H_2$ in the absence of reactions, which is given by our modified Henry's law (Eq.~\ref{eq:Henry_mod}):
-\begin{equation}
-X_{H_2}^l = \alpha \left( \frac{x_{H_2} P_s}{1+\epsilon} \right) ^ {1/\beta}
-\end{equation}
-This completes the derivation of \cite[Eq.~37,][]{OS19} and \textbf{suggests that we can accommodate reactions by simply modifying (again) the form of Henry's law to account for an extra factor of $\epsilon$.}
+
+You can consider this to be a type of Henry's law, in that the partial pressure of H$_2$O appears on the RHS, but the important point is that it is explicitly tied to the partial pressure of H$_2$ through the equilibrium reaction.
 
 %%%%
 %%%%
