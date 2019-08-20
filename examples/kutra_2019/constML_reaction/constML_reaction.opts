@@ -228,6 +228,7 @@
 -H2_henry 1.0 # ppm/Pa--- what is this for hydrogen? 
 -H2_henry_pow 1.0 # Power for Henry's law
 -H2_molar_mass 0.002 # kg/mol
+# FIXME: should these next two be with an H2 prefix?  If the variable names are the same as above, these values will override the ones above
 -H2O_coeff 2
 -H2O_sign 1
 
