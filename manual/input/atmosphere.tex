@@ -166,16 +166,16 @@ X_{\rm v}^{\rm l} = \alpha p_v^{1/\beta} %, \qquad \frac{dp}{d X_{\rm v}^{\rm l}
 \end{equation}
 where $p_v$ is the concentration of a given volatile in terms of its partial pressure (i.e., these are the $[]$ quantities above).  Hence $X_{\rm v}^{\rm l}$ is then the concentration (by mass) in the magma ocean.  \dbnote{OK.  Thing is, we technically want an update equation for the $X$'s, rather than re-setting their value explicitly.}\tknote{Would it make more sense to use $X_{\rm v}^{\rm l}$ for the equilibrium calculations instead of the partial pressure? At the end we would be left with $\delta X_{\rm v}^{\rm l}$? If we do this the value of the equilibrium constant might have to be altered, but I'm not sure by how much. Alternatively, if we stick with using the partial pressures and need just an update value, we could just take the difference before and after the reactions?: }
 \begin{equation}  
-    \delta X_{\rm v}^{\rm l}^\dagger = X_{\rm v}^{\rm l}^\ast - \alpha(p_v\pm\delta p)^{1/\beta} 
+    \delta X_{\rm v}^{\rm l\dagger}  = X_{\rm v}^{\rm l \ast} - \alpha(p_v\pm\delta p)^{1/\beta} 
 \end{equation}
 \tknote{This way the updated amount of the mass fraction is simply the difference between the value before and after the chemistry. \\
 Or another thing I tried is taking the time derivative of Eq. 258:}
 \begin{equation}
-    \frac{d  X_{\rm v}^{\rm l}}{dt} = \frac{\alpha}{\beta}p_{\rm v}^{1/\beta -1} \times \Big(\frac{dp_{\rmv}}{dt} \Big)^{1/\beta}
+    \frac{d  X_{\rm v}^{\rm l}}{dt} = \frac{\alpha}{\beta}p_{\rm v}^{1/\beta -1} \times \Big(\frac{dp_{\rm v}}{dt} \Big)^{1/\beta }
 \end{equation}
 \tknote{And then:} 
 \begin{equation}
-    \frac{dp_{\rmv}}{dt} = [\delta x]
+    \frac{dp_{\rm v}}{dt} = [\delta x]
 \end{equation}
 \tknote{is the updated partial pressure that we calculate and $p_{\rm v}$ is the partial pressure after the chemical reactions:} 
 \begin{equation}
