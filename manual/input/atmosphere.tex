@@ -251,18 +251,40 @@ More generally, a chemical reaction:
 \end{equation}
 where $a,b,c,d$ are constants and $A,B,C,D$ are volatiles.  The equilibrium constant is: 
 \begin{equation}
-    K = \frac{X_C^c X_D^d}{X_A^a X_B^b}
+    K_{eq} = \frac{X_C^c X_D^d}{X_A^a X_B^b}
 \end{equation}
 and we calculate the difference in concentration using: 
 \begin{equation}
-K = 
-     \begin{dcases}
-        \frac{(X_C + C_Cx)^{C_C} (X_D + C_Dx)^{C_D}}{(X_A-C_Ax)^{C_A} (X_B-C_Bx)^{C_B}} & Q < K \\
-        \frac{(X_C - C_Cx)^{C_C} (X_D - C_Dx)^{C_D}}{(X_A+C_Ax)^{C_A} (X_B+C_Bx)^{C_B}} & Q > K\\
-        \frac{X_C^{C_C} X_D^{C_D}}{X_A^{C_A} X_B^{C_B}} & Q = K \\
-    \end{dcases}
+K_{eq} = \frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}}
 \end{equation}
-Whichever value of $x$ gives $Q=K$ determines the amount that the concentrations will change in the timestep. The value of $x$ is usually a partial pressure, which must be converted to a mass fraction. 
+Whichever value of $\delta x$ gives $Q=K$ determines the amount that the concentrations will change in the timestep. The value of $\delta x$ is usually a partial pressure, which must be converted to a mass fraction via Henry's law. 
+
+\subsubsection{Newtons Method for finding $\delta x$}: 
+Since we cannot generally solve for $\delta x$, as is the case in water production, we might need an iterative method to find the roots. Newtons method finds the roots of a function by adjusting a guess using the function and it's derivative. The expression for theequilibrium constant becomes: 
+\begin{equation}
+    f(\delta x) = \frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} - K_{eq} 
+\end{equation}
+And it's derivative: 
+\begin{equation}
+\begin{aligned}
+    f'(\delta x) =  & 
+    \Big(\frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_B-C_B\delta x)^{C_B}} \Big) -C_A^2    (X_A - C_A\delta x)^{-C_A-1} +  \\
+    & \Big(\frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A}} \Big) -C_B^2   (X_B - C_B\delta x)^{-C_B-1} + \\
+    & \Big( \frac{ (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} \Big)  C_C^2   (X_C + C_C\delta x)^{ C_C-1} + \\
+    & \Big( \frac{ (X_C + C_C\delta x)^{C_C}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} \Big)  C_D^2   (X_D + C_D\delta x)^{ C_D-1}  
+\end{aligned}
+\end{equation}
+Or, in a somewhat more condensed notation:
+\begin{equation}
+    f'(\delta x) = \mathlarger{\sum}_{i=1}^n {\rm sign}_iC_i^2(X_i+{\rm sign_iC_i\delta x})^{{\rm sign_i} C_i-1} \prod_{j\neq i}^n (X_j+{\rm sign}_i C_i \delta x)^{{\rm sign}_i C_i}
+\end{equation}
+Where ${\rm sign}_i$ is the same parameter as described before, and indicates whether the volatile is a product or reactant. The default convention is the forward reaction, so reactants have negative signs while products have positive signs. If the reaction were to occur backward, then $\delta x$ would simply be negative. The constant $C_i$ is the coefficient, described previously as well, and tells you how many molecules of a given species are involved in the reaction. $X_i$ can be taken to be partial pressures, or mass fractions within the mantle with the corresponding equilibrium constant. g
+
+For Newton's method, we start with some guess $x_n$ of the root, and then compute a new approximation using: 
+\begin{equation}
+    x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}
+\end{equation}
+and continue until our approximation of $x_n$ is consistent for some threshold (i.e. until $x_n-x_n+1<0.01$, or another similar condition). 
 
 %%%%
 %%%%
