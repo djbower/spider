@@ -164,14 +164,35 @@ If the concentrations are in terms of partial pressures (which I believe is the 
 X_{\rm v}^{\rm l} = \alpha p_v^{1/\beta} %, \qquad \frac{dp}{d X_{\rm v}^{\rm l}} = \frac{\beta}{\alpha} \left( \frac{X_{\rm v}^{\rm l}}{\alpha} \right)^{\beta-1}
 \label{eq:Henry_mod_invert}
 \end{equation}
-where $p_v$ is the concentration of a given volatile in terms of its partial pressure (i.e., these are the $[]$ quantities above).  Hence $X_{\rm v}^{\rm l}$ is then the concentration (by mass) in the magma ocean.  \dbnote{OK.  Thing is, we technically want an update equation for the $X$'s, rather than re-setting their value explicitly.}
+where $p_v$ is the concentration of a given volatile in terms of its partial pressure (i.e., these are the $[]$ quantities above).  Hence $X_{\rm v}^{\rm l}$ is then the concentration (by mass) in the magma ocean.  \dbnote{OK.  Thing is, we technically want an update equation for the $X$'s, rather than re-setting their value explicitly.}\tknote{Would it make more sense to use $X_{\rm v}^{\rm l}$ for the equilibrium calculations instead of the partial pressure? At the end we would be left with $\delta X_{\rm v}^{\rm l}$? If we do this the value of the equilibrium constant might have to be altered, but I'm not sure by how much. Alternatively, if we stick with using the partial pressures and need just an update value, we could just take the difference before and after the reactions?: }
+\begin{equation}  
+    \delta X_{\rm v}^{\rm l}^\dagger = X_{\rm v}^{\rm l}^\ast - \alpha(p_v\pm\delta p)^{1/\beta} 
+\end{equation}
+\tknote{This way the updated amount of the mass fraction is simply the difference between the value before and after the chemistry. \\
+Or another thing I tried is taking the time derivative of Eq. 258:}
+\begin{equation}
+    \frac{d  X_{\rm v}^{\rm l}}{dt} = \frac{\alpha}{\beta}p_{\rm v}^{1/\beta -1} \times \Big(\frac{dp_{\rmv}}{dt} \Big)^{1/\beta}
+\end{equation}
+\tknote{And then:} 
+\begin{equation}
+    \frac{dp_{\rmv}}{dt} = [\delta x]
+\end{equation}
+\tknote{is the updated partial pressure that we calculate and $p_{\rm v}$ is the partial pressure after the chemical reactions:} 
+\begin{equation}
+    p_{\rm v}=p_{\rm v}^\ast \pm [\delta x]
+\end{equation}
+\tknote{So the time evolution could be:} 
+\begin{equation}
+     \frac{d  X_{\rm v}^{\rm l}}{dt} = \frac{\alpha}{\beta}\left( p_{\rm v}^\ast \pm [\delta x] \right)^{1/\beta -1} [\delta x]^{1/\beta}
+\end{equation}
+\tknote{And then we would use this instead of} \ref{eq:chemevol}? 
 
-As a technical detail, we probably need to compute the chemical reactions after other physical processes such as outgassing (if solidification of the magma ocean is being considered) and atmospheric escape.  Otherwise, there's a possibility we will simply remain locked at thermodynamic equilibrium and nothing interesting will happen (i.e., volatiles will not evolve).  \dbnote{Whether this is an issue or not will probably become more apparent later.}
+As a technical detail, we probably need to compute the chemical reactions after other physical processes such as outgassing (if solidification of the magma ocean is being considered) and atmospheric escape.  Otherwise, there's a possibility we will simply remain locked at thermodynamic equilibrium and nothing interesting will happen (i.e., volatiles will not evolve).  \dbnote{Whether this is an issue or not will probably become more apparent later.} 
 
 The volatile parameters \texttt{sign} and \texttt{coeff} are determined by the stoichiometry of the chemical reaction. The sign of the exponent indicates whether the volatile is a reactant (for which $\texttt{sign}=-1$) or a product ($\texttt{sign}=1$) in order to correctly compute Eq.~\ref{eq:Keq}. The coefficient is the constant of the chemical reaction. For example, in the reaction with water using equation \ref{eq:reaction} $\texttt{coeff}=1$ for hydrogen and water. However if we chose to use Eq.~\ref{eq:altreaction} instead, $\texttt{coeff}=2$ for hydrogen and water. 
 
 The relationship between the partial pressure of a volatile added or subtracted due to chemical reactions and its mass evolution is: 
-\boxedeq{}{\frac{dm_{\rm v}^r}{dt} = \pm C_{\rm v} \left( \frac{\delta p}{P_T} \right) \left( \frac{\mu_{\rm v}}{\mu_T} \right) M^l }
+\boxedeq{}{\frac{dm_{\rm v}^r}{dt} = \pm C_{\rm v} \left( \frac{\delta p}{P_T} \right) \left( \frac{\mu_{\rm v}}{\mu_T} \right) M^l \label{eq:chemevol} }
 where the sign is determined through the comparison of Q and K and whether the volatile is a product or reactant. $C$ is the coefficient from the chemical reaction and is also dimensionless.  
 
 %%%%
@@ -241,15 +262,12 @@ K =
         \frac{X_C^{C_C} X_D^{C_D}}{X_A^{C_A} X_B^{C_B}} & Q = K \\
     \end{dcases}
 \end{equation}
-Whichever value of $x$ gives $Q=K$ determines the amount that the concentrations will change in the timestep. The value of $x$ is usually a partial pressure, which must be converted to a mass fraction. The relationship between the partial pressure of a volatile added or subtracted due to chemical reactions and its mass evolution is: 
-\boxedeq{}{\frac{dm_{\rm v}^r}{dt} = \pm C_{\rm v} \left( \frac{\delta p}{P_T} \right) \left( \frac{\mu_{\rm v}}{\mu_T} \right) M^l }
-where the sign is determined through the comparison of Q and K and whether the volatile is a product or reactant. $C$ is the coefficient from the chemical reaction and is also dimensionless.  
+Whichever value of $x$ gives $Q=K$ determines the amount that the concentrations will change in the timestep. The value of $x$ is usually a partial pressure, which must be converted to a mass fraction. 
 
 %%%%
 %%%%
 \subsection{Non-dimensionalisation}
 \subsubsection{Mass}
-\tknote{TODO non-dimensionalization for chemical reactions.}
 In the code, we non-dimensionalise all masses as:
 \begin{equation}
 M = \rho_0 R_0^3 \hat{M} = M_0 \hat{M}
