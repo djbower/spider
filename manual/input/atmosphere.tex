@@ -153,6 +153,7 @@ K_{eq} (fO_2)^{1/2} = \frac{([H_2O]^\ast + [\delta x])}{([H_2]^\ast - [\delta x]
 If $Q(fO_2)^{1/2} < K_{eq}(fO_2)^{1/2}$, there are more reactants and less products than what is required for equilibrium, and therefore the concentration of reactants decreases and products increase.  In this case, the $\delta x$ in Eq.~\ref{eq:Keq_diff} is positive. If $Q(fO_2)^{1/2} > K_{eq}(fO_2)^{1/2}$, reactants are produced and $\delta x$ is negative.  If $Q(fO_2)^{1/2} = K_{eq}(fO_2)^{1/2}$ the system is still in equilibrium.  At each time step, we calculate $Q(fO_2)^{1/2}$, compare to $K_{eq}(fO_2)^{1/2}$, and then adjust the concentrations of the volatiles to maintain equilibrium before continuing.  For the reaction above, it's actually trivial to compute $[\delta x]$ directly:
 \begin{equation}
 [\delta x] = \frac{K_{eq} (fO_2)^{1/2} \times [H_2]^\ast - [H_2O]^\ast }{K_{eq} (fO_2)^{1/2} + 1}
+\label{eq:Keq_diff_solve}
 \end{equation}
 %\dbnote{Agreed.  We want to solve for $\delta p$ and update the partial pressures accordingly.  Now because the partial pressures of each species relates to the concentration in the interior, the interior concentration is affected by these reactions.  I think to avoid time-reversing our reactions we have to do all the chemistry at the end of the time loop.  This might prevent us from including the chemistry as part of the same ODE that deals with the outgassing and escape.  I will have to think more about this.  Also, since we are dealing directly with partial pressures, maybe we can add a correction or extra term to an existing reservoir rather than add a new linear term in the mass balance.}
 We can now compute the ``revised'' concentrations of [H$_2]^\dagger$ and [H$_2$O$]^\dagger$ according to:
@@ -194,7 +195,68 @@ The volatile parameters \texttt{sign} and \texttt{coeff} are determined by the s
 The relationship between the partial pressure of a volatile added or subtracted due to chemical reactions and its mass evolution is: 
 \boxedeq{}{\frac{dm_{\rm v}^r}{dt} = \pm C_{\rm v} \left( \frac{\delta p}{P_T} \right) \left( \frac{\mu_{\rm v}}{\mu_T} \right) M^l \label{eq:chemevol} }
 where the sign is determined through the comparison of Q and K and whether the volatile is a product or reactant. $C$ is the coefficient from the chemical reaction and is also dimensionless.  
+%%%%
+%%%%
+%%%%
+\subsubsection{Mass balance with and without reactions}
+\paragraph{Without chemical reactions}
+First, consider the classic picture of Henry's law, with a volatile overlying a liquid phase in which it is dissolved.  This simple picture corresponds to a volatile in the magma ocean (i.e., liquid) and volatile in the atmosphere.  The total mass balance for a given volatile, excluding reactions is:
+\begin{equation}
+X_{\rm v}^{\rm l} (k_{\rm v} M^{\rm s} + M^{\rm l}) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{\rm v}^{\rm g}}{\mu_{\rm t}} \right) p (X_{\rm v}^{\rm l}) = X_{\rm v}^{\rm init} M^{\rm m}
+\end{equation}
+The first term is the mass of volatile in a solid phase (for the typical Henry's picture you can consider $k_v=0$), the second term is the mass in the liquid, and the third term is the mass in the atmosphere.  By mass conservation, this must be equal to some initial mass (the RHS).  The (mass) concentration in the liquid is related to the molar concentration in the atmosphere through a Henry-type law (Eq.~\ref{eq:Henry_mod}).  An equation of this form holds for all volatiles in the system.  The total reservoir (RHS) is modified by escape, but in the end, there is a reservoir of a given mass of volatiles that is partitioned between the solid, liquid, and gas phase.
 
+\paragraph{With chemical reactions}
+For simplicity, let's just consider H$_2$ and the forward reaction (reaction of the dissolved H$_2$ to form H$_2$O gas in the liquid).  The backward reaction is naturally accommodated by a sign change, so does not require any special adjustment of the equations.  Since there is a relationship between the concentration in the liquid and the mole fraction in the gas, we can express the reaction either in terms of concentrations or in terms of partial pressures.  It seems to be more common to express in terms of a change in partial pressure, probably due to the historical development of chemical reactions in gases.  Therefore, let's explicitly now note that Eq.~\ref{eq:Keq_diff_solve} provides the necessary change in partial pressure to bring the system back to equilibrium:
+\begin{equation}
+[\delta p] = \frac{K_{eq} (fO_2)^{1/2} P_{H_2} - P_{H_2O}}{K_{eq} (fO_2)^{1/2} + 1}
+\label{eq:Keq_diff_solve2}
+\end{equation}
+And again, this $\delta p$ relates to a change in mass concentration of the volatile in the liquid, through a Henry-type law.  First, let's just consider the mass of volatile that is lost from the gas phase, since this is more trivial to obtain from $\delta p$ directly.  By our sign convention:
+\begin{equation}
+P_{H_2}^{\rm eq} (X_{H_2}^{\rm eq}) = P_{H_2}(X_{H_2}) - \delta p (X_{H_2},\ X_{H_2O})
+\label{eq:peq_diff}
+\end{equation}
+\begin{equation}
+P_{H_2O}^{\rm eq} (X_{H_2O}^{\rm eq}) = P_{H_2O} (X_{H_2O}) + \delta p (X_{H_2},\ X_{H_2O})
+\end{equation}
+The arguments have been included to emphasis the dependencies, where importantly, at equilibrium there is an associated equilibrium concentration in the liquid.  The superscript notation is simply to denote the effective partial pressure accounting for the reaction.  To recap, we are assuming that we are currently not in equilibrium with the reaction with a concentration ($X_{H_2}$), and need to compute ($X^{\rm eq}_{H_2}$).  We can use Eq.~\ref{eq:peq_diff} to replace $P_{H_2}$:
+\begin{equation}
+X_{H_2} (k_{H_2} M^s + M^l) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{H_2}}{\mu_{\rm t}} \right) \left( P_{H_2}^{\rm eq}(X_{H_2}^{\rm eq})+\delta p (X_{H_2}) \right) = X_{H_2}^{\rm init} M^m
+\end{equation}
+%It's apparent that we need to relate $X_{H_2}^{\rm eq}$ to $X_{H_2}$ using $\delta p$ to eliminate $X_{H_2}$.  This is because ultimately we want an update equation for $X_{H_2}$, which may (or may not) be in chemical equilibrium with the reaction.  \dbnote{A basic sanity check is to recover previous behaviour if the system is already in equilibrium.}. Using the non-linear Henry's law:
+\begin{equation}
+X_{H_2} = \alpha_{H_2} \left( P_{H_2}^{\rm eq} +\delta p \right)^{1/\beta}
+\end{equation}
+Therefore:
+\begin{equation}
+\alpha_{H_2} \left( P_{H_2}^{\rm eq} +\delta p \right)^{1/\beta} (k_{H_2} M^s + M^l) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{H_2}}{\mu_{\rm t}} \right) \left( P_{H_2}^{\rm eq}+\delta p \right) = X_{H_2}^{\rm init} M^m
+\end{equation}
+This is non-linear, but we know the current concentrations of all $X$'s, so can determine $X_{H_2}^{\rm eq}$.  \dbnote{$\mu_t$ must also be compatible with the new (equilibrium) partial pressures of all volatiles post-reaction).}
+%\begin{equation}
+%X_{H_2}^{\rm eq} = \alpha_{H_2} \left( P_{H_2}^{\rm eq} \right)^{1/\beta}
+%\end{equation}
+%So a change in $\delta p$ results in a change of concentration $\delta X$:
+%\begin{equation}
+%\delta X = X_{H_2} - X_{H_2}^{\rm eq} = \alpha_{H_2} \left( P_{H_2}^{\rm eq} +\delta p \right)^{1/\beta} - \alpha_{H_2} \left( P_{H_2}^{\rm eq} \right)^{1/\beta}
+%\end{equation}
+%The non-linearity introduced by $\beta$ is annoying, because otherwise this expression would simplify (for $\beta=1$) to:
+%\begin{equation}
+%\delta X = X_{H_2} - X_{H_2}^{\rm eq} = \alpha_{H_2} \delta p
+%\end{equation}
+%In which case (again, $\beta=1$):
+%\begin{equation}
+%X_{H_2}^{\rm eq} = X_{H_2}-\alpha_{H_2} \delta p
+%\end{equation}
+
+%Since we also are ultimately wanting an update equation for $X_{H_2}$, let's also consider an ``input'' of a $X_{H_2}$ that is not in chemical equilibrium
+%\begin{equation}
+%X_{H_2} (k_{H_2} M^s + M^l) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{H_2}^{\rm g}}{\mu_{\rm t}} \right) p (X_{H_2}) = X_{H_2}^{\rm init} M^m
+%\end{equation}
+%Eq.~\ref{eq:Keq_diff_solve}
+
+
+%%%%
 %%%%
 %%%%
 \subsubsection{Additional notes on \cite{OS19}}
