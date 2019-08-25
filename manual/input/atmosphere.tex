@@ -347,7 +347,39 @@ For Newton's method, we start with some guess $x_n$ of the root, and then comput
     x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}
 \end{equation}
 and continue until our approximation of $x_n$ is consistent for some threshold (i.e. until $x_n-x_n+1<0.01$, or another similar condition). 
-
+%%%%
+%%%%
+%%%%
+\subsubsection{Patrick Sanan's notes}
+Assume that we have some time-dependent equilibrium law that must be obeyed, between
+quantities $A$ and $B$ representing species of matter in a system.
+\begin{equation}\label{eq:equilibrium}
+f(A,B,t) = 0
+\end{equation}
+Further assume that we have some way of converting $A$ to $B$ in the domain to maintain this equilibrium. We may exchange one unit of $A$ for $\beta$ units of $B$.  Finally, suppose that input rates of the two species to the system are given, as $\dot A_\text{in}$ and $\dot B_\text{in}$.  Since equilibrium must be instantaneously maintained, there is a rate at which the input material is converted from $A$ to $B$. We call this rate $\dot c$.  Thus, the rates of change of the quantities in the reservoir are
+\begin{align}\label{eq:inputconvert}
+  \dot A_\text{in} - \dot c = \frac{\partial A}{\partial t} \\
+  \dot B_\text{in} + \beta \dot c = \frac{\partial B}{\partial t} \\
+\end{align}
+$\dot c$ may be eliminated, to give
+\begin{equation} \label{eq:inputconvertelim}
+  \dot A_\text{in} - \frac{\partial A}{\partial t} = \frac{1}{\beta}\left( \dot B_\text{in} -\frac{\partial B}{\partial t} \right)
+\end{equation}
+Equation \ref{eq:equilibrium} can be differentiated \footnote{$\partial_1f$ means the partial derivative of $f$ with respect to its first argument} to give
+$$
+\partial_1f(A,B,t) \frac{\partial A}{\partial t} + \partial_2f(A,B,t)\frac{\partial B}{\partial t} + \partial_3f(A,B,t) = 0
+$$
+and \ref{eq:inputconvertelim} may be used to eliminate, say  $\frac{\partial A}{\partial t}$, leaving a single ODE
+$$
+\partial_1f(A,B,t) \left[\dot A_\text{in} - \frac{1}{\beta}\left( \dot B_\text{in} -\frac{\partial B}{\partial t} \right) \right] + \partial_2f(A,B,t)\frac{\partial B}{\partial t} + \partial_3f(A,B,t) = 0
+$$
+(Note that $A$ still appears, but it could be expressed in terms of $B$ and $t$ via \ref{eq:equilibrium}).
+Notes:
+\begin{itemize}
+  \item Could probably extend to multiple species.
+  \item I don't see any reason that $f$ can't depend on other quantities.
+  \item The main idea of interest here is to explicitly consider the instantaneous rate at which species are converted as they move in and out of a system in constant equilibrium. With $\beta =1$, hopefully this could also apply when we're talking about partitioning between the different reservoirs and removing material via various escape mechanisms.
+\end{itemize}
 %%%%
 %%%%
 \subsection{Non-dimensionalisation}
