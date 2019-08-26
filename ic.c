@@ -337,7 +337,7 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
         xx[i] = Ap->volatile_parameters[i].initial;
     }
     // DJB: need initial guess for reaction mass
-    xx[Ap->n_volatiles] = 1.0;
+    xx[Ap->n_volatiles] = 0.0;
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
@@ -381,6 +381,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     const PetscScalar          *xx;
     PetscScalar                *ff;
     PetscScalar                mass_r; // DJB
+    PetscScalar                epsilon; // DJB
     PetscInt                   i;
     Ctx                        *E = (Ctx*) ptr;
     Atmosphere                 *A = &E->atmosphere;
@@ -403,6 +404,15 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     for (i=0; i<Ap->n_volatiles; ++i) {
         ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i], mass_r );
     }
+
+    // DJB: need to set another function to zero
+    // This is the chemical equilibrium condition
+    // FIXME: should not be hard-coded
+    epsilon = 0.01;
+    // FIXME:
+    // first slot (0) is assumed to be H2
+    // second slot (1) is assumed to be H2O
+    ff[Ap->n_volatiles] = A->volatiles[0].p - epsilon * A->volatiles[1].p; 
 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
