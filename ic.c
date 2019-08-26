@@ -412,7 +412,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     // FIXME:
     // first slot (0) is assumed to be H2
     // second slot (1) is assumed to be H2O
-    ff[Ap->n_volatiles] = A->volatiles[0].p - epsilon * A->volatiles[1].p; 
+    ff[Ap->n_volatiles] = epsilon*A->volatiles[0].p - A->volatiles[1].p; 
 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
