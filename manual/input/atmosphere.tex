@@ -446,6 +446,28 @@ Now we have two volatile update equations---one for H$_2$ and one for H$_2$O---b
 \frac{d\hat{p_{H_2O}}}{dt} - \epsilon \frac{d\hat{p_{H_2}}}{dt} = 0
 \end{equation}
 So now we have 3 equations and 3 unknowns.  The unknowns are the time differential of the interior mass concentration of both H$_2$ and H$_2$O (which directly relates to their partial pressure updates), and the rate-of-change of H$_2$ mass to H$_2$O, that is: $dm^{\rm r}_{H_2}/dt$.  Therefore, we should have everything we now need to solve this system.
+\subsubsection{Revised initial volatile concentration}
+For an initial condition it is desirable to prescribe $\hat{X}^{\rm init}$, but we must then compute $\hat{X}^{\rm l}$ according to the mass balance since this is the quantity that is actually solved for (i.e., evolved with time).  We assume the magma ocean is completely molten at $t=0$, i.e. all the mantle mass is liquid, and no volatiles have yet escaped.  We also need to realise that our ``desired'' initial volatile concentration may be incompatible with the chemical equilibrium criteria that we prescribe, and therefore we have a chemical reaction mass.  \dbnote{Sign probably positive for H$_2$ but negative for H$_2$O, in order to keep the convention of the forward reaction being the default}.  Therefore:
+\begin{equation}
+\hat{M}^{\rm s} = \hat{m}_{\rm v}^{\rm e} = \hat{m}_{\rm v}^{\rm o} = 0, \qquad \hat{M}^{\rm l} = \hat{M}^{\rm m}
+\end{equation}
+So the mass balance for the initial condition is:
+\begin{equation}
+\hat{X}^{\rm l} \hat{M}^{\rm m} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\hat{p} (\hat{X}^{\rm l}) + \hat{m}_{\rm v}^{\rm r} = \hat{X}^{\rm init} \hat{M}^{\rm m}
+\end{equation}
+Substitute in the expression for the partial pressure:
+\begin{equation}
+\hat{X}^{\rm l} \hat{M}^{\rm m} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^\beta + \hat{m}_{\rm v}^{\rm r} = \hat{X}^{\rm init} \hat{M}^{\rm m}
+\end{equation}
+Divide through by the (non-dimensional) mantle mass $\hat{M}^m$:
+\begin{equation}
+\hat{X}^{\rm l} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{M}^{\rm m} \hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^\beta + \frac{\hat{m}_{\rm v}^{\rm r}}{\hat{M}^m} = \hat{X}^{\rm init}
+\end{equation}
+For chemical equilibrium:
+\begin{equation}
+\frac{\hat{p_{H_2O}} (\hat{X_{H_2O}}^{\rm l})}{\hat{p_{H_2}} (\hat{X_{H_2}}^{\rm l})} = \epsilon
+\end{equation}
+The mean molar mass of the atmosphere is given by Eq.~\ref{eq:atmosphere_molar_mass} and recall that the partial pressures must sum to give the total pressure (Eq.~\ref{eq:atmosphere_molar_mass}).  For the initial condition, we want to specify the \myemph{total initial abundance of a given volatile, relative to the mantle mass}.  This means that we know the RHS and must solve for $\hat{X}^l$, since the code integrates the liquid mantle abundance.  Furthermore, since every volatile relation relies on the others through the mean molar mass of the atmosphere, we have a coupled system of $p$ non-linear equations that we must solve to determine the initial liquid abundance of every volatile species.
 %%%%
 %%%%
 \subsection{Non-dimensionalisation}
