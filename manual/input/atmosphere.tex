@@ -5,31 +5,31 @@
 \subsection{Volatile Mass Balance}
 The mass balance of a given volatile in the interior of a SPIDER model \citep[e.g.,][]{LMC13} is:
 \begin{equation}
-m_{\rm v}^{\rm s} + m_{\rm v}^{\rm l} + m_{\rm v}^{\rm g} + m_{\rm v}^{\rm e} + m_{\rm v}^{\rm o} + m_{\rm v}^r= m_{\rm v}^{\rm t}
+m_v^s + m_v^l + m_v^g + m_v^e + m_v^o + m_v^r= m_v^t
 \end{equation}
-where subscript $v$ denotes a particular volatile and superscripts $s$, $l$, $g$, $o$, $t$ indicates the volatile's mass in the solid, liquid (i.e., melt), gas, and surface liquid ocean, as well as the total mass, respectively.  Superscript $e$ represents the reservoir (lost) due to escape, superscript $o$ accounts for ocean formation (this is just a placeholder and is not currently implemented), and superscript $r$ accounts for the amount of the volatile added (or removed) by chemical reactions.  We can now express these masses as follows:
+where subscript $v$ denotes a particular volatile and superscripts $s$, $l$, $g$, $o$, $t$ indicates the volatile's mass in the solid, liquid (i.e., melt), gas, and surface liquid ocean, as well as the total mass, respectively.  Superscript $e$ represents the reservoir (lost) due to escape, superscript $o$ accounts for ocean formation (this is just a placeholder and is not currently implemented), and superscript $r$ accounts for the amount of the volatile added (or removed) by chemical reactions.  We can express these masses as follows:
 \begin{equation}
-X_{\rm v}^{\rm s} M^{\rm s} + X_{\rm v}^{\rm l} M^{\rm l} + X_{\rm v}^{\rm g} M^{\rm g} + m_{\rm v}^{\rm e} + m_{\rm v}^{\rm o} + m_{\rm v}^r = X_{\rm v}^{\rm init} M^{\rm m}
+X_v^s M^s + X_v^l M^l + X_v^g M^g + m_v^e + m_v^o + m_v^r = X_v^{\rm init} M^m
 \end{equation}
-where $X$ are mass fractions of volatile in each phase (solid, liquid, and gas), relative to the respective \myemph{physical} reservoir size of solid, liquid, and gas.  \myemph{In SPIDER we actually work with scaled volume or mass, i.e. the $4 \pi$ prefactor associated with spherical geometry is omitted for all spherical volume and mass quantities (except for output, where the $4 \pi$ is reintroduced).  Nevertheless, the above equation is valid for physical or scaled masses.}. The total mass of the mantle:
+where $X$ are mass fractions of volatile in each phase (solid, liquid, and gas), relative to the respective \myemph{physical} reservoir size of solid, liquid, and gas.  \myemph{In SPIDER we actually work with scaled volume or mass, i.e. the $4 \pi$ prefactor associated with spherical geometry is omitted for all spherical volume and mass quantities (except for output, where the $4 \pi$ is reintroduced).  Nevertheless, the above equation is valid for physical or scaled masses}.  \textbf{Since we will eventually formulate the equation in terms of the mass concentration in the melt, we will also drop the $l$ superscript from $X_v$ for convenience.} The total mass of the mantle:
 \begin{equation}
-M^{\rm m} = M^{\rm s} + M^{\rm l}
+M^m = M^s + M^l
 \end{equation}
-This is used because it is most sensible to define an initial mass fraction of volatiles relative to the total mantle mass, which is constant, even though the masses of the solid and liquid mantle evolve with time as the magma ocean cools and crystallises.  We assume a simple partition coefficient that relates the mass fraction of the volatile in the solid phase to the mass fraction of the volatile in the liquid phase.
+This is used because it is most sensible to define an initial mass fraction of volatiles relative to the total mantle mass, which is constant, even though the masses of the solid and liquid mantle evolve with time as the magma ocean cools and crystallises.  Note that the initial mass fraction of volatiles as prescribed by the user must obey the mass balance, which means that the initial values will be adjusted to, for example, be consistent with prescribed chemical reactions.  We assume a simple partition coefficient that relates the mass fraction of the volatile in the solid phase to the mass fraction of the volatile in the liquid phase.
 \begin{equation}
-k_{\rm v} = \frac{X_{\rm v}^{\rm s}}{X_{\rm v}^{\rm l}}
+k_v = \frac{X_v^s}{X_v}
 \end{equation}
 We should now consider the \myemph{physical} atmospheric mass of a particular volatile.  First, consider the total atmospheric mass as being composed of $q$ species:
 \begin{equation}
-m_{\rm t}^{\rm g} = m_0^{\rm g} + m_1^{\rm g} + m_2^{\rm g} + \dots + m_q^{\rm g} = \frac{4 \pi R_p^2}{g} P_s
+m_t^g = m_0^g + m_1^g + m_2^g + \dots + m_q^g = \frac{4 \pi R_p^2}{g} P_s
 \end{equation}
-where $R_{\rm p}$ is the planetary radius, and $P_s$ is the surface pressure.  Now express in terms of molar mass $\mu$:
+where $R_p$ is the planetary radius, and $P_s$ is the surface pressure.  Now express in terms of molar mass $\mu$:
 \begin{equation}
-\mu_{\rm t}^{\rm g} N = \mu_0^{\rm g} n_0 + \mu_1^{\rm g} n_1 + \mu_2^{\rm g} n_2+ \dots + \mu_q^{\rm g} n_q = \frac{4 \pi R_p^2}{g} P_s
+\bar{\mu} N = \mu_0^g n_0 + \mu_1^g n_1 + \mu_2^g n_2+ \dots + \mu_q^g n_q = \frac{4 \pi R_p^2}{g} P_s
 \end{equation}
-where $\mu_{\rm t}^{\rm g}$ is the mean molar mass of the atmosphere, $N$ the total number of moles, and $n_q$ is the number of moles of species $q$.  Now divide through:
+where $\bar{\mu}$ is the mean molar mass of the atmosphere, $N$ the total number of moles, and $n_q$ is the number of moles of species $q$.  Now divide through:
 \begin{equation}
-\frac{\mu_0^{\rm g}}{\mu_{\rm t}^{\rm g}} \frac{n_0}{N} + \frac{\mu_1^{\rm g}}{\mu_{\rm t}^{\rm g}} \frac{n_1}{N} + \frac{\mu_2^{\rm g}}{\mu_{\rm t}^{\rm g}} \frac{n_2}{N}+ \dots + \frac{\mu_q^{\rm g}}{\mu_{\rm t}^{\rm g}} \frac{n_q}{N} = 1
+\frac{\mu_0^g}{\bar{\mu}} \frac{n_0}{N} + \frac{\mu_1^g}{\bar{\mu}} \frac{n_1}{N} + \frac{\mu_2^g}{\bar{\mu}} \frac{n_2}{N}+ \dots + \frac{\mu_q^g}{\bar{\mu}} \frac{n_q}{N} = 1
 \end{equation}
 The definition of partial pressure $p_q$:
 \begin{equation}
@@ -37,27 +37,277 @@ The definition of partial pressure $p_q$:
 \end{equation}
 Note that the partial pressure must vary with optical depth (i.e., height), but for a well-mixed atmosphere the ratio of the partial pressure to the total pressure for a given species is constant.  By reintroducing the constant factors leads to:
 \begin{equation}
-4 \pi R_p^2 \left( \frac{\mu_0^{\rm g}}{\mu_{\rm t}^{\rm g}} \right) \frac{p_0}{g} + 4 \pi R_p^2 \left( \frac{\mu_1^{\rm g}}{\mu_{\rm t}^{\rm g}} \right) \frac{p_1}{g} + \dots + 4 \pi R_p^2 \left( \frac{\mu_q^{\rm g}}{\mu_{\rm t}^{\rm g}} \right) \frac{p_q}{g} = \frac{4 \pi R_p^2 P_s}{g} = m_{\rm t}^{\rm g}
+4 \pi R_p^2 \left( \frac{\mu_0^g}{\bar{\mu}} \right) \frac{p_0}{g} + 4 \pi R_p^2 \left( \frac{\mu_1^g}{\bar{\mu}} \right) \frac{p_1}{g} + \dots + 4 \pi R_p^2 \left( \frac{\mu_q^g}{\bar{\mu}} \right) \frac{p_q}{g} = \frac{4 \pi R_p^2 P_s}{g} = m_{\rm t}^{\rm g}
 \end{equation}
 Demonstrating that the mass of a given volatile species $q$ is related to the \myemph{surface partial pressure} as:
 \begin{equation}
-m_q^{\rm g} = 4 \pi R_p^2 \left( \frac{\mu_q^{\rm g}}{\mu_{\rm t}^{\rm g}} \right) \frac{p_q}{g}
+m_q^g = 4 \pi R_p^2 \left( \frac{\mu_q^g}{\bar{\mu}} \right) \frac{p_q}{g}
 \end{equation}
 Many previous studies that consider outgassing of multiple volatiles species do not use this correct expression \citep[e.g.,][]{ET08,LMC13,SMD17,NKT19}.  This is discussed in \cite{BKW19}.  The \myemph{physical} atmospheric mass of a particular volatile is given by:
 \begin{equation}
-m_{\rm v}^{\rm g} = X_{\rm v}^{\rm g} M^{\rm g} = \frac{4 \pi R_{\rm p}^2}{g} \left( \frac{\mu_{\rm v}^{\rm g}}{\mu_{\rm t}} \right) p (X_{\rm v}^{\rm l})
+m_v^g = X_v^g M^g = 4 \pi R_p^2 \left( \frac{\mu_v^g}{\bar{\mu}} \right) \frac{p_v}{g}
 \end{equation}
-\myemph{We must exclude the factor of $4 \pi$ for scaled mass!}.  $p(X_{\rm v}^{\rm l})$ is the partial pressure of the volatile which is a function of the mass fraction in the liquid phase, i.e., by a modified (power-law form) of Henry's law:
+\myemph{We must exclude the factor of $4 \pi$ for scaled mass!}.  $p_v(X_v)$ is the partial pressure of the volatile which is a function of the mass fraction in the liquid phase, i.e., by a modified (power-law form) of Henry's law:
 \begin{equation}
-p( X_{\rm v}^{\rm l} ) = \left( \frac{X_{\rm v}^{\rm l}}{\alpha} \right)^\beta, \qquad \frac{dp}{d X_{\rm v}^{\rm l}} = \frac{\beta}{\alpha} \left( \frac{X_{\rm v}^{\rm l}}{\alpha} \right)^{\beta-1}
+p_v ( X_v ) = \left( \frac{X_v}{\alpha_v} \right)^{\beta_v}, \qquad \frac{dp_v}{d X_v} = \frac{\beta_v}{\alpha_v} \left( \frac{X_v}{\alpha_v} \right)^{\beta_v-1}
 \label{eq:Henry_mod}
 \end{equation}
-where $\alpha$ and $\beta$ are parameters for each volatile.  The ``standard'' Henry's law is recovered when $\beta=1$, but allowing a power-law form provides more flexibility for volatiles that do not follow Henry's law exactly ($\beta \neq 1$).  \myemph{From now on we will only consider the scaled mass which omits the $4 \pi$ factor associated with spherical geometry:}
-\boxedeq{eq:dimvolatile}{X_{\rm v}^{\rm l} (k_{\rm v} M^{\rm s} + M^{\rm l}) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{\rm v}^{\rm g}}{\mu_{\rm t}} \right) p (X_{\rm v}^{\rm l}) + m_{\rm v}^{\rm e} + m_{\rm v}^{\rm o} + m_{\rm v}^r = X_{\rm v}^{\rm init} M^{\rm m}}
+where $\alpha_v$ and $\beta_v$ are parameters for each volatile.  The ``standard'' Henry's law is recovered when $\beta_v=1$, but allowing a power-law form provides more flexibility for volatiles that do not follow Henry's law exactly ($\beta_v \neq 1$).  \myemph{From now on we will only consider the scaled mass which omits the $4 \pi$ factor associated with spherical geometry:}
+\boxedeq{eq:dimvolatile}{X_v (k_v M^s + M^l) + \frac{R_p^2}{g} \left( \frac{\mu_v^g}{\bar{\mu}} \right) p_v + m_v^e + m_v^o + m_v^r = X_v^{\rm init} M^m}
 And note, importantly, that we solve for the volatile mass fraction in the liquid phase, from which we can subsequently compute the volatile mass in the solid and gas phase.  The above equation also shows that the volatile abundances are coupled through the mean molecular weight:
 \begin{equation}
-\mu_{\rm t} = \frac{1}{N} \sum_q \mu_q n_q = \frac{1}{P_s} \sum_q \mu_q p_q \qquad P_s = \sum_q p_q
+\bar{\mu} = \sum_v^q \left( \frac{p_v \mu_v}{P_s} \right), \qquad P_s = \sum_v^q p_v
 \label{eq:atmosphere_molar_mass}
+\end{equation}
+%%%%
+%%%%
+%%%%
+\subsection{Non-dimensionalisation}
+We now sequentially introduce the terms that form the dimensionalisation scheme for the volatile mass balance.
+\subsubsection{Mass}
+In the code, we non-dimensionalise all masses as:
+\begin{equation}
+M = \rho_0 R_0^3 \hat{M} = M_0 \hat{M}
+\end{equation}
+Note that $\rho_0$ and $R_0$ are chosen to ensure that the solution quantities are around unity value.  They do not necessarily correspond to a physically meaningful value.  Therefore, $R_0$ is not necessarily the radius of the planet $R_p$.  $\hat{M}$ is the non-dimensional mass.  The non-dimensional mass balance is:
+\begin{equation}
+k_v X_v \hat{M}^s + X_v \hat{M}^l + \frac{R_p^2}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{m_v^e}{M_0} + \frac{m_v^o}{M_0} + \frac{m_v^r}{M_0} = X_v^{\rm init} \hat{M}^m
+\end{equation}
+Note that we have also non-dimensionalised the molar masses in this step, although since we take the ratio of these quantities it probably isn't required.
+%%%%
+\subsubsection{Volatile Concentration}
+It's more convenient to express volatile concentration as a scaled version of parts-per-million (ppm).  This scaling is to ensure we can scale the volatile evolution equations similar to other quantities in the system of equations (like entropy, entropy gradient, etc.):
+\begin{equation}
+\hat{X_v} = \frac{X_{\rm ppm}}{V_0} = \frac{10^6 X_v}{V_0}
+\end{equation}
+Therefore, the mass balance:
+\begin{equation}
+k_v \frac{X_{\rm ppm}}{V_0} \hat{M}^s + \frac{X_{\rm ppm}}{V_0} \hat{M}^l + \frac{10^6}{V_0} \frac{R_p^2}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \frac{X_{\rm ppm}^{\rm init}}{V_0} \hat{M}^m
+\end{equation}
+Collect terms:
+\begin{equation}
+\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0}\frac{R_p^2}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
+\end{equation}
+Note that the $X_v$ within $p_v$ has \textbf{not} yet been non-dimensionalised (see below).
+%%%%
+\subsubsection{Partial Pressure}
+Convert the partial pressure expression to non-dimensional form.  First, introduce $\hat{X_v}$:
+\begin{equation}
+p_v( X_v ) = \left( \frac{X_v}{\alpha_v} \right)^{\beta_v}
+ = \left( \frac{10^6 V_0 X_v}{10^6 V_0 \alpha_v} \right)^{\beta_v}
+ \end{equation}
+Therefore:
+\begin{equation}
+p_v( \hat{X_v} ) = \left( \frac{V_0 \hat{X_v}}{10^6 \alpha_v} \right)^{\beta_v}
+\end{equation}
+Second, introduce the non-dimensional Henry's constant:
+\begin{equation}
+\hat{\alpha_v} = \frac{10^6 \alpha_v}{V_0} P_0^\frac{1}{\beta_v}
+\end{equation}
+$P_0$ is a pressure scale that relates to the primary non-dimensional quantities.  In the code, we input $\alpha_v$ in units of ppm/Pa$^{1/\beta}$.  So to non-dimensionalise the input we just need to divide by $V_0$ and multiply by $P_0^{1/\beta}$, as shown above (i.e., the factor of $10^6$ is include in the definition of ppm).  Therefore, the non-dimensional partial pressure is:
+\begin{equation}
+\hat{p_v} ( \hat{X_v} ) = \left( \frac{\hat{X_v}}{\hat{\alpha_v}} \right) ^ {\beta_v}, \qquad \frac{d \hat{p_v}}{d \hat{X_v}} = \frac{\beta_v}{\hat{\alpha_v}} \left( \frac{\hat{X_v}}{\hat{\alpha_v}} \right)^{\beta_v-1}
+\end{equation}
+Now the mass balance becomes, noting that a factor of $P_0$ appears in the numerator on the penultimate term on the LHS because we introduce the non-dimensional pressure:
+\begin{equation}
+\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0} \frac{R_p^2 P_0}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^{\rm m}
+\end{equation}
+Note that the as yet unspecified mass reservoirs in the last term on the LHS all exclude a factor of $4\pi$ since we are only considering scaled masses now.
+%%%%
+\subsubsection{Gravity and Radius}
+Gravity is non-dimensionalised in SPIDER as:
+\begin{equation}
+g = \frac{S_0 T_0}{R_0} \hat{g}
+\end{equation}
+and the radius of the planet $R_p$ is non-dimensionalised by $R_0$.  Hence the mass balance becomes:
+\begin{equation}
+\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0}\frac{\hat{R}_p^2}{\hat{g}}\frac{P_0 R_0^3}{M_0 S_0 T_0} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
+\end{equation}
+Now the scaling constants in the penultimate term on the LHS are, according to the non-dimensional scheme in SPIDER:
+\begin{equation}
+\frac{P_0 R_0^3}{M_0 S_0 T_0} = \frac{\rho_0 S_0 T_0 R_0^3}{\rho_0 R_0^3 S_0 T_0} = 1
+\end{equation}
+%%%%
+\subsubsection{Non-dimensional volatile mass balance}
+Therefore the mass balance in non-dimensional form is, \myemph{where again, masses of the solid, liquid, mantle, and escape reservoir, are scaled masses without the $4 \pi$ term}:
+\boxedeq{}{\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m \label{eq:volevo}}
+Compared to the dimensional form (Eq.~\ref{eq:dimvolatile}), there is an extra scaling factor in front of the atmospheric mass and other mass terms, to take account of the fact that we have converted mass fraction quantities to scaled ppm.  In the case of the atmospheric mass, this extra scaling factor cannot be absorbed by a $\hat{X_v}$ term since the volatile concentration is wrapped up inside the partial pressure formula.
+%%%%
+\subsubsection{Scaled non-dimensional masses}
+The scaled (i.e., without the prefactor of $4\pi$) non-dimensional masses of volatiles are therefore:
+\begin{equation}
+\hat{m}_v^s = \hat{X_v} k_v \hat{M}^s
+\end{equation}
+\begin{equation}
+\hat{m}_v^l = \hat{X_v} \hat{M}^l
+\end{equation}
+\begin{equation}
+\hat{m}_v^g = \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p}
+\end{equation}
+The remaining mass reservoirs (superscript $e$, $o$, and $r$) all follow this scaling (e.g.)
+\begin{equation}
+\hat{m}_v^e = \frac{10^6}{V_0} \frac{m_v^e}{M_0}
+\end{equation}
+%%%%
+\dbnote{TO HERE}
+\subsubsection{Dimensionalising}
+In SPIDER we provide a dimensional scaling for each parameter to give a meaningful output for plotting and analysis.  For the \myemph{physical mantle reservoir masses of melt and solid phases (note $4 \pi$ term)}:
+\begin{equation}
+M^{\rm sp} = \hat{M}^{\rm s} \cdot 4 \pi M_0, \qquad M^{\rm lp} = \hat{M}^{\rm l} \cdot 4 \pi M_0
+\end{equation}
+Now for each volatile, we compute the dimensional mass in the liquid, solid, and gas phase, as well as the escaped reservoir:
+\begin{equation}
+m_{\rm v}^{\rm sp} = \hat{m}_{\rm v}^{\rm s} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
+\end{equation}
+\begin{equation}
+m_{\rm v}^{\rm lp} = \hat{m}_{\rm v}^{\rm l} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
+\end{equation}
+\begin{equation}
+m_{\rm v}^{\rm gp} = \hat{m}_{\rm v}^{\rm g} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
+\end{equation}
+\begin{equation}
+m_{\rm v}^{\rm ep} = \hat{m}_{\rm v}^{\rm ep} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
+\end{equation}
+\begin{equation}
+m_{\rm v}^{\rm o} = \hat{m}_{\rm v}^{\rm o} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
+\end{equation}
+%%%%
+\subsection{Initial Volatile Concentration}
+For an initial condition it is desirable to prescribe $\hat{X}^{\rm init}$, but we must then compute $\hat{X}^{\rm l}$ according to the mass balance since this is the quantity that is actually solved for (i.e., evolved with time).  We assume the magma ocean is completely molten at $t=0$, i.e. all the mantle mass is liquid, and no volatiles have yet escaped.  Therefore:
+\begin{equation}
+\hat{M}^{\rm s} = \hat{m}_{\rm v}^{\rm e} = \hat{m}_{\rm v}^{\rm o} = 0, \qquad \hat{M}^{\rm l} = \hat{M}^{\rm m}
+\end{equation}
+So the mass balance for the initial condition is:
+\begin{equation}
+\hat{X}^{\rm l} \hat{M}^{\rm m} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\hat{p} (\hat{X}^{\rm l}) = \hat{X}^{\rm init} \hat{M}^{\rm m}
+\end{equation}
+Substitute in the expression for the partial pressure:
+\begin{equation}
+\hat{X}^{\rm l} \hat{M}^{\rm m} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^\beta = \hat{X}^{\rm init} \hat{M}^{\rm m}
+\end{equation}
+Divide through by the (non-dimensional) mantle mass $\hat{M}^m$:
+\begin{equation}
+\hat{X}^{\rm l} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{M}^{\rm m} \hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^\beta = \hat{X}^{\rm init}
+\end{equation}
+where the mean molar mass of the atmosphere is given by Eq.~\ref{eq:atmosphere_molar_mass} and recall that the partial pressures must sum to give the total pressure (Eq.~\ref{eq:atmosphere_molar_mass}).  For the initial condition, we want to specify the \myemph{total initial abundance of a given volatile, relative to the mantle mass}.  This means that we know the RHS and must solve for $\hat{X}^l$, since the code integrates the liquid mantle abundance.  Furthermore, since every volatile relation relies on the others through the mean molar mass of the atmosphere, we have a coupled system of $p$ non-linear equations that we must solve to determine the initial liquid abundance of every volatile species.
+%%%%
+%%%%
+%%%%
+\subsection{Evolution Equation}
+Remember that we compute a RHS in SPIDER that represents the time-derivative (update) of a solution quantity.  We are going to solve the volatile evolution equations within the system of equations that include the update to entropy, etc.  \textbf{Strictly speaking, it is not necessary to integrate to find the equilibrium volatile abundance in the melt in the simplest situations.  You could save computations (and accumulated error) by instead solving Eq.~\ref{eq:volevo}, but this would not allow you to introduce time-dependent atmospheric escape for example.}  Therefore, taking the time derivative of the volatile mass balance equation:
+\begin{equation}
+\frac{d \hat{X}^{\rm l}}{d t} (k_{\rm v} \hat{M}^{\rm s} + \hat{M}^{\rm l}) + \hat{X}^{\rm l} \left( k_{\rm v} \frac{d \hat{M}^{\rm s}}{d t} + \frac{d \hat{M}^{\rm l}}{d t} \right) + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}} \frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm o}}{dt} = 0
+\end{equation}
+\subsubsection{Mean molar mass of atmosphere}
+The mean molar mass $\hat{\mu}_{\rm t}$ of the atmosphere evolves during outgassing and therefore is a time-dependent quantity.  By the product rule:
+\begin{equation}
+\frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = \hat{p}(\hat{X}^{\rm l}) \frac{d}{dt} \left( \frac{1}{\hat{\mu}_{\rm t}} \right) + \frac{1}{\hat{\mu}_{\rm t}} \frac{d}{dt} \left( \hat{p}(\hat{X}^{\rm l}) \right)
+\label{eq:atmos_evo}
+\end{equation}
+The second term can be calculated using the chain rule:
+\begin{equation}
+\frac{1}{\hat{\mu}_{\rm t}} \frac{d}{dt} \left( \hat{p}(\hat{X}^{\rm l}) \right) = \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+\end{equation}
+%%% two species only %%%
+\subsubsection{Two volatile species}
+To deal with the first term, recall that for two species (Eq.~\ref{eq:atmosphere_molar_mass}):
+\begin{equation}
+\hat{\mu}_{\rm t} = \left( \frac{\hat{p}_C}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_C + \left( \frac{\hat{p}_H}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_H
+\end{equation}1
+where subscript $C$ denotes CO$_2$ and $H$ denotes H$_2$O, and $\hat{p}$ is partial pressure and $\hat{\mu}$ is molar mass.  Taking the time derivative of $\hat{\mu}_{\rm t}$ noting that only the $\mu$'s are independent of time:
+\begin{equation}
+\frac{d}{dt} \left( \frac{1}{\hat{\mu}_{\rm t}} \right) = -\hat{\mu}_{\rm t}^{-2} \frac{d}{dt} \hat{\mu}_{\rm t}
+\end{equation}
+\begin{equation}
+\frac{d}{dt} \hat{\mu}_{\rm t} = \frac{d}{dt} \left[ \left( \frac{\hat{p}_C}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_C + \left( \frac{\hat{p}_H}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_H \right]
+\end{equation}
+This is tedious but straightforward to compute (and Mathematica helps!):
+\begin{align}
+\frac{d}{dt} \hat{\mu}_{\rm t} &= \left( \frac{\hat{\mu}_C}{\hat{p}_C+\hat{p}_H} \right) \frac{d\hat{p}_C}{dt} - \frac{\hat{\mu}_C \hat{p}_C}{(\hat{p}_C+\hat{p}_H)^2} \left( \frac{d\hat{p}_C}{dt}+\frac{d\hat{p}_H}{dt} \right)\\
+&+ \left( \frac{\hat{\mu}_H}{\hat{p}_C+\hat{p}_H} \right) \frac{d\hat{p}_H}{dt} - \frac{\hat{\mu}_H \hat{p}_H}{(\hat{p}_C+\hat{p}_H)^2} \left( \frac{d\hat{p}_C}{dt}+\frac{d\hat{p}_H}{dt} \right)
+\end{align}
+Simplifying:
+\begin{equation}
+\frac{d}{dt} \hat{\mu}_{\rm t} = \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{dt} - \hat{p}_C \frac{d\hat{p}_H}{dt} \right)
+\end{equation}
+Putting it all together (i.e., returning to Eq.~\ref{eq:atmos_evo}):
+\begin{equation}
+\frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = -\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{dt} - \hat{p}_C \frac{d\hat{p}_H}{dt} \right) + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+\end{equation}
+To recap, we are considering the concentration of a given volatile $\hat{X}^{\rm l}$, which can either be CO$_2$ or H$_2$O, and we need to know the time derivative of this quantity.  \myemph{Through the mean molar mass of the atmosphere, the volatiles are now coupled, and we can no longer determine the time derivative of either volatile independently of the other.  Rather we must solve a coupled system of equations at each time step to give us the time update of all the volatiles under consideration.}.  The above equations may be expressed slightly differently, but should be identical to the equations in \citet[Appendix A,][]{BKW19}.
+\subsubsection{$n$ volatile species}
+For $n$ species, where $(t)$ is used to emphasise the time-dependent quantities, we just need to derive a general expression for the rate-of-change of the mean molar mass of the atmosphere:
+\begin{equation}
+\hat{\mu}_{\rm t}(t) = \sum_i^n \left( \frac{\hat{p}_i(t) \hat{\mu}_i}{\sum_j^n \hat{p}_j(t)} \right)
+\end{equation}
+Time derivative:
+\begin{equation}
+\frac{d \hat{\mu}_{\rm t}}{d t} = \sum_i^n \hat{\mu}_i \frac{d}{d t} \left( \frac{\hat{p}_i(t)}{\sum_j^n \hat{p}_j(t)} \right)
+\end{equation}
+Note that the term within the time derivative is the volume mixing ratio of each volatile species.  Break apart the derivative using the product rule:
+\begin{equation}
+\frac{d \hat{\mu}_{\rm t}}{d t} = \sum_i^n \hat{\mu}_i \left[ \hat{p}_i \frac{d}{d t} \left( \frac{1}{\sum_j^n \hat{p}_j} \right) + \frac{1}{\sum_j^n \hat{p}_j} \frac{d \hat{p}_i}{d t} \right]
+\end{equation}
+Evaluate:
+\begin{equation}
+\frac{d \hat{\mu}_{\rm t}}{d t} = \sum_i^n \hat{\mu}_i \left[ \frac{-\hat{p}_i}{\left( \sum_j^n \hat{p}_j \right)^2} \sum_j^n \frac{d \hat{p}_j}{d t} + \frac{1}{\sum_j^n \hat{p}_j} \frac{d \hat{p}_i}{d t} \right]
+\end{equation}
+Looks simpler when you substitute in the total surface pressure $P_s$ and break apart some terms to show the symmetry (and confirm that the units are correct):
+\begin{equation}
+\frac{d \hat{\mu}_{\rm t}}{d t} = \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{d \hat{p}_i}{d t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{d P_s}{d t} \right]
+\end{equation}
+Putting it all together:
+\begin{equation}
+\frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = -\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{d \hat{p}_i}{d t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{d P_s}{d t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+\end{equation}
+The above equations may be expressed slightly differently, but should be identical to the equations in \citet[Appendix A,][]{BKW19}.
+%%%%
+%%%%
+\subsubsection{Returning to the evolution equation}
+Recall that:
+\begin{equation}
+\hat{M}^{\rm s} + \hat{M}^{\rm l} = \hat{M}^{\rm m} \equiv \text{constant}
+\label{eq:mantle_mass}
+\end{equation}
+Therefore, we can now just express in terms of the total mantle mass and the mass of liquid (melt) and its time derivative.  \myemph{The evolution equation is, therefore:}
+\begin{align}
+&\frac{d \hat{X}^{\rm l}}{d t} \left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
++ \hat{X}^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
+&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
+\left[
+-\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+\right]+ \nonumber \\
+& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm o}}{dt} = 0
+\end{align}
+This cannot be separated into the form of the time derivative equal to a RHS, so the time derivative must instead be numerically calculated within the time stepper.
+%%%%
+%%%%
+%%%%
+\subsubsection{Atmospheric escape formulation}
+%But remember that the reservoir of escaped volatile is not defined per se, but rather the rate at which volatiles escape (see subsequent sections).
+The expression for escape due to surface heating is \citep{JOY15}: % Eq. 2b
+\begin{equation}
+\frac{d m_{\rm v}^{\rm esc}}{dt} = \left( \frac{d m_{\rm v}^{\rm g}}{dt} \right) \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) 
+\end{equation}
+where $\mathcal{R}$ is a fitting parameter based on molecular kinetic simulations of N$_2$ \citep{VJT11,VTE11} and $\lambda_s$ is the surface value of the Jean's parameter $\lambda_s$.  For us, $\lambda_s$ and $\mathcal{R}$ may just be treated as a constant scaling for simplicity.  From dimensional analysis we can see that the terms following the mass derivative must be non-dimensional constants.
+\begin{equation}
+\lambda_s =  \frac{G M_p^{\rm p} \mu_{\rm v}}{R_p k_b T_s N_A} = \frac{g R_p \mu_{\rm v}}{k_b T_s N_A}
+\end{equation}
+where $G$ is the gravitational constant, $g$ surface gravity, $M_p$ mass of the planet (superscript p denotes physical mass), $\mu_v$ the molar mass of the volatile, $N_A$ Avogadro's number (units per mol), $k_b$ Boltzmann constant, and $T_s$ surface temperature.  Remember that we deal with scaled masses in SPIDER, but since the Jeans parameter is a physical quantity, we must introduce the correct physical scaling.  Now in fact, the physical $g$ is treated as a constant input parameter by SPIDER and therefore absorbs the factor of $4 \pi$ that is included in the planetary mass.  Non-dimensionalising:
+\begin{equation}
+\lambda_s = \left( \frac{S_0 T_0 R_0 M_0}{R_0 S_0 \rho_0 R_0^3 T_0} \right) \frac{\hat{g} \hat{R}_p \hat{\mu}_{\rm v}}{\hat{k}_b \hat{T}_s N_A} = \frac{\hat{g} \hat{R}_p \hat{\mu}_{\rm v}^{\rm g}}{\hat{k}_b \hat{T}_s N_A}
+\end{equation}
+We already computed the growth rate of the atmosphere, i.e. the source rate, and therefore:
+\begin{align}
+\frac{d \hat{m}_{\rm v}^{\rm esc}}{dt} &= \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
+\left[
+-\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{d \hat{p}_i}{d t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{d P_s}{d t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+\right]\\
+& \times \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) 
+\end{align}
+It is now obvious that we can scale the source time in the evolution equation by a factor to account for atmospheric escape:
+\begin{equation}
+\mathcal{F}_e = 1+\mathcal{R} (1 + \lambda_s) \exp(-\lambda_s)
 \end{equation}
 %%%%
 %%%%
@@ -350,38 +600,6 @@ and continue until our approximation of $x_n$ is consistent for some threshold (
 %%%%
 %%%%
 %%%%
-\subsubsection{Patrick Sanan's notes}
-Assume that we have some time-dependent equilibrium law that must be obeyed, between
-quantities $A$ and $B$ representing species of matter in a system.
-\begin{equation}\label{eq:equilibrium}
-f(A,B,t) = 0
-\end{equation}
-Further assume that we have some way of converting $A$ to $B$ in the domain to maintain this equilibrium. We may exchange one unit of $A$ for $\beta$ units of $B$.  Finally, suppose that input rates of the two species to the system are given, as $\dot A_\text{in}$ and $\dot B_\text{in}$.  Since equilibrium must be instantaneously maintained, there is a rate at which the input material is converted from $A$ to $B$. We call this rate $\dot c$.  Thus, the rates of change of the quantities in the reservoir are
-\begin{align}\label{eq:inputconvert}
-  \dot A_\text{in} - \dot c = \frac{\partial A}{\partial t} \\
-  \dot B_\text{in} + \beta \dot c = \frac{\partial B}{\partial t} \\
-\end{align}
-$\dot c$ may be eliminated, to give
-\begin{equation} \label{eq:inputconvertelim}
-  \dot A_\text{in} - \frac{\partial A}{\partial t} = \frac{1}{\beta}\left( \dot B_\text{in} -\frac{\partial B}{\partial t} \right)
-\end{equation}
-Equation \ref{eq:equilibrium} can be differentiated \footnote{$\partial_1f$ means the partial derivative of $f$ with respect to its first argument} to give
-$$
-\partial_1f(A,B,t) \frac{\partial A}{\partial t} + \partial_2f(A,B,t)\frac{\partial B}{\partial t} + \partial_3f(A,B,t) = 0
-$$
-and \ref{eq:inputconvertelim} may be used to eliminate, say  $\frac{\partial A}{\partial t}$, leaving a single ODE
-$$
-\partial_1f(A,B,t) \left[\dot A_\text{in} - \frac{1}{\beta}\left( \dot B_\text{in} -\frac{\partial B}{\partial t} \right) \right] + \partial_2f(A,B,t)\frac{\partial B}{\partial t} + \partial_3f(A,B,t) = 0
-$$
-(Note that $A$ still appears, but it could be expressed in terms of $B$ and $t$ via \ref{eq:equilibrium}).
-Notes:
-\begin{itemize}
-  \item Could probably extend to multiple species.
-  \item I don't see any reason that $f$ can't depend on other quantities.
-  \item The main idea of interest here is to explicitly consider the instantaneous rate at which species are converted as they move in and out of a system in constant equilibrium. With $\beta =1$, hopefully this could also apply when we're talking about partitioning between the different reservoirs and removing material via various escape mechanisms.
-\end{itemize}
-%%%%
-%%%%
 \subsubsection{Building on the idea above}
 The evolution equation (described later) is:
 \begin{align}
@@ -469,249 +687,6 @@ For chemical equilibrium:
 \frac{\hat{p_{H_2O}} (\hat{X_{H_2O}}^{\rm l})}{\hat{p_{H_2}} (\hat{X_{H_2}}^{\rm l})} = \epsilon
 \end{equation}
 The mean molar mass of the atmosphere is given by Eq.~\ref{eq:atmosphere_molar_mass} and recall that the partial pressures must sum to give the total pressure (Eq.~\ref{eq:atmosphere_molar_mass}).  For the initial condition, we want to specify the \myemph{total initial abundance of a given volatile, relative to the mantle mass}.  This means that we know the RHS and must solve for $\hat{X}^l$, since the code integrates the liquid mantle abundance.  Furthermore, since every volatile relation relies on the others through the mean molar mass of the atmosphere, we have a coupled system of $p$ non-linear equations that we must solve to determine the initial liquid abundance of every volatile species.
-%%%%
-%%%%
-\subsection{Non-dimensionalisation}
-\subsubsection{Mass}
-In the code, we non-dimensionalise all masses as:
-\begin{equation}
-M = \rho_0 R_0^3 \hat{M} = M_0 \hat{M}
-\end{equation}
-Note that $\rho_0$ and $R_0$ are chosen to ensure that the solution quantities are around unity value.  They do not necessarily correspond to a physically meaningful value.  Therefore, $R_0$ is not necessarily the radius of the planet $R_p$.  $\hat{M}$ is the non-dimensional mass.  The non-dimensional mass balance is:
-\begin{equation}
-k_{\rm v} X_{\rm v}^{\rm l} \hat{M}^{\rm s} + X_{\rm v}^{\rm l} \hat{M}^{\rm l} + \frac{R_{\rm p}^2}{M_0 g} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right) p (X_{\rm v}^{\rm l}) + \frac{m_{\rm v}^{\rm e}}{M_0} + \frac{m_{\rm v}^{\rm o}}{M_0} = X_{\rm v}^{\rm init} \hat{M}^{\rm m}
-\end{equation}
-Note that we have also non-dimensionalised the molar masses in this step.
-\subsubsection{Volatile Concentration}
-It's more convenient to express volatile concentration as a scaled version of parts-per-million (ppm).  This scaling is to ensure we can scale the volatile evolution equations similar to other quantities in the system of equations (like entropy, entropy gradient, etc.):
-\begin{equation}
-\hat{X} = \frac{X_{\rm ppm}}{V_0} = \frac{10^6 X_{\rm v}}{V_0}
-\end{equation}
-Therefore, the mass balance:
-\begin{equation}
-k_{\rm v} \frac{X_{\rm ppm}^{\rm l}}{V_0} \hat{M}^{\rm s} + \frac{X_{\rm ppm}^{\rm l}}{V_0} \hat{M}^{\rm l} + \frac{10^6}{V_0} \frac{R_{\rm p}^2}{M_0 g} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right) p (X_{\rm v}^{\rm l}) + \frac{10^6}{V_0} \frac{m_{\rm v}^{\rm e}}{M_0} + \frac{10^6}{V_0} \frac{m_{\rm v}^{\rm o}}{M_0} = \frac{X_{\rm ppm}^{\rm init}}{V_0} \hat{M}^{\rm m}
-\end{equation}
-Collect terms:
-\begin{equation}
-\hat{X}^{\rm l} (k_{\rm v} \hat{M}^{\rm s} + \hat{M}^{\rm l}) + \frac{10^6}{V_0}\frac{R_{\rm p}^2}{M_0 g} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right) p (X_{\rm v}^{\rm l}) + \frac{10^6}{V_0} \frac{m_{\rm v}^{\rm e}}{M_0} + \frac{10^6}{V_0} \frac{m_{\rm v}^{\rm o}}{M_0} = \hat{X}^{\rm init} \hat{M}^{\rm m}
-\end{equation}
-\subsubsection{Partial Pressure}
-Convert the partial pressure expression to non-dimensional form.  First, introduce $\hat{X}^{\rm l}$:
-\begin{equation}
-p( X_{\rm v}^{\rm l} ) = \left( \frac{X_{\rm v}^{\rm l}}{\alpha} \right)^\beta
- = \left( \frac{10^6 V_0 X_{\rm v}^{\rm l}}{10^6 V_0 \alpha} \right)^\beta
- \end{equation}
- Therefore:
- \begin{equation}
-p( \hat{X}^{\rm l} ) = \left( \frac{V_0 \hat{X}^{\rm l}}{10^6 \alpha} \right)^\beta
-\end{equation}
-Second, introduce the non-dimensional Henry's constant:
-\begin{equation}
-\hat{\alpha} = \frac{10^6 \alpha}{V_0} P_0^\frac{1}{\beta}
-\end{equation}
-In the code, we input $\alpha$ in units of ppm/Pa$^{1/\beta}$.  So to non-dimensionalise the input we just need to divide by $V_0$ and multiply by $P_0^{1/\beta}$, as shown above (i.e., the factor of $10^6$ is include in the definition of ppm).  Therefore, the non-dimensional partial pressure is:
-\begin{equation}
-\hat{p} ( \hat{X}^{\rm l} ) = \left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right) ^ {\beta}, \qquad \frac{d \hat{p}}{d \hat{X}^{\rm l}} = \frac{\beta}{\hat{\alpha}} \left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^{\beta-1}
-\end{equation}
-Now the mass balance becomes, noting that a factor of $P_0$ appears in the numerator on the penultimate term on the LHS because we introduce the non-dimensional pressure:
-\begin{equation}
-\hat{X}^{\rm l} (k_{\rm v} \hat{M}^{\rm s} + \hat{M}^{\rm l}) + \frac{10^6}{V_0} \frac{R_{\rm p}^2 P_0}{M_0 g} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right) \hat{p} (\hat{X}^{\rm l}) + \frac{10^6}{V_0} \frac{m_{\rm v}^{\rm e}}{M_0} = \hat{X}^{\rm init} \hat{M}^{\rm m}
-\end{equation}
-Note that $m_{\rm v}^{\rm e}$ excludes a factor of $4\pi$ since we are only considering scaled masses now.
-\subsubsection{Gravity and Radius}
-Gravity is non-dimensionalised in SPIDER as:
-\begin{equation}
-g = \frac{S_0 T_0}{R_0} \hat{g}
-\end{equation}
-and the radius of the planet $R_p$ is non-dimensionalised by $R_0$.  Hence the mass balance becomes:
-\begin{equation}
-\hat{X}^{\rm l} (k_{\rm v} \hat{M}^{\rm s} + \hat{M}^{\rm l}) + \frac{10^6}{V_0}\frac{\hat{R}_{\rm p}^2 P_0 R_0^3}{M_0 S_0 T_0 \hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right) \hat{p} (\hat{X}^{\rm l}) + \frac{10^6}{V_0} \frac{m_{\rm v}^{\rm e}}{M_0} = \hat{X}^{\rm init} \hat{M}^{\rm m}
-\end{equation}
-Now the scaling constants in the penultimate term on the LHS are, according to the non-dimensional scheme in SPIDER:
-\begin{equation}
-\frac{P_0 R_0^3}{M_0 S_0 T_0} = \frac{\rho_0 S_0 T_0 R_0^3}{\rho_0 R_0^3 S_0 T_0} = 1
-\end{equation}
-\subsubsection{Non-dimensional volatile mass balance}
-Therefore the mass balance in non-dimensional form is, \myemph{where again, masses of the solid, liquid, mantle, and escape reservoir, are scaled masses without the $4 \pi$ term}:
-\boxedeq{}{\hat{X}^{\rm l} (k_{\rm v} \hat{M}^{\rm s} + \hat{M}^{\rm l}) + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right) \hat{p} (\hat{X}^{\rm l}) + \frac{10^6}{V_0} \frac{m_{\rm v}^{\rm e}}{M_0} + \frac{10^6}{V_0} \frac{m_{\rm v}^{\rm o}}{M_0} = \hat{X}^{\rm init} \hat{M}^{\rm m} \label{eq:volevo}}
-Compared to the dimensional form (Eq.~\ref{eq:dimvolatile}), there is an extra scaling factor in front of the atmosphere (and escape) terms, to take account of the fact that we have converted mass fraction quantities to scaled ppm.  This extra scaling factor cannot be absorbed by a $\hat{X}^{\rm l}$ term since the volatile concentration is wrapped up inside the partial pressure formula.  Therefore, the (scaled) non-dimensional masses of volatiles are defined as:
-\begin{equation}
-\hat{m}_{\rm v}^{\rm s} = \hat{X}^{\rm l} k_{\rm v} \hat{M}^{\rm s}
-\end{equation}
-\begin{equation}
-\hat{m}_{\rm v}^{\rm l} = \hat{X}^{\rm l} \hat{M}^{\rm l}
-\end{equation}
-\begin{equation}
-\hat{m}_{\rm v}^{\rm g} = \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right) \hat{p} (\hat{X}^{\rm l})
-\end{equation}
-\begin{equation}
-\hat{m}_{\rm v}^{\rm e} = \frac{10^6}{V_0} \frac{m_{\rm v}^{\rm e}}{M_0}
-\end{equation}
-\begin{equation}
-\hat{m}_{\rm v}^{\rm o} = \frac{10^6}{V_0} \frac{m_{\rm v}^{\rm o}}{M_0}
-\end{equation}
-But remember that the reservoir of escaped volatile is not defined per se, but rather the rate at which volatiles escape (see subsequent sections).
-%%%%
-\subsubsection{Dimensionalising}
-In SPIDER we provide a dimensional scaling for each parameter to give a meaningful output for plotting and analysis.  For the \myemph{physical mantle reservoir masses of melt and solid phases (note $4 \pi$ term)}:
-\begin{equation}
-M^{\rm sp} = \hat{M}^{\rm s} \cdot 4 \pi M_0, \qquad M^{\rm lp} = \hat{M}^{\rm l} \cdot 4 \pi M_0
-\end{equation}
-Now for each volatile, we compute the dimensional mass in the liquid, solid, and gas phase, as well as the escaped reservoir:
-\begin{equation}
-m_{\rm v}^{\rm sp} = \hat{m}_{\rm v}^{\rm s} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
-\end{equation}
-\begin{equation}
-m_{\rm v}^{\rm lp} = \hat{m}_{\rm v}^{\rm l} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
-\end{equation}
-\begin{equation}
-m_{\rm v}^{\rm gp} = \hat{m}_{\rm v}^{\rm g} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
-\end{equation}
-\begin{equation}
-m_{\rm v}^{\rm ep} = \hat{m}_{\rm v}^{\rm ep} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
-\end{equation}
-\begin{equation}
-m_{\rm v}^{\rm o} = \hat{m}_{\rm v}^{\rm o} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
-\end{equation}
-%%%%
-\subsection{Initial Volatile Concentration}
-For an initial condition it is desirable to prescribe $\hat{X}^{\rm init}$, but we must then compute $\hat{X}^{\rm l}$ according to the mass balance since this is the quantity that is actually solved for (i.e., evolved with time).  We assume the magma ocean is completely molten at $t=0$, i.e. all the mantle mass is liquid, and no volatiles have yet escaped.  Therefore:
-\begin{equation}
-\hat{M}^{\rm s} = \hat{m}_{\rm v}^{\rm e} = \hat{m}_{\rm v}^{\rm o} = 0, \qquad \hat{M}^{\rm l} = \hat{M}^{\rm m}
-\end{equation}
-So the mass balance for the initial condition is:
-\begin{equation}
-\hat{X}^{\rm l} \hat{M}^{\rm m} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\hat{p} (\hat{X}^{\rm l}) = \hat{X}^{\rm init} \hat{M}^{\rm m}
-\end{equation}
-Substitute in the expression for the partial pressure:
-\begin{equation}
-\hat{X}^{\rm l} \hat{M}^{\rm m} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^\beta = \hat{X}^{\rm init} \hat{M}^{\rm m}
-\end{equation}
-Divide through by the (non-dimensional) mantle mass $\hat{M}^m$:
-\begin{equation}
-\hat{X}^{\rm l} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{M}^{\rm m} \hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^\beta = \hat{X}^{\rm init}
-\end{equation}
-where the mean molar mass of the atmosphere is given by Eq.~\ref{eq:atmosphere_molar_mass} and recall that the partial pressures must sum to give the total pressure (Eq.~\ref{eq:atmosphere_molar_mass}).  For the initial condition, we want to specify the \myemph{total initial abundance of a given volatile, relative to the mantle mass}.  This means that we know the RHS and must solve for $\hat{X}^l$, since the code integrates the liquid mantle abundance.  Furthermore, since every volatile relation relies on the others through the mean molar mass of the atmosphere, we have a coupled system of $p$ non-linear equations that we must solve to determine the initial liquid abundance of every volatile species.
-%%%%
-%%%%
-%%%%
-\subsection{Evolution Equation}
-Remember that we compute a RHS in SPIDER that represents the time-derivative (update) of a solution quantity.  We are going to solve the volatile evolution equations within the system of equations that include the update to entropy, etc.  \textbf{Strictly speaking, it is not necessary to integrate to find the equilibrium volatile abundance in the melt in the simplest situations.  You could save computations (and accumulated error) by instead solving Eq.~\ref{eq:volevo}, but this would not allow you to introduce time-dependent atmospheric escape for example.}  Therefore, taking the time derivative of the volatile mass balance equation:
-\begin{equation}
-\frac{d \hat{X}^{\rm l}}{d t} (k_{\rm v} \hat{M}^{\rm s} + \hat{M}^{\rm l}) + \hat{X}^{\rm l} \left( k_{\rm v} \frac{d \hat{M}^{\rm s}}{d t} + \frac{d \hat{M}^{\rm l}}{d t} \right) + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}} \frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm o}}{dt} = 0
-\end{equation}
-\subsubsection{Mean molar mass of atmosphere}
-The mean molar mass $\hat{\mu}_{\rm t}$ of the atmosphere evolves during outgassing and therefore is a time-dependent quantity.  By the product rule:
-\begin{equation}
-\frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = \hat{p}(\hat{X}^{\rm l}) \frac{d}{dt} \left( \frac{1}{\hat{\mu}_{\rm t}} \right) + \frac{1}{\hat{\mu}_{\rm t}} \frac{d}{dt} \left( \hat{p}(\hat{X}^{\rm l}) \right)
-\label{eq:atmos_evo}
-\end{equation}
-The second term can be calculated using the chain rule:
-\begin{equation}
-\frac{1}{\hat{\mu}_{\rm t}} \frac{d}{dt} \left( \hat{p}(\hat{X}^{\rm l}) \right) = \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
-\end{equation}
-%%% two species only %%%
-\subsubsection{Two volatile species}
-To deal with the first term, recall that for two species (Eq.~\ref{eq:atmosphere_molar_mass}):
-\begin{equation}
-\hat{\mu}_{\rm t} = \left( \frac{\hat{p}_C}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_C + \left( \frac{\hat{p}_H}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_H
-\end{equation}1
-where subscript $C$ denotes CO$_2$ and $H$ denotes H$_2$O, and $\hat{p}$ is partial pressure and $\hat{\mu}$ is molar mass.  Taking the time derivative of $\hat{\mu}_{\rm t}$ noting that only the $\mu$'s are independent of time:
-\begin{equation}
-\frac{d}{dt} \left( \frac{1}{\hat{\mu}_{\rm t}} \right) = -\hat{\mu}_{\rm t}^{-2} \frac{d}{dt} \hat{\mu}_{\rm t}
-\end{equation}
-\begin{equation}
-\frac{d}{dt} \hat{\mu}_{\rm t} = \frac{d}{dt} \left[ \left( \frac{\hat{p}_C}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_C + \left( \frac{\hat{p}_H}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_H \right]
-\end{equation}
-This is tedious but straightforward to compute (and Mathematica helps!):
-\begin{align}
-\frac{d}{dt} \hat{\mu}_{\rm t} &= \left( \frac{\hat{\mu}_C}{\hat{p}_C+\hat{p}_H} \right) \frac{d\hat{p}_C}{dt} - \frac{\hat{\mu}_C \hat{p}_C}{(\hat{p}_C+\hat{p}_H)^2} \left( \frac{d\hat{p}_C}{dt}+\frac{d\hat{p}_H}{dt} \right)\\
-&+ \left( \frac{\hat{\mu}_H}{\hat{p}_C+\hat{p}_H} \right) \frac{d\hat{p}_H}{dt} - \frac{\hat{\mu}_H \hat{p}_H}{(\hat{p}_C+\hat{p}_H)^2} \left( \frac{d\hat{p}_C}{dt}+\frac{d\hat{p}_H}{dt} \right)
-\end{align}
-Simplifying:
-\begin{equation}
-\frac{d}{dt} \hat{\mu}_{\rm t} = \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{dt} - \hat{p}_C \frac{d\hat{p}_H}{dt} \right)
-\end{equation}
-Putting it all together (i.e., returning to Eq.~\ref{eq:atmos_evo}):
-\begin{equation}
-\frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = -\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{dt} - \hat{p}_C \frac{d\hat{p}_H}{dt} \right) + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
-\end{equation}
-To recap, we are considering the concentration of a given volatile $\hat{X}^{\rm l}$, which can either be CO$_2$ or H$_2$O, and we need to know the time derivative of this quantity.  \myemph{Through the mean molar mass of the atmosphere, the volatiles are now coupled, and we can no longer determine the time derivative of either volatile independently of the other.  Rather we must solve a coupled system of equations at each time step to give us the time update of all the volatiles under consideration.}.  The above equations may be expressed slightly differently, but should be identical to the equations in \citet[Appendix A,][]{BKW19}.
-\subsubsection{$n$ volatile species}
-For $n$ species, where $(t)$ is used to emphasise the time-dependent quantities, we just need to derive a general expression for the rate-of-change of the mean molar mass of the atmosphere:
-\begin{equation}
-\hat{\mu}_{\rm t}(t) = \sum_i^n \left( \frac{\hat{p}_i(t) \hat{\mu}_i}{\sum_j^n \hat{p}_j(t)} \right)
-\end{equation}
-Time derivative:
-\begin{equation}
-\frac{d \hat{\mu}_{\rm t}}{d t} = \sum_i^n \hat{\mu}_i \frac{d}{d t} \left( \frac{\hat{p}_i(t)}{\sum_j^n \hat{p}_j(t)} \right)
-\end{equation}
-Note that the term within the time derivative is the volume mixing ratio of each volatile species.  Break apart the derivative using the product rule:
-\begin{equation}
-\frac{d \hat{\mu}_{\rm t}}{d t} = \sum_i^n \hat{\mu}_i \left[ \hat{p}_i \frac{d}{d t} \left( \frac{1}{\sum_j^n \hat{p}_j} \right) + \frac{1}{\sum_j^n \hat{p}_j} \frac{d \hat{p}_i}{d t} \right]
-\end{equation}
-Evaluate:
-\begin{equation}
-\frac{d \hat{\mu}_{\rm t}}{d t} = \sum_i^n \hat{\mu}_i \left[ \frac{-\hat{p}_i}{\left( \sum_j^n \hat{p}_j \right)^2} \sum_j^n \frac{d \hat{p}_j}{d t} + \frac{1}{\sum_j^n \hat{p}_j} \frac{d \hat{p}_i}{d t} \right]
-\end{equation}
-Looks simpler when you substitute in the total surface pressure $P_s$ and break apart some terms to show the symmetry (and confirm that the units are correct):
-\begin{equation}
-\frac{d \hat{\mu}_{\rm t}}{d t} = \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{d \hat{p}_i}{d t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{d P_s}{d t} \right]
-\end{equation}
-Putting it all together:
-\begin{equation}
-\frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = -\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{d \hat{p}_i}{d t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{d P_s}{d t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
-\end{equation}
-The above equations may be expressed slightly differently, but should be identical to the equations in \citet[Appendix A,][]{BKW19}.
-%%%%
-%%%%
-\subsubsection{Returning to the evolution equation}
-Recall that:
-\begin{equation}
-\hat{M}^{\rm s} + \hat{M}^{\rm l} = \hat{M}^{\rm m} \equiv \text{constant}
-\label{eq:mantle_mass}
-\end{equation}
-Therefore, we can now just express in terms of the total mantle mass and the mass of liquid (melt) and its time derivative.  \myemph{The evolution equation is, therefore:}
-\begin{align}
-&\frac{d \hat{X}^{\rm l}}{d t} \left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
-+ \hat{X}^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
-&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
-\left[
--\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
-\right]+ \nonumber \\
-& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm o}}{dt} = 0
-\end{align}
-This cannot be separated into the form of the time derivative equal to a RHS, so the time derivative must instead be numerically calculated within the time stepper.
-%%%%
-%%%%
-%%%%
-\subsubsection{Atmospheric escape formulation}
-The expression for escape due to surface heating is \citep{JOY15}: % Eq. 2b
-\begin{equation}
-\frac{d m_{\rm v}^{\rm esc}}{dt} = \left( \frac{d m_{\rm v}^{\rm g}}{dt} \right) \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) 
-\end{equation}
-where $\mathcal{R}$ is a fitting parameter based on molecular kinetic simulations of N$_2$ \citep{VJT11,VTE11} and $\lambda_s$ is the surface value of the Jean's parameter $\lambda_s$.  For us, $\lambda_s$ and $\mathcal{R}$ may just be treated as a constant scaling for simplicity.  From dimensional analysis we can see that the terms following the mass derivative must be non-dimensional constants.
-\begin{equation}
-\lambda_s =  \frac{G M_p^{\rm p} \mu_{\rm v}}{R_p k_b T_s N_A} = \frac{g R_p \mu_{\rm v}}{k_b T_s N_A}
-\end{equation}
-where $G$ is the gravitational constant, $g$ surface gravity, $M_p$ mass of the planet (superscript p denotes physical mass), $\mu_v$ the molar mass of the volatile, $N_A$ Avogadro's number (units per mol), $k_b$ Boltzmann constant, and $T_s$ surface temperature.  Remember that we deal with scaled masses in SPIDER, but since the Jeans parameter is a physical quantity, we must introduce the correct physical scaling.  Now in fact, the physical $g$ is treated as a constant input parameter by SPIDER and therefore absorbs the factor of $4 \pi$ that is included in the planetary mass.  Non-dimensionalising:
-\begin{equation}
-\lambda_s = \left( \frac{S_0 T_0 R_0 M_0}{R_0 S_0 \rho_0 R_0^3 T_0} \right) \frac{\hat{g} \hat{R}_p \hat{\mu}_{\rm v}}{\hat{k}_b \hat{T}_s N_A} = \frac{\hat{g} \hat{R}_p \hat{\mu}_{\rm v}^{\rm g}}{\hat{k}_b \hat{T}_s N_A}
-\end{equation}
-We already computed the growth rate of the atmosphere, i.e. the source rate, and therefore:
-\begin{align}
-\frac{d \hat{m}_{\rm v}^{\rm esc}}{dt} &= \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
-\left[
--\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{d \hat{p}_i}{d t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{d P_s}{d t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
-\right]\\
-& \times \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) 
-\end{align}
-It is now obvious that we can scale the source time in the evolution equation by a factor to account for atmospheric escape:
-\begin{equation}
-\mathcal{F}_e = 1+\mathcal{R} (1 + \lambda_s) \exp(-\lambda_s)
-\end{equation}
-%%%%
-%%%%
 \subsubsection{Global mass of liquid and solid}
 The current version of SPIDER computes the hydrostatic pressure profile \emph{a priori} based on the Adams-Williamson equation of state.  This means that for simplicity we can compute the liquid mass by multiplying the mass of a particular radial shell $d\hat{m}_i$, with some function $g$, and then sum:% the melt fraction $\phi$, and then sum:
 \begin{equation}
