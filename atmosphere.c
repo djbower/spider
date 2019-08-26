@@ -801,9 +801,11 @@ static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParam
 
 }
 
-PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, const Volatile *V )
+PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, const Volatile *V, PetscScalar mass_r )
 {
     PetscScalar out;
+
+    // do stuff with mass_r
 
     out = 1.0E6 / *Ap->VOLATILE_ptr;
     out *= PetscSqr( (*Ap->radius_ptr) ) / -(*Ap->gravity_ptr);
@@ -811,6 +813,10 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     out *= (Vp->molar_mass / A->molar_mass);
     out *= V->p;
     out += V->x;
+    // DJB: reactions
+    // NOTE MINUS =, due to sign convention of reactant=-1, product=1
+    // TODO: clean this up, looks inconsistent
+    out -= Vp->sign * Vp->factor * mass_r; // XXX
     out -= Vp->initial;
 
     return out;

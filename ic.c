@@ -324,7 +324,8 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"atmosic_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles );CHKERRQ(ierr);
+    // DJB: plus one for reaction mass
+    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles+1 );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
@@ -335,6 +336,8 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     for (i=0; i<Ap->n_volatiles; ++i) {
         xx[i] = Ap->volatile_parameters[i].initial;
     }
+    // DJB: need initial guess for reaction mass
+    xx[Ap->n_volatiles] = 1.0;
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
@@ -377,6 +380,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     PetscErrorCode             ierr;
     const PetscScalar          *xx;
     PetscScalar                *ff;
+    PetscScalar                mass_r; // DJB
     PetscInt                   i;
     Ctx                        *E = (Ctx*) ptr;
     Atmosphere                 *A = &E->atmosphere;
@@ -389,6 +393,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].x = xx[i];
     }
+    mass_r = xx[Ap->n_volatiles]; // reaction mass (to be determined also by solver)
     VecRestoreArrayRead(x,&xx);
 
     ierr = set_atmosphere_volatile_content( A, Ap ); CHKERRQ(ierr);
@@ -396,7 +401,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
 
     for (i=0; i<Ap->n_volatiles; ++i) {
-        ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i] );
+        ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i], mass_r );
     }
 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);

@@ -10,8 +10,7 @@ SRC_C = main.c ctx.c rhs.c ic.c mesh.c lookup.c bc.c util.c twophase.c \
         monitor.c energy.c matprop.c \
         dimensionalisablefield.c rheologicalfront.c \
         cJSON.c rollback.c poststep.c \
-        parameters_reaction.c atmosphere_reaction.c \
-        # parameters.c atmospere.c \
+        parameters.c atmosphere.c \
 
 # Main Target
 all :: ${EXNAME}

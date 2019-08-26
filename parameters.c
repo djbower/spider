@@ -134,6 +134,24 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->cross_section,NULL);CHKERRQ(ierr);
   vp->cross_section /= C->AREA;
 
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_factor");CHKERRQ(ierr);
+  /* TODO: if relevant, add non-dimensionalisation and/or scaling here */
+  // vp->factor *= 1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->factor,&set);CHKERRQ(ierr);
+  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_sign");CHKERRQ(ierr);
+  /* TODO: if relevant, add non-dimensionalisation and/or scaling here */
+  // vp->sign *= 1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->sign,&set);CHKERRQ(ierr);
+  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_coeff");CHKERRQ(ierr);
+  /* TODO: if relevant, add non-dimensionalisation and/or scaling here */
+  // vp->coeff *= 1.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->coeff,&set);CHKERRQ(ierr);
+  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
+
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_poststep_change");CHKERRQ(ierr);
   vp->poststep_change = -1;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->poststep_change,&set);CHKERRQ(ierr);
