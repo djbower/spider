@@ -382,6 +382,72 @@ Notes:
 \end{itemize}
 %%%%
 %%%%
+\subsubsection{Building on the idea above}
+The evolution equation (described later) is:
+\begin{align}
+&\frac{d \hat{X}^{\rm l}}{d t} \left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
++ \hat{X}^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
+&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
+\left[
+-\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+\right]+ \nonumber \\
+& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm o}}{dt} = 0
+\end{align}
+We can include (an as yet) unspecified change in mass due to chemical reactions.  Remove the condensation (ocean) mass source since this is currently not implemented, and recall that the escape term is known but not explicitly written out here:
+\begin{align}
+&\frac{d \hat{X}^{\rm l}}{d t} \left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
++ \hat{X}^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
+&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
+\left[
+-\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+\right]+ \nonumber \\
+& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm r}}{dt} = 0
+\end{align}
+For simplicity, again consider the reaction from H$_2$ to H$_2$O, so just 2 volatiles.  By our sign convention, mass of He ``lost'' must be equal to the mass of H$_2$O ``gained''.  So let's formulate the last term again:
+\begin{equation}
+\frac{1}{\mu_{H_2}} \frac{dm_{H_2}^{\rm r}}{dt} = - \frac{1}{\mu_{H_2O}} \frac{dm_{H_{2O}}^{\rm r}}{dt}
+\end{equation}
+Basically, here we are using molar masses to account for the fact that loss of 1 mole of H$_2$ is effectively a gain of 1 mole of H$_2$O, since we do not explicitly keep track of the mass balance of O.  Therefore:
+\begin{equation}
+\frac{dm_{H_2}^{\rm r}}{dt} = - \frac{\mu_{H_2}}{\mu_{H_2O}} \frac{dm_{H_{2O}}^{\rm r}}{dt} = -\gamma \frac{dm_{H_{2O}}^{\rm r}}{dt}
+\end{equation}
+This is analogous to the idea presented above.  So for H$_2$:
+\begin{align}
+&\frac{d \hat{X_{H_2}}^{\rm l}}{d t} \left(k_{H_2} \hat{M}^{\rm m} + (1-k_{H_2}) \hat{M}^{\rm l} \right)
++ \hat{X_{H_2}}^{\rm l} (1-k_{H_2}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
+&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{H_2}^{\rm g}}{\hat{g}}
+\left[
+-\frac{\hat{p_{H_2}}(\hat{X_{H_2}}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p_{H_2}}}{d \hat{X_{H_2}}^{\rm l}} \frac{d \hat{X_{H_2}}^{\rm l}}{d t} \right)
+\right]+ \nonumber \\
+& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{H_2}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{H_2}^{\rm r}}{dt} = 0
+\end{align}
+And for H$_2$O:
+\begin{align}
+&\frac{d \hat{X_{H_2O}}^{\rm l}}{d t} \left(k_{H_2O} \hat{M}^{\rm m} + (1-k_{H_2O}) \hat{M}^{\rm l} \right)
++ \hat{X_{H_2O}}^{\rm l} (1-k_{H_2O}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
+&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{H_2O}^{\rm g}}{\hat{g}}
+\left[
+-\frac{\hat{p_{H_2O}}(\hat{X_{H_2O}}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p_{H_2O}}}{d \hat{X_{H_2O}}^{\rm l}} \frac{d \hat{X_{H_2O}}^{\rm l}}{d t} \right)
+\right]+ \nonumber \\
+& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{H_2O}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{H_2O}^{\rm r}}{dt} = 0
+\end{align}
+Where we can sub in to replace the last term:
+\begin{align}
+&\frac{d \hat{X_{H_2O}}^{\rm l}}{d t} \left(k_{H_2O} \hat{M}^{\rm m} + (1-k_{H_2O}) \hat{M}^{\rm l} \right)
++ \hat{X_{H_2O}}^{\rm l} (1-k_{H_2O}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
+&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{H_2O}^{\rm g}}{\hat{g}}
+\left[
+-\frac{\hat{p_{H_2O}}(\hat{X_{H_2O}}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p_{H_2O}}}{d \hat{X_{H_2O}}^{\rm l}} \frac{d \hat{X_{H_2O}}^{\rm l}}{d t} \right)
+\right]+ \nonumber \\
+& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{H_2O}^{\rm e}}{dt} - \frac{10^6}{V_0 M_0} \frac{1}{\gamma} \frac{dm_{H_2}^{\rm r}}{dt} = 0
+\end{align}
+Now we have two volatile update equations---one for H$_2$ and one for H$_2$O---but three unknowns because we also don't know the change in H$_2$ mass due to reactions.  But we also have an equation that must be satisfied to be at chemical equilibrium.  In differential form, this is:
+\begin{equation}
+\frac{d\hat{p_{H_2O}}}{dt} - \epsilon \frac{d\hat{p_{H_2}}}{dt} = 0
+\end{equation}
+So now we have 3 equations and 3 unknowns.  The unknowns are the time differential of the interior mass concentration of both H$_2$ and H$_2$O (which directly relates to their partial pressure updates), and the rate-of-change of H$_2$ mass to H$_2$O, that is: $dm^{\rm r}_{H_2}/dt$.  Therefore, we should have everything we now need to solve this system.
+%%%%
+%%%%
 \subsection{Non-dimensionalisation}
 \subsubsection{Mass}
 In the code, we non-dimensionalise all masses as:
