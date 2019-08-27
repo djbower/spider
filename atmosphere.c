@@ -805,8 +805,6 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
 {
     PetscScalar out;
 
-    // do stuff with mass_r
-
     out = 1.0E6 / *Ap->VOLATILE_ptr;
     out *= PetscSqr( (*Ap->radius_ptr) ) / -(*Ap->gravity_ptr);
     out /= (*Ap->mantle_mass_ptr);
@@ -815,7 +813,7 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     out += V->x;
     // DJB: reactions
     // NOTE MINUS =, due to sign convention of reactant=-1, product=1
-    out -= Vp->sign * Vp->factor * mass_r; // XXX
+    out -= Vp->sign * Vp->factor * mass_r; // contribution of the reaction mass
     out -= Vp->initial;
 
     return out;
