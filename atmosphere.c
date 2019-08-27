@@ -656,7 +656,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     PetscScalar       *ff;
     Ctx               *E = (Ctx*) ptr;
     PetscInt          i;
-    PetscScalar       mass_r; // DJB
+    PetscScalar       dmrdt; // DJB
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -667,12 +667,12 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].dxdt = xx[i];
     }
-    mass_r = xx[Ap->n_volatiles];
+    dmrdt = xx[Ap->n_volatiles];
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        ff[i] = get_dxdt( A, Ap, i, mass_r );
+        ff[i] = get_dxdt( A, Ap, i, dmrdt );
     }
     // DJB: chemical equilibrium condition
     // first slot (0) is assumed to be H2
@@ -680,7 +680,13 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     // at equilibrium this function must be zero
     // FIXME: usage of factor here is clunky, but basically it's a hack to eliminate this term for no reactions
     // by setting the factor to 0 for both H2 and H2O
-    ff[Ap->n_volatiles] = Ap->volatile_parameters[0].factor * Ap->epsilon * A->volatiles[0].dpdx * A->volatiles[0].dxdt - Ap->volatile_parameters[1].factor * A->volatiles[1].dpdx * A->volatiles[1].dxdt;
+    // FIXME: hacky, but turn OFF reactions if sign is zero 
+    if( (Ap->volatile_parameters[0].sign==0) && (Ap->volatile_parameters[1].sign==0) ){
+        ff[Ap->n_volatiles] = 0.0;
+    }
+    else{
+        ff[Ap->n_volatiles] = Ap->epsilon * A->volatiles[0].dpdx * A->volatiles[0].dxdt - A->volatiles[1].dpdx * A->volatiles[1].dxdt;
+    }
 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
@@ -688,7 +694,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 
 }
 
-PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, PetscScalar mass_r )
+PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, PetscScalar dmrdt )
 {
 
     PetscScalar               out, out2, dpsurfdt, f_thermal_escape;
@@ -731,8 +737,7 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     out2 *= f_thermal_escape;
 
     /* chemical reactions */
-    // DJB: should be symmetry with line ~802 in ic.c
-    out2 -= Ap->volatile_parameters[i].sign * Ap->volatile_parameters[i].factor * mass_r;
+    out2 -= Ap->volatile_parameters[i].sign * Ap->volatile_parameters[i].factor * dmrdt;
 
     /* solid and liquid reservoirs */
     out2 += A->volatiles[i].dxdt * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
