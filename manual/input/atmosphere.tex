@@ -1,7 +1,9 @@
 \fbox{\parbox{\textwidth}{Dimensional and non-dimensional equation for the mass balance and evolution of mass balance of a volatile.}}
 
 \noindent \dbnote{TODO: throughout this section the gravity is assumed to be positive, but in SPIDER it is actually negative!  So be aware of sign differences between these notes and the code.}
-
+%%%%
+%%%%
+%%%%
 \subsection{Volatile Mass Balance}
 The mass balance of a given volatile in the interior of a SPIDER model \citep[e.g.,][]{LMC13} is:
 \begin{equation}
@@ -128,13 +130,13 @@ Now the scaling constants in the penultimate term on the LHS are, according to t
 \frac{P_0 R_0^3}{M_0 S_0 T_0} = \frac{\rho_0 S_0 T_0 R_0^3}{\rho_0 R_0^3 S_0 T_0} = 1
 \end{equation}
 %%%%
-\subsubsection{Non-dimensional volatile mass balance}
-Therefore the mass balance in non-dimensional form is, \myemph{where again, masses of the solid, liquid, mantle, and escape reservoir, are scaled masses without the $4 \pi$ term}:
+\subsubsection{Volatile Mass Balance}
+Therefore the mass balance in non-dimensional form is, \myemph{where again, masses are scaled masses without the $4 \pi$ term}:
 \boxedeq{}{\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m \label{eq:volevo}}
 Compared to the dimensional form (Eq.~\ref{eq:dimvolatile}), there is an extra scaling factor in front of the atmospheric mass and other mass terms, to take account of the fact that we have converted mass fraction quantities to scaled ppm.  In the case of the atmospheric mass, this extra scaling factor cannot be absorbed by a $\hat{X_v}$ term since the volatile concentration is wrapped up inside the partial pressure formula.
 %%%%
-\subsubsection{Scaled non-dimensional masses}
-The scaled (i.e., without the prefactor of $4\pi$) non-dimensional masses of volatiles are therefore:
+\subsubsection{Scaled Non-dimensional Mass}
+By inspection of Eq.~\ref{eq:volevo}, we can determine the scaled (i.e., without the prefactor of $4\pi$) non-dimensional masses of volatiles:
 \begin{equation}
 \hat{m}_v^s = \hat{X_v} k_v \hat{M}^s
 \end{equation}
@@ -142,54 +144,63 @@ The scaled (i.e., without the prefactor of $4\pi$) non-dimensional masses of vol
 \hat{m}_v^l = \hat{X_v} \hat{M}^l
 \end{equation}
 \begin{equation}
-\hat{m}_v^g = \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p}
+\hat{m}_v^g = \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v}
 \end{equation}
-The remaining mass reservoirs (superscript $e$, $o$, and $r$) all follow this scaling (e.g.)
+The remaining mass reservoirs (superscript $e$, $o$, and $r$) all follow this scaling (taking $m_v^e$ as an example):
 \begin{equation}
 \hat{m}_v^e = \frac{10^6}{V_0} \frac{m_v^e}{M_0}
 \end{equation}
 %%%%
-\dbnote{TO HERE}
-\subsubsection{Dimensionalising}
-In SPIDER we provide a dimensional scaling for each parameter to give a meaningful output for plotting and analysis.  For the \myemph{physical mantle reservoir masses of melt and solid phases (note $4 \pi$ term)}:
+\subsubsection{Dimensional Physical Mass}
+We provide a dimensional scaling for each parameter to give a meaningful physical output for plotting and analysis.  For the \myemph{physical mantle reservoir masses of melt and solid phases (note $4 \pi$ term), where the additional superscript $p$ denotes physical}:
 \begin{equation}
 M^{\rm sp} = \hat{M}^{\rm s} \cdot 4 \pi M_0, \qquad M^{\rm lp} = \hat{M}^{\rm l} \cdot 4 \pi M_0
 \end{equation}
-Now for each volatile, we compute the dimensional mass in the liquid, solid, and gas phase, as well as the escaped reservoir:
+For each volatile, we compute the dimensional mass for all reservoirs using the same scaling (taking $m_v^{sp}$ as an example):
 \begin{equation}
-m_{\rm v}^{\rm sp} = \hat{m}_{\rm v}^{\rm s} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
-\end{equation}
-\begin{equation}
-m_{\rm v}^{\rm lp} = \hat{m}_{\rm v}^{\rm l} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
-\end{equation}
-\begin{equation}
-m_{\rm v}^{\rm gp} = \hat{m}_{\rm v}^{\rm g} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
-\end{equation}
-\begin{equation}
-m_{\rm v}^{\rm ep} = \hat{m}_{\rm v}^{\rm ep} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
-\end{equation}
-\begin{equation}
-m_{\rm v}^{\rm o} = \hat{m}_{\rm v}^{\rm o} \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
+m_v^{sp} = \hat{m}_v^s \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
 \end{equation}
 %%%%
+%%%%
+%%%%
 \subsection{Initial Volatile Concentration}
-For an initial condition it is desirable to prescribe $\hat{X}^{\rm init}$, but we must then compute $\hat{X}^{\rm l}$ according to the mass balance since this is the quantity that is actually solved for (i.e., evolved with time).  We assume the magma ocean is completely molten at $t=0$, i.e. all the mantle mass is liquid, and no volatiles have yet escaped.  Therefore:
+For an initial condition it is desirable to prescribe $\hat{X}_v^{\rm init}$, but we must then compute $\hat{X_v}$ according to the mass balance since this is the quantity that is actually solved for (i.e., evolved with time).  We assume the magma ocean is completely molten at $t=0$, i.e., all the mantle mass is liquid, and no volatiles have yet escaped.  We also need to realise that our ``desired'' initial volatile concentration may be incompatible with the chemical equilibrium criteria that we (optionally) prescribe, and therefore some mass may be necessarily exchanged through chemical reactions.  In this regard, our prescribed initial abundances are really just initial guesses of $X_v$ that the code uses to iterate to find the correct $X_v$ that satisfies the mass balance.  Therefore:
 \begin{equation}
-\hat{M}^{\rm s} = \hat{m}_{\rm v}^{\rm e} = \hat{m}_{\rm v}^{\rm o} = 0, \qquad \hat{M}^{\rm l} = \hat{M}^{\rm m}
+\hat{M}^s = \hat{m}_v^e = \hat{m}_v^o = 0, \qquad \hat{M}^l = \hat{M}^m
 \end{equation}
 So the mass balance for the initial condition is:
 \begin{equation}
-\hat{X}^{\rm l} \hat{M}^{\rm m} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\hat{p} (\hat{X}^{\rm l}) = \hat{X}^{\rm init} \hat{M}^{\rm m}
+\hat{X_v} \hat{M}^m + \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p_v} + \hat{m}_v^r = \hat{X}_v^{\rm init} \hat{M}^m
+\label{eq:volinit}
 \end{equation}
-Substitute in the expression for the partial pressure:
+For the case of no chemical reactions, $\hat{m}_v^r=0$ for all volatiles and hence the only coupling between volatiles is through their partial pressures, which all contribute to the total surface pressure.  For the case with a single chemical reaction, there is mass transfer between two volatile species (denoted by subscripts 0 and 1 in the following) according to an equilibrium criteria, such as:
 \begin{equation}
-\hat{X}^{\rm l} \hat{M}^{\rm m} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^\beta = \hat{X}^{\rm init} \hat{M}^{\rm m}
+\frac{\hat{p_1}}{\hat{p_0}} = \epsilon
+\label{eq:volequil}
 \end{equation}
-Divide through by the (non-dimensional) mantle mass $\hat{M}^m$:
+Therefore, if a single chemical reaction is present that only exchanges mass between two volatiles, we use Eq.~\ref{eq:volinit} (for each volatile, including those that are non-reacting by setting $m_v^r$ to zero) along with an additional equilibrium constraint given by Eq.~\ref{eq:volequil}.  This enables us to solve for $\hat{X_v}$ for each volatile and the chemical reaction mass $m_v^r$, once we establish a relationship between the mass loss of one volatile and the mass gain of another (see Sect.~\ref{sect:chemreact}).  Recall that the mean molar mass of the atmosphere is given by Eq.~\ref{eq:atmosphere_molar_mass} and the partial pressures must sum to give the total pressure (Eq.~\ref{eq:atmosphere_molar_mass}).
+%%%%
+%%%%
+%%%%
+\subsection{Chemical Reactions}
+\label{sect:chemreact}
+A statement of chemical equilibrium is often conveniently expressed like Eq.~\ref{eq:volequil}, but practically this is manifest as a transfer of mass between volatiles.  For simplicity, again consider a single chemical reaction that transfers mass between two volatile species, taking the following as an example:
 \begin{equation}
-\hat{X}^{\rm l} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{M}^{\rm m} \hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^\beta = \hat{X}^{\rm init}
+    \frac{1}{2} O_2 + H_2 \leftrightarrow H_2O
+    \label{eq:reaction}
 \end{equation}
-where the mean molar mass of the atmosphere is given by Eq.~\ref{eq:atmosphere_molar_mass} and recall that the partial pressures must sum to give the total pressure (Eq.~\ref{eq:atmosphere_molar_mass}).  For the initial condition, we want to specify the \myemph{total initial abundance of a given volatile, relative to the mantle mass}.  This means that we know the RHS and must solve for $\hat{X}^l$, since the code integrates the liquid mantle abundance.  Furthermore, since every volatile relation relies on the others through the mean molar mass of the atmosphere, we have a coupled system of $p$ non-linear equations that we must solve to determine the initial liquid abundance of every volatile species.
+In essence, we can consider a loss (or gain) of H$_2$ to relate to a gain (or loss) of H$_2$O.  Therefore, the relationship between the reaction mass terms is:
+\begin{equation}
+\frac{m_{H_2}^r}{\mu_{H_2}} = -\frac{m_{H_2O}^r}{\mu_{H_2O}}
+\label{eq:mvr}
+\end{equation}
+Our sign convention, inherent to Eq.~\ref{eq:mvr}, is that positive $m_{H_2}^r$ corresponds to $H_2$ mass loss (this is obvious when you move the term to the RHS of the volatile mass balance and it then becomes negative).  Therefore, the ``default'' reaction is the forward reaction and the sign encapsulates the direction of the reaction.  In Eq.~\ref{eq:mvr} we are using molar masses to account for the fact that loss of 1 mole of H$_2$ is effectively a gain of 1 mole of H$_2$O, since we do not explicitly keep track of the mass balance of O.  Therefore:
+\begin{equation}
+m_{H_2}^r = - \left( \frac{\mu_{H_2}}{\mu_{H_2O}} \right) m_{H_{2O}}^r
+\end{equation}
+This establishes the relationship between two chemical reaction terms, such that now we can determine $\hat{X_v}$ for each volatile and, for example in the case of H$_2$ and H$_2$O, either $m_{H_2}^r$ or $m_{H_2O}^r$.  \dbnote{In the prototype code, the ratio of the molar masses is defined as \emph{-H2O\_factor}.  By default, \emph{-H2\_factor=1} since the reaction is calibrated (referenced) to H$_2$.  Also, \emph{-H2O\_sign=1} identifies H$_2$O as a product (by default), and \emph{-H2\_sign=-1} identifies H$_2$ as a reactant (by default).}
+
+
 %%%%
 %%%%
 %%%%
@@ -448,41 +459,42 @@ where the sign is determined through the comparison of Q and K and whether the v
 %%%%
 %%%%
 %%%%
-\subsubsection{Mass balance with and without reactions}
-\paragraph{Without chemical reactions}
-First, consider the classic picture of Henry's law, with a volatile overlying a liquid phase in which it is dissolved.  This simple picture corresponds to a volatile in the magma ocean (i.e., liquid) and volatile in the atmosphere.  The total mass balance for a given volatile, excluding reactions is:
-\begin{equation}
-X_{\rm v}^{\rm l} (k_{\rm v} M^{\rm s} + M^{\rm l}) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{\rm v}^{\rm g}}{\mu_{\rm t}} \right) p (X_{\rm v}^{\rm l}) = X_{\rm v}^{\rm init} M^{\rm m}
-\end{equation}
-The first term is the mass of volatile in a solid phase (for the typical Henry's picture you can consider $k_v=0$), the second term is the mass in the liquid, and the third term is the mass in the atmosphere.  By mass conservation, this must be equal to some initial mass (the RHS).  The (mass) concentration in the liquid is related to the molar concentration in the atmosphere through a Henry-type law (Eq.~\ref{eq:Henry_mod}).  An equation of this form holds for all volatiles in the system.  The total reservoir (RHS) is modified by escape, but in the end, there is a reservoir of a given mass of volatiles that is partitioned between the solid, liquid, and gas phase.
-
-\paragraph{With chemical reactions}
-For simplicity, let's just consider H$_2$ and the forward reaction (reaction of the dissolved H$_2$ to form H$_2$O gas in the liquid).  The backward reaction is naturally accommodated by a sign change, so does not require any special adjustment of the equations.  Since there is a relationship between the concentration in the liquid and the mole fraction in the gas, we can express the reaction either in terms of concentrations or in terms of partial pressures.  It seems to be more common to express in terms of a change in partial pressure, probably due to the historical development of chemical reactions in gases.  Therefore, let's explicitly now note that Eq.~\ref{eq:Keq_diff_solve} provides the necessary change in partial pressure to bring the system back to equilibrium:
-\begin{equation}
-[\delta p] = \frac{K_{eq} (fO_2)^{1/2} P_{H_2} - P_{H_2O}}{K_{eq} (fO_2)^{1/2} + 1}
-\label{eq:Keq_diff_solve2}
-\end{equation}
-And again, this $\delta p$ relates to a change in mass concentration of the volatile in the liquid, through a Henry-type law.  First, let's just consider the mass of volatile that is lost from the gas phase, since this is more trivial to obtain from $\delta p$ directly.  By our sign convention:
-\begin{equation}
-P_{H_2}^{\rm eq} (X_{H_2}^{\rm eq}) = P_{H_2}(X_{H_2}) - \delta p (X_{H_2},\ X_{H_2O})
-\label{eq:peq_diff}
-\end{equation}
-\begin{equation}
-P_{H_2O}^{\rm eq} (X_{H_2O}^{\rm eq}) = P_{H_2O} (X_{H_2O}) + \delta p (X_{H_2},\ X_{H_2O})
-\end{equation}
-The arguments have been included to emphasis the dependencies, where importantly, at equilibrium there is an associated equilibrium concentration in the liquid.  The superscript notation is simply to denote the effective partial pressure accounting for the reaction.  To recap, we are assuming that we are currently not in equilibrium with the reaction with a concentration ($X_{H_2}$), and need to compute ($X^{\rm eq}_{H_2}$).  We can use Eq.~\ref{eq:peq_diff} to replace $P_{H_2}$:
-\begin{equation}
-X_{H_2} (k_{H_2} M^s + M^l) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{H_2}}{\mu_{\rm t}} \right) \left( P_{H_2}^{\rm eq}(X_{H_2}^{\rm eq})+\delta p (X_{H_2}) \right) = X_{H_2}^{\rm init} M^m
-\end{equation}
+% OLD WORKING NOW COMMENTED OUT
+%\subsubsection{Mass balance with and without reactions}
+%\paragraph{Without chemical reactions}
+%First, consider the classic picture of Henry's law, with a volatile overlying a liquid phase in which it is dissolved.  This simple picture corresponds to a volatile in the magma ocean (i.e., liquid) and volatile in the atmosphere.  The total mass balance for a given volatile, excluding reactions is:
+%\begin{equation}
+%X_{\rm v}^{\rm l} (k_{\rm v} M^{\rm s} + M^{\rm l}) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{\rm v}^{\rm g}}{\mu_{\rm t}} \right) p (X_{\rm v}^{\rm l}) = X_{\rm v}^{\rm init} M^{\rm m}
+%\end{equation}
+%The first term is the mass of volatile in a solid phase (for the typical Henry's picture you can consider $k_v=0$), the second term is the mass in the liquid, and the third term is the mass in the atmosphere.  By mass conservation, this must be equal to some initial mass (the RHS).  The (mass) concentration in the liquid is related to the molar concentration in the atmosphere through a Henry-type law (Eq.~\ref{eq:Henry_mod}).  An equation of this form holds for all volatiles in the system.  The total reservoir (RHS) is modified by escape, but in the end, there is a reservoir of a given mass of volatiles that is partitioned between the solid, liquid, and gas phase.
+%%%%
+%\paragraph{With chemical reactions}
+%For simplicity, let's just consider H$_2$ and the forward reaction (reaction of the dissolved H$_2$ to form H$_2$O gas in the liquid).  The backward reaction is naturally accommodated by a sign change, so does not require any special adjustment of the equations.  Since there is a relationship between the concentration in the liquid and the mole fraction in the gas, we can express the reaction either in terms of concentrations or in terms of partial pressures.  It seems to be more common to express in terms of a change in partial pressure, probably due to the historical development of chemical reactions in gases.  Therefore, let's explicitly now note that Eq.~\ref{eq:Keq_diff_solve} provides the necessary change in partial pressure to bring the system back to equilibrium:
+%\begin{equation}
+%[\delta p] = \frac{K_{eq} (fO_2)^{1/2} P_{H_2} - P_{H_2O}}{K_{eq} (fO_2)^{1/2} + 1}
+%\label{eq:Keq_diff_solve2}
+%\end{equation}
+%And again, this $\delta p$ relates to a change in mass concentration of the volatile in the liquid, through a Henry-type law.  First, let's just consider the mass of volatile that is lost from the gas phase, since this is more trivial to obtain from $\delta p$ directly.  By our sign convention:
+%\begin{equation}
+%P_{H_2}^{\rm eq} (X_{H_2}^{\rm eq}) = P_{H_2}(X_{H_2}) - \delta p (X_{H_2},\ X_{H_2O})
+%\label{eq:peq_diff}
+%\end{equation}
+%\begin{equation}
+%P_{H_2O}^{\rm eq} (X_{H_2O}^{\rm eq}) = P_{H_2O} (X_{H_2O}) + \delta p (X_{H_2},\ X_{H_2O})
+%\end{equation}
+%The arguments have been included to emphasis the dependencies, where importantly, at equilibrium there is an associated equilibrium concentration in the liquid.  The superscript notation is simply to denote the effective partial pressure accounting for the reaction.  To recap, we are assuming that we are currently not in equilibrium with the reaction with a concentration ($X_{H_2}$), and need to compute ($X^{\rm eq}_{H_2}$).  We can use Eq.~\ref{eq:peq_diff} to replace $P_{H_2}$:
+%\begin{equation}
+%X_{H_2} (k_{H_2} M^s + M^l) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{H_2}}{\mu_{\rm t}} \right) \left( P_{H_2}^{\rm eq}(X_{H_2}^{\rm eq})+\delta p (X_{H_2}) \right) = X_{H_2}^{\rm init} M^m
+%\end{equation}
 %It's apparent that we need to relate $X_{H_2}^{\rm eq}$ to $X_{H_2}$ using $\delta p$ to eliminate $X_{H_2}$.  This is because ultimately we want an update equation for $X_{H_2}$, which may (or may not) be in chemical equilibrium with the reaction.  \dbnote{A basic sanity check is to recover previous behaviour if the system is already in equilibrium.}. Using the non-linear Henry's law:
-\begin{equation}
-X_{H_2} = \alpha_{H_2} \left( P_{H_2}^{\rm eq} +\delta p \right)^{1/\beta}
-\end{equation}
-Therefore:
-\begin{equation}
-\alpha_{H_2} \left( P_{H_2}^{\rm eq} +\delta p \right)^{1/\beta} (k_{H_2} M^s + M^l) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{H_2}}{\mu_{\rm t}} \right) \left( P_{H_2}^{\rm eq}+\delta p \right) = X_{H_2}^{\rm init} M^m
-\end{equation}
-This is non-linear, but we know the current concentrations of all $X$'s, so can determine $X_{H_2}^{\rm eq}$.  \dbnote{$\mu_t$ must also be compatible with the new (equilibrium) partial pressures of all volatiles post-reaction).}
+%\begin{equation}
+%X_{H_2} = \alpha_{H_2} \left( P_{H_2}^{\rm eq} +\delta p \right)^{1/\beta}
+%\end{equation}
+%Therefore:
+%\begin{equation}
+%\alpha_{H_2} \left( P_{H_2}^{\rm eq} +\delta p \right)^{1/\beta} (k_{H_2} M^s + M^l) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{H_2}}{\mu_{\rm t}} \right) \left( P_{H_2}^{\rm eq}+\delta p \right) = X_{H_2}^{\rm init} M^m
+%\end{equation}
+%This is non-linear, but we know the current concentrations of all $X$'s, so can determine $X_{H_2}^{\rm eq}$.  \dbnote{$\mu_t$ must also be compatible with the new (equilibrium) partial pressures of all volatiles post-reaction).}
 %\begin{equation}
 %X_{H_2}^{\rm eq} = \alpha_{H_2} \left( P_{H_2}^{\rm eq} \right)^{1/\beta}
 %\end{equation}
@@ -509,50 +521,50 @@ This is non-linear, but we know the current concentrations of all $X$'s, so can 
 %%%%
 %%%%
 %%%%
-\subsubsection{Additional notes on \cite{OS19}}
-An aspect I hadn't fully appreciated until now, is that in some sense H$_2$O is not a ``free'' volatile for \cite{OS19}.  Basically, the only way that H$_2$O can be produced is through chemical reactions involving H$_2$.  This means that the concentration of H$_2$O at the surface is solely dependent on the concentration of H$_2$ \citep[Eq.~39,][]{OS19}.  This addresses a source of confusion I was having, which is how you can ``independently'' evolve H$_2$ and H$_2$O according to their own solubility criteria when thermodynamic considerations of the interior demand that the concentrations are linked.  In this regard, I'm not sure we can honour the existing independent evolution of all volatiles in SPIDER whilst at the same time enforcing the thermodynamic condition.  Basically, there are too many (inconsistent) constraints.
+%\subsubsection{Additional notes on \cite{OS19}}
+%An aspect I hadn't fully appreciated until now, is that in some sense H$_2$O is not a ``free'' volatile for \cite{OS19}.  Basically, the only way that H$_2$O can be produced is through chemical reactions involving H$_2$.  This means that the concentration of H$_2$O at the surface is solely dependent on the concentration of H$_2$ \citep[Eq.~39,][]{OS19}.  This addresses a source of confusion I was having, which is how you can ``independently'' evolve H$_2$ and H$_2$O according to their own solubility criteria when thermodynamic considerations of the interior demand that the concentrations are linked.  In this regard, I'm not sure we can honour the existing independent evolution of all volatiles in SPIDER whilst at the same time enforcing the thermodynamic condition.  Basically, there are too many (inconsistent) constraints.
 
-Following \cite[Eq.~35,][]{OS19} (i.e., Dalton's law):
-\begin{equation}
-P_s = P_{H_2} + P_{He} + P_{H_2O}
-\end{equation}
+%Following \cite[Eq.~35,][]{OS19} (i.e., Dalton's law):
+%\begin{equation}
+%P_s = P_{H_2} + P_{He} + P_{H_2O}
+%\end{equation}
 
-And the equilibrium condition \citep[Eq.~36,][]{OS19}:
-\begin{equation}
-\frac{P_{H_2O}}{P_{H_2}} = \epsilon
-\end{equation}
-Therefore:
-\begin{equation}
-P_s = P_{H_2} + P_{H_2O} + P_{He} = (1+\epsilon) P_{H_2} + P_{He} %= P_{H_2}^\ast + P_{He}
-\end{equation}
-And:
-\begin{equation}
-\frac{P_{H_2}}{P_{H_2} + P_{H_2O}} = \frac{1}{1+\epsilon}
-\end{equation}
-Therefore, relative to no chemical reaction occurring, the ratio of partial pressures drops below unity.
+%And the equilibrium condition \citep[Eq.~36,][]{OS19}:
+%\begin{equation}
+%\frac{P_{H_2O}}{P_{H_2}} = \epsilon
+%\end{equation}
+%Therefore:
+%\begin{equation}
+%P_s = P_{H_2} + P_{H_2O} + P_{He} = (1+\epsilon) P_{H_2} + P_{He} %= P_{H_2}^\ast + P_{He}
+%\end{equation}
+%And:
+%\begin{equation}
+%\frac{P_{H_2}}{P_{H_2} + P_{H_2O}} = \frac{1}{1+\epsilon}
+%\end{equation}
+%Therefore, relative to no chemical reaction occurring, the ratio of partial pressures drops below unity.
 %where $P_{H_2}^\ast$ is the equivalent partial pressure of H$_2$ accounting for the reaction.
 
-\dbnote{Continue with derivative for Eq.~37 in Olson and Sharp (2019).  I added some stuff below (now commented out in the latex version) but I don't think it's quite right --- the volatiles should always be independent of each other in terms of computing their partial pressure.}
-where $P_{H_2,H_2O}$ is an effective partial pressure that accounts for both H$_2$ and H$_2$O (i.e., taking account of reactions).  This must relate directly to the total number of moles of H$_2$ in the atmosphere $x_{H_2}$ (again, including the contribution from H$_2$O):
-\begin{equation}
-P_{H_2}^\ast = x_{H_2} P_s
-\end{equation}
-Therefore:
-\begin{equation}
-P_{H_2} = \left( \frac{x_{H_2} P_s}{1+\epsilon} \right)
-\end{equation}
-Finally, $P_{H_2}$ is the partial pressure of $H_2$ in the absence of reactions, which is given by our modified Henry's law (Eq.~\ref{eq:Henry_mod}):
-\begin{equation}
-X_{H_2}^l = \alpha \left( \frac{x_{H_2} P_s}{1+\epsilon} \right) ^ {1/\beta}
-\end{equation}
-This completes the derivation of \cite[Eq.~37,][]{OS19} and \textbf{suggests that we can accommodate reactions by simply modifying (again) the form of Henry's law to account for an extra factor of $\epsilon$.}. \dbnote{but how to deal with $x_{H_2}$ since usually we don't consider this since it relates directly to the partial pressure of Henry's law (in the absence of chemical reactions).}
+%\dbnote{Continue with derivative for Eq.~37 in Olson and Sharp (2019).  I added some stuff below (now commented out in the latex version) but I don't think it's quite right --- the volatiles should always be independent of each other in terms of computing their partial pressure.}
+%where $P_{H_2,H_2O}$ is an effective partial pressure that accounts for both H$_2$ and H$_2$O (i.e., taking account of reactions).  This must relate directly to the total number of moles of H$_2$ in the atmosphere $x_{H_2}$ (again, including the contribution from H$_2$O):
+%\begin{equation}
+%P_{H_2}^\ast = x_{H_2} P_s
+%\end{equation}
+%Therefore:
+%\begin{equation}
+%P_{H_2} = \left( \frac{x_{H_2} P_s}{1+\epsilon} \right)
+%\end{equation}
+%Finally, $P_{H_2}$ is the partial pressure of $H_2$ in the absence of reactions, which is given by our modified Henry's law (Eq.~\ref{eq:Henry_mod}):
+%\begin{equation}
+%X_{H_2}^l = \alpha \left( \frac{x_{H_2} P_s}{1+\epsilon} \right) ^ {1/\beta}
+%\end{equation}
+%This completes the derivation of \cite[Eq.~37,][]{OS19} and \textbf{suggests that we can accommodate reactions by simply modifying (again) the form of Henry's law to account for an extra factor of $\epsilon$.}. \dbnote{but how to deal with $x_{H_2}$ since usually we don't consider this since it relates directly to the partial pressure of Henry's law (in the absence of chemical reactions).}
 
-Now, importantly \cite{OS19} have a standard Henry's law for noble gases, but the concentration of H$_2$O is directly tied to H$_2$:
-\begin{equation}
-X_{H_2O}^l = 1.1 ( \epsilon X_{H_2}^l )^{1/2}
-\end{equation}
+%Now, importantly \cite{OS19} have a standard Henry's law for noble gases, but the concentration of H$_2$O is directly tied to H$_2$:
+%\begin{equation}
+%X_{H_2O}^l = 1.1 ( \epsilon X_{H_2}^l )^{1/2}
+%\end{equation}
 
-You can consider this to be a type of Henry's law, in that the partial pressure of H$_2$O appears on the RHS, but the important point is that it is explicitly tied to the partial pressure of H$_2$ through the equilibrium reaction.
+%You can consider this to be a type of Henry's law, in that the partial pressure of H$_2$O appears on the RHS, but the important point is that it is explicitly tied to the partial pressure of H$_2$ through the equilibrium reaction.
 
 %%%%
 %%%%
@@ -664,29 +676,7 @@ Now we have two volatile update equations---one for H$_2$ and one for H$_2$O---b
 \frac{d\hat{p_{H_2O}}}{dt} - \epsilon \frac{d\hat{p_{H_2}}}{dt} = 0
 \end{equation}
 So now we have 3 equations and 3 unknowns.  The unknowns are the time differential of the interior mass concentration of both H$_2$ and H$_2$O (which directly relates to their partial pressure updates), and the rate-of-change of H$_2$ mass to H$_2$O, that is: $dm^{\rm r}_{H_2}/dt$.  Therefore, we should have everything we now need to solve this system.
-\subsubsection{Revised initial volatile concentration}
-For an initial condition it is desirable to prescribe $\hat{X}^{\rm init}$, but we must then compute $\hat{X}^{\rm l}$ according to the mass balance since this is the quantity that is actually solved for (i.e., evolved with time).  We assume the magma ocean is completely molten at $t=0$, i.e. all the mantle mass is liquid, and no volatiles have yet escaped.  We also need to realise that our ``desired'' initial volatile concentration may be incompatible with the chemical equilibrium criteria that we prescribe, and therefore we have a chemical reaction mass.  \dbnote{Sign probably positive for H$_2$ but negative for H$_2$O, in order to keep the convention of the forward reaction being the default}.  Therefore:
-\begin{equation}
-\hat{M}^{\rm s} = \hat{m}_{\rm v}^{\rm e} = \hat{m}_{\rm v}^{\rm o} = 0, \qquad \hat{M}^{\rm l} = \hat{M}^{\rm m}
-\end{equation}
-So the mass balance for the initial condition is:
-\begin{equation}
-\hat{X}^{\rm l} \hat{M}^{\rm m} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\hat{p} (\hat{X}^{\rm l}) + \hat{m}_{\rm v}^{\rm r} = \hat{X}^{\rm init} \hat{M}^{\rm m}
-\end{equation}
-Substitute in the expression for the partial pressure:
-\begin{equation}
-\hat{X}^{\rm l} \hat{M}^{\rm m} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^\beta + \hat{m}_{\rm v}^{\rm r} = \hat{X}^{\rm init} \hat{M}^{\rm m}
-\end{equation}
-Divide through by the (non-dimensional) mantle mass $\hat{M}^m$:
-\begin{equation}
-\hat{X}^{\rm l} + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2}{\hat{M}^{\rm m} \hat{g}} \left( \frac{\hat{\mu}_{\rm v}^{\rm g}}{\hat{\mu}_{\rm t}} \right)\left( \frac{\hat{X}^{\rm l}}{\hat{\alpha}} \right)^\beta + \frac{\hat{m}_{\rm v}^{\rm r}}{\hat{M}^m} = \hat{X}^{\rm init}
-\end{equation}
-The above equation applies to H$_2$.
-For chemical equilibrium:
-\begin{equation}
-\frac{\hat{p_{H_2O}} (\hat{X_{H_2O}}^{\rm l})}{\hat{p_{H_2}} (\hat{X_{H_2}}^{\rm l})} = \epsilon
-\end{equation}
-The mean molar mass of the atmosphere is given by Eq.~\ref{eq:atmosphere_molar_mass} and recall that the partial pressures must sum to give the total pressure (Eq.~\ref{eq:atmosphere_molar_mass}).  For the initial condition, we want to specify the \myemph{total initial abundance of a given volatile, relative to the mantle mass}.  This means that we know the RHS and must solve for $\hat{X}^l$, since the code integrates the liquid mantle abundance.  Furthermore, since every volatile relation relies on the others through the mean molar mass of the atmosphere, we have a coupled system of $p$ non-linear equations that we must solve to determine the initial liquid abundance of every volatile species.
+%%%%
 \subsubsection{Global mass of liquid and solid}
 The current version of SPIDER computes the hydrostatic pressure profile \emph{a priori} based on the Adams-Williamson equation of state.  This means that for simplicity we can compute the liquid mass by multiplying the mass of a particular radial shell $d\hat{m}_i$, with some function $g$, and then sum:% the melt fraction $\phi$, and then sum:
 \begin{equation}
