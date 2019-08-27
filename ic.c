@@ -142,6 +142,10 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     if(Ap->SOLVE_FOR_VOLATILES){
         ierr = set_initial_volatile( E ); CHKERRQ(ierr);
+        /* TODO: it might be best to now re-solve for the initial volatile abundance that is consistent
+           with the mass balance.  I.e., determine the compatible X_init for each volatile such that
+           the mass reaction term is, by definition, zero for the initial condition.  This shouldn't
+           influence the integration or anything, but it will mean we are sensibly referenced */
         for (i=0; i<Ap->n_volatiles; ++i) {
             x0 = A->volatiles[i].x;
             ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);

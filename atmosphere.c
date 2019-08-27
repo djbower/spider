@@ -815,7 +815,6 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     out += V->x;
     // DJB: reactions
     // NOTE MINUS =, due to sign convention of reactant=-1, product=1
-    // TODO: clean this up, looks inconsistent
     out -= Vp->sign * Vp->factor * mass_r; // XXX
     out -= Vp->initial;
 
