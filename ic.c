@@ -413,7 +413,9 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     // first slot (0) is assumed to be H2
     // second slot (1) is assumed to be H2O
     // at equilibrium this function must be zero
-    ff[Ap->n_volatiles] = Ap->epsilon*A->volatiles[0].p - A->volatiles[1].p; 
+    // FIXME: usage of factor here is clunky, but basically it's a hack to eliminate this term for no reactions
+    // by setting the factor to 0 for both H2 and H2O
+    ff[Ap->n_volatiles] = Ap->volatile_parameters[0].factor*Ap->epsilon*A->volatiles[0].p - Ap->volatile_parameters[1].factor*A->volatiles[1].p; 
 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 

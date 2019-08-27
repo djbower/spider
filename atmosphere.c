@@ -653,6 +653,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     PetscScalar       *ff;
     Ctx               *E = (Ctx*) ptr;
     PetscInt          i;
+    PetscScalar       mass_r; // DJB
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -663,19 +664,28 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].dxdt = xx[i];
     }
+    mass_r = xx[Ap->n_volatiles];
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        ff[i] = get_dxdt( A, Ap, i );
+        ff[i] = get_dxdt( A, Ap, i, mass_r );
     }
+    // DJB: chemical equilibrium condition
+    // first slot (0) is assumed to be H2
+    // second slot (1) is assumed to be H2O
+    // at equilibrium this function must be zero
+    // FIXME: usage of factor here is clunky, but basically it's a hack to eliminate this term for no reactions
+    // by setting the factor to 0 for both H2 and H2O
+    ff[Ap->n_volatiles] = Ap->volatile_parameters[0].factor * Ap->epsilon * A->volatiles[0].dpdx * A->volatiles[0].dxdt - Ap->volatile_parameters[1].factor * A->volatiles[1].dpdx * A->volatiles[1].dxdt;
+
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
 }
 
-PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i )
+PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, PetscScalar mass_r )
 {
 
     PetscScalar               out, out2, dpsurfdt, f_thermal_escape;
@@ -717,21 +727,9 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i 
     /* thermal escape correction */
     out2 *= f_thermal_escape;
 
-// TODO: delete old for two species only below
-#if 0
-    /* first part of atmosphere derivative */
-    out = -(V->p / PetscSqr(A->molar_mass)) * (CO2p->molar_mass - H2Op->molar_mass) / PetscSqr( CO2->p+H2O->p );
-    out *= H2O->p * CO2->dpdx * CO2->dxdt - CO2->p * H2O->dpdx * H2O->dxdt;
-
-    /* second part of atmosphere derivative */
-    out += ( 1.0 / A->molar_mass ) * V->dpdx * V->dxdt;
-
-    /* multiply by prefactors */
-    out *= (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Vp->molar_mass / -(*Ap->gravity_ptr); // note negative gravity
-
-    /* thermal escape correction */
-    out *= f_thermal_escape;
-#endif
+    /* chemical reactions */
+    // DJB: should be symmetry with line ~802 in ic.c
+    out2 -= Ap->volatile_parameters[i].sign * Ap->volatile_parameters[i].factor * mass_r;
 
     /* solid and liquid reservoirs */
     out2 += A->volatiles[i].dxdt * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);

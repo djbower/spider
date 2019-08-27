@@ -337,7 +337,8 @@ PetscErrorCode solve_dxdts( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"atmosts_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles );CHKERRQ(ierr);
+    // DJB: plus one to account for chemical equilibration constraint
+    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles+1 );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
@@ -348,6 +349,8 @@ PetscErrorCode solve_dxdts( Ctx *E )
     for (i=0; i<Ap->n_volatiles; ++i) {
         xx[i] = 0.0;
     }
+    // DJB chemical equilibration constraint
+    xx[Ap->n_volatiles] = 0.0; // relates to (dm_v^r)/dt
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
