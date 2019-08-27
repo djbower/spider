@@ -208,7 +208,6 @@
 -CO2_henry_pow 1.0 # power for Henry's law (Lebrun et al., 2013)
 -CO2_molar_mass 0.04401 # kg/mol
 -CO2_factor 0.0
--CO2_coeff 0.0
 -CO2_sign 0.0
 
 # parameters relating to H2O volatile
@@ -228,7 +227,6 @@
 # is a larger mass gain for the H2O reservoir than mass loss for the H2
 # reservoir.  This factor accommodates this
 -H2O_factor 8.936682739051928  # H2O molar mass / H2 molar mass
--H2O_coeff 1 # current stoichiometry
 # TODO: it might be more natural in the code to use -1 for a product
 -H2O_sign 1 # a product, numerator
 
@@ -243,7 +241,6 @@
 -H2_molar_mass 0.002 # kg/mol
 # FIXME: should these next two be with an H2 prefix?  If the variable names are the same as above, these values will override the ones above
 -H2_factor 1 # currently, everything is scaled to H2 so this is unity by default
--H2_coeff 1 # current stoichiometry
 # TODO: it might be more natural in the code to use 1 for a reactant
 -H2_sign -1 # a reactant, denominator
 
