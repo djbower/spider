@@ -385,7 +385,6 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     const PetscScalar          *xx;
     PetscScalar                *ff;
     PetscScalar                mass_r; // DJB
-    PetscScalar                epsilon; // DJB
     PetscInt                   i;
     Ctx                        *E = (Ctx*) ptr;
     Atmosphere                 *A = &E->atmosphere;
@@ -410,13 +409,11 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     }
 
     // DJB: next is the chemical equilibrium condition
-    // FIXME: epsilon should not be hard-coded
-    epsilon = 0.01;
     // DANGEROUS FIXME:
     // first slot (0) is assumed to be H2
     // second slot (1) is assumed to be H2O
     // at equilibrium this function must be zero
-    ff[Ap->n_volatiles] = epsilon*A->volatiles[0].p - A->volatiles[1].p; 
+    ff[Ap->n_volatiles] = Ap->epsilon*A->volatiles[0].p - A->volatiles[1].p; 
 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 

@@ -515,6 +515,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
 
+  Ap->epsilon = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-epsilon",&Ap->epsilon,NULL);CHKERRQ(ierr);
+
   /* emissivity is constant for SURFACE_BC != MO_ATMOSPHERE_TYPE_VOLATILES */
   Ap->emissivity0 = 1.0; // non-dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-emissivity0",&Ap->emissivity0,NULL);CHKERRQ(ierr);

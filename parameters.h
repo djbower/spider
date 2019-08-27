@@ -88,6 +88,7 @@ typedef struct AtmosphereParameters_ {
     PetscInt           n_volatiles;
     VolatileParameters volatile_parameters[SPIDER_MAX_VOLATILE_SPECIES];
     PetscScalar Rgas; // gas constant
+    PetscScalar epsilon; // for H2<->H2O reaction
     PetscScalar const * gravity_ptr;
     PetscScalar const * radius_ptr;
     PetscScalar const * VOLATILE_ptr;
