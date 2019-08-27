@@ -218,7 +218,7 @@
 # TODO: this initial is basically an initial guess, since we now solve
 # for chemical equilibrium and hence this value changes
 # below is a test, but this initial H2 agrees with chemical equil when epsilon=0.01
--H2O_initial 1.3399401107003328 # originally 500 # ppm, Elkins-Tanton (2008) case 2
+-H2O_initial 500 #1.3399401107003328 # originally 500 # ppm, Elkins-Tanton (2008) case 2
 #-H2O_initial 0.0 # ppm, Elkins-Tanton (2008) case 3
 -H2O_kdist 1.0E-4 # distribution coefficients are given in supplementary material of ET08
 -H2O_kabs 0.01 # absorption (m^2/kg)
@@ -238,7 +238,7 @@
 # for chemical equilibrium and hence this value changes
 
 # below is a test, but this initial H2 agrees with chemical equil when epsilon=0.01
--H2_initial 155.7992349566391 # originally 100 # ppm from https://doi.org/10.1016/j.epsl.2012.06.031
+-H2_initial 100 #155.7992349566391 # originally 100 # ppm from https://doi.org/10.1016/j.epsl.2012.06.031
 -H2_kdist 0.0017 # from https://doi.org/10.1029/2004GL021341
 -H2_kabs 0.0 # absorption (m^2/kg)
 -H2_henry 6.8E-2 # ppm/Pa--- what is this for hydrogen? 
