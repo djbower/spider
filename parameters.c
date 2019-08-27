@@ -141,15 +141,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_sign");CHKERRQ(ierr);
-  /* TODO: if relevant, add non-dimensionalisation and/or scaling here */
-  // vp->sign *= 1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->sign,&set);CHKERRQ(ierr);
-  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
-
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_coeff");CHKERRQ(ierr);
-  /* TODO: if relevant, add non-dimensionalisation and/or scaling here */
-  // vp->coeff *= 1.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->coeff,&set);CHKERRQ(ierr);
   if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_poststep_change");CHKERRQ(ierr);
