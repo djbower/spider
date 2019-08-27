@@ -29,11 +29,12 @@
 -ts_sundials_atol 1.0e-11
 -ts_sundials_rtol 1.0e-11
 
-#-atmosts_snes_atol 1.0E-11
-#-atmosts_snes_rtol 1.0E-11
+# tolerances for volatile evolution
+-atmosts_snes_atol 1.0E-11
+-atmosts_snes_rtol 1.0E-11
 
-#-atmosts_ksp_atol 1.0E-11
-#-atmosts_ksp_rtol 1.0E-11
+-atmosts_ksp_atol 1.0E-11
+-atmosts_ksp_rtol 1.0E-11
 
 #-atmosts_snes_view 
 #-atmosts_snes_converged_reason
@@ -210,7 +211,7 @@
 -CO2_factor 0.0
 -CO2_sign 0.0
 
--epsilon 0.01 # for H2<->H2O reaction
+-epsilon 0.1 # for H2<->H2O reaction
 
 # parameters relating to H2O volatile
 #-H2O_initial 0.0 # ppm
