@@ -421,7 +421,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     // second slot (1) is assumed to be H2O
     // at equilibrium this function must be zero
     // FIXME: hacky, but turn OFF reactions if sign is zero   
-    if( (Ap->volatile_parameters[0].sign==0) && (Ap->volatile_parameters[1].sign==0) ){
+    if( (Ap->volatile_parameters[0].sign==0.0) && (Ap->volatile_parameters[1].sign==0.0) ){
         ff[Ap->n_volatiles] = 0.0;
     }
     else{

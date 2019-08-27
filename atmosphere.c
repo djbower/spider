@@ -681,7 +681,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     // FIXME: usage of factor here is clunky, but basically it's a hack to eliminate this term for no reactions
     // by setting the factor to 0 for both H2 and H2O
     // FIXME: hacky, but turn OFF reactions if sign is zero 
-    if( (Ap->volatile_parameters[0].sign==0) && (Ap->volatile_parameters[1].sign==0) ){
+    if( (Ap->volatile_parameters[0].sign==0.0) && (Ap->volatile_parameters[1].sign==0.0) ){
         ff[Ap->n_volatiles] = 0.0;
     }
     else{
