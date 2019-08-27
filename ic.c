@@ -132,8 +132,8 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     PetscScalar                x0;
     Vec                        *subVecs;
     Atmosphere                 *A = &E->atmosphere;
-    Parameters           const *P  = &E->parameters;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    Parameters                 *P  = &E->parameters;
+    AtmosphereParameters       *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
 
@@ -142,10 +142,14 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     if(Ap->SOLVE_FOR_VOLATILES){
         ierr = set_initial_volatile( E ); CHKERRQ(ierr);
-        /* TODO: it might be best to now re-solve for the initial volatile abundance that is consistent
-           with the mass balance.  I.e., determine the compatible X_init for each volatile such that
-           the mass reaction term is, by definition, zero for the initial condition.  This shouldn't
-           influence the integration or anything, but it will mean we are sensibly referenced */
+        /* FIXME: hacky, but over-ride initial with new initial that obeys chemical reactions */
+        /* FIXME FIXME FIXME: should not write to parameters after they have been set! */
+        for (i=0; i<Ap->n_volatiles; ++i){
+            /* positive mass_reaction means that H2 has been lost (and sign is negative for H2) */
+            /* positive mass_reaction means that H2O has been gained (and sign is positive for H2O) */
+            Ap->volatile_parameters[i].initial += Ap->volatile_parameters[i].sign * Ap->volatile_parameters[i].factor * A->mass_reaction / (*Ap->mantle_mass_ptr);
+        }
+
         for (i=0; i<Ap->n_volatiles; ++i) {
             x0 = A->volatiles[i].x;
             ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
@@ -369,6 +373,9 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
             A->volatiles[i].x = xx[i];
         }
     }
+    /* DJB: save mass offset to reset initial volatile */
+    A->mass_reaction = xx[Ap->n_volatiles];
+
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     ierr = VecDestroy(&x);CHKERRQ(ierr);

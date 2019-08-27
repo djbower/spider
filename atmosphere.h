@@ -36,6 +36,7 @@ typedef struct Atmosphere_ {
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
     Volatile    volatiles[SPIDER_MAX_VOLATILE_SPECIES]; // volatile quantities
     PetscScalar molar_mass; // mean molar mass
+    PetscScalar mass_reaction; // DJB for IC atmosphere calculation (chemical reactions)
     DM          da_atm; // da for outputing atmosphere structure (below)
     DimensionalisableField atm_struct[NUMATMSTRUCTVECS];
     Vec atm_struct_tau;

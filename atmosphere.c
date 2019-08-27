@@ -74,6 +74,9 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     A->tsurf = 1.0;
     A->psurf = 0.0;
 
+    /* DJB: for chemical reactions */
+    A->mass_reaction = 0.0;
+
     PetscFunctionReturn(0);
 
 }
@@ -805,14 +808,14 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
 
     out = 1.0E6 / *Ap->VOLATILE_ptr;
     out *= PetscSqr( (*Ap->radius_ptr) ) / -(*Ap->gravity_ptr);
-    out /= (*Ap->mantle_mass_ptr);
+    //out /= (*Ap->mantle_mass_ptr);
     out *= (Vp->molar_mass / A->molar_mass);
     out *= V->p;
-    out += V->x;
+    out += V->x * (*Ap->mantle_mass_ptr);
     // DJB: reactions
     // NOTE MINUS =, due to sign convention of reactant=-1, product=1
     out -= Vp->sign * Vp->factor * mass_r; // contribution of the reaction mass
-    out -= Vp->initial;
+    out -= Vp->initial * (*Ap->mantle_mass_ptr);
 
     return out;
 
