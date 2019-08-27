@@ -324,7 +324,7 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"atmosic_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    // DJB: plus one for reaction mass
+    // DJB: plus one for reaction mass (H2<->H2O)
     ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles+1 );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
@@ -337,7 +337,7 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
         xx[i] = Ap->volatile_parameters[i].initial;
     }
     // DJB: need initial guess for reaction mass
-    xx[Ap->n_volatiles] = 0.0;
+    xx[Ap->n_volatiles] = 0.0; // assume we are at equilibrium
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
@@ -394,7 +394,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].x = xx[i];
     }
-    mass_r = xx[Ap->n_volatiles]; // reaction mass (to be determined also by solver)
+    mass_r = xx[Ap->n_volatiles]; // reaction mass (also to be determined by solver)
     VecRestoreArrayRead(x,&xx);
 
     ierr = set_atmosphere_volatile_content( A, Ap ); CHKERRQ(ierr);
@@ -405,13 +405,13 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
         ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i], mass_r );
     }
 
-    // DJB: need to set another function to zero
-    // This is the chemical equilibrium condition
-    // FIXME: should not be hard-coded
+    // DJB: next is the chemical equilibrium condition
+    // FIXME: epsilon should not be hard-coded
     epsilon = 0.01;
-    // FIXME:
+    // DANGEROUS FIXME:
     // first slot (0) is assumed to be H2
     // second slot (1) is assumed to be H2O
+    // at equilibrium this function must be zero
     ff[Ap->n_volatiles] = epsilon*A->volatiles[0].p - A->volatiles[1].p; 
 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
