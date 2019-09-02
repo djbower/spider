@@ -75,6 +75,7 @@ typedef struct AtmosphereParameters_ {
     PetscScalar kB;
     PetscScalar bigG;
     PetscScalar teqm;
+    PetscReal   tsurf_poststep_change; // maxmimum absolute change in surface temperature before exiting loop
     PetscBool   PARAM_UTBL;
     PetscScalar param_utbl_const;
     // for volatile ODE

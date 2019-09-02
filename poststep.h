@@ -6,6 +6,7 @@
 
 typedef struct {
   PetscReal volatile_abundances[SPIDER_MAX_VOLATILE_SPECIES];
+  PetscReal tsurf;
 } PostStepData;
 
 PetscErrorCode PostStepDataInitialize(Ctx *,Vec);

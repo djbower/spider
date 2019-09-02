@@ -526,6 +526,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-teqm",&Ap->teqm,NULL);CHKERRQ(ierr);
   Ap->teqm /= C->TEMP;
 
+  Ap->tsurf_poststep_change = -1.0; // (K) (also, negative value turns off)
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-tsurf_poststep_change",&Ap->tsurf_poststep_change,NULL);CHKERRQ(ierr);
+  Ap->tsurf_poststep_change /= C->TEMP;
+
   /* for radiative boundary condition at the top surface
      dT = param_utbl_const * [Surface temperature]**3 */
   Ap->PARAM_UTBL = PETSC_TRUE;
