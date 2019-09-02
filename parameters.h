@@ -165,6 +165,7 @@ typedef struct _Parameters {
     PetscScalar ic_dsdr;
     PetscScalar radius;
     PetscScalar coresize;
+    PetscScalar coremass;
     PetscScalar rhos;
     PetscScalar beta;
     PetscScalar grain;

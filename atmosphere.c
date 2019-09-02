@@ -553,6 +553,8 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     ierr = JSON_add_single_value_to_object(dm, scaling, "mass_solid", "kg", A->Msol, data);CHKERRQ(ierr);
     /* total mass of mantle, kg (for sanity check) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "mass_mantle", "kg", *Ap->mantle_mass_ptr, data);CHKERRQ(ierr);
+    /* total mass of core, kg */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "mass_core", "kg", P->coremass, data);CHKERRQ(ierr);
 
     /* kg, without 4*pi */
     val = C->MASS * A->molar_mass * 1.0E3;

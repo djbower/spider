@@ -341,6 +341,10 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-rho_core",&P->rho_core,NULL);CHKERRQ(ierr);
   P->rho_core /= C->DENSITY;
 
+  /* core mass (calculated, non-dimensional scaled mass) */
+  P->coremass = 1.0/3.0 * PetscPowScalar( P->coresize, 3.0) * PetscPowScalar( P->radius, 3.0 );
+  P->coremass *= P->rho_core;
+
   /* heat capacity of core (J/kg-K) */
   P->cp_core = 880.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-cp_core",&P->cp_core,NULL);CHKERRQ(ierr);
