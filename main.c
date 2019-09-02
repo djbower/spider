@@ -104,7 +104,6 @@ int main(int argc, char ** argv)
     stepmacro = 0; /* Macro steps always start from 0, regardless of physical starting time */
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
 
-
     /* Final setup logic (needs to be here because some things, like TSSetTime(),
        won't work properly for the SUNDIALS implementation if called after TSSetUp()) */
     ierr = TSSetUp(ts);CHKERRQ(ierr);
@@ -122,10 +121,11 @@ int main(int argc, char ** argv)
     }
     if (P->postStepActive) {
       ierr = TSSetApplicationContext(ts,&ctx);CHKERRQ(ierr);
-      ierr = PostStepDataInitialize(&ctx,sol);CHKERRQ(ierr); /* use initial condition here */
+      ierr = PostStepDataInitialize(&ctx);CHKERRQ(ierr); /* use initial condition here */
       ierr = TSSetPostStep(ts,PostStep);CHKERRQ(ierr);
     }
 
+    /* TODO: remove this block if the block above is OK */
     /* previously was here */
     /* output first time step (initial condition) */
     //if (P->monitor) {

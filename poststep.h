@@ -9,7 +9,7 @@ typedef struct {
   PetscReal tsurf;
 } PostStepData;
 
-PetscErrorCode PostStepDataInitialize(Ctx *,Vec);
+PetscErrorCode PostStepDataInitialize(Ctx *);
 PetscErrorCode PostStep(TS);
 
 #endif

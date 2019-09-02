@@ -2,7 +2,7 @@
 #include "ctx.h"
 #include "util.h"
 
-PetscErrorCode PostStepDataInitialize(Ctx *E, Vec sol_in)
+PetscErrorCode PostStepDataInitialize(Ctx *E)
 {
   PetscErrorCode             ierr;
   Atmosphere                 *A = &E->atmosphere;
@@ -16,19 +16,20 @@ PetscErrorCode PostStepDataInitialize(Ctx *E, Vec sol_in)
   //ierr = PetscPrintf(PetscObjectComm((PetscObject)X),"PLACEHOLDER I'm %s in %s:%d, Populating ctx->postStepData\n",__func__,__FILE__,__LINE__);
   data = (PostStepData*) E->postStepData;
 
-  // TODO: I think not needed anymore, since we evaluate RHS before this is called
-  /* update the volatile abundances in the atmosphere struct */
-  //ierr = set_volatile_abundances_from_solution( E, sol_in );CHKERRQ(ierr);
+  /* PostStepDataInitialize is called after TSCustomMonitor, which means the ctx has
+     been updated to be consistent with the solution.  Therefore we can pull data
+     from the ctx */
 
   /* store volatile abundances to the poststep data struct */
   for( i=0; i<Ap->n_volatiles; ++i) {
      data->volatile_abundances[i] = A->volatiles[i].x;
   }
 
-  /* surface temperature */
+  /* store surface temperature to the poststep data struct */
   data->tsurf = A->tsurf;
 
   PetscFunctionReturn(0);
+
 }
 
 PetscErrorCode PostStep(TS ts)
@@ -65,11 +66,13 @@ PetscErrorCode PostStep(TS ts)
   for( i=0; i<Ap->n_volatiles; ++i) {
      Volatile *V = &A->volatiles[i];
      maxx = P->atmosphere_parameters.volatile_parameters[i].poststep_change;
-     relx = PetscAbsReal( (V->x-data->volatile_abundances[i]) / data->volatile_abundances[i] );
-     if ( relx > maxx ){
-         //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, rolling back solution and setting flags\n",__fun    c__,__FILE__,__LINE__);
-         ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"volatile %d change exceeded (= %f, max= %f)\n",i,relx,maxx);
-         EVENT = PETSC_TRUE;
+     if( maxx > 0 ){
+         relx = PetscAbsReal( (V->x-data->volatile_abundances[i]) / data->volatile_abundances[i] );
+         if ( relx > maxx ){
+             //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, rolling back solution and setting flags\n",__fun    c__,__FILE__,__LINE__);
+             ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"volatile %d change exceeded (= %f, max= %f)\n",i,relx,maxx);
+             EVENT = PETSC_TRUE;
+         }
      }
   }
 

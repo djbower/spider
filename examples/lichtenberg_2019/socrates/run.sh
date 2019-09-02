@@ -29,7 +29,7 @@
 # -nstepsmacro 1:                  make a single timestep
 # -dtmacro 30000:                  delta time to advance by, here is 30,000 years
 #
-# -tsurf_poststep_change:          maximum absolute temperature change in Kelvin.  Default is OFF (a negative value)
+# -tsurf_poststep_change:          maximum absolute temperature change in Kelvin
 
 # ==================
 # Overview of result
@@ -50,4 +50,4 @@
 # SPIDER to do it.
 
 # main restart example is here:
-spider -options_file bu_input.opts -initial_condition 2 -ic_filename 50002.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -tsurf_poststep_change 100 -nstepsmacro 1 -dtmacro 30000
+spider -options_file bu_input.opts -initial_condition 2 -ic_filename 50002.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -tsurf_poststep_change 10.0 -nstepsmacro 1 -dtmacro 30000

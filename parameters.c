@@ -135,7 +135,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   vp->cross_section /= C->AREA;
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_poststep_change");CHKERRQ(ierr);
-  vp->poststep_change = -1;
+  vp->poststep_change = -1; // fractional (negative value is OFF)
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->poststep_change,&set);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -526,7 +526,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-teqm",&Ap->teqm,NULL);CHKERRQ(ierr);
   Ap->teqm /= C->TEMP;
 
-  Ap->tsurf_poststep_change = -1.0; // (K) (also, negative value turns off)
+  Ap->tsurf_poststep_change = -1; // (K) (negative value is OFF)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-tsurf_poststep_change",&Ap->tsurf_poststep_change,NULL);CHKERRQ(ierr);
   Ap->tsurf_poststep_change /= C->TEMP;
 

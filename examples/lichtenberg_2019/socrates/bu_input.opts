@@ -175,8 +175,6 @@
 # Define the volatiles
 -volatile_names CO2,H2O
 
--tsurf_poststep_change 10.0
-
 # parameters relating to CO2 volatile
 #-CO2_initial 0.0 # ppm
 #-CO2_initial 1000.0 # ppm, Elkins-Tanton (2008) case 1 
