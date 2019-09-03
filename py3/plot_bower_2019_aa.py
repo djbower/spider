@@ -34,7 +34,9 @@ def spiderplot_fig1( times ):
     # these times are for case1
     #times='0,94400,5450000,560000000,4550000000'
     # these times are for case1m
-    times = '0,94400,300000,550000,3900000'
+    #times = '0,94400,300000,550000,3900000'
+    # these times are for case3s
+    times = '0,250000,700000,62000000,4550000000'
     # with 0.3 contour
     # these times are for case3
     #times='0,250000,650000,573000000,4550000000'
