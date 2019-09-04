@@ -36,6 +36,12 @@ def get_param_data_d():
                 'CO2_ppm': 941,
                 'H2O_ppm': 128,
                 'mix': 0.75},
+                 # case 7
+                'case7s': {
+                'dir':'case7s_941_128',
+                'CO2_ppm': 941,
+                'H2O_ppm': 128,
+                'mix': 0.75},
                 'case7w': {
                 'dir':'case7w_941_128',
                 'CO2_ppm': 941,
@@ -43,6 +49,11 @@ def get_param_data_d():
                 'mix': 0.75},
                 'case7m': {
                 'dir':'case7m_941_128',
+                'CO2_ppm': 941,
+                'H2O_ppm': 128,
+                'mix': 0.75},
+                'case7ms': {
+                'dir':'case7ms_941_128',
                 'CO2_ppm': 941,
                 'H2O_ppm': 128,
                 'mix': 0.75},
@@ -102,6 +113,11 @@ def get_param_data_d():
                 'mix': 1.0/4.0},
                 'case3m5': {
                 'dir':'case3m5_160_197',
+                'CO2_ppm': 160,
+                'H2O_ppm': 197,
+                'mix': 1.0/4.0},
+                'case3m5s': {
+                'dir':'case3m5s_160_197',
                 'CO2_ppm': 160,
                 'H2O_ppm': 197,
                 'mix': 1.0/4.0},
@@ -189,10 +205,10 @@ def dump_all_data():
 
     param_d = get_param_data_d()
 
-    case_l = [1,'1m',2,3,'3w','3m','3mw','3m5',4,5,'5m',6,7,'7w','7m','7mw',8,9,'9m','N','Nw']
+    case_l = [1,'1m',2,3,'3s','3w','3m','3mw','3m5','3m5s',4,5,'5m',6,7,'7s','7w','7m','7ms','7mw',8,9,'9m','N','Nw']
     #case_l = ['N','Nw']
     #case_l = ['3m5']
-    case_l = ['3s']
+    case_l = ['3m5s']
 
     for case in case_l:
         print(case_l,case)
@@ -226,7 +242,7 @@ def dump_all_data():
 
         param_d[strcase]['time'] = time_a.tolist()
 
-    with open('3sdata.json', 'w') as fp:
+    with open('3m5sdata.json', 'w') as fp:
         json.dump(param_d, fp)
 
 #====================================================================
@@ -2118,10 +2134,11 @@ def plot_melt_solid_separation_comparison():
     '''plot atmosphere properties for a single case, which should be
        specified by casenum'''
 
-    width = 1.1 * 4.7747 * 3.0/2.0
-    height = 1.1 * 4.7747 #/ 2.0
-    fig_o = su.FigureData( 2, 3, width, height, 'melt_solid_separation_comparison', units='Myr' )
-    fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.25)
+    width = 4.7747 * 3.0/2.0
+    height = 4.7747 #/ 2.0
+    times = '0,0,0,0' # dummy for getting colors
+    fig_o = su.FigureData( 2, 3, width, height, 'melt_solid_separation_comparison', times, units='Myr' )
+    fig_o.fig.subplots_adjust(wspace=0.35,hspace=0.4)
 
     ax0 = fig_o.ax[0][0]
     ax1 = fig_o.ax[0][1]
@@ -2132,17 +2149,30 @@ def plot_melt_solid_separation_comparison():
 
     with open('data.json', 'r') as fp: 
         data_d = json.load(fp )
+    strcase = 'case3m5'
+    case3c_d = get_data_for_melt_solid_comparison( data_d, strcase )
     strcase = 'case3'
-    case3_d = get_data_for_melt_solid_comparison( data_d, strcase )
+    case3v_d = get_data_for_melt_solid_comparison( data_d, strcase )
+    strcase = 'case7m'
+    case7c_d = get_data_for_melt_solid_comparison( data_d, strcase )
     strcase = 'case7'
-    case7_d = get_data_for_melt_solid_comparison( data_d, strcase )
+    case7v_d = get_data_for_melt_solid_comparison( data_d, strcase )
 
     with open('3sdata.json', 'r') as fp: 
         data_d = json.load(fp )
     strcase = 'case3s'
-    case3s_d = get_data_for_melt_solid_comparison( data_d, strcase )
-    strcase = 'case3s'
-    case7s_d = get_data_for_melt_solid_comparison( data_d, strcase )
+    case3vs_d = get_data_for_melt_solid_comparison( data_d, strcase )
+
+    with open('3m5sdata.json', 'r') as fp: 
+        data_d = json.load(fp )
+    strcase = 'case3cs'
+    case3cs_d = get_data_for_melt_solid_comparison( data_d, strcase )
+
+    with open('7sdata.json', 'r') as fp: 
+        data_d = json.load(fp )
+    strcase = 'case7s'
+    case7vs_d = get_data_for_melt_solid_comparison( data_d, strcase )
+    case7cs_d = case7vs_d
 
     xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3]
     xlabel = 'Time (Myr)'
@@ -2151,160 +2181,163 @@ def plot_melt_solid_separation_comparison():
     red = (0.5,0.1,0.1)
     blue = (0.1,0.1,0.5)
     black = 'black'
+    linestyle = '-'
 
-    # case3 versus case3s comparison
+    TITLE = 'Case'
+
+    # case3 comparison
 
     ##########
     # figure a
     ##########
     if 1:
-        title = r'\textbf{(a) Pressure and melt (3v, 3vs)}'
-        ylabel = '$p$ (bar)'
-        trans = transforms.blended_transform_factory(
-            ax0.transData, ax0.transAxes)
-        h1, = ax0.semilogx( case3_d['timeMyr_a'], case3_d['CO2_atmos_a'], color=red, linestyle='--', label=r'3v CO$_2$')
-        h2, = ax0.semilogx( case3s_d['timeMyr_a'], case3s_d['CO2_atmos_a'], color=red, linestyle='-', label=r'3vs CO$_2$')
-        h3, = ax0.semilogx( case3_d['timeMyr_a'], case3_d['H2O_atmos_a'], color=blue, linestyle='--', label=r'3v H$_2$O')
-        h4, = ax0.semilogx( case3s_d['timeMyr_a'], case3s_d['H2O_atmos_a'], color=blue, linestyle='-', label=r'3vs H$_2$O')
-        ax0b = ax0.twinx()
-        h5, = ax0b.semilogx( case3_d['timeMyr_a'], case3_d['phi_global'], color=black, linestyle='--', label=r'3v Melt, $\phi_g$')
-        h6, = ax0b.semilogx( case3s_d['timeMyr_a'], case3s_d['phi_global'], color=black, linestyle='-', label=r'3vs Melt, $\phi_g$')
-        handle_l = [h1,h2,h3,h4,h5,h6]
-        fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xticks=xticks )
-        fig_o.set_mylegend( ax0b, handle_l, loc='upper left', ncol=1, facecolor='white', framealpha=0.9 )
+        title = r'\textbf{(a) Global melt fraction, $\phi_g$}'
+        ylabel = r'$\phi_g$'
+        color = fig_o.get_color(0)
+        h1, = ax0.semilogx( case3v_d['timeMyr_a'], case3v_d['phi_global'], color=color, linestyle=linestyle, label=r'3v')
+        color = fig_o.get_color(1)
+        h2, = ax0.semilogx( case3vs_d['timeMyr_a'], case3vs_d['phi_global'], color=color, linestyle=linestyle, label=r'3vs')
+        color = fig_o.get_color(2)
+        h3, = ax0.semilogx( case3c_d['timeMyr_a'], case3c_d['phi_global'], color=color, linestyle=linestyle, label=r'3c')
+        color = fig_o.get_color(3)
+        h4, = ax0.semilogx( case3cs_d['timeMyr_a'], case3cs_d['phi_global'], color=color, linestyle=linestyle, label=r'3cs')
+
+        handle_l = [h1,h2,h3,h4]
+        fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xlabel='Time (Myr)', xticks=xticks )
+        fig_o.set_mylegend( ax0, handle_l, loc='upper right', ncol=1, TITLE=TITLE, facecolor='white', framealpha=0.9 )
  
         ax0.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax0.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax0.xaxis.set_minor_formatter(ticker.NullFormatter())
         ax0.set_xlim( *xlim )
-        ax0.yaxis.set_label_coords(-0.15,0.5)
-        ax0b.set_ylabel( r'$\phi_g$', rotation=0 )
-        ax0b.yaxis.set_label_coords(1.1,0.525)
+        ax0.yaxis.set_label_coords(-0.1,0.475)
 
 
     ##########
     # figure b
     ##########
     if 1:
-        title = r'\textbf{(b) CO$_2$ mass fraction (3v, 3vs)}'
-        #h5, = ax1.semilogx( timeMyr_a, mass_liquid_a / mass_mantle, 'k--', label='melt' )
-        h1, = ax1.semilogx( case3_d['timeMyr_a'], (case3_d['CO2_liquid_kg_a']+case3_d['CO2_solid_kg_a']) / case3_d['CO2_total_kg'], color=black, linestyle='--', label=r'3v CO$_2$ int' )
-        h2, = ax1.semilogx( case3s_d['timeMyr_a'], (case3s_d['CO2_liquid_kg_a']+case3s_d['CO2_solid_kg_a']) / case3s_d['CO2_total_kg'], color=black, linestyle='-', label=r'3vs CO$_2$ int' )
-        h3, = ax1.semilogx( case3_d['timeMyr_a'], case3_d['CO2_atmos_kg_a'] / case3_d['CO2_total_kg'], color=red, linestyle='--', label=r'3v CO$_2$ atm' )
+        title = r'\textbf{(b) CO$_2$ partial pressure (bar)}'
+        ylabel = '$p$ (bar)'
+        color = fig_o.get_color(0)
+        h1, = ax1.semilogx( case3v_d['timeMyr_a'], case3v_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'3v')
+        color = fig_o.get_color(1)
+        h2, = ax1.semilogx( case3vs_d['timeMyr_a'], case3vs_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'3vs')
+        color = fig_o.get_color(2)
+        h3, = ax1.semilogx( case3c_d['timeMyr_a'], case3c_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'3c')
+        color = fig_o.get_color(3)
+        h4, = ax1.semilogx( case3cs_d['timeMyr_a'], case3cs_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'3cs')
 
-        h4, = ax1.semilogx( case3s_d['timeMyr_a'], case3s_d['CO2_atmos_kg_a'] / case3s_d['CO2_total_kg'], color=red, linestyle='-', label=r'3vs CO$_2$ atm' )
+        handle_l = [h1,h2,h3,h4]
+        fig_o.set_myaxes( ax1, title=title, ylabel=ylabel, xlabel='Time (Myr)', xticks=xticks )
+        fig_o.set_mylegend( ax1, handle_l, loc='lower left', ncol=1, TITLE=TITLE )
 
-        #h2b, = ax1.semilogx( timeMyr_a, CO2_escape_kg_a / CO2_total_kg, color=red, linestyle=':', label='Escape' )
-        #h3, = ax1.semilogx( timeMyr_a, (H2O_liquid_kg_a+H2O_solid_kg_a) / H2O_total_kg, color=blue, linestyle='-', label=r'H$_2$O interior' )
-        #h4, = ax1.semilogx( timeMyr_a, H2O_atmos_kg_a / H2O_total_kg, color=blue, linestyle='--', label=r'H$_2$O atmos')
-        #h4b, = ax1.semilogx( timeMyr_a, H2O_escape_kg_a / H2O_total_kg, color=blue, linestyle=':', label='Atmos' )
-        fig_o.set_myaxes( ax1, title=title, ylabel='$x$', xticks=xticks )
         ax1.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax1.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax1.xaxis.set_minor_formatter(ticker.NullFormatter())
         ax1.set_xlim( *xlim )
-        handle_l = [h1,h2,h3,h4]
-        fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1 )
-        ax1.yaxis.set_label_coords(-0.1,0.47)
+        ax1.yaxis.set_label_coords(-0.15,0.45)
 
     ##########
     # figure c
     ##########
     if 1:
-        title = r'\textbf{(c) H$_2$O mass fraction (3v, 3vs)}'
-        #h5, = ax1.semilogx( timeMyr_a, mass_liquid_a / mass_mantle, 'k--', label='melt' )
-        #h1, = ax1.semilogx( timeMyr_a, (CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg, color=red, linestyle='-', label=r'CO$_2$ interior' )
-        #h2, = ax1.semilogx( timeMyr_a, CO2_atmos_kg_a / CO2_total_kg, color=red, linestyle='--', label=r'CO$_2$ atmos' )
-        #h2b, = ax1.semilogx( timeMyr_a, CO2_escape_kg_a / CO2_total_kg, color=red, linestyle=':', label='Escape' )
-        h1, = ax2.semilogx( case3_d['timeMyr_a'], (case3_d['H2O_liquid_kg_a']+case3_d['H2O_solid_kg_a']) / case3_d['H2O_total_kg'], color=black, linestyle='--', label=r'3v H$_2$O int' )
-        h2, = ax2.semilogx( case3s_d['timeMyr_a'], (case3s_d['H2O_liquid_kg_a']+case3s_d['H2O_solid_kg_a']) / case3s_d['H2O_total_kg'], color=black, linestyle='-', label=r'3vs H$_2$O int' )
-        h3, = ax2.semilogx( case3_d['timeMyr_a'], case3_d['H2O_atmos_kg_a'] / case3_d['H2O_total_kg'], color=blue, linestyle='--', label=r'3v H$_2$O atm')
-        h4, = ax2.semilogx( case3s_d['timeMyr_a'], case3s_d['H2O_atmos_kg_a'] / case3s_d['H2O_total_kg'], color=blue, linestyle='-', label=r'3vs H$_2$O atm')
-        #h4b, = ax1.semilogx( timeMyr_a, H2O_escape_kg_a / H2O_total_kg, color=blue, linestyle=':', label='Atmos' )
-        fig_o.set_myaxes( ax2, title=title, ylabel='$x$', xticks=xticks )
+        title = r'\textbf{(c) H$_2$O partial pressure (bar)}'
+        ylabel = '$p$ (bar)'
+        color = fig_o.get_color(0)
+        h1, = ax2.semilogx( case3v_d['timeMyr_a'], case3v_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'3v')
+        color = fig_o.get_color(1)
+        h2, = ax2.semilogx( case3vs_d['timeMyr_a'], case3vs_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'3vs')
+        color = fig_o.get_color(2)
+        h3, = ax2.semilogx( case3c_d['timeMyr_a'], case3c_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'3c')
+        color = fig_o.get_color(3)
+        h4, = ax2.semilogx( case3cs_d['timeMyr_a'], case3cs_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'3cs')
+
+        handle_l = [h1,h2,h3,h4]
+        fig_o.set_myaxes( ax2, title=title, ylabel=ylabel, xticks=xticks, xlabel='Time (Myr)' )
+        fig_o.set_mylegend( ax2, handle_l, loc='upper left', ncol=1, TITLE=TITLE )
+
         ax2.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax2.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax2.xaxis.set_minor_formatter(ticker.NullFormatter())
         ax2.set_xlim( *xlim )
-        handle_l = [h1,h2,h3,h4]#,h2b]
-        fig_o.set_mylegend( ax2, handle_l, loc='center left', ncol=1 )
-        ax2.yaxis.set_label_coords(-0.1,0.47)
+        ax2.yaxis.set_label_coords(-0.15,0.525)
 
     ##########
     # figure d
     ##########
     if 1:
-        title = r'\textbf{(d) Pressure and melt (7v, 7vs)}'
-        ylabel = '$p$ (bar)'
-        trans = transforms.blended_transform_factory(
-            ax3.transData, ax3.transAxes)
-        h1, = ax3.semilogx( case7_d['timeMyr_a'], case7_d['CO2_atmos_a'], color=red, linestyle='--', label=r'7v CO$_2$')
-        h2, = ax3.semilogx( case7s_d['timeMyr_a'], case7s_d['CO2_atmos_a'], color=red, linestyle='-', label=r'7vs CO$_2$')
-        h3, = ax3.semilogx( case7_d['timeMyr_a'], case7_d['H2O_atmos_a'], color=blue, linestyle='--', label=r'7v H$_2$O')
-        h4, = ax3.semilogx( case7s_d['timeMyr_a'], case7s_d['H2O_atmos_a'], color=blue, linestyle='-', label=r'7vs H$_2$O')
-        ax3b = ax3.twinx()
-        h5, = ax3b.semilogx( case7_d['timeMyr_a'], case7_d['phi_global'], color=black, linestyle='--', label=r'7v Melt, $\phi_g$')
-        h6, = ax3b.semilogx( case7s_d['timeMyr_a'], case7s_d['phi_global'], color=black, linestyle='-', label=r'7vs Melt, $\phi_g$')
-        handle_l = [h1,h2,h3,h4,h5,h6]
-        fig_o.set_myaxes( ax3, title=title, ylabel=ylabel, xlabel=xlabel, xticks=xticks )
-        fig_o.set_mylegend( ax3b, handle_l, loc=(0.45,0.38), ncol=1, facecolor='white', framealpha=0.9 )
+        title = r'\textbf{(d) Global melt fraction, $\phi_g$}'
+        ylabel = r'$\phi_g$'
+        color = fig_o.get_color(0)
+        h1, = ax3.semilogx( case7v_d['timeMyr_a'], case7v_d['phi_global'], color=color, linestyle=linestyle, label=r'7v')
+        color = fig_o.get_color(1)
+        h2, = ax3.semilogx( case7vs_d['timeMyr_a'], case7vs_d['phi_global'], color=color, linestyle=linestyle, label=r'7vs')
+        color = fig_o.get_color(2)
+        h3, = ax3.semilogx( case7c_d['timeMyr_a'], case7c_d['phi_global'], color=color, linestyle=linestyle, label=r'7c')
+        color = fig_o.get_color(3)
+        h4, = ax3.semilogx( case7cs_d['timeMyr_a'], case7cs_d['phi_global'], color=color, linestyle=linestyle, label=r'7cs')
+
+        handle_l = [h1,h2,h3,h4]
+        fig_o.set_myaxes( ax3, ylabel=ylabel, title=title, xticks=xticks, xlabel='Time (Myr)' )
+        fig_o.set_mylegend( ax3, handle_l, loc='upper right', ncol=1, TITLE=TITLE, facecolor='white', framealpha=0.9 )
  
         ax3.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax3.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax3.xaxis.set_minor_formatter(ticker.NullFormatter())
         ax3.set_xlim( *xlim )
-        ax3.yaxis.set_label_coords(-0.15,0.6)
-        ax3b.set_ylabel( r'$\phi_g$', rotation=0 )
-        ax3b.yaxis.set_label_coords(1.1,0.525)
+        ax3.yaxis.set_label_coords(-0.1,0.475)
 
 
     ##########
     # figure e
     ##########
     if 1:
-        title = r'\textbf{(e) CO$_2$ mass fraction (7v, 7vs)}'
-        #h5, = ax1.semilogx( timeMyr_a, mass_liquid_a / mass_mantle, 'k--', label='melt' )
-        h1, = ax4.semilogx( case7_d['timeMyr_a'], (case7_d['CO2_liquid_kg_a']+case7_d['CO2_solid_kg_a']) / case7_d['CO2_total_kg'], color=black, linestyle='--', label=r'7v CO$_2$ int' )
-        h2, = ax4.semilogx( case7s_d['timeMyr_a'], (case7s_d['CO2_liquid_kg_a']+case7s_d['CO2_solid_kg_a']) / case7s_d['CO2_total_kg'], color=black, linestyle='-', label=r'7vs CO$_2$ int' )
-        h3, = ax4.semilogx( case7_d['timeMyr_a'], case7_d['CO2_atmos_kg_a'] / case7_d['CO2_total_kg'], color=red, linestyle='--', label=r'7v CO$_2$ atm' )
+        title = r'\textbf{(e) CO$_2$ partial pressure (bar)}'
+        ylabel = '$p$ (bar)'
+        color = fig_o.get_color(0)
+        h1, = ax4.semilogx( case7v_d['timeMyr_a'], case7v_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'7v')
+        color = fig_o.get_color(1)
+        h2, = ax4.semilogx( case7vs_d['timeMyr_a'], case7vs_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'7vs')
+        color = fig_o.get_color(2)
+        h3, = ax4.semilogx( case7c_d['timeMyr_a'], case7c_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'7c')
+        color = fig_o.get_color(3)
+        h4, = ax4.semilogx( case7cs_d['timeMyr_a'], case7cs_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'7cs')
 
-        h4, = ax4.semilogx( case7s_d['timeMyr_a'], case7s_d['CO2_atmos_kg_a'] / case7s_d['CO2_total_kg'], color=red, linestyle='-', label=r'7vs CO$_2$ atm' )
+        handle_l = [h1,h2,h3,h4]
+        fig_o.set_myaxes( ax4, ylabel=ylabel, title=title, xlabel='Time (Myr)', xticks=xticks )
+        fig_o.set_mylegend( ax4, handle_l, loc='upper left', ncol=1, TITLE=TITLE )
 
-        #h2b, = ax1.semilogx( timeMyr_a, CO2_escape_kg_a / CO2_total_kg, color=red, linestyle=':', label='Escape' )
-        #h3, = ax1.semilogx( timeMyr_a, (H2O_liquid_kg_a+H2O_solid_kg_a) / H2O_total_kg, color=blue, linestyle='-', label=r'H$_2$O interior' )
-        #h4, = ax1.semilogx( timeMyr_a, H2O_atmos_kg_a / H2O_total_kg, color=blue, linestyle='--', label=r'H$_2$O atmos')
-        #h4b, = ax1.semilogx( timeMyr_a, H2O_escape_kg_a / H2O_total_kg, color=blue, linestyle=':', label='Atmos' )
-        fig_o.set_myaxes( ax4, title=title, ylabel='$x$', xlabel=xlabel,xticks=xticks )
         ax4.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax4.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax4.xaxis.set_minor_formatter(ticker.NullFormatter())
         ax4.set_xlim( *xlim )
-        handle_l = [h1,h2,h3,h4]
-        fig_o.set_mylegend( ax4, handle_l, loc='center left', ncol=1 )
-        ax4.yaxis.set_label_coords(-0.1,0.47)
+        ax4.yaxis.set_label_coords(-0.15,0.55)
 
     ##########
     # figure f
     ##########
     if 1:
-        title = r'\textbf{(f) H$_2$O mass fraction (7v, 7vs)}'
-        #h5, = ax1.semilogx( timeMyr_a, mass_liquid_a / mass_mantle, 'k--', label='melt' )
-        #h1, = ax1.semilogx( timeMyr_a, (CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg, color=red, linestyle='-', label=r'CO$_2$ interior' )
-        #h2, = ax1.semilogx( timeMyr_a, CO2_atmos_kg_a / CO2_total_kg, color=red, linestyle='--', label=r'CO$_2$ atmos' )
-        #h2b, = ax1.semilogx( timeMyr_a, CO2_escape_kg_a / CO2_total_kg, color=red, linestyle=':', label='Escape' )
-        h1, = ax5.semilogx( case7_d['timeMyr_a'], (case7_d['H2O_liquid_kg_a']+case7_d['H2O_solid_kg_a']) / case7_d['H2O_total_kg'], color=black, linestyle='--', label=r'7v H$_2$O int' )
-        h2, = ax5.semilogx( case7s_d['timeMyr_a'], (case7s_d['H2O_liquid_kg_a']+case7s_d['H2O_solid_kg_a']) / case7s_d['H2O_total_kg'], color=black, linestyle='-', label=r'7vs H$_2$O int' )
-        h3, = ax5.semilogx( case7_d['timeMyr_a'], case7_d['H2O_atmos_kg_a'] / case7_d['H2O_total_kg'], color=blue, linestyle='--', label=r'7v H$_2$O atm')
-        h4, = ax5.semilogx( case7s_d['timeMyr_a'], case7s_d['H2O_atmos_kg_a'] / case7s_d['H2O_total_kg'], color=blue, linestyle='-', label=r'7vs H$_2$O atm')
-        #h4b, = ax1.semilogx( timeMyr_a, H2O_escape_kg_a / H2O_total_kg, color=blue, linestyle=':', label='Atmos' )
-        fig_o.set_myaxes( ax5, title=title, ylabel='$x$', xlabel=xlabel,xticks=xticks )
+        title = r'\textbf{(f) H$_2$O partial pressure (bar)}'
+        ylabel = '$p$ (bar)'
+        color = fig_o.get_color(0)
+        h1, = ax5.semilogx( case7v_d['timeMyr_a'], case7v_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'7v')
+        color = fig_o.get_color(1)
+        h2, = ax5.semilogx( case7vs_d['timeMyr_a'], case7vs_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'7vs')
+        color = fig_o.get_color(2)
+        h3, = ax5.semilogx( case7c_d['timeMyr_a'], case7c_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'7c')
+        color = fig_o.get_color(3)
+        h4, = ax5.semilogx( case7cs_d['timeMyr_a'], case7cs_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'7cs')
+
+        handle_l = [h1,h2,h3,h4]
+        fig_o.set_myaxes( ax5, ylabel=ylabel, title=title, xlabel='Time (Myr)', xticks=xticks )
+        fig_o.set_mylegend( ax5, handle_l, loc='upper left', ncol=1, TITLE=TITLE )
+
         ax5.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax5.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax5.xaxis.set_minor_formatter(ticker.NullFormatter())
         ax5.set_xlim( *xlim )
-        handle_l = [h1,h2,h3,h4]#,h2b]
-        fig_o.set_mylegend( ax5, handle_l, loc='center left', ncol=1 )
-        ax5.yaxis.set_label_coords(-0.1,0.47)
+        ax5.yaxis.set_label_coords(-0.15,0.525)
 
     fig_o.savefig(16)
 
@@ -2314,7 +2347,7 @@ if __name__ == "__main__":
 
     # much faster to dump the relevant data to a json and then read
     # from there, faster for debugging, plotting, etc.
-    #dump_all_data()
+    dump_all_data()
 
     # uncomment below for generating plots
     #plot_interior_depletion()
@@ -2346,6 +2379,6 @@ if __name__ == "__main__":
 
     #plot_phi_versus_radius()
 
-    plot_melt_solid_separation_comparison()
+    #plot_melt_solid_separation_comparison()
 
     plt.show()
