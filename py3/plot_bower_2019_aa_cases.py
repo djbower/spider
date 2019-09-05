@@ -2351,7 +2351,7 @@ if __name__ == "__main__":
 
     # much faster to dump the relevant data to a json and then read
     # from there, faster for debugging, plotting, etc.
-    #dump_all_data()
+    dump_all_data()
 
     # uncomment below for generating plots
     #plot_interior_depletion()
@@ -2383,6 +2383,6 @@ if __name__ == "__main__":
 
     #plot_phi_versus_radius()
 
-    plot_melt_solid_separation_comparison()
+    #plot_melt_solid_separation_comparison()
 
     plt.show()
