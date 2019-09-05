@@ -208,7 +208,7 @@ def dump_all_data():
     case_l = [1,'1m',2,3,'3s','3w','3m','3mw','3m5','3m5s',4,5,'5m',6,7,'7s','7w','7m','7ms','7mw',8,9,'9m','N','Nw']
     #case_l = ['N','Nw']
     #case_l = ['3m5']
-    case_l = ['3m5s']
+    case_l = ['7ms']
 
     for case in case_l:
         print(case_l,case)
@@ -242,7 +242,7 @@ def dump_all_data():
 
         param_d[strcase]['time'] = time_a.tolist()
 
-    with open('3m5sdata.json', 'w') as fp:
+    with open('7msdata.json', 'w') as fp:
         json.dump(param_d, fp)
 
 #====================================================================
@@ -2165,14 +2165,18 @@ def plot_melt_solid_separation_comparison():
 
     with open('3m5sdata.json', 'r') as fp: 
         data_d = json.load(fp )
-    strcase = 'case3cs'
+    strcase = 'case3m5s'
     case3cs_d = get_data_for_melt_solid_comparison( data_d, strcase )
 
     with open('7sdata.json', 'r') as fp: 
         data_d = json.load(fp )
     strcase = 'case7s'
     case7vs_d = get_data_for_melt_solid_comparison( data_d, strcase )
-    case7cs_d = case7vs_d
+
+    with open('7msdata.json', 'r') as fp: 
+        data_d = json.load(fp )
+    strcase = 'case7ms'
+    case7cs_d = get_data_for_melt_solid_comparison( data_d, strcase )
 
     xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3]
     xlabel = 'Time (Myr)'
@@ -2200,7 +2204,7 @@ def plot_melt_solid_separation_comparison():
         color = fig_o.get_color(2)
         h3, = ax0.semilogx( case3c_d['timeMyr_a'], case3c_d['phi_global'], color=color, linestyle=linestyle, label=r'3c')
         color = fig_o.get_color(3)
-        h4, = ax0.semilogx( case3cs_d['timeMyr_a'], case3cs_d['phi_global'], color=color, linestyle=linestyle, label=r'3cs')
+        h4, = ax0.semilogx( case3cs_d['timeMyr_a'], case3cs_d['phi_global'], color=color, linestyle='--', label=r'3cs')
 
         handle_l = [h1,h2,h3,h4]
         fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xlabel='Time (Myr)', xticks=xticks )
@@ -2276,7 +2280,7 @@ def plot_melt_solid_separation_comparison():
         color = fig_o.get_color(2)
         h3, = ax3.semilogx( case7c_d['timeMyr_a'], case7c_d['phi_global'], color=color, linestyle=linestyle, label=r'7c')
         color = fig_o.get_color(3)
-        h4, = ax3.semilogx( case7cs_d['timeMyr_a'], case7cs_d['phi_global'], color=color, linestyle=linestyle, label=r'7cs')
+        h4, = ax3.semilogx( case7cs_d['timeMyr_a'], case7cs_d['phi_global'], color=color, linestyle='--', label=r'7cs')
 
         handle_l = [h1,h2,h3,h4]
         fig_o.set_myaxes( ax3, ylabel=ylabel, title=title, xticks=xticks, xlabel='Time (Myr)' )
@@ -2347,7 +2351,7 @@ if __name__ == "__main__":
 
     # much faster to dump the relevant data to a json and then read
     # from there, faster for debugging, plotting, etc.
-    dump_all_data()
+    #dump_all_data()
 
     # uncomment below for generating plots
     #plot_interior_depletion()
@@ -2379,6 +2383,6 @@ if __name__ == "__main__":
 
     #plot_phi_versus_radius()
 
-    #plot_melt_solid_separation_comparison()
+    plot_melt_solid_separation_comparison()
 
     plt.show()

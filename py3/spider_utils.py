@@ -304,6 +304,15 @@ class FigureData( object ):
                         (0.5,0.1,0.1)]#,
                         #(0.3,0.0,0.0)]
             colors_l.reverse()
+        elif cmap=='bkr8' and num==4:
+            colors_l = [(0.0,0.0,0.3),
+                        #(0.1,0.1,0.5),
+                        #(0.2,0.2,0.7),
+                        (0.4,0.4,0.8),
+                        #(0.8,0.4,0.4),
+                        (0.7,0.2,0.2),
+                        #(0.5,0.1,0.1)]#,
+                        (0.3,0.0,0.0)]
         elif cmap=='bkr8' and num==5:
             colors_l = [(0.0,0.0,0.3),
                         #(0.1,0.1,0.5),
@@ -599,6 +608,8 @@ def get_dict_surface_values_for_times( keys_t, time_l, indir='output'):
 
     for time in time_l:
         filename = os.path.join( indir, '{}.json'.format(time) )
+        # next line is useful for identifying corrupt jsons
+        #print(filename)
         myjson_o = MyJSON( filename )
         keydata_l = []
         for key in keys_t:
