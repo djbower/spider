@@ -2136,7 +2136,7 @@ def plot_melt_solid_separation_comparison():
 
     width = 4.7747 * 3.0/2.0
     height = 4.7747 #/ 2.0
-    times = '0,0,0,0' # dummy for getting colors
+    times = '0,0,0' # dummy for getting colors
     fig_o = su.FigureData( 2, 3, width, height, 'melt_solid_separation_comparison', times, units='Myr' )
     fig_o.fig.subplots_adjust(wspace=0.35,hspace=0.4)
 
@@ -2202,11 +2202,11 @@ def plot_melt_solid_separation_comparison():
         color = fig_o.get_color(1)
         h2, = ax0.semilogx( case3vs_d['timeMyr_a'], case3vs_d['phi_global'], color=color, linestyle=linestyle, label=r'3vs')
         color = fig_o.get_color(2)
-        h3, = ax0.semilogx( case3c_d['timeMyr_a'], case3c_d['phi_global'], color=color, linestyle=linestyle, label=r'3c')
-        color = fig_o.get_color(3)
-        h4, = ax0.semilogx( case3cs_d['timeMyr_a'], case3cs_d['phi_global'], color=color, linestyle='--', label=r'3cs')
+        h3, = ax0.semilogx( case3c_d['timeMyr_a'], case3c_d['phi_global'], color=color, linestyle=linestyle, label=r'3c, 3cs')
+        #color = fig_o.get_color(3)
+        #h4, = ax0.semilogx( case3cs_d['timeMyr_a'], case3cs_d['phi_global'], color=color, linestyle='--', label=r'3cs')
 
-        handle_l = [h1,h2,h3,h4]
+        handle_l = [h1,h2,h3]#,h4]
         fig_o.set_myaxes( ax0, title=title, ylabel=ylabel, xlabel='Time (Myr)', xticks=xticks )
         fig_o.set_mylegend( ax0, handle_l, loc='upper right', ncol=1, TITLE=TITLE, facecolor='white', framealpha=0.9 )
  
@@ -2228,11 +2228,11 @@ def plot_melt_solid_separation_comparison():
         color = fig_o.get_color(1)
         h2, = ax1.semilogx( case3vs_d['timeMyr_a'], case3vs_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'3vs')
         color = fig_o.get_color(2)
-        h3, = ax1.semilogx( case3c_d['timeMyr_a'], case3c_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'3c')
-        color = fig_o.get_color(3)
-        h4, = ax1.semilogx( case3cs_d['timeMyr_a'], case3cs_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'3cs')
+        h3, = ax1.semilogx( case3c_d['timeMyr_a'], case3c_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'3c, 3cs')
+        #color = fig_o.get_color(3)
+        #h4, = ax1.semilogx( case3cs_d['timeMyr_a'], case3cs_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'3cs')
 
-        handle_l = [h1,h2,h3,h4]
+        handle_l = [h1,h2,h3]#,h4]
         fig_o.set_myaxes( ax1, title=title, ylabel=ylabel, xlabel='Time (Myr)', xticks=xticks )
         fig_o.set_mylegend( ax1, handle_l, loc='lower left', ncol=1, TITLE=TITLE )
 
@@ -2253,11 +2253,11 @@ def plot_melt_solid_separation_comparison():
         color = fig_o.get_color(1)
         h2, = ax2.semilogx( case3vs_d['timeMyr_a'], case3vs_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'3vs')
         color = fig_o.get_color(2)
-        h3, = ax2.semilogx( case3c_d['timeMyr_a'], case3c_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'3c')
-        color = fig_o.get_color(3)
-        h4, = ax2.semilogx( case3cs_d['timeMyr_a'], case3cs_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'3cs')
+        h3, = ax2.semilogx( case3c_d['timeMyr_a'], case3c_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'3c, 3cs')
+        #color = fig_o.get_color(3)
+        #h4, = ax2.semilogx( case3cs_d['timeMyr_a'], case3cs_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'3cs')
 
-        handle_l = [h1,h2,h3,h4]
+        handle_l = [h1,h2,h3]#,h4]
         fig_o.set_myaxes( ax2, title=title, ylabel=ylabel, xticks=xticks, xlabel='Time (Myr)' )
         fig_o.set_mylegend( ax2, handle_l, loc='upper left', ncol=1, TITLE=TITLE )
 
@@ -2278,11 +2278,11 @@ def plot_melt_solid_separation_comparison():
         color = fig_o.get_color(1)
         h2, = ax3.semilogx( case7vs_d['timeMyr_a'], case7vs_d['phi_global'], color=color, linestyle=linestyle, label=r'7vs')
         color = fig_o.get_color(2)
-        h3, = ax3.semilogx( case7c_d['timeMyr_a'], case7c_d['phi_global'], color=color, linestyle=linestyle, label=r'7c')
-        color = fig_o.get_color(3)
-        h4, = ax3.semilogx( case7cs_d['timeMyr_a'], case7cs_d['phi_global'], color=color, linestyle='--', label=r'7cs')
+        h3, = ax3.semilogx( case7c_d['timeMyr_a'], case7c_d['phi_global'], color=color, linestyle=linestyle, label=r'7c, 7cs')
+        #color = fig_o.get_color(3)
+        #h4, = ax3.semilogx( case7cs_d['timeMyr_a'], case7cs_d['phi_global'], color=color, linestyle='--', label=r'7cs')
 
-        handle_l = [h1,h2,h3,h4]
+        handle_l = [h1,h2,h3]#,h4]
         fig_o.set_myaxes( ax3, ylabel=ylabel, title=title, xticks=xticks, xlabel='Time (Myr)' )
         fig_o.set_mylegend( ax3, handle_l, loc='upper right', ncol=1, TITLE=TITLE, facecolor='white', framealpha=0.9 )
  
@@ -2304,13 +2304,13 @@ def plot_melt_solid_separation_comparison():
         color = fig_o.get_color(1)
         h2, = ax4.semilogx( case7vs_d['timeMyr_a'], case7vs_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'7vs')
         color = fig_o.get_color(2)
-        h3, = ax4.semilogx( case7c_d['timeMyr_a'], case7c_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'7c')
-        color = fig_o.get_color(3)
-        h4, = ax4.semilogx( case7cs_d['timeMyr_a'], case7cs_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'7cs')
+        h3, = ax4.semilogx( case7c_d['timeMyr_a'], case7c_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'7c, 7cs')
+        #color = fig_o.get_color(3)
+        #h4, = ax4.semilogx( case7cs_d['timeMyr_a'], case7cs_d['CO2_atmos_a'], color=color, linestyle=linestyle, label=r'7cs')
 
-        handle_l = [h1,h2,h3,h4]
+        handle_l = [h1,h2,h3]#,h4]
         fig_o.set_myaxes( ax4, ylabel=ylabel, title=title, xlabel='Time (Myr)', xticks=xticks )
-        fig_o.set_mylegend( ax4, handle_l, loc='upper left', ncol=1, TITLE=TITLE )
+        fig_o.set_mylegend( ax4, handle_l, loc='lower right', ncol=1, TITLE=TITLE )
 
         ax4.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax4.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
@@ -2329,11 +2329,11 @@ def plot_melt_solid_separation_comparison():
         color = fig_o.get_color(1)
         h2, = ax5.semilogx( case7vs_d['timeMyr_a'], case7vs_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'7vs')
         color = fig_o.get_color(2)
-        h3, = ax5.semilogx( case7c_d['timeMyr_a'], case7c_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'7c')
-        color = fig_o.get_color(3)
-        h4, = ax5.semilogx( case7cs_d['timeMyr_a'], case7cs_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'7cs')
+        h3, = ax5.semilogx( case7c_d['timeMyr_a'], case7c_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'7c, 7cs')
+        #color = fig_o.get_color(3)
+        #h4, = ax5.semilogx( case7cs_d['timeMyr_a'], case7cs_d['H2O_atmos_a'], color=color, linestyle=linestyle, label=r'7cs')
 
-        handle_l = [h1,h2,h3,h4]
+        handle_l = [h1,h2,h3] #,h4]
         fig_o.set_myaxes( ax5, ylabel=ylabel, title=title, xlabel='Time (Myr)', xticks=xticks )
         fig_o.set_mylegend( ax5, handle_l, loc='upper left', ncol=1, TITLE=TITLE )
 
@@ -2351,7 +2351,7 @@ if __name__ == "__main__":
 
     # much faster to dump the relevant data to a json and then read
     # from there, faster for debugging, plotting, etc.
-    dump_all_data()
+    #dump_all_data()
 
     # uncomment below for generating plots
     #plot_interior_depletion()
@@ -2383,6 +2383,6 @@ if __name__ == "__main__":
 
     #plot_phi_versus_radius()
 
-    #plot_melt_solid_separation_comparison()
+    plot_melt_solid_separation_comparison()
 
     plt.show()
