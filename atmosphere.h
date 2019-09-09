@@ -6,6 +6,8 @@
 #include "cJSON.h"
 #include "dimensionalisablefield.h"
 
+// Note: the practice here of mixing state and parameters is suboptimal design and shouldn't be imitated.
+
 /* these structures hold calculated quantities */
 /* the parameter equivalents are in parameters.h */
 
@@ -24,6 +26,10 @@ typedef struct Volatile_ {
     PetscScalar R_thermal_escape;
 } Volatile;
 
+typedef struct Reaction_ {
+    PetscScalar dmrdt;
+} Reaction;
+
 #define NUMATMSTRUCTVECS 4
 typedef struct Atmosphere_ {
     PetscScalar Mliq; // mass of liquid (kg)
@@ -36,7 +42,8 @@ typedef struct Atmosphere_ {
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
     Volatile    volatiles[SPIDER_MAX_VOLATILE_SPECIES]; // volatile quantities
     PetscScalar molar_mass; // mean molar mass
-    PetscScalar mass_reaction; // DJB for IC atmosphere calculation (chemical reactions)
+    Reaction    reactions[SPIDER_MAX_REACTIONS]; // reaction quantities
+    PetscScalar mass_reaction[SPIDER_MAX_REACTIONS];
     DM          da_atm; // da for outputing atmosphere structure (below)
     DimensionalisableField atm_struct[NUMATMSTRUCTVECS];
     Vec atm_struct_tau;
@@ -51,12 +58,12 @@ PetscErrorCode destroy_atmosphere( Atmosphere * );
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters * );
 PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const Constants *C );
 PetscScalar get_emissivity_abe_matsui( Atmosphere *, const AtmosphereParameters *);
-PetscScalar get_initial_volatile_abundance( Atmosphere *, const AtmosphereParameters *, const VolatileParameters *,  const Volatile *, PetscScalar );
+PetscScalar get_initial_volatile_abundance( Atmosphere *, const AtmosphereParameters *, const VolatileParameters *,  const Volatile *);
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters *, PetscScalar );
 PetscErrorCode set_surface_temperature_from_flux( Atmosphere *, const AtmosphereParameters * );
 PetscErrorCode set_atmosphere_volatile_content( Atmosphere *, const AtmosphereParameters * );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
 PetscErrorCode FormFunction2( SNES, Vec, Vec, void * );
-PetscScalar get_dxdt( Atmosphere *, const AtmosphereParameters *Ap, PetscInt, PetscScalar );
+PetscScalar get_dxdt( Atmosphere *, const AtmosphereParameters *, PetscInt, const PetscScalar * );
 
 #endif

@@ -74,11 +74,14 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     A->tsurf = 1.0;
     A->psurf = 0.0;
 
-    /* DJB: for chemical reactions */
-    A->mass_reaction = 0.0;
+    /* Initialize mass_reaction temporary field (maybe not needed) to zero */
+    {
+      PetscInt i;
+
+      for (i=0; i<SPIDER_MAX_REACTIONS; ++i) A->mass_reaction[i] = 0.0;
+    }
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParameters *Ap)
@@ -584,6 +587,9 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
       ierr = JSON_add_volatile(dm, P, &Ap->volatile_parameters[v], &A->volatiles[v], A, Ap->volatile_parameters[v].prefix, data ); CHKERRQ(ierr);
     }
 
+    /* Reactions */
+    // (Not currently output)
+
     cJSON_AddItemToObject(json,name,data);
 
     PetscFunctionReturn(0);
@@ -651,12 +657,12 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
 
 PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 {
-    PetscErrorCode    ierr;
-    const PetscScalar *xx;
-    PetscScalar       *ff;
-    Ctx               *E = (Ctx*) ptr;
-    PetscInt          i;
-    PetscScalar       dmrdt; // DJB
+    PetscErrorCode             ierr;
+    const PetscScalar          *xx;
+    PetscScalar                *ff;
+    Ctx                        *E = (Ctx*) ptr;
+    PetscInt                   i;
+    const PetscScalar          *dmrdt;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -667,34 +673,29 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].dxdt = xx[i];
     }
-    dmrdt = xx[Ap->n_volatiles];
+    dmrdt = &xx[Ap->n_volatiles];
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
         ff[i] = get_dxdt( A, Ap, i, dmrdt );
     }
-    // DJB: chemical equilibrium condition
-    // first slot (0) is assumed to be H2
-    // second slot (1) is assumed to be H2O
-    // at equilibrium this function must be zero
-    // FIXME: usage of factor here is clunky, but basically it's a hack to eliminate this term for no reactions
-    // by setting the factor to 0 for both H2 and H2O
-    // FIXME: hacky, but turn OFF reactions if sign is zero 
-    if( (Ap->volatile_parameters[0].sign==0.0) && (Ap->volatile_parameters[1].sign==0.0) ){
-        ff[Ap->n_volatiles] = 0.0;
-    }
-    else{
-        ff[Ap->n_volatiles] = Ap->epsilon * A->volatiles[0].dpdx * A->volatiles[0].dxdt - A->volatiles[1].dpdx * A->volatiles[1].dxdt;
-    }
 
+    /* Objective function, "simple" reactions (2 species, constant epsilon) only */
+    for (i=0; i<Ap->n_reactions; ++i) {
+      const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+      const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
+
+      if (Ap->reaction_parameters[i]->n_volatiles != 2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Only simple reactions supported");
+      ff[Ap->n_volatiles + i] = Ap->reaction_parameters[i]->epsilon[v0] * A->volatiles[v0].dxdt * A->volatiles[v0].dpdx
+                              + Ap->reaction_parameters[i]->epsilon[v1] * A->volatiles[v1].dxdt * A->volatiles[v1].dpdx;
+    }
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
-PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, PetscScalar dmrdt )
+PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, const PetscScalar *dmrdt )
 {
 
     PetscScalar               out, out2, dpsurfdt, f_thermal_escape;
@@ -736,8 +737,15 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     /* thermal escape correction */
     out2 *= f_thermal_escape;
 
-    /* chemical reactions */
-    out2 -= Ap->volatile_parameters[i].sign * Ap->volatile_parameters[i].factor * dmrdt;
+    /* chemical reactions. Loop through all reactions, check if they involve
+      this volatile, and if so , subtract a term*/
+    for (j=0; j<Ap->n_reactions; ++j) {
+      for (k=0; k<Ap->reaction_parameters[j]->n_volatiles; ++k) {
+        if (k==i) {
+          out2 -= Ap->reaction_parameters[j]->gamma[k] * dmrdt[j];
+        }
+      }
+    }
 
     /* solid and liquid reservoirs */
     out2 += A->volatiles[i].dxdt * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
@@ -807,7 +815,7 @@ static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParam
 
 }
 
-PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, const Volatile *V, PetscScalar mass_r )
+PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, const Volatile *V)
 {
     PetscScalar out;
 
@@ -817,11 +825,7 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     out *= (Vp->molar_mass / A->molar_mass);
     out *= V->p;
     out += V->x * (*Ap->mantle_mass_ptr);
-    // DJB: reactions
-    // NOTE MINUS =, due to sign convention of reactant=-1, product=1
-    out -= Vp->sign * Vp->factor * mass_r; // contribution of the reaction mass
     out -= Vp->initial * (*Ap->mantle_mass_ptr);
-
+    /* Note: we do not include subtracting mass from reactions here */
     return out;
-
 }
