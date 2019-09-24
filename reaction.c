@@ -12,6 +12,7 @@ PetscErrorCode ReactionParametersCreateSimple(ReactionParameters* reaction_param
   PetscFunctionBeginUser;
   ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
   reaction_parameters = *reaction_parameters_ptr;
+  reaction_parameters->type = "simple";
   reaction_parameters->n_volatiles = 2;
   ierr = PetscMalloc3(2,&reaction_parameters->gamma,2,&reaction_parameters->volatiles,2,&reaction_parameters->epsilon);CHKERRQ(ierr);
   reaction_parameters->gamma[0] = gamma0;
@@ -20,6 +21,36 @@ PetscErrorCode ReactionParametersCreateSimple(ReactionParameters* reaction_param
   reaction_parameters->epsilon[1] = epsilon1;
   reaction_parameters->volatiles[0] = v0;
   reaction_parameters->volatiles[1] = v1;
+  PetscFunctionReturn(0);
+}
+
+/* A named reaction */
+PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+{
+  PetscErrorCode     ierr;
+  PetscInt           i,v;
+  PetscBool          flg;
+  ReactionParameters reaction_parameters;
+
+  PetscFunctionBeginUser;
+  ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
+  reaction_parameters = *reaction_parameters_ptr;
+  reaction_parameters->type = "methane1";
+  reaction_parameters->n_volatiles = 4;
+  ierr = PetscMalloc2(3,&reaction_parameters->gamma,3,&reaction_parameters->volatiles);CHKERRQ(ierr);
+  reaction_parameters->gamma[0] = 1.0;  // CO2
+  reaction_parameters->gamma[1] = 2.0;  // H2
+  reaction_parameters->gamma[2] = -1.0; // CH4
+  for (i=0; i<3; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
+  for (v=0; v<Ap->n_volatiles; ++v) {
+    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO2",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[0] = v;
+    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[1] = v;
+    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CH4",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[2] = v;
+  }
+  for (i=0; i<3; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
   PetscFunctionReturn(0);
 }
 

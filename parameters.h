@@ -74,7 +74,7 @@ Thus, the data are:
 - A set of N volatiles, identified by indices corresponding to volatile species.
 - A set of N coefficients gamma_i to describe how the volatiles are converted.
   The sign of these defines the direction of the reaction; positive implies a product.
-- An equation describing the equilibrium state. The simplest (and default) is described by parameters epsilon_i describing a balance
+- An equation describing the equilibrium state. The simplest (and default) is described by parameters epsilon_i describing a balance. This is controlled by a "type" field
 
 Developers' Note: this class's name should change if we ever want to consider
 reactions occuring anywhere except in the liquid mantle, e.g. in the
@@ -85,10 +85,11 @@ to a struct, not itself a struct.  Other classes in SPIDER aren't (yet) all
 done this way.
 */
 typedef struct {
-  PetscInt  n_volatiles;
-  PetscInt  *volatiles; /* indices for volatiles. Populated from prefix strings during parameter processing */
-  PetscReal *gamma;     /* "Exchange rates" */
-  PetscReal *epsilon;    /* Default equilibrium parameters (constant). */
+  const char *type;
+  PetscInt   n_volatiles;
+  PetscInt   *volatiles; /* indices for volatiles. Populated from prefix strings during parameter processing */
+  PetscReal  *gamma;     /* "Exchange rates" */
+  PetscReal  *epsilon;    /* Default equilibrium parameters (constant). */
 } data_ReactionParameters;
 typedef data_ReactionParameters* ReactionParameters;
 
@@ -257,6 +258,7 @@ PetscErrorCode ParametersDestroy(Parameters *parameters);
 
 /* ReactionParameters Methods */
 PetscErrorCode ReactionParametersCreateSimple(ReactionParameters*,PetscInt,PetscInt,PetscReal,PetscReal,PetscReal,PetscReal);
+PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters*,const AtmosphereParameters*);
 PetscErrorCode ReactionParametersDestroy(ReactionParameters*);
 
 #endif

@@ -681,14 +681,20 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
         ff[i] = get_dxdt( A, Ap, i, dmrdt );
     }
 
-    /* Objective function, "simple" reactions (2 species, constant epsilon) only */
+    /* Objective function */
     for (i=0; i<Ap->n_reactions; ++i) {
-      const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-      const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
+      PetscBool is_simple;
 
-      if (Ap->reaction_parameters[i]->n_volatiles != 2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Only simple reactions supported");
-      ff[Ap->n_volatiles + i] = Ap->reaction_parameters[i]->epsilon[v0] * A->volatiles[v0].dxdt * A->volatiles[v0].dpdx
-                              + Ap->reaction_parameters[i]->epsilon[v1] * A->volatiles[v1].dxdt * A->volatiles[v1].dpdx;
+      ierr = PetscStrcmp(Ap->reaction_parameters[i]->type,"simple",&is_simple);CHKERRQ(ierr);
+      if (is_simple) {
+        const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+        const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
+
+        ff[Ap->n_volatiles + i] = Ap->reaction_parameters[i]->epsilon[v0] * A->volatiles[v0].dxdt * A->volatiles[v0].dpdx
+                                + Ap->reaction_parameters[i]->epsilon[v1] * A->volatiles[v1].dxdt * A->volatiles[v1].dpdx;
+      } else {
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction type %s not recognized",Ap->reaction_parameters[i]->type);
+      }
     }
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 

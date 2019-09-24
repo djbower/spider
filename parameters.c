@@ -585,13 +585,26 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   }
 
   /* Reactions: look for command-line options to determine the number of reactions
-     and options for each. These are defined with respect to the
-     prefixes for the volatiles, which are translated to integer ids */
+     and options for each. These include named reactions and "simple" reactions.
+     These are defined with respect to the prefixes for the volatiles, which are translated to integer ids */
   Ap ->n_reactions = 0;
+
+  /* Special "named" reactions */
   {
+    PetscBool flg;
+
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_methane1",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateMethane1(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+  }
+
+  {
+    /* Do a brute-force search for all pairs of volatiles, looking for "simple" reactions */
     PetscInt  v0,v1;
-    /* Do a brute-force search for all pairs of volatiles. Note that we do not
-       automatically look for reactions with more than two volatiles. */
+
     for (v0=0; v0<Ap->n_volatiles; ++v0) {
       for (v1=v0+1; v1<Ap->n_volatiles; ++v1) {
         char       option[256],option_value[256];
@@ -605,50 +618,39 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
         ierr = PetscOptionsGetString(NULL,NULL,option,option_value,sizeof(option_value),&set);CHKERRQ(ierr);
         }
         if (set) {
-          PetscBool is_simple;
-
           if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
 
-          /* Interpret the empty string as "simple" */
-          ierr = PetscStrcmp(option_value,"",&is_simple);CHKERRQ(ierr);
-          if (!is_simple) {
-            ierr = PetscStrcmp(option_value,"simple",&is_simple);
-          }
-          if (!is_simple) {
-            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Only \"simple\" reactions implemented");
-          } else {
-            /* Collect epsilon and gamma values for each volatile */
-            PetscReal epsilon[2],gamma[2];
-            PetscInt  v;
+          /* Collect epsilon and gamma values for each volatile */
+          PetscReal epsilon[2],gamma[2];
+          PetscInt  v;
 
-            for (v=0; v<2; ++v) {
-              char      option[256];
-              PetscBool flg;
+          for (v=0; v<2; ++v) {
+            char      option[256];
+            PetscBool flg;
 
-              ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_epsilon_%s",Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+            ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_epsilon_%s",Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+            ierr = PetscOptionsGetReal(NULL,NULL,option,&epsilon[v],&flg);CHKERRQ(ierr);
+            if (!flg) {
+              /* Other ordering */
+              ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_epsilon_%s",Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
               ierr = PetscOptionsGetReal(NULL,NULL,option,&epsilon[v],&flg);CHKERRQ(ierr);
-              if (!flg) {
-                /* Other ordering */
-                ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_epsilon_%s",Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
-                ierr = PetscOptionsGetReal(NULL,NULL,option,&epsilon[v],&flg);CHKERRQ(ierr);
-              }
-              if (!flg) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"You must supply an option like %s",option);
             }
-            for (v=0; v<2; ++v) {
-              char      option[256];
-              PetscBool flg;
-
-              ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_gamma_%s",Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
-              ierr = PetscOptionsGetReal(NULL,NULL,option,&gamma[v],&flg);CHKERRQ(ierr);
-              if (!flg) {
-                /* Other ordering */
-                ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_gamma_%s",Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
-                ierr = PetscOptionsGetReal(NULL,NULL,option,&gamma[v],&flg);CHKERRQ(ierr);
-              }
-              if (!flg) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"You must supply an option like %s",option);
-            }
-            ierr = ReactionParametersCreateSimple(&Ap->reaction_parameters[Ap->n_reactions],v0,v1,gamma[0],gamma[1],epsilon[0],epsilon[1]);CHKERRQ(ierr);
+            if (!flg) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"You must supply an option like %s",option);
           }
+          for (v=0; v<2; ++v) {
+            char      option[256];
+            PetscBool flg;
+
+            ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_gamma_%s",Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+            ierr = PetscOptionsGetReal(NULL,NULL,option,&gamma[v],&flg);CHKERRQ(ierr);
+            if (!flg) {
+              /* Other ordering */
+              ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_gamma_%s",Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+              ierr = PetscOptionsGetReal(NULL,NULL,option,&gamma[v],&flg);CHKERRQ(ierr);
+            }
+            if (!flg) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"You must supply an option like %s",option);
+          }
+          ierr = ReactionParametersCreateSimple(&Ap->reaction_parameters[Ap->n_reactions],v0,v1,gamma[0],gamma[1],epsilon[0],epsilon[1]);CHKERRQ(ierr);
           ++Ap->n_reactions;
         }
       }
@@ -830,7 +832,6 @@ PetscErrorCode PrintParameters(Parameters const *P)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%-10D %-15s (.. additional parameters omitted ..)\n",i,Ap->volatile_parameters[i].prefix);CHKERRQ(ierr);
-      // TODO print out more info
     }
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
     if (Ap->n_reactions > 0) {
@@ -845,16 +846,24 @@ PetscErrorCode PrintParameters(Parameters const *P)
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%0.3g %s",sgn_str,(double) gamma_abs,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
       }
       ierr = PetscPrintf(PETSC_COMM_WORLD," = 0 ");CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD," (Simple equilibrium: ");CHKERRQ(ierr);
-      for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
-        const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
-        const char *sgn_str = Ap->reaction_parameters[i]->epsilon[j] < 0.0 ? " - " : j==0 ? "" : " + ";
-        const PetscReal epsilon_abs = PetscAbsReal(Ap->reaction_parameters[i]->epsilon[j]);
-        ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%0.3g %s",sgn_str,(double) epsilon_abs,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+      {
+        PetscBool flg;
+
+        ierr = PetscStrcmp(Ap->reaction_parameters[i]->type,"simple",&flg);
+        if (flg) {
+          ierr = PetscPrintf(PETSC_COMM_WORLD," (Simple equilibrium: ");CHKERRQ(ierr);
+          for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
+            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+            const char *sgn_str = Ap->reaction_parameters[i]->epsilon[j] < 0.0 ? " - " : j==0 ? "" : " + ";
+            const PetscReal epsilon_abs = PetscAbsReal(Ap->reaction_parameters[i]->epsilon[j]);
+            ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%0.3g %s",sgn_str,(double) epsilon_abs,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+          }
+          ierr = PetscPrintf(PETSC_COMM_WORLD," = 0) ");CHKERRQ(ierr);
+        } else {
+          ierr = PetscPrintf(PETSC_COMM_WORLD," (type: %s )",Ap->reaction_parameters[i]->type);CHKERRQ(ierr);
+        }
       }
-      ierr = PetscPrintf(PETSC_COMM_WORLD," = 0) ");CHKERRQ(ierr);
       ierr = PetscPrintf(PETSC_COMM_WORLD,"(.. additional parameters omitted ..)\n");CHKERRQ(ierr);
-      // TODO print out more info
     }
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
     }

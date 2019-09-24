@@ -436,11 +436,17 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
     /* Objective function, "simple" reactions (2 species, constant epsilon) only */
     for (i=0; i<Ap->n_reactions; ++i) {
-      const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-      const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
+      PetscBool is_simple;
 
-      if (Ap->reaction_parameters[i]->n_volatiles != 2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Only simple reactions supported");
-      ff[Ap->n_volatiles + i] = Ap->reaction_parameters[i]->epsilon[v0] * A->volatiles[v0].p + Ap->reaction_parameters[i]->epsilon[v1] * A->volatiles[v1].p;
+      ierr = PetscStrcmp(Ap->reaction_parameters[i]->type,"simple",&is_simple);CHKERRQ(ierr);
+      if (is_simple) {
+        const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+        const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
+
+        ff[Ap->n_volatiles + i] = Ap->reaction_parameters[i]->epsilon[v0] * A->volatiles[v0].p + Ap->reaction_parameters[i]->epsilon[v1] * A->volatiles[v1].p;
+      } else{
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction type %s not recognized",Ap->reaction_parameters[i]->type);
+      }
     }
 
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
