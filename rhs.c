@@ -129,12 +129,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
     }
   }
 
-  /* PS - cannot the following just be within one loop, or is this the preferred way of
-     assembling vecs? */
   for (i=1; i<E->numFields; ++i) {
     ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
-  }
-  for (i=1; i<E->numFields; ++i) {
     ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
   }
 
