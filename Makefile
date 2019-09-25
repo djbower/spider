@@ -11,6 +11,7 @@ SRC_C = main.c ctx.c rhs.c ic.c mesh.c lookup.c bc.c util.c twophase.c \
         dimensionalisablefield.c rheologicalfront.c \
         cJSON.c rollback.c poststep.c \
         parameters.c atmosphere.c \
+        reaction.c \
 
 # Main Target
 all :: ${EXNAME}

@@ -11,8 +11,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_from_solidus( Ctx*, Vec );
 static PetscErrorCode set_initial_volatile( Ctx * );
-// TODO: rename once this works
-static PetscErrorCode FormFunction1( SNES, Vec, Vec, void *);
+static PetscErrorCode FormFunction1( SNES, Vec, Vec, void *); // TODO DJB: rename this function
 
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
@@ -128,7 +127,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 {
 
     PetscErrorCode             ierr;
-    PetscInt                   i;
+    PetscInt                   i,j;
     PetscScalar                x0;
     Vec                        *subVecs;
     Atmosphere                 *A = &E->atmosphere;
@@ -140,14 +139,15 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
+    // FIXME this is horrible - parameters should not ever be changed!! Rather, there should be a dedicated step (with output to the user) which fixes inconsistent ICs
     if(Ap->SOLVE_FOR_VOLATILES){
         ierr = set_initial_volatile( E ); CHKERRQ(ierr);
-        /* FIXME: hacky, but over-ride initial with new initial that obeys chemical reactions */
-        /* FIXME FIXME FIXME: should not write to parameters after they have been set! */
-        for (i=0; i<Ap->n_volatiles; ++i){
-            /* positive mass_reaction means that H2 has been lost (and sign is negative for H2) */
-            /* positive mass_reaction means that H2O has been gained (and sign is positive for H2O) */
-            Ap->volatile_parameters[i].initial += Ap->volatile_parameters[i].sign * Ap->volatile_parameters[i].factor * A->mass_reaction / (*Ap->mantle_mass_ptr);
+        for (i=0; i<Ap->n_reactions; ++i){
+          for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
+            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+            /* Note: maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
+            Ap->volatile_parameters[v].initial += Ap->reaction_parameters[i]->gamma[j] * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
+          }
         }
 
         for (i=0; i<Ap->n_volatiles; ++i) {
@@ -160,6 +160,11 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
             x0 = 0.0;
             ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
         }
+    }
+
+    /* Initialize reaction amounts to zero */
+    for (i=0; i<Ap->n_reactions; ++i) {
+        ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],i,0.0,INSERT_VALUES);CHKERRQ(ierr);
     }
 
     for (i=0; i<E->numFields; ++i) {
@@ -250,7 +255,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"unexpected number of subdomains");
         }
 
-        for (i=0; i<cJSON_GetArraySize(values); i++ ){     
+        for (i=0; i<cJSON_GetArraySize(values); i++ ){
             item = cJSON_GetArrayItem( values, i );
             item_str = item->valuestring;
 #if (defined PETSC_USE_REAL___FLOAT128)
@@ -332,8 +337,8 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"atmosic_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    // DJB: plus one for reaction mass (H2<->H2O)
-    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles+1 );CHKERRQ(ierr);
+    /* Vector with one dof per volatile species, and one dof per volatile reaction */
+    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles + Ap->n_reactions );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
@@ -344,8 +349,10 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     for (i=0; i<Ap->n_volatiles; ++i) {
         xx[i] = Ap->volatile_parameters[i].initial;
     }
-    // DJB: need initial guess for reaction mass
-    xx[Ap->n_volatiles] = 0.0; // assume we are at equilibrium
+    /* Initial guesses for reaction masses */
+    for (i=Ap->n_volatiles; i<Ap->n_volatiles + Ap->n_reactions; ++i) {
+      xx[i] = 0.0; // assume we are at equilibrium
+    }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
@@ -373,8 +380,10 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
             A->volatiles[i].x = xx[i];
         }
     }
-    /* DJB: save mass offset to reset initial volatile */
-    A->mass_reaction = xx[Ap->n_volatiles];
+    /* Save mass offset to reset initial volatile */
+    for (i=0; i<Ap->n_reactions; ++i) {
+      A->mass_reaction[i] = xx[Ap->n_volatiles + i ];  /* Note: maybe the use of this storage could be avoided */
+    }
 
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
@@ -391,7 +400,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     PetscErrorCode             ierr;
     const PetscScalar          *xx;
     PetscScalar                *ff;
-    PetscScalar                mass_r; // DJB
+    const PetscScalar          *mass_r;
     PetscInt                   i;
     Ctx                        *E = (Ctx*) ptr;
     Atmosphere                 *A = &E->atmosphere;
@@ -400,34 +409,47 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
     PetscFunctionBeginUser;
 
-    VecGetArrayRead(x, &xx);
-    for (i=0; i<Ap->n_volatiles; ++i) {
-        A->volatiles[i].x = xx[i];
-    }
-    mass_r = xx[Ap->n_volatiles]; // reaction mass (also to be determined by solver)
-    VecRestoreArrayRead(x,&xx);
-
-    ierr = set_atmosphere_volatile_content( A, Ap ); CHKERRQ(ierr);
-
+    ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
 
     for (i=0; i<Ap->n_volatiles; ++i) {
-        ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i], mass_r );
+        A->volatiles[i].x = xx[i];
+    }
+    mass_r = &xx[Ap->n_volatiles]; /* reaction masses (also to be determined by solver) */
+
+    ierr = set_atmosphere_volatile_content( A, Ap ); CHKERRQ(ierr);
+
+    /* Balance equation for volatile abundance */
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        // TODO DJB rename this function
+        ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i]);
     }
 
-    // DJB: next is the chemical equilibrium condition
-    // DANGEROUS FIXME:
-    // first slot (0) is assumed to be H2
-    // second slot (1) is assumed to be H2O
-    // at equilibrium this function must be zero
-    // FIXME: hacky, but turn OFF reactions if sign is zero   
-    if( (Ap->volatile_parameters[0].sign==0.0) && (Ap->volatile_parameters[1].sign==0.0) ){
-        ff[Ap->n_volatiles] = 0.0;
-    }
-    else{
-        ff[Ap->n_volatiles] = Ap->epsilon * A->volatiles[0].p - A->volatiles[1].p; 
+    /* Subtract reaction masses */
+    for (i=0; i<Ap->n_reactions; ++i) {
+      PetscInt j;
+      for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
+        const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+        ff[v] -= Ap->reaction_parameters[i]->gamma[j] * mass_r[i];
+      }
     }
 
+    /* Objective function, "simple" reactions (2 species, constant epsilon) only */
+    for (i=0; i<Ap->n_reactions; ++i) {
+      PetscBool is_simple;
+
+      ierr = PetscStrcmp(Ap->reaction_parameters[i]->type,"simple",&is_simple);CHKERRQ(ierr);
+      if (is_simple) {
+        const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+        const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
+
+        ff[Ap->n_volatiles + i] = Ap->reaction_parameters[i]->epsilon[v0] * A->volatiles[v0].p + Ap->reaction_parameters[i]->epsilon[v1] * A->volatiles[v1].p;
+      } else{
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction type %s not recognized",Ap->reaction_parameters[i]->type);
+      }
+    }
+
+    ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

@@ -337,8 +337,8 @@ PetscErrorCode solve_dxdts( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"atmosts_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    // DJB: plus one to account for chemical equilibration constraint
-    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles+1 );CHKERRQ(ierr);
+    /* one dof per volatile, and one dof per reaction */
+    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles + Ap->n_reactions );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
@@ -349,8 +349,9 @@ PetscErrorCode solve_dxdts( Ctx *E )
     for (i=0; i<Ap->n_volatiles; ++i) {
         xx[i] = 0.0;
     }
-    // DJB chemical equilibration constraint
-    xx[Ap->n_volatiles] = 0.0; // relates to (dm_v^r)/dt
+    for (i=0; i<Ap->n_reactions; ++i) {
+        xx[Ap->n_volatiles + i] = 0.0;
+    }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
@@ -370,6 +371,9 @@ PetscErrorCode solve_dxdts( Ctx *E )
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].dxdt = xx[i];
+    }
+    for (i=0; i<Ap->n_reactions; ++i) {
+        A->reactions[i].dmrdt = xx[Ap->n_volatiles + i];
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 

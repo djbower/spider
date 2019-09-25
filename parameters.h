@@ -3,6 +3,7 @@
 
 #include <petsc.h>
 #include "lookup.h"
+#include "reaction.h"
 
 /* dimensionalising constants */
 typedef struct _Constants {
@@ -57,13 +58,44 @@ typedef struct VolatileParameters_ {
     PetscScalar R_thermal_escape_value; // for thermal escape
     PetscScalar molar_mass;
     PetscScalar cross_section;
-    /* factor is a mass balance consideration for reactions */
-    PetscScalar factor;
-    /* sign is really controlling whether the volatile is a product (sign=1)
-       or a reactant (sign=-1) */
-    PetscScalar sign; // for chemical reactions, TODO: make variable name more explicit
     PetscReal   poststep_change; // allowable fractional change (only for -activate_poststep)
 } VolatileParameters;
+
+/*
+ReactionParameters: an object which describes a particular type of chemical equilibrium.
+
+Specifically, it represents the situation where two or more volatiles in the
+liquid phase (in the mantle) can be converted (reversibly, unconditionally) to
+one another by means of chemical reactions, and where these volatiles are in
+(instantaneous, quasi-static) equilibrium, as described by some
+(time-and-state-dependent) function.
+
+Thus, the data are:
+- A set of N volatiles, identified by indices corresponding to volatile species.
+- A set of N coefficients gamma_i to describe how the volatiles are converted.
+  The sign of these defines the direction of the reaction; positive implies a product.
+- An equation describing the equilibrium state. The simplest (and default) is described by parameters epsilon_i describing a balance. This is controlled by a "type" field
+
+Developers' Note: this class's name should change if we ever want to consider
+reactions occuring anywhere except in the liquid mantle, e.g. in the
+atmosphere.
+
+Developers' Note: this class is done "properly", in that Reaction is a pointer
+to a struct, not itself a struct.  Other classes in SPIDER aren't (yet) all
+done this way.
+*/
+typedef struct {
+  const char *type;
+  PetscInt   n_volatiles;
+  PetscInt   *volatiles; /* indices for volatiles. Populated from prefix strings during parameter processing */
+  PetscReal  *gamma;     /* "Exchange rates" */
+  PetscReal  *epsilon;    /* Default equilibrium parameters (constant). */
+} data_ReactionParameters;
+typedef data_ReactionParameters* ReactionParameters;
+
+/* We hard-code the maximum number of reactions. If needbe, the array of
+   ReactionParameters could be dynamically allocated and freed.*/
+#define SPIDER_MAX_REACTIONS 8
 
 /* for storing atmosphere outputs */
 typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY} MagmaOceanAtmosphereType;
@@ -83,12 +115,13 @@ typedef struct AtmosphereParameters_ {
     PetscBool   PARAM_UTBL;
     PetscScalar param_utbl_const;
     // for volatile ODE
-    PetscBool SOLVE_FOR_VOLATILES;
-    PetscScalar P0;
-    PetscInt           n_volatiles;
-    VolatileParameters volatile_parameters[SPIDER_MAX_VOLATILE_SPECIES];
-    PetscScalar Rgas; // gas constant
-    PetscScalar epsilon; // for H2<->H2O reaction
+    PetscBool           SOLVE_FOR_VOLATILES;
+    PetscScalar         P0;
+    PetscInt            n_volatiles;
+    VolatileParameters  volatile_parameters[SPIDER_MAX_VOLATILE_SPECIES];
+    PetscInt            n_reactions;
+    ReactionParameters  reaction_parameters[SPIDER_MAX_REACTIONS];
+    PetscScalar         Rgas; // gas constant
     PetscScalar const * gravity_ptr;
     PetscScalar const * radius_ptr;
     PetscScalar const * VOLATILE_ptr;
@@ -217,8 +250,15 @@ typedef struct _Parameters {
 
 } Parameters;
 
+/* Parameters Methods */
 PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *parameters);
 PetscErrorCode PrintParameters(Parameters const *parameters);
 PetscErrorCode SetLookups( Parameters * );
+PetscErrorCode ParametersDestroy(Parameters *parameters);
+
+/* ReactionParameters Methods */
+PetscErrorCode ReactionParametersCreateSimple(ReactionParameters*,PetscInt,PetscInt,PetscReal,PetscReal,PetscReal,PetscReal);
+PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters*,const AtmosphereParameters*);
+PetscErrorCode ReactionParametersDestroy(ReactionParameters*);
 
 #endif

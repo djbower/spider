@@ -110,25 +110,27 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* S0, TODO: I think this breaks for parallel */
   ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,arr_dSdt_s[0],INSERT_VALUES);CHKERRQ(ierr);
 
-  /* volatiles */
-  if (Ap->SOLVE_FOR_VOLATILES){
+  /* volatiles and reactions */
+  if (Ap->SOLVE_FOR_VOLATILES) {
     ierr = solve_dxdts( E );
     for (v=0; v<Ap->n_volatiles; ++v) {
       ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,A->volatiles[v].dxdt,INSERT_VALUES);CHKERRQ(ierr);
+    }
+    for (v=0; v<Ap->n_reactions; ++v) {
+      ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],v,A->reactions[v].dmrdt,INSERT_VALUES);CHKERRQ(ierr);
     }
   }
   else{
     for (v=0; v<Ap->n_volatiles; ++v) {
       ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,0.0,INSERT_VALUES);CHKERRQ(ierr);
     }
+    for (v=0; v<Ap->n_reactions; ++v) {
+      ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],v,0.0,INSERT_VALUES);CHKERRQ(ierr);
+    }
   }
 
-  /* PS - cannot the following just be within one loop, or is this the preferred way of
-     assembling vecs? */
   for (i=1; i<E->numFields; ++i) {
     ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
-  }
-  for (i=1; i<E->numFields; ++i) {
     ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
   }
 

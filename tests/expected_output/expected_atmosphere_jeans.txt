@@ -107,3 +107,5 @@ description: Magma ocean volatile content
 scaling: 0.0004697889028520918
 val: 0.1824527596124122
 val: 40.46901041988973
+description: Magma ocean reaction accumulated amounts
+scaling: 0.0004697889028520918
