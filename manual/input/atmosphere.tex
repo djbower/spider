@@ -84,11 +84,11 @@ It's more convenient to express volatile concentration as a scaled version of pa
 \end{equation}
 Therefore, the mass balance:
 \begin{equation}
-k_v \frac{X_{\rm ppm}}{V_0} \hat{M}^s + \frac{X_{\rm ppm}}{V_0} \hat{M}^l + \frac{10^6}{V_0} \frac{R_p^2}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \frac{X_{\rm ppm}^{\rm init}}{V_0} \hat{M}^m
+k_v \frac{X_{\rm ppm}}{V_0} \hat{M}^s + \frac{X_{\rm ppm}}{V_0} \hat{M}^l + \frac{10^6}{V_0} \frac{R_p^2}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \frac{X_{\rm ppm}^{\rm init}}{V_0} \hat{M}^m
 \end{equation}
 Collect terms:
 \begin{equation}
-\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0}\frac{R_p^2}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
+\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0}\frac{R_p^2}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
 \end{equation}
 Note that the $X_v$ within $p_v$ has \textbf{not} yet been non-dimensionalised (see below).
 %%%%
@@ -112,7 +112,7 @@ $P_0$ is a pressure scale that relates to the primary non-dimensional quantities
 \end{equation}
 Now the mass balance becomes, noting that a factor of $P_0$ appears in the numerator on the penultimate term on the LHS because we introduce the non-dimensional pressure:
 \begin{equation}
-\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0} \frac{R_p^2 P_0}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^{\rm m}
+\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0} \frac{R_p^2 P_0}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^{\rm m}
 \end{equation}
 Note that the as yet unspecified mass reservoirs in the last term on the LHS all exclude a factor of $4\pi$ since we are only considering scaled masses now.
 %%%%
@@ -123,7 +123,7 @@ g = \frac{S_0 T_0}{R_0} \hat{g}
 \end{equation}
 and the radius of the planet $R_p$ is non-dimensionalised by $R_0$.  Hence the mass balance becomes:
 \begin{equation}
-\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0}\frac{\hat{R}_p^2}{\hat{g}}\frac{P_0 R_0^3}{M_0 S_0 T_0} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
+\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0}\frac{\hat{R}_p^2}{\hat{g}}\frac{P_0 R_0^3}{M_0 S_0 T_0} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
 \end{equation}
 Now the scaling constants in the penultimate term on the LHS are, according to the non-dimensional scheme in SPIDER:
 \begin{equation}
@@ -132,7 +132,7 @@ Now the scaling constants in the penultimate term on the LHS are, according to t
 %%%%
 \subsubsection{Volatile Mass Balance}
 Therefore the mass balance in non-dimensional form is, \myemph{where again, masses are scaled masses without the $4 \pi$ term}:
-\boxedeq{}{\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{M_0 V_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m \label{eq:volevo}}
+\boxedeq{}{\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m \label{eq:volevo}}
 Compared to the dimensional form (Eq.~\ref{eq:dimvolatile}), there is an extra scaling factor in front of the atmospheric mass and other mass terms, to take account of the fact that we have converted mass fraction quantities to scaled ppm.  In the case of the atmospheric mass, this extra scaling factor cannot be absorbed by a $\hat{X_v}$ term since the volatile concentration is wrapped up inside the partial pressure formula.
 %%%%
 \subsubsection{Scaled Non-dimensional Mass}
@@ -594,33 +594,38 @@ and we calculate the difference in concentration using:
 K_{eq} = \frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}}
 \end{equation}
 Whichever value of $\delta x$ gives $Q=K$ determines the amount that the concentrations will change in the timestep. The value of $\delta x$ is usually a partial pressure, which must be converted to a mass fraction via Henry's law. 
+%%%%
+%%%%
+%%%% added by Taylor, but PETSC takes care of the non-linear solves
+%%%%
+%%%%
+%%%%
+%\subsubsection{Newtons Method for finding $\delta x$}: 
+%Since we cannot generally solve for $\delta x$, as is the case in water production, we might need an iterative method to find the roots. Newtons method finds the roots of a function by adjusting a guess using the function and it's derivative. The expression for theequilibrium constant becomes: 
+%\begin{equation}
+%    f(\delta x) = \frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} - K_{eq} 
+%\end{equation}
+%And it's derivative: 
+%\begin{equation}
+%\begin{aligned}
+%    f'(\delta x) =  & 
+%    \Big(\frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_B-C_B\delta x)^{C_B}} \Big) -C_A^2    (X_A - C_A\delta x)^{-C_A-1} +  \\
+%    & \Big(\frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A}} \Big) -C_B^2   (X_B - C_B\delta x)^{-C_B-1} + \\
+%    & \Big( \frac{ (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} \Big)  C_C^2   (X_C + C_C\delta x)^{ C_C-1} + \\
+%    & \Big( \frac{ (X_C + C_C\delta x)^{C_C}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} \Big)  C_D^2   (X_D + C_D\delta x)^{ C_D-1}  
+%\end{aligned}
+%\end{equation}
+%Or, in a somewhat more condensed notation:
+%\begin{equation}
+%    f'(\delta x) = \sum_{i=1}^n {\rm sign}_iC_i^2(X_i+{\rm sign_iC_i\delta x})^{{\rm sign}_i C_i-1} \prod_{j\neq i}^n (X_j+{\rm sign}_i C_i \delta x)^{{\rm sign}_i C_i}
+%\end{equation}
+%Where ${\rm sign}_i$ is the same parameter as described before, and indicates whether the volatile is a product or reactant. The default convention is the forward reaction, so reactants have negative signs while products have positive signs. If the reaction were to occur backward, then $\delta x$ would simply be negative. The constant $C_i$ is the coefficient, described previously as well, and tells you how many molecules of a given species are involved in the reaction. $X_i$ can be taken to be partial pressures, or mass fractions within the mantle with the corresponding equilibrium constant. g
 
-\subsubsection{Newtons Method for finding $\delta x$}: 
-Since we cannot generally solve for $\delta x$, as is the case in water production, we might need an iterative method to find the roots. Newtons method finds the roots of a function by adjusting a guess using the function and it's derivative. The expression for theequilibrium constant becomes: 
-\begin{equation}
-    f(\delta x) = \frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} - K_{eq} 
-\end{equation}
-And it's derivative: 
-\begin{equation}
-\begin{aligned}
-    f'(\delta x) =  & 
-    \Big(\frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_B-C_B\delta x)^{C_B}} \Big) -C_A^2    (X_A - C_A\delta x)^{-C_A-1} +  \\
-    & \Big(\frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A}} \Big) -C_B^2   (X_B - C_B\delta x)^{-C_B-1} + \\
-    & \Big( \frac{ (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} \Big)  C_C^2   (X_C + C_C\delta x)^{ C_C-1} + \\
-    & \Big( \frac{ (X_C + C_C\delta x)^{C_C}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} \Big)  C_D^2   (X_D + C_D\delta x)^{ C_D-1}  
-\end{aligned}
-\end{equation}
-Or, in a somewhat more condensed notation:
-\begin{equation}
-    f'(\delta x) = \sum_{i=1}^n {\rm sign}_iC_i^2(X_i+{\rm sign_iC_i\delta x})^{{\rm sign}_i C_i-1} \prod_{j\neq i}^n (X_j+{\rm sign}_i C_i \delta x)^{{\rm sign}_i C_i}
-\end{equation}
-Where ${\rm sign}_i$ is the same parameter as described before, and indicates whether the volatile is a product or reactant. The default convention is the forward reaction, so reactants have negative signs while products have positive signs. If the reaction were to occur backward, then $\delta x$ would simply be negative. The constant $C_i$ is the coefficient, described previously as well, and tells you how many molecules of a given species are involved in the reaction. $X_i$ can be taken to be partial pressures, or mass fractions within the mantle with the corresponding equilibrium constant. g
-
-For Newton's method, we start with some guess $x_n$ of the root, and then compute a new approximation using: 
-\begin{equation}
-    x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}
-\end{equation}
-and continue until our approximation of $x_n$ is consistent for some threshold (i.e. until $x_n-x_n+1<0.01$, or another similar condition). 
+%For Newton's method, we start with some guess $x_n$ of the root, and then compute a new approximation using: 
+%\begin{equation}
+%    x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}
+%\end{equation}
+%and continue until our approximation of $x_n$ is consistent for some threshold (i.e. until $x_n-x_n+1<0.01$, or another similar condition). 
 %%%%
 %%%%
 %%%%
@@ -707,26 +712,30 @@ The change in solid mass can be similarly computed, and since we are dealing wit
 In the code, I experimented with smoothing across the liquidus and solidus for these integrated mass quantities, but early testing suggested that no smoothing performed better. See around line 400 in twophase.c.
 %%%%
 %%%%
-\subsubsection{Batch crystallisation}
-If we assume that the magma ocean batch crystallises, then:
-\begin{equation}
-g_i(t) = \phi_i(t)
-\end{equation}
-Basically, the ability of a partial of mass to retain volatiles is only dependent on its melt fraction.  Also:
-\begin{equation}
-\frac{d \hat{M}^{\rm l}}{dt} = \sum_i^N \frac{d \phi_i}{d S_i} \frac{dS_i}{dt} dm_i = \sum_i^N \frac{1}{\Delta S_{{\rm fus}i}} \frac{dS_i}{dt} dm_i, \qquad \text{ for } 0 < \phi < 1
-\end{equation}
+%%%% below were experiments before utilising the fact that a constant mixing length prevents a lid from forming
+%%%% also, preliminary tests did not seem to conserve volatile abundance (perhaps due to set accuracy of atmosts timestepper?)
 %%%%
 %%%%
-\subsubsection{Fractional crystallisation}
-We can retain the same basic formulation as for batch crystallisation, but now add a weighting factor that penalises the ability of low melt fractions to store volatiles:
-\begin{equation}
-g_i(t) = \frac{\phi(t)}{2} \left(1+ \tanh\left(\frac{\phi(t)-\phi_c}{\phi_w} \right)\right)
-\end{equation}
-where $\phi(t)$ is melt fraction, $\phi_c$ the critical melt fraction, and $\phi_w$ a smoothing width.  Compute the time derivative:
-\begin{equation}
-\frac{d g_i}{d S_i} =\frac{1}{\Delta S_{i,fus}} \frac{1}{2\phi_w} \frac{1}{\cosh^2{x_i}}, \qquad x_i = \frac{\phi_i(t)-\phi_c}{\phi_w}
-\end{equation}
+%\subsubsection{Batch crystallisation}
+%If we assume that the magma ocean batch crystallises, then:
+%\begin{equation}
+%g_i(t) = \phi_i(t)
+%\end{equation}
+%Basically, the ability of a partial of mass to retain volatiles is only dependent on its melt fraction.  Also:
+%\begin{equation}
+%\frac{d \hat{M}^{\rm l}}{dt} = \sum_i^N \frac{d \phi_i}{d S_i} \frac{dS_i}{dt} dm_i = \sum_i^N \frac{1}{\Delta S_{{\rm fus}i}} \frac{dS_i}{dt} dm_i, \qquad \text{ for } 0 < \phi < 1
+%\end{equation}
+%%%%
+%%%%
+%\subsubsection{Fractional crystallisation}
+%We can retain the same basic formulation as for batch crystallisation, but now add a weighting factor that penalises the ability of low melt fractions to store volatiles:
+%\begin{equation}
+%g_i(t) = \frac{\phi(t)}{2} \left(1+ \tanh\left(\frac{\phi(t)-\phi_c}{\phi_w} \right)\right)
+%\end{equation}
+%where $\phi(t)$ is melt fraction, $\phi_c$ the critical melt fraction, and $\phi_w$ a smoothing width.  Compute the time derivative:
+%\begin{equation}
+%\frac{d g_i}{d S_i} =\frac{1}{\Delta S_{i,fus}} \frac{1}{2\phi_w} \frac{1}{\cosh^2{x_i}}, \qquad x_i = \frac{\phi_i(t)-\phi_c}{\phi_w}
+%\end{equation}
 %%%%
 %%%%
 %%%%
