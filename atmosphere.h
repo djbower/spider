@@ -36,6 +36,7 @@ typedef struct Atmosphere_ {
     PetscScalar Msol; // mass of solid (kg)
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tsurf; // surface temperature
+    PetscScalar oxygen_fugacity; // Oxygen fugacity
     PetscScalar psurf; // surface pressure
     PetscScalar tau; // aggregate optical depth at surface (dimensionless)
     PetscScalar Fatm; // net upward atmosphere flux
@@ -65,5 +66,7 @@ PetscErrorCode set_atmosphere_volatile_content( Atmosphere *, const AtmospherePa
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
 PetscErrorCode FormFunction2( SNES, Vec, Vec, void * );
 PetscScalar get_dxdt( Atmosphere *, const AtmosphereParameters *, PetscInt, const PetscScalar * );
+
+PetscErrorCode set_oxygen_fugacity( Atmosphere *, const AtmosphereParameters * );
 
 #endif

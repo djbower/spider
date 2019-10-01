@@ -99,9 +99,11 @@ typedef data_ReactionParameters* ReactionParameters;
 
 /* for storing atmosphere outputs */
 typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY} MagmaOceanAtmosphereType;
+typedef enum {OXYGEN_FUGACITY_CI=1,OXYGEN_FUGACITY_CV,OXYGEN_FUGACITY_H,OXYGEN_FUGACITY_EH,OXYGEN_FUGACITY_EUCRITE} OxygenFugacityType;
 typedef struct AtmosphereParameters_ {
     // input parameters
     MagmaOceanAtmosphereType SURFACE_BC;
+    OxygenFugacityType OXYGEN_FUGACITY; // for chemical reactions
     PetscBool VISCOUS_MANTLE_COOLING_RATE;
     PetscBool THERMAL_ESCAPE;
     PetscScalar surface_bc_value;

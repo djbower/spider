@@ -111,6 +111,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,arr_dSdt_s[0],INSERT_VALUES);CHKERRQ(ierr);
 
   /* volatiles and reactions */
+  /* TODO: only necessary for chemical reactions, but since this is a cheap operation, compute regardless */
+  ierr = set_oxygen_fugacity( A, Ap );CHKERRQ(ierr);
+
   if (Ap->SOLVE_FOR_VOLATILES) {
     ierr = solve_dxdts( E );
     for (v=0; v<Ap->n_volatiles; ++v) {

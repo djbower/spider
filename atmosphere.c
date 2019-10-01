@@ -835,3 +835,65 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     /* Note: we do not include subtracting mass from reactions here */
     return out;
 }
+
+PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+
+    /* TODO: make this a separate function, so can switch between Schaefer and Fegley (2017)
+       and Olson and Sharp (2019) */
+
+    /* These are oxygen fugacity fits for individual meteoritic materials as
+       as function of temperature from Schaefer and Fegley (2017), ApJ */
+    PetscScalar a,b,c,d,f,log10fO2;
+    PetscScalar temp = A->tsurf;
+
+    PetscFunctionBeginUser;
+
+    switch( Ap->OXYGEN_FUGACITY ){
+        case 1:
+            a = 2.4976;
+            b = -9.8605;
+            c = -17.0701;
+            d = 7.5220;
+            f = -1.0404;
+            break;
+        case 2:
+            a = 9.0621;
+            b = -31.193;
+            c = 5.1092;
+            d = -1.8475;
+            f = 0.2000;
+            break;
+        case 3:
+            a = 5.0743;
+            b = -22.906;
+            c = -5.6610;
+            d = 2.0634;
+            f = -0.2618;
+            break;
+        case 4:
+            a = 4.9495;
+            b = -24.024;
+            c = -4.6236;
+            d = 1.7177;
+            f = -0.2332;
+            break;
+        case 5:
+            a = 5.4856;
+            b = -25.127;
+            c = -3.6580;
+            d = 1.3014;
+            f = -0.1650;
+            break;
+        default:
+            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported OXYGEN_FUGACITY value %d provided",Ap->OXYGEN_FUGACITY);
+            break;
+        }
+
+    log10fO2 = a + b*1E3/temp + c*1E6/PetscPowScalar(temp,2.0) + d*1E9/PetscPowScalar(temp,3.0) + f*1E12/PetscPowScalar(temp,4.0);
+
+    A->oxygen_fugacity = PetscPowScalar(10.0,log10fO2);
+
+    PetscFunctionReturn(0);
+
+}
