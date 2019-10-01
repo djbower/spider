@@ -16,6 +16,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   PetscErrorCode    ierr;
   Ctx                  *E = (Ctx*) ptr;
   Parameters           *P = &E->parameters;
+  Constants            *C = &P->constants;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
   Atmosphere           *A = &E->atmosphere;
   Mesh                 *M = &E->mesh;
@@ -112,7 +113,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   /* volatiles and reactions */
   /* TODO: only necessary for chemical reactions, but since this is a cheap operation, compute regardless */
-  ierr = set_oxygen_fugacity( A, Ap );CHKERRQ(ierr);
+  ierr = set_oxygen_fugacity( A, Ap, C );CHKERRQ(ierr);
 
   if (Ap->SOLVE_FOR_VOLATILES) {
     ierr = solve_dxdts( E );

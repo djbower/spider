@@ -841,7 +841,7 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     return out;
 }
 
-PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap )
+PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
 
     /* These are oxygen fugacity fits for individual meteoritic materials as
@@ -849,7 +849,8 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
        Also, fits to IW buffer from Olson and Sharp (2019) based on Ebel and Grossman (2000) */
 
     PetscScalar a,b,c,d,f,log10fO2;
-    PetscScalar temp = A->tsurf;
+    /* temperature must be dimensional in K */
+    PetscScalar temp = A->tsurf * C->TEMP;
 
     PetscFunctionBeginUser;
 
@@ -890,16 +891,19 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             f = -0.1650;
             break;
         case 6:
+            /* Olson and Sharp (2019), IW buffer */
             a = -2.75E6;
             b = -1.7;
             c = 0.0;
             break;
         case 7:
+            /* Olson and Sharp (2019), IW-1 */
             a = -2.75E6;
             b = -1.7;
             c = -1.0;
             break;
         case 8:
+            /* Olson and Sharp (2019), IW-2 */
             a = -2.75E6;
             b = -1.7;
             c = -2.0;
@@ -909,12 +913,12 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             break;
         }
 
+    /* Schaefer and Fegley (2017) */
     if( Ap->OXYGEN_FUGACITY <= 5 ){
-        /* Schaefer and Fegley (2017) */
         log10fO2 = a + b*1E3/temp + c*1E6/PetscPowScalar(temp,2.0) + d*1E9/PetscPowScalar(temp,3.0) + f*1E12/PetscPowScalar(temp,4.0);
     }
+    /* Olson and Sharp (2019) fits to Ebel and Grossman (2000) */
     else if( Ap->OXYGEN_FUGACITY <= 8){
-        /* Olson and Sharp (2019) fits to Ebel and Grossman (2000) */
         log10fO2 = a * PetscPowScalar( temp, b ) + c;
     }
 
