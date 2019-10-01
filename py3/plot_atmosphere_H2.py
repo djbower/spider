@@ -14,7 +14,7 @@ logger = su.get_my_logger(__name__)
 def plot_atmosphere():
 
     logger.info( 'building atmosphere' )
-    wdir = 'varML'
+    wdir = 'output'
 
     width = 10 * 3.0/2.0
     height = 10 / 2.0
@@ -245,7 +245,7 @@ def plot_atmosphere():
     #out_a = np.column_stack( (timeMyr_a, temperature_surface_a, emissivity_a ) )
     #np.savetxt( 'out.dat', out_a )
 
-    fig_o.savefig(6, jpg=True)
+    #fig_o.savefig(6, jpg=True)
     fig_o.savefig(6)
 
 #====================================================================
