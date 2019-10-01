@@ -572,6 +572,11 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     scaling = C->PRESSURE / 1.0E5; /* bar */
     ierr = JSON_add_single_value_to_object(dm, scaling, "pressure_surface", "bar", A->psurf, data);CHKERRQ(ierr);
 
+    /* TODO: check */
+    /* oxygen fugacity, non-dimensional */
+    scaling = 1.0;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "oxygen_fugacity", "None", A->oxygen_fugacity, data);CHKERRQ(ierr);
+
     /* optical depth, non-dimensional */
     scaling = 1.0;
     ierr = JSON_add_single_value_to_object(dm, scaling, "optical_depth", "None", A->tau, data);CHKERRQ(ierr);
