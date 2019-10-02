@@ -186,8 +186,58 @@ Therefore, if a single chemical reaction is present that only exchanges mass bet
 \label{sect:chemreact}
 A statement of chemical equilibrium is often conveniently expressed like Eq.~\ref{eq:volequil}, but practically this is manifest as a transfer of mass between volatiles.  For simplicity, again consider a single chemical reaction that transfers mass between two volatile species, taking the following as an example:
 \begin{equation}
-    \frac{1}{2} O_2 + H_2 \leftrightarrow H_2O
+    [\rm{H}_2O]\leftrightarrow \frac{1}{2} [\rm{O}_2] + [\rm{H}_2]
     \label{eq:reaction}
+\end{equation}
+Eq.~\ref{eq:reaction} is balanced in terms of molar concentration (square brackets), and the equilibrium constant is defined as \cite[e.g.][]{SF17}:
+\begin{equation}
+K=\frac{p_{\rm H_2} f_{\rm O_2}^{1/2}}{p_{\rm H_2\rm O}}
+\end{equation}
+Although chemical reactions are naturally expressed in terms of moles (or molecules), we need a formulation that considers mass, since ultimately we are tracking mass addition to, and removal from, interior and exterior reservoirs.  Mass is conserved:
+\begin{equation}
+m_{H_2O} \leftrightarrow m_{O_2} + m_{H_2}
+\label{eq:reaction_mass}
+\end{equation}
+We now need a relationship between $m_{H_2O}$ and $m_{H_2}$ to enable us to solve for the exchange of mass between the H$_2$O and H$_2$ reservoirs in order to maintain chemical equilibrium.  We do not track the evolution of O$_2$ explicitly, but rather relate this to the oxygen fugacity $f_{O_2}$ (which is assumed to have units of Pa):
+\begin{equation}
+    \frac{1}{P_s} p_{H_2O} \leftrightarrow \frac{1}{P_s} \left( \frac{1}{2} f_{O_2} + p_{H_2} \right)
+    \label{eq:reactionp}
+\end{equation}
+Here we have introduced the total pressure $P_s$ to ensure the units are molar concentration (mol/mol).  We can now introduce the molar masses $\mu_v$ and the total number of moles $X_{tot}$ to derive a mass balance (kg):
+\begin{equation}
+    \frac{X_{tot}}{P_s} p_{H_2O} \mu_{H_2O} \leftrightarrow \frac{X_{tot}}{P_s} \left( \frac{1}{2} f_{O_2} \mu_{O_2} + p_{H_2} \mu_{H_2} \right)
+    \label{eq:reaction_mass2}
+\end{equation}
+where comparison with Eq.~\ref{eq:reaction_mass} reveals that:
+\begin{equation}
+m_{H_2O} = \frac{X_{tot}}{P_s} p_{H_2O} \mu_{H_2O}
+\end{equation}
+\begin{equation}
+m_{O_2} = \frac{X_{tot}}{P_s} \frac{1}{2} f_{O_2} \mu_{O_2}
+\end{equation}
+\begin{equation}
+m_{H_2} = \frac{X_{tot}}{P_s} p_{H_2} \mu_{H_2}
+\end{equation}
+Divide through by the mass of the H$_2$ reservoir:
+\begin{equation}
+\frac{m_{H_2O}}{m_{H_2}} = \frac{p_{H_2O} \mu_{H_2O}}{p_{H_2} \mu_{H_2} } = \frac{\mu_{H_2O}}{\mu_{H_2}} \frac{f_{O_2}^{1/2}}{K} \implies m_{H_2O} = \frac{\mu_{H_2O}}{\mu_{H_2}} \frac{f_{O_2}^{1/2}}{K} m_{H_2}
+\end{equation}
+\begin{equation}
+\frac{m_{O_2}}{m_{H_2}} = \frac{1}{2} \frac{ f_{O_2} \mu_{O_2}}{p_{H_2} \mu_{H_2}} \implies m_{O_2} = \frac{1}{2} \frac{ f_{O_2} \mu_{O_2}}{p_{H_2} \mu_{H_2}} m_{H_2}
+\end{equation}
+Therefore we can solve for $m_{H_2}$ and derive the other masses of the volatile reservoirs.
+%%%%
+%%%%
+%%%%
+%%%% DELETE BELOW %%%%
+\dbnote{Need to revise below}
+where $\mu_v$ is the molar mass (kg/mole) of a volatile $v$.  Since we do not explicitly track oxygen (rather it is given by $fO_2$), we are just solving for the exchange of mass between H$_2$O and H$_2$:
+\begin{equation}
+m_{H_2O} \leftrightarrow \frac{1}{2} \frac{p_{O_2}}{P_s} X_{tot} \mu_{O_2} + m_{H_2}
+\end{equation}
+$fO_2$ is known, so substitute in \dbnote{Check with Kaustubh, $fO_2$ is assumed to be non-dimensional, but referenced to 1 bar?}:
+\begin{equation}
+m_{H_2O} \leftrightarrow \frac{1}{2} \frac{f_{O_2}}{P_s} X_{tot} \mu_{O_2} + m_{H_2}
 \end{equation}
 In essence, we can consider a loss (or gain) of H$_2$ to relate to a gain (or loss) of H$_2$O.  Therefore, the relationship between the reaction mass terms is:
 \begin{equation}
@@ -356,7 +406,7 @@ This is rewritten in terms of the oxygen fugacity $fO_2$, as:
 Note that the stoichiometry is important for defining the equilibrium constant.  If instead we consider the reaction:
 \begin{equation}
     \frac{1}{2} O_2 + H_2 \leftrightarrow H_2O
-    \label{eq:reaction}
+    \label{eq:reaction2}
 \end{equation}
 We instead derive:
 \begin{equation}
@@ -463,7 +513,7 @@ Or another thing I tried is taking the time derivative of Eq. 258:}
 
 As a technical detail, we probably need to compute the chemical reactions after other physical processes such as outgassing (if solidification of the magma ocean is being considered) and atmospheric escape.  Otherwise, there's a possibility we will simply remain locked at thermodynamic equilibrium and nothing interesting will happen (i.e., volatiles will not evolve).  \dbnote{Whether this is an issue or not will probably become more apparent later.} 
 
-The volatile parameters \texttt{sign} and \texttt{coeff} are determined by the stoichiometry of the chemical reaction. The sign of the exponent indicates whether the volatile is a reactant (for which $\texttt{sign}=-1$) or a product ($\texttt{sign}=1$) in order to correctly compute Eq.~\ref{eq:Keq}. The coefficient is the constant of the chemical reaction. For example, in the reaction with water using equation \ref{eq:reaction} $\texttt{coeff}=1$ for hydrogen and water. However if we chose to use Eq.~\ref{eq:altreaction} instead, $\texttt{coeff}=2$ for hydrogen and water. 
+The volatile parameters \texttt{sign} and \texttt{coeff} are determined by the stoichiometry of the chemical reaction. The sign of the exponent indicates whether the volatile is a reactant (for which $\texttt{sign}=-1$) or a product ($\texttt{sign}=1$) in order to correctly compute Eq.~\ref{eq:Keq}. The coefficient is the constant of the chemical reaction. For example, in the reaction with water using equation \ref{eq:reaction2} $\texttt{coeff}=1$ for hydrogen and water. However if we chose to use Eq.~\ref{eq:altreaction} instead, $\texttt{coeff}=2$ for hydrogen and water. 
 
 The relationship between the partial pressure of a volatile added or subtracted due to chemical reactions and its mass evolution is: 
 \boxedeq{}{\frac{dm_{\rm v}^r}{dt} = \pm C_{\rm v} \left( \frac{\delta p}{P_T} \right) \left( \frac{\mu_{\rm v}}{\mu_T} \right) M^l \label{eq:chemevol} }
