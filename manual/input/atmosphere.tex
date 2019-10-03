@@ -184,6 +184,7 @@ Therefore, if a single chemical reaction is present that only exchanges mass bet
 %%%%
 \subsection{Chemical Reactions}
 \label{sect:chemreact}
+\subsubsection{Simple example: $[\rm{H}_2O]\leftrightarrow \frac{1}{2} [\rm{O}_2] + [\rm{H}_2]$}
 A statement of chemical equilibrium is often conveniently expressed like Eq.~\ref{eq:volequil}, but practically this is manifest as a transfer of mass between volatiles.  For simplicity, again consider a single chemical reaction that transfers mass between two volatile species, taking the following as an example:
 \begin{equation}
     [\rm{H}_2O]\leftrightarrow \frac{1}{2} [\rm{O}_2] + [\rm{H}_2]
@@ -225,31 +226,101 @@ Divide through by the mass of the H$_2$ reservoir:
 \begin{equation}
 \frac{m_{O_2}}{m_{H_2}} = \frac{1}{2} \frac{ f_{O_2} \mu_{O_2}}{p_{H_2} \mu_{H_2}} \implies m_{O_2} = \frac{1}{2} \frac{ f_{O_2} \mu_{O_2}}{p_{H_2} \mu_{H_2}} m_{H_2}
 \end{equation}
-Therefore we can solve for $m_{H_2}$ and derive the other masses of the volatile reservoirs.
+Therefore, we have effectively introduced another unknown ($m_{H_2}$) which we can solve for using the equilibrium condition and the volatile mass balances for H$_2$O and H$_2$.  Since everything else is known, we can then derive the masses of the other volatile reservoirs (H$_2$O and O$_2$).
+%%%%
+\subsubsection{Another simple example: $[\rm{CO}_2]\leftrightarrow [\rm{CO}] + \frac{1}{2} [\rm{O}_2]$}
+Following the methodology above:
+\begin{equation}
+    [\rm{CO}_2]\leftrightarrow [\rm{CO}] + \frac{1}{2} [\rm{O}_2]
+    \label{eq:reactionCO2}
+\end{equation}
+\begin{equation}
+\frac{m_{CO_2}}{m_{CO}} = \frac{p_{CO_2} \mu_{CO_2}}{p_{CO} \mu_{CO} } = \frac{\mu_{CO_2}}{\mu_{CO}} \frac{f_{O_2}^{1/2}}{K} \implies m_{CO_2} = \frac{\mu_{CO_2}}{\mu_{CO}} \frac{f_{O_2}^{1/2}}{K} m_{CO}
+\end{equation}
+\begin{equation}
+\frac{m_{O_2}}{m_{CO}} = \frac{1}{2} \frac{ f_{O_2} \mu_{O_2}}{p_{CO} \mu_{CO}} \implies m_{O_2} = \frac{1}{2} \frac{ f_{O_2} \mu_{O_2}}{p_{CO} \mu_{CO}} m_{CO}
+\end{equation}
+\subsubsection{Generalised simple example: $[\rm{A}]\leftrightarrow [\rm{B}] + c [\rm{O}_2]$}
+\begin{equation}
+\frac{m_{A}}{m_{B}} = \frac{p_{A} \mu_{A}}{p_{B} \mu_{B}} = \frac{\mu_{A}}{\mu_{B}} \frac{f_{O_2}^{c}}{K} \implies m_{A} = \frac{\mu_{A}}{\mu_{B}} \frac{f_{O_2}^{c}}{K} m_{B}
+\end{equation}
+\begin{equation}
+\frac{m_{O_2}}{m_{B}} = c \frac{ f_{O_2} \mu_{O_2}}{p_{B} \mu_{B}} \implies m_{O_2} = c \frac{ f_{O_2} \mu_{O_2}}{p_{B} \mu_{B}} m_{B}
+\end{equation}
+It's already becoming clear that a simple pattern is followed: taking the ratio of the partial pressures multiplied by the molar masses, scaled by a coefficient determined by stoichiometry.
+%%%%
+\subsubsection{More complicated example:}
+Still involving oxygen, but now coupling between three volatile species that are explicitly tracked through mass evolution equations.
+\begin{equation}
+    [\rm{CO}_2] + 2[\rm{H}_2] \leftrightarrow [\rm{CH}_4] + [\rm{O}_2]
+    \label{eq:reactionCO2}
+\end{equation}
+\begin{equation}
+K = \frac{p_{{\rm CH}_4} f_{\rm O_2}}{p_{{\rm CO}_2} p_{\rm H_2}^2}
+\end{equation}
+\begin{equation}
+    \frac{X_{tot}}{P_s} \left( p_{CO_2} \mu_{CO_2} + 2 p_{H_2} \mu_{H_2} \right)  \leftrightarrow \frac{X_{tot}}{P_s} \left( p_{CH_4} \mu_{CH_4} + f_{O_2} \mu_{O_2} \right)
+    \label{eq:reaction_mass_complicated}
+\end{equation}
+\begin{equation}
+m_{CO_2} = \frac{X_{tot}}{P_s} p_{CO_2} \mu_{CO_2}
+\end{equation}
+\begin{equation}
+m_{H_2} = \frac{X_{tot}}{P_s} 2 p_{H_2} \mu_{H_2}
+\end{equation}
+\begin{equation}
+m_{CH_4} = \frac{X_{tot}}{P_s} p_{CH_4} \mu_{CH_4}
+\end{equation}
+\begin{equation}
+m_{O_2} = \frac{X_{tot}}{P_s} f_{O_2} \mu_{O_2}
+\end{equation}
+Divide through by the mass of the H$_2$ reservoir:
+\begin{equation}
+\frac{m_{CO_2}}{m_{H_2}} = \frac{p_{CO_2} \mu_{CO_2}}{2 p_{H_2} \mu_{H_2} }
+\end{equation}
+\begin{equation}
+\frac{m_{CH_4}}{m_{H_2}} = \frac{p_{CH_4} \mu_{CH_4}}{2 p_{H_2} \mu_{H_2} }
+\end{equation}
+\begin{equation}
+\frac{m_{O_2}}{m_{H_2}} = \frac{f_{O_2} \mu_{O_2}}{2 p_{H_2} \mu_{H_2} }
+\end{equation}
+So actually, this is basically as simple as before.  For generality, we can use the equilibrium condition as the extra equation, and we solve for the ``chemical reaction'' mass of one particular volatile (H$_2$ is probably the most sensible default), and then compute the changes of mass based on the stoichiometry of the reaction.
+%%%%
+\subsubsection{General example}
+\begin{equation}
+    a[\rm{A}] + b[\rm{B}] \leftrightarrow c[\rm{C}] + d[\rm{D}]
+    \label{eq:reaction_general}
+\end{equation}
+Equilibrium constant:
+\begin{equation}
+K = \frac{C^c D^d}{A^a B^b}
+\label{eq:equilibrium_constant}
+\end{equation}
+\begin{equation}
+\frac{m_{A}}{m_{A}} = 1
+\end{equation}
+\begin{equation}
+\frac{m_{B}}{m_{A}} = \frac{b p_{B} \mu_{B}}{a p_{A} \mu_{A} }
+\end{equation}
+\begin{equation}
+\frac{m_{C}}{m_{A}} = \frac{c p_{C} \mu_{C}}{a p_{A} \mu_{A} }
+\end{equation}
+\begin{equation}
+\frac{m_{D}}{m_{A}} = \frac{d p_{D} \mu_{D}}{a p_{A} \mu_{A} }
+\end{equation}
+where again we can use Eq.~\ref{eq:equilibrium_constant} as the extra equation, and then solve for $m_A$.  So for input, we need:
+\begin{itemize}
+\item Stoichiometry coefficients (4)
+\item Volatile identification (names)
+\item Volatile molar masses
+\item Parameters $a$ and $b$ for the equilibrium constant (in Table in draft paper)
+\item Oxygen fugacity model (also in Table in draft paper)
+\end{itemize}
 %%%%
 %%%%
 %%%%
-%%%% DELETE BELOW %%%%
-\dbnote{Need to revise below}
-where $\mu_v$ is the molar mass (kg/mole) of a volatile $v$.  Since we do not explicitly track oxygen (rather it is given by $fO_2$), we are just solving for the exchange of mass between H$_2$O and H$_2$:
-\begin{equation}
-m_{H_2O} \leftrightarrow \frac{1}{2} \frac{p_{O_2}}{P_s} X_{tot} \mu_{O_2} + m_{H_2}
-\end{equation}
-$fO_2$ is known, so substitute in \dbnote{Check with Kaustubh, $fO_2$ is assumed to be non-dimensional, but referenced to 1 bar?}:
-\begin{equation}
-m_{H_2O} \leftrightarrow \frac{1}{2} \frac{f_{O_2}}{P_s} X_{tot} \mu_{O_2} + m_{H_2}
-\end{equation}
-In essence, we can consider a loss (or gain) of H$_2$ to relate to a gain (or loss) of H$_2$O.  Therefore, the relationship between the reaction mass terms is:
-\begin{equation}
-\frac{m_{H_2}^r}{\mu_{H_2}} = -\frac{m_{H_2O}^r}{\mu_{H_2O}}
-\label{eq:mvr}
-\end{equation}
-Our sign convention, inherent to Eq.~\ref{eq:mvr}, is that positive $m_{H_2}^r$ corresponds to $H_2$ mass loss (this is obvious when you move the term to the RHS of the volatile mass balance and it then becomes negative).  Therefore, the ``default'' reaction is the forward reaction and the sign encapsulates the direction of the reaction.  In Eq.~\ref{eq:mvr} we are using molar masses to account for the fact that loss of 1 mole of H$_2$ is effectively a gain of 1 mole of H$_2$O, since we do not explicitly keep track of the mass balance of O.  Therefore:
-\begin{equation}
-m_{H_2O}^r = - \left( \frac{\mu_{H_2O}}{\mu_{H_2}} \right) m_{H_2}^r
-\label{eq:mvr_final}
-\end{equation}
-This establishes the relationship between two chemical reaction terms, such that now we can determine $\hat{X_v}$ for each volatile and, for example in the case of H$_2$ and H$_2$O, either $m_{H_2}^r$ or $m_{H_2O}^r$.  \dbnote{In the prototype code, the ratio of the molar masses is defined as \emph{-H2O\_factor}.  By default, \emph{-H2\_factor=1} since the reaction is calibrated (referenced) to H$_2$.  Also, \emph{-H2O\_sign=1} identifies H$_2$O as a product (by default), and \emph{-H2\_sign=-1} identifies H$_2$ as a reactant (by default).  We can also set \emph{-CO2\_sign=0} and/or \emph{-CO2\_factor=0} to explicitly exclude any chemical reactions that affect the volatile budget of CO$_2$.  In fact, if we set all the \emph{\_sign} and \emph{\_factor} quantities to zero we should recover the same behaviour as before without any chemical reactions.}
+%%%% DELETE BELOW EVENTUALLY %%%%
+%\dbnote{In the prototype code, the ratio of the molar masses is defined as \emph{-H2O\_factor}.  By default, \emph{-H2\_factor=1} since the reaction is calibrated (referenced) to H$_2$.  Also, \emph{-H2O\_sign=1} identifies H$_2$O as a product (by default), and \emph{-H2\_sign=-1} identifies H$_2$ as a reactant (by default).  We can also set \emph{-CO2\_sign=0} and/or \emph{-CO2\_factor=0} to explicitly exclude any chemical reactions that affect the volatile budget of CO$_2$.  In fact, if we set all the \emph{\_sign} and \emph{\_factor} quantities to zero we should recover the same behaviour as before without any chemical reactions.}
 %%%%
 %%%%
 %%%%
@@ -383,299 +454,9 @@ And likewise for the chemical reaction mass (Eq.~\ref{eq:mvr_final}):
 %%%%
 %%%%
 %%%%
-\subsection{Chemical Reactions}
-\dbnote{I moved this to the end for the time being, but will keep this information somewhere for future use}
-We use a chemical model similar to \cite{GS14}, wherein we assume chemical reactions are at equilibrium at each time step and then we calculate the change in concentration of reactants and products based on how much of any volatile is added to the system.  \textbf{Here, we are considering reactions between volatiles (i.e., gas phases) that are dissolved in a liquid phase (i.e., the melt, the magma ocean with 100\% melt fraction)}.
-\subsubsection{Water production in the magma ocean}
-For the reaction that produces water:
-\begin{equation}
-    {O_2} + 2H_2 \leftrightarrow 2H_2O
-    \label{eq:altreaction} 
-\end{equation}
-The equilibrium constant for this reaction, \textbf{expressed in terms of concentrations (i.e., square brackets)} is:
-\begin{equation}
-    K = \frac{[H_2O]^2}{[H_2]^2[O_2]}
-    %K_{eq} = \frac{(P_{H_2O})^2}{\left(P_{H_2}\right)^2 P_{O_2}}
-\end{equation}
-Note that the equilibrium constant should be unitless, although often this is not the case in the geophysical and astrophysical literature.
-This is rewritten in terms of the oxygen fugacity $fO_2$, as: 
-\begin{equation}
-    \frac{[H_2O]}{[H_2]} = \sqrt{K_{eq}} \left(fO_2\right)^{1/2}
-    %\frac{P_{H_2O}}{P_{H_2}} = \sqrt{K_{eq}} \left(fO_2\right)^{1/2}
-\end{equation}
-Note that the stoichiometry is important for defining the equilibrium constant.  If instead we consider the reaction:
-\begin{equation}
-    \frac{1}{2} O_2 + H_2 \leftrightarrow H_2O
-    \label{eq:reaction2}
-\end{equation}
-We instead derive:
-\begin{equation}
-     K_{eq} = \frac{[H_2O]}{[H_2] [O_2]^{1/2}} = \frac{[H_2O]}{[H_2] \left(fO_2\right)^{1/2}}
-    \label{eq:Keq}
-\end{equation}
-%and therefore by rearranging:
-%\begin{equation}
-%    \frac{P_{H_2O}}{P_{H_2}} = K_{eq} \left(fO_2\right)^{1/2}
-%\end{equation}
-The equilibrium constant for this reaction is calculated based on the surface temperature using data from \cite{RBF78} and a fit from \cite{OS19}.  Note that there seems to be an inconsistency between the assumed stoichiometry and the equilibrium constant within the main body of the text in \cite{OS19}, but this appears to be clarified in their Table~3.  \textbf{Therefore, let's continue using $K_{eq}$ (Eq.~\ref{eq:Keq_OS19}), $fO_2$ (Eq.~\ref{eq:fO2_OS19}) and Eq.~\ref{eq:Keq}}.
-%\tknote{I checked this because I also noticed the inconsistency with the reaction equation and expression of the equilibrium constant. Turns out that for the surface temperature range necessary (between 500 and 4000K is what I checked because it is the bounds of the model runs that I did before), both expressions give values that are very close. Converting their expressions for $K_{eq}$ (Eq. 246 here) and $fO_2$ (Eq 40 in Olson \& Sharp) into exponential form and putting them back into the chemical equilibrium expression gives: 
-%$K_{eq}(fO_2) ^{1/2} = 10^{\textbf{7.39}\times10^5T_s^{-1.61} - 1.39\times10^6T_s^{-1.7}}$  \\
-%or \\
-%$(K_{eq} fO_2) ^{1/2} = 10^{\textbf{3.695}\times10^5T_s^{-1.61} - 1.39\times10^6T_s^{-1.7}}$\\
-%The difference between the two is only a factor of 1/2 in an exponent that is of order $10^5$, so it doesn't change anything significantly--I can send you the plot but there also isn't much to see (because the lines overlap entirely). We can use either Eq 241 or 244.}
-The equilibrium constant depends on the surface temperature \citep[Eq.~41,][]{OS19}:
-\begin{equation}
-    \log_{10} K_{eq} = 7.39\times 10^5T_s^{-1.61}
-    \label{eq:Keq_OS19}
-\end{equation}
-The oxygen fugacity depends on the surface temperature \citep[Eq.~40,][]{OS19}:
-\begin{equation}
-\log_{10} fO_2 = -2.75 \times 10^6 T_s^{-1.7}
-\label{eq:fO2_OS19}
-\end{equation}
-Combining Eq.~\ref{eq:Keq_OS19} and \ref{eq:fO2_OS19}:
-\begin{equation}
-K_{eq} (fO_2)^{1/2} = 10^{7.39 \times 10^5 T_s^{-1.61}-1.375 \times 10^6 T_s^{-1.7}}
-\label{eq:Keq_fO2_OS19}
-\end{equation}
-Now we have two options, which we could in principle switch between in the code with a user-defined FLAG:
-\begin{enumerate}
-\item Compute the mean of Eq.~\ref{eq:Keq_fO2_OS19} over the surface temperature range from 500 to 4000 K to eliminate $T_s$:
-\boxedeq{}{K_{eq}\left(fO_2\right)^{1/2} = 0.01 \label{eq:Keq_fO2_approx}}
-\item Retain dependence on the surface temperature $T_s$, since this is computed (known) at every time step within the code:
-\boxedeq{}{K_{eq} (fO_2)^{1/2} = 10^{7.39 \times 10^5 T_s^{-1.61}-1.375 \times 10^6 T_s^{-1.7}} \label{eq:Keq_fO2_Ts}}
-\end{enumerate}
-\textbf{For testing purposes, it's fine to stick to (1), but extension to (2) should not be difficult}.  There are other expressions that we could adopt in the future to determine $fO_2$.  The oxygen fugacity, which is determined by the iron-w\"{u}stite buffer, can be calculated using the interior pressure and temperature using either \citep{O87}: 
-\begin{equation}
-    \log_{10}\left(fO_2\right) = 6.899 - \frac{27714}{T} + \frac{0.05(P-1)}{T}
-\end{equation}
-or \citep{F91}:
-\begin{equation}
-    \log_{10}\left(fO_2\right) = 6.702-\frac{27489}{T} + \frac{0.055(P-1)}{T}
-\end{equation}
-However, for simplicity at the present time we use Eq.~\ref{eq:Keq_fO2_approx}.  Therefore, at equilibrium we have:
-\boxedeq{}{\frac{[H_2O]}{[H_2]} = K_{eq} \left(fO_2\right)^{1/2}=0.01}
-%\dbnote{My understanding now is that, given our simplifications, the concentration of H$_2$O to H$_2$ is fixed in the mantle.  Note that it would be trivial to reinstate the surface temperature $T_s$ as a controlling parameter, since we compute this every time step within the code.  So you don't need to average over the surface temperature range if you don't want to.}\tknote{Doing this now.}
-%\dbnote{OK, so now we can easily compute $(fO_2)^{1/2}$ for any surface temperature, since it only depends on $K_{eq}$}\tknote{$fO_2$ is set by the pressure and temperature within the mantle and so should eventually be calculated using expression 247 or 248. $K_{eq}$ is presumably also determined by the interior temperature and pressure, because that is what changes the iron-wustite buffer, but for now 246 is the best expression I have found. }\\
-%\dbnote{But this above expression is not explicitly used, since we instead compute $Q$ and compare to $K$, as described below?} \tknote{Eq. 250 is used to establish chemical equilibrium in the MO at every timestep. } \\
-%\dbnote{Currently, this condition is not at all enforced in the volatile evolution.  I.e., outgassing is driven by over-saturation of the melt phase, and this results in changes in the partial pressure of species in the atmosphere.  The partial pressures are coupled through the fact that partial pressure of one species can change as a consequence of other species outgassing.  But there are no chemical reactions by default.} \\
-%\dbnote{It's not obvious to me that we have to do all this work.  If we know the concentration in the magma ocean of, for example, He, then thermodynamic considerations of the reaction already constrain the concentration of H$_2$O.  So we might be able to solve directly, rather than iterating to determine $[\delta x]$.  This seems to be what Olson and Sharp (2019) do; they track He and then directly compute H$_2$O.}
-There are other physical processes operating during the evolution of a magma ocean (e.g., outgassing, escape), such that we expect this reaction is driven away from equilibrium.  If the reaction is not in equilibrium, we use Eq.~\ref{eq:Keq} to calculate the reaction quotient Q:
-\begin{equation}
-Q\left(fO_2\right)^{1/2} = \frac{[H_2O]^\ast}{[H_2]^\ast }
-\end{equation}
-That is, \textbf{we use the current values of the concentrations of $H_2O$ and $H_2$ (denoted by $^\ast$) to compute the LHS, i.e., Q$(fO_2)^{1/2}$}.
-%\dbnote{Now how do we know $(fO_2)^{1/2}$?  It is inconsistent to average over surface temperature as above and then use $K_{eq}$ with its $T_s$ dependence to back-compute $(fO_2)^{1/2}$. Now I think you are only averaging the $T_s$ for the $fO_2$ equation and retaining $K_{eq}$ with its full surface temperature dependence.  Please clarify.} \tknote{I averaged over $K_{eq}(fO_2)^{1/2}$ for the surface temperature range 500-4000K, so the RHS of 252. And then since $fO_2$ is fixed, I am actually comparing $K_{eq}(fO_2)^{1/2}$ to $Q(fO_2)^{1/2}$ because the comparisons still hold. }.
-%, where $(fO_2)^{1/2}$ is known from Eq.~\ref{eq:fO2}  \dbnote{Basically, the partial pressures here are after outgassing, atmospheric escape etc., but before we do any chemistry}\tknote{Yes, they are the partial pressures within the mantle.}.
-We can then compare Q$(fO_2)^{1/2}$ to K$_{eq}(fO_2)^{1/2}$ to determine if the system is in equilibrium and if it is not, how it will shift to go back into equilibrium. If the reaction quotient is not equal to the equilibrium constant, the concentrations of products will change by some amount $[\delta x]$:
-\begin{equation}
-K_{eq} (fO_2)^{1/2} = \frac{([H_2O]^\ast + [\delta x])}{([H_2]^\ast - [\delta x])}
-\label{eq:Keq_diff}
-\end{equation}
-%\dbnote{Note that we don't need these three cases here.  $\delta x$ encapsulates sign information, to show whether we need more products or more reactants.  We just have to pick a convention.} \tknote{Set the forward reaction to be the default (i.e. converting hydrogen to water). I also had mixed up the comparison before, if $Q<K$ we produce products and if $Q>K$ we produce reactants.}. \dbnote{But this remains consistent with the text below, where $Q<K_{eq}$ means that there are more reactants and less products than what equilibrium wants---right?} \tknote{yes, I changed it already. I had written the opposite before, that Q<K means more products and less reactants.}
-If $Q(fO_2)^{1/2} < K_{eq}(fO_2)^{1/2}$, there are more reactants and less products than what is required for equilibrium, and therefore the concentration of reactants decreases and products increase.  In this case, the $\delta x$ in Eq.~\ref{eq:Keq_diff} is positive. If $Q(fO_2)^{1/2} > K_{eq}(fO_2)^{1/2}$, reactants are produced and $\delta x$ is negative.  If $Q(fO_2)^{1/2} = K_{eq}(fO_2)^{1/2}$ the system is still in equilibrium.  At each time step, we calculate $Q(fO_2)^{1/2}$, compare to $K_{eq}(fO_2)^{1/2}$, and then adjust the concentrations of the volatiles to maintain equilibrium before continuing.  For the reaction above, it's actually trivial to compute $[\delta x]$ directly:
-\begin{equation}
-[\delta x] = \frac{K_{eq} (fO_2)^{1/2} \times [H_2]^\ast - [H_2O]^\ast }{K_{eq} (fO_2)^{1/2} + 1}
-\label{eq:Keq_diff_solve}
-\end{equation}
-%\dbnote{Agreed.  We want to solve for $\delta p$ and update the partial pressures accordingly.  Now because the partial pressures of each species relates to the concentration in the interior, the interior concentration is affected by these reactions.  I think to avoid time-reversing our reactions we have to do all the chemistry at the end of the time loop.  This might prevent us from including the chemistry as part of the same ODE that deals with the outgassing and escape.  I will have to think more about this.  Also, since we are dealing directly with partial pressures, maybe we can add a correction or extra term to an existing reservoir rather than add a new linear term in the mass balance.}
-We can now compute the ``revised'' concentrations of [H$_2]^\dagger$ and [H$_2$O$]^\dagger$ according to:
-\begin{equation}
-[H_2O]^\dagger = [H_2O]^\ast + [\delta x], \qquad [H_2]^\dagger = [H_2]^\ast - [\delta x]
-\end{equation}
-If the concentrations are in terms of partial pressures (which I believe is the default), then we can use these revised concentrations (partial pressures) to determine the concentration of the volatiles in the magma ocean that are involved in the chemical reaction through the modified Henry's law:
-\begin{equation}
-X_{\rm v}^{\rm l} = \alpha p_v^{1/\beta} %, \qquad \frac{dp}{d X_{\rm v}^{\rm l}} = \frac{\beta}{\alpha} \left( \frac{X_{\rm v}^{\rm l}}{\alpha} \right)^{\beta-1}
-\label{eq:Henry_mod_invert}
-\end{equation}
-where $p_v$ is the concentration of a given volatile in terms of its partial pressure (i.e., these are the $[]$ quantities above).  Hence $X_{\rm v}^{\rm l}$ is then the concentration (by mass) in the magma ocean.  \dbnote{OK.  Thing is, we technically want an update equation for the $X$'s, rather than re-setting their value explicitly.}\tknote{Would it make more sense to use $X_{\rm v}^{\rm l}$ for the equilibrium calculations instead of the partial pressure? At the end we would be left with $\delta X_{\rm v}^{\rm l}$? If we do this the value of the equilibrium constant might have to be altered, but I'm not sure by how much. Alternatively, if we stick with using the partial pressures and need just an update value, we could just take the difference before and after the reactions?: }
-\begin{equation}  
-    \delta X_{\rm v}^{\rm l\dagger}  = X_{\rm v}^{\rm l \ast} - \alpha(p_v\pm\delta p)^{1/\beta} 
-\end{equation}
-\tknote{This way the updated amount of the mass fraction is simply the difference between the value before and after the chemistry. \\
-Or another thing I tried is taking the time derivative of Eq. 258:}
-\begin{equation}
-    \frac{d  X_{\rm v}^{\rm l}}{dt} = \frac{\alpha}{\beta}p_{\rm v}^{1/\beta -1} \times \Big(\frac{dp_{\rm v}}{dt} \Big)^{1/\beta }
-\end{equation}
-\tknote{And then:} 
-\begin{equation}
-    \frac{dp_{\rm v}}{dt} = [\delta x]
-\end{equation}
-\tknote{is the updated partial pressure that we calculate and $p_{\rm v}$ is the partial pressure after the chemical reactions:} 
-\begin{equation}
-    p_{\rm v}=p_{\rm v}^\ast \pm [\delta x]
-\end{equation}
-\tknote{So the time evolution could be:} 
-\begin{equation}
-     \frac{d  X_{\rm v}^{\rm l}}{dt} = \frac{\alpha}{\beta}\left( p_{\rm v}^\ast \pm [\delta x] \right)^{1/\beta -1} [\delta x]^{1/\beta}
-\end{equation}
-\tknote{And then we would use this instead of} \ref{eq:chemevol}? 
-
-As a technical detail, we probably need to compute the chemical reactions after other physical processes such as outgassing (if solidification of the magma ocean is being considered) and atmospheric escape.  Otherwise, there's a possibility we will simply remain locked at thermodynamic equilibrium and nothing interesting will happen (i.e., volatiles will not evolve).  \dbnote{Whether this is an issue or not will probably become more apparent later.} 
-
-The volatile parameters \texttt{sign} and \texttt{coeff} are determined by the stoichiometry of the chemical reaction. The sign of the exponent indicates whether the volatile is a reactant (for which $\texttt{sign}=-1$) or a product ($\texttt{sign}=1$) in order to correctly compute Eq.~\ref{eq:Keq}. The coefficient is the constant of the chemical reaction. For example, in the reaction with water using equation \ref{eq:reaction2} $\texttt{coeff}=1$ for hydrogen and water. However if we chose to use Eq.~\ref{eq:altreaction} instead, $\texttt{coeff}=2$ for hydrogen and water. 
-
-The relationship between the partial pressure of a volatile added or subtracted due to chemical reactions and its mass evolution is: 
-\boxedeq{}{\frac{dm_{\rm v}^r}{dt} = \pm C_{\rm v} \left( \frac{\delta p}{P_T} \right) \left( \frac{\mu_{\rm v}}{\mu_T} \right) M^l \label{eq:chemevol} }
-where the sign is determined through the comparison of Q and K and whether the volatile is a product or reactant. $C$ is the coefficient from the chemical reaction and is also dimensionless.  
-%%%%
-%%%%
-%%%%
-% OLD WORKING NOW COMMENTED OUT
-%\subsubsection{Mass balance with and without reactions}
-%\paragraph{Without chemical reactions}
-%First, consider the classic picture of Henry's law, with a volatile overlying a liquid phase in which it is dissolved.  This simple picture corresponds to a volatile in the magma ocean (i.e., liquid) and volatile in the atmosphere.  The total mass balance for a given volatile, excluding reactions is:
-%\begin{equation}
-%X_{\rm v}^{\rm l} (k_{\rm v} M^{\rm s} + M^{\rm l}) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{\rm v}^{\rm g}}{\mu_{\rm t}} \right) p (X_{\rm v}^{\rm l}) = X_{\rm v}^{\rm init} M^{\rm m}
-%\end{equation}
-%The first term is the mass of volatile in a solid phase (for the typical Henry's picture you can consider $k_v=0$), the second term is the mass in the liquid, and the third term is the mass in the atmosphere.  By mass conservation, this must be equal to some initial mass (the RHS).  The (mass) concentration in the liquid is related to the molar concentration in the atmosphere through a Henry-type law (Eq.~\ref{eq:Henry_mod}).  An equation of this form holds for all volatiles in the system.  The total reservoir (RHS) is modified by escape, but in the end, there is a reservoir of a given mass of volatiles that is partitioned between the solid, liquid, and gas phase.
-%%%%
-%\paragraph{With chemical reactions}
-%For simplicity, let's just consider H$_2$ and the forward reaction (reaction of the dissolved H$_2$ to form H$_2$O gas in the liquid).  The backward reaction is naturally accommodated by a sign change, so does not require any special adjustment of the equations.  Since there is a relationship between the concentration in the liquid and the mole fraction in the gas, we can express the reaction either in terms of concentrations or in terms of partial pressures.  It seems to be more common to express in terms of a change in partial pressure, probably due to the historical development of chemical reactions in gases.  Therefore, let's explicitly now note that Eq.~\ref{eq:Keq_diff_solve} provides the necessary change in partial pressure to bring the system back to equilibrium:
-%\begin{equation}
-%[\delta p] = \frac{K_{eq} (fO_2)^{1/2} P_{H_2} - P_{H_2O}}{K_{eq} (fO_2)^{1/2} + 1}
-%\label{eq:Keq_diff_solve2}
-%\end{equation}
-%And again, this $\delta p$ relates to a change in mass concentration of the volatile in the liquid, through a Henry-type law.  First, let's just consider the mass of volatile that is lost from the gas phase, since this is more trivial to obtain from $\delta p$ directly.  By our sign convention:
-%\begin{equation}
-%P_{H_2}^{\rm eq} (X_{H_2}^{\rm eq}) = P_{H_2}(X_{H_2}) - \delta p (X_{H_2},\ X_{H_2O})
-%\label{eq:peq_diff}
-%\end{equation}
-%\begin{equation}
-%P_{H_2O}^{\rm eq} (X_{H_2O}^{\rm eq}) = P_{H_2O} (X_{H_2O}) + \delta p (X_{H_2},\ X_{H_2O})
-%\end{equation}
-%The arguments have been included to emphasis the dependencies, where importantly, at equilibrium there is an associated equilibrium concentration in the liquid.  The superscript notation is simply to denote the effective partial pressure accounting for the reaction.  To recap, we are assuming that we are currently not in equilibrium with the reaction with a concentration ($X_{H_2}$), and need to compute ($X^{\rm eq}_{H_2}$).  We can use Eq.~\ref{eq:peq_diff} to replace $P_{H_2}$:
-%\begin{equation}
-%X_{H_2} (k_{H_2} M^s + M^l) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{H_2}}{\mu_{\rm t}} \right) \left( P_{H_2}^{\rm eq}(X_{H_2}^{\rm eq})+\delta p (X_{H_2}) \right) = X_{H_2}^{\rm init} M^m
-%\end{equation}
-%It's apparent that we need to relate $X_{H_2}^{\rm eq}$ to $X_{H_2}$ using $\delta p$ to eliminate $X_{H_2}$.  This is because ultimately we want an update equation for $X_{H_2}$, which may (or may not) be in chemical equilibrium with the reaction.  \dbnote{A basic sanity check is to recover previous behaviour if the system is already in equilibrium.}. Using the non-linear Henry's law:
-%\begin{equation}
-%X_{H_2} = \alpha_{H_2} \left( P_{H_2}^{\rm eq} +\delta p \right)^{1/\beta}
-%\end{equation}
-%Therefore:
-%\begin{equation}
-%\alpha_{H_2} \left( P_{H_2}^{\rm eq} +\delta p \right)^{1/\beta} (k_{H_2} M^s + M^l) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{H_2}}{\mu_{\rm t}} \right) \left( P_{H_2}^{\rm eq}+\delta p \right) = X_{H_2}^{\rm init} M^m
-%\end{equation}
-%This is non-linear, but we know the current concentrations of all $X$'s, so can determine $X_{H_2}^{\rm eq}$.  \dbnote{$\mu_t$ must also be compatible with the new (equilibrium) partial pressures of all volatiles post-reaction).}
-%\begin{equation}
-%X_{H_2}^{\rm eq} = \alpha_{H_2} \left( P_{H_2}^{\rm eq} \right)^{1/\beta}
-%\end{equation}
-%So a change in $\delta p$ results in a change of concentration $\delta X$:
-%\begin{equation}
-%\delta X = X_{H_2} - X_{H_2}^{\rm eq} = \alpha_{H_2} \left( P_{H_2}^{\rm eq} +\delta p \right)^{1/\beta} - \alpha_{H_2} \left( P_{H_2}^{\rm eq} \right)^{1/\beta}
-%\end{equation}
-%The non-linearity introduced by $\beta$ is annoying, because otherwise this expression would simplify (for $\beta=1$) to:
-%\begin{equation}
-%\delta X = X_{H_2} - X_{H_2}^{\rm eq} = \alpha_{H_2} \delta p
-%\end{equation}
-%In which case (again, $\beta=1$):
-%\begin{equation}
-%X_{H_2}^{\rm eq} = X_{H_2}-\alpha_{H_2} \delta p
-%\end{equation}
-
-%Since we also are ultimately wanting an update equation for $X_{H_2}$, let's also consider an ``input'' of a $X_{H_2}$ that is not in chemical equilibrium
-%\begin{equation}
-%X_{H_2} (k_{H_2} M^s + M^l) + \frac{R_{\rm p}^2}{g} \left( \frac{\mu_{H_2}^{\rm g}}{\mu_{\rm t}} \right) p (X_{H_2}) = X_{H_2}^{\rm init} M^m
-%\end{equation}
-%Eq.~\ref{eq:Keq_diff_solve}
-
-
-%%%%
-%%%%
-%%%%
-%\subsubsection{Additional notes on \cite{OS19}}
-%An aspect I hadn't fully appreciated until now, is that in some sense H$_2$O is not a ``free'' volatile for \cite{OS19}.  Basically, the only way that H$_2$O can be produced is through chemical reactions involving H$_2$.  This means that the concentration of H$_2$O at the surface is solely dependent on the concentration of H$_2$ \citep[Eq.~39,][]{OS19}.  This addresses a source of confusion I was having, which is how you can ``independently'' evolve H$_2$ and H$_2$O according to their own solubility criteria when thermodynamic considerations of the interior demand that the concentrations are linked.  In this regard, I'm not sure we can honour the existing independent evolution of all volatiles in SPIDER whilst at the same time enforcing the thermodynamic condition.  Basically, there are too many (inconsistent) constraints.
-
-%Following \cite[Eq.~35,][]{OS19} (i.e., Dalton's law):
-%\begin{equation}
-%P_s = P_{H_2} + P_{He} + P_{H_2O}
-%\end{equation}
-
-%And the equilibrium condition \citep[Eq.~36,][]{OS19}:
-%\begin{equation}
-%\frac{P_{H_2O}}{P_{H_2}} = \epsilon
-%\end{equation}
-%Therefore:
-%\begin{equation}
-%P_s = P_{H_2} + P_{H_2O} + P_{He} = (1+\epsilon) P_{H_2} + P_{He} %= P_{H_2}^\ast + P_{He}
-%\end{equation}
-%And:
-%\begin{equation}
-%\frac{P_{H_2}}{P_{H_2} + P_{H_2O}} = \frac{1}{1+\epsilon}
-%\end{equation}
-%Therefore, relative to no chemical reaction occurring, the ratio of partial pressures drops below unity.
-%where $P_{H_2}^\ast$ is the equivalent partial pressure of H$_2$ accounting for the reaction.
-
-%\dbnote{Continue with derivative for Eq.~37 in Olson and Sharp (2019).  I added some stuff below (now commented out in the latex version) but I don't think it's quite right --- the volatiles should always be independent of each other in terms of computing their partial pressure.}
-%where $P_{H_2,H_2O}$ is an effective partial pressure that accounts for both H$_2$ and H$_2$O (i.e., taking account of reactions).  This must relate directly to the total number of moles of H$_2$ in the atmosphere $x_{H_2}$ (again, including the contribution from H$_2$O):
-%\begin{equation}
-%P_{H_2}^\ast = x_{H_2} P_s
-%\end{equation}
-%Therefore:
-%\begin{equation}
-%P_{H_2} = \left( \frac{x_{H_2} P_s}{1+\epsilon} \right)
-%\end{equation}
-%Finally, $P_{H_2}$ is the partial pressure of $H_2$ in the absence of reactions, which is given by our modified Henry's law (Eq.~\ref{eq:Henry_mod}):
-%\begin{equation}
-%X_{H_2}^l = \alpha \left( \frac{x_{H_2} P_s}{1+\epsilon} \right) ^ {1/\beta}
-%\end{equation}
-%This completes the derivation of \cite[Eq.~37,][]{OS19} and \textbf{suggests that we can accommodate reactions by simply modifying (again) the form of Henry's law to account for an extra factor of $\epsilon$.}. \dbnote{but how to deal with $x_{H_2}$ since usually we don't consider this since it relates directly to the partial pressure of Henry's law (in the absence of chemical reactions).}
-
-%Now, importantly \cite{OS19} have a standard Henry's law for noble gases, but the concentration of H$_2$O is directly tied to H$_2$:
-%\begin{equation}
-%X_{H_2O}^l = 1.1 ( \epsilon X_{H_2}^l )^{1/2}
-%\end{equation}
-
-%You can consider this to be a type of Henry's law, in that the partial pressure of H$_2$O appears on the RHS, but the important point is that it is explicitly tied to the partial pressure of H$_2$ through the equilibrium reaction.
-
-%%%%
-%%%%
-\subsubsection{Generalized Expressions}
-More generally, a chemical reaction: 
-\begin{equation}
-    aA + bB \leftrightarrow cC + dD
-\end{equation}
-where $a,b,c,d$ are constants and $A,B,C,D$ are volatiles.  The equilibrium constant is: 
-\begin{equation}
-    K_{eq} = \frac{X_C^c X_D^d}{X_A^a X_B^b}
-\end{equation}
-and we calculate the difference in concentration using: 
-\begin{equation}
-K_{eq} = \frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}}
-\end{equation}
-Whichever value of $\delta x$ gives $Q=K$ determines the amount that the concentrations will change in the timestep. The value of $\delta x$ is usually a partial pressure, which must be converted to a mass fraction via Henry's law. 
-%%%%
-%%%%
-%%%% added by Taylor, but PETSC takes care of the non-linear solves
-%%%%
-%%%%
-%%%%
-%\subsubsection{Newtons Method for finding $\delta x$}: 
-%Since we cannot generally solve for $\delta x$, as is the case in water production, we might need an iterative method to find the roots. Newtons method finds the roots of a function by adjusting a guess using the function and it's derivative. The expression for theequilibrium constant becomes: 
-%\begin{equation}
-%    f(\delta x) = \frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} - K_{eq} 
-%\end{equation}
-%And it's derivative: 
-%\begin{equation}
-%\begin{aligned}
-%    f'(\delta x) =  & 
-%    \Big(\frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_B-C_B\delta x)^{C_B}} \Big) -C_A^2    (X_A - C_A\delta x)^{-C_A-1} +  \\
-%    & \Big(\frac{(X_C + C_C\delta x)^{C_C} (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A}} \Big) -C_B^2   (X_B - C_B\delta x)^{-C_B-1} + \\
-%    & \Big( \frac{ (X_D + C_D\delta x)^{C_D}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} \Big)  C_C^2   (X_C + C_C\delta x)^{ C_C-1} + \\
-%    & \Big( \frac{ (X_C + C_C\delta x)^{C_C}}{(X_A-C_A\delta x)^{C_A} (X_B-C_B\delta x)^{C_B}} \Big)  C_D^2   (X_D + C_D\delta x)^{ C_D-1}  
-%\end{aligned}
-%\end{equation}
-%Or, in a somewhat more condensed notation:
-%\begin{equation}
-%    f'(\delta x) = \sum_{i=1}^n {\rm sign}_iC_i^2(X_i+{\rm sign_iC_i\delta x})^{{\rm sign}_i C_i-1} \prod_{j\neq i}^n (X_j+{\rm sign}_i C_i \delta x)^{{\rm sign}_i C_i}
-%\end{equation}
-%Where ${\rm sign}_i$ is the same parameter as described before, and indicates whether the volatile is a product or reactant. The default convention is the forward reaction, so reactants have negative signs while products have positive signs. If the reaction were to occur backward, then $\delta x$ would simply be negative. The constant $C_i$ is the coefficient, described previously as well, and tells you how many molecules of a given species are involved in the reaction. $X_i$ can be taken to be partial pressures, or mass fractions within the mantle with the corresponding equilibrium constant. g
-
-%For Newton's method, we start with some guess $x_n$ of the root, and then compute a new approximation using: 
-%\begin{equation}
-%    x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}
-%\end{equation}
-%and continue until our approximation of $x_n$ is consistent for some threshold (i.e. until $x_n-x_n+1<0.01$, or another similar condition). 
+% the following were old notes from original working with Taylor Kutra.
+% but these are being/have been superseded with a newer approach
+%\input{input/atmosphere_old}
 %%%%
 %%%%
 %%%%
