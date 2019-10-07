@@ -607,6 +607,14 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
         ierr = ReactionParametersCreateMethane1(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
         ++Ap->n_reactions;
     }
+
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_water1",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateWater1(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+
   }
 
   {
