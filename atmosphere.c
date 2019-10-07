@@ -686,6 +686,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
         ff[i] = get_dxdt( A, Ap, i, dmrdt );
     }
 
+#if 0
     /* Objective function */
     for (i=0; i<Ap->n_reactions; ++i) {
       PetscBool is_simple;
@@ -701,6 +702,12 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
         SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction type %s not recognized",Ap->reaction_parameters[i]->type);
       }
     }
+#endif
+
+    /* DJB HACK FIXME */
+    ff[Ap->n_volatiles] = 0.0;
+    ff[Ap->n_volatiles+1] = 0.0;
+
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

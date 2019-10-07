@@ -434,6 +434,10 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
       }
     }
 
+    // FIXME: temporary hack DJB
+    ff[Ap->n_volatiles + i] = 0;
+
+#if 0
     /* Objective function, "simple" reactions (2 species, constant epsilon) only */
     for (i=0; i<Ap->n_reactions; ++i) {
       PetscBool is_simple;
@@ -448,6 +452,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
         SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction type %s not recognized",Ap->reaction_parameters[i]->type);
       }
     }
+#endif
 
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
