@@ -240,13 +240,13 @@
 
 # PS: new proposal here
 # H2-H2O reaction
--reaction_H2O_fO2_H2
--reaction_H2O_fO2_H2_stoichiometry_H2O = -1 # reactant is negative
--reaction_H2O_fO2_H2_stoichiometry_fO2 = 0.5 # product is positive
--reaction_H2O_fO2_H2_stoichiometry_H2 = 1 # product is positive
+#-reaction_H2O_fO2_H2
+#-reaction_H2O_fO2_H2_stoichiometry_H2O = -1 # reactant is negative
+#-reaction_H2O_fO2_H2_stoichiometry_fO2 = 0.5 # product is positive
+#-reaction_H2O_fO2_H2_stoichiometry_H2 = 1 # product is positive
 # parameters for equilibrium constant
--reaction_H2O_fO2_H2_K_a = -12794
--reaction_H2O_fO2_H2_K_b = 2.7768
+#-reaction_H2O_fO2_H2_K_a = -12794
+#-reaction_H2O_fO2_H2_K_b = 2.7768
 # molar masses of reactants and products are already given
 # in the volatile_parameters struct.  Can we simply relate
 # these reactions to those volatile parameters to get the
@@ -260,8 +260,8 @@
 # PS: original below
 # H2-H2O reaction
 -reaction_H2O_H2
--reaction_H2O_H2_epsilon_H2O 0.01
--reaction_H2O_H2_epsilon_H2 -1.0
+-reaction_H2O_H2_epsilon_H2O 1
+-reaction_H2O_H2_epsilon_H2 -0.01
 -reaction_H2O_H2_gamma_H2O 8.936682739051928 # H2O molar mass / H2 molar mass
 -reaction_H2O_H2_gamma_H2 -1.0
 
