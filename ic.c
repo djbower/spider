@@ -483,6 +483,9 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
         ReactionParameters const * reaction_parameters_ptr = &Ap->reaction_parameters[i];
 
+        /* LLDB print outs given below relate to -OXYGEN_FUGACITY 1, which is a case
+           that breaks the solver.  -OXYGEN_FUGACITY 2 seems to work, interestingly. */
+
         /* for test case, this gives PH2/PH2O */
         /* return the numerator and denominator separately to retain scalings,
            otherwise the non-linear solver has problems */
