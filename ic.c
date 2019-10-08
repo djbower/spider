@@ -487,7 +487,8 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
         K = 100.0;
 
         // FIXME: temporary hack DJB
-        ff[Ap->n_volatiles + i] = Q-K;
+        ff[Ap->n_volatiles + i] = 0.0;
+        //ff[Ap->n_volatiles + i] = Q-K;
 
     }
 

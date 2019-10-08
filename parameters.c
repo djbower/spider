@@ -617,6 +617,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   }
 
+#if 0
   {
     /* Do a brute-force search for all pairs of volatiles, looking for "simple" reactions */
     PetscInt  v0,v1;
@@ -672,6 +673,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       }
     }
   }
+#endif
 
   /* radiogenic heating */
   /* aluminium 26 */
@@ -787,7 +789,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 PetscErrorCode PrintParameters(Parameters const *P)
 {
   PetscErrorCode             ierr;
-  PetscInt                   i,j;
+  PetscInt                   i;//,j;
   Constants const            *C  = &P->constants;
   AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
@@ -850,6 +852,8 @@ PetscErrorCode PrintParameters(Parameters const *P)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%-10D %-15s (.. additional parameters omitted ..)\n",i,Ap->volatile_parameters[i].prefix);CHKERRQ(ierr);
     }
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
+
+#if 0
     if (Ap->n_reactions > 0) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"\n[Reaction] \n");CHKERRQ(ierr);
       ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
@@ -883,6 +887,7 @@ PetscErrorCode PrintParameters(Parameters const *P)
     }
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
     }
+#endif
   }
   if (P->postStepActive) {
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);

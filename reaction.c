@@ -4,6 +4,8 @@
 
 /* Create a simple reaction, involving 2 volatiles, described by "exchange rate"
    factors gamma0 and gamma1, and an equilibrium ratio factors epsilon0 and epsilon1 */
+
+#if 0
 PetscErrorCode ReactionParametersCreateSimple(ReactionParameters* reaction_parameters_ptr,PetscInt v0,PetscInt v1,PetscReal gamma0,PetscReal gamma1,PetscReal epsilon0, PetscReal epsilon1)
 {
   PetscErrorCode     ierr;
@@ -23,6 +25,7 @@ PetscErrorCode ReactionParametersCreateSimple(ReactionParameters* reaction_param
   reaction_parameters->volatiles[1] = v1;
   PetscFunctionReturn(0);
 }
+#endif
 
 /* A named reaction */
 PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
@@ -90,7 +93,7 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
   PetscErrorCode     ierr;
 
   PetscFunctionBeginUser;
-  ierr = PetscFree4((*reaction_parameters_ptr)->Keq_coeffs,(*reaction_parameters_ptr)->gamma,(*reaction_parameters_ptr)->volatiles,(*reaction_parameters_ptr)->epsilon);CHKERRQ(ierr);
+  ierr = PetscFree3((*reaction_parameters_ptr)->Keq_coeffs,(*reaction_parameters_ptr)->gamma,(*reaction_parameters_ptr)->volatiles);CHKERRQ(ierr);
   ierr = PetscFree(*reaction_parameters_ptr);CHKERRQ(ierr);/* must be last */
   *reaction_parameters_ptr = NULL;
   PetscFunctionReturn(0);
