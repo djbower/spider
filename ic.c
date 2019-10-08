@@ -476,14 +476,18 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     /* TODO: currently a placeholder */
     for (i=0; i<Ap->n_reactions; ++i) {
 
-        PetscScalar Q;
+        PetscScalar Q,K;
 
         ReactionParameters const * reaction_parameters_ptr = &Ap->reaction_parameters[i];
 
+        /* for test case, this gives PH2/PH2O */
         Q = get_reaction_quotient( reaction_parameters_ptr, A );
 
+        /* for testing */
+        K = 100.0;
+
         // FIXME: temporary hack DJB
-        ff[Ap->n_volatiles + i] = 0;
+        ff[Ap->n_volatiles + i] = Q-K;
 
     }
 
