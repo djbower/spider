@@ -76,6 +76,8 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
   /* equilibrium constant coefficients */
   reaction_parameters->Keq_coeffs[0] = -12794;
   reaction_parameters->Keq_coeffs[1] = 2.7768;
+  /* fO2 stoichiometry */
+  reaction_parameters->fO2_stoichiometry = 0.5;
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
@@ -135,7 +137,9 @@ PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_
 
     }
 
-    /* FIXME: add contribution of fO2 */
+    if( reaction_parameters->fO2_stoichiometry > 0.0 ){
+        Qp *= PetscPowScalar( A->oxygen_fugacity*A->psurf, reaction_parameters->fO2_stoichiometry );
+    }
 
     return Qp;
 
@@ -160,7 +164,10 @@ PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction
 
     }
 
-    /* FIXME: add contribution of fO2 */
+    if( reaction_parameters->fO2_stoichiometry < 0.0 ){
+        /* Note: negative stoichiometry below, since return denominator and not 1/denominator */
+        Qr *= PetscPowScalar( A->oxygen_fugacity*A->psurf, -reaction_parameters->fO2_stoichiometry );
+    }
 
     return Qr;
 

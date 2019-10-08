@@ -3,7 +3,6 @@
 
 #include <petsc.h>
 #include "lookup.h"
-//#include "reaction.h"
 
 /* dimensionalising constants */
 typedef struct _Constants {
@@ -89,7 +88,7 @@ typedef struct {
   PetscInt   *volatiles; /* indices for volatiles. Populated from prefix strings during parameter processing */
   PetscReal  *stoichiometry;  /* stoichiometry */
   PetscReal  *Keq_coeffs;  /* Equilibrium constant parameters */
-  PetscBool  fO2_stoichiometry; /* fO2 stoichiometry (zero turns it off, non-zero value is used) */
+  PetscReal  fO2_stoichiometry; /* fO2 stoichiometry (zero turns it off, non-zero value is used) */
 } data_ReactionParameters;
 typedef data_ReactionParameters* ReactionParameters;
 
