@@ -491,17 +491,17 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
         /* i.e. pH2/pH2O = 100 */
         /* FIXME: generally expression using reaction quotient breaks the solver */
-        //ff[Ap->n_volatiles + i] = Q-K;
+        ff[Ap->n_volatiles + i] = Q-K;
 
         /* the old format was like this, where previously -reaction_H2O_H2_epsilon_H2O -1
            and -reaction_H2O_H2_epsilon_H2 0.01 */
         /* FIXME: but the previous expression works */
-        const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-        const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
+        //const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+        //const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
         /* scaling using 0.01 */
         //ff[Ap->n_volatiles + i] = -1.0 * A->volatiles[v0].p + 0.01 * A->volatiles[v1].p;
         /* exactly the same equation, but scaling using 100 instead */
-        ff[Ap->n_volatiles + i] = -100.0 * A->volatiles[v0].p + 1.0 * A->volatiles[v1].p;
+        //ff[Ap->n_volatiles + i] = -100.0 * A->volatiles[v0].p + 1.0 * A->volatiles[v1].p;
     }
 
 #if 0
