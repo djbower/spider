@@ -936,7 +936,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
         log10fO2 = a + b*1E3/temp + c*1E6/PetscPowScalar(temp,2.0) + d*1E9/PetscPowScalar(temp,3.0) + f*1E12/PetscPowScalar(temp,4.0);
     }
     /* Olson and Sharp (2019) fits to Ebel and Grossman (2000) */
-    else{ // if( Ap->OXYGEN_FUGACITY <= 8){
+    else{
         log10fO2 = a * PetscPowScalar( temp, b ) + c;
     }
 

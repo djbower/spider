@@ -236,7 +236,10 @@
 -H2_molar_mass 0.00201588 # kg/mol
 
 # fO2
--OXYGEN_FUGACITY 1
+# other fO2s break the atmosic solver
+# this fO2 seems to work (CV meteorite)
+# probably a scaling issue again
+-OXYGEN_FUGACITY 2
 
 # PS: new proposal here
 # H2-H2O reaction

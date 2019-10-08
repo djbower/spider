@@ -102,7 +102,7 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
 }
 
 /* Compute equilibrium constant */
-PetscScalar get_equilibrium_constant( ReactionParameters* reaction_parameters_ptr, PetscScalar temp, const Constants *C )
+PetscScalar get_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        log10Keq, Keq;
