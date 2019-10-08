@@ -327,6 +327,12 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
         A->psurf += V->p;
     }
 
+    /* FIXME: Oxygen is often treated as a trace species from the
+       perspective of computing the total atmospheric pressure,
+       but here we can have a flag to test the influence.  In
+       principle, it should not make the system more difficult
+       to solve.  Basically, add fO2 (in Pa) to A->psurf */
+
     PetscFunctionReturn(0);
 }
 
@@ -706,7 +712,6 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 
     /* DJB HACK FIXME */
     ff[Ap->n_volatiles] = 0.0;
-    ff[Ap->n_volatiles+1] = 0.0;
 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
@@ -848,6 +853,21 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     return out;
 }
 
+PetscScalar get_equilibrium_constant( PetscScalar a, PetscScalar b, PetscScalar temp, const Constants *C )
+{
+
+    PetscScalar log10K,K;
+
+    temp *= C->TEMP;
+
+    log10K = a / temp + b;
+
+    K = PetscPowScalar(10.0,log10K);
+
+    return K;
+
+}
+
 PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
 
@@ -863,6 +883,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
 
     switch( Ap->OXYGEN_FUGACITY ){
         case 1:
+            /* Schaefer and Fegley (2017), CI meteorite */
             a = 2.4976;
             b = -9.8605;
             c = -17.0701;
@@ -870,6 +891,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             f = -1.0404;
             break;
         case 2:
+            /* Schaefer and Fegley (2017), CV meteorite */
             a = 9.0621;
             b = -31.193;
             c = 5.1092;
@@ -877,6 +899,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             f = 0.2000;
             break;
         case 3:
+            /* Schaefer and Fegley (2017), H meteorite */
             a = 5.0743;
             b = -22.906;
             c = -5.6610;
@@ -884,6 +907,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             f = -0.2618;
             break;
         case 4:
+            /* Schaefer and Fegley (2017), EH meteorite */
             a = 4.9495;
             b = -24.024;
             c = -4.6236;
@@ -891,6 +915,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             f = -0.2332;
             break;
         case 5:
+            /* Schaefer and Fegley (2017), Eucrite meteorite */
             a = 5.4856;
             b = -25.127;
             c = -3.6580;
@@ -930,6 +955,17 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
     }
 
     A->oxygen_fugacity = PetscPowScalar(10.0,log10fO2);
+
+    /* the assumed standard state is 1 bar, but we need to renormalise
+       to a standard state of 1 non-dimensional pressure unit.  This 
+       is because the oxygen fugacity is later multipled by A->psurf,
+       and A->psurf is non-dimensional according to C->PRESSURE */
+
+    /* convert standard pressure from 1 bar to 1 non-dim unit */
+    /* FIXME: I think this is OK, but be aware of reference pressure
+       of 1 bar versus standard state of 1 atm = 101325 Pa */
+    A->oxygen_fugacity *= 1.0E-5; /* 1 bar to 1 Pa reference */
+    A->oxygen_fugacity *= C->PRESSURE; /* 1 Pa reference to 1 non-dim reference */
 
     PetscFunctionReturn(0);
 

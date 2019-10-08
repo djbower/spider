@@ -89,7 +89,8 @@ typedef struct {
   PetscInt   n_volatiles;
   PetscInt   *volatiles; /* indices for volatiles. Populated from prefix strings during parameter processing */
   PetscReal  *gamma;     /* "Exchange rates" */
-  PetscReal  *epsilon;    /* Default equilibrium parameters (constant). */
+  PetscReal  *epsilon;
+  PetscReal  *Keq_coeffs;  /* Equilibrium constant parameters */
 } data_ReactionParameters;
 typedef data_ReactionParameters* ReactionParameters;
 

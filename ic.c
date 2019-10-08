@@ -430,6 +430,10 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
       PetscInt j;
       for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
         const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+        /* Previously, this did for H2O:
+        ff[v] -= -8.936682739051928 * mass_r[i] // +VE IMPLIES LOSS
+           and for H2:
+        ff[v] -= 1.0 * mass_r[i] */ // -VE IMPLIES GAIN
         ff[v] -= Ap->reaction_parameters[i]->gamma[j] * mass_r[i];
       }
     }

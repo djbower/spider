@@ -67,9 +67,13 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
   reaction_parameters = *reaction_parameters_ptr;
   reaction_parameters->type = "water1";
   reaction_parameters->n_volatiles = 2;
-  ierr = PetscMalloc2(3,&reaction_parameters->gamma,3,&reaction_parameters->volatiles);CHKERRQ(ierr);
+  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,3,&reaction_parameters->gamma,3,&reaction_parameters->volatiles);CHKERRQ(ierr);
   reaction_parameters->gamma[0] = -1.0;  // H2O
   reaction_parameters->gamma[1] = 1.0;  // H2
+  /* equilibrium constant coefficients */
+  reaction_parameters->Keq_coeffs[0] = -12794;
+  reaction_parameters->Keq_coeffs[1] = 2.7768;
+
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
     ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2O",&flg);CHKERRQ(ierr);
