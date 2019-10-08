@@ -439,6 +439,17 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
       }
     }
 
+    /* Objective function */
+    for (i=0; i<Ap->n_reactions; ++i) {
+
+        PetscScalar Q;
+
+        ReactionParameters * reaction_parameters_ptr = &Ap->reaction_parameters[i];
+
+        Q = get_reaction_quotient( reaction_parameters_ptr, A );
+
+    }
+
     // FIXME: temporary hack DJB
     ff[Ap->n_volatiles + i] = 0;
 
