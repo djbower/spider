@@ -1,4 +1,4 @@
-#include "parameters.h"
+#include "reaction.h"
 
 /* Note: this could logically be included in parameters.c, but that file was getting crowded */
 
@@ -111,5 +111,27 @@ PetscScalar get_equilibrium_constant( ReactionParameters* reaction_parameters_pt
     Keq = PetscPowScalar( 10.0, log10Keq );
 
     return Keq;
+
+}
+
+/* Compute reaction quotient */
+PetscScalar get_reaction_quotient( ReactionParameters* reaction_parameters_ptr, const Atmosphere *A )
+{
+    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
+    PetscInt           j;
+    PetscScalar        Q = 1;
+
+    for (j=0; j<reaction_parameters->n_volatiles; ++j) {
+
+        const PetscInt v = reaction_parameters->volatiles[j];
+
+        /* reaction quotient excluding fO2 */
+        Q *= PetscPowScalar( A->volatiles[v].p, reaction_parameters->gamma[j] );
+
+    }
+
+    /* FIXME: add contribution of fO2 */
+
+    return Q;
 
 }
