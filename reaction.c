@@ -115,7 +115,7 @@ PetscScalar get_equilibrium_constant( ReactionParameters* reaction_parameters_pt
 }
 
 /* Compute reaction quotient */
-PetscScalar get_reaction_quotient( ReactionParameters* reaction_parameters_ptr, const Atmosphere *A )
+PetscScalar get_reaction_quotient( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt           j;

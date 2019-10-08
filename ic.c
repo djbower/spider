@@ -65,6 +65,11 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
         ierr = set_solution_from_entropy( E, sol );CHKERRQ(ierr);
     }
 
+
+
+
+
+
     PetscFunctionReturn(0);
 }
 
@@ -440,11 +445,12 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     }
 
     /* Objective function */
+    /* TODO: currently a placeholder */
     for (i=0; i<Ap->n_reactions; ++i) {
 
         PetscScalar Q;
 
-        ReactionParameters * reaction_parameters_ptr = &Ap->reaction_parameters[i];
+        ReactionParameters const * reaction_parameters_ptr = &Ap->reaction_parameters[i];
 
         Q = get_reaction_quotient( reaction_parameters_ptr, A );
 
