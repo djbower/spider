@@ -476,12 +476,15 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     /* TODO: currently a placeholder */
     for (i=0; i<Ap->n_reactions; ++i) {
 
-        PetscScalar Q,K;
+        PetscScalar Qp,Qr,K;
 
         ReactionParameters const * reaction_parameters_ptr = &Ap->reaction_parameters[i];
 
         /* for test case, this gives PH2/PH2O */
-        Q = get_reaction_quotient( reaction_parameters_ptr, A );
+        /* return the numerator and denominator separately to retain scalings,
+           otherwise the non-linear solver has problems */
+        Qp = get_reaction_quotient_products( reaction_parameters_ptr, A );
+        Qr = get_reaction_quotient_reactants( reaction_parameters_ptr, A );
 
         /* for testing */
         K = 100.0;
@@ -490,8 +493,10 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
         //ff[Ap->n_volatiles + i] = 0.0;
 
         /* i.e. pH2/pH2O = 100 */
-        /* FIXME: generally expression using reaction quotient breaks the solver */
-        ff[Ap->n_volatiles + i] = Q-K;
+        /* this general form retains the pressure scaling and is preferred by the solver:
+           passing in the reaction quotient rather than decomposed into a numerator and
+           denominator breaks the solver.  Due to FD Jacobian? */
+        ff[Ap->n_volatiles + i] = K*Qr-Qp;
 
         /* the old format was like this, where previously -reaction_H2O_H2_epsilon_H2O -1
            and -reaction_H2O_H2_epsilon_H2 0.01 */

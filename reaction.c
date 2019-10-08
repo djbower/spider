@@ -117,24 +117,51 @@ PetscScalar get_equilibrium_constant( ReactionParameters* reaction_parameters_pt
 
 }
 
-/* Compute reaction quotient */
-PetscScalar get_reaction_quotient( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
+/* Compute reaction quotient (products, numerator) */
+PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt           j;
-    PetscScalar        Q = 1;
+    PetscScalar        Qp = 1;
 
     for (j=0; j<reaction_parameters->n_volatiles; ++j) {
 
         const PetscInt v = reaction_parameters->volatiles[j];
 
-        /* reaction quotient excluding fO2 */
-        Q *= PetscPowScalar( A->volatiles[v].p, reaction_parameters->gamma[j] );
+        if( reaction_parameters->gamma[j] > 0.0 ){
+            /* reaction quotient numerator (products), excluding fO2 */
+            Qp *= PetscPowScalar( A->volatiles[v].p, reaction_parameters->gamma[j] );
+        }
 
     }
 
     /* FIXME: add contribution of fO2 */
 
-    return Q;
+    return Qp;
+
+}
+
+/* Compute reaction quotient (reactants, denominator) */
+PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
+{
+    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
+    PetscInt           j;
+    PetscScalar        Qr = 1;
+
+    for (j=0; j<reaction_parameters->n_volatiles; ++j) {
+
+        const PetscInt v = reaction_parameters->volatiles[j];
+
+        if( reaction_parameters->gamma[j] < 0.0 ){
+            /* reaction quotient denominator (reactants), excluding fO2 */
+            /* Note: negative gamma below, since return denominator and not 1/denominator */
+            Qr *= PetscPowScalar( A->volatiles[v].p, -reaction_parameters->gamma[j] );
+        }
+
+    }
+
+    /* FIXME: add contribution of fO2 */
+
+    return Qr;
 
 }
