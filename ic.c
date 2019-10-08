@@ -488,9 +488,11 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
         /* FIXME: temporary hack to ignore this objective function */
         //ff[Ap->n_volatiles + i] = 0.0;
-        /* i.e. pH2/pH2O = 100, hence pH20/pH2 = 0.01 as before */
+
+        /* i.e. pH2/pH2O = 100 */
         /* FIXME: generally expression using reaction quotient breaks the solver */
         //ff[Ap->n_volatiles + i] = Q-K;
+
         /* the old format was like this, where previously -reaction_H2O_H2_epsilon_H2O -1
            and -reaction_H2O_H2_epsilon_H2 0.01 */
         /* FIXME: but the previous expression works */
