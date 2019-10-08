@@ -486,10 +486,20 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
         /* for testing */
         K = 100.0;
 
-        // FIXME: temporary hack DJB
-        ff[Ap->n_volatiles + i] = 0.0;
+        /* FIXME: temporary hack to ignore this objective function */
+        //ff[Ap->n_volatiles + i] = 0.0;
+        /* i.e. pH2/pH2O = 100, hence pH20/pH2 = 0.01 as before */
+        /* FIXME: generally expression using reaction quotient breaks the solver */
         //ff[Ap->n_volatiles + i] = Q-K;
-
+        /* the old format was like this, where previously -reaction_H2O_H2_epsilon_H2O -1
+           and -reaction_H2O_H2_epsilon_H2 0.01 */
+        /* FIXME: but the previous expression works */
+        const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+        const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
+        /* scaling using 0.01 */
+        //ff[Ap->n_volatiles + i] = -1.0 * A->volatiles[v0].p + 0.01 * A->volatiles[v1].p;
+        /* exactly the same equation, but scaling using 100 instead */
+        ff[Ap->n_volatiles + i] = -100.0 * A->volatiles[v0].p + 1.0 * A->volatiles[v1].p;
     }
 
 #if 0
