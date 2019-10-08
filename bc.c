@@ -3,7 +3,6 @@
 #include "util.h"
 
 static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
-static PetscScalar tsurf_param( PetscScalar, const AtmosphereParameters * );
 static PetscScalar get_isothermal_surface( const Ctx * );
 static PetscScalar isothermal_or_cooling_cmb( const Ctx *, PetscScalar );
 static PetscScalar get_core_cooling_factor( const Ctx * );
