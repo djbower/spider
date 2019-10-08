@@ -1,6 +1,8 @@
 #include "ic.h"
 #include "bc.h"
 #include "cJSON.h"
+#include "matprop.h"
+#include "twophase.h"
 #include "reaction.h"
 #include "util.h"
 #include "atmosphere.h"
@@ -21,8 +23,12 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     PetscInt ind,numpts_s;
     Solution *S = &E->solution;
     Parameters const *P = &E->parameters;
+    Constants const *C = &P->constants;
+    Atmosphere *A = &E->atmosphere;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     PetscInt IC = P->initial_condition;
     PetscInt const ind0=0;
+    PetscScalar temp0;
 
     PetscFunctionBeginUser;
 
@@ -38,7 +44,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 
     if(IC==1){
         ierr = set_ic_default( E, sol ); CHKERRQ(ierr);
-        ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
     }
     else if(IC==2){
         // this sets everything, including the atmosphere
@@ -46,7 +51,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     }
     else if(IC==3){
         ierr = set_ic_from_solidus( E, sol ); CHKERRQ(ierr);
-        ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
     }
 
     /* TODO: move this code block to a conform_boundary_conditions
@@ -65,10 +69,34 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
         ierr = set_solution_from_entropy( E, sol );CHKERRQ(ierr);
     }
 
+    /* need surface temperature to compute atmosphere IC, which means calling
+       these functions below.  TODO: could streamline this? */
+    ierr = set_entropy_from_solution( E, sol );CHKERRQ(ierr);
+    ierr = set_gphi_smooth( E );CHKERRQ(ierr);
+    ierr = set_matprop_basic( E );CHKERRQ(ierr);
 
+    ierr = VecGetValues(S->temp,1,&ind0,&temp0); CHKERRQ(ierr);
 
+    /* correct for ultra-thin thermal boundary layer at the surface */
+    if( Ap->PARAM_UTBL ){
+        A->tsurf = tsurf_param( temp0, Ap); // parameterised boundary layer
+    }
+    else{
+        A->tsurf = temp0; // surface temperature is potential temperature
+    }
 
+    /* TODO: this is a cheap operation, but should maybe return zero if
+       this feature is not requested by the user? */
+    set_oxygen_fugacity( A, Ap, C );
 
+    /* TODO: atmosphere IC always assumes that mantle is initially total molten */
+
+    /* need surface temperature to compute fO2 before can compute initial atmosphere
+       condition.  Hence atmosphere IC now appears here */
+    /* atmosphere IC */
+    if( (IC==1 || IC==3) ){
+        ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
@@ -454,10 +482,10 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
         Q = get_reaction_quotient( reaction_parameters_ptr, A );
 
-    }
+        // FIXME: temporary hack DJB
+        ff[Ap->n_volatiles + i] = 0;
 
-    // FIXME: temporary hack DJB
-    ff[Ap->n_volatiles + i] = 0;
+    }
 
 #if 0
     /* Objective function, "simple" reactions (2 species, constant epsilon) only */
