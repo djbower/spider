@@ -40,10 +40,10 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_par
   reaction_parameters = *reaction_parameters_ptr;
   reaction_parameters->type = "methane1";
   reaction_parameters->n_volatiles = 4;
-  ierr = PetscMalloc2(3,&reaction_parameters->gamma,3,&reaction_parameters->volatiles);CHKERRQ(ierr);
-  reaction_parameters->gamma[0] = 1.0;  // CO2
-  reaction_parameters->gamma[1] = 2.0;  // H2
-  reaction_parameters->gamma[2] = -1.0; // CH4
+  ierr = PetscMalloc2(3,&reaction_parameters->stoichiometry,3,&reaction_parameters->volatiles);CHKERRQ(ierr);
+  reaction_parameters->stoichiometry[0] = 1.0;  // CO2
+  reaction_parameters->stoichiometry[1] = 2.0;  // H2
+  reaction_parameters->stoichiometry[2] = -1.0; // CH4
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
     ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO2",&flg);CHKERRQ(ierr);
@@ -70,9 +70,9 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
   reaction_parameters = *reaction_parameters_ptr;
   reaction_parameters->type = "water1";
   reaction_parameters->n_volatiles = 2;
-  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,3,&reaction_parameters->gamma,3,&reaction_parameters->volatiles);CHKERRQ(ierr);
-  reaction_parameters->gamma[0] = -1.0;  // H2O
-  reaction_parameters->gamma[1] = 1.0;  // H2
+  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,3,&reaction_parameters->stoichiometry,3,&reaction_parameters->volatiles);CHKERRQ(ierr);
+  reaction_parameters->stoichiometry[0] = -1.0;  // H2O
+  reaction_parameters->stoichiometry[1] = 1.0;  // H2
   /* equilibrium constant coefficients */
   reaction_parameters->Keq_coeffs[0] = -12794;
   reaction_parameters->Keq_coeffs[1] = 2.7768;
@@ -93,7 +93,7 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
   PetscErrorCode     ierr;
 
   PetscFunctionBeginUser;
-  ierr = PetscFree3((*reaction_parameters_ptr)->Keq_coeffs,(*reaction_parameters_ptr)->gamma,(*reaction_parameters_ptr)->volatiles);CHKERRQ(ierr);
+  ierr = PetscFree3((*reaction_parameters_ptr)->Keq_coeffs,(*reaction_parameters_ptr)->stoichiometry,(*reaction_parameters_ptr)->volatiles);CHKERRQ(ierr);
   ierr = PetscFree(*reaction_parameters_ptr);CHKERRQ(ierr);/* must be last */
   *reaction_parameters_ptr = NULL;
   PetscFunctionReturn(0);
@@ -128,9 +128,9 @@ PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_
 
         const PetscInt v = reaction_parameters->volatiles[j];
 
-        if( reaction_parameters->gamma[j] > 0.0 ){
+        if( reaction_parameters->stoichiometry[j] > 0.0 ){
             /* reaction quotient numerator (products), excluding fO2 */
-            Qp *= PetscPowScalar( A->volatiles[v].p, reaction_parameters->gamma[j] );
+            Qp *= PetscPowScalar( A->volatiles[v].p, reaction_parameters->stoichiometry[j] );
         }
 
     }
@@ -152,10 +152,10 @@ PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction
 
         const PetscInt v = reaction_parameters->volatiles[j];
 
-        if( reaction_parameters->gamma[j] < 0.0 ){
+        if( reaction_parameters->stoichiometry[j] < 0.0 ){
             /* reaction quotient denominator (reactants), excluding fO2 */
-            /* Note: negative gamma below, since return denominator and not 1/denominator */
-            Qr *= PetscPowScalar( A->volatiles[v].p, -reaction_parameters->gamma[j] );
+            /* Note: negative stoichiometry below, since return denominator and not 1/denominator */
+            Qr *= PetscPowScalar( A->volatiles[v].p, -reaction_parameters->stoichiometry[j] );
         }
 
     }

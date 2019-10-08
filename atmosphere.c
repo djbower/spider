@@ -765,7 +765,8 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     for (j=0; j<Ap->n_reactions; ++j) {
       for (k=0; k<Ap->reaction_parameters[j]->n_volatiles; ++k) {
         if (k==i) {
-          out2 -= Ap->reaction_parameters[j]->gamma[k] * dmrdt[j];
+          // FIXME: STOICHIOMETRY FIELD IS WRONG
+          out2 -= Ap->reaction_parameters[j]->stoichiometry[k] * dmrdt[j];
         }
       }
     }

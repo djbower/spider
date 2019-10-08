@@ -180,7 +180,8 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
           for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
             const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
             /* Note: maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
-            Ap->volatile_parameters[v].initial += Ap->reaction_parameters[i]->gamma[j] * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
+            // FIXME: STOICHIOMETRY IS WRONG FIELD
+            Ap->volatile_parameters[v].initial += Ap->reaction_parameters[i]->stoichiometry[j] * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
           }
         }
 
@@ -468,7 +469,8 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
         ff[v] -= -8.936682739051928 * mass_r[i] // +VE IMPLIES LOSS
            and for H2:
         ff[v] -= 1.0 * mass_r[i] */ // -VE IMPLIES GAIN
-        ff[v] -= Ap->reaction_parameters[i]->gamma[j] * mass_r[i];
+        // FIXME: stoichiometry is wrong field
+        ff[v] -= Ap->reaction_parameters[i]->stoichiometry[j] * mass_r[i];
       }
     }
 

@@ -72,9 +72,8 @@ one another by means of chemical reactions, and where these volatiles are in
 
 Thus, the data are:
 - A set of N volatiles, identified by indices corresponding to volatile species.
-- A set of N coefficients gamma_i to describe how the volatiles are converted.
-  The sign of these defines the direction of the reaction; positive implies a product.
-- An equation describing the equilibrium state. The simplest (and default) is described by parameters epsilon_i describing a balance. This is controlled by a "type" field
+- A set of N coefficients stoichiometry_i
+  The sign of these defines the direction of the reaction; positive implies a product, negative a reactant.
 
 Developers' Note: this class's name should change if we ever want to consider
 reactions occuring anywhere except in the liquid mantle, e.g. in the
@@ -88,8 +87,9 @@ typedef struct {
   const char *type;
   PetscInt   n_volatiles;
   PetscInt   *volatiles; /* indices for volatiles. Populated from prefix strings during parameter processing */
-  PetscReal  *gamma;     /* "Exchange rates" */
+  PetscReal  *stoichiometry;  /* stoichiometry */
   PetscReal  *Keq_coeffs;  /* Equilibrium constant parameters */
+  PetscBool  fO2_stoichiometry; /* fO2 stoichiometry (zero turns it off, non-zero value is used) */
 } data_ReactionParameters;
 typedef data_ReactionParameters* ReactionParameters;
 
