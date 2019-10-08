@@ -90,7 +90,7 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
   PetscErrorCode     ierr;
 
   PetscFunctionBeginUser;
-  ierr = PetscFree3((*reaction_parameters_ptr)->gamma,(*reaction_parameters_ptr)->volatiles,(*reaction_parameters_ptr)->epsilon);CHKERRQ(ierr);
+  ierr = PetscFree4((*reaction_parameters_ptr)->Keq_coeffs,(*reaction_parameters_ptr)->gamma,(*reaction_parameters_ptr)->volatiles,(*reaction_parameters_ptr)->epsilon);CHKERRQ(ierr);
   ierr = PetscFree(*reaction_parameters_ptr);CHKERRQ(ierr);/* must be last */
   *reaction_parameters_ptr = NULL;
   PetscFunctionReturn(0);
