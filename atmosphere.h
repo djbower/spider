@@ -68,6 +68,5 @@ PetscErrorCode FormFunction2( SNES, Vec, Vec, void * );
 PetscScalar get_dxdt( Atmosphere *, const AtmosphereParameters *, PetscInt, const PetscScalar * );
 
 PetscErrorCode set_oxygen_fugacity( Atmosphere *, const AtmosphereParameters *, const Constants * );
-PetscScalar get_equilibrium_constant( PetscScalar, PetscScalar, PetscScalar, const Constants * );
 
 #endif

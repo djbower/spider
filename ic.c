@@ -1,6 +1,7 @@
 #include "ic.h"
 #include "bc.h"
 #include "cJSON.h"
+#include "reaction.h"
 #include "util.h"
 #include "atmosphere.h"
 #include "parameters.h"

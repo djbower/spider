@@ -853,21 +853,6 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     return out;
 }
 
-PetscScalar get_equilibrium_constant( PetscScalar a, PetscScalar b, PetscScalar temp, const Constants *C )
-{
-
-    PetscScalar log10K,K;
-
-    temp *= C->TEMP;
-
-    log10K = a / temp + b;
-
-    K = PetscPowScalar(10.0,log10K);
-
-    return K;
-
-}
-
 PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
 

@@ -3,7 +3,7 @@
 
 #include <petsc.h>
 #include "lookup.h"
-#include "reaction.h"
+//#include "reaction.h"
 
 /* dimensionalising constants */
 typedef struct _Constants {

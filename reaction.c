@@ -95,3 +95,21 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
   *reaction_parameters_ptr = NULL;
   PetscFunctionReturn(0);
 }
+
+/* Compute equilibrium constant */
+PetscScalar get_equilibrium_constant( ReactionParameters* reaction_parameters_ptr, PetscScalar temp, const Constants *C )
+{
+    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
+    PetscScalar        log10Keq, Keq;
+
+    temp *= C->TEMP;
+
+    /* log10Keq = a/T + b is a standard form for computing an equilibrium constant */
+    /* e.g., Schaefer and Fegley (2017) */
+    log10Keq = reaction_parameters->Keq_coeffs[0] / temp + reaction_parameters->Keq_coeffs[1];
+
+    Keq = PetscPowScalar( 10.0, log10Keq );
+
+    return Keq;
+
+}
