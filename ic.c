@@ -477,11 +477,11 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
         /* but regarding above, convention is arbitrary since mass_r[i] will switch sign to balance */
 
         /* Previously, this did for H2O:
+           NOTE: these expressions are actually wrong!
         ff[v] -= -8.936682739051928 * mass_r[i] // +VE IMPLIES LOSS
            and for H2:
-        ff[v] -= 1.0 * mass_r[i] */ // -VE IMPLIES GAIN
-        // FIXME: stoichiometry is wrong field
-        //ff[v] -= Ap->reaction_parameters[i]->stoichiometry[j] * mass_r[i];
+        ff[v] -= 1.0 * mass_r[i] // -VE IMPLIES GAIN
+        ff[v] -= Ap->reaction_parameters[i]->stoichiometry[j] * mass_r[i]; */
       }
     }
 
