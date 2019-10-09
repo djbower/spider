@@ -483,28 +483,20 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     }
 
     /* Objective function */
-    /* TODO: currently a placeholder */
     for (i=0; i<Ap->n_reactions; ++i) {
 
         PetscScalar Qp,Qr,K;
 
         ReactionParameters const * reaction_parameters_ptr = &Ap->reaction_parameters[i];
 
-        /* LLDB print outs given below relate to -OXYGEN_FUGACITY 1, which is a case
-           that breaks the solver.  -OXYGEN_FUGACITY 2 seems to work, interestingly. */
-
         /* for test case, this gives PH2/PH2O */
         /* return the numerator and denominator separately to retain scalings,
            otherwise the non-linear solver has problems */
         Qp = get_reaction_quotient_products( reaction_parameters_ptr, A );
-        //(PetscScalar) $1 = 0.000000013683141498892851
         Qr = get_reaction_quotient_reactants( reaction_parameters_ptr, A );
-        //(PetscScalar) $2 = 0.00000060143617811541345
         // Q = Qp/Qr
-        // (double) $3 = 0.022750778880260683
 
         /* for testing */
-        // (PetscScalar) $0 = 0.011278444300309255
         K = get_equilibrium_constant( reaction_parameters_ptr, A->tsurf, C );
 
         /* FIXME: temporary hack to ignore this objective function */
@@ -515,7 +507,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
            passing in the reaction quotient rather than decomposed into a numerator and
            denominator breaks the solver.  Due to FD Jacobian? */
         ff[Ap->n_volatiles + i] = Qp - K * Qr;
-        //ff[Ap->n_volatiles + i] = 1.0E5; /* test scaling */
+        //ff[Ap->n_volatiles + i] *= 1.0E9; /* test scaling */
 
         /* the old format was like this, where previously -reaction_H2O_H2_epsilon_H2O -1
            and -reaction_H2O_H2_epsilon_H2 0.01 */
@@ -549,15 +541,15 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
 /* xx looks like:
-1.
-1.
+1e-05
+1e-05
 0.
 */
 
     /* ff looks like:
-0.00204999
-0.00022939
--6.89988e-09
+2.04999e-08
+2.2939e-09
+-6.78262e-09
 */
 
     PetscFunctionReturn(0);
