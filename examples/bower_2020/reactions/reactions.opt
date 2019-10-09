@@ -239,7 +239,7 @@
 # other fO2s break the atmosic solver
 # this fO2 seems to work (CV meteorite)
 # probably a scaling issue again
--OXYGEN_FUGACITY 2
+-OXYGEN_FUGACITY 1
 
 # PS: new proposal here
 # H2-H2O reaction

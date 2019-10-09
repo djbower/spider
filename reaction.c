@@ -138,7 +138,12 @@ PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_
     }
 
     if( reaction_parameters->fO2_stoichiometry > 0.0 ){
-        Qp *= PetscPowScalar( A->oxygen_fugacity*A->psurf, reaction_parameters->fO2_stoichiometry );
+        if( A->oxygen_fugacity != 0 ){
+            Qp *= PetscPowScalar( A->oxygen_fugacity*A->psurf, reaction_parameters->fO2_stoichiometry );
+        }
+        else{
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction demands fO2, but OXYGEN_FUGACITY is switched OFF!");
+        }
     }
 
     return Qp;
@@ -165,8 +170,13 @@ PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction
     }
 
     if( reaction_parameters->fO2_stoichiometry < 0.0 ){
-        /* Note: negative stoichiometry below, since return denominator and not 1/denominator */
-        Qr *= PetscPowScalar( A->oxygen_fugacity*A->psurf, -reaction_parameters->fO2_stoichiometry );
+        if( A->oxygen_fugacity != 0 ){
+            /* Note: negative stoichiometry below, since return denominator and not 1/denominator */
+            Qr *= PetscPowScalar( A->oxygen_fugacity*A->psurf, -reaction_parameters->fO2_stoichiometry );
+        }
+        else{
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction demands fO2, but OXYGEN_FUGACITY is switched OFF!");
+        }
     }
 
     return Qr;

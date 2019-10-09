@@ -464,14 +464,21 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     /* Subtract reaction masses */
     for (i=0; i<Ap->n_reactions; ++i) {
       PetscInt j;
+      PetscScalar factor;
+      const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+      factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * A->volatiles[v0].p;
       for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
         const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+        PetscScalar massv;
+        massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * A->volatiles[v].p;
+        massv /= factor;
+        ff[v] += massv * mass_r[i];
         /* Previously, this did for H2O:
         ff[v] -= -8.936682739051928 * mass_r[i] // +VE IMPLIES LOSS
            and for H2:
         ff[v] -= 1.0 * mass_r[i] */ // -VE IMPLIES GAIN
         // FIXME: stoichiometry is wrong field
-        ff[v] -= Ap->reaction_parameters[i]->stoichiometry[j] * mass_r[i];
+        //ff[v] -= Ap->reaction_parameters[i]->stoichiometry[j] * mass_r[i];
       }
     }
 
