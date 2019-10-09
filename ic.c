@@ -461,18 +461,21 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
         ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i]);
     }
 
-    /* Subtract reaction masses */
+    /* Subtract or add reaction masses */
     for (i=0; i<Ap->n_reactions; ++i) {
       PetscInt j;
-      PetscScalar factor;
+      PetscScalar factor; /* normalisation, using the first volatile (reactant) in this chemical reaction */
       const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+      /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
       factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * A->volatiles[v0].p;
       for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
         const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
         PetscScalar massv;
         massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * A->volatiles[v].p;
-        massv /= factor;
-        ff[v] += massv * mass_r[i];
+        massv /= factor; /* +ve for reactants, -ve for products */
+        ff[v] += massv * mass_r[i]; /* convention here is mass loss of reactants, mass gain of products */
+        /* but regarding above, convention is arbitrary since mass_r[i] will switch sign to balance */
+
         /* Previously, this did for H2O:
         ff[v] -= -8.936682739051928 * mass_r[i] // +VE IMPLIES LOSS
            and for H2:
