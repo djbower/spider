@@ -945,18 +945,9 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
         log10fO2 = a * PetscPowScalar( temp, b ) + c;
     }
 
+    /* Remember that oxygen_fugacity is equivalent to a volume
+       mixing ratio, and therefore does not need scaling */
     A->oxygen_fugacity = PetscPowScalar(10.0,log10fO2);
-
-    /* the assumed standard state is 1 bar, but we need to renormalise
-       to a standard state of 1 non-dimensional pressure unit.  This 
-       is because the oxygen fugacity is later multipled by A->psurf,
-       and A->psurf is non-dimensional according to C->PRESSURE */
-
-    /* convert standard pressure from 1 bar to 1 non-dim unit */
-    /* FIXME: I think this is OK, but be aware of reference pressure
-       of 1 bar versus standard state of 1 atm = 101325 Pa */
-    A->oxygen_fugacity *= 1.0E-5; /* 1 bar to 1 Pa reference */
-    A->oxygen_fugacity *= C->PRESSURE; /* 1 Pa reference to 1 non-dim reference */
 
     PetscFunctionReturn(0);
 
