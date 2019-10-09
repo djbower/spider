@@ -327,11 +327,12 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
         A->psurf += V->p;
     }
 
-    /* FIXME: Oxygen is often treated as a trace species from the
-       perspective of computing the total atmospheric pressure,
-       but here we can have a flag to test the influence.  In
-       principle, it should not make the system more difficult
-       to solve.  Basically, add fO2 (in Pa) to A->psurf */
+    /* Oxygen is often treated as a trace species from the
+       perspective of computing the total atmospheric pressure, but
+       it is trivial to include: */
+    /* Actually, for oxidised meteorite material this is almost
+       certainly required, since O2 could be a dominant species */
+    A->psurf /= (1.0 - A->oxygen_fugacity);
 
     PetscFunctionReturn(0);
 }
