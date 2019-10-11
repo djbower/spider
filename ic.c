@@ -352,6 +352,26 @@ static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
+/* A custom, verbose SNES monitor */
+static PetscErrorCode SNESMonitorVerbose(SNES snes, PetscInt its, PetscReal norm, void *mctx)
+{
+  PetscErrorCode ierr;
+  Vec            x,r;
+  PetscErrorCode (*func)(SNES,Vec,Vec,void*);
+  void           *ctx;
+
+  PetscFunctionBeginUser;
+  ierr = SNESGetSolution(snes,&x);CHKERRQ(ierr);
+  ierr = SNESGetFunction(snes,&r,&func,&ctx);CHKERRQ(ierr); /* ctx should be the same as mctx */
+  ierr = func(snes,x,r,ctx);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[36m### Iteration %D\e[0m\n",its);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[32mresidual function norm: %g\nx:\e[0m\n",(double)norm);CHKERRQ(ierr);
+  ierr = VecView(x,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[32mresidual function:\e[0m\n");CHKERRQ(ierr);
+  ierr = VecView(r,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
 static PetscErrorCode set_initial_volatile( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -393,6 +413,16 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_mf",NULL);CHKERRQ(ierr);
+
+    /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
+    {
+      PetscBool flg = PETSC_FALSE;
+
+      ierr = PetscOptionsGetBool(NULL,NULL,"-atmosic_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      if (flg) {
+        ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
+      }
+    }
 
     /* Solve */
     ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
@@ -510,7 +540,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
            passing in the reaction quotient rather than decomposed into a numerator and
            denominator breaks the solver.  Due to FD Jacobian? */
         ff[Ap->n_volatiles + i] = Qp - K * Qr;
-        ff[Ap->n_volatiles + i] *= PetscPowScalar( C->PRESSURE, 0.5 );
+        //ff[Ap->n_volatiles + i] *= PetscPowScalar( C->PRESSURE, 0.5 );
         //ff[Ap->n_volatiles + i] *= 1.0E9; /* test scaling */
 
         /* the old format was like this, where previously -reaction_H2O_H2_epsilon_H2O -1
