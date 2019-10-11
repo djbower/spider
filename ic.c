@@ -510,6 +510,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
            passing in the reaction quotient rather than decomposed into a numerator and
            denominator breaks the solver.  Due to FD Jacobian? */
         ff[Ap->n_volatiles + i] = Qp - K * Qr;
+        ff[Ap->n_volatiles + i] *= PetscPowScalar( C->PRESSURE, 0.5 );
         //ff[Ap->n_volatiles + i] *= 1.0E9; /* test scaling */
 
         /* the old format was like this, where previously -reaction_H2O_H2_epsilon_H2O -1
