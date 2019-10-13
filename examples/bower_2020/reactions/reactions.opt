@@ -62,7 +62,7 @@
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
--volatile0 1.0E2 # increased this for IC testing
+-volatile0 1.0E3 #E2 # increased this for IC testing
 
 # energy fluxes and sources to include
 # [0] is off
