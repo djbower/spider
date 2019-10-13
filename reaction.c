@@ -132,7 +132,7 @@ PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_
 
         if( reaction_parameters->stoichiometry[j] > 0.0 ){
             /* reaction quotient numerator (products), excluding fO2 */
-            Qp *= PetscPowScalar( A->volatiles[v].p, reaction_parameters->stoichiometry[j] );
+            Qp *= PetscPowScalar( (A->volatiles[v].p/A->psurf), reaction_parameters->stoichiometry[j] );
         }
 
     }
@@ -164,7 +164,7 @@ PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction
         if( reaction_parameters->stoichiometry[j] < 0.0 ){
             /* reaction quotient denominator (reactants), excluding fO2 */
             /* Note: negative stoichiometry below, since return denominator and not 1/denominator */
-            Qr *= PetscPowScalar( A->volatiles[v].p, -reaction_parameters->stoichiometry[j] );
+            Qr *= PetscPowScalar( (A->volatiles[v].p/A->psurf), -reaction_parameters->stoichiometry[j] );
         }
 
     }
