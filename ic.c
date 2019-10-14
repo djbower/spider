@@ -487,7 +487,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
     /* Balance equation for volatile abundance */
     for (i=0; i<Ap->n_volatiles; ++i) {
-        // TODO DJB rename this function
+        /* TODO: DJB rename this function */
         ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i]);
     }
 
@@ -497,22 +497,17 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
       PetscScalar factor; /* normalisation, using the first volatile (reactant) in this chemical reaction */
       const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
       /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
-      /* NOW SCALING BY A->PSURF) */
+      /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+      /* TODO: if this works, swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
       factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
       for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
         const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
         PetscScalar massv;
+        /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
         massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
         massv /= factor; /* +ve for reactants, -ve for products */
-        ff[v] += massv * mass_r[i]; /* convention here is mass loss of reactants, mass gain of products */
+        ff[v] += massv * mass_r[i]; /* convention is mass loss of reactants, mass gain of products */
         /* but regarding above, convention is arbitrary since mass_r[i] will switch sign to balance */
-
-        /* Previously, this did for H2O:
-           NOTE: these expressions are actually wrong!
-        ff[v] -= -8.936682739051928 * mass_r[i] // +VE IMPLIES LOSS
-           and for H2:
-        ff[v] -= 1.0 * mass_r[i] // -VE IMPLIES GAIN
-        ff[v] -= Ap->reaction_parameters[i]->stoichiometry[j] * mass_r[i]; */
       }
     }
 
@@ -523,12 +518,10 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
         ReactionParameters const * reaction_parameters_ptr = &Ap->reaction_parameters[i];
 
-        /* for test case, this gives PH2/PH2O */
         /* return the numerator and denominator separately to retain scalings,
            otherwise the non-linear solver has problems */
         Qp = get_reaction_quotient_products( reaction_parameters_ptr, A );
         Qr = get_reaction_quotient_reactants( reaction_parameters_ptr, A );
-        // Q = Qp/Qr
 
         /* for testing */
         K = get_equilibrium_constant( reaction_parameters_ptr, A->tsurf, C );
@@ -574,18 +567,6 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
-
-/* xx looks like:
-1e-05
-1e-05
-0.
-*/
-
-    /* ff looks like:
-2.04999e-08
-2.2939e-09
--6.78262e-09
-*/
 
     PetscFunctionReturn(0);
 

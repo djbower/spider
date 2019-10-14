@@ -131,7 +131,9 @@ PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_
         const PetscInt v = reaction_parameters->volatiles[j];
 
         if( reaction_parameters->stoichiometry[j] > 0.0 ){
-            /* reaction quotient numerator (products), excluding fO2 */
+            /* Note: reaction quotient numerator (products), excluding fO2 */
+            /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+            /* TODO: if this works, swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
             Qp *= PetscPowScalar( (A->volatiles[v].p/A->psurf), reaction_parameters->stoichiometry[j] );
         }
 
@@ -162,8 +164,9 @@ PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction
         const PetscInt v = reaction_parameters->volatiles[j];
 
         if( reaction_parameters->stoichiometry[j] < 0.0 ){
-            /* reaction quotient denominator (reactants), excluding fO2 */
-            /* Note: negative stoichiometry below, since return denominator and not 1/denominator */
+            /* Note: reaction quotient denominator (reactants), excluding fO2 */
+            /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+            /* TODO: if this works, swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
             Qr *= PetscPowScalar( (A->volatiles[v].p/A->psurf), -reaction_parameters->stoichiometry[j] );
         }
 
@@ -172,6 +175,8 @@ PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction
     if( reaction_parameters->fO2_stoichiometry < 0.0 ){
         if( A->oxygen_fugacity != 0 ){
             /* Note: negative stoichiometry below, since return denominator and not 1/denominator */
+            /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+            /* TODO: if this works, swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
             Qr *= PetscPowScalar( A->oxygen_fugacity, -reaction_parameters->fO2_stoichiometry );
         }
         else{
