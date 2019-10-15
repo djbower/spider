@@ -536,7 +536,6 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
         Qp = get_reaction_quotient_products( reaction_parameters_ptr, A );
         Qr = get_reaction_quotient_reactants( reaction_parameters_ptr, A );
 
-        /* for testing */
         K = get_equilibrium_constant( reaction_parameters_ptr, A->tsurf, C );
 
         /* this general form retains the pressure scaling and is preferred by the solver:
