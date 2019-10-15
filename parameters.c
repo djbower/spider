@@ -601,6 +601,20 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   {
     PetscBool flg;
 
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_ammonia1",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateAmmonia1(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_carbondioxide1",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateCarbonDioxide1(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+
     ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_methane1",NULL,&flg);CHKERRQ(ierr);
     if (flg) {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);

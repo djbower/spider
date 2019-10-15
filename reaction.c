@@ -41,11 +41,17 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_par
   ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
   reaction_parameters = *reaction_parameters_ptr;
   reaction_parameters->type = "methane1";
-  reaction_parameters->n_volatiles = 4;
-  ierr = PetscMalloc2(3,&reaction_parameters->stoichiometry,3,&reaction_parameters->volatiles);CHKERRQ(ierr);
-  reaction_parameters->stoichiometry[0] = 1.0;  // CO2
-  reaction_parameters->stoichiometry[1] = 2.0;  // H2
-  reaction_parameters->stoichiometry[2] = -1.0; // CH4
+  reaction_parameters->n_volatiles = 3;
+  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
+  reaction_parameters->stoichiometry[0] = -1.0;  // CO2
+  reaction_parameters->stoichiometry[1] = -2.0;  // H2
+  reaction_parameters->stoichiometry[2] = 1.0; // CH4
+  /* equilibrium constant coefficients */
+  reaction_parameters->Keq_coeffs[0] = -16276;
+  reaction_parameters->Keq_coeffs[1] = -5.4738;
+  /* fO2 stoichiometry */
+  reaction_parameters->fO2_stoichiometry = 1.0;
+
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
     ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO2",&flg);CHKERRQ(ierr);
@@ -53,6 +59,42 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_par
     ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
     ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CH4",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[2] = v;
+  }
+  for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
+  PetscFunctionReturn(0);
+}
+
+/* A named reaction */
+PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+{
+  PetscErrorCode     ierr;
+  PetscInt           i,v;
+  PetscBool          flg;
+  ReactionParameters reaction_parameters;
+
+  PetscFunctionBeginUser;
+  ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
+  reaction_parameters = *reaction_parameters_ptr;
+  reaction_parameters->type = "ammonia1";
+  reaction_parameters->n_volatiles = 3;
+  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
+  reaction_parameters->stoichiometry[0] = -1.0;  // N2
+  reaction_parameters->stoichiometry[1] = -3.0;  // H2
+  reaction_parameters->stoichiometry[2] = 2.0; // NH3
+  /* equilibrium constant coefficients */
+  reaction_parameters->Keq_coeffs[0] = 5331.9;
+  reaction_parameters->Keq_coeffs[1] = -11.884;
+  /* fO2 stoichiometry */
+  reaction_parameters->fO2_stoichiometry = 0;
+
+  for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
+  for (v=0; v<Ap->n_volatiles; ++v) {
+    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"N2",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[0] = v;
+    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[1] = v;
+    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"NH3",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[2] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -72,7 +114,7 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
   reaction_parameters = *reaction_parameters_ptr;
   reaction_parameters->type = "water1";
   reaction_parameters->n_volatiles = 2;
-  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,3,&reaction_parameters->stoichiometry,3,&reaction_parameters->volatiles);CHKERRQ(ierr);
+  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
   reaction_parameters->stoichiometry[0] = -1.0;  // H2O
   reaction_parameters->stoichiometry[1] = 1.0;  // H2
   /* equilibrium constant coefficients */
@@ -92,13 +134,46 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
   PetscFunctionReturn(0);
 }
 
+/* A named reaction */
+PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+{
+  PetscErrorCode     ierr;
+  PetscInt           i,v;
+  PetscBool          flg;
+  ReactionParameters reaction_parameters;
+
+  PetscFunctionBeginUser;
+  ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
+  reaction_parameters = *reaction_parameters_ptr;
+  reaction_parameters->type = "carbondioxide1";
+  reaction_parameters->n_volatiles = 2;
+  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
+  reaction_parameters->stoichiometry[0] = -1.0;  // CO2
+  reaction_parameters->stoichiometry[1] = 1.0;  // CO
+  /* equilibrium constant coefficients */
+  reaction_parameters->Keq_coeffs[0] = -14787;
+  reaction_parameters->Keq_coeffs[1] = 4.5472;
+  /* fO2 stoichiometry */
+  reaction_parameters->fO2_stoichiometry = 0.5;
+
+  for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
+  for (v=0; v<Ap->n_volatiles; ++v) {
+    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO2",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[0] = v;
+    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[1] = v;
+  }
+  for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
+  PetscFunctionReturn(0);
+}
+
 PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters_ptr)
 {
   PetscErrorCode     ierr;
 
   PetscFunctionBeginUser;
   ierr = PetscFree3((*reaction_parameters_ptr)->Keq_coeffs,(*reaction_parameters_ptr)->stoichiometry,(*reaction_parameters_ptr)->volatiles);CHKERRQ(ierr);
-  ierr = PetscFree(*reaction_parameters_ptr);CHKERRQ(ierr);/* must be last */
+  ierr = PetscFree(*reaction_parameters_ptr);CHKERRQ(ierr); /* must be last */
   *reaction_parameters_ptr = NULL;
   PetscFunctionReturn(0);
 }
@@ -134,7 +209,6 @@ static PetscScalar get_psurf_exponent( const ReactionParameters * reaction_param
     return expon;
 
 }
-
 
 /* Compute reaction quotient (products, numerator) */
 PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
