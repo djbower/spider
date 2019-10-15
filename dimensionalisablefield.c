@@ -228,7 +228,7 @@ PetscErrorCode DimensionalisableFieldToJSON(DimensionalisableField const f,cJSON
     cJSON_AddItemToObject(curr,"size",cJSON_CreateNumber(vecSize));
     {
       char str[FORMAT_STRING_SIZE];
-      ierr = valueToString(*f->scaling,str,FORMAT_STRING_SIZE);CHKERRQ(ierr);
+      ierr = valueToString(f->scaling[d],str,FORMAT_STRING_SIZE);CHKERRQ(ierr);
       cJSON_AddItemToObject(curr,"scaling",cJSON_CreateString(str));
     }
     cJSON_AddItemToObject(curr,"scaled",f->scaled? cJSON_CreateString("true") : cJSON_CreateString("false"));
