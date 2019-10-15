@@ -62,11 +62,9 @@ PetscScalar get_emissivity_abe_matsui( Atmosphere *, const AtmosphereParameters 
 PetscScalar get_initial_volatile_abundance( Atmosphere *, const AtmosphereParameters *, const VolatileParameters *,  const Volatile *);
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters *, PetscScalar );
 PetscErrorCode set_surface_temperature_from_flux( Atmosphere *, const AtmosphereParameters * );
-PetscErrorCode set_atmosphere_volatile_content( Atmosphere *, const AtmosphereParameters * );
+PetscErrorCode set_atmosphere_volatile_content( Atmosphere *, const AtmosphereParameters *, const Constants * );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
 PetscErrorCode FormFunction2( SNES, Vec, Vec, void * );
 PetscScalar get_dxdt( Atmosphere *, const AtmosphereParameters *, PetscInt, const PetscScalar * );
-
-PetscErrorCode set_oxygen_fugacity( Atmosphere *, const AtmosphereParameters *, const Constants * );
 
 #endif

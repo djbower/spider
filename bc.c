@@ -39,8 +39,8 @@ PetscErrorCode set_surface_flux( Ctx *E )
         A->tsurf = temp0; // surface temperature is potential temperature
       }
 
-      /* must be after A->tsurf is set */
-      ierr = set_atmosphere_volatile_content( A, Ap ); CHKERRQ(ierr);
+      /* must be after A->tsurf is set for fO2 calculation */
+      ierr = set_atmosphere_volatile_content( A, Ap, C ); CHKERRQ(ierr);
 
       /* determine surface flux */
       /* in all cases, compute flux and emissivity consistently */

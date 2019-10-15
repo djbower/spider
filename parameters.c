@@ -502,7 +502,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       break;
   }
 
-  Ap->OXYGEN_FUGACITY=OXYGEN_FUGACITY_CI;
+  Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY_NONE;
   {
     PetscInt  OXYGEN_FUGACITY = 0;
     PetscBool OXYGEN_FUGACITYset = PETSC_FALSE;

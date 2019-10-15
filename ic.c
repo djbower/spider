@@ -23,7 +23,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     PetscInt ind,numpts_s;
     Solution *S = &E->solution;
     Parameters const *P = &E->parameters;
-    Constants const *C = &P->constants;
     Atmosphere *A = &E->atmosphere;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     PetscInt IC = P->initial_condition;
@@ -84,10 +83,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     else{
         A->tsurf = temp0; // surface temperature is potential temperature
     }
-
-    /* TODO: this is a cheap operation, but should maybe return zero if
-       this feature is not requested by the user? */
-    set_oxygen_fugacity( A, Ap, C );
 
     /* TODO: atmosphere IC always assumes that mantle is initially total molten */
 
@@ -496,7 +491,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
     }
     mass_r = &xx[Ap->n_volatiles]; /* reaction masses (also to be determined by solver) */
 
-    ierr = set_atmosphere_volatile_content( A, Ap ); CHKERRQ(ierr);
+    ierr = set_atmosphere_volatile_content( A, Ap, C ); CHKERRQ(ierr);
 
     /* Balance equation for volatile abundance */
     for (i=0; i<Ap->n_volatiles; ++i) {

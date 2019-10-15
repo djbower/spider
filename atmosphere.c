@@ -3,7 +3,7 @@
 #include "util.h"
 
 static PetscErrorCode initialise_volatiles( Atmosphere *, const AtmosphereParameters * );
-static PetscErrorCode set_atmosphere_pressures( Atmosphere *, const AtmosphereParameters * );
+static PetscErrorCode set_atmosphere_pressures( Atmosphere *, const AtmosphereParameters *, const Constants * );
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_escape( Atmosphere *, const AtmosphereParameters * );
@@ -19,7 +19,7 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_depth( Atmosphere *, const AtmosphereParameters * );
-/* these are for an individual volatile */
+static PetscErrorCode set_oxygen_fugacity( Atmosphere *, const AtmosphereParameters *, const Constants * );
 
 PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
@@ -304,7 +304,7 @@ static PetscErrorCode set_f_thermal_escape( Atmosphere *A, PetscInt i )
 
 }
 
-static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereParameters *Ap )
+static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
     PetscInt                  i;
     Volatile                 *V;
@@ -325,6 +325,13 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
         V->dpdx *= PetscPowScalar( V->x / Vp->henry, Vp->henry_pow-1.0 );
         /* total pressure by Dalton's law */
         A->psurf += V->p;
+    }
+
+    if( Ap->OXYGEN_FUGACITY ){
+        set_oxygen_fugacity( A, Ap, C );
+    }
+    else{
+        A->oxygen_fugacity = 0;
     }
 
     /* Oxygen is often treated as a trace species from the
@@ -375,7 +382,7 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
 
 }
 
-PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap )
+PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
     PetscErrorCode           ierr;
 
@@ -387,7 +394,7 @@ PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereP
        actually included in the model */
 
     /* order of these functions is very important! */
-    ierr = set_atmosphere_pressures( A, Ap );CHKERRQ(ierr);
+    ierr = set_atmosphere_pressures( A, Ap, C );CHKERRQ(ierr);
 
     ierr = set_volume_mixing_ratios( A, Ap );CHKERRQ(ierr);
 
@@ -860,7 +867,7 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     return out;
 }
 
-PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
+static PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
 
     /* These are oxygen fugacity fits for individual meteoritic materials as
