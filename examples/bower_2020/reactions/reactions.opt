@@ -216,6 +216,8 @@
 # for chemical equilibrium and hence this value changes
 # below is a test, but this initial H2 agrees with chemical equil when epsilon=0.01
 -H2O_initial 100.0 #6.2155024017041427 #1.3399401107003328 # originally 500 # ppm, Elkins-Tanton (2008) case 2
+#-H2O_initial 92.22674857180891 # equilibrated value for IW buffer
+
 #-H2O_initial 0.0 # ppm, Elkins-Tanton (2008) case 3
 -H2O_kdist 1.0E-4 # distribution coefficients are given in supplementary material of ET08
 -H2O_kabs 0.01 # absorption (m^2/kg)
@@ -229,6 +231,7 @@
 
 # below is a test, but this initial H2 agrees with chemical equil when epsilon=0.01
 -H2_initial 100.0 #155.25366760985411 # originally 100 # ppm from https://doi.org/10.1016/j.epsl.2012.06.031
+#-H2_initial 100.9996905047807 # equilibrated value for IW buffer
 -H2_kdist 0.0017 # from https://doi.org/10.1029/2004GL021341
 -H2_kabs 0.0 # absorption (m^2/kg)
 -H2_henry 6.8E-2 # ppm/Pa--- what is this for hydrogen?
@@ -236,9 +239,7 @@
 -H2_molar_mass 0.00201588 # kg/mol
 
 # fO2
-# other fO2s break the atmosic solver
-# this fO2 seems to work (CV meteorite)
-# probably a scaling issue again
+# 6 is IW buffer
 -OXYGEN_FUGACITY 6
 
 # PS: new proposal here
