@@ -36,9 +36,9 @@ typedef struct Atmosphere_ {
     PetscScalar Msol; // mass of solid (kg)
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tsurf; // surface temperature
-    PetscScalar oxygen_fugacity; // Oxygen fugacity
+    PetscScalar oxygen_fugacity; // oxygen fugacity (non-dimensional)
     PetscScalar psurf; // surface pressure
-    PetscScalar tau; // aggregate optical depth at surface (dimensionless)
+    PetscScalar tau; // aggregate optical depth at surface (non-dimensional)
     PetscScalar Fatm; // net upward atmosphere flux
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)
     Volatile    volatiles[SPIDER_MAX_VOLATILE_SPECIES]; // volatile quantities
