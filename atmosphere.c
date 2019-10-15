@@ -711,8 +711,12 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     }
 #endif
 
-    /* DJB HACK FIXME */
-    ff[Ap->n_volatiles] = 0.0;
+    /* FIXME: this turns off all reactions, but allows test cases to run */
+    /* TODO: DJB needs to figure out and update the objective function for the time stepper */
+    /* Objective function */
+    for (i=0; i<Ap->n_reactions; ++i) {
+        ff[Ap->n_volatiles + i] = 0.0;
+    }
 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
