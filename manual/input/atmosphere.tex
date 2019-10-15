@@ -173,12 +173,16 @@ So the mass balance for the initial condition is:
 \hat{X_v} \hat{M}^m + \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p_v} + \hat{m}_v^r = \hat{X}_v^{\rm init} \hat{M}^m
 \label{eq:volinit}
 \end{equation}
-For the case of no chemical reactions, $\hat{m}_v^r=0$ for all volatiles and hence the only coupling between volatiles is through their partial pressures, which all contribute to the total surface pressure.  For the case with a single chemical reaction, there is mass transfer between two volatile species (denoted by subscripts 0 and 1 in the following) according to an equilibrium criteria, such as:
+And optionally dividing through by $\hat{M}^m$:
 \begin{equation}
-\frac{\hat{p_1}}{\hat{p_0}} = \epsilon
-\label{eq:volequil}
+\hat{X_v} + \frac{10^6}{V_0 \hat{M}^m} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p_v} + \frac{\hat{m}_v^r}{\hat{M}^m} = \hat{X}_v^{\rm init}
+\label{eq:volinit2}
 \end{equation}
-Therefore, if a single chemical reaction is present that only exchanges mass between two volatiles, we use Eq.~\ref{eq:volinit} (for each volatile, including those that are non-reacting by setting $m_v^r$ to zero) along with an additional equilibrium constraint given by Eq.~\ref{eq:volequil}.  This enables us to solve for $\hat{X_v}$ for each volatile and the chemical reaction mass $m_v^r$, once we establish a relationship between the mass loss of one volatile and the mass gain of another (see Sect.~\ref{sect:chemreact}).  Recall that the mean molar mass of the atmosphere is given by Eq.~\ref{eq:atmosphere_molar_mass} and the partial pressures must sum to give the total pressure (Eq.~\ref{eq:atmosphere_molar_mass}).
+For the case of no chemical reactions, $\hat{m}_v^r=0$ for all volatiles and hence the only coupling between volatiles is through their partial pressures, which all contribute to the total surface pressure.  For chemical reactions, we can solve for the initial volatile abundance that obeys the prescribed chemical equilibrium laws by rearranging:
+\begin{equation}
+\hat{X_v} + \frac{10^6}{V_0 \hat{M}^m} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p_v} = \hat{X}_v^{\rm init} - \frac{\hat{m}_v^r}{\hat{M}^m} \equiv \hat{X}_v^{\rm new\ init} 
+\label{eq:volinit3}
+\end{equation}
 %%%%
 %%%%
 %%%%
