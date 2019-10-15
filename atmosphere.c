@@ -856,14 +856,15 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
 {
     PetscScalar out;
 
+    /* atmosphere */
     out = 1.0E6 / *Ap->VOLATILE_ptr;
     out *= PetscSqr( (*Ap->radius_ptr) ) / -(*Ap->gravity_ptr);
-    //out /= (*Ap->mantle_mass_ptr);
     out *= (Vp->molar_mass / A->molar_mass);
     out *= V->p;
-    out += V->x * (*Ap->mantle_mass_ptr);
+    /* liquid and solid */
+    out += V->x * ( Vp->kdist * A->Msol + A->Mliq );
     out -= Vp->initial * (*Ap->mantle_mass_ptr);
-    /* Note: we do not include subtracting mass from reactions here */
+    /* Note: we do not include reaction masses here */
     return out;
 }
 

@@ -70,9 +70,15 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 
     /* need surface temperature to compute atmosphere IC, which means calling
        these functions below.  TODO: could streamline this? */
+    /* also want initial mass of solid and liquid to ensure that the
+       initial volatile distribution is always compatible with the
+       initial temperature profile */
     ierr = set_entropy_from_solution( E, sol );CHKERRQ(ierr);
     ierr = set_gphi_smooth( E );CHKERRQ(ierr);
+    ierr = set_melt_fraction_staggered( E );CHKERRQ(ierr);
     ierr = set_matprop_basic( E );CHKERRQ(ierr);
+    ierr = set_Mliq( E );CHKERRQ(ierr);
+    ierr = set_Msol( E );CHKERRQ(ierr);
 
     ierr = VecGetValues(S->temp,1,&ind0,&temp0); CHKERRQ(ierr);
 
@@ -219,6 +225,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
+
 }
 
 static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
