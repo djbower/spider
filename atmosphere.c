@@ -882,10 +882,6 @@ static PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParame
     PetscFunctionBeginUser;
 
     switch( Ap->OXYGEN_FUGACITY ){
-        case 0:
-            /* do not consider oxygen fugacity */
-            A->oxygen_fugacity = 0;
-            PetscFunctionReturn(0);
         case 1:
             /* Schaefer and Fegley (2017), CI meteorite */
             a = 2.4976;
