@@ -497,13 +497,13 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
       PetscScalar factor; /* normalisation, using the first volatile (reactant) in this chemical reaction */
       const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
       /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
-      /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-      /* TODO: if this works, swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
+      /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+      /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
       factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
       for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
         const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
         PetscScalar massv;
-        /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+        /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
         massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
         massv /= factor; /* +ve for reactants, -ve for products */
         ff[v] += massv * mass_r[i]; /* convention is mass loss of reactants, mass gain of products */
@@ -526,26 +526,11 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
         /* for testing */
         K = get_equilibrium_constant( reaction_parameters_ptr, A->tsurf, C );
 
-        /* FIXME: temporary hack to ignore this objective function */
-        //ff[Ap->n_volatiles + i] = 0.0;
-
-        /* i.e. pH2/pH2O = 100 */
         /* this general form retains the pressure scaling and is preferred by the solver:
            passing in the reaction quotient rather than decomposed into a numerator and
-           denominator breaks the solver.  Due to FD Jacobian? */
+           denominator causes problems in computing the FD Jacobian */
         ff[Ap->n_volatiles + i] = Qp - K * Qr;
-        //ff[Ap->n_volatiles + i] *= PetscPowScalar( C->PRESSURE, 0.5 );
-        //ff[Ap->n_volatiles + i] *= 1.0E9; /* test scaling */
 
-        /* the old format was like this, where previously -reaction_H2O_H2_epsilon_H2O -1
-           and -reaction_H2O_H2_epsilon_H2 0.01 */
-        /* FIXME: but the previous expression works */
-        //const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-        //const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
-        /* scaling using 0.01 */
-        //ff[Ap->n_volatiles + i] = -1.0 * A->volatiles[v0].p + 0.01 * A->volatiles[v1].p;
-        /* exactly the same equation, but scaling using 100 instead */
-        //ff[Ap->n_volatiles + i] = -100.0 * A->volatiles[v0].p + 1.0 * A->volatiles[v1].p;
     }
 
 #if 0
