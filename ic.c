@@ -533,6 +533,9 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
         /* return the numerator and denominator separately to retain scalings,
            otherwise the non-linear solver has problems */
+        /* NOTE: since scaling by A->psurf, it may not be necessary any longer
+           to split the reaction quotient into two parts, but nevertheless
+           why fix something that is not broken? */
         Qp = get_reaction_quotient_products( reaction_parameters_ptr, A );
         Qr = get_reaction_quotient_reactants( reaction_parameters_ptr, A );
 
