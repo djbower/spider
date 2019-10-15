@@ -1,5 +1,7 @@
 #include "reaction.h"
 
+static PetscScalar get_psurf_exponent( const ReactionParameters * );
+
 /* Note: this could logically be included in parameters.c, but that file was getting crowded */
 
 /* Create a simple reaction, involving 2 volatiles, described by "exchange rate"
@@ -119,12 +121,28 @@ PetscScalar get_equilibrium_constant( const ReactionParameters * reaction_parame
 
 }
 
+static PetscScalar get_psurf_exponent( const ReactionParameters * reaction_parameters_ptr )
+{
+    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
+    PetscInt    j;
+    PetscScalar expon = 0;
+
+    for( j=0; j<reaction_parameters->n_volatiles; ++j) {
+        expon += reaction_parameters->stoichiometry[j];
+    }
+
+    return expon;
+
+}
+
+
 /* Compute reaction quotient (products, numerator) */
 PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt           j;
     PetscScalar        Qp = 1;
+    PetscScalar        expon;
 
     for (j=0; j<reaction_parameters->n_volatiles; ++j) {
 
@@ -148,6 +166,17 @@ PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_
         }
     }
 
+    /* since we are using the volume mixing ratio (i.e. scaling by A->psurf),
+       we must account for the extra factors of A->psurf to ensure that
+       Q=Qp/Qr is non-dimensional */
+    /* to be explicit about retaining the scalings, we only scale
+       here if expon is positive.  Negative is accommodated in the reaction
+       quotient denominator. */
+    expon = get_psurf_exponent( reaction_parameters_ptr );
+    if( expon > 0.0 ){
+        Qp *= PetscPowScalar( A->psurf, expon );
+    }
+
     return Qp;
 
 }
@@ -158,6 +187,7 @@ PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt           j;
     PetscScalar        Qr = 1;
+    PetscScalar        expon;
 
     for (j=0; j<reaction_parameters->n_volatiles; ++j) {
 
@@ -182,6 +212,17 @@ PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction
         else{
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction demands fO2, but OXYGEN_FUGACITY is switched OFF!");
         }
+    }
+
+    /* since we are using the volume mixing ratio (i.e. scaling by A->psurf),
+       we must account for the extra factors of A->psurf to ensure that
+       Q=Qp/Qr is non-dimensional */
+    /* to be explicit about retaining the scalings, we only scale
+       here if expon is negative.  Positive is accommodated in the reaction
+       quotient numerator */
+    expon = get_psurf_exponent( reaction_parameters_ptr );
+    if( expon < 0.0 ){
+        Qr *= PetscPowScalar( A->psurf, -expon );
     }
 
     return Qr;
