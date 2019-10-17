@@ -90,8 +90,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
         A->tsurf = temp0; // surface temperature is potential temperature
     }
 
-    /* TODO: atmosphere IC always assumes that mantle is initially total molten */
-
     /* need surface temperature to compute fO2 before can compute initial atmosphere
        condition.  Hence atmosphere IC now appears here */
     /* atmosphere IC */
