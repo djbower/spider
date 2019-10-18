@@ -1,6 +1,7 @@
 #include "atmosphere.h"
 #include "bc.h"
 #include "cJSON.h"
+#include "energy.h"
 #include "ic.h"
 #include "matprop.h"
 #include "parameters.h"
@@ -23,11 +24,8 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     PetscInt ind,numpts_s;
     Solution *S = &E->solution;
     Parameters const *P = &E->parameters;
-    Atmosphere *A = &E->atmosphere;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     PetscInt IC = P->initial_condition;
     PetscInt const ind0=0;
-    PetscScalar temp0;
 
     PetscFunctionBeginUser;
 
@@ -37,15 +35,11 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
 
-    /* TODO: these functions do not typically (consistently)
-       update entries in the vectors stored in Solution, they
-       simply write the data to the solution vector (sol) */
-
     if(IC==1){
         ierr = set_ic_default( E, sol ); CHKERRQ(ierr);
     }
     else if(IC==2){
-        // this sets everything, including the atmosphere
+        /* set everything, including the atmosphere, from a JSON */
         ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
     }
     else if(IC==3){
@@ -68,30 +62,10 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
         ierr = set_solution_from_entropy( E, sol );CHKERRQ(ierr);
     }
 
-    /* need surface temperature to compute atmosphere IC, which means calling
-       these functions below.  TODO: could streamline this? */
-    /* also want initial mass of solid and liquid to ensure that the
-       initial volatile distribution is always compatible with the
-       initial temperature profile */
-    ierr = set_entropy_from_solution( E, sol );CHKERRQ(ierr);
-    ierr = set_gphi_smooth( E );CHKERRQ(ierr);
-    ierr = set_melt_fraction_staggered( E );CHKERRQ(ierr);
-    ierr = set_matprop_basic( E );CHKERRQ(ierr);
-    ierr = set_Mliq( E );CHKERRQ(ierr);
-    ierr = set_Msol( E );CHKERRQ(ierr);
+    /*  FIXME: currently assumes that time is zero, which will affect the
+        power output of radiogenic nuclides */
+    ierr = set_interior_structure_from_solution( E, 0.0, sol ); CHKERRQ(ierr);
 
-    ierr = VecGetValues(S->temp,1,&ind0,&temp0); CHKERRQ(ierr);
-
-    /* correct for ultra-thin thermal boundary layer at the surface */
-    if( Ap->PARAM_UTBL ){
-        A->tsurf = tsurf_param( temp0, Ap); // parameterised boundary layer
-    }
-    else{
-        A->tsurf = temp0; // surface temperature is potential temperature
-    }
-
-    /* need surface temperature to compute fO2 before can compute initial atmosphere
-       condition.  Hence atmosphere IC now appears here */
     /* atmosphere IC */
     if( (IC==1 || IC==3) ){
         ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);

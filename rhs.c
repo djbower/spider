@@ -43,17 +43,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = VecSetFromOptions( rhs_b );CHKERRQ(ierr);
   ierr = VecSetUp( rhs_b );CHKERRQ(ierr);
 
-  /* set solution in the relevant structs */
-  ierr = set_entropy_from_solution( E, sol_in );CHKERRQ(ierr);
-  ierr = set_volatile_abundances_from_solution( E, sol_in );CHKERRQ(ierr);
+  /* DJB: this new function sets everything possible (and consistently)
+     from an initial thermal (entropy) profile */
+  ierr = set_interior_structure_from_solution( E, t, sol_in );CHKERRQ(ierr);
 
-  /* set material properties and energy fluxes and sources */
-  ierr = set_gphi_smooth( E );CHKERRQ(ierr);
-  ierr = set_melt_fraction_staggered( E ); CHKERRQ(ierr);
-  ierr = set_capacitance_staggered( E );CHKERRQ(ierr);
-  ierr = set_matprop_basic( E );CHKERRQ(ierr);
-  ierr = set_Etot( E );CHKERRQ(ierr);
-  ierr = set_Htot( E, t );CHKERRQ(ierr);
+  ierr = set_volatile_abundances_from_solution( E, sol_in );CHKERRQ(ierr);
 
   /* boundary conditions must be after all arrays are set */
   ierr = set_surface_flux( E );CHKERRQ(ierr);
@@ -94,12 +88,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
-  /* these update A->Mliq, A->Msol, and A->dMliqdt */
-  ierr = set_Mliq( E );CHKERRQ(ierr);
-  ierr = set_Msol( E );CHKERRQ(ierr);
-  ierr = set_dMliqdt( E );CHKERRQ(ierr); /* must be after dS/dt computation */
-
-  ierr = set_rheological_front( E ); CHKERRQ(ierr);
+  /* must be here since must be after dS/dt computation */
+  ierr = set_dMliqdt( E );CHKERRQ(ierr);
 
   /* transfer d/dt to solution */
   /* dS/dr at basic nodes */

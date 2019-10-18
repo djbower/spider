@@ -19,7 +19,6 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_depth( Atmosphere *, const AtmosphereParameters * );
-static PetscErrorCode set_oxygen_fugacity( Atmosphere *, const AtmosphereParameters *, const Constants * );
 
 PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
@@ -327,18 +326,12 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
         A->psurf += V->p;
     }
 
-    if( Ap->OXYGEN_FUGACITY ){
-        set_oxygen_fugacity( A, Ap, C );
-    }
-    else{
-        A->oxygen_fugacity = 0;
-    }
-
     /* Oxygen is often treated as a trace species from the
        perspective of computing the total atmospheric pressure, but
        it is trivial to include: */
     /* Actually, for oxidised meteorite material this is almost
        certainly required, since O2 could be a dominant species */
+    /* fO2 is set in set_interior_structure_from_solution */
     A->psurf /= (1.0 - A->oxygen_fugacity);
 
     PetscFunctionReturn(0);
@@ -868,7 +861,7 @@ PetscScalar get_initial_volatile_abundance( Atmosphere *A, const AtmosphereParam
     return out;
 }
 
-static PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
+PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
 
     /* These are oxygen fugacity fits for individual meteoritic materials as

@@ -12,7 +12,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
     PetscErrorCode       ierr;
     PetscMPIInt          rank;
-    PetscScalar          temp0,Qout,area0;
+    PetscScalar          Qout,area0;
     PetscInt             const ind0=0;
     Atmosphere           *A  = &E->atmosphere;
     Mesh                 const *M  = &E->mesh;
@@ -28,18 +28,8 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       ierr = VecGetValues(M->area_b,1,&ind0,&area0);CHKERRQ(ierr);
 
-      /* temperature (potential temperature if coarse mesh is used) */
-      ierr = VecGetValues(S->temp,1,&ind0,&temp0); CHKERRQ(ierr);
-
-      /* correct for ultra-thin thermal boundary layer at the surface */
-      if( Ap->PARAM_UTBL ){
-        A->tsurf = tsurf_param( temp0, Ap); // parameterised boundary layer
-      }
-      else{
-        A->tsurf = temp0; // surface temperature is potential temperature
-      }
-
       /* must be after A->tsurf is set for fO2 calculation */
+      /* therefore set_surface_flux always called after set_interior_structure_from_solution */
       ierr = set_atmosphere_volatile_content( A, Ap, C ); CHKERRQ(ierr);
 
       /* determine surface flux */
@@ -296,24 +286,6 @@ static PetscScalar isothermal_or_cooling_cmb( const Ctx *E, PetscScalar cooling_
     Qin *= cooling_factor;
 
     return Qin;
-}
-
-PetscScalar tsurf_param( PetscScalar temp, const AtmosphereParameters *Ap )
-{
-    PetscScalar Ts, c, fac, num, den;
-    c = Ap->param_utbl_const;
-
-    fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
-    fac = PetscPowScalar( fac, 1.0/2.0 );
-    fac += 9.0*temp*PetscPowScalar(c,2.0);
-    // numerator
-    num = PetscPowScalar(2.0,1.0/3)*PetscPowScalar(fac,2.0/3)-2.0*PetscPowScalar(3.0,1.0/3)*c;
-    // denominator
-    den = PetscPowScalar(6.0,2.0/3)*c*PetscPowScalar(fac,1.0/3);
-    // surface temperature
-    Ts = num / den;
-
-    return Ts;
 }
 
 PetscErrorCode solve_dxdts( Ctx *E )
