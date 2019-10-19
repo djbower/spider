@@ -332,7 +332,7 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
     /* Actually, for oxidised meteorite material this is almost
        certainly required, since O2 could be a dominant species */
     /* fO2 is set in set_interior_structure_from_solution */
-    A->psurf /= (1.0 - A->oxygen_fugacity);
+    A->psurf /= (1.0 - A->fO2);
 
     PetscFunctionReturn(0);
 }
@@ -583,7 +583,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     /* the value itself is the non-dimensional oxygen fugacity, a la Schaefer and Fegley (2017) */
     /* multiplying by the scaling gives the oxygen fugacity (partial pressure) in bar */
     scaling = A->psurf * C->PRESSURE / 1.0E5; /* bar */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "oxygen_fugacity", "bar", A->oxygen_fugacity, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "bar", A->fO2, data);CHKERRQ(ierr);
 
     /* optical depth, non-dimensional */
     scaling = 1.0;
@@ -949,7 +949,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
 
     /* Remember that oxygen_fugacity is equivalent to a volume
        mixing ratio, and therefore does not need scaling */
-    A->oxygen_fugacity = PetscPowScalar(10.0,log10fO2);
+    A->fO2 = PetscPowScalar(10.0,log10fO2);
 
     PetscFunctionReturn(0);
 

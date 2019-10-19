@@ -36,7 +36,7 @@ typedef struct Atmosphere_ {
     PetscScalar Msol; // mass of solid (kg)
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tsurf; // surface temperature
-    PetscScalar oxygen_fugacity; // oxygen fugacity (non-dimensional)
+    PetscScalar fO2; // oxygen fugacity (non-dimensional)
     PetscScalar psurf; // surface pressure
     PetscScalar tau; // aggregate optical depth at surface (non-dimensional)
     PetscScalar Fatm; // net upward atmosphere flux

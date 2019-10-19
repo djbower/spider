@@ -232,8 +232,8 @@ PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_
     }
 
     if( reaction_parameters->fO2_stoichiometry > 0.0 ){
-        if( A->oxygen_fugacity != 0 ){
-            Qp *= PetscPowScalar( A->oxygen_fugacity, reaction_parameters->fO2_stoichiometry );
+        if( A->fO2 != 0 ){
+            Qp *= PetscPowScalar( A->fO2, reaction_parameters->fO2_stoichiometry );
         }
         else{
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction demands fO2, but OXYGEN_FUGACITY is switched OFF!");
@@ -277,11 +277,11 @@ PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction
     }
 
     if( reaction_parameters->fO2_stoichiometry < 0.0 ){
-        if( A->oxygen_fugacity != 0 ){
+        if( A->fO2 != 0 ){
             /* Note: negative stoichiometry below, since return denominator and not 1/denominator */
             /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
             /* TODO: if this works, swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-            Qr *= PetscPowScalar( A->oxygen_fugacity, -reaction_parameters->fO2_stoichiometry );
+            Qr *= PetscPowScalar( A->fO2, -reaction_parameters->fO2_stoichiometry );
         }
         else{
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction demands fO2, but OXYGEN_FUGACITY is switched OFF!");
