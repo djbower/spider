@@ -196,6 +196,23 @@ PetscScalar get_equilibrium_constant( const ReactionParameters * reaction_parame
 
 }
 
+/* Derivative of equilibrium constant with respect to temperature */
+PetscScalar get_equilibrium_constant_derivative( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
+{
+    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
+    PetscScalar        dKeqdT;
+
+    temp *= C->TEMP;
+
+    dKeqdT = get_equilibrium_constant( reaction_parameters_ptr, temp, C );
+    dKeqdT *= PetscLogReal(10.0);
+    dKeqdT *= -reaction_parameters->Keq_coeffs[0] / PetscPowScalar( temp, 2.0 );
+
+    return dKeqdT;
+
+}
+
+/* Exponent of extra factor of psurf to ensure reaction quotient is non-dimensional */
 static PetscScalar get_psurf_exponent( const ReactionParameters * reaction_parameters_ptr )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
