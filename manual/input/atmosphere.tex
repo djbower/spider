@@ -291,6 +291,7 @@ Divide through by the mass of the H$_2$ reservoir:
 So actually, this is basically as simple as before.  For generality, we can use the equilibrium condition as the extra equation, and we solve for the ``chemical reaction'' mass of one particular volatile (H$_2$ is probably the most sensible default), and then compute the changes of mass based on the stoichiometry of the reaction.
 %%%%
 \subsubsection{General example}
+\label{sec:general_reaction}
 \begin{equation}
     a[\rm{A}] + b[\rm{B}] \leftrightarrow c[\rm{C}] + d[\rm{D}]
     \label{eq:reaction_general}
@@ -446,15 +447,65 @@ It is now obvious that we can scale the source time in the evolution equation by
 \end{equation}
 %%%%
 \subsubsection{Chemical reactions}
-Similar to before, we use the differential form of the equilibrium condition (Eq.~\ref{eq:volequil}) to provide another update equation \dbnote{TODO: in reality, $\epsilon$ may also be a function of time}:
+As with the initial condition, we need to prescribe an extra condition when we have reactions based on the reaction quotient (one per reaction).  For the IC we use:
 \begin{equation}
-\frac{d\hat{p}_1}{dt} = \epsilon \frac{d\hat{p}_0}{dt}
+Q_p - K Q_r = 0
 \end{equation}
-And likewise for the chemical reaction mass (Eq.~\ref{eq:mvr_final}):
+Therefore we can take the time derivative, and keep the same scalings since these are preferred by the solver:
 \begin{equation}
-\frac{dm_{H_2O}^r}{dt} = - \left( \frac{\mu_{H_2O}}{\mu_{H_2}} \right) \frac{dm_{H_2}^r}{dt}
-\label{eq:mvr_final}
+\frac{\partial Q_p}{\partial t} - K \frac{\partial Q_r}{\partial t} - Q_r \frac{\partial K}{\partial t} = 0
 \end{equation}
+Following the general example for a reaction (Sect.~\ref{sec:general_reaction}), the numerator of the reaction quotient $Q_p$ is:
+\begin{equation}
+Q_p = C^c D^d
+\end{equation}
+Note that in the code we use positive stoichiometry coefficients to denote products and negative coefficients to denote reactants.  Also, quantities $C$ and $D$ are the volume mixing ratios of the products i.e. $p_v/P_s$, since we wish to retain the total pressure scale for numerical reasons (stability of solver).  Now differentiate:
+\begin{equation}
+\frac{\partial Q_p}{\partial t} = D^d c C^{(c-1)} \frac{\partial C}{\partial t} + C^c d D^{(d-1)} \frac{\partial D}{\partial t}
+\end{equation}
+Now express $C$ and $D$ in terms of their partial pressure, by recognising that for $C$ (and similarly for $D$):
+\begin{equation}
+\frac{\partial C}{\partial t} = \frac{\partial}{\partial t} \left( \frac{p_C}{P_s} \right) = \frac{1}{P_s} \frac{\partial p_C}{\partial t} - \frac{p_C}{P_s^2} \frac{\partial P_s}{\partial t}
+\end{equation}
+For several reactions that we consider, the $D$ product is actually oxygen, which is constrained by the evolution of the interior.  Hence we have expressions that give $fO_2$ as a function of temperature $T$.  \textbf{Note that $fO_2$ here is the volume mixing ratio, already normalised by the total (surface) pressure!}. For the form given in \cite{SF17} (and yes, same symbols for constants are used as the stoichiometry above, but in fact they are different!):
+\begin{equation}
+\log_{10} fO_2 = a + b \frac{10^3}{T} + c \frac{10^6}{T^2} + d \frac{10^9}{T^3} + f \frac{10^{12}}{T^4} = g(T)
+\end{equation}
+\begin{equation}
+fO_2 = 10^{g(T)}
+\end{equation}
+Now compute the derivative with respect to temperature $T$, which is needed as part of the chain rule to eventually express in terms of time $t$:
+\begin{equation}
+\frac{d fO_2}{d T} = \ln(10) \times 10^{g(T)} \frac{dg}{dT}
+\end{equation}
+Where:
+\begin{equation}
+\frac{dg}{dT} = -b \frac{10^3}{T^2} - 2c \frac{10^6}{T^3} - 3d \frac{10^9}{T^4} - 4f \frac{10^{12}}{T^5}
+\end{equation}
+\dbnote{TODO: an alternative but similar form for $fO_2$ is given in Olson and Sharp (2019), and the derivative can be determined similarly.}.  The denominator of the reaction quotient is:
+\begin{equation}
+Q_r = A^{-a} B^{-b} P_s^{-f}
+\end{equation}
+The above deserves some clarification.  Firstly, in the code we use negative stoichiometry to denote reactants, and hence we negate the coefficients $a$ and $b$ in the above equation.  Secondly, because we are effectively using volume mixing ratios, an extra scaling of $P_s$ appears to ensure that the reaction coefficient is non-dimensional.  In the above, I am assuming that the scaling appears in the denominator with an exponent of $f$, and hence again this is also negated in the above equation.  \dbnote{Check if $f$ is in fact negative, and therefore results in a positive exponent in the above equation, that the formulation still works out.}.  Taking the derivative follows the same pattern as before with the reaction quotient numerator, but now we are considering the reaction quotient denominator:
+\begin{equation}
+\frac{\partial Q_r}{\partial t} = A^{-a} \left( B^{-b}(-f)P_s^{(-f-1)} \frac{\partial P_s}{\partial t} + P_s^{-f} (-b)B^{(-b-1)} \frac{\partial B}{\partial t} \right) + B^{-b} P_s^{-f} (-a) A^{(-a-1)} \frac{\partial A}{\partial t}
+\end{equation}
+That is:
+\begin{equation}
+\frac{\partial Q_r}{\partial t} = A^{-a} B^{-b}(-f)P_s^{(-f-1)} \frac{\partial P_s}{\partial t} + A^{-a} P_s^{-f} (-b)B^{(-b-1)} \frac{\partial B}{\partial t} + B^{-b} P_s^{-f} (-a) A^{(-a-1)} \frac{\partial A}{\partial t}
+\end{equation}
+For several of the reactions that we consider, there is just one reactant (e.g., H$_2$O) and therefore the second reactant drops out ($B=1$).  Also, often the extra factor of $P_s$ also drops out since $f=0$.  Hence although this equation is general, it is reduced in complexity for several of the reactions that we consider in practice.
+
+%%% OLD BELOW AND ALSO WRONG!
+%Similar to before, we use the differential form of the equilibrium condition (Eq.~\ref{eq:volequil}) to provide another update equation \dbnote{TODO: in reality, $\epsilon$ may also be a function of time}:
+%\begin{equation}
+%\frac{d\hat{p}_1}{dt} = \epsilon \frac{d\hat{p}_0}{dt}
+%\end{equation}
+%And likewise for the chemical reaction mass (Eq.~\ref{eq:mvr_final}):
+%\begin{equation}
+%\frac{dm_{H_2O}^r}{dt} = - \left( \frac{\mu_{H_2O}}{\mu_{H_2}} \right) \frac{dm_{H_2}^r}{dt}
+%\label{eq:mvr_final}
+%\end{equation}
 %%%%
 %%%%
 %%%%
