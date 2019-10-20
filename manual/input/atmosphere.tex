@@ -447,6 +447,7 @@ It is now obvious that we can scale the source time in the evolution equation by
 \end{equation}
 %%%%
 \subsubsection{Chemical reactions}
+\paragraph{Overview}
 As with the initial condition, we need to prescribe an extra condition when we have reactions based on the reaction quotient (one per reaction).  For the IC we use:
 \begin{equation}
 Q_p - K Q_r = 0
@@ -455,6 +456,7 @@ Therefore we can take the time derivative, and keep the same scalings since thes
 \begin{equation}
 \frac{\partial Q_p}{\partial t} - K \frac{\partial Q_r}{\partial t} - Q_r \frac{\partial K}{\partial t} = 0
 \end{equation}
+\paragraph{Reaction quotient: products}
 Following the general example for a reaction (Sect.~\ref{sec:general_reaction}), the numerator of the reaction quotient $Q_p$ is:
 \begin{equation}
 Q_p = C^c D^d
@@ -467,10 +469,20 @@ Now express $C$ and $D$ in terms of their partial pressure, by recognising that 
 \begin{equation}
 \frac{\partial C}{\partial t} = \frac{\partial}{\partial t} \left( \frac{p_C}{P_s} \right) = \frac{1}{P_s} \frac{\partial p_C}{\partial t} - \frac{p_C}{P_s^2} \frac{\partial P_s}{\partial t}
 \end{equation}
-For several reactions that we consider, the $D$ product is actually oxygen, which is constrained by the evolution of the interior.  Hence we have expressions that give $fO_2$ as a function of temperature $T$.  \textbf{Note that $fO_2$ here is the volume mixing ratio, already normalised by the total (surface) pressure!}. For the form given in \cite{SF17} (and yes, same symbols for constants are used as the stoichiometry above, but in fact they are different!):
+\paragraph{Oxygen fugacity}
+For several reactions that we consider, the $D$ product is actually oxygen, which is constrained by the evolution of the interior.  Hence we have expressions that give $fO_2$ as a function of temperature $T$.  \textbf{Note that $fO_2$ here is the volume mixing ratio, already normalised by the total (surface) pressure!}.
 \begin{equation}
-\log_{10} fO_2 = a + b \frac{10^3}{T} + c \frac{10^6}{T^2} + d \frac{10^9}{T^3} + f \frac{10^{12}}{T^4} = g(T)
+\log_{10} fO_2 = g(T)
 \end{equation}
+For the form given in \cite{SF17} (and yes, same symbols for constants are used as the stoichiometry above, but in fact they are different!):
+\begin{equation}
+g_1(T) = a + b \frac{10^3}{T} + c \frac{10^6}{T^2} + d \frac{10^9}{T^3} + f \frac{10^{12}}{T^4}
+\end{equation}
+For \cite{OS19}:
+\begin{equation}
+g_2(T) = a T^b
+\end{equation}
+Oxygen fugacity is:
 \begin{equation}
 fO_2 = 10^{g(T)}
 \end{equation}
@@ -478,11 +490,16 @@ Now compute the derivative with respect to temperature $T$, which is needed as p
 \begin{equation}
 \frac{d fO_2}{d T} = \ln(10) \times 10^{g(T)} \frac{dg}{dT}
 \end{equation}
-Where:
+Where for the oxygen fugacity models of \cite{SF17}:
 \begin{equation}
-\frac{dg}{dT} = -b \frac{10^3}{T^2} - 2c \frac{10^6}{T^3} - 3d \frac{10^9}{T^4} - 4f \frac{10^{12}}{T^5}
+\frac{dg}{dT} = \frac{dg_1}{dT} = -b \frac{10^3}{T^2} - 2c \frac{10^6}{T^3} - 3d \frac{10^9}{T^4} - 4f \frac{10^{12}}{T^5}
 \end{equation}
-\dbnote{TODO: an alternative but similar form for $fO_2$ is given in Olson and Sharp (2019), and the derivative can be determined similarly.}.  The denominator of the reaction quotient is:
+And for the oxygen fugacity models of \cite{OS19}:
+\begin{equation}
+\frac{dg}{dT} = \frac{dg_2}{dT} = abT^{(b-1)}
+\end{equation}
+\paragraph{Reaction quotient: reactions}
+Now consider the reaction quotient:
 \begin{equation}
 Q_r = A^{-a} B^{-b} P_s^{-f}
 \end{equation}
@@ -495,6 +512,26 @@ That is:
 \frac{\partial Q_r}{\partial t} = A^{-a} B^{-b}(-f)P_s^{(-f-1)} \frac{\partial P_s}{\partial t} + A^{-a} P_s^{-f} (-b)B^{(-b-1)} \frac{\partial B}{\partial t} + B^{-b} P_s^{-f} (-a) A^{(-a-1)} \frac{\partial A}{\partial t}
 \end{equation}
 For several of the reactions that we consider, there is just one reactant (e.g., H$_2$O) and therefore the second reactant drops out ($B=1$).  Also, often the extra factor of $P_s$ also drops out since $f=0$.  Hence although this equation is general, it is reduced in complexity for several of the reactions that we consider in practice.
+\paragraph{Equilibrium constant}
+All equilibrium constants $K$ are expressed using the form in \cite{SF17}:
+\begin{equation}
+\log_{10} K = \frac{a}{T} + b
+\end{equation}
+where again $a$ and $b$ are constants unrelated to previous usages of these symbols.  We can differentiate with respect to $T$, since by the chain rule this is required if we eventually want $\partial K/\partial T$.  The differential is:
+\begin{equation}
+\frac{\partial K}{\partial T} = \ln(10) \times 10^{(a/T+b)} \times \frac{-a}{T^2}
+\end{equation}
+\paragraph{Derivatives with respect to time $t$}
+Both fO$_2$ and $K$ a functions of temperature, which is why we have computed derivatives with respect to temperature $T$, since:
+\begin{equation}
+\frac{\partial fO_2}{\partial t} = \frac{\partial fO_2}{\partial T} \frac{\partial T}{\partial t}
+\end{equation}
+And similarly:
+\begin{equation}
+\frac{\partial K}{\partial t} = \frac{\partial K}{\partial T} \frac{\partial T}{\partial t}
+\end{equation}
+\paragraph{Surface temperature derivative}
+Therefore the final derivative that we need is $\partial T/\partial t$, where $T$ here is taken as the surface temperature.  Unfortunately this isn't an easy term to get at, since temperature for us is a lookup quantity since entropy $S$ is the primitive (solution) variable.  Furthermore, application of the parameterised ultra-thin thermal boundary at the surface will further complicate obtaining the surface temperature derivative.  \dbnote{Get an estimate of this quantity numerically, or perhaps can linearise around the current surface temperature to obtain an estimate?}
 
 %%% OLD BELOW AND ALSO WRONG!
 %Similar to before, we use the differential form of the equilibrium condition (Eq.~\ref{eq:volequil}) to provide another update equation \dbnote{TODO: in reality, $\epsilon$ may also be a function of time}:
