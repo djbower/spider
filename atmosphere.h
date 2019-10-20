@@ -32,11 +32,15 @@ typedef struct Reaction_ {
 
 #define NUMATMSTRUCTVECS 4
 typedef struct Atmosphere_ {
+    /* TODO: some of these quantities are not really strictly
+       related to the atmosphere, and should perhaps live
+       elsewhere */
     PetscScalar Mliq; // mass of liquid (kg)
     PetscScalar Msol; // mass of solid (kg)
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tsurf; // surface temperature
     PetscScalar fO2; // oxygen fugacity (non-dimensional)
+    PetscScalar dfO2dT; // temp derivative of fO2
     PetscScalar psurf; // surface pressure
     PetscScalar tau; // aggregate optical depth at surface (non-dimensional)
     PetscScalar Fatm; // net upward atmosphere flux

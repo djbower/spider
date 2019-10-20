@@ -457,7 +457,9 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
         ierr = set_oxygen_fugacity( A, Ap, C );CHKERRQ(ierr);
     }
     else{
+        /* TODO: maybe initialise these variables elsewhere? */
         A->fO2 = 0;
+        A->dfO2dT = 0;
     }
 
     PetscFunctionReturn(0);

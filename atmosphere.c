@@ -868,7 +868,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
        as function of temperature from Schaefer and Fegley (2017), ApJ.
        Also, fits to IW buffer from Olson and Sharp (2019) based on Ebel and Grossman (2000) */
 
-    PetscScalar a,b,c,d,f,log10fO2;
+    PetscScalar a,b,c,d,f,func,dfuncdT;
     /* temperature must be dimensional in K */
     PetscScalar temp = A->tsurf * C->TEMP;
 
@@ -940,16 +940,19 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
 
     /* Schaefer and Fegley (2017) */
     if( Ap->OXYGEN_FUGACITY <= 5 ){
-        log10fO2 = a + b*1E3/temp + c*1E6/PetscPowScalar(temp,2.0) + d*1E9/PetscPowScalar(temp,3.0) + f*1E12/PetscPowScalar(temp,4.0);
+        func = a + b*1E3/temp + c*1E6/PetscPowScalar(temp,2.0) + d*1E9/PetscPowScalar(temp,3.0) + f*1E12/PetscPowScalar(temp,4.0);
+        dfuncdT = -b*1E3/PetscPowScalar(temp,2.0) - 2*c*1E6/PetscPowScalar(temp,3.0) - 3*d*1E9/PetscPowScalar(temp,4.0) - 4*f*1E12/PetscPowScalar(temp,5.0);
     }
     /* Olson and Sharp (2019) fits to Ebel and Grossman (2000) */
     else{
-        log10fO2 = a * PetscPowScalar( temp, b ) + c;
+        func = a * PetscPowScalar( temp, b ) + c;
+        dfuncdT = a * b * PetscPowScalar( temp, b-1 );
     }
 
     /* Remember that oxygen_fugacity is equivalent to a volume
        mixing ratio, and therefore does not need scaling */
-    A->fO2 = PetscPowScalar(10.0,log10fO2);
+    A->fO2 = PetscPowScalar(10.0,func);
+    A->dfO2dT = A->fO2 * PetscLogReal(10.0) * dfuncdT;
 
     PetscFunctionReturn(0);
 
