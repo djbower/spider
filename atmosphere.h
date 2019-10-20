@@ -39,6 +39,7 @@ typedef struct Atmosphere_ {
     PetscScalar Msol; // mass of solid (kg)
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tsurf; // surface temperature
+    PetscScalar dtsurfdt; // time derivative of surface temperature
     PetscScalar fO2; // oxygen fugacity (non-dimensional)
     PetscScalar dfO2dT; // temp derivative of fO2
     PetscScalar psurf; // surface pressure

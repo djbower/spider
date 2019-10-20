@@ -71,6 +71,7 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
        (valgrind).  During the time loop, A->tsurf is updated to a
        meaningful value before it is actually used (as is A->psurf) */
     A->tsurf = 1.0;
+    A->dtsurfdt = 0.0;
     A->psurf = 0.0;
 
     /* Initialize mass_reaction temporary field (maybe not needed) to zero */
