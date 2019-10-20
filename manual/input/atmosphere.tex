@@ -531,7 +531,21 @@ And similarly:
 \frac{\partial K}{\partial t} = \frac{\partial K}{\partial T} \frac{\partial T}{\partial t}
 \end{equation}
 \paragraph{Surface temperature derivative}
-Therefore the final derivative that we need is $\partial T/\partial t$, where $T$ here is taken as the surface temperature.  Unfortunately this isn't an easy term to get at, since temperature for us is a lookup quantity since entropy $S$ is the primitive (solution) variable.  Furthermore, application of the parameterised ultra-thin thermal boundary at the surface will further complicate obtaining the surface temperature derivative.  \dbnote{Get an estimate of this quantity numerically, or perhaps can linearise around the current surface temperature to obtain an estimate?}
+Therefore the final derivative that we need is $\partial T/\partial t$, where $T$ here is taken as the surface temperature.  Unfortunately this isn't an easy term to get at, since temperature for us is a lookup quantity since entropy $S$ is the primitive (solution) variable.  Furthermore, application of the parameterised ultra-thin thermal boundary at the surface will further complicate obtaining the surface temperature derivative.  \dbnote{Get an estimate of this quantity numerically, or perhaps can linearise around the current surface temperature to obtain an estimate?}.  Actually, I think we can get at the temperature change (without accounting for the parameterised boundary layer) using the following:
+\begin{equation}
+dS = \left( \frac{\partial S}{\partial T} \right)_P dT + \left( \frac{\partial S}{\partial P} \right)_T dP
+\end{equation}
+\begin{equation}
+dS = \left( \frac{c_P}{T} \right) dT
+\end{equation}
+Therefore:
+\begin{equation}
+\frac{\partial S}{\partial t} = \left( \frac{c_P}{T} \right) \frac{\partial T}{\partial t}
+\end{equation}
+And hence:
+\begin{equation}
+\frac{\partial T}{\partial t} = \frac{\partial S}{\partial t} \left( \frac{T}{c_P} \right)
+\end{equation}
 
 %%% OLD BELOW AND ALSO WRONG!
 %Similar to before, we use the differential form of the equilibrium condition (Eq.~\ref{eq:volequil}) to provide another update equation \dbnote{TODO: in reality, $\epsilon$ may also be a function of time}:
