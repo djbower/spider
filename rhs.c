@@ -21,7 +21,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
   PetscScalar          *arr_dSdt_s, *arr_rhs_b;
-  const PetscScalar    *arr_Etot, *arr_lhs_s, *arr_temp_s, *arr_Htot_s, *arr_radius_s, *arr_radius_b;
+  const PetscScalar    *arr_Etot, *arr_lhs_s, *arr_temp_s, *arr_cp_s, *arr_Htot_s, *arr_radius_s, *arr_radius_b;
   PetscMPIInt          rank,size;
   PetscInt             i,v,ihi_b,ilo_b,w_b,numpts_b;
   DM                   da_s = E->da_s, da_b=E->da_b;
@@ -53,6 +53,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = set_surface_flux( E );CHKERRQ(ierr);
   ierr = set_core_mantle_flux( E );CHKERRQ(ierr);
 
+  /* now we compute the time-dependent quantities */
+
   /* loop over basic nodes except last node */
   ierr = DMDAVecGetArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
@@ -62,12 +64,20 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecGetArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->temp_s,&arr_temp_s); CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s,S->cp_s,&arr_cp_s); CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
 
   /* first staggered node */
   arr_dSdt_s[0] = ( arr_Etot[1] - arr_Etot[0] ) / arr_lhs_s[0];
   arr_dSdt_s[0] += arr_Htot_s[0] / arr_temp_s[0];
+  /* dTsurf/dr */
+  /* TODO: this is an approximation of dTsurf/dt, because we are
+     just using the value at the top staggered node.  Formally, we
+     could consider accounting for the extrapolation to the top
+     (surface) basic node, as well as the influence of the ultra-thin
+     thermal boundary layer parameterisation */
+  A->dtsurfdt = arr_dSdt_s[0] * arr_temp_s[0] / arr_cp_s[0];
 
   for(i=ilo_b+1; i<ihi_b; ++i){
     /* dSdt at staggered nodes */
@@ -87,6 +97,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecRestoreArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->lhs_s,&arr_lhs_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
 
   /* must be here since must be after dS/dt computation */
   ierr = set_dMliqdt( E );CHKERRQ(ierr);
