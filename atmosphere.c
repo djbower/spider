@@ -1,4 +1,5 @@
 #include "atmosphere.h"
+#include "ctx.h"
 #include "dimensionalisablefield.h"
 #include "reaction.h"
 #include "util.h"
@@ -16,6 +17,7 @@ static PetscErrorCode set_R_thermal_escape( Atmosphere *, const AtmosphereParame
 static PetscErrorCode set_f_thermal_escape( Atmosphere *, PetscInt );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
 static PetscErrorCode JSON_add_atm_struct( Atmosphere *, const AtmosphereParameters *, cJSON * );
+static PetscErrorCode JSON_add_reaction_mass( DM , Parameters const *, Atmosphere const *, cJSON * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmosphereParameters * );
@@ -602,12 +604,45 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
       ierr = JSON_add_volatile(dm, P, &Ap->volatile_parameters[v], &A->volatiles[v], A, Ap->volatile_parameters[v].prefix, data ); CHKERRQ(ierr);
     }
 
-    /* Reactions */
-    // (Not currently output)
+    /* Reaction masses */
+    ierr = JSON_add_reaction_mass(dm, P, A, data ); CHKERRQ(ierr);
 
     cJSON_AddItemToObject(json,name,data);
 
     PetscFunctionReturn(0);
+}
+
+static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosphere const *A, cJSON *json )
+{
+    PetscErrorCode ierr;
+    cJSON          *data;
+    PetscScalar    scaling;
+    PetscInt       v;
+    Constants      const *C = &P->constants;
+    char const     *name = "mass_reaction";
+    //char           str[1]; // FIXME: will break for more than 9 reactions!
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+
+    data = cJSON_CreateObject();
+
+    /* kilograms (kg) */
+    scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+
+    for (v=0; v<Ap->n_reactions; ++v) {
+        // FIXME: instead of "test", can we output the slot number (v)?
+        // sprintf( str, "%d", v );
+        // I think we can use cJSON_CreateString?
+        //char str[FORMAT_STRING_SIZE];
+        //ierr = valueToString(v,str,FORMAT_STRING_SIZE);CHKERRQ(ierr);
+        ierr = JSON_add_single_value_to_object( dm, scaling, "slot number", "kg", A->mass_reaction[v], data); CHKERRQ(ierr);
+    }
+
+    cJSON_AddItemToObject(json,name,data);
+
+    PetscFunctionReturn(0);
+
 }
 
 static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatileParameters const *VP, Volatile const *V, Atmosphere const *A, char const *name, cJSON *json )
