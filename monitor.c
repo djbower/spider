@@ -219,3 +219,23 @@ PetscErrorCode TSMonitorWalltimed(TS ts,PetscInt steps,PetscReal time,Vec x,void
   }
   PetscFunctionReturn(0);
 }
+
+/* A custom, verbose SNES monitor */
+PetscErrorCode SNESMonitorVerbose(SNES snes, PetscInt its, PetscReal norm, void *mctx)
+{
+  PetscErrorCode ierr;
+  Vec            x,r;
+  PetscErrorCode (*func)(SNES,Vec,Vec,void*);
+  void           *ctx;
+
+  PetscFunctionBeginUser;
+  ierr = SNESGetSolution(snes,&x);CHKERRQ(ierr);
+  ierr = SNESGetFunction(snes,&r,&func,&ctx);CHKERRQ(ierr); /* ctx should be the same as mctx */
+  ierr = func(snes,x,r,ctx);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[36m### Iteration %D\e[0m\n",its);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[32mresidual function norm: %g\nx:\e[0m\n",(double)norm);CHKERRQ(ierr);
+  ierr = VecView(x,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[32mresidual function:\e[0m\n");CHKERRQ(ierr);
+  ierr = VecView(r,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}

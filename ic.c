@@ -4,6 +4,7 @@
 #include "energy.h"
 #include "ic.h"
 #include "matprop.h"
+#include "monitor.h"
 #include "parameters.h"
 #include "reaction.h"
 #include "twophase.h"
@@ -339,6 +340,7 @@ static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
+#if 0
 /* A custom, verbose SNES monitor */
 static PetscErrorCode SNESMonitorVerbose(SNES snes, PetscInt its, PetscReal norm, void *mctx)
 {
@@ -358,6 +360,7 @@ static PetscErrorCode SNESMonitorVerbose(SNES snes, PetscInt its, PetscReal norm
   ierr = VecView(r,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
+#endif
 
 static PetscErrorCode set_initial_volatile( Ctx *E )
 {

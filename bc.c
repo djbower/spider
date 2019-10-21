@@ -1,5 +1,6 @@
-#include "bc.h"
 #include "atmosphere.h"
+#include "bc.h"
+#include "monitor.h"
 #include "util.h"
 
 static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
@@ -328,6 +329,16 @@ PetscErrorCode solve_dxdts( Ctx *E )
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
     ierr = PetscOptionsSetValue(NULL,"-atmosts_snes_mf",NULL);CHKERRQ(ierr);
+
+    /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
+    {   
+      PetscBool flg = PETSC_FALSE;
+
+      ierr = PetscOptionsGetBool(NULL,NULL,"-atmosts_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      if (flg) {
+        ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
+      }   
+    }
 
     /* Solve */
     ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
