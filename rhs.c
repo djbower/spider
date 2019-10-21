@@ -47,6 +47,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
      from an initial thermal (entropy) profile */
   ierr = set_interior_structure_from_solution( E, t, sol_in );CHKERRQ(ierr);
 
+  /* below also sets reaction masses in Atmosphere struct (required
+     for time-stepping) */
   ierr = set_volatile_abundances_from_solution( E, sol_in );CHKERRQ(ierr);
 
   /* boundary conditions must be after all arrays are set */

@@ -99,8 +99,14 @@ PetscErrorCode set_volatile_abundances_from_solution( Ctx *E, Vec sol )
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
+    /* volatile abundances */
     for( i=0; i<Ap->n_volatiles; ++i) {
         ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],1,&i,&A->volatiles[i].x);CHKERRQ(ierr);
+    }
+
+    /* mass reaction terms */
+    for( i=0; i<Ap->n_reactions; ++i) {
+        ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],1,&i,&A->mass_reaction[i]);CHKERRQ(ierr);
     }
 
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);

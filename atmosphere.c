@@ -785,13 +785,23 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     out2 *= f_thermal_escape;
 
     /* chemical reactions. Loop through all reactions, check if they involve
-      this volatile, and if so , subtract a term*/
+       this volatile, and if so, add a term */
     for (j=0; j<Ap->n_reactions; ++j) {
+      /* normalisation, using the first volatile (reactant) in this chemical reaction */
+      const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
       for (k=0; k<Ap->reaction_parameters[j]->n_volatiles; ++k) {
-        if (k==i) {
-          // FIXME: STOICHIOMETRY FIELD IS WRONG
-          out2 -= Ap->reaction_parameters[j]->stoichiometry[k] * dmrdt[j];
-        }
+          const PetscInt v = Ap->reaction_parameters[j]->volatiles[k];
+          /* i is the current volatile of interest */
+          /* TODO: below should be v or k?, I think v is correct (was previously k) */
+          if (v==i) {
+              PetscScalar massv;
+              massv = ( A->volatiles[v].p / A->volatiles[v0].p ) * dmrdt[j];
+              massv += ( A->mass_reaction[j] / A->volatiles[v0].p ) * A->volatiles[v].dpdx * A->volatiles[v].dxdt;
+              massv -= ( A->volatiles[v].p * A->mass_reaction[j] ) / PetscPowScalar( A->volatiles[v0].p, 2.0 ) * A->volatiles[v0].dpdx * A->volatiles[v0].dxdt;
+              massv *= Ap->reaction_parameters[j]->stoichiometry[k] / Ap->reaction_parameters[j]->stoichiometry[0];
+              massv *= Ap->volatile_parameters[v].molar_mass / Ap->volatile_parameters[v0].molar_mass;
+              out2 += massv;
+          }
       }
     }
 
@@ -800,6 +810,7 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i].kdist) * A->dMliqdt;
 
     return out2;
+
 }
 
 static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters *Ap, const Atmosphere *A )

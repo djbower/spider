@@ -434,7 +434,7 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     }
     /* Save mass offset to reset initial volatile */
     for (i=0; i<Ap->n_reactions; ++i) {
-      A->mass_reaction[i] = xx[Ap->n_volatiles + i ];  /* Note: maybe the use of this storage could be avoided */
+      A->mass_reaction[i] = xx[Ap->n_volatiles + i ];
     }
 
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
