@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-spider -options_file reactions.opt -atmosic_snes_verbose_monitor
+spider -options_file reactions.opt # -atmosic_snes_verbose_monitor -atmosts_snes_verbose_monitor
 
 # sledgehammer
 #spider -options_file reactions.opt  -atmosic_snes_verbose_monitor -atmosic_snes_view -atmosic_ksp_rtol 1e-10 -atmosic_ksp_atol 1e-10  -atmosic_snes_converged_reason -atmosic_snes_linesearch_damping 0.01 -atmosic_snes_max_it 10000 -snes_linesearch_max_it 1000
