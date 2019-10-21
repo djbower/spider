@@ -788,7 +788,7 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
        this volatile, and if so, add a term */
     for (j=0; j<Ap->n_reactions; ++j) {
       /* normalisation, using the first volatile (reactant) in this chemical reaction */
-      const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+      const PetscInt v0 = Ap->reaction_parameters[j]->volatiles[0];
       for (k=0; k<Ap->reaction_parameters[j]->n_volatiles; ++k) {
           const PetscInt v = Ap->reaction_parameters[j]->volatiles[k];
           /* i is the current volatile of interest */
