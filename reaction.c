@@ -180,6 +180,11 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
   PetscFunctionReturn(0);
 }
 
+/* TODO: it will probably be helpful for debugging and output to store
+   the equilibrium constant and its derivative, but currently we do not
+   have an obvious place to store them since they are not parameters
+   but rather time-dependent quantities */
+
 /* Compute equilibrium constant */
 PetscScalar get_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
 {
@@ -290,14 +295,14 @@ static PetscScalar get_reaction_quotient( const ReactionParameters * reaction_pa
 PetscScalar get_reaction_quotient_products_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap )
 {
 
-    return get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, 1.0 );
+    return get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, 1 );
 
 }
 
 PetscScalar get_reaction_quotient_reactants_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap )
 {
 
-    return  get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, -1.0 );
+    return  get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, -1 );
 
 }
 
