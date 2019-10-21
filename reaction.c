@@ -1,6 +1,8 @@
 #include "reaction.h"
 
 static PetscScalar get_psurf_exponent( const ReactionParameters * );
+static PetscScalar get_reaction_quotient( const ReactionParameters *, const Atmosphere *, PetscInt );
+static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters *, const Atmosphere *, const AtmosphereParameters *, PetscInt );
 
 /* Note: this could logically be included in parameters.c, but that file was getting crowded */
 
@@ -197,7 +199,7 @@ PetscScalar get_equilibrium_constant( const ReactionParameters * reaction_parame
 }
 
 /* Derivative of equilibrium constant with respect to temperature */
-PetscScalar get_equilibrium_constant_derivative( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
+PetscScalar get_equilibrium_constant_temperature_derivative( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        dKeqdT;
@@ -228,77 +230,45 @@ static PetscScalar get_psurf_exponent( const ReactionParameters * reaction_param
 }
 
 /* Compute reaction quotient (products, numerator) */
+
 PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
-    PetscInt           j;
-    PetscScalar        Qp = 1;
-    PetscScalar        expon;
 
-    for (j=0; j<reaction_parameters->n_volatiles; ++j) {
-
-        const PetscInt v = reaction_parameters->volatiles[j];
-
-        if( reaction_parameters->stoichiometry[j] > 0.0 ){
-            /* Note: reaction quotient numerator (products), excluding fO2 */
-            /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-            /* TODO: if this works, swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-            Qp *= PetscPowScalar( (A->volatiles[v].p/A->psurf), reaction_parameters->stoichiometry[j] );
-        }
-
-    }
-
-    if( reaction_parameters->fO2_stoichiometry > 0.0 ){
-        if( A->fO2 != 0 ){
-            Qp *= PetscPowScalar( A->fO2, reaction_parameters->fO2_stoichiometry );
-        }
-        else{
-            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction demands fO2, but OXYGEN_FUGACITY is switched OFF!");
-        }
-    }
-
-    /* since we are using the volume mixing ratio (i.e. scaling by A->psurf),
-       we must account for the extra factors of A->psurf to ensure that
-       Q=Qp/Qr is non-dimensional */
-    /* to be explicit about retaining the scalings, we only scale
-       here if expon is positive.  Negative is accommodated in the reaction
-       quotient denominator. */
-    expon = get_psurf_exponent( reaction_parameters_ptr );
-    if( expon > 0.0 ){
-        Qp *= PetscPowScalar( A->psurf, expon );
-    }
-
-    return Qp;
+    return get_reaction_quotient( reaction_parameters_ptr, A, 1 );
 
 }
 
-/* Compute reaction quotient (reactants, denominator) */
 PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
 {
+
+    return get_reaction_quotient( reaction_parameters_ptr, A, -1 );
+
+}
+
+static PetscScalar get_reaction_quotient( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, PetscInt SIGN )
+{
+    /* returns numerator for SIGN=1 (products) and denominator for SIGN=-1 (reactants) */
+
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt           j;
-    PetscScalar        Qr = 1;
+    PetscScalar        Q = 1;
     PetscScalar        expon;
 
     for (j=0; j<reaction_parameters->n_volatiles; ++j) {
 
         const PetscInt v = reaction_parameters->volatiles[j];
 
-        if( reaction_parameters->stoichiometry[j] < 0.0 ){
-            /* Note: reaction quotient denominator (reactants), excluding fO2 */
+        if( SIGN * reaction_parameters->stoichiometry[j] > 0.0 ){
             /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
             /* TODO: if this works, swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-            Qr *= PetscPowScalar( (A->volatiles[v].p/A->psurf), -reaction_parameters->stoichiometry[j] );
+            Q *= PetscPowScalar( (A->volatiles[v].p/A->psurf), SIGN * reaction_parameters->stoichiometry[j] );
         }
 
     }
 
-    if( reaction_parameters->fO2_stoichiometry < 0.0 ){
+    if( SIGN * reaction_parameters->fO2_stoichiometry > 0.0 ){
         if( A->fO2 != 0 ){
-            /* Note: negative stoichiometry below, since return denominator and not 1/denominator */
-            /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-            /* TODO: if this works, swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-            Qr *= PetscPowScalar( A->fO2, -reaction_parameters->fO2_stoichiometry );
+            Q *= PetscPowScalar( A->fO2, SIGN * reaction_parameters->fO2_stoichiometry );
         }
         else{
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction demands fO2, but OXYGEN_FUGACITY is switched OFF!");
@@ -308,14 +278,151 @@ PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction
     /* since we are using the volume mixing ratio (i.e. scaling by A->psurf),
        we must account for the extra factors of A->psurf to ensure that
        Q=Qp/Qr is non-dimensional */
-    /* to be explicit about retaining the scalings, we only scale
-       here if expon is negative.  Positive is accommodated in the reaction
-       quotient numerator */
     expon = get_psurf_exponent( reaction_parameters_ptr );
-    if( expon < 0.0 ){
-        Qr *= PetscPowScalar( A->psurf, -expon );
+    if( SIGN * expon > 0.0 ){
+        Q *= PetscPowScalar( A->psurf, SIGN * expon );
     }
 
-    return Qr;
+    return Q;
+
+}
+
+PetscScalar get_reaction_quotient_products_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap )
+{
+
+    return get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, 1.0 );
+
+}
+
+PetscScalar get_reaction_quotient_reactants_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap )
+{
+
+    return  get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, -1.0 );
+
+}
+
+/* compute reaction quotient (products, numerator) derivative with respect to time t */
+static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap, PetscInt SIGN )
+{
+    /* returns dQp/dt for SIGN=1 (products) and dQr/dt for SIGN=-1 (reactants) */
+
+    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
+    PetscInt           i,j,k;
+    PetscScalar        dQdt=0, dpsurfdt, dvdt;
+    PetscScalar        expon, prefactor;
+    PetscBool          INCLUDE_PSURF = PETSC_FALSE, INCLUDE_FO2 = PETSC_FALSE;
+
+    /* this is a bit ugly, because I decide whether to include the scaling of surface pressure in the
+       numerator if the stoichiometry is positive (otherwise it is included in the denominator */
+    expon = get_psurf_exponent( reaction_parameters_ptr );
+    if( SIGN * expon > 0.0 ){
+        INCLUDE_PSURF = PETSC_TRUE;
+    }
+
+    /* and similarly for fO2 */
+    if( SIGN * reaction_parameters->fO2_stoichiometry > 0.0 ){
+        INCLUDE_FO2 = PETSC_TRUE;
+    }
+
+    /* TODO: dPsurf/dt is required in various locations, and should probably be computed
+       once and stored.  For example, this same calculation is in get_dxdt() */
+    dpsurfdt = 0.0;
+    /* NOTE: this is over all volatiles, and not just those volatiles in a
+       particular reaction */
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        dpsurfdt += A->volatiles[i].dpdx * A->volatiles[i].dxdt;
+    }
+
+    /* what follows is the chain rule */
+
+    /* first, account for volatiles in this reaction that are explicitly tracked
+       by the code */
+    for (j=0; j<reaction_parameters->n_volatiles; ++j) {
+
+        if( SIGN * reaction_parameters->stoichiometry[j] > 0.0 ){
+
+            /* compute derivative of this volatile */
+            const PetscInt v = reaction_parameters->volatiles[j];
+            prefactor = 1.0;
+
+            /* find all other volatiles with positive stoichiometry that define the prefactor */
+            for (k=0; k<reaction_parameters->n_volatiles; ++k) {
+                if ( SIGN * reaction_parameters->stoichiometry[k] > 0.0 && k!=j ){
+                    const PetscInt v2 = reaction_parameters->volatiles[k];
+                    prefactor *= PetscPowScalar( (A->volatiles[v2].p/A->psurf), SIGN * reaction_parameters->stoichiometry[k] );
+                }
+            }
+            /* should the prefactor include fO2? */
+            if( INCLUDE_FO2 ){
+                prefactor *= PetscPowScalar( A->fO2, SIGN * reaction_parameters->fO2_stoichiometry );
+            }
+            /* should the prefactor include Psurf? */
+            if( INCLUDE_PSURF ){
+                prefactor *= PetscPowScalar( A->psurf, SIGN * expon );
+            }
+            /* compute the derivative of this volatile */
+            /* TODO: this is also a generic formula for the time derivative of the
+               volume mixing ratio and appears elsewhere in the code */
+            dvdt = (1.0/A->psurf) * A->volatiles[v].dxdt * A->volatiles[v].dpdx;
+            dvdt -= (A->volatiles[v].p / PetscPowScalar( A->psurf, 2.0 )) * dpsurfdt;
+
+            /* so the contribution of this derivative is as follows */
+            dvdt *= SIGN * reaction_parameters->stoichiometry[j] * PetscPowScalar( (A->volatiles[v].p/A->psurf), SIGN * reaction_parameters->stoichiometry[j] - 1.0 );
+            dQdt += prefactor * dvdt;
+        }
+    }
+
+    /* now account for dfO2/dt */
+    if( INCLUDE_FO2 ){
+
+        /* find all other volatiles with positive stoichiometry that define the prefactor */
+        prefactor = 1.0;
+        for (k=0; k<reaction_parameters->n_volatiles; ++k) {
+            if ( SIGN * reaction_parameters->stoichiometry[k] > 0.0 ){
+                const PetscInt v2 = reaction_parameters->volatiles[k];
+                prefactor *= PetscPowScalar( (A->volatiles[v2].p/A->psurf), SIGN * reaction_parameters->stoichiometry[k] );
+            }
+        }
+
+        /* should the prefactor include Psurf? */
+        if( INCLUDE_PSURF ){
+            prefactor *= PetscPowScalar( A->psurf, SIGN * expon );
+        }
+
+        /* now compute the time derivative of fO2 */
+        /* TODO: check that these entries are set and updated accordingly */
+        dvdt = A->dfO2dT * A->dtsurfdt;
+
+        /* contribution is */
+        dvdt *= SIGN * reaction_parameters->fO2_stoichiometry * PetscPowScalar( A->fO2, SIGN * reaction_parameters->fO2_stoichiometry - 1.0 );
+        dQdt += prefactor * dvdt;
+    }
+
+    /* now account for dpsurf/dt */
+    if( INCLUDE_PSURF ) {
+
+        /* find all other volatiles with positive stoichiometry that define the prefactor */
+        prefactor = 1.0;
+        for (k=0; k<reaction_parameters->n_volatiles; ++k) {
+            if ( SIGN * reaction_parameters->stoichiometry[k] > 0.0 ){
+                const PetscInt v2 = reaction_parameters->volatiles[k];
+                prefactor *= PetscPowScalar( (A->volatiles[v2].p/A->psurf), SIGN * reaction_parameters->stoichiometry[k] );
+            }
+        }
+
+        /* should the prefactor include fO2? */
+        if( INCLUDE_FO2 ){
+            prefactor *= PetscPowScalar( A->fO2, SIGN * reaction_parameters->fO2_stoichiometry );
+        }
+
+        /* now compute the time derivative of psurf */
+        dvdt = dpsurfdt;
+
+        /* so the contribution is */
+        dvdt *= SIGN * expon * PetscPowScalar( A->psurf, SIGN * expon - 1.0 );
+        dQdt += prefactor * dvdt;
+    }
+
+    return dQdt;
 
 }
