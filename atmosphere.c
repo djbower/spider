@@ -1,5 +1,6 @@
 #include "atmosphere.h"
 #include "dimensionalisablefield.h"
+#include "reaction.h"
 #include "util.h"
 
 static PetscErrorCode initialise_volatiles( Atmosphere *, const AtmosphereParameters * );
@@ -679,6 +680,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     const PetscScalar          *dmrdt;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
+    Constants            const *C = &P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
@@ -693,6 +695,20 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
         ff[i] = get_dxdt( A, Ap, i, dmrdt );
+    }
+
+    /* chemical equilibrium constraints */
+    for (i=0; i<Ap->n_reactions; ++i) {
+        PetscScalar dQpdt, dQrdt, K, Qr, dKdT, dKdt;
+        Qr = get_reaction_quotient_reactants( &Ap->reaction_parameters[i], A );
+        dQpdt = get_reaction_quotient_products_time_derivative( &Ap->reaction_parameters[i], A, Ap );
+        dQrdt = get_reaction_quotient_reactants_time_derivative( &Ap->reaction_parameters[i], A, Ap );
+        K = get_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, C );
+        dKdT = get_equilibrium_constant_temperature_derivative( &Ap->reaction_parameters[i], A->tsurf, C );
+        dKdt = dKdT * A->dtsurfdt;
+        /* residual of reaction balance */
+        //ff[Ap->n_volatiles + i] = 0.0; // for debugging
+        ff[Ap->n_volatiles + i] = dQpdt - K * dQrdt - Qr * dKdt;
     }
 
 #if 0
@@ -711,7 +727,6 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
         SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction type %s not recognized",Ap->reaction_parameters[i]->type);
       }
     }
-#endif
 
     /* FIXME: this turns off all reactions, but allows test cases to run */
     /* TODO: DJB needs to figure out and update the objective function for the time stepper */
@@ -719,6 +734,8 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
     for (i=0; i<Ap->n_reactions; ++i) {
         ff[Ap->n_volatiles + i] = 0.0;
     }
+#endif
+
 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
