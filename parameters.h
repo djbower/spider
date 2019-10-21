@@ -263,6 +263,7 @@ PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters*,const Atmosp
 PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters*,const AtmosphereParameters*);
 PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters*,const AtmosphereParameters*);
 PetscErrorCode ReactionParametersCreateWater1(ReactionParameters*,const AtmosphereParameters*);
+PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters*,const AtmosphereParameters*);
 PetscErrorCode ReactionParametersDestroy(ReactionParameters*);
 
 #endif
