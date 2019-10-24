@@ -15,6 +15,8 @@ static PetscErrorCode set_ic_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_interior( Ctx *, Vec );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char * );
+static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
+static PetscErrorCode set_ic_atmosphere_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_from_solidus( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *, Vec );
 static PetscErrorCode set_initial_volatile( Ctx * );
@@ -57,7 +59,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     else if (IC==2){
         /* set everything, including the atmosphere, from a JSON */
         /* also sets P->t0 (start time) */
-        ierr = set_ic_from_file( E, sol, P->ic_interior_filename ); CHKERRQ(ierr);
+        ierr = set_ic_interior_from_file( E, sol ); CHKERRQ(ierr);
     }
     else if (IC==3){
         ierr = set_ic_from_solidus( E, sol ); CHKERRQ(ierr);
@@ -81,6 +83,35 @@ static PetscErrorCode set_ic_default( Ctx *E, Vec sol )
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_default()\n");CHKERRQ(ierr);
 
     ierr = set_ic_entropy( E, sol ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_ic_interior_from_file( Ctx *E, Vec sol )
+{
+    PetscErrorCode ierr;
+    Parameters const *P = &E->parameters;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_file()\n");CHKERRQ(ierr);
+
+    ierr = set_ic_from_file( E, sol, P->ic_interior_filename ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
+{
+    PetscErrorCode ierr;
+    Parameters const *P = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_file()\n");CHKERRQ(ierr);
+
+    ierr = set_ic_from_file( E, sol, Ap->ic_atmosphere_filename ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -389,6 +420,19 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
               }
             }
         }
+
+        /* read atmosphere IC from file (could be a different file to
+           the interior IC) */
+        else if (Ap->IC_ATMOSPHERE==2){
+            ierr = set_ic_atmosphere_from_file( E, sol ); CHKERRQ(ierr);
+        }
+
+#if 0
+        /* placeholder for partial pressure IC */
+        else if (Ap->IC_ATMOSPHERE==3){
+            pass;
+        }
+#endif
 
         /* FIXME: need a condition to prevent getting here without A->volatiles[i].x being set */
 
