@@ -14,7 +14,7 @@ static PetscErrorCode set_ic_default( Ctx *, Vec );
 static PetscErrorCode set_ic_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_interior( Ctx *, Vec );
-static PetscErrorCode set_ic_from_file( Ctx *, Vec );
+static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char * );
 static PetscErrorCode set_ic_from_solidus( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *, Vec );
 static PetscErrorCode set_initial_volatile( Ctx * );
@@ -24,7 +24,7 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
     Parameters const *P = &E->parameters;
-    PetscInt IC = P->ic_interior;
+    PetscInt IC = P->IC_INTERIOR;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition()\n");CHKERRQ(ierr);
@@ -46,7 +46,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
     Parameters const *P = &E->parameters;
-    PetscInt IC = P->ic_interior;
+    PetscInt IC = P->IC_INTERIOR;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior()\n");CHKERRQ(ierr);
@@ -57,7 +57,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     else if (IC==2){
         /* set everything, including the atmosphere, from a JSON */
         /* also sets P->t0 (start time) */
-        ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
+        ierr = set_ic_from_file( E, sol, P->ic_interior_filename ); CHKERRQ(ierr);
     }
     else if (IC==3){
         ierr = set_ic_from_solidus( E, sol ); CHKERRQ(ierr);
@@ -130,7 +130,7 @@ static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
+static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
 {
     /* reads an initial condition from a previously output JSON file
        to enable restarting */
@@ -155,7 +155,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
-    fp = fopen( P->ic_interior_filename, "r" );
+    fp = fopen( filename, "r" );
 
     if(fp==NULL) {
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",P->ic_interior_filename);

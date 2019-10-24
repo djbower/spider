@@ -36,7 +36,7 @@
 # initial condition
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
--ic_interior 1
+-IC_INTERIOR 1
 #-ic_interior_filename output/dSdr_b_aug_0.m
 
 # all units are SI unless indicated otherwise

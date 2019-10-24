@@ -255,16 +255,16 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   }
 
   /* initial condition for interior */
-  P->ic_interior = 1;
-  ierr = PetscOptionsGetInt(NULL,NULL,"-ic_interior",&P->ic_interior,NULL);CHKERRQ(ierr);
+  P->IC_INTERIOR = 1;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-IC_INTERIOR",&P->IC_INTERIOR,NULL);CHKERRQ(ierr);
 
   ierr = PetscStrcpy(P->ic_interior_filename,"restart.json"); CHKERRQ(ierr);
-  if ( (P->ic_interior==2) || (P->ic_interior==3) ){
+  if ( (P->IC_INTERIOR==2) || (P->IC_INTERIOR==3) ){
     ierr = PetscOptionsGetString(NULL,NULL,"-ic_interior_filename",P->ic_interior_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
   }
 
   P->ic_melt_pressure = 30.0; // GPa
-  if ( P->ic_interior==3 ){
+  if ( P->IC_INTERIOR==3 ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_melt_pressure",&P->ic_melt_pressure,NULL); CHKERRQ(ierr);
   }
 
@@ -458,6 +458,15 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     default:
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported CORE_BC value %d provided",P->CORE_BC);
       break;
+  }
+
+  /* initial condition for atmosphere */
+  Ap->IC_ATMOSPHERE = 1;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-IC_ATMOSPHERE",&Ap->IC_ATMOSPHERE,NULL);CHKERRQ(ierr);
+
+  ierr = PetscStrcpy(Ap->ic_atmosphere_filename,"restart.json"); CHKERRQ(ierr);
+  if ( (Ap->IC_ATMOSPHERE==2) || (Ap->IC_ATMOSPHERE==3) ){
+    ierr = PetscOptionsGetString(NULL,NULL,"-ic_atmosphere_filename",Ap->ic_atmosphere_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
   }
 
   Ap->SOLVE_FOR_VOLATILES = PETSC_FALSE;

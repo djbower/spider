@@ -101,6 +101,8 @@ typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSP
 typedef enum {OXYGEN_FUGACITY_NONE=0,OXYGEN_FUGACITY_CI,OXYGEN_FUGACITY_CV,OXYGEN_FUGACITY_H,OXYGEN_FUGACITY_EH,OXYGEN_FUGACITY_EUCRITE,OXYGEN_FUGACITY_IW,OXYGEN_FUGACITY_IW_MINUS_ONE,OXYGEN_FUGACITY_IW_MINUS_TWO} OxygenFugacityType;
 typedef struct AtmosphereParameters_ {
     // input parameters
+    PetscInt IC_ATMOSPHERE;
+    char ic_atmosphere_filename[PETSC_MAX_PATH_LEN];
     MagmaOceanAtmosphereType SURFACE_BC;
     OxygenFugacityType OXYGEN_FUGACITY; // for chemical reactions
     PetscBool VISCOUS_MANTLE_COOLING_RATE;
@@ -195,7 +197,7 @@ typedef struct _Parameters {
     PetscBool COMPOSITION; // Brg and Res compositional model
     PetscInt mixing_length;
     PetscScalar mixing_length_layer_radius;
-    PetscInt ic_interior;
+    PetscInt IC_INTERIOR;
     char ic_interior_filename[PETSC_MAX_PATH_LEN];
     PetscScalar ic_melt_pressure;
     PetscScalar ic_adiabat_entropy; // entropy at top of adiabat
