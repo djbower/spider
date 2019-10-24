@@ -26,8 +26,8 @@
 # initial condition
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
--initial_condition 1
--ic_filename 500000.json
+-IC_INTERIOR 1
+-ic_interior_filename 500000.json
 
 # all units are SI unless indicated otherwise
 

@@ -8,8 +8,8 @@
 # ======================
 # -options_file bu_input.opts:     reads the options file to provide the parameters for SPIDER
 #                                  subsequent options on the command line over-ride these defaults
-# -initial_condition 2:            read in ic from file (prescribed by -ic_filename, see below)
-# -ic_filename 50002.json:         JSON file to read in initial condition
+# -IC_INTERIOR 2:                  read in ic from file (prescribed by -ic_filename, see below)
+# -ic_interior filename 50002.json:JSON file to read in initial condition
 # -SURFACE_BC 4:                   constant heat flux boundary condition
 # -surface_bc_value 1.0E4:         prescribed surface heat flux (e.g., 10^4 W/m^2)
 #                                  this value will be determined by SOCRATES and passed in
@@ -47,4 +47,4 @@
 # SPIDER to do it.
 
 # main restart example is here:
-spider -options_file bu_input.opts -initial_condition 2 -ic_filename 50002.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -nstepsmacro 1 -dtmacro 30000
+spider -options_file bu_input.opts -IC_INTERIOR 2 -ic_interior_filename 50002.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -nstepsmacro 1 -dtmacro 30000
