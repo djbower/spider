@@ -47,4 +47,4 @@
 # SPIDER to do it.
 
 # main restart example is here:
-spider -options_file bu_input.opts -IC_INTERIOR 2 -ic_interior_filename 50002.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -nstepsmacro 1 -dtmacro 30000
+lldb -- spider -options_file bu_input.opts -IC_INTERIOR 2 -ic_interior_filename 50002.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -nstepsmacro 1 -dtmacro 30000

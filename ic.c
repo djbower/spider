@@ -130,6 +130,47 @@ static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode read_JSON_file_to_JSON_object( const char * filename, cJSON * json )
+{
+    PetscErrorCode   ierr;
+    FILE             *fp;
+    long             length;
+    char             *buffer = 0;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"read_JSON_file_to_JSON_object()\n");CHKERRQ(ierr);
+
+    fp = fopen( filename, "r" );
+
+    if(fp==NULL) {
+       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",filename);
+    }
+
+    /* read file to zero terminated string */
+    /* TODO: can this be improved? */
+    // https://stackoverflow.com/questions/174531/how-to-read-the-content-of-a-file-to-a-string-in-c
+    if (fp){
+        fseek(fp,0,SEEK_END);
+        length = ftell(fp);
+        fseek(fp,0,SEEK_SET);
+        buffer = malloc(length+1);
+        if (buffer){
+            if(fread(buffer,1,length,fp) != length) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_FILE_READ,"fread() error");
+        } else SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MEM,"malloc error");
+        fclose(fp);
+        buffer[length] = '\0';
+    }
+
+    /* FIXME FIXME FIXME */
+    /* the address of the JSON data is lost when the function exits */
+    json = cJSON_Parse( buffer );
+
+    free( buffer );
+
+    PetscFunctionReturn(0);
+
+}
+
 static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
 {
     /* reads an initial condition from a previously output JSON file
@@ -137,14 +178,14 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
 
     PetscErrorCode   ierr;
     Parameters *P  = &E->parameters;
-    FILE             *fp;
-    cJSON            *json, *solution, *subdomain, *values, *data, *item, *time;
-    long             length;
+    //FILE             *fp;
+    cJSON            *json=0, *solution, *subdomain, *values, *data, *item, *time;
+    //long             length;
     char             *item_str;
     PetscInt         i, subdomain_num;
     PetscScalar      val = 0;
     Vec              invec, *subVecs;
-    char             *buffer = 0;
+    //char             *buffer = 0;
 #if (defined PETSC_USE_REAL___FLOAT128)
     char             val_str[30];
 #endif
@@ -155,6 +196,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
+#if 0
     fp = fopen( filename, "r" );
 
     if(fp==NULL) {
@@ -177,6 +219,11 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
     }
 
     json = cJSON_Parse( buffer );
+
+    free( buffer );
+#endif
+
+    ierr = read_JSON_file_to_JSON_object( filename, json );
 
     /* time from this restart JSON must be passed to the time stepper
        to continue the integration and keep track of absolute time */
@@ -234,7 +281,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
 
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
     cJSON_Delete( json );
-    free( buffer );
+    //free( buffer );
 
     PetscFunctionReturn(0);
 }
