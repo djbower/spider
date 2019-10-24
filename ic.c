@@ -344,28 +344,36 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     // FIXME this is horrible - parameters should not ever be changed!! Rather, there should be a dedicated step (with output to the user) which fixes inconsistent ICs
     if(Ap->SOLVE_FOR_VOLATILES){
-        ierr = set_initial_volatile( E ); CHKERRQ(ierr);
-        /* Resolve for the initial volatile abundances that are necessary to
-           satisfy chemical equilibrium.  This operation effectively sets
-           the initial chemical reaction mass to zero */
-        /* TODO: some overlap here with FormFunction1.  Could have a single
-           function that returns the scalings (massv) rather than recomputing
-           them */
-        for (i=0; i<Ap->n_reactions; ++i){
-          const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-          /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
-          /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-          /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-          factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
-          for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
-            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
-            /* Note: maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
-            /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
-            massv /= factor;
-            Ap->volatile_parameters[v].initial -= massv * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
-          }
+
+        /* "standard" atmosphere IC is to solve for the volatile
+           abundances in the melt based on a prescribed initial
+           abundance in the whole mantle */
+        if(Ap->IC_ATMOSPHERE==1){
+            ierr = set_initial_volatile( E ); CHKERRQ(ierr);
+            /* Resolve for the initial volatile abundances that are necessary to
+               satisfy chemical equilibrium.  This operation effectively sets
+               the initial chemical reaction mass to zero */
+            /* TODO: some overlap here with FormFunction1.  Could have a single
+               function that returns the scalings (massv) rather than recomputing
+               them */
+            for (i=0; i<Ap->n_reactions; ++i){
+              const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+              /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
+              /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+              /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
+              factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
+              for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
+                const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+                /* Note: maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
+                /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+                massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
+                massv /= factor;
+                Ap->volatile_parameters[v].initial -= massv * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
+              }
+            }
         }
+
+        /* FIXME: need a condition to prevent getting here without A->volatiles[i].x being set */
 
         for (i=0; i<Ap->n_volatiles; ++i) {
             x0 = A->volatiles[i].x;
