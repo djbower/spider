@@ -254,17 +254,17 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si1",&P->Mg_Si1,NULL);CHKERRQ(ierr);
   }
 
-  /* initial condition */
-  P->initial_condition = 1;
-  ierr = PetscOptionsGetInt(NULL,NULL,"-initial_condition",&P->initial_condition,NULL);CHKERRQ(ierr);
+  /* initial condition for interior */
+  P->ic_interior = 1;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-ic_interior",&P->ic_interior,NULL);CHKERRQ(ierr);
 
-  ierr = PetscStrcpy(P->ic_filename,"restart.json"); CHKERRQ(ierr);
-  if ( (P->initial_condition==2) || (P->initial_condition==3) ){
-    ierr = PetscOptionsGetString(NULL,NULL,"-ic_filename",P->ic_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
+  ierr = PetscStrcpy(P->ic_interior_filename,"restart.json"); CHKERRQ(ierr);
+  if ( (P->ic_interior==2) || (P->ic_interior==3) ){
+    ierr = PetscOptionsGetString(NULL,NULL,"-ic_interior_filename",P->ic_interior_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
   }
 
   P->ic_melt_pressure = 30.0; // GPa
-  if ( P->initial_condition==3 ){
+  if ( P->ic_interior==3 ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_melt_pressure",&P->ic_melt_pressure,NULL); CHKERRQ(ierr);
   }
 

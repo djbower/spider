@@ -24,13 +24,14 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
     Parameters const *P = &E->parameters;
-    PetscInt IC = P->initial_condition;
+    PetscInt IC = P->ic_interior;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition()\n");CHKERRQ(ierr);
 
     ierr = set_ic_interior( E, sol ); CHKERRQ(ierr);
 
+    /* not interior IC anymore */
     if( (IC==1 || IC==3) ){
         ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
     }
@@ -45,7 +46,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
     Parameters const *P = &E->parameters;
-    PetscInt IC = P->initial_condition;
+    PetscInt IC = P->ic_interior;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior()\n");CHKERRQ(ierr);
@@ -154,10 +155,10 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
-    fp = fopen( P->ic_filename, "r" );
+    fp = fopen( P->ic_interior_filename, "r" );
 
     if(fp==NULL) {
-      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",P->ic_filename);
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",P->ic_interior_filename);
     }
 
     /* read file to zero terminated string */
@@ -201,6 +202,9 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
         }
         else if (subdomain_num == 2){
             invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]];
+        }
+        else if (subdomain_num == 3){
+            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]];
         }
         else {
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"unexpected number of subdomains");

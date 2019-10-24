@@ -195,8 +195,8 @@ typedef struct _Parameters {
     PetscBool COMPOSITION; // Brg and Res compositional model
     PetscInt mixing_length;
     PetscScalar mixing_length_layer_radius;
-    PetscInt initial_condition;
-    char ic_filename[PETSC_MAX_PATH_LEN];
+    PetscInt ic_interior;
+    char ic_interior_filename[PETSC_MAX_PATH_LEN];
     PetscScalar ic_melt_pressure;
     PetscScalar ic_adiabat_entropy; // entropy at top of adiabat
     PetscScalar ic_surface_entropy; // initial entropy at surface
