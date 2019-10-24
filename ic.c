@@ -14,6 +14,8 @@ static PetscErrorCode set_ic_default( Ctx *, Vec );
 static PetscErrorCode set_ic_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_interior( Ctx *, Vec );
+static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
+static PetscErrorCode set_ic_atmosphere_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char * );
 static PetscErrorCode set_ic_from_solidus( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *, Vec );
@@ -57,7 +59,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     else if (IC==2){
         /* set everything, including the atmosphere, from a JSON */
         /* also sets P->t0 (start time) */
-        ierr = set_ic_from_file( E, sol, P->ic_interior_filename ); CHKERRQ(ierr);
+        ierr = set_ic_interior_from_file( E, sol ); CHKERRQ(ierr);
     }
     else if (IC==3){
         ierr = set_ic_from_solidus( E, sol ); CHKERRQ(ierr);
@@ -130,35 +132,34 @@ static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
+static PetscErrorCode set_ic_interior_from_file( Ctx *E, Vec sol )
 {
-    /* reads an initial condition from a previously output JSON file
-       to enable restarting */
-
     PetscErrorCode   ierr;
-    Parameters *P  = &E->parameters;
-    FILE             *fp;
-    cJSON            *json, *solution, *subdomain, *values, *data, *item, *time;
-    long             length;
-    char             *item_str;
-    PetscInt         i, subdomain_num;
-    PetscScalar      val = 0;
-    Vec              invec, *subVecs;
-    char             *buffer = 0;
-#if (defined PETSC_USE_REAL___FLOAT128)
-    char             val_str[30];
-#endif
+    Parameters const *P = &E->parameters;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_file()\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_file()\n");CHKERRQ(ierr);
 
-    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
-    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    ierr = set_ic_from_file( E, sol, P->ic_interior_filename ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode read_JSON_file_to_JSON_object( const char * filename, cJSON *json )
+{
+    PetscErrorCode ierr;
+    FILE           *fp;
+    char           *buffer=0;
+    long           length;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"read_JSON_file_to_JSON_object()\n");CHKERRQ(ierr);
 
     fp = fopen( filename, "r" );
 
     if(fp==NULL) {
-      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",P->ic_interior_filename);
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_FILE_OPEN,"Could not open file %s",filename);
     }
 
     /* read file to zero terminated string */
@@ -178,8 +179,39 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
 
     json = cJSON_Parse( buffer );
 
+    free( buffer );
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
+{
+    /* reads an initial condition from a previously output JSON file
+       to enable restarting */
+
+    PetscErrorCode   ierr;
+    Parameters *P  = &E->parameters;
+    cJSON            *json, *solution, *subdomain, *values, *data, *item, *time;
+    char             *item_str;
+    PetscInt         i, subdomain_num;
+    PetscScalar      val = 0;
+    Vec              invec, *subVecs;
+#if (defined PETSC_USE_REAL___FLOAT128)
+    char             val_str[30];
+#endif
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_file()\n");CHKERRQ(ierr);
+
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
+    ierr = read_JSON_file_to_JSON_object( filename, json );CHKERRQ(ierr);
+
     /* time from this restart JSON must be passed to the time stepper
        to continue the integration and keep track of absolute time */
+    /* FIXME: need to decide which time to use */
     time = cJSON_GetObjectItem(json,"time");
     P->t0 = time->valuedouble;
 
@@ -193,7 +225,8 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
         subdomain_num = subdomain->valueint;
         values = cJSON_GetObjectItem( data, "values" );
 
-        /* FIXME: could break if ordering of subdomains changes */
+        /* FIXME: could break if ordering of subdomains changes, and
+           must add new subdomains to this block */
         if (subdomain_num == 0){
             invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]];
         }
@@ -203,6 +236,8 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
         else if (subdomain_num == 2){
             invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]];
         }
+        /* TOOD: I think this is backwards compatible with the previous JSON output
+           prior to reaction masses */
         else if (subdomain_num == 3){
             invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]];
         }
@@ -234,7 +269,6 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
 
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
     cJSON_Delete( json );
-    free( buffer );
 
     PetscFunctionReturn(0);
 }
@@ -344,34 +378,45 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     // FIXME this is horrible - parameters should not ever be changed!! Rather, there should be a dedicated step (with output to the user) which fixes inconsistent ICs
     if(Ap->SOLVE_FOR_VOLATILES){
-        ierr = set_initial_volatile( E ); CHKERRQ(ierr);
-        /* Resolve for the initial volatile abundances that are necessary to
-           satisfy chemical equilibrium.  This operation effectively sets
-           the initial chemical reaction mass to zero */
-        /* TODO: some overlap here with FormFunction1.  Could have a single
-           function that returns the scalings (massv) rather than recomputing
-           them */
-        for (i=0; i<Ap->n_reactions; ++i){
-          const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-          /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
-          /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-          /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-          factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
-          for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
-            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
-            /* Note: maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
-            /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
-            massv /= factor;
-            Ap->volatile_parameters[v].initial -= massv * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
-          }
+
+        /* the "standard" IC is to provide an initial mantle abundance of volatiles */
+        if(Ap->IC_ATMOSPHERE==1){
+            ierr = set_initial_volatile( E ); CHKERRQ(ierr);
+            /* Resolve for the initial volatile abundances that are necessary to
+               satisfy chemical equilibrium.  This operation effectively sets
+               the initial chemical reaction mass to zero */
+            /* TODO: some overlap here with FormFunction1.  Could have a single
+               function that returns the scalings (massv) rather than recomputing
+               them */
+            for (i=0; i<Ap->n_reactions; ++i){
+              const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+              /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
+              /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+              /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
+              factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
+              for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
+                const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+                /* Note: maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
+                /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+                massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
+                massv /= factor;
+                Ap->volatile_parameters[v].initial -= massv * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
+              }
+            }
+
+            for (i=0; i<Ap->n_volatiles; ++i) {
+                x0 = A->volatiles[i].x;
+                ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
+            }
         }
 
-        for (i=0; i<Ap->n_volatiles; ++i) {
-            x0 = A->volatiles[i].x;
-            ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
+        /* can now add more initial conditions here */
+        else if(Ap->IC_ATMOSPHERE==2){
+            ierr = set_ic_atmosphere_from_file( E, sol ); CHKERRQ(ierr);
         }
+
     }
+
     else{
         for (i=0; i<Ap->n_volatiles; ++i) {
             x0 = 0.0;
@@ -391,6 +436,21 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
+{
+    PetscErrorCode   ierr;
+    Parameters const *P = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_file()\n");CHKERRQ(ierr);
+
+    ierr = set_ic_from_file( E, sol, Ap->ic_atmosphere_filename ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
