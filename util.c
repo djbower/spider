@@ -117,7 +117,7 @@ PetscErrorCode set_volatile_abundances_from_solution( Ctx *E, Vec sol )
 }
 
 
-PetscErrorCode set_solution_from_entropy( Ctx *E, Vec sol )
+PetscErrorCode set_solution_from_entropy_at_staggered_nodes( Ctx *E, Vec sol )
 {
     /* Set the solution fields SPIDER_SOLUTION_FIELD_S0 and
        SPIDER_SOLUTION_FIELD_DSDR_B using the entropy at

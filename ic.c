@@ -13,64 +13,61 @@
 static PetscErrorCode set_ic_default( Ctx *, Vec );
 static PetscErrorCode set_ic_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
+static PetscErrorCode set_ic_interior( Ctx *, Vec );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec );
-static PetscErrorCode set_ic_from_solidus( Ctx*, Vec );
+static PetscErrorCode set_ic_from_solidus( Ctx *, Vec );
+static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *, Vec );
 static PetscErrorCode set_initial_volatile( Ctx * );
 static PetscErrorCode FormFunction1( SNES, Vec, Vec, void *); // TODO DJB: rename this function
 
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
-    PetscMPIInt rank,size;
-    PetscInt ind,numpts_s;
-    Solution *S = &E->solution;
     Parameters const *P = &E->parameters;
     PetscInt IC = P->initial_condition;
-    PetscInt const ind0=0;
 
     PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition()\n");CHKERRQ(ierr);
 
-    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ind = numpts_s-1;
+    ierr = set_ic_interior( E, sol ); CHKERRQ(ierr);
 
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
-    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
-
-    if(IC==1){
-        ierr = set_ic_default( E, sol ); CHKERRQ(ierr);
-    }
-    else if(IC==2){
-        /* set everything, including the atmosphere, from a JSON */
-        ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
-    }
-    else if(IC==3){
-        ierr = set_ic_from_solidus( E, sol ); CHKERRQ(ierr);
-    }
-
-    /* TODO: move this code block to a conform_boundary_conditions
-       function */
-    /* FIXME: will break in parallel */
-    if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
-        ierr = set_entropy_from_solution( E, sol );
-        if( P->ic_surface_entropy > 0.0 ){
-            ierr = VecSetValues( S->S_s,1,&ind0,&P->ic_surface_entropy,INSERT_VALUES );CHKERRQ(ierr);
-        }
-        if( P->ic_core_entropy > 0.0 ){
-            ierr = VecSetValues( S->S_s,1,&ind,&P->ic_core_entropy,INSERT_VALUES );CHKERRQ(ierr);
-        }
-        ierr = VecAssemblyBegin(S->S_s);CHKERRQ(ierr);
-        ierr = VecAssemblyEnd(S->S_s);CHKERRQ(ierr);
-        ierr = set_solution_from_entropy( E, sol );CHKERRQ(ierr);
-    }
-
-    /*  FIXME: currently assumes that time is zero, which will affect the
-        power output of radiogenic nuclides */
-    ierr = set_interior_structure_from_solution( E, 0.0, sol ); CHKERRQ(ierr);
-
-    /* atmosphere IC */
     if( (IC==1 || IC==3) ){
         ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
     }
+
+    PetscFunctionReturn(0);
+
+}
+
+/* initial condition of interior */
+
+static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
+{
+    PetscErrorCode ierr;
+    Parameters const *P = &E->parameters;
+    PetscInt IC = P->initial_condition;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior()\n");CHKERRQ(ierr);
+
+    if (IC==1){
+        ierr = set_ic_default( E, sol ); CHKERRQ(ierr);
+    }
+    else if (IC==2){
+        /* set everything, including the atmosphere, from a JSON */
+        /* also sets P->t0 (start time) */
+        ierr = set_ic_from_file( E, sol ); CHKERRQ(ierr);
+    }
+    else if (IC==3){
+        ierr = set_ic_from_solidus( E, sol ); CHKERRQ(ierr);
+    }
+
+    ierr = set_ic_interior_conform_to_bcs( E, sol ); CHKERRQ(ierr);
+
+    /* P->t0 (start time) is by default zero, unless set by the user.
+       The value is set from the restart JSON for IC==2.  Time
+       is needed for the radiogenic energy input */
+    ierr = set_interior_structure_from_solution( E, P->t0, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -80,6 +77,7 @@ static PetscErrorCode set_ic_default( Ctx *E, Vec sol )
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_default()\n");CHKERRQ(ierr);
 
     ierr = set_ic_entropy( E, sol ); CHKERRQ(ierr);
 
@@ -99,7 +97,7 @@ static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
     Vec              *subVecs;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_constant_dSdr:\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_entropy()\n");CHKERRQ(ierr);
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
@@ -131,76 +129,6 @@ static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
-{
-
-    PetscErrorCode             ierr;
-    PetscInt                   i,j;
-    PetscScalar                x0, factor, massv;
-    Vec                        *subVecs;
-    Atmosphere                 *A = &E->atmosphere;
-    Parameters                 *P  = &E->parameters;
-    AtmosphereParameters       *Ap = &P->atmosphere_parameters;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
-    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-
-    // FIXME this is horrible - parameters should not ever be changed!! Rather, there should be a dedicated step (with output to the user) which fixes inconsistent ICs
-    if(Ap->SOLVE_FOR_VOLATILES){
-        ierr = set_initial_volatile( E ); CHKERRQ(ierr);
-        /* Resolve for the initial volatile abundances that are necessary to
-           satisfy chemical equilibrium.  This operation effectively sets
-           the initial chemical reaction mass to zero */
-        /* TODO: some overlap here with FormFunction1.  Could have a single
-           function that returns the scalings (massv) rather than recomputing
-           them */
-        for (i=0; i<Ap->n_reactions; ++i){
-          const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-          /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
-          /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-          /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-          factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
-          for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
-            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
-            /* Note: maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
-            /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
-            massv /= factor;
-            Ap->volatile_parameters[v].initial -= massv * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
-          }
-        }
-
-        for (i=0; i<Ap->n_volatiles; ++i) {
-            x0 = A->volatiles[i].x;
-            ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
-        }
-    }
-    else{
-        for (i=0; i<Ap->n_volatiles; ++i) {
-            x0 = 0.0;
-            ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
-        }
-    }
-
-    /* Initialize reaction amounts to zero */
-    for (i=0; i<Ap->n_reactions; ++i) {
-        ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],i,0.0,INSERT_VALUES);CHKERRQ(ierr);
-    }
-
-    for (i=0; i<E->numFields; ++i) {
-      ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
-      ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
-    }
-
-    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-    ierr = PetscFree(subVecs);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-
-}
-
 static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 {
     /* reads an initial condition from a previously output JSON file
@@ -221,7 +149,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 #endif
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_file:\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_file()\n");CHKERRQ(ierr);
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
@@ -310,21 +238,24 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol )
 static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
 {
 
-    PetscErrorCode ierr;
+    /* entropy tracks the solidus below a cutoff value, and is
+       equal to the cutoff value above.  It is simplest to construct
+       the ic using S->S_s, and then map the values to the
+       solution Vec */
+
+    PetscErrorCode   ierr;
     Parameters const *P = &E->parameters;
-    PetscInt i, numpts_s;
-    PetscScalar S_i;
-    Solution    *S = &E->solution;
+    PetscInt         i, numpts_s;
+    PetscScalar      S_i;
+    Solution         *S = &E->solution;
 
     PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_solidus()\n");CHKERRQ(ierr);
 
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     ierr = VecCopy( S->solidus_s, S->S_s ); CHKERRQ(ierr);
 
-    /* added by Rob Spaargaren to enable the initial condition to
-       follow the solidus for entropies below a cutoff, and then
-       be constant for entropies above the cutoff */
     for(i=1; i<numpts_s-1;++i) {
         ierr = VecGetValues(S->S_s,1,&i,&S_i);CHKERRQ(ierr);
         if(P->ic_adiabat_entropy < S_i){
@@ -335,32 +266,131 @@ static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
     VecAssemblyBegin( S->S_s );
     VecAssemblyEnd( S->S_s );
 
-    ierr = set_solution_from_entropy( E, sol ); CHKERRQ(ierr);
+    /* map S->S_s to the solution Vec (derivatives are taken) */
+    ierr = set_solution_from_entropy_at_staggered_nodes( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-#if 0
-/* A custom, verbose SNES monitor */
-static PetscErrorCode SNESMonitorVerbose(SNES snes, PetscInt its, PetscReal norm, void *mctx)
+static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E, Vec sol )
 {
-  PetscErrorCode ierr;
-  Vec            x,r;
-  PetscErrorCode (*func)(SNES,Vec,Vec,void*);
-  void           *ctx;
+    /* ensure that the interior ic is compatible with boundary
+       conditions, and that the entropy vecs in the solution
+       struct are consistent with the sol Vec (and vice-versa) */
 
-  PetscFunctionBeginUser;
-  ierr = SNESGetSolution(snes,&x);CHKERRQ(ierr);
-  ierr = SNESGetFunction(snes,&r,&func,&ctx);CHKERRQ(ierr); /* ctx should be the same as mctx */
-  ierr = func(snes,x,r,ctx);CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[36m### Iteration %D\e[0m\n",its);CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[32mresidual function norm: %g\nx:\e[0m\n",(double)norm);CHKERRQ(ierr);
-  ierr = VecView(x,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[32mresidual function:\e[0m\n");CHKERRQ(ierr);
-  ierr = VecView(r,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
+    PetscErrorCode ierr;
+    PetscInt ind,numpts_s;
+    Solution *S = &E->solution;
+    Parameters const *P = &E->parameters;
+    PetscInt const ind0=0;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"ic_conform_to_bcs()\n");CHKERRQ(ierr);
+
+    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ind = numpts_s-1;
+
+    /* conform entropy-related Vecs in solution struct to sol Vec */
+    ierr = set_entropy_from_solution( E, sol );
+
+    /* ensure that initial condition conforms to boundary conditions */
+    /* TODO: these are just for isothermal, and also first order, since
+       we set the top and bottom staggered node to the surface and
+       CMB entropy, respectively */
+
+    if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
+        if( P->ic_surface_entropy > 0.0 ){
+            ierr = VecSetValues( S->S_s,1,&ind0,&P->ic_surface_entropy,INSERT_VALUES );CHKERRQ(ierr);
+        }
+        if( P->ic_core_entropy > 0.0 ){
+            ierr = VecSetValues( S->S_s,1,&ind,&P->ic_core_entropy,INSERT_VALUES );CHKERRQ(ierr);
+        }
+        ierr = VecAssemblyBegin(S->S_s);CHKERRQ(ierr);
+        ierr = VecAssemblyEnd(S->S_s);CHKERRQ(ierr);
+    }
+
+    /* conform sol Vec to (potentially) modified S->S_s */
+    ierr = set_solution_from_entropy_at_staggered_nodes( E, sol );CHKERRQ(ierr);
+
+    /* conform other entropy-related Vecs in sol struct, since thus
+       far only S->S_s is guaranteed to be consistent with sol Vec */
+    ierr = set_entropy_from_solution( E, sol );CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
 }
-#endif
+
+/* initial condition of atmosphere */
+
+static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
+{
+
+    PetscErrorCode             ierr;
+    PetscInt                   i,j;
+    PetscScalar                x0, factor, massv;
+    Vec                        *subVecs;
+    Atmosphere                 *A = &E->atmosphere;
+    Parameters                 *P  = &E->parameters;
+    AtmosphereParameters       *Ap = &P->atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
+    // FIXME this is horrible - parameters should not ever be changed!! Rather, there should be a dedicated step (with output to the user) which fixes inconsistent ICs
+    if(Ap->SOLVE_FOR_VOLATILES){
+        ierr = set_initial_volatile( E ); CHKERRQ(ierr);
+        /* Resolve for the initial volatile abundances that are necessary to
+           satisfy chemical equilibrium.  This operation effectively sets
+           the initial chemical reaction mass to zero */
+        /* TODO: some overlap here with FormFunction1.  Could have a single
+           function that returns the scalings (massv) rather than recomputing
+           them */
+        for (i=0; i<Ap->n_reactions; ++i){
+          const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+          /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
+          /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+          /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
+          factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
+          for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
+            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+            /* Note: maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
+            /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
+            massv /= factor;
+            Ap->volatile_parameters[v].initial -= massv * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
+          }
+        }
+
+        for (i=0; i<Ap->n_volatiles; ++i) {
+            x0 = A->volatiles[i].x;
+            ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
+        }
+    }
+    else{
+        for (i=0; i<Ap->n_volatiles; ++i) {
+            x0 = 0.0;
+            ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
+        }
+    }
+
+    /* Initialize reaction amounts to zero */
+    for (i=0; i<Ap->n_reactions; ++i) {
+        ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],i,0.0,INSERT_VALUES);CHKERRQ(ierr);
+    }
+
+    for (i=0; i<E->numFields; ++i) {
+      ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
+      ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
+    }
+
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
 
 static PetscErrorCode set_initial_volatile( Ctx *E )
 {
