@@ -8,8 +8,8 @@
 # ======================
 # -options_file bu_input.opts:     reads the options file to provide the parameters for SPIDER
 #                                  subsequent options on the command line over-ride these defaults
-# -IC_INTERIOR 2:                  read in ic from file (prescribed by -ic_filename, see below)
-# -ic_interior filename 50002.json:JSON file to read in initial condition
+# -IC_INTERIOR 2:                  read in interior ic from file (prescribed by -ic_interior_filename, see below)
+# -ic_interior filename 50002.json:JSON file to read in interior initial condition
 # -SURFACE_BC 4:                   constant heat flux boundary condition
 # -surface_bc_value 1.0E4:         prescribed surface heat flux (e.g., 10^4 W/m^2)
 #                                  this value will be determined by SOCRATES and passed in
