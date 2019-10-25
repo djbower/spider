@@ -93,10 +93,15 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   PetscFunctionBeginUser;
   /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
      if they are missing. Note that this code has a lot of duplication */
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial");CHKERRQ(ierr);
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_abundance");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial,&set);CHKERRQ(ierr);
   if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
   vp->initial /= C->VOLATILE;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_pressure");CHKERRQ(ierr);
+  vp->initial_pressure = 0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_pressure,&set);CHKERRQ(ierr);
+  vp->initial_pressure /= C->PRESSURE;
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_kdist");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kdist,&set);CHKERRQ(ierr);
@@ -125,8 +130,8 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->R_thermal_escape_value,&set);CHKERRQ(ierr);
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
-  vp->molar_mass = 0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,&set);CHKERRQ(ierr);
+  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
   vp->molar_mass /= C->MASS;
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_cross_section");CHKERRQ(ierr);

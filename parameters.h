@@ -49,6 +49,7 @@ typedef struct _Constants {
 typedef struct VolatileParameters_ {
     char        prefix[128];  /* Maximum prefix length */
     PetscScalar initial;
+    PetscScalar initial_pressure;
     PetscScalar kdist;
     PetscScalar kabs; // note this is without pressure-dependence
     PetscScalar henry;
