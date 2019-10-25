@@ -341,6 +341,22 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+    PetscInt i;
+
+    PetscFunctionBeginUser;
+
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        A->volatiles[i].x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i].henry_pow );
+        A->volatiles[i].x *= Ap->volatile_parameters[i].henry;
+    }
+
+    PetscFunctionReturn(0);
+
+}
+
+
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     /* mass of volatiles in atmosphere */

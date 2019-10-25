@@ -29,8 +29,10 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition()\n");CHKERRQ(ierr);
 
+    /* interior initial condition */
     ierr = set_ic_interior( E, sol ); CHKERRQ(ierr);
 
+    /* atmosphere initial condition */
     ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -52,8 +54,6 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
         ierr = set_ic_default( E, sol ); CHKERRQ(ierr);
     }
     else if (IC==2){
-        /* set everything, including the atmosphere, from a JSON */
-        /* also sets P->t0 (start time) */
         ierr = set_ic_interior_from_file( E, sol ); CHKERRQ(ierr);
     }
     else if (IC==3){
