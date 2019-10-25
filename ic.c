@@ -596,7 +596,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
     /* Balance equation for volatile abundance */
     for (i=0; i<Ap->n_volatiles; ++i) {
-        ff[i] = get_volatile_mass_residual_no_reactions( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i]);
+        ff[i] = get_residual_volatile_mass_no_reactions( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i]);
     }
 
     /* Subtract or add reaction masses */
