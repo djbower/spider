@@ -14,7 +14,7 @@ static PetscErrorCode set_ic_default( Ctx *, Vec );
 static PetscErrorCode set_ic_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_interior( Ctx *, Vec );
-static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char * );
+static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char *, const PetscInt *, PetscInt );
 static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_from_solidus( Ctx *, Vec );
@@ -25,18 +25,13 @@ static PetscErrorCode FormFunction1( SNES, Vec, Vec, void *); // TODO DJB: renam
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
-    Parameters const *P = &E->parameters;
-    PetscInt IC = P->IC_INTERIOR;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition()\n");CHKERRQ(ierr);
 
     ierr = set_ic_interior( E, sol ); CHKERRQ(ierr);
 
-    /* not interior IC anymore */
-    if( (IC==1 || IC==3) ){
-        ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
-    }
+    ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -92,11 +87,13 @@ static PetscErrorCode set_ic_interior_from_file( Ctx *E, Vec sol )
 {
     PetscErrorCode ierr;
     Parameters const *P = &E->parameters;
+    /* subdomains to use, i.e. dS/dr and S0 */
+    PetscInt const arr[2] = {0, 1};
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_file()\n");CHKERRQ(ierr);
 
-    ierr = set_ic_from_file( E, sol, P->ic_interior_filename ); CHKERRQ(ierr);
+    ierr = set_ic_from_file( E, sol, P->ic_interior_filename, arr, 2 ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -107,11 +104,13 @@ static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
     PetscErrorCode ierr;
     Parameters const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    /* subdomains to use, i.e. volatile abundances */
+    PetscInt const arr[2] = {2,3};
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_file()\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_file()\n");CHKERRQ(ierr);
 
-    ierr = set_ic_from_file( E, sol, Ap->ic_atmosphere_filename ); CHKERRQ(ierr);
+    ierr = set_ic_from_file( E, sol, Ap->ic_atmosphere_filename, arr, 2 ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -203,7 +202,7 @@ static PetscErrorCode read_JSON_file_to_JSON_object( const char * filename, cJSO
 
 }
 
-static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
+static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, const PetscInt *arr, PetscInt size_arr )
 {
     /* reads an initial condition from a previously output JSON file
        to enable restarting */
@@ -212,7 +211,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
     Parameters *P  = &E->parameters;
     cJSON            *json=NULL, *solution, *subdomain, *values, *data, *item, *time;
     char             *item_str;
-    PetscInt         i, subdomain_num;
+    PetscInt         i, j, subdomain_num;
     PetscScalar      val = 0;
     Vec              invec, *subVecs;
 #if (defined PETSC_USE_REAL___FLOAT128)
@@ -235,7 +234,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
     solution = cJSON_GetObjectItem(json,"solution");
     subdomain = cJSON_GetObjectItem(solution,"subdomain data");
 
-    /* loop over subdomains and extract values */
+    /* loop over all subdomains */
     cJSON_ArrayForEach( data, subdomain )
     {
         subdomain = cJSON_GetObjectItem( data, "subdomain" );
@@ -259,19 +258,24 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename )
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"unexpected number of subdomains");
         }
 
-        for (i=0; i<cJSON_GetArraySize(values); i++ ){
-            item = cJSON_GetArrayItem( values, i );
-            item_str = item->valuestring;
+        /* determine if this subdomain is required for the IC by checking
+           against the listed subdomains in arr */
+        for( j=0; j<size_arr; j++ ){
+            if(subdomain_num == arr[j]){
+                for (i=0; i<cJSON_GetArraySize(values); i++ ){
+                    item = cJSON_GetArrayItem( values, i );
+                    item_str = item->valuestring;
 #if (defined PETSC_USE_REAL___FLOAT128)
-            sscanf( item_str, "%s", val_str );
-            val = strtoflt128(val_str, NULL);
+                    sscanf( item_str, "%s", val_str );
+                    val = strtoflt128(val_str, NULL);
 #else
-            sscanf( item_str, "%lf", &val );
+                    sscanf( item_str, "%lf", &val );
 #endif
-            /* add value to vec */
-            VecSetValue( invec, i, val, INSERT_VALUES );CHKERRQ(ierr);
+                    /* add value to vec */
+                    VecSetValue( invec, i, val, INSERT_VALUES );CHKERRQ(ierr);
+                }
+            }
         }
-
     }
 
     /* all vec assembly is done here */
@@ -419,11 +423,25 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
                 Ap->volatile_parameters[v].initial -= massv * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
               }
             }
+
+            /* now need to re-solve to get volatile abundances (A->volatiles[i].x)
+               with reaction masses equal to zero by construction */
+            ierr = set_initial_volatile( E ); CHKERRQ(ierr);
+
+            /* write initial volatile abundances (currently in A struct) to Vec sol */
+            for (i=0; i<Ap->n_volatiles; ++i) {
+                x0 = A->volatiles[i].x;
+                ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
+            }
+
+            /* TODO: check, but since we re-solve above the reaction masses should be zero by definition */
+
         }
 
         /* read atmosphere IC from file (could be a different file to
            the interior IC) */
         else if (Ap->IC_ATMOSPHERE==2){
+            /* this only sets the sol Vec, and not the A->volatiles[i].x */
             ierr = set_ic_atmosphere_from_file( E, sol ); CHKERRQ(ierr);
         }
 
@@ -434,13 +452,9 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
         }
 #endif
 
-        /* FIXME: need a condition to prevent getting here without A->volatiles[i].x being set */
-
-        for (i=0; i<Ap->n_volatiles; ++i) {
-            x0 = A->volatiles[i].x;
-            ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
-        }
+        /* FIXME: need a condition to prevent getting here without Vec sol being set (what about A->volatiles[i].x?) */
     }
+
     else{
         for (i=0; i<Ap->n_volatiles; ++i) {
             x0 = 0.0;
@@ -448,7 +462,9 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
         }
     }
 
+    /* FIXME: I think redundant, since we solve the above to explicitly set mass reactions to zero */
     /* Initialize reaction amounts to zero */
+    /* But check what happens if reactions are not included */
     for (i=0; i<Ap->n_reactions; ++i) {
         ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],i,0.0,INSERT_VALUES);CHKERRQ(ierr);
     }
@@ -580,8 +596,7 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
 
     /* Balance equation for volatile abundance */
     for (i=0; i<Ap->n_volatiles; ++i) {
-        /* TODO: DJB rename this function */
-        ff[i] = get_initial_volatile_abundance( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i]);
+        ff[i] = get_volatile_mass_residual_no_reactions( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i]);
     }
 
     /* Subtract or add reaction masses */
