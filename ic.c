@@ -10,19 +10,26 @@
 #include "twophase.h"
 #include "util.h"
 
-static PetscErrorCode set_ic_default( Ctx *, Vec );
-static PetscErrorCode set_ic_entropy( Ctx *, Vec );
-static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
+/* interior ic */
 static PetscErrorCode set_ic_interior( Ctx *, Vec );
-static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char *, const PetscInt *, PetscInt );
+static PetscErrorCode set_ic_interior_default( Ctx *, Vec );
+static PetscErrorCode set_ic_interior_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
+static PetscErrorCode set_ic_interior_from_solidus( Ctx *, Vec );
+static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *, Vec );
+/* atmosphere ic */
+static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
+static PetscErrorCode set_ic_atmosphere_default( Ctx *, Vec );
+static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Vec sol );
 static PetscErrorCode set_ic_atmosphere_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *, Vec );
-static PetscErrorCode set_ic_from_solidus( Ctx *, Vec );
-static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *, Vec );
-static PetscErrorCode set_initial_volatile( Ctx * );
+static PetscErrorCode solve_for_initial_melt_abundance( Ctx * );
+/* general */
+static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char *, const PetscInt *, PetscInt );
+/* to sort */
 static PetscErrorCode FormFunction1( SNES, Vec, Vec, void *); // TODO DJB: rename this function
 
+/* main function to set initial condition */
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
@@ -52,33 +59,34 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior()\n");CHKERRQ(ierr);
 
     if (IC==1){
-        ierr = set_ic_default( E, sol ); CHKERRQ(ierr);
+        ierr = set_ic_interior_default( E, sol ); CHKERRQ(ierr);
     }
     else if (IC==2){
         ierr = set_ic_interior_from_file( E, sol ); CHKERRQ(ierr);
+        /* in parameters.c, this condition also sets the start time
+           P->t0 from the interior file */
     }
     else if (IC==3){
-        ierr = set_ic_from_solidus( E, sol ); CHKERRQ(ierr);
+        ierr = set_ic_interior_from_solidus( E, sol ); CHKERRQ(ierr);
     }
 
     ierr = set_ic_interior_conform_to_bcs( E, sol ); CHKERRQ(ierr);
 
-    /* P->t0 (start time) is by default zero, unless set by the user.
-       The value is set from the restart JSON for IC==2.  Time
-       is needed for the radiogenic energy input */
+    /* P->t0 is set in parameters.c */
+    /* time is needed for the radiogenic energy input */
     ierr = set_interior_structure_from_solution( E, P->t0, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_ic_default( Ctx *E, Vec sol )
+static PetscErrorCode set_ic_interior_default( Ctx *E, Vec sol )
 {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_default()\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_default()\n");CHKERRQ(ierr);
 
-    ierr = set_ic_entropy( E, sol ); CHKERRQ(ierr);
+    ierr = set_ic_interior_entropy( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -106,7 +114,7 @@ static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
     Parameters const *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     /* subdomains to use, i.e. volatile abundances */
-    PetscInt const arr[2] = {2,3};
+    PetscInt const arr[2] = {2, 3};
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_file()\n");CHKERRQ(ierr);
@@ -117,7 +125,7 @@ static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
 
 }
 
-static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
+static PetscErrorCode set_ic_interior_entropy( Ctx *E, Vec sol )
 {
     /* set initial entropy gradient to constant for all nodes */
 
@@ -129,7 +137,7 @@ static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
     Vec              *subVecs;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_entropy()\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_entropy()\n");CHKERRQ(ierr);
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
@@ -286,7 +294,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
+static PetscErrorCode set_ic_interior_from_solidus( Ctx *E, Vec sol )
 {
 
     /* entropy tracks the solidus below a cutoff value, and is
@@ -301,7 +309,7 @@ static PetscErrorCode set_ic_from_solidus( Ctx *E, Vec sol )
     Solution         *S = &E->solution;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_solidus()\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_solidus()\n");CHKERRQ(ierr);
 
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
@@ -336,13 +344,13 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E, Vec sol )
     PetscInt const ind0=0;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"ic_conform_to_bcs()\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_conform_to_bcs()\n");CHKERRQ(ierr);
 
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ind = numpts_s-1;
 
     /* conform entropy-related Vecs in solution struct to sol Vec */
-    ierr = set_entropy_from_solution( E, sol );
+    ierr = set_entropy_from_solution( E, sol ); CHKERRQ(ierr);
 
     /* ensure that initial condition conforms to boundary conditions */
     /* TODO: these are just for isothermal, and also first order, since
@@ -377,14 +385,14 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 {
 
     PetscErrorCode             ierr;
-    PetscInt                   i,j;
-    PetscScalar                x0, factor, massv;
+    PetscInt                   i;
+    PetscScalar                x0;
     Vec                        *subVecs;
-    Atmosphere                 *A = &E->atmosphere;
     Parameters                 *P  = &E->parameters;
     AtmosphereParameters       *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere()\n");CHKERRQ(ierr);
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
@@ -392,45 +400,8 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     // FIXME this is horrible - parameters should not ever be changed!! Rather, there should be a dedicated step (with output to the user) which fixes inconsistent ICs
     if(Ap->SOLVE_FOR_VOLATILES){
 
-        /* "standard" atmosphere IC is to solve for the volatile
-           abundances in the melt based on a prescribed initial
-           abundance in the whole mantle */
         if(Ap->IC_ATMOSPHERE==1){
-            ierr = set_initial_volatile( E ); CHKERRQ(ierr);
-            /* Resolve for the initial volatile abundances that are necessary to
-               satisfy chemical equilibrium.  This operation effectively sets
-               the initial chemical reaction mass to zero */
-            /* TODO: some overlap here with FormFunction1.  Could have a single
-               function that returns the scalings (massv) rather than recomputing
-               them */
-            for (i=0; i<Ap->n_reactions; ++i){
-              const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-              /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
-              /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-              /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-              factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
-              for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
-                const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
-                /* Note: maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
-                /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-                massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
-                massv /= factor;
-                Ap->volatile_parameters[v].initial -= massv * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
-              }
-            }
-
-            /* now need to re-solve to get volatile abundances (A->volatiles[i].x)
-               with reaction masses equal to zero by construction */
-            ierr = set_initial_volatile( E ); CHKERRQ(ierr);
-
-            /* write initial volatile abundances (currently in A struct) to Vec sol */
-            for (i=0; i<Ap->n_volatiles; ++i) {
-                x0 = A->volatiles[i].x;
-                ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
-            }
-
-            /* TODO: check, but since we re-solve above the reaction masses should be zero by definition */
-
+            ierr = set_ic_atmosphere_default( E, sol );CHKERRQ(ierr);
         }
 
         /* read atmosphere IC from file (could be a different file to
@@ -448,6 +419,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
         /* FIXME: need a condition to prevent getting here without Vec sol being set (what about A->volatiles[i].x?) */
     }
 
+    /* if not SOLVE_FOR_VOLATILES, initialise all to zero */
     else{
         for (i=0; i<Ap->n_volatiles; ++i) {
             x0 = 0.0;
@@ -474,31 +446,110 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
 }
 
+static PetscErrorCode set_ic_atmosphere_default( Ctx *E, Vec sol )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_default()\n");CHKERRQ(ierr);
+
+    ierr = set_ic_atmosphere_from_initial_total_abundance( E, sol ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Vec sol )
+{
+    PetscErrorCode       ierr;
+    PetscScalar          x0, factor, massv;
+    Vec                  *subVecs;
+    PetscInt             i,j;
+    Parameters           *P = &E->parameters;
+    Atmosphere           *A = &E->atmosphere;
+    AtmosphereParameters *Ap = &P->atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_initial_total_abundance()\n");CHKERRQ(ierr);
+
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+ 
+    ierr = solve_for_initial_melt_abundance( E ); CHKERRQ(ierr);
+    /* Resolve for the initial volatile abundances that are necessary to
+       satisfy chemical equilibrium.  This operation effectively sets
+       the initial chemical reaction mass to zero */
+    /* TODO: some overlap here with FormFunction1.  Could have a single
+       function that returns the scalings (massv) rather than recomputing
+       them */
+    for (i=0; i<Ap->n_reactions; ++i){
+        const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+        /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
+        /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+        /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
+        factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
+        for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
+            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+            /* Note: maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
+            /* NOTE: introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
+            massv /= factor;
+            Ap->volatile_parameters[v].initial_total_abundance -= massv * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
+         }
+    }
+
+    /* now need to re-solve to get volatile abundances (A->volatiles[i].x)
+       with reaction masses equal to zero by construction */
+    ierr = solve_for_initial_melt_abundance( E ); CHKERRQ(ierr);
+
+    /* write initial volatile abundances (currently in A struct) to Vec sol */
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        x0 = A->volatiles[i].x;
+        ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
+    }
+
+    /* TODO: check, but since we re-solve above the reaction masses should be zero by definition */
+
+    for (i=0; i<E->numFields; ++i) {
+      ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
+      ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
+    }
+
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
 static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
 {
     PetscErrorCode       ierr;
     PetscInt             i;
     Atmosphere           *A = &E->atmosphere;
     AtmosphereParameters *Ap = &E->parameters.atmosphere_parameters;
+    Constants const      *C = &E->parameters.constants;
 
     PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_partial_pressure()\n");CHKERRQ(ierr);
 
     /* set initial partial pressure to A->volatiles[i].p */
     for (i=0; i<Ap->n_volatiles; ++i) {
-        A->volatiles[i].p = Ap->volatile_parameters[i].initial_pressure;
+        A->volatiles[i].p = Ap->volatile_parameters[i].initial_atmos_pressure;
     }
 
     /* compute initial volatile abundance in melt */
     ierr = set_volatile_abundances_from_partial_pressure( A, Ap );CHKERRQ(ierr);
 
-    /* TODO: back compute initial total abundance and set in parameters dict */
+    ierr = set_atmosphere_volatile_content( A, Ap, C );CHKERRQ(ierr);
+
+    ierr = set_initial_volatile_abundances( A, Ap );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
 }
 
-
-static PetscErrorCode set_initial_volatile( Ctx *E )
+static PetscErrorCode solve_for_initial_melt_abundance( Ctx *E )
 {
     PetscErrorCode ierr;
     SNES           snes;
@@ -510,6 +561,7 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"solve_for_initial_melt_abundance()\n");CHKERRQ(ierr);
 
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
 
@@ -528,7 +580,7 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        xx[i] = Ap->volatile_parameters[i].initial;
+        xx[i] = Ap->volatile_parameters[i].initial_total_abundance;
     }
     /* Initial guesses for reaction masses */
     for (i=Ap->n_volatiles; i<Ap->n_volatiles + Ap->n_reactions; ++i) {
@@ -565,7 +617,7 @@ static PetscErrorCode set_initial_volatile( Ctx *E )
         if( A->volatiles[i].x < 0.0 ){
             /* Sanity check on solution (since it's non-unique) */
             SETERRQ2(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
-                "Unphysical initial volatile concentration: volatile %d, x: %g",i,A->volatiles[i].x);
+                "Unphysical initial total volatile abundance: volatile %d, x: %g",i,A->volatiles[i].x);
         }
         else{
             A->volatiles[i].x = xx[i];

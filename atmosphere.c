@@ -360,6 +360,23 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
 
 }
 
+PetscErrorCode set_initial_volatile_abundances( Atmosphere *A, AtmosphereParameters *Ap )
+{
+
+    //PetscInt i;
+
+    PetscFunctionBeginUser;
+
+// FIXME
+#if 0
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        Ap->volatile_parameters[i].
+    }
+#endif
+
+    PetscFunctionReturn(0);
+
+}
 
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap )
 {
@@ -716,7 +733,7 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     /* parts-per-million (ppm) */
     scaling = C->VOLATILE;
     /* initial volatile (ppm) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_ppm", "ppm", VP->initial, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_ppm", "ppm", VP->initial_total_abundance, data);CHKERRQ(ierr);
     /* volatile in liquid mantle (ppm) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_ppm", "ppm", V->x, data);CHKERRQ(ierr);
     /* volatile in solid mantle (ppm) */
@@ -725,7 +742,7 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     /* kilograms (kg) */
     scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
     /* initial volatile (kg) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_kg", "kg", VP->initial*(*Ap->mantle_mass_ptr), data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_kg", "kg", VP->initial_total_abundance*(*Ap->mantle_mass_ptr), data);CHKERRQ(ierr);
     /* volatile in liquid mantle (kg) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_kg", "kg", V->mass_liquid, data);CHKERRQ(ierr);
     /* volatile in solid mantle (kg) */
@@ -973,7 +990,7 @@ PetscScalar get_residual_volatile_mass_no_reactions( Atmosphere *A, const Atmosp
     out = V->mass_atmos + V->mass_liquid + V->mass_solid;
 
     /* initial */
-    out -= Vp->initial * (*Ap->mantle_mass_ptr);
+    out -= Vp->initial_total_abundance * (*Ap->mantle_mass_ptr);
 
     /* Note: we do not include reaction masses here */
 

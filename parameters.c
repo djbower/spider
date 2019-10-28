@@ -97,15 +97,25 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   PetscFunctionBeginUser;
   /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
      if they are missing. Note that this code has a lot of duplication */
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_abundance");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial,&set);CHKERRQ(ierr);
-  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
-  vp->initial /= C->VOLATILE;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_total_abundance");CHKERRQ(ierr);
+  vp->initial_total_abundance = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_total_abundance,&set);CHKERRQ(ierr);
+  vp->initial_total_abundance /= C->VOLATILE;
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_pressure");CHKERRQ(ierr);
-  vp->initial_pressure = 0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_pressure,&set);CHKERRQ(ierr);
-  vp->initial_pressure /= C->PRESSURE;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_liquid_abundance");CHKERRQ(ierr);
+  vp->initial_liquid_abundance = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_liquid_abundance,&set);CHKERRQ(ierr);
+  vp->initial_liquid_abundance /= C->VOLATILE;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_atmos_pressure");CHKERRQ(ierr);
+  vp->initial_atmos_pressure = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_atmos_pressure,&set);CHKERRQ(ierr);
+  vp->initial_atmos_pressure /= C->PRESSURE;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_total_mass");CHKERRQ(ierr);
+  vp->initial_total_mass = 0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_total_mass,&set);CHKERRQ(ierr);
+  vp->initial_total_mass /= C->MASS;
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_kdist");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kdist,&set);CHKERRQ(ierr);
