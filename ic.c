@@ -26,8 +26,7 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *, Vec );
 static PetscErrorCode solve_for_initial_melt_abundance( Ctx * );
 /* general */
 static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char *, const PetscInt *, PetscInt );
-/* to sort */
-static PetscErrorCode FormFunction1( SNES, Vec, Vec, void *); // TODO DJB: rename this function
+static PetscErrorCode objective_function_initial_melt_abundance( SNES, Vec, Vec, void *);
 
 /* main function to set initial condition */
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
@@ -42,6 +41,10 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 
     /* atmosphere initial condition */
     ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
+
+    /* conform parameters structs to initial condition */
+    /* TODO: add function to update parameters to be consistent with
+       BCs and ICs */
 
     PetscFunctionReturn(0);
 
@@ -479,7 +482,7 @@ static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Ve
     /* Resolve for the initial volatile abundances that are necessary to
        satisfy chemical equilibrium.  This operation effectively sets
        the initial chemical reaction mass to zero */
-    /* TODO: some overlap here with FormFunction1.  Could have a single
+    /* TODO: some overlap here with objective_function_initial_melt_abundance.  Could have a single
        function that returns the scalings (massv) rather than recomputing
        them */
     for (i=0; i<Ap->n_reactions; ++i){
@@ -575,7 +578,7 @@ static PetscErrorCode solve_for_initial_melt_abundance( Ctx *E )
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
-    ierr = SNESSetFunction(snes,r,FormFunction1,E);CHKERRQ(ierr);
+    ierr = SNESSetFunction(snes,r,objective_function_initial_melt_abundance,E);CHKERRQ(ierr);
 
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
@@ -637,8 +640,7 @@ static PetscErrorCode solve_for_initial_melt_abundance( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-/* Non-linear solver for initial volatile abundance */
-static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
+static PetscErrorCode objective_function_initial_melt_abundance( SNES snes, Vec x, Vec f, void *ptr)
 {
     PetscErrorCode             ierr;
     const PetscScalar          *xx;
@@ -688,7 +690,6 @@ static PetscErrorCode FormFunction1( SNES snes, Vec x, Vec f, void *ptr)
       }
     }
 
-    /* Objective function */
     for (i=0; i<Ap->n_reactions; ++i) {
 
         PetscScalar Qp,Qr,K;
