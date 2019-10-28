@@ -8,8 +8,12 @@ Custom PETSc command line options should only ever be parsed here.
 
 #include "parameters.h"
 #include "ctx.h"
+#include "ic.h"
 // FIXME
 //#include "composition.h"
+
+static PetscErrorCode set_start_time_from_file( Parameters * , const char * );
+
 
 static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
@@ -193,10 +197,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->nstepsmacro = 18;
   ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,NULL);CHKERRQ(ierr);
 
-  /* start time (years) */
-  P->t0 = 0.0;
-  ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&P->t0,NULL);CHKERRQ(ierr);
-  P->t0 /= C->TIMEYRS; // non-dimensional for time stepping
+  /* start time (years) P->t0 is set further down, since it may
+     acquire a value from a restart value */
 
   /* step time (years) */
   P->dtmacro = 100;
@@ -259,13 +261,27 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si1",&P->Mg_Si1,NULL);CHKERRQ(ierr);
   }
 
+  /* start time (years) */
+  P->t0 = 0.0;
+
   /* initial condition for interior */
   P->IC_INTERIOR = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-IC_INTERIOR",&P->IC_INTERIOR,NULL);CHKERRQ(ierr);
 
   ierr = PetscStrcpy(P->ic_interior_filename,"restart.json"); CHKERRQ(ierr);
-  if ( (P->IC_INTERIOR==2) || (P->IC_INTERIOR==3) ){
+  if ( P->IC_INTERIOR==2 ){
     ierr = PetscOptionsGetString(NULL,NULL,"-ic_interior_filename",P->ic_interior_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
+    /* set start time from restart file */
+    /* TODO: get time from interior restart file, but could add
+       other options to get time from e.g. atmosphere restart file */
+    ierr = set_start_time_from_file( P, P->ic_interior_filename ); CHKERRQ(ierr);
+  }
+  else{
+    PetscScalar   t0 = 0.0;
+    PetscBool t0_set = PETSC_FALSE;
+    ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&t0,&t0_set);CHKERRQ(ierr);
+    if( t0_set ) P->t0 = t0;
+    P->t0 /= C->TIMEYRS; // non-dimensional for time stepping
   }
 
   P->ic_melt_pressure = 30.0; // GPa
@@ -821,6 +837,28 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode set_start_time_from_file( Parameters *P , const char * filename )
+{
+
+    PetscErrorCode   ierr;
+    cJSON            *json=NULL, *time;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_start_time_from_file()\n");CHKERRQ(ierr);
+
+    ierr = read_JSON_file_to_JSON_object( filename, &json );
+
+    /* time from this restart JSON must be passed to the time stepper
+       to continue the integration and keep track of absolute time */
+    time = cJSON_GetObjectItem(json,"time");
+    P->t0 = time->valuedouble;
+
+    cJSON_Delete( json );
+
+    PetscFunctionReturn(0);
+
+}
+
 PetscErrorCode PrintParameters(Parameters const *P)
 {
   PetscErrorCode             ierr;
@@ -829,6 +867,7 @@ PetscErrorCode PrintParameters(Parameters const *P)
   AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
   PetscFunctionBeginUser;
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"                                                                                                    );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"**************** Magma Ocean | Parameters **************\n\n"                                          );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15s %s\n"                 ,"[Scaling]"  ,"","Value"                       ,"Units"       );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);

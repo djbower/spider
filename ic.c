@@ -160,7 +160,7 @@ static PetscErrorCode set_ic_entropy( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode read_JSON_file_to_JSON_object( const char * filename, cJSON ** json )
+PetscErrorCode read_JSON_file_to_JSON_object( const char * filename, cJSON ** json )
 {
     PetscErrorCode   ierr;
     FILE             *fp;
@@ -208,8 +208,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, 
        to enable restarting */
 
     PetscErrorCode   ierr;
-    Parameters *P  = &E->parameters;
-    cJSON            *json=NULL, *solution, *subdomain, *values, *data, *item, *time;
+    cJSON            *json=NULL, *solution, *subdomain, *values, *data, *item;
     char             *item_str;
     PetscInt         i, j, subdomain_num;
     PetscScalar      val = 0;
@@ -225,11 +224,6 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, 
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
     ierr = read_JSON_file_to_JSON_object( filename, &json );
-
-    /* time from this restart JSON must be passed to the time stepper
-       to continue the integration and keep track of absolute time */
-    time = cJSON_GetObjectItem(json,"time");
-    P->t0 = time->valuedouble;
 
     solution = cJSON_GetObjectItem(json,"solution");
     subdomain = cJSON_GetObjectItem(solution,"subdomain data");
