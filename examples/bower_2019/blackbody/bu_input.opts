@@ -181,7 +181,7 @@
 -P0 101325.0 # Pa (= 1 atm)
 
 # Define the volatiles
--volatile_names CO2,H2O
+#-volatile_names CO2,H2O
 
 # parameters relating to CO2 volatile
 #-CO2_initial 0.0 # ppm

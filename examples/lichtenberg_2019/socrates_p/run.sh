@@ -1,5 +1,7 @@
 #/user/bin/env bash
 
+# UPDATED VERSION OF ../SOCRATES EXAMPLE TO RESTART FROM PARTIAL PRESSURES
+
 # Template file for running SPIDER within the framework of a coupled interior/atmosphere/escape
 # scheme
 
@@ -28,6 +30,9 @@
 # to advance before the code again halts even if an event has not occurred.
 # -nstepsmacro 1:                  make a single timestep
 # -dtmacro 30000:                  delta time to advance by, here is 30,000 years
+# restart with atmospheric partial pressure
+# -CO2_initial_atmos_pressure      partial pressure of CO2 in Pa
+# -H2O_initial_atmos_pressure      partial pressure of H2O in Pa
 
 # ==================
 # Overview of result
@@ -47,5 +52,4 @@
 # SPIDER to do it.
 
 # main restart example is here:
-#lldb -- 
-spider -options_file bu_input.opts -IC_INTERIOR 2 -ic_interior_filename 50002.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -nstepsmacro 1 -dtmacro 30000
+lldb -- spider -options_file bu_input.opts -IC_INTERIOR 2 -ic_interior_filename 50002.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -SOLVE_FOR_VOLATILES 1 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -IC_ATMOSPHERE 3 -H2O_initial_atmos_pressure 101325 -CO2_initial_atmos_pressure 101325 -nstepsmacro 1 -dtmacro 30000

@@ -122,7 +122,6 @@ typedef struct AtmosphereParameters_ {
     PetscBool   PARAM_UTBL;
     PetscScalar param_utbl_const;
     // for volatile ODE
-    PetscBool           SOLVE_FOR_VOLATILES;
     PetscScalar         P0;
     PetscInt            n_volatiles;
     VolatileParameters  volatile_parameters[SPIDER_MAX_VOLATILE_SPECIES];

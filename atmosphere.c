@@ -79,10 +79,9 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     A->dtsurfdt = 0.0;
     A->psurf = 0.0;
 
-    /* Initialize mass_reaction temporary field (maybe not needed) to zero */
+    /* initialise mass reaction terms to zero */
     {
       PetscInt i;
-
       for (i=0; i<SPIDER_MAX_REACTIONS; ++i) A->mass_reaction[i] = 0.0;
     }
 

@@ -204,8 +204,6 @@ description: S at surface
 scaling: 2993.025100070677
 val: 0.9020973462388412
 description: Magma ocean volatile content
-scaling: 100
-val:                0
-val:                0
+scaling:              100 
 description: Magma ocean reaction accumulated amounts
 scaling: 1.499085657717868e+21

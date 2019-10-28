@@ -500,9 +500,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     ierr = PetscOptionsGetString(NULL,NULL,"-ic_atmosphere_filename",Ap->ic_atmosphere_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
   }
 
-  Ap->SOLVE_FOR_VOLATILES = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-SOLVE_FOR_VOLATILES",&Ap->SOLVE_FOR_VOLATILES,NULL);CHKERRQ(ierr);
-
   /* (top) surface boundary condition */
   Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
   {
@@ -527,7 +524,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
            with CO2 and H2O volatile using plane-parallel radiative equilibrium model
            of Abe and Matsui (1985)
          do nothing */
-      Ap->SOLVE_FOR_VOLATILES = PETSC_TRUE;
       break;
     case 4:
       // MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed)

@@ -36,6 +36,7 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     ierr = set_ic_interior( E, sol ); CHKERRQ(ierr);
 
     /* atmosphere initial condition */
+    /* must be after interior initial condition */
     ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
 
     /* conform parameters structs to initial condition */
@@ -67,11 +68,16 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     else if (IC==3){
         ierr = set_ic_interior_from_solidus( E, sol ); CHKERRQ(ierr);
     }
+    else{
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported IC_INTERIOR value %d provided",P->IC_INTERIOR);
+    }
 
     ierr = set_ic_interior_conform_to_bcs( E, sol ); CHKERRQ(ierr);
 
     /* P->t0 is set in parameters.c */
     /* time is needed for the radiogenic energy input */
+    /* below sets interior structure, since possibly required for
+       atmosphere initial condition */
     ierr = set_interior_structure_from_solution( E, P->t0, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -378,20 +384,13 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 {
 
     PetscErrorCode             ierr;
-    PetscInt                   i;
-    PetscScalar                x0;
-    Vec                        *subVecs;
     Parameters                 *P  = &E->parameters;
     AtmosphereParameters       *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere()\n");CHKERRQ(ierr);
 
-    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
-    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-
-    // FIXME this is horrible - parameters should not ever be changed!! Rather, there should be a dedicated step (with output to the user) which fixes inconsistent ICs
-    if(Ap->SOLVE_FOR_VOLATILES){
+    if(Ap->n_volatiles){
 
         if(Ap->IC_ATMOSPHERE==1){
             ierr = set_ic_atmosphere_default( E, sol );CHKERRQ(ierr);
@@ -409,31 +408,13 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
             ierr = set_ic_atmosphere_from_partial_pressure( E, sol ); CHKERRQ(ierr);
         }
 
-        /* FIXME: need a condition to prevent getting here without Vec sol being set (what about A->volatiles[i].x?) */
-    }
-
-    /* if not SOLVE_FOR_VOLATILES, initialise all to zero */
-    else{
-        for (i=0; i<Ap->n_volatiles; ++i) {
-            x0 = 0.0;
-            ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
+        else{
+            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported IC_ATMOSPHERE value %d provided",Ap->IC_ATMOSPHERE);
         }
     }
 
-    /* FIXME: I think redundant, since we solve the above to explicitly set mass reactions to zero */
-    /* Initialize reaction amounts to zero */
-    /* But check what happens if reactions are not included */
-    for (i=0; i<Ap->n_reactions; ++i) {
-        ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],i,0.0,INSERT_VALUES);CHKERRQ(ierr);
-    }
-
-    for (i=0; i<E->numFields; ++i) {
-      ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
-      ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
-    }
-
-    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-    ierr = PetscFree(subVecs);CHKERRQ(ierr);
+    /* TODO: check, but with Ap->n_volatiles=0 there are no entries in
+       the solution vector to initialise to zero */
 
     PetscFunctionReturn(0);
 }
@@ -453,8 +434,7 @@ static PetscErrorCode set_ic_atmosphere_default( Ctx *E, Vec sol )
 static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Vec sol )
 {
     PetscErrorCode       ierr;
-    PetscScalar          x0, factor, massv;
-    Vec                  *subVecs;
+    PetscScalar          factor, massv;
     PetscInt             i,j;
     Parameters           *P = &E->parameters;
     Atmosphere           *A = &E->atmosphere;
@@ -463,9 +443,6 @@ static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Ve
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_initial_total_abundance()\n");CHKERRQ(ierr);
 
-    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
-    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
- 
     ierr = solve_for_initial_melt_abundance( E ); CHKERRQ(ierr);
     /* Resolve for the initial volatile abundances that are necessary to
        satisfy chemical equilibrium.  This operation effectively sets
@@ -473,6 +450,10 @@ static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Ve
     /* TODO: some overlap here with objective_function_initial_melt_abundance.  Could have a single
        function that returns the scalings (massv) rather than recomputing
        them */
+
+    /* TODO: this block should move to a function that has exclusive access to conform
+       the parameters struct to the ICs and BCs */
+    // FIXME this is horrible - parameters should not ever be changed!! Rather, there should be a dedicated step (with output to the user) which fixes inconsistent ICs
     for (i=0; i<Ap->n_reactions; ++i){
         const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
         /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
@@ -493,21 +474,8 @@ static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Ve
        with reaction masses equal to zero by construction */
     ierr = solve_for_initial_melt_abundance( E ); CHKERRQ(ierr);
 
-    /* write initial volatile abundances (currently in A struct) to Vec sol */
-    for (i=0; i<Ap->n_volatiles; ++i) {
-        x0 = A->volatiles[i].x;
-        ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,x0,INSERT_VALUES);CHKERRQ(ierr);
-    }
-
-    /* TODO: check, but since we re-solve above the reaction masses should be zero by definition */
-
-    for (i=0; i<E->numFields; ++i) {
-      ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
-      ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);
-    }
-
-    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-    ierr = PetscFree(subVecs);CHKERRQ(ierr);
+    /* below will also update mass reaction terms */
+    ierr = set_solution_from_volatile_abundances( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -518,7 +486,6 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
     PetscInt             i;
     Atmosphere           *A = &E->atmosphere;
     AtmosphereParameters *Ap = &E->parameters.atmosphere_parameters;
-    Constants const      *C = &E->parameters.constants;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_partial_pressure()\n");CHKERRQ(ierr);
@@ -531,9 +498,11 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
     /* compute initial volatile abundance in melt */
     ierr = set_volatile_abundances_from_partial_pressure( A, Ap );CHKERRQ(ierr);
 
-    ierr = set_atmosphere_volatile_content( A, Ap, C );CHKERRQ(ierr);
-
-    ierr = set_initial_volatile_abundances( A, Ap );CHKERRQ(ierr);
+    /* mass reaction has not been updated, so should still be zero */
+    /* FIXME: this initial condition is not compatible with reactions,
+       but nor does it need to be, since this initial condition is
+       used when codes are coupled (e.g. to VULCAN) */
+    ierr = set_solution_from_volatile_abundances( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

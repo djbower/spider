@@ -1,11 +1,11 @@
-#include "ctx.h"
+#include "atmosphere.h"
 #include "bc.h"
+#include "ctx.h"
 #include "energy.h"
 #include "matprop.h"
 #include "rheologicalfront.h"
 #include "twophase.h"
 #include "util.h"
-#include "atmosphere.h"
 // FIXME
 //#include "composition.h"
 
@@ -117,7 +117,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   /* volatiles and reactions */
 
-  if (Ap->SOLVE_FOR_VOLATILES) {
+  if (Ap->n_volatiles){
     ierr = solve_dxdts( E );
     for (v=0; v<Ap->n_volatiles; ++v) {
       ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,A->volatiles[v].dxdt,INSERT_VALUES);CHKERRQ(ierr);
@@ -126,14 +126,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
       ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],v,A->reactions[v].dmrdt,INSERT_VALUES);CHKERRQ(ierr);
     }
   }
-  else{
-    for (v=0; v<Ap->n_volatiles; ++v) {
-      ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,0.0,INSERT_VALUES);CHKERRQ(ierr);
-    }
-    for (v=0; v<Ap->n_reactions; ++v) {
-      ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],v,0.0,INSERT_VALUES);CHKERRQ(ierr);
-    }
-  }
+
+  /* TODO: check, but with Ap->n_volatiles=0 there are no entries in
+     the rhs vector to initialise to zero */
 
   for (i=1; i<E->numFields; ++i) {
     ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);

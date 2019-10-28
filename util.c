@@ -83,13 +83,13 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
 PetscErrorCode set_volatile_abundances_from_solution( Ctx *E, Vec sol )
 {
-    PetscErrorCode ierr;
+    PetscErrorCode             ierr;
     Atmosphere                 *A = &E->atmosphere;
     Parameters                 *P = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
-    PetscInt       i;
-    PetscMPIInt    size;
-    Vec            *subVecs;
+    PetscInt                    i;
+    PetscMPIInt                 size;
+    Vec                        *subVecs;
 
     PetscFunctionBeginUser;
 
@@ -116,6 +116,41 @@ PetscErrorCode set_volatile_abundances_from_solution( Ctx *E, Vec sol )
 
 }
 
+PetscErrorCode set_solution_from_volatile_abundances( Ctx *E, Vec sol )
+{
+    PetscErrorCode             ierr;
+    Parameters                 *P = &E->parameters;
+    Atmosphere                 *A = &E->atmosphere;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    PetscInt                   i;
+    Vec                        *subVecs;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+
+    /* volatile abundances */
+    for( i=0; i<Ap->n_volatiles; ++i) {
+        ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,A->volatiles[i].x,INSERT_VALUES);CHKERRQ(ierr);
+    }
+
+    /* mass reaction terms */
+    for( i=0; i<Ap->n_reactions; ++i) {
+        ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],i,A->mass_reaction[i],INSERT_VALUES);CHKERRQ(ierr);
+    }
+
+    ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]]);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]]);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]]);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]]);CHKERRQ(ierr);
+
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    PetscFree(subVecs);
+
+    PetscFunctionReturn(0);
+
+}
 
 PetscErrorCode set_solution_from_entropy_at_staggered_nodes( Ctx *E, Vec sol )
 {
