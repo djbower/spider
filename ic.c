@@ -1,13 +1,9 @@
 #include "atmosphere.h"
-#include "bc.h"
-#include "cJSON.h"
 #include "energy.h"
 #include "ic.h"
-#include "matprop.h"
 #include "monitor.h"
 #include "parameters.h"
 #include "reaction.h"
-#include "twophase.h"
 #include "util.h"
 
 /* interior ic */
@@ -47,7 +43,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
        BCs and ICs */
 
     PetscFunctionReturn(0);
-
 }
 
 /* initial condition of interior */
@@ -92,7 +87,6 @@ static PetscErrorCode set_ic_interior_default( Ctx *E, Vec sol )
     ierr = set_ic_interior_entropy( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_ic_interior_from_file( Ctx *E, Vec sol )
@@ -108,7 +102,6 @@ static PetscErrorCode set_ic_interior_from_file( Ctx *E, Vec sol )
     ierr = set_ic_from_file( E, sol, P->ic_interior_filename, arr, 2 ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
@@ -125,7 +118,6 @@ static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
     ierr = set_ic_from_file( E, sol, Ap->ic_atmosphere_filename, arr, 2 ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_ic_interior_entropy( Ctx *E, Vec sol )
@@ -211,7 +203,6 @@ PetscErrorCode read_JSON_file_to_JSON_object( const char * filename, cJSON ** js
     free( buffer );
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, const PetscInt *arr, PetscInt size_arr )
@@ -379,7 +370,6 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E, Vec sol )
     ierr = set_entropy_from_solution( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 /* initial condition of atmosphere */
@@ -446,7 +436,6 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_ic_atmosphere_default( Ctx *E, Vec sol )
@@ -459,7 +448,6 @@ static PetscErrorCode set_ic_atmosphere_default( Ctx *E, Vec sol )
     ierr = set_ic_atmosphere_from_initial_total_abundance( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Vec sol )
@@ -522,7 +510,6 @@ static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Ve
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
@@ -549,7 +536,6 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
     ierr = set_initial_volatile_abundances( A, Ap );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode solve_for_initial_melt_abundance( Ctx *E )
@@ -734,5 +720,4 @@ static PetscErrorCode objective_function_initial_melt_abundance( SNES snes, Vec 
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
