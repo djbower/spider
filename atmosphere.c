@@ -1013,7 +1013,6 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             b = -1.7;
             c = -2.0;
             break;
-        /* TODO: add a testing mode where fO2 is a constant? */
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported OXYGEN_FUGACITY value %d provided",Ap->OXYGEN_FUGACITY);
             break;
