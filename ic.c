@@ -17,6 +17,7 @@ static PetscErrorCode set_ic_interior( Ctx *, Vec );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char *, const PetscInt *, PetscInt );
 static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_file( Ctx *, Vec );
+static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *, Vec );
 static PetscErrorCode set_ic_from_solidus( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *, Vec );
 static PetscErrorCode set_initial_volatile( Ctx * );
@@ -439,12 +440,10 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
             ierr = set_ic_atmosphere_from_file( E, sol ); CHKERRQ(ierr);
         }
 
-#if 0
-        /* placeholder for partial pressure IC */
+        /* set IC from partial pressure in the atmosphere */
         else if (Ap->IC_ATMOSPHERE==3){
-            pass;
+            ierr = set_ic_atmosphere_from_partial_pressure( E, sol ); CHKERRQ(ierr);
         }
-#endif
 
         /* FIXME: need a condition to prevent getting here without Vec sol being set (what about A->volatiles[i].x?) */
     }
@@ -474,6 +473,30 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 
 }
+
+static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
+{
+    PetscErrorCode       ierr;
+    PetscInt             i;
+    Atmosphere           *A = &E->atmosphere;
+    AtmosphereParameters *Ap = &E->parameters.atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+
+    /* set initial partial pressure to A->volatiles[i].p */
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        A->volatiles[i].p = Ap->volatile_parameters[i].initial_pressure;
+    }
+
+    /* compute initial volatile abundance in melt */
+    ierr = set_volatile_abundances_from_partial_pressure( A, Ap );CHKERRQ(ierr);
+
+    /* TODO: back compute initial total abundance and set in parameters dict */
+
+    PetscFunctionReturn(0);
+
+}
+
 
 static PetscErrorCode set_initial_volatile( Ctx *E )
 {
