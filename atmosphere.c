@@ -8,6 +8,8 @@ static PetscErrorCode initialise_volatiles( Atmosphere *, const AtmosphereParame
 static PetscErrorCode set_atmosphere_pressures( Atmosphere *, const AtmosphereParameters *, const Constants * );
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters * );
+static PetscErrorCode set_volatile_masses_in_liquid( Atmosphere *, const AtmosphereParameters * );
+static PetscErrorCode set_volatile_masses_in_solid( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_escape( Atmosphere *, const AtmosphereParameters * );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, PetscInt );
 static PetscErrorCode set_jeans( Atmosphere *, const AtmosphereParameters *, PetscInt );
@@ -99,7 +101,9 @@ static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParam
         A->volatiles[i].p = 0.0;
         A->volatiles[i].dxdt = 0.0;
         A->volatiles[i].dpdx = 0.0;
-        A->volatiles[i].m = 0.0;
+        A->volatiles[i].mass_atmos = 0.0;
+        A->volatiles[i].mass_liquid = 0.0;
+        A->volatiles[i].mass_solid = 0.0;
         A->volatiles[i].tau = 0.0;
         A->volatiles[i].mixing_ratio = 0.0;
         A->volatiles[i].column_density = 0.0;
@@ -366,9 +370,41 @@ static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *A, const At
     PetscFunctionBeginUser;
 
     for (i=0; i<Ap->n_volatiles; ++i) {
-        A->volatiles[i].m = PetscSqr((*Ap->radius_ptr)) * A->volatiles[i].p / -(*Ap->gravity_ptr);
-        A->volatiles[i].m *= 1.0E6 / (*Ap->VOLATILE_ptr);
-        A->volatiles[i].m *= Ap->volatile_parameters[i].molar_mass / A->molar_mass;
+        A->volatiles[i].mass_atmos = PetscSqr((*Ap->radius_ptr)) * A->volatiles[i].p / -(*Ap->gravity_ptr);
+        A->volatiles[i].mass_atmos *= 1.0E6 / (*Ap->VOLATILE_ptr);
+        A->volatiles[i].mass_atmos *= Ap->volatile_parameters[i].molar_mass / A->molar_mass;
+    }
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_volatile_masses_in_liquid( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+    /* mass of volatiles in liquid */
+
+    PetscInt i;
+
+    PetscFunctionBeginUser;
+
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        A->volatiles[i].mass_liquid = A->volatiles[i].x*A->Mliq;
+    }
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_volatile_masses_in_solid( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+    /* mass of volatiles in solid */
+
+    PetscInt i;
+
+    PetscFunctionBeginUser;
+
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        A->volatiles[i].mass_solid = A->volatiles[i].x * Ap->volatile_parameters[i].kdist * A->Msol;
     }
 
     PetscFunctionReturn(0);
@@ -412,6 +448,10 @@ PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereP
     ierr = set_volume_mixing_ratios( A, Ap );CHKERRQ(ierr);
 
     ierr = set_volatile_masses_in_atmosphere( A, Ap );CHKERRQ(ierr);
+
+    ierr = set_volatile_masses_in_liquid( A, Ap );CHKERRQ(ierr);
+
+    ierr = set_volatile_masses_in_solid( A, Ap );CHKERRQ(ierr);
 
     /* escape is always set, since then we can easily see the
        variables, regardless of whether the feedback is actually
@@ -687,11 +727,11 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     /* initial volatile (kg) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "initial_kg", "kg", VP->initial*(*Ap->mantle_mass_ptr), data);CHKERRQ(ierr);
     /* volatile in liquid mantle (kg) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_kg", "kg", V->x*A->Mliq, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_kg", "kg", V->mass_liquid, data);CHKERRQ(ierr);
     /* volatile in solid mantle (kg) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "solid_kg", "kg", V->x*VP->kdist*A->Msol, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "solid_kg", "kg", V->mass_solid, data);CHKERRQ(ierr);
     /* volatile in atmosphere (kg) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_kg", "kg", V->m, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_kg", "kg", V->mass_atmos, data);CHKERRQ(ierr);
 
     /* kilograms (kg), without 4*pi */
     val = C->MASS * VP->molar_mass * 1.0E3;
@@ -929,15 +969,14 @@ PetscScalar get_residual_volatile_mass_no_reactions( Atmosphere *A, const Atmosp
 {
     PetscScalar out;
 
-    /* atmosphere */
-    out = 1.0E6 / *Ap->VOLATILE_ptr;
-    out *= PetscSqr( (*Ap->radius_ptr) ) / -(*Ap->gravity_ptr);
-    out *= (Vp->molar_mass / A->molar_mass);
-    out *= V->p;
-    /* liquid and solid */
-    out += V->x * ( Vp->kdist * A->Msol + A->Mliq );
+    /* reservoirs */
+    out = V->mass_atmos + V->mass_liquid + V->mass_solid;
+
+    /* initial */
     out -= Vp->initial * (*Ap->mantle_mass_ptr);
+
     /* Note: we do not include reaction masses here */
+
     return out;
 }
 
