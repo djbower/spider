@@ -461,6 +461,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
 
     PetscErrorCode       ierr;
     PetscInt             i;
+    PetscScalar          mass;
     Parameters           *P = &E->parameters;
     Atmosphere           *A = &E->atmosphere;
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
@@ -471,27 +472,42 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     /* prior to this function, A->volatiles[i].x and A->mass_reaction[i]
        are updated */
 
-    /* conform, unless data is read in from a file, in which case we
-       assume the user does not want to reset the mass_reaction to zero */
-    if( Ap->IC_ATMOSPHERE !=2 ){
-
-        /* update initial_total_abundance to account for mass reactions */ 
-        for (i=0; i<Ap->n_volatiles; ++i){
+    /* conform initial_total_abundance */
+    for (i=0; i<Ap->n_volatiles; ++i){
+        if( Ap->IC_ATMOSPHERE==1 ){
+            /* this is equivalent to the operation below for Ap->IC_ATMOSPHERE==3, but a shortcut since
+               we do not need to sum all reservoirs to get to the initial total abundance */
+            /* below we correct with -= */
             Ap->volatile_parameters[i].initial_total_abundance -= A->volatiles[i].mass_reaction / (*Ap->mantle_mass_ptr);
         }
 
-        /* re-solve to get volatile abundances in the melt (A->volatiles[i].x) */
-        ierr = solve_for_initial_melt_abundance( E ); CHKERRQ(ierr);
+        /* do not conform if Ap->IC_ATMOSPHERE==2, since we assume the user wants to resume from the exact state as
+           defined in the restart file */
 
-        /* above will also set mass reactions close to (but not exactly)
-           to zero.  Explicitly zero the entries here */
-        for(i=0; i<Ap->n_reactions; ++i){
-            A->mass_reaction[i] = 0.0;
+        else if( Ap->IC_ATMOSPHERE==3 ){
+            mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos + A->volatiles[i].mass_reaction;
+            /* below we set with = */
+            Ap->volatile_parameters[i].initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
         }
     }
 
-    /* these updated values in the structs are mapped back to the sol
-       Vec in the next function call once this return */
+    /* re-solve to get volatile abundances in the melt (A->volatiles[i].x) */
+    ierr = solve_for_initial_melt_abundance( E ); CHKERRQ(ierr);
+
+    /* Ap_>IC_ATMOSPHERE==1 will also set mass reactions close to (but not exactly)
+       to zero.  Explicitly zero the entries here */
+    /* FIXME: add tolerance check to ensure that mass reactions are
+       actually close to zero before overwriting them here */
+    for(i=0; i<Ap->n_reactions; ++i){
+        A->mass_reaction[i] = 0.0;
+    }
+
+    for(i=0; i<Ap->n_volatiles; ++i){
+        Ap->volatile_parameters[i].initial_atmos_pressure = A->volatiles[i].p;
+    }
+
+    /* the relevant updated values in the structs are mapped back to the sol
+       Vec in the next function call following this return */
 
     PetscFunctionReturn(0);
 }

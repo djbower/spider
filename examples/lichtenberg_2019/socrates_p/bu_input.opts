@@ -39,7 +39,6 @@
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
-# volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
 -volatile0 1.0E2
 
 # energy fluxes and sources to include
@@ -156,14 +155,6 @@
 # (often only a few cms thick) cannot be resolved by the choice of mesh
 -PARAM_UTBL 0 # flag to turn on parameterisation
 -param_utbl_const 1.0E-7 # value of parameterisation
-
-# track time-dependence of volatile content in atmosphere and magma ocean
-# can be done passively or self-consistently
-# with SURFACE_BC=3 above (where the volatile content feeds back into determining
-# the emissivity of the atmosphere)
-# [0] off
-# [1] on
--SOLVE_FOR_VOLATILES 1
 
 # below is for SURFACE_BC=3, see Abe and Matsui (1986) and Elkins-Tanton (2008)
 # for the grey-body atmosphere formulation.  The expressions for the partial

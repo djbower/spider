@@ -50,9 +50,7 @@ typedef struct VolatileParameters_ {
     char        prefix[128];  /* Maximum prefix length */
     /* next three (initial_) are not mutually exclusive */
     PetscScalar initial_total_abundance;
-    PetscScalar initial_liquid_abundance;
     PetscScalar initial_atmos_pressure;
-    PetscScalar initial_total_mass;
     PetscScalar kdist;
     PetscScalar kabs; // note this is without pressure-dependence
     PetscScalar henry;
