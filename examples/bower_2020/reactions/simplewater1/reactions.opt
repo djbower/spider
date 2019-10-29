@@ -48,7 +48,7 @@
 # initial condition
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
--initial_condition 1
+-IC_INTERIOR 1
 #-ic_filename output/dSdr_b_aug_0.m
 
 # all units are SI unless indicated otherwise
@@ -178,17 +178,11 @@
 -PARAM_UTBL 0 # flag to turn on parameterisation
 -param_utbl_const 1.0E-7 # value of parameterisation
 
-# track time-dependence of volatile content in atmosphere and magma ocean
-# can be done passively (with SURFACE_BC=1 or 2 above), or self-consistently
-# with SURFACE_BC=3 above (where the volatile content feeds back into determining
-# the emissivity of the atmosphere)
-# [0] off
-# [1] on
--SOLVE_FOR_VOLATILES 1
-
 # below is for SURFACE_BC=3, see Abe and Matsui (1986) and Elkins-Tanton (2008)
 # for the grey-body atmosphere formulation.  The expressions for the partial
 # pressure of each component (H2O and CO2) are taken from Lebrun et al. (2013)
+
+-IC_ATMOSPHERE 1
 
 # atmosphere reference pressure (Pa)
 -P0 101325.0 # Pa (= 1 atm)
@@ -215,7 +209,7 @@
 # TODO: this initial is basically an initial guess, since we now solve
 # for chemical equilibrium and hence this value changes
 # below is a test, but this initial H2 agrees with chemical equil when epsilon=0.01
--H2O_initial 100.0 #6.2155024017041427 #1.3399401107003328 # originally 500 # ppm, Elkins-Tanton (2008) case 2
+-H2O_initial_total_abundance 100.0 #6.2155024017041427 #1.3399401107003328 # originally 500 # ppm, Elkins-Tanton (2008) case 2
 #-H2O_initial 92.22674857180891 # equilibrated value for IW buffer
 
 #-H2O_initial 0.0 # ppm, Elkins-Tanton (2008) case 3
@@ -230,7 +224,7 @@
 # for chemical equilibrium and hence this value changes
 
 # below is a test, but this initial H2 agrees with chemical equil when epsilon=0.01
--H2_initial 100.0 #155.25366760985411 # originally 100 # ppm from https://doi.org/10.1016/j.epsl.2012.06.031
+-H2_initial_total_abundance 100.0 #155.25366760985411 # originally 100 # ppm from https://doi.org/10.1016/j.epsl.2012.06.031
 #-H2_initial 100.9996905047807 # equilibrated value for IW buffer
 -H2_kdist 0.0017 # from https://doi.org/10.1029/2004GL021341
 -H2_kabs 0.0 # absorption (m^2/kg)
@@ -260,6 +254,8 @@
 #-reaction_H2O_fO2_H2_epsilon_H2 -1.0
 #-reaction_H2O_fO2_H2_gamma_H2O 8.936682739051928 # H2O molar mass / H2 molar mass
 #-reaction_H2O_fO2_H2_gamma_H2 -1.0
+
+#-reaction_water1
 
 -reaction_simplewater1
 

@@ -10,6 +10,7 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmospherePa
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_liquid( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_solid( Atmosphere *, const AtmosphereParameters * );
+static PetscErrorCode set_volatile_masses_reactions( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_escape( Atmosphere *, const AtmosphereParameters * );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *, PetscInt );
 static PetscErrorCode set_jeans( Atmosphere *, const AtmosphereParameters *, PetscInt );
@@ -103,6 +104,7 @@ static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParam
         A->volatiles[i].mass_atmos = 0.0;
         A->volatiles[i].mass_liquid = 0.0;
         A->volatiles[i].mass_solid = 0.0;
+        A->volatiles[i].mass_reaction = 0.0;
         A->volatiles[i].tau = 0.0;
         A->volatiles[i].mixing_ratio = 0.0;
         A->volatiles[i].column_density = 0.0;
@@ -427,6 +429,41 @@ static PetscErrorCode set_volatile_masses_in_solid( Atmosphere *A, const Atmosph
 
 }
 
+static PetscErrorCode set_volatile_masses_reactions( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+    /* mass gain or loss due to reactions */
+
+    PetscInt    i,j;
+    PetscScalar factor; /* normalisation, using the first volatile (reactant) in this chemical reaction */
+    PetscScalar massv;
+
+    PetscFunctionBeginUser;
+
+    /* initialise mass_reactions to zero for each volatile */
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        A->volatiles[i].mass_reaction = 0.0;
+    }
+
+    for (i=0; i<Ap->n_reactions; ++i) {
+        const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
+        /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
+        /* introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+        /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
+        factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
+        for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
+            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+            /* introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
+            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
+            massv /= factor; /* +ve for reactants, -ve for products */
+            A->volatiles[v].mass_reaction += massv * A->mass_reaction[i]; /* convention is mass loss of reactants, mass gain of products */
+            /* but regarding above, convention is arbitrary since mass_r[i] will switch sign to balance */
+        }
+    }
+
+    PetscFunctionReturn(0);
+
+}
+
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     PetscInt i;
@@ -468,6 +505,8 @@ PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereP
     ierr = set_volatile_masses_in_liquid( A, Ap );CHKERRQ(ierr);
 
     ierr = set_volatile_masses_in_solid( A, Ap );CHKERRQ(ierr);
+
+    ierr = set_volatile_masses_reactions( A, Ap );CHKERRQ(ierr);
 
     /* escape is always set, since then we can easily see the
        variables, regardless of whether the feedback is actually
@@ -748,6 +787,8 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     ierr = JSON_add_single_value_to_object(dm, scaling, "solid_kg", "kg", V->mass_solid, data);CHKERRQ(ierr);
     /* volatile in atmosphere (kg) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_kg", "kg", V->mass_atmos, data);CHKERRQ(ierr);
+    /* volatile exchanges due to reactions (kg) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "reaction_kg", "kg", V->mass_reaction, data);CHKERRQ(ierr);
 
     /* kilograms (kg), without 4*pi */
     val = C->MASS * VP->molar_mass * 1.0E3;
@@ -981,17 +1022,15 @@ static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParam
 
 }
 
-PetscScalar get_residual_volatile_mass_no_reactions( Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, const Volatile *V)
+PetscScalar get_residual_volatile_mass( Atmosphere *A, const AtmosphereParameters *Ap, const VolatileParameters *Vp, const Volatile *V)
 {
     PetscScalar out;
 
     /* reservoirs */
-    out = V->mass_atmos + V->mass_liquid + V->mass_solid;
+    out = V->mass_atmos + V->mass_liquid + V->mass_solid + V->mass_reaction;
 
     /* initial */
     out -= Vp->initial_total_abundance * (*Ap->mantle_mass_ptr);
-
-    /* Note: we do not include reaction masses here */
 
     return out;
 }

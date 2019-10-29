@@ -19,6 +19,7 @@ typedef struct Volatile_ {
     PetscScalar mass_atmos; // mass in atmosphere (kg)
     PetscScalar mass_liquid; // mass in liquid (kg)
     PetscScalar mass_solid; // mass in solid (kg)
+    PetscScalar mass_reaction; // mass exchange (gain or loss) due to reactions (kg)
     PetscScalar tau; // optical_depth at surface (non-dimensional)
     PetscScalar mixing_ratio;
     PetscScalar column_density;
@@ -66,7 +67,7 @@ PetscErrorCode destroy_atmosphere( Atmosphere * );
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters * );
 PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const Constants *C );
 PetscScalar get_emissivity_abe_matsui( Atmosphere *, const AtmosphereParameters *);
-PetscScalar get_residual_volatile_mass_no_reactions( Atmosphere *, const AtmosphereParameters *, const VolatileParameters *,  const Volatile *);
+PetscScalar get_residual_volatile_mass( Atmosphere *, const AtmosphereParameters *, const VolatileParameters *,  const Volatile *);
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters *, PetscScalar );
 PetscErrorCode set_surface_temperature_from_flux( Atmosphere *, const AtmosphereParameters * );
 PetscErrorCode set_atmosphere_volatile_content( Atmosphere *, const AtmosphereParameters *, const Constants * );
