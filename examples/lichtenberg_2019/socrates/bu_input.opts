@@ -1,7 +1,7 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 20
+-nstepsmacro 1
 # was 2000, but only need one million years for a reasonable
 # test of output
 
@@ -27,7 +27,7 @@
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
 -IC_INTERIOR 1
--ic_interior_filename 500000.json
+#-ic_interior_filename 500000.json
 
 # all units are SI unless indicated otherwise
 
@@ -157,13 +157,7 @@
 -PARAM_UTBL 0 # flag to turn on parameterisation
 -param_utbl_const 1.0E-7 # value of parameterisation
 
-# track time-dependence of volatile content in atmosphere and magma ocean
-# can be done passively or self-consistently
-# with SURFACE_BC=3 above (where the volatile content feeds back into determining
-# the emissivity of the atmosphere)
-# [0] off
-# [1] on
--SOLVE_FOR_VOLATILES 1
+-IC_ATMOSPHERE 1
 
 # below is for SURFACE_BC=3, see Abe and Matsui (1986) and Elkins-Tanton (2008)
 # for the grey-body atmosphere formulation.  The expressions for the partial
