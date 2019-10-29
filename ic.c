@@ -43,9 +43,8 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     /* conform parameters structs to initial condition */
     ierr = conform_parameters_to_initial_condition( E );CHKERRQ(ierr);
 
-    /* below will also update mass reaction terms */
+    /* this also updates mass reaction terms */
     ierr = set_solution_from_volatile_abundances( E, sol ); CHKERRQ(ierr);
-
 
     PetscFunctionReturn(0);
 }
@@ -430,7 +429,8 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
            solution */
         ierr = set_atmosphere_volatile_content( A, Ap, C );CHKERRQ(ierr);
 
-        /* again, note that mass reaction terms are not yet zero! */
+        /* again, note that mass reaction terms are not yet
+           (necessarily) zero! */
 
     }
 
@@ -471,14 +471,27 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     /* prior to this function, A->volatiles[i].x and A->mass_reaction[i]
        are updated */
 
-    /* update initial_total_abundance to account for mass reactions */ 
-    for (i=0; i<Ap->n_volatiles; ++i){
-        Ap->volatile_parameters[i].initial_total_abundance -= A->volatiles[i].mass_reaction / (*Ap->mantle_mass_ptr);
+    /* conform, unless data is read in from a file, in which case we
+       assume the user does not want to reset the mass_reaction to zero */
+    if( Ap->IC_ATMOSPHERE !=2 ){
+
+        /* update initial_total_abundance to account for mass reactions */ 
+        for (i=0; i<Ap->n_volatiles; ++i){
+            Ap->volatile_parameters[i].initial_total_abundance -= A->volatiles[i].mass_reaction / (*Ap->mantle_mass_ptr);
+        }
+
+        /* re-solve to get volatile abundances in the melt (A->volatiles[i].x) */
+        ierr = solve_for_initial_melt_abundance( E ); CHKERRQ(ierr);
+
+        /* above will also set mass reactions close to (but not exactly)
+           to zero.  Explicitly zero the entries here */
+        for(i=0; i<Ap->n_reactions; ++i){
+            A->mass_reaction[i] = 0.0;
+        }
     }
 
-    /* re-solve to get volatile abundances in the melt (A->volatiles[i].x)
-       with reaction masses equal to zero by construction */
-    ierr = solve_for_initial_melt_abundance( E ); CHKERRQ(ierr);
+    /* these updated values in the structs are mapped back to the sol
+       Vec in the next function call once this return */
 
     PetscFunctionReturn(0);
 }
