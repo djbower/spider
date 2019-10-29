@@ -361,24 +361,6 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
 
 }
 
-PetscErrorCode set_initial_volatile_abundances( Atmosphere *A, AtmosphereParameters *Ap )
-{
-
-    //PetscInt i;
-
-    PetscFunctionBeginUser;
-
-// FIXME
-#if 0
-    for (i=0; i<Ap->n_volatiles; ++i) {
-        Ap->volatile_parameters[i].
-    }
-#endif
-
-    PetscFunctionReturn(0);
-
-}
-
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     /* mass of volatiles in atmosphere */

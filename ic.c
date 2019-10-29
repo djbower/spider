@@ -388,8 +388,10 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 {
 
     PetscErrorCode             ierr;
-    Parameters                 *P  = &E->parameters;
-    AtmosphereParameters       *Ap = &P->atmosphere_parameters;
+    Parameters const           *P  = &E->parameters;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    Atmosphere                 *A = &E->atmosphere;
+    Constants const            *C = &P->constants;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere()\n");CHKERRQ(ierr);
@@ -424,6 +426,12 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
            to zero */
         ierr = set_volatile_abundances_from_solution( E, sol );CHKERRQ(ierr);
 
+        /* ensure all atmosphere quantities are consistent with current
+           solution */
+        ierr = set_atmosphere_volatile_content( A, Ap, C );CHKERRQ(ierr);
+
+        /* again, note that mass reaction terms are not yet zero! */
+
     }
 
     /* with Ap->n_volatiles=0 there are no entries in
@@ -452,8 +460,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
        initial condition */
 
     PetscErrorCode       ierr;
-    PetscScalar          factor, massv;
-    PetscInt             i,j;
+    PetscInt             i;
     Parameters           *P = &E->parameters;
     Atmosphere           *A = &E->atmosphere;
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
@@ -464,25 +471,9 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     /* prior to this function, A->volatiles[i].x and A->mass_reaction[i]
        are updated */
 
-    /* update initial_total_abundance to account for mass reactions,
-       effectively setting all mass reaction terms to zero in the 
-       process.  This ensures our initial condition satisfies any
-       chemical equlibrium conditions as defined by reactions */
-
-    for (i=0; i<Ap->n_reactions; ++i){
-        const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-        /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
-        /* introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-        /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-        factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
-        for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
-            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
-            /* maybe it's possible to just get mass_reaction out of sol, avoiding the state in A */
-            /* introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
-            massv /= factor;
-            Ap->volatile_parameters[v].initial_total_abundance -= massv * A->mass_reaction[i] / (*Ap->mantle_mass_ptr);
-         }
+    /* update initial_total_abundance to account for mass reactions */ 
+    for (i=0; i<Ap->n_volatiles; ++i){
+        Ap->volatile_parameters[i].initial_total_abundance -= A->volatiles[i].mass_reaction / (*Ap->mantle_mass_ptr);
     }
 
     /* re-solve to get volatile abundances in the melt (A->volatiles[i].x)
