@@ -35,10 +35,10 @@ pipelines:
             # pipeline minutes.  This is particularly important since valgrind does not
             # run on Mojave
             # Test
-            #- cd tests
-            #- git clone https://bitbucket.org/dmay/pythontestharness
-            #- ./runTests.py -d # create default config
-            #- ./runTests.py -f # Return error code based on test success
+            - cd tests
+            - git clone https://bitbucket.org/dmay/pythontestharness
+            - ./runTests.py -d # create default config
+            - ./runTests.py -f # Return error code based on test success
 definitions:
    caches:
       petsc-double-direct: petsc-double-direct

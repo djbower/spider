@@ -48,7 +48,9 @@ typedef struct _Constants {
 #define SPIDER_MAX_VOLATILE_SPECIES 16
 typedef struct VolatileParameters_ {
     char        prefix[128];  /* Maximum prefix length */
-    PetscScalar initial;
+    /* next three (initial_) are not mutually exclusive */
+    PetscScalar initial_total_abundance;
+    PetscScalar initial_atmos_pressure;
     PetscScalar kdist;
     PetscScalar kabs; // note this is without pressure-dependence
     PetscScalar henry;
@@ -60,11 +62,51 @@ typedef struct VolatileParameters_ {
     PetscReal   poststep_change; // allowable fractional change (only for -activate_poststep)
 } VolatileParameters;
 
+/*
+ReactionParameters: an object which describes a particular type of chemical equilibrium.
+
+Specifically, it represents the situation where two or more volatiles in the
+liquid phase (in the mantle) can be converted (reversibly, unconditionally) to
+one another by means of chemical reactions, and where these volatiles are in
+(instantaneous, quasi-static) equilibrium, as described by some
+(time-and-state-dependent) function.
+
+Thus, the data are:
+- A set of N volatiles, identified by indices corresponding to volatile species.
+- A set of N coefficients stoichiometry_i
+  The sign of these defines the direction of the reaction; positive implies a product, negative a reactant.
+
+Developers' Note: this class's name should change if we ever want to consider
+reactions occuring anywhere except in the liquid mantle, e.g. in the
+atmosphere.
+
+Developers' Note: this class is done "properly", in that Reaction is a pointer
+to a struct, not itself a struct.  Other classes in SPIDER aren't (yet) all
+done this way.
+*/
+typedef struct {
+  const char *type;
+  PetscInt   n_volatiles;
+  PetscInt   *volatiles; /* indices for volatiles. Populated from prefix strings during parameter processing */
+  PetscReal  *stoichiometry;  /* stoichiometry */
+  PetscReal  *Keq_coeffs;  /* Equilibrium constant parameters */
+  PetscReal  fO2_stoichiometry; /* fO2 stoichiometry (zero turns it off, non-zero value is used) */
+} data_ReactionParameters;
+typedef data_ReactionParameters* ReactionParameters;
+
+/* We hard-code the maximum number of reactions. If needbe, the array of
+   ReactionParameters could be dynamically allocated and freed.*/
+#define SPIDER_MAX_REACTIONS 8
+
 /* for storing atmosphere outputs */
 typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY} MagmaOceanAtmosphereType;
+typedef enum {OXYGEN_FUGACITY_NONE=0,OXYGEN_FUGACITY_CI,OXYGEN_FUGACITY_CV,OXYGEN_FUGACITY_H,OXYGEN_FUGACITY_EH,OXYGEN_FUGACITY_EUCRITE,OXYGEN_FUGACITY_IW,OXYGEN_FUGACITY_IW_MINUS_ONE,OXYGEN_FUGACITY_IW_MINUS_TWO} OxygenFugacityType;
 typedef struct AtmosphereParameters_ {
     // input parameters
+    PetscInt IC_ATMOSPHERE;
+    char ic_atmosphere_filename[PETSC_MAX_PATH_LEN];
     MagmaOceanAtmosphereType SURFACE_BC;
+    OxygenFugacityType OXYGEN_FUGACITY; // for chemical reactions
     PetscBool VISCOUS_MANTLE_COOLING_RATE;
     PetscBool THERMAL_ESCAPE;
     PetscScalar surface_bc_value;
@@ -79,11 +121,12 @@ typedef struct AtmosphereParameters_ {
     PetscBool   PARAM_UTBL;
     PetscScalar param_utbl_const;
     // for volatile ODE
-    PetscBool SOLVE_FOR_VOLATILES;
-    PetscScalar P0;
-    PetscInt           n_volatiles;
-    VolatileParameters volatile_parameters[SPIDER_MAX_VOLATILE_SPECIES];
-    PetscScalar Rgas; // gas constant
+    PetscScalar         P0;
+    PetscInt            n_volatiles;
+    VolatileParameters  volatile_parameters[SPIDER_MAX_VOLATILE_SPECIES];
+    PetscInt            n_reactions;
+    ReactionParameters  reaction_parameters[SPIDER_MAX_REACTIONS];
+    PetscScalar         Rgas; // gas constant
     PetscScalar const * gravity_ptr;
     PetscScalar const * radius_ptr;
     PetscScalar const * VOLATILE_ptr;
@@ -156,8 +199,8 @@ typedef struct _Parameters {
     PetscBool COMPOSITION; // Brg and Res compositional model
     PetscInt mixing_length;
     PetscScalar mixing_length_layer_radius;
-    PetscInt initial_condition;
-    char ic_filename[PETSC_MAX_PATH_LEN];
+    PetscInt IC_INTERIOR;
+    char ic_interior_filename[PETSC_MAX_PATH_LEN];
     PetscScalar ic_melt_pressure;
     PetscScalar ic_adiabat_entropy; // entropy at top of adiabat
     PetscScalar ic_surface_entropy; // initial entropy at surface
@@ -213,8 +256,19 @@ typedef struct _Parameters {
 
 } Parameters;
 
+/* Parameters Methods */
 PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *parameters);
 PetscErrorCode PrintParameters(Parameters const *parameters);
 PetscErrorCode SetLookups( Parameters * );
+PetscErrorCode ParametersDestroy(Parameters *parameters);
+
+/* ReactionParameters Methods */
+PetscErrorCode ReactionParametersCreateSimple(ReactionParameters*,PetscInt,PetscInt,PetscReal,PetscReal,PetscReal,PetscReal);
+PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters*,const AtmosphereParameters*);
+PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters*,const AtmosphereParameters*);
+PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters*,const AtmosphereParameters*);
+PetscErrorCode ReactionParametersCreateWater1(ReactionParameters*,const AtmosphereParameters*);
+PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters*,const AtmosphereParameters*);
+PetscErrorCode ReactionParametersDestroy(ReactionParameters*);
 
 #endif

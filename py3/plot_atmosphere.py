@@ -31,11 +31,11 @@ def plot_atmosphere():
     keys_t = ( ('atmosphere','mass_liquid'),
                ('atmosphere','mass_solid'),
                ('atmosphere','mass_mantle'),
-               ('atmosphere','CO2','liquid_kg'),
-               ('atmosphere','CO2','solid_kg'),
-               ('atmosphere','CO2','initial_kg'),
-               ('atmosphere','CO2','atmosphere_kg'),
-               ('atmosphere','CO2','atmosphere_bar'),
+               ('atmosphere','H2','liquid_kg'),
+               ('atmosphere','H2','solid_kg'),
+               ('atmosphere','H2','initial_kg'),
+               ('atmosphere','H2','atmosphere_kg'),
+               ('atmosphere','H2','atmosphere_bar'),
                ('atmosphere','H2O','liquid_kg'),
                ('atmosphere','H2O','solid_kg'),
                ('atmosphere','H2O','initial_kg'),
@@ -116,7 +116,7 @@ def plot_atmosphere():
         #    label = cont #int(cont*100) # as percent
         #    ax0.text( phi_time_l[cc], 0.40, '{:2d}'.format(label), va='bottom', ha='center', rotation=90, bbox=dict(facecolor='white'), transform=trans )
         #ax0.text( 0.1, 0.9, '$\phi (\%)$', ha='center', va='bottom', transform=ax0.transAxes )
-        h1, = ax0.semilogx( timeMyr_a, CO2_atmos_a, color=red, linestyle='-', label=r'CO$_2$')
+        h1, = ax0.semilogx( timeMyr_a, CO2_atmos_a, color=red, linestyle='-', label=r'H$_2$')
         h2, = ax0.semilogx( timeMyr_a, H2O_atmos_a, color=blue, linestyle='-', label=r'H$_2$O')
         ax0b = ax0.twinx()
         h3, = ax0b.semilogx( timeMyr_a, phi_global, color=black, linestyle='--', label=r'Melt, $\phi_g$')
@@ -138,8 +138,8 @@ def plot_atmosphere():
     if 1:
         title = r'\textbf{(b) Reservoir mass fraction}'
         #h5, = ax1.semilogx( timeMyr_a, mass_liquid_a / mass_mantle, 'k--', label='melt' )
-        h1, = ax1.semilogx( timeMyr_a, (CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg, color=red, linestyle='-', label=r'CO$_2$ interior' )
-        h2, = ax1.semilogx( timeMyr_a, CO2_atmos_kg_a / CO2_total_kg, color=red, linestyle='--', label=r'CO$_2$ atmos' )
+        h1, = ax1.semilogx( timeMyr_a, (CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg, color=red, linestyle='-', label=r'H$_2$ interior' )
+        h2, = ax1.semilogx( timeMyr_a, CO2_atmos_kg_a / CO2_total_kg, color=red, linestyle='--', label=r'H$_2$ atmos' )
         #h2b, = ax1.semilogx( timeMyr_a, CO2_escape_kg_a / CO2_total_kg, color=red, linestyle=':', label='Escape' )
         h3, = ax1.semilogx( timeMyr_a, (H2O_liquid_kg_a+H2O_solid_kg_a) / H2O_total_kg, color=blue, linestyle='-', label=r'H$_2$O interior' )
         h4, = ax1.semilogx( timeMyr_a, H2O_atmos_kg_a / H2O_total_kg, color=blue, linestyle='--', label=r'H$_2$O atmos')

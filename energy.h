@@ -5,5 +5,7 @@
 
 PetscErrorCode set_Etot( Ctx * );
 PetscErrorCode set_Htot( Ctx *, PetscReal t );
+PetscErrorCode set_interior_structure_from_solution( Ctx *, PetscScalar, Vec );
+PetscScalar tsurf_param( PetscScalar, const AtmosphereParameters * );
 
 #endif

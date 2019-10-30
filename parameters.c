@@ -8,8 +8,12 @@ Custom PETSc command line options should only ever be parsed here.
 
 #include "parameters.h"
 #include "ctx.h"
+#include "ic.h"
 // FIXME
 //#include "composition.h"
+
+static PetscErrorCode set_start_time_from_file( Parameters * , const char * );
+
 
 static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
@@ -93,10 +97,15 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   PetscFunctionBeginUser;
   /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
      if they are missing. Note that this code has a lot of duplication */
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial,&set);CHKERRQ(ierr);
-  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
-  vp->initial /= C->VOLATILE;
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_total_abundance");CHKERRQ(ierr);
+  vp->initial_total_abundance = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_total_abundance,&set);CHKERRQ(ierr);
+  vp->initial_total_abundance /= C->VOLATILE;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_atmos_pressure");CHKERRQ(ierr);
+  vp->initial_atmos_pressure = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_atmos_pressure,&set);CHKERRQ(ierr);
+  vp->initial_atmos_pressure /= C->PRESSURE;
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_kdist");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kdist,&set);CHKERRQ(ierr);
@@ -125,8 +134,8 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->R_thermal_escape_value,&set);CHKERRQ(ierr);
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
-  vp->molar_mass = 0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,&set);CHKERRQ(ierr);
+  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
   vp->molar_mass /= C->MASS;
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_cross_section");CHKERRQ(ierr);
@@ -188,10 +197,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->nstepsmacro = 18;
   ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,NULL);CHKERRQ(ierr);
 
-  /* start time (years) */
-  P->t0 = 0.0;
-  ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&P->t0,NULL);CHKERRQ(ierr);
-  P->t0 /= C->TIMEYRS; // non-dimensional for time stepping
+  /* start time (years) P->t0 is set further down, since it may
+     acquire a value from a restart value */
 
   /* step time (years) */
   P->dtmacro = 100;
@@ -254,17 +261,31 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si1",&P->Mg_Si1,NULL);CHKERRQ(ierr);
   }
 
-  /* initial condition */
-  P->initial_condition = 1;
-  ierr = PetscOptionsGetInt(NULL,NULL,"-initial_condition",&P->initial_condition,NULL);CHKERRQ(ierr);
+  /* start time (years) */
+  P->t0 = 0.0;
 
-  ierr = PetscStrcpy(P->ic_filename,"restart.json"); CHKERRQ(ierr);
-  if ( (P->initial_condition==2) || (P->initial_condition==3) ){
-    ierr = PetscOptionsGetString(NULL,NULL,"-ic_filename",P->ic_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
+  /* initial condition for interior */
+  P->IC_INTERIOR = 1;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-IC_INTERIOR",&P->IC_INTERIOR,NULL);CHKERRQ(ierr);
+
+  ierr = PetscStrcpy(P->ic_interior_filename,"restart.json"); CHKERRQ(ierr);
+  if ( P->IC_INTERIOR==2 ){
+    ierr = PetscOptionsGetString(NULL,NULL,"-ic_interior_filename",P->ic_interior_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
+    /* set start time from restart file */
+    /* TODO: get time from interior restart file, but could add
+       other options to get time from e.g. atmosphere restart file */
+    ierr = set_start_time_from_file( P, P->ic_interior_filename ); CHKERRQ(ierr);
+  }
+  else{
+    PetscScalar   t0 = 0.0;
+    PetscBool t0_set = PETSC_FALSE;
+    ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&t0,&t0_set);CHKERRQ(ierr);
+    if( t0_set ) P->t0 = t0;
+    P->t0 /= C->TIMEYRS; // non-dimensional for time stepping
   }
 
   P->ic_melt_pressure = 30.0; // GPa
-  if ( P->initial_condition==3 ){
+  if ( P->IC_INTERIOR==3 ){
     ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_melt_pressure",&P->ic_melt_pressure,NULL); CHKERRQ(ierr);
   }
 
@@ -464,8 +485,14 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       break;
   }
 
-  Ap->SOLVE_FOR_VOLATILES = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-SOLVE_FOR_VOLATILES",&Ap->SOLVE_FOR_VOLATILES,NULL);CHKERRQ(ierr);
+  /* initial condition for atmosphere */
+  Ap->IC_ATMOSPHERE = 1;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-IC_ATMOSPHERE",&Ap->IC_ATMOSPHERE,NULL);CHKERRQ(ierr);
+
+  ierr = PetscStrcpy(Ap->ic_atmosphere_filename,"restart.json"); CHKERRQ(ierr);
+  if ( (Ap->IC_ATMOSPHERE==2) || (Ap->IC_ATMOSPHERE==3) ){
+    ierr = PetscOptionsGetString(NULL,NULL,"-ic_atmosphere_filename",Ap->ic_atmosphere_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
+  }
 
   /* (top) surface boundary condition */
   Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
@@ -491,7 +518,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
            with CO2 and H2O volatile using plane-parallel radiative equilibrium model
            of Abe and Matsui (1985)
          do nothing */
-      Ap->SOLVE_FOR_VOLATILES = PETSC_TRUE;
       break;
     case 4:
       // MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed)
@@ -504,6 +530,14 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     default:
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
       break;
+  }
+
+  Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY_NONE;
+  {
+    PetscInt  OXYGEN_FUGACITY = 0;
+    PetscBool OXYGEN_FUGACITYset = PETSC_FALSE;
+    ierr = PetscOptionsGetInt(NULL,NULL,"-OXYGEN_FUGACITY",&OXYGEN_FUGACITY,&OXYGEN_FUGACITYset);CHKERRQ(ierr);
+   if( OXYGEN_FUGACITYset ) Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY;
   }
 
   Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
@@ -591,6 +625,110 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   for (v=0; v<Ap->n_volatiles; ++v) {
     ierr = VolatileParametersSetFromOptions(&Ap->volatile_parameters[v], C);CHKERRQ(ierr);
   }
+
+  /* Reactions: look for command-line options to determine the number of reactions
+     and options for each. These include named reactions and "simple" reactions.
+     These are defined with respect to the prefixes for the volatiles, which are translated to integer ids */
+  Ap ->n_reactions = 0;
+
+  /* Special "named" reactions */
+  {
+    PetscBool flg;
+
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_ammonia1",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateAmmonia1(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_carbondioxide1",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateCarbonDioxide1(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_methane1",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateMethane1(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_water1",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateWater1(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_simplewater1",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateSimpleWater1(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+
+  }
+
+#if 0
+  {
+    /* Do a brute-force search for all pairs of volatiles, looking for "simple" reactions */
+    PetscInt  v0,v1;
+
+    for (v0=0; v0<Ap->n_volatiles; ++v0) {
+      for (v1=v0+1; v1<Ap->n_volatiles; ++v1) {
+        char       option[256],option_value[256];
+        PetscBool  set;
+
+        ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s",Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v1].prefix);CHKERRQ(ierr);
+        ierr = PetscOptionsGetString(NULL,NULL,option,option_value,sizeof(option_value),&set);CHKERRQ(ierr);
+        if (!set) {
+          /* Also check for other ordering */
+          ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s",Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v0].prefix);CHKERRQ(ierr);
+        ierr = PetscOptionsGetString(NULL,NULL,option,option_value,sizeof(option_value),&set);CHKERRQ(ierr);
+        }
+        if (set) {
+          if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+
+          /* Collect epsilon and gamma values for each volatile */
+          PetscReal epsilon[2],gamma[2];
+          PetscInt  v;
+
+          for (v=0; v<2; ++v) {
+            char      option[256];
+            PetscBool flg;
+
+            ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_epsilon_%s",Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+            ierr = PetscOptionsGetReal(NULL,NULL,option,&epsilon[v],&flg);CHKERRQ(ierr);
+            if (!flg) {
+              /* Other ordering */
+              ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_epsilon_%s",Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+              ierr = PetscOptionsGetReal(NULL,NULL,option,&epsilon[v],&flg);CHKERRQ(ierr);
+            }
+            if (!flg) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"You must supply an option like %s",option);
+          }
+          for (v=0; v<2; ++v) {
+            char      option[256];
+            PetscBool flg;
+
+            ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_gamma_%s",Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+            ierr = PetscOptionsGetReal(NULL,NULL,option,&gamma[v],&flg);CHKERRQ(ierr);
+            if (!flg) {
+              /* Other ordering */
+              ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_gamma_%s",Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+              ierr = PetscOptionsGetReal(NULL,NULL,option,&gamma[v],&flg);CHKERRQ(ierr);
+            }
+            if (!flg) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"You must supply an option like %s",option);
+          }
+          ierr = ReactionParametersCreateSimple(&Ap->reaction_parameters[Ap->n_reactions],v0,v1,gamma[0],gamma[1],epsilon[0],epsilon[1]);CHKERRQ(ierr);
+          ++Ap->n_reactions;
+        }
+      }
+    }
+  }
+#endif
 
   /* radiogenic heating */
   /* aluminium 26 */
@@ -703,12 +841,37 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode set_start_time_from_file( Parameters *P , const char * filename )
+{
+
+    PetscErrorCode   ierr;
+    cJSON            *json=NULL, *time;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_start_time_from_file()\n");CHKERRQ(ierr);
+
+    ierr = read_JSON_file_to_JSON_object( filename, &json );
+
+    /* time from this restart JSON must be passed to the time stepper
+       to continue the integration and keep track of absolute time */
+    time = cJSON_GetObjectItem(json,"time");
+    P->t0 = time->valuedouble;
+
+    cJSON_Delete( json );
+
+    PetscFunctionReturn(0);
+
+}
+
 PetscErrorCode PrintParameters(Parameters const *P)
 {
-  PetscErrorCode ierr;
-  Constants const *C = &P->constants;
+  PetscErrorCode             ierr;
+  PetscInt                   i;//,j;
+  Constants const            *C  = &P->constants;
+  AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
   PetscFunctionBeginUser;
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"                                                                                                    );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"**************** Magma Ocean | Parameters **************\n\n"                                          );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15s %s\n"                 ,"[Scaling]"  ,"","Value"                       ,"Units"       );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
@@ -747,7 +910,6 @@ PetscErrorCode PrintParameters(Parameters const *P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"numpts_b"   ,P->numpts_b                                                  );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"numpts_s"   ,P->numpts_s                                                  );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","ic_adiabat_entropy"     ,(double)P->ic_adiabat_entropy       ,(double)(P->ic_adiabat_entropy*C->ENTROPY) ,"J/kg-K"      );CHKERRQ(ierr);
-  // TODO print out the parameters for each volatile (important since not all are always used)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"liquidus data file"         ,P->liquidusFilename                          );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"solidus data file"          ,P->solidusFilename                           );CHKERRQ(ierr);
@@ -761,6 +923,50 @@ PetscErrorCode PrintParameters(Parameters const *P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"           ,P->rhoMelFilename                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"          ,P->tempSolFilename                           );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"          ,P->tempMelFilename                           );CHKERRQ(ierr);
+  if (Ap->n_volatiles > 0) {
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"\n[Volatile] prefix/name\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
+    for (i=0; i<Ap->n_volatiles; ++i) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"%-10D %-15s (.. additional parameters omitted ..)\n",i,Ap->volatile_parameters[i].prefix);CHKERRQ(ierr);
+    }
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
+
+#if 0
+    if (Ap->n_reactions > 0) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\n[Reaction] \n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
+    for (i=0; i<Ap->n_reactions; ++i) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"%-10D",i);CHKERRQ(ierr);
+      for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
+        const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+        const char *sgn_str = Ap->reaction_parameters[i]->gamma[j] < 0.0 ? " - " : j==0 ? "" : " + ";
+        const PetscReal gamma_abs = PetscAbsReal(Ap->reaction_parameters[i]->gamma[j]);
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%0.3g %s",sgn_str,(double) gamma_abs,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+      }
+      ierr = PetscPrintf(PETSC_COMM_WORLD," = 0 ");CHKERRQ(ierr);
+      {
+        PetscBool flg;
+
+        ierr = PetscStrcmp(Ap->reaction_parameters[i]->type,"simple",&flg);
+        if (flg) {
+          ierr = PetscPrintf(PETSC_COMM_WORLD," (Simple equilibrium: ");CHKERRQ(ierr);
+          for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
+            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
+            const char *sgn_str = Ap->reaction_parameters[i]->epsilon[j] < 0.0 ? " - " : j==0 ? "" : " + ";
+            const PetscReal epsilon_abs = PetscAbsReal(Ap->reaction_parameters[i]->epsilon[j]);
+            ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%0.3g %s",sgn_str,(double) epsilon_abs,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
+          }
+          ierr = PetscPrintf(PETSC_COMM_WORLD," = 0) ");CHKERRQ(ierr);
+        } else {
+          ierr = PetscPrintf(PETSC_COMM_WORLD," (type: %s )",Ap->reaction_parameters[i]->type);CHKERRQ(ierr);
+        }
+      }
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"(.. additional parameters omitted ..)\n");CHKERRQ(ierr);
+    }
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
+    }
+#endif
+  }
   if (P->postStepActive) {
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"PostStep logic active\n"                                                                             );CHKERRQ(ierr);
@@ -969,5 +1175,27 @@ PetscErrorCode SetLookups( Parameters *P )
   ierr = set_interp1d( P->solidusFilename, &P->solid_prop.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
   ierr = set_interp1d( P->solidusFilename, &P->melt_prop.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
 
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode AtmosphereParametersDestroy(AtmosphereParameters* Ap)
+{
+  PetscErrorCode ierr;
+  PetscInt       i;
+
+  PetscFunctionBeginUser;
+  for (i=0; i<Ap->n_reactions; ++i) {
+    ierr = ReactionParametersDestroy(&Ap->reaction_parameters[i]);CHKERRQ(ierr);
+  }
+  Ap->n_reactions = 0;
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode ParametersDestroy(Parameters* parameters)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+  ierr = AtmosphereParametersDestroy(&parameters->atmosphere_parameters);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }

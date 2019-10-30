@@ -22,16 +22,21 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     long long int elapsedSeconds;
     int           days,hours,minutes,seconds;
     Vec           *subVecs;
+    PetscBool     *fieldActive;
     PetscScalar   *maxVals,*minVals;
-    PetscInt      i;
+    PetscInt      i,len;
 
     /* Compute min/max for each field */
-    ierr = PetscMalloc3(ctx->numFields,&subVecs,ctx->numFields,&maxVals,ctx->numFields,&minVals);CHKERRQ(ierr);
+    ierr = PetscMalloc4(ctx->numFields,&fieldActive,ctx->numFields,&subVecs,ctx->numFields,&maxVals,ctx->numFields,&minVals);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(ctx->dm_sol,sol,ctx->numFields,NULL,subVecs);CHKERRQ(ierr);
 
     for (i=0; i<ctx->numFields; ++i) {
-      ierr = VecMin(subVecs[i],NULL,&minVals[i]);CHKERRQ(ierr);
-      ierr = VecMax(subVecs[i],NULL,&maxVals[i]);CHKERRQ(ierr);
+      ierr = VecGetSize(subVecs[i],&len);CHKERRQ(ierr);
+      fieldActive[i] = len > 0;
+      if (fieldActive[i]) {
+        ierr = VecMin(subVecs[i],NULL,&minVals[i]);CHKERRQ(ierr);
+        ierr = VecMax(subVecs[i],NULL,&maxVals[i]);CHKERRQ(ierr);
+      }
     }
     ierr = DMCompositeRestoreAccessArray(ctx->dm_sol,sol,ctx->numFields,NULL,subVecs);CHKERRQ(ierr);
 
@@ -47,11 +52,15 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     /* Print */
     ierr = PetscPrintf(PETSC_COMM_WORLD,"***  Writing output at macro Step %D, t=%f. [%lld:%02d:%02d:%02d]\n",step,(double)time,days,hours,minutes,seconds);CHKERRQ(ierr);
     for (i=0; i<ctx->numFields; ++i) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"  Field %D Min/Max %f/%f\n",i,(double)minVals[i],(double)maxVals[i]);CHKERRQ(ierr);
+      if (fieldActive[i]) {
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"  Field %D Min/Max %f/%f\n",i,(double)minVals[i],(double)maxVals[i]);CHKERRQ(ierr);
+      } else {
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"  Field %D Min/Max N/A\n",i);CHKERRQ(ierr);
+      }
     }
 
     /* Cleanup */
-    ierr = PetscFree3(subVecs,maxVals,minVals);CHKERRQ(ierr);
+    ierr = PetscFree4(fieldActive,subVecs,maxVals,minVals);CHKERRQ(ierr);
   }
 
   /* Ensure that the output directory exists */
@@ -116,7 +125,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
         ierr = DimensionalisableFieldDestroy(&rhsDF);CHKERRQ(ierr);
       }
 
- 
+
       /* Add data of interest */
       // Note: this is duplicative, but it's too painful to flatten out the Ctx
       {
@@ -127,7 +136,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
           DimensionalisableField curr = ctx->mesh.meshFields_s[i];
           ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
           cJSON_AddItemToObject(data,curr->name,item);
-        } 
+        }
         for (i=0; i<NUMMESHVECS_B; ++i) {
           cJSON *item;
           DimensionalisableField curr = ctx->mesh.meshFields_b[i];
@@ -208,5 +217,25 @@ PetscErrorCode TSMonitorWalltimed(TS ts,PetscInt steps,PetscReal time,Vec x,void
     ierr = TSGetTimeStep(ts,&dt);CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"  micro step %D, t=%.3f, dt=%.3g [%d:%02d:%02d:%02d]\n",steps,(double)time,(double)dt,days,hours,minutes,seconds,elapsedSeconds);CHKERRQ(ierr);
   }
+  PetscFunctionReturn(0);
+}
+
+/* A custom, verbose SNES monitor */
+PetscErrorCode SNESMonitorVerbose(SNES snes, PetscInt its, PetscReal norm, void *mctx)
+{
+  PetscErrorCode ierr;
+  Vec            x,r;
+  PetscErrorCode (*func)(SNES,Vec,Vec,void*);
+  void           *ctx;
+
+  PetscFunctionBeginUser;
+  ierr = SNESGetSolution(snes,&x);CHKERRQ(ierr);
+  ierr = SNESGetFunction(snes,&r,&func,&ctx);CHKERRQ(ierr); /* ctx should be the same as mctx */
+  ierr = func(snes,x,r,ctx);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[36m### Iteration %D\e[0m\n",its);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[32mresidual function norm: %g\nx:\e[0m\n",(double)norm);CHKERRQ(ierr);
+  ierr = VecView(x,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"\e[32mresidual function:\e[0m\n");CHKERRQ(ierr);
+  ierr = VecView(r,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }

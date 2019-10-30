@@ -7,20 +7,33 @@
 \usepackage{tikz}
 \usepackage{empheq}
 \usepackage{cases}
-\usepackage[hidelinks]{hyperref}
+
+\usepackage{titlesec}
+
+\setcounter{secnumdepth}{4}
+
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 
 \usepackage{xcolor}
 \usepackage{soul}
 \definecolor{redhl}{rgb}{1,0.5,0.5}
 \definecolor{bluehl}{rgb}{0.75,0.75,1}
 \definecolor{greenhl}{rgb}{0.5,1.0,0.5}
+\definecolor{tealhl}{rgb}{0.6,0.8,0.8}
 \newcommand{\awnote}[1]{\sethlcolor{redhl}\hl{(AW: #1)}}
 \newcommand{\dbnote}[1]{\sethlcolor{bluehl}\hl{(DB: #1)}}
 \newcommand{\psnote}[1]{\sethlcolor{greenhl}\hl{(PS: #1)}}
+\newcommand{\tknote}[1]{\sethlcolor{tealhl}\hl{(TK: #1)}}
 \newcommand{\boxedeq}[2]{\begin{empheq}[box={\fboxsep=6pt\fbox}]{align}\label{#1}#2\end{empheq}}
 
-\newcommand{\myemph}[1]{\textbf{#1}}
+% for atmosphere / volatiles
+%\newcommand{\water}[0]{H$_2$O}
+%\newcommand{\dih}[0]{H$_2$}
 
+\newcommand{\myemph}[1]{\textbf{#1}}
 \begin{document}
 
 \title{Manual and extended notes for SPIDER\\[2ex] \includegraphics[width=0.5\textwidth]{figs/spider_logo}}
@@ -42,20 +55,20 @@
 %The abstract text goes here.
 %\end{abstract}
 
-\section{Preface}
-\input{input/preface}
+%\section{Preface}
+%\input{input/preface}
 %\clearpage
 
-\section{Fundamental thermodynamics}
-\input{input/basic_thermodynamics}
+%\section{Fundamental thermodynamics}
+%\input{input/basic_thermodynamics}
 %\clearpage
 
-\section{Conservation of chemical species}
-\input{input/transport}
+%\section{Conservation of chemical species}
+%\input{input/transport}
 %\clearpage
 
-\section{Material properties}
-\input{input/material_properties}
+%\section{Material properties}
+%\input{input/material_properties}
 %\clearpage
 
 %%%%%%%%%%%%%
@@ -393,31 +406,34 @@ while for the mobile and sluggish lids it's a more complex equation
 \end{equation}
 Values for the numbers are given in their Table 4, for both Bottom-heated and Mixed heated models (as long as internal heating by radiogenic elements is switched on, we're in the mixed heating regime).
 
-\section{Parameterised fluxes}
-\input{input/parameterised_fluxes}
+%\section{Parameterised fluxes}
+%\input{input/parameterised_fluxes}
 
-\section{Derivations in Abe (1993)}
-\input{input/abe1993}
+%\section{Derivations in Abe (1993)}
+%\input{input/abe1993}
 
-\section{Internal heating}
-\input{input/internal_heating}
+%\section{Internal heating}
+%\input{input/internal_heating}
 
 \section{Atmosphere}
 \input{input/atmosphere}
 
-\section{Boundary conditions}
-\input{input/boundary_conditions}
+%\section{Boundary conditions}
+%\input{input/boundary_conditions}
 
 \section{Hybrid mantle EOS from multiple data sources}
 \input{input/hybrid_eos}
 
-\section{Toy model}
-\input{input/toy_model}
+%\section{Toy model}
+%\input{input/toy_model}
 
-\appendix
-\input{input/appendix}
+%\appendix
+%\input{input/appendix}
 
 \bibliography{refs}
 \bibliographystyle{plainnat}
+
+%\bibliographystyle{utphys}
+%\bibliographystyle{kp}
 
 \end{document}

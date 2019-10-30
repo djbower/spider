@@ -1,9 +1,9 @@
-#include "bc.h"
 #include "atmosphere.h"
+#include "bc.h"
+#include "monitor.h"
 #include "util.h"
 
 static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
-static PetscScalar tsurf_param( PetscScalar, const AtmosphereParameters * );
 static PetscScalar get_isothermal_surface( const Ctx * );
 static PetscScalar isothermal_or_cooling_cmb( const Ctx *, PetscScalar );
 static PetscScalar get_core_cooling_factor( const Ctx * );
@@ -13,7 +13,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
     PetscErrorCode       ierr;
     PetscMPIInt          rank;
-    PetscScalar          temp0,Qout,area0;
+    PetscScalar          Qout,area0;
     PetscInt             const ind0=0;
     Atmosphere           *A  = &E->atmosphere;
     Mesh                 const *M  = &E->mesh;
@@ -29,19 +29,9 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       ierr = VecGetValues(M->area_b,1,&ind0,&area0);CHKERRQ(ierr);
 
-      /* temperature (potential temperature if coarse mesh is used) */
-      ierr = VecGetValues(S->temp,1,&ind0,&temp0); CHKERRQ(ierr);
-
-      /* correct for ultra-thin thermal boundary layer at the surface */
-      if( Ap->PARAM_UTBL ){
-        A->tsurf = tsurf_param( temp0, Ap); // parameterised boundary layer
-      }
-      else{
-        A->tsurf = temp0; // surface temperature is potential temperature
-      }
-
-      /* must be after A->tsurf is set */
-      ierr = set_atmosphere_volatile_content( A, Ap ); CHKERRQ(ierr);
+      /* must be after A->tsurf is set for fO2 calculation */
+      /* therefore set_surface_flux always called after set_interior_structure_from_solution */
+      ierr = set_atmosphere_volatile_content( A, Ap, C ); CHKERRQ(ierr);
 
       /* determine surface flux */
       /* in all cases, compute flux and emissivity consistently */
@@ -299,24 +289,6 @@ static PetscScalar isothermal_or_cooling_cmb( const Ctx *E, PetscScalar cooling_
     return Qin;
 }
 
-PetscScalar tsurf_param( PetscScalar temp, const AtmosphereParameters *Ap )
-{
-    PetscScalar Ts, c, fac, num, den;
-    c = Ap->param_utbl_const;
-
-    fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
-    fac = PetscPowScalar( fac, 1.0/2.0 );
-    fac += 9.0*temp*PetscPowScalar(c,2.0);
-    // numerator
-    num = PetscPowScalar(2.0,1.0/3)*PetscPowScalar(fac,2.0/3)-2.0*PetscPowScalar(3.0,1.0/3)*c;
-    // denominator
-    den = PetscPowScalar(6.0,2.0/3)*c*PetscPowScalar(fac,1.0/3);
-    // surface temperature
-    Ts = num / den;
-
-    return Ts;
-}
-
 PetscErrorCode solve_dxdts( Ctx *E )
 {
     PetscErrorCode             ierr;
@@ -337,7 +309,8 @@ PetscErrorCode solve_dxdts( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"atmosts_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles );CHKERRQ(ierr);
+    /* one dof per volatile, and one dof per reaction */
+    ierr = VecSetSizes( x, PETSC_DECIDE, Ap->n_volatiles + Ap->n_reactions );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
@@ -348,11 +321,24 @@ PetscErrorCode solve_dxdts( Ctx *E )
     for (i=0; i<Ap->n_volatiles; ++i) {
         xx[i] = 0.0;
     }
+    for (i=0; i<Ap->n_reactions; ++i) {
+        xx[Ap->n_volatiles + i] = 0.0;
+    }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
     ierr = PetscOptionsSetValue(NULL,"-atmosts_snes_mf",NULL);CHKERRQ(ierr);
+
+    /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
+    {   
+      PetscBool flg = PETSC_FALSE;
+
+      ierr = PetscOptionsGetBool(NULL,NULL,"-atmosts_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      if (flg) {
+        ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
+      }   
+    }
 
     /* Solve */
     ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
@@ -367,6 +353,9 @@ PetscErrorCode solve_dxdts( Ctx *E )
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].dxdt = xx[i];
+    }
+    for (i=0; i<Ap->n_reactions; ++i) {
+        A->reactions[i].dmrdt = xx[Ap->n_volatiles + i];
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 

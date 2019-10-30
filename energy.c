@@ -1,4 +1,7 @@
+#include "atmosphere.h"
 #include "energy.h"
+#include "matprop.h"
+#include "twophase.h"
 #include "util.h"
 
 static PetscErrorCode set_Jtot( Ctx * );
@@ -9,6 +12,7 @@ static PetscErrorCode append_Jgrav( Ctx * );
 static PetscErrorCode append_Hradio( Ctx *, PetscReal );
 static PetscErrorCode append_Htidal( Ctx *, PetscReal );
 static PetscScalar get_radiogenic_heat_production( RadiogenicIsotopeParameters const *, PetscReal );
+static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters * );
 
 ///////////////////////////
 /* internal heat sources */
@@ -394,4 +398,88 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 
     PetscFunctionReturn(0);
 
+}
+
+PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec sol_in )
+{
+
+    /* set all possible quantities for a given entropy structure (i.e. top staggered 
+       value S0 and dS/dr at all basic nodes excluding the top and bottom which are 
+       controlled by boundary conditions).  This one function ensure that everything
+       is set self-consistently. */
+
+    PetscErrorCode       ierr;
+    PetscMPIInt          rank;
+    PetscScalar          temp0;
+    PetscInt             const ind0 = 0;
+    Atmosphere           *A  = &E->atmosphere;
+    Parameters           const *P  = &E->parameters;
+    Solution             const *S  = &E->solution;
+    Constants            const *C  = &P->constants;
+    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+
+    /* set solution in the relevant structs */
+    ierr = set_entropy_from_solution( E, sol_in );CHKERRQ(ierr);
+
+    /* set material properties and energy fluxes and sources */
+    ierr = set_gphi_smooth( E );CHKERRQ(ierr);
+    ierr = set_melt_fraction_staggered( E ); CHKERRQ(ierr);
+    ierr = set_capacitance_staggered( E );CHKERRQ(ierr);
+    ierr = set_matprop_basic( E );CHKERRQ(ierr);
+    ierr = set_Etot( E );CHKERRQ(ierr);
+    ierr = set_Htot( E, t );CHKERRQ(ierr);
+
+    ierr = set_Mliq( E );CHKERRQ(ierr);
+    ierr = set_Msol( E );CHKERRQ(ierr);
+    /* NOTE: we cannot set_dMliqdt, since it must be after dS/dt computation */
+
+    ierr = set_rheological_front( E ); CHKERRQ(ierr);
+
+    /* set surface temperature */
+    if (!rank) {
+        /* temperature (potential temperature if coarse mesh is used) */
+        ierr = VecGetValues(S->temp,1,&ind0,&temp0); CHKERRQ(ierr);
+
+        /* correct for ultra-thin thermal boundary layer at the surface */
+        if( Ap->PARAM_UTBL ){
+            A->tsurf = get_tsurf_using_parameterised_boundary_layer( temp0, Ap); // parameterised boundary layer
+        }
+        else{
+            A->tsurf = temp0; // surface temperature is potential temperature
+        }
+    }
+
+    /* must be after A->tsurf is set for fO2 calculation */
+    if( Ap->OXYGEN_FUGACITY ){
+        ierr = set_oxygen_fugacity( A, Ap, C );CHKERRQ(ierr);
+    }
+    else{
+        /* TODO: maybe initialise these variables elsewhere? */
+        A->fO2 = 0;
+        A->dfO2dT = 0;
+    }
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters *Ap )
+{
+    PetscScalar Ts, c, fac, num, den;
+    c = Ap->param_utbl_const;
+
+    fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
+    fac = PetscPowScalar( fac, 1.0/2.0 );
+    fac += 9.0*temp*PetscPowScalar(c,2.0);
+    // numerator
+    num = PetscPowScalar(2.0,1.0/3)*PetscPowScalar(fac,2.0/3)-2.0*PetscPowScalar(3.0,1.0/3)*c;
+    // denominator
+    den = PetscPowScalar(6.0,2.0/3)*c*PetscPowScalar(fac,1.0/3);
+    // surface temperature
+    Ts = num / den;
+
+    return Ts; 
 }

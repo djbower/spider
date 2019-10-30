@@ -41,6 +41,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,    dof,stencilWidth,NULL,&ctx->da_s        );CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1,              dof,0,           NULL,&ctx->da_point    );CHKERRQ(ierr);
   ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,Ap->n_volatiles,dof,0           ,NULL,&ctx->da_volatiles);CHKERRQ(ierr); /* A collection of 0-dimensional bulk quantities */
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,Ap->n_reactions,dof,0           ,NULL,&ctx->da_reactions);CHKERRQ(ierr); /* A collection of 0-dimensional bulk quantities */
 
   /* Create a composite DM of the basic nodes plus additional quantities.
     This allows us to create a vector to solve for all of these quantities.  */
@@ -84,6 +85,12 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     sol_scalings[f] = C->VOLATILE;
     ++f;
 
+    ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_reactions);CHKERRQ(ierr);
+    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_REACTIONS;
+    ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
+    sol_scalings[f] = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS; // physical reservoir mass scaling
+    ++f;
+
     ierr = DMCompositeGetNumberDM(ctx->dm_sol,&ctx->numFields);CHKERRQ(ierr); /* For convenience */
 
     /* Create a DimensionalisableField, referring to this DMComposite,
@@ -97,8 +104,6 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     }
     ierr = PetscFree(sol_scalings);CHKERRQ(ierr);
   }
-
-
 
   /* Continue to initialize context with distributed data */
   ierr = CtxCreateFields(ctx);CHKERRQ(ierr);
@@ -173,6 +178,9 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
 
   ierr = destroy_atmosphere( &ctx->atmosphere );CHKERRQ(ierr);
 
+  /* Destroy parameter data */
+  ierr = ParametersDestroy(P);CHKERRQ(ierr);
+
   ierr = PetscFree2(ctx->solutionFieldIDs,ctx->solutionSlots);CHKERRQ(ierr);
   ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
   ierr = MatDestroy(&ctx->qty_at_b);CHKERRQ(ierr);
@@ -181,10 +189,11 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_point);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_volatiles);CHKERRQ(ierr);
+  ierr = DMDestroy(&ctx->da_reactions);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->dm_sol);CHKERRQ(ierr);
 
   /* Destroy PostStep data */
-  if (ctx->postStepData) { 
+  if (ctx->postStepData) {
     ierr = PetscFree(ctx->postStepData);CHKERRQ(ierr);
   }
 
