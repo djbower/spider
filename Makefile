@@ -67,13 +67,13 @@ test : test_create_output_dir
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testcheck\n"
 
-testcheck : test_create_output_dir
+test_check : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -t ${SPIDER_BASIC_TESTS} && cd -
 
 # Atmosphere tests
 SPIDER_ATMOS_TESTS=atmosphere,atmosphere_jeans
 
-testatmos : test_create_output_dir
+test_atmos : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t ${SPIDER_ATMOS_TESTS} && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "To run more tests\n"
@@ -81,17 +81,17 @@ testatmos : test_create_output_dir
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testatmoscheck\n"
 
-testatmoscheck : test_create_output_dir
+test_atmos_check : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -t ${SPIDER_ATMOS_TESTS} && cd -
 
 # All Tests
-testall : test_create_output_dir
+test_all : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testallcheck\n"
 
-testallcheck : test_create_output_dir
+test_all_check : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v && cd -
 
 .PHONY: test testatmos testall test_create_output_dir
