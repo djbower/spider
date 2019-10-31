@@ -1,10 +1,10 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 1000000
+-nstepsmacro 100
 
 # macro step size in years
--dtmacro 1
+-dtmacro 10000
 
 # for default time ranges
 # if one of these is set, then the above time stepping

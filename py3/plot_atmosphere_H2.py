@@ -85,6 +85,7 @@ def plot_atmosphere():
     H2O_atmos_kg_a = data_a[6,:]
     H2O_atmos_a = data_a[7,:]
     H2O_reaction_kg_a = data_a[17,:]
+    H2O_total2_kg_a = H2O_liquid_kg_a + H2O_solid_kg_a + H2O_atmos_kg_a# + H2O_reaction_kg_a
     H2O_escape_kg_a = H2O_total_kg - H2O_liquid_kg_a - H2O_solid_kg_a - H2O_atmos_kg_a - H2O_reaction_kg_a
 
     H2_liquid_kg_a = data_a[8,:]
@@ -94,6 +95,7 @@ def plot_atmosphere():
     H2_atmos_kg_a = data_a[11,:]
     H2_atmos_a = data_a[12,:]
     H2_reaction_kg_a = data_a[18,:]
+    H2_total2_kg_a =  H2_liquid_kg_a + H2_solid_kg_a  + H2_atmos_kg_a# + H2_reaction_kg_a
     H2_escape_kg_a = H2_total_kg - H2_liquid_kg_a - H2_solid_kg_a - H2_atmos_kg_a - H2_reaction_kg_a
 
     #O2_liquid_kg_a = data_a[18,:]
@@ -108,6 +110,12 @@ def plot_atmosphere():
     emissivity_a = data_a[14,:]
     phi_global = data_a[15,:]
     Fatm = data_a[16,:]
+
+    H2O_err = 100.0 * (H2O_total2_kg_a-H2O_total_kg) / H2O_total_kg
+    H2_err =  100.0 * (H2_total2_kg_a-H2_total_kg) / H2_total_kg
+
+    print('H2O_err MAX=', np.max(H2O_err))
+    print('H2_err MAX=', np.max(H2_err))
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
     #xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
@@ -185,15 +193,15 @@ def plot_atmosphere():
         h3, = ax1.loglog( timeMyr_a, H2O_liquid_kg_a / H2O_total_kg, color=blue, linestyle='-', label=r'H$_2$O liquid' )
         h4, = ax1.loglog( timeMyr_a, H2O_solid_kg_a / H2O_total_kg, color=blue, linestyle=':', label=r'H$_2$O solid' )
         h5, = ax1.loglog( timeMyr_a, H2O_atmos_kg_a / H2O_total_kg, color=blue, linestyle='--', label=r'H$_2$O atmos')
-        h6, = ax1.loglog( timeMyr_a, H2O_reaction_kg_a / H2O_total_kg, color=blue, linestyle='-.', label=r'H$_2$O (+ve) reaction')
-        h7, = ax1.loglog( timeMyr_a, (H2O_liquid_kg_a+H2O_solid_kg_a+H2O_atmos_kg_a+H2O_reaction_kg_a)/H2O_total_kg, color=black, linestyle='-', label=r'H$_2$O total')
+        #h6, = ax1.loglog( timeMyr_a, H2O_reaction_kg_a / H2O_total_kg, color=blue, linestyle='-.', label=r'H$_2$O (+ve) reaction')
+        h7, = ax1.loglog( timeMyr_a, H2O_total2_kg_a / H2O_total_kg, color=black, linestyle='-', label=r'H$_2$O total')
 
         #h4b, = ax1.semilogx( timeMyr_a, H2O_escape_kg_a / H2O_total_kg, color=blue, linestyle=':', label='Atmos' )
         h8, = ax1.loglog( timeMyr_a, H2_liquid_kg_a / H2_total_kg, color=green, linestyle='-', label=r'H$_2$ liquid' )
         h9, = ax1.loglog( timeMyr_a, H2_solid_kg_a / H2_total_kg, color=green, linestyle=':', label=r'H$_2$ solid')
         h10, = ax1.loglog( timeMyr_a, H2_atmos_kg_a / H2_total_kg, color=green, linestyle='--', label=r'H$_2$ atmos')
-        h11, = ax1.loglog( timeMyr_a, -H2_reaction_kg_a / H2_total_kg, color=green, linestyle='-.', label=r'H$_2$ (-ve) reaction')
-        h12, = ax1.loglog( timeMyr_a, (H2_liquid_kg_a+H2_solid_kg_a+H2_atmos_kg_a+H2_reaction_kg_a)/H2_total_kg, color=yellow, linestyle='-', label=r'H$_2$ total')
+        #h11, = ax1.loglog( timeMyr_a, -H2_reaction_kg_a / H2_total_kg, color=green, linestyle='-.', label=r'H$_2$ (-ve) reaction')
+        h12, = ax1.loglog( timeMyr_a, H2_total2_kg_a / H2_total_kg, color=yellow, linestyle='-', label=r'H$_2$ total')
 
         fig_o.set_myaxes( ax1, title=title, ylabel='$x$', xlabel=xlabel) #,xticks=xticks )
         ax1.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
@@ -202,7 +210,8 @@ def plot_atmosphere():
         ax1.set_xlim( *xlim )
         ax1.set_ylim(1.0E-8, 2.0)
         ax1.legend()
-        handle_l = [h3,h4,h5,h6,h7,h8,h9,h10,h11,h12] #[h1,h2,h3,h4]#,h2b]
+        #handle_l = [h3,h4,h5,h6,h7,h8,h9,h10,h11,h12] #[h1,h2,h3,h4]#,h2b]
+        handle_l = [h3,h4,h5,h7,h8,h9,h10,h12] #[h1,h2,h3,h4]#,h2b]
         #fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1 )
         ax1.yaxis.set_label_coords(-0.1,0.47)
 
