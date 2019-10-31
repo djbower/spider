@@ -61,8 +61,10 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     PetscScalar *sol_scalings;
 
     /* We (over)allocate assuming a maximum of SPIDER_NUM_FIELD_IDS fields, that is that
-       you will never have more than one copy of the same field. */
-    ierr = PetscMalloc2(SPIDER_NUM_FIELD_IDS,&ctx->solutionFieldIDs,SPIDER_NUM_FIELD_IDS,&ctx->solutionSlots);CHKERRQ(ierr);
+       you will never have more than one copy of the same field.
+       Note that ctx->solutionSlots has an extra entry to account for the extra,
+       "undefined" entry in SpiderSolutionFieldID */
+    ierr = PetscMalloc2(SPIDER_NUM_FIELD_IDS,&ctx->solutionFieldIDs,SPIDER_NUM_FIELD_IDS+1,&ctx->solutionSlots);CHKERRQ(ierr);
     ierr = PetscMalloc1(SPIDER_NUM_FIELD_IDS,&sol_scalings);CHKERRQ(ierr);
     for (i=0; i<SPIDER_NUM_FIELD_IDS; ++i) ctx->solutionSlots[i] = -1;
     f = 0;
