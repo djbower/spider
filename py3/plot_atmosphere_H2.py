@@ -32,11 +32,11 @@ def plot_atmosphere():
     keys_t = ( ('atmosphere','mass_liquid'),
                ('atmosphere','mass_solid'),
                ('atmosphere','mass_mantle'),
-               ('atmosphere','CO2','liquid_kg'),
-               ('atmosphere','CO2','solid_kg'),
-               ('atmosphere','CO2','initial_kg'),
-               ('atmosphere','CO2','atmosphere_kg'),
-               ('atmosphere','CO2','atmosphere_bar'),
+           #    ('atmosphere','CO2','liquid_kg'),
+           #    ('atmosphere','CO2','solid_kg'),
+           #    ('atmosphere','CO2','initial_kg'),
+          #     ('atmosphere','CO2','atmosphere_kg'),
+          #     ('atmosphere','CO2','atmosphere_bar'),
                ('atmosphere','H2O','liquid_kg'),
                ('atmosphere','H2O','solid_kg'),
                ('atmosphere','H2O','initial_kg'),
@@ -55,7 +55,9 @@ def plot_atmosphere():
                ('atmosphere','temperature_surface'),
                ('atmosphere','emissivity'),
                ('rheological_front_phi','phi_global'),
-               ('atmosphere','Fatm'))
+               ('atmosphere','Fatm'),
+               ('atmosphere','H2O','reaction_kg'),
+               ('atmosphere','H2','reaction_kg'))
 
     data_a = su.get_dict_surface_values_for_times( keys_t, fig_o.time, indir=wdir )
 
@@ -68,29 +70,31 @@ def plot_atmosphere():
     mass_mantle = mass_mantle_a[0] # time independent
 
     # compute total mass (kg) in each reservoir
-    CO2_liquid_kg_a = data_a[3,:]
-    CO2_solid_kg_a = data_a[4,:]
-    CO2_total_kg_a = data_a[5,:]
-    CO2_total_kg = CO2_total_kg_a[0] # time-independent
-    CO2_atmos_kg_a = data_a[6,:]
-    CO2_atmos_a = data_a[7,:]
-    CO2_escape_kg_a = CO2_total_kg - CO2_liquid_kg_a - CO2_solid_kg_a - CO2_atmos_kg_a
+    #CO2_liquid_kg_a = data_a[3,:]
+    #CO2_solid_kg_a = data_a[4,:]
+    #CO2_total_kg_a = data_a[5,:]
+    #CO2_total_kg = CO2_total_kg_a[0] # time-independent
+    #CO2_atmos_kg_a = data_a[6,:]
+    #CO2_atmos_a = data_a[7,:]
+    #CO2_escape_kg_a = CO2_total_kg - CO2_liquid_kg_a - CO2_solid_kg_a - CO2_atmos_kg_a
 
-    H2O_liquid_kg_a = data_a[8,:]
-    H2O_solid_kg_a = data_a[9,:]
-    H2O_total_kg_a = data_a[10,:]
+    H2O_liquid_kg_a = data_a[3,:]
+    H2O_solid_kg_a = data_a[4,:]
+    H2O_total_kg_a = data_a[5,:]
     H2O_total_kg = H2O_total_kg_a[0] # time-independent
-    H2O_atmos_kg_a = data_a[11,:]
-    H2O_atmos_a = data_a[12,:]
-    H2O_escape_kg_a = H2O_total_kg - H2O_liquid_kg_a - H2O_solid_kg_a - H2O_atmos_kg_a
+    H2O_atmos_kg_a = data_a[6,:]
+    H2O_atmos_a = data_a[7,:]
+    H2O_reaction_kg_a = data_a[17,:]
+    H2O_escape_kg_a = H2O_total_kg - H2O_liquid_kg_a - H2O_solid_kg_a - H2O_atmos_kg_a - H2O_reaction_kg_a
 
-    H2_liquid_kg_a = data_a[13,:]
-    H2_solid_kg_a = data_a[14,:]
-    H2_total_kg_a = data_a[15,:]
+    H2_liquid_kg_a = data_a[8,:]
+    H2_solid_kg_a = data_a[9,:]
+    H2_total_kg_a = data_a[10,:]
     H2_total_kg = H2_total_kg_a[0] # time-independent
-    H2_atmos_kg_a = data_a[16,:]
-    H2_atmos_a = data_a[17,:]
-    H2_escape_kg_a = H2_total_kg - H2_liquid_kg_a - H2_solid_kg_a - H2_atmos_kg_a
+    H2_atmos_kg_a = data_a[11,:]
+    H2_atmos_a = data_a[12,:]
+    H2_reaction_kg_a = data_a[18,:]
+    H2_escape_kg_a = H2_total_kg - H2_liquid_kg_a - H2_solid_kg_a - H2_atmos_kg_a - H2_reaction_kg_a
 
     #O2_liquid_kg_a = data_a[18,:]
     #O2_solid_kg_a = data_a[19,:]
@@ -100,21 +104,21 @@ def plot_atmosphere():
     #O2_atmos_a = data_a[22,:]
     #O2_escape_kg_a = O2_total_kg - O2_liquid_kg_a - O2_solid_kg_a - O2_atmos_kg_a
 
-    temperature_surface_a = data_a[18,:]
-    emissivity_a = data_a[19,:]
-    phi_global = data_a[20,:]
-    Fatm = data_a[21,:]
+    temperature_surface_a = data_a[13,:]
+    emissivity_a = data_a[14,:]
+    phi_global = data_a[15,:]
+    Fatm = data_a[16,:]
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
     #xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
     #xticks = (1E-6,1E-5,1E-4,1E-3,1E-2,1E-1,1E0)
     xlabel = 'Time (Myr)'
     #xlim = (1.0E-2, 4550)
-    xlim = (1e-4,1e2)
+    xlim = (1e-6,1)
 
     red = (0.5,0.1,0.1)
     blue = (0.1,0.1,0.5)
-    yellow = (0.2,0.2,0.2)
+    yellow = (1,1,0)
     green = (0.1,0.5,0.1)
     black = 'black'
 
@@ -144,9 +148,9 @@ def plot_atmosphere():
         #    label = cont #int(cont*100) # as percent
         #    ax0.text( phi_time_l[cc], 0.40, '{:2d}'.format(label), va='bottom', ha='center', rotation=90, bbox=dict(facecolor='white'), transform=trans )
         #ax0.text( 0.1, 0.9, '$\phi (\%)$', ha='center', va='bottom', transform=ax0.transAxes )
-        h1, = ax0.semilogx( timeMyr_a, CO2_atmos_a, color=red, linestyle='-', label=r'CO$_2$')
-        h2, = ax0.semilogx( timeMyr_a, H2O_atmos_a, color=blue, linestyle='-', label=r'H$_2$O')
-        h3, = ax0.semilogx( timeMyr_a, H2_atmos_a, color=green, linestyle='-', label=r'H$_2$')
+        #h1, = ax0.semilogx( timeMyr_a, CO2_atmos_a, color=red, linestyle='-', label=r'CO$_2$')
+        h2, = ax0.loglog( timeMyr_a, H2O_atmos_a, color=blue, linestyle='-', label=r'H$_2$O')
+        h3, = ax0.loglog( timeMyr_a, H2_atmos_a, color=green, linestyle='-', label=r'H$_2$')
         #h4, = ax0.semilogx( timeMyr_a, O2_atmos_a, color=green, linestyle='-', label=r'O$_2$')
         ax0b = ax0.twinx()
         h5, = ax0b.semilogx( timeMyr_a, phi_global, color=black, linestyle='--', label=r'Melt, $\phi_g$')
@@ -162,7 +166,7 @@ def plot_atmosphere():
         ax0.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax0.xaxis.set_minor_formatter(ticker.NullFormatter())
         ax0.set_xlim( *xlim )
-        ax0.set_ylim( -10, 500)
+        #ax0.set_ylim( -10, 500)
         ax0.yaxis.set_label_coords(-0.15,0.5)
         ax0b.set_ylabel( r'$\phi_g$', rotation=0 )
         ax0b.yaxis.set_label_coords(1.1,0.525)
@@ -170,28 +174,35 @@ def plot_atmosphere():
     ##########
     # figure b
     ##########
-    print((CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg)
-    print(CO2_total_kg, H2O_total_kg, H2_total_kg)
+    #print((CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg)
+    #print(CO2_total_kg, H2O_total_kg, H2_total_kg)
     if 1:
         title = r'\textbf{(b) Reservoir mass fraction}'
         #h5, = ax1.semilogx( timeMyr_a, mass_liquid_a / mass_mantle, 'k--', label='melt' )
-        h1, = ax1.semilogx( timeMyr_a, (CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg, color=red, linestyle='-', label=r'CO$_2$ interior' )
-        h2, = ax1.semilogx( timeMyr_a, CO2_atmos_kg_a / CO2_total_kg, color=red, linestyle='--', label=r'CO$_2$ atmos' )
+        #h1, = ax1.semilogx( timeMyr_a, (CO2_liquid_kg_a+CO2_solid_kg_a) / CO2_total_kg, color=red, linestyle='-', label=r'CO$_2$ interior' )
+        #h2, = ax1.semilogx( timeMyr_a, CO2_atmos_kg_a / CO2_total_kg, color=red, linestyle='--', label=r'CO$_2$ atmos' )
         #h2b, = ax1.semilogx( timeMyr_a, CO2_escape_kg_a / CO2_total_kg, color=red, linestyle=':', label='Escape' )
-        h3, = ax1.semilogx( timeMyr_a, (H2O_liquid_kg_a+H2O_solid_kg_a) / H2O_total_kg, color=blue, linestyle='-', label=r'H$_2$O interior' )
-        h4, = ax1.semilogx( timeMyr_a, H2O_atmos_kg_a / H2O_total_kg, color=blue, linestyle='--', label=r'H$_2$O atmos')
+        h3, = ax1.loglog( timeMyr_a, H2O_liquid_kg_a / H2O_total_kg, color=blue, linestyle='-', label=r'H$_2$O liquid' )
+        h4, = ax1.loglog( timeMyr_a, H2O_solid_kg_a / H2O_total_kg, color=blue, linestyle=':', label=r'H$_2$O solid' )
+        h5, = ax1.loglog( timeMyr_a, H2O_atmos_kg_a / H2O_total_kg, color=blue, linestyle='--', label=r'H$_2$O atmos')
+        h6, = ax1.loglog( timeMyr_a, H2O_reaction_kg_a / H2O_total_kg, color=blue, linestyle='-.', label=r'H$_2$O (+ve) reaction')
+        h7, = ax1.loglog( timeMyr_a, (H2O_liquid_kg_a+H2O_solid_kg_a+H2O_atmos_kg_a+H2O_reaction_kg_a)/H2O_total_kg, color=black, linestyle='-', label=r'H$_2$O total')
+
         #h4b, = ax1.semilogx( timeMyr_a, H2O_escape_kg_a / H2O_total_kg, color=blue, linestyle=':', label='Atmos' )
-        h5, = ax1.semilogx( timeMyr_a, (H2_liquid_kg_a+H2_solid_kg_a) / H2_total_kg, color=green, linestyle='-', label=r'H$_2$ interior' )
-        h6, = ax1.semilogx( timeMyr_a, H2_atmos_kg_a / H2_total_kg, color=green, linestyle='--', label=r'H$_2$ atmos')
-        
+        h8, = ax1.loglog( timeMyr_a, H2_liquid_kg_a / H2_total_kg, color=green, linestyle='-', label=r'H$_2$ liquid' )
+        h9, = ax1.loglog( timeMyr_a, H2_solid_kg_a / H2_total_kg, color=green, linestyle=':', label=r'H$_2$ solid')
+        h10, = ax1.loglog( timeMyr_a, H2_atmos_kg_a / H2_total_kg, color=green, linestyle='--', label=r'H$_2$ atmos')
+        h11, = ax1.loglog( timeMyr_a, -H2_reaction_kg_a / H2_total_kg, color=green, linestyle='-.', label=r'H$_2$ (-ve) reaction')
+        h12, = ax1.loglog( timeMyr_a, (H2_liquid_kg_a+H2_solid_kg_a+H2_atmos_kg_a+H2_reaction_kg_a)/H2_total_kg, color=yellow, linestyle='-', label=r'H$_2$ total')
+
         fig_o.set_myaxes( ax1, title=title, ylabel='$x$', xlabel=xlabel) #,xticks=xticks )
         ax1.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
         ax1.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
         ax1.xaxis.set_minor_formatter(ticker.NullFormatter())
         ax1.set_xlim( *xlim )
-        ax2.set_ylim(-0.1, 1.1)
+        ax1.set_ylim(1.0E-8, 2.0)
         ax1.legend()
-        handle_l = [h1,h2,h3,h4]#,h2b]
+        handle_l = [h3,h4,h5,h6,h7,h8,h9,h10,h11,h12] #[h1,h2,h3,h4]#,h2b]
         #fig_o.set_mylegend( ax1, handle_l, loc='center left', ncol=1 )
         ax1.yaxis.set_label_coords(-0.1,0.47)
 
