@@ -35,7 +35,8 @@ pipelines:
             - cd tests
             - git clone https://bitbucket.org/dmay/pythontestharness
             - ./runTests.py -d # create default config
-            - ./runTests.py -f # Return error code based on test success
+            - ./runTests.py -t blackbody_init_liquid -f # Return error code based on test success
+            # TODO run a more-principled subset of the tests
   branches:
     master: *default-step
 definitions:
