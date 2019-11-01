@@ -15,6 +15,15 @@
 -ts_exact_final_time interpolate
 #-ts_exact_final_time matchstep
 
+# suggested by PS
+-atmosic_snes_verbose_monitor
+-atmosic_snes_converged_reason
+-atmosic_ksp_rtol 1e-10
+-atmosic_ksp_atol 1e-10
+-atmosic_snes_linesearch_damping 0.01
+-atmosic_snes_max_it 10000
+-snes_linesearch_max_it 1000
+
 # tolerances
 -ts_sundials_atol 1.0e-11
 -ts_sundials_rtol 1.0e-11
