@@ -31,12 +31,13 @@ pipelines:
             # run valgrind for atmosphere (examine manually!)
             #- valgrind ./spider -options_file examples/bower_2019/atmosphere_jeans/bu_input.opts -nstepsmacro 1 -dtmacro_years 0.00001
 
-            # Test
+            # Set up for Tests
             - cd tests
             - git clone https://bitbucket.org/dmay/pythontestharness
             - ./runTests.py -d # create default config
-            - ./runTests.py -t blackbody_init_liquid -f # Return error code based on test success
-            # TODO run a more-principled subset of the tests
+
+            # Run a subset of the tests (-f returns an error code)
+            - ./runTests.py -t blackbody_init_liquid,blackbody_init_solid,blackbody_init_mixed,blackbody -f
   branches:
     master: *default-step
 definitions:
