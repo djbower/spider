@@ -270,6 +270,7 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters*,const Atmosp
 PetscErrorCode ReactionParametersCreateWater1(ReactionParameters*,const AtmosphereParameters*);
 PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters*,const AtmosphereParameters*);
 PetscErrorCode ReactionParametersCreateSimpleWater2(ReactionParameters*,const AtmosphereParameters*);
+PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters*,const AtmosphereParameters*);
 PetscErrorCode ReactionParametersDestroy(ReactionParameters*);
 
 #endif
