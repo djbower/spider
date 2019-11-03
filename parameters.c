@@ -532,14 +532,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
       break;
   }
 
-  Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY_NONE;
-  {
-    PetscInt  OXYGEN_FUGACITY = 0;
-    PetscBool OXYGEN_FUGACITYset = PETSC_FALSE;
-    ierr = PetscOptionsGetInt(NULL,NULL,"-OXYGEN_FUGACITY",&OXYGEN_FUGACITY,&OXYGEN_FUGACITYset);CHKERRQ(ierr);
-   if( OXYGEN_FUGACITYset ) Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY;
-  }
-
   Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
 
@@ -629,7 +621,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* Reactions: look for command-line options to determine the number of reactions
      and options for each. These include named reactions and "simple" reactions.
      These are defined with respect to the prefixes for the volatiles, which are translated to integer ids */
-  Ap ->n_reactions = 0;
+  Ap->n_reactions = 0;
 
   /* Special "named" reactions */
   {
@@ -670,6 +662,23 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
         ++Ap->n_reactions;
     }
 
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_simplewater2",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateSimpleWater2(&Ap->reaction_parameters[Ap->n_reactions],Ap);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+
+  }
+
+  Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY_NONE;
+  {
+    PetscInt  OXYGEN_FUGACITY = 0;
+    PetscBool OXYGEN_FUGACITYset = PETSC_FALSE;
+    ierr = PetscOptionsGetInt(NULL,NULL,"-OXYGEN_FUGACITY",&OXYGEN_FUGACITY,&OXYGEN_FUGACITYset);CHKERRQ(ierr);
+    /* only set OXYGEN_FUGACITY if there are reactions, since fO2 is
+       used to also adjust the total atmosphere pressure */
+    if( OXYGEN_FUGACITYset && Ap->n_reactions ) Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY;
   }
 
 #if 0
