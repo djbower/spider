@@ -695,10 +695,13 @@ static PetscErrorCode objective_function_initial_melt_abundance( SNES snes, Vec 
 
         K = get_equilibrium_constant( reaction_parameters_ptr, A->tsurf, C );
 
-        /* this general form retains the pressure scaling and is preferred by the solver:
-           passing in the reaction quotient rather than decomposed into a numerator and
-           denominator causes problems in computing the FD Jacobian */
-        ff[Ap->n_volatiles + i] = Qp - K * Qr;
+        /* the form below was used for testing the simplewater reactions, but seems
+           to fail when fO2 is included (which changes the scaling by around 2-3
+           orders of magnitude) */
+        //ff[Ap->n_volatiles + i] = Qp - K * Qr;
+        /* the latest form, below, seems to work for all oxygen fugacity models
+           as well as the simplewater tests.  Perhaps a scaling is retained? */
+        ff[Ap->n_volatiles + i] = Qp/Qr - K;
 
     }
 
