@@ -25,19 +25,16 @@ pipelines:
             # Build SPIDER
             - make -j
 
-            # run valgrind (examine manually!)
+            # Run valgrind (examine manually!)
             - valgrind ./spider -nstepsmacro 1 -dtmacro_years 10
-
-            # run valgrind for atmosphere (examine manually!)
-            #- valgrind ./spider -options_file examples/bower_2019/atmosphere_jeans/bu_input.opts -nstepsmacro 1 -dtmacro_years 0.00001
 
             # Set up for Tests
             - cd tests
             - git clone https://bitbucket.org/dmay/pythontestharness
             - ./runTests.py -d # create default config
 
-            # Run a subset of the tests (-f returns an error code)
-            - ./runTests.py -t blackbody_init_liquid,blackbody_init_solid,blackbody_init_mixed,blackbody -f
+            # Run all the tests (-f returns an error code)
+            - ./runTests.py -f
   branches:
     master: *default-step
 definitions:

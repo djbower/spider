@@ -28,7 +28,7 @@ import pyTestHarness.harness as pthharness
 import pyTestHarness.version as pthversion
 
 # Import functions to generate tests
-from expected_output.tests import *
+from test_definitions import *
 
 def main() :
 
