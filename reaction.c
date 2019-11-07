@@ -210,6 +210,41 @@ PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters* reaction
 }
 
 /* A named reaction */
+/* This one is used for testing, since it assumes K, but allows fO2 to evolve with temperature (hence time) */
+/* K = pH2/pH2O = 10**1.0 = 10 */
+PetscErrorCode ReactionParametersCreateMiddleWater2(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+{
+  PetscErrorCode     ierr;
+  PetscInt           i,v;
+  PetscBool          flg;
+  ReactionParameters reaction_parameters;
+
+  PetscFunctionBeginUser;
+  ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
+  reaction_parameters = *reaction_parameters_ptr;
+  reaction_parameters->type = "middlewater2";
+  reaction_parameters->n_volatiles = 2;
+  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
+  reaction_parameters->stoichiometry[0] = -1.0;  // H2O
+  reaction_parameters->stoichiometry[1] = 1.0;  // H2
+  /* equilibrium constant coefficients */
+  reaction_parameters->Keq_coeffs[0] = 0;
+  reaction_parameters->Keq_coeffs[1] = 1.0;
+  /* fO2 stoichiometry */
+  reaction_parameters->fO2_stoichiometry = 0.5;
+
+  for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
+  for (v=0; v<Ap->n_volatiles; ++v) {
+    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2O",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[0] = v;
+    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[1] = v;
+  }
+  for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
+  PetscFunctionReturn(0);
+}
+
+/* A named reaction */
 PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
 {
   PetscErrorCode     ierr;

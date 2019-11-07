@@ -1051,6 +1051,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             break;
         case 3:
             /* Schaefer and Fegley (2017), H meteorite */
+            /* note: below IW buffer */
             a = 5.0743;
             b = -22.906;
             c = -5.6610;
@@ -1059,6 +1060,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             break;
         case 4:
             /* Schaefer and Fegley (2017), EH meteorite */
+            /* note: below IW buffer */
             a = 4.9495;
             b = -24.024;
             c = -4.6236;
@@ -1067,6 +1069,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             break;
         case 5:
             /* Schaefer and Fegley (2017), Eucrite meteorite */
+           /* note: below IW buffer */
             a = 5.4856;
             b = -25.127;
             c = -3.6580;
