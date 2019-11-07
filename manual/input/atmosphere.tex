@@ -9,7 +9,7 @@ The mass balance of a given volatile in the interior of a SPIDER model \citep[e.
 \begin{equation}
 m_v^s + m_v^l + m_v^g + m_v^e + m_v^o + m_v^r= m_v^t
 \end{equation}
-where subscript $v$ denotes a particular volatile and superscripts $s$, $l$, $g$, $o$, $t$ indicates the volatile's mass in the solid, liquid (i.e., melt), gas, and surface liquid ocean, as well as the total mass, respectively.  Superscript $e$ represents the reservoir (lost) due to escape, superscript $o$ accounts for ocean formation (this is just a placeholder and is not currently implemented), and superscript $r$ accounts for the amount of the volatile added (or removed) by chemical reactions.  We can express these masses as follows:
+where subscript $v$ denotes a particular volatile and superscripts $s$, $l$, $g$, $o$, $t$ indicates the volatile's mass in the solid, liquid (i.e., melt), gas, and surface liquid ocean, as well as the total mass, respectively.  Superscript $e$ represents the reservoir (lost) due to escape, superscript $o$ accounts for ocean formation (this is just a placeholder and is not currently implemented), and superscript $r$ accounts for the amount of the volatile added (or removed) by chemical reactions.  \textbf{Only the solid, liquid, and atmosphere are physical reservoirs, in the sense that the other reservoirs are fictitious to ensure mass conservation.}. We can express these masses as follows:
 \begin{equation}
 X_v^s M^s + X_v^l M^l + X_v^g M^g + m_v^e + m_v^o + m_v^r = X_v^{\rm init} M^m
 \end{equation}
@@ -164,25 +164,14 @@ m_v^{sp} = \hat{m}_v^s \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
 %%%%
 %%%%
 \subsection{Initial Volatile Concentration}
-For an initial condition it is desirable to prescribe $\hat{X}_v^{\rm init}$, but we must then compute $\hat{X_v}$ according to the mass balance since this is the quantity that is actually solved for (i.e., evolved with time).  We assume the magma ocean is completely molten at $t=0$, i.e., all the mantle mass is liquid, and no volatiles have yet escaped.  We also need to realise that our ``desired'' initial volatile concentration may be incompatible with the chemical equilibrium criteria that we (optionally) prescribe, and therefore some mass may be necessarily exchanged through chemical reactions.  In this regard, our prescribed initial abundances are really just initial guesses of $X_v$ that the code uses to iterate to find the correct $X_v$ that satisfies the mass balance.  Therefore:
-\begin{equation}
-\hat{M}^s = \hat{m}_v^e = \hat{m}_v^o = 0, \qquad \hat{M}^l = \hat{M}^m
-\end{equation}
-So the mass balance for the initial condition is:
-\begin{equation}
-\hat{X_v} \hat{M}^m + \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p_v} + \hat{m}_v^r = \hat{X}_v^{\rm init} \hat{M}^m
-\label{eq:volinit}
-\end{equation}
-And optionally dividing through by $\hat{M}^m$:
-\begin{equation}
-\hat{X_v} + \frac{10^6}{V_0 \hat{M}^m} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p_v} + \frac{\hat{m}_v^r}{\hat{M}^m} = \hat{X}_v^{\rm init}
-\label{eq:volinit2}
-\end{equation}
+For an initial condition it is desirable to prescribe $\hat{X}_v^{\rm init}$, but we must then compute $\hat{X_v}$ according to the mass balance since this is the quantity that is actually solved for (i.e., evolved with time).  We also need to realise that our ``desired'' initial volatile concentration may be incompatible with the chemical equilibrium criteria that we (optionally) prescribe, and therefore some mass may be necessarily exchanged through chemical reactions.  In this regard, our prescribed initial abundances are really just initial guesses of $X_v$ that the code uses to iterate to find the correct $X_v$ that satisfies the mass balance.  Therefore, to determine the initial volatile abundances we solve Eq.~\ref{eq:volevo} for a given thermal state of the interior, i.e. the masses of solid and liquid are known.
+
 For the case of no chemical reactions, $\hat{m}_v^r=0$ for all volatiles and hence the only coupling between volatiles is through their partial pressures, which all contribute to the total surface pressure.  For chemical reactions, we can solve for the initial volatile abundance that obeys the prescribed chemical equilibrium laws by rearranging:
 \begin{equation}
-\hat{X_v} + \frac{10^6}{V_0 \hat{M}^m} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p_v} = \hat{X}_v^{\rm init} - \frac{\hat{m}_v^r}{\hat{M}^m} \equiv \hat{X}_v^{\rm new\ init} 
+\frac{\hat{X_v}}{\hat{M}^m} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0 \hat{M}^m} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p_v} = \hat{X}_v^{\rm init} - \frac{\hat{m}_v^r}{\hat{M}^m} \equiv \hat{X}_v^{\rm new\ init} 
 \label{eq:volinit3}
 \end{equation}
+Effectively, this initialises the mass reaction term $\hat{m}^r_v$ to zero at the start of the model run, and computes both the new total initial volatile concentration $\hat{X}_v^{\rm new\ init}$ as well as the initial volatile abundance in the melt $\hat{X_v}$.  \dbnote{This implicitly assumes that the escape reservoir is initially zero, which it may not be if we are resuming from a previous output.  To look at this at some point.}
 %%%%
 %%%%
 %%%%
@@ -329,7 +318,7 @@ m_B = \frac{b \mu_B}{a \mu_A} \frac{p_B}{p_A} m_A
 \end{equation}
 And therefore the time derivative is:
 \begin{equation}
-\frac{\partial m_B}{\partial t} = \frac{b \mu_B}{a \mu_A} \left( \frac{p_B}{p_A} \frac{\partial m_A}{\partial t} + \frac{m_A}{p_A} \frac{\partial p_B}{\partial t} + (-1)\frac{p_B m_A}{{p_A}^2} \frac{\partial p_A}{\partial t} \right)
+\frac{\partial m_B}{\partial t} = \frac{b \mu_B}{a \mu_A} \left( \frac{p_B}{p_A} \frac{\partial m_A}{\partial t} + \frac{m_A}{p_A} \frac{\partial p_B}{\partial t} -\frac{p_B m_A}{{p_A}^2} \frac{\partial p_A}{\partial t} \right)
 \end{equation}
 %%%%
 %%%%
