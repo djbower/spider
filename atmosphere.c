@@ -877,7 +877,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, const PetscScalar *dmrdt )
 {
 
-    PetscScalar               out, out2, dpsurfdt, f_thermal_escape;
+    PetscScalar               out, out2, massv, dpsurfdt, f_thermal_escape;
     PetscInt                  j,k;
 
     /* remember that to this point, V->f_thermal_escape is always
@@ -926,7 +926,6 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
           /* i is the current volatile of interest */
           /* TODO: below should be v or k?, I think v is correct (was previously k) */
           if (v==i) {
-              PetscScalar massv;
               massv = ( A->volatiles[v].p / A->volatiles[v0].p ) * dmrdt[j];
               massv += ( A->mass_reaction[j] / A->volatiles[v0].p ) * A->volatiles[v].dpdx * A->volatiles[v].dxdt;
               massv -= ( A->volatiles[v].p * A->mass_reaction[j] ) / PetscPowScalar( A->volatiles[v0].p, 2.0 ) * A->volatiles[v0].dpdx * A->volatiles[v0].dxdt;
