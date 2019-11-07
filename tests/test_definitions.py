@@ -6,10 +6,9 @@ def atmosphere(rootDir) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "atmosphere"
   ranks = 1
-  # Long range of acceptable files (probably better to check earlier)
-  acceptable_files = ' '.join(['output/'+str(i)+'.json' for i in range(1000000,1000124)])
+  acceptable_files = ' '.join(['output/'+str(i)+'.json' for i in range(49990,50010)])
   launch = [\
-          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','tests','atmosphere','bu_input.opts'),\
+          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','tests','atmosphere','bu_input.opts') + ' -nstepsmacro 1',\
           os.path.join(rootDir,'tests','copy_one_of.py') + ' ' + acceptable_files + ' -o to_check.json',\
           os.path.join(rootDir,'tests','json_timestep_to_txt.py to_check.json'),
           ]
@@ -31,10 +30,9 @@ def atmosphere_jeans(rootDir) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "atmosphere_jeans"
   ranks = 1
-  # Long range of acceptable files (probably better to check earlier)
-  acceptable_files = ' '.join(['output/'+str(i)+'.json' for i in range(1000000,1000097)])
+  acceptable_files = ' '.join(['output/'+str(i)+'.json' for i in range(49990,50010)])
   launch = [\
-          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','tests','atmosphere_jeans','bu_input.opts'),\
+          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','tests','atmosphere_jeans','bu_input.opts') + ' -nstepsmacro 1',\
           os.path.join(rootDir,'tests','copy_one_of.py') + ' ' + acceptable_files + ' -o to_check.json',\
           os.path.join(rootDir,'tests','json_timestep_to_txt.py to_check.json'),
           ]
