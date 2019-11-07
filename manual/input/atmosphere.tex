@@ -471,7 +471,7 @@ Following the general example for a reaction (Sect.~\ref{sec:general_reaction}),
 \begin{equation}
 Q_p = C^c D^d
 \end{equation}
-Note that in the code we use positive stoichiometry coefficients to denote products and negative coefficients to denote reactants.  Also, quantities $C$ and $D$ are the volume mixing ratios of the products i.e. $p_v/P_s$, since we wish to retain the total pressure scale for numerical reasons (stability of solver).  Now differentiate:
+Note that in the code we use positive stoichiometry coefficients to denote products and negative coefficients to denote reactants.  \textbf{Also, quantities $C$ and $D$ are the volume mixing ratios of the products i.e. $p_v/P_s$, since we wish to retain the total pressure scale for numerical reasons (stability of solver)}.  Now differentiate:
 \begin{equation}
 \frac{\partial Q_p}{\partial t} = D^d c C^{(c-1)} \frac{\partial C}{\partial t} + C^c d D^{(d-1)} \frac{\partial D}{\partial t}
 \end{equation}
@@ -508,12 +508,12 @@ And for the oxygen fugacity models of \cite{OS19}:
 \begin{equation}
 \frac{dg}{dT} = \frac{dg_2}{dT} = abT^{(b-1)}
 \end{equation}
-\paragraph{Reaction quotient: reactions}
-Now consider the reaction quotient:
+\paragraph{Reaction quotient: reactants}
+Now consider the denominator of the reaction quotient:
 \begin{equation}
 Q_r = A^{-a} B^{-b} P_s^{-f}
 \end{equation}
-The above deserves some clarification.  Firstly, in the code we use negative stoichiometry to denote reactants, and hence we negate the coefficients $a$ and $b$ in the above equation.  Secondly, because we are effectively using volume mixing ratios, an extra scaling of $P_s$ appears to ensure that the reaction coefficient is non-dimensional.  In the above, I am assuming that the scaling appears in the denominator with an exponent of $f$, and hence again this is also negated in the above equation.  \dbnote{Check if $f$ is in fact negative, and therefore results in a positive exponent in the above equation, that the formulation still works out.}.  Taking the derivative follows the same pattern as before with the reaction quotient numerator, but now we are considering the reaction quotient denominator:
+The above deserves some clarification.  Firstly, in the code we use negative stoichiometry to denote reactants, and hence we negate the coefficients $a$ and $b$ in the above equation.  Secondly, because we are effectively using volume mixing ratios, an extra scaling of $P_s$ appears to ensure that the reaction quotient is non-dimensional.  In the above, I am assuming that the scaling appears in the denominator with an exponent of $f$, and hence again this is also negated in the above equation.  \dbnote{Check if $f$ is in fact negative, and therefore results in a positive exponent in the above equation, that the formulation still works out.}.  Taking the derivative follows the same pattern as before with the reaction quotient numerator, but now we are considering the reaction quotient denominator:
 \begin{equation}
 \frac{\partial Q_r}{\partial t} = A^{-a} \left( B^{-b}(-f)P_s^{(-f-1)} \frac{\partial P_s}{\partial t} + P_s^{-f} (-b)B^{(-b-1)} \frac{\partial B}{\partial t} \right) + B^{-b} P_s^{-f} (-a) A^{(-a-1)} \frac{\partial A}{\partial t}
 \end{equation}
