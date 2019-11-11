@@ -834,8 +834,9 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 
     /* chemical equilibrium constraints */
     for (i=0; i<Ap->n_reactions; ++i) {
-        PetscScalar dQpdt, dQrdt, K, Qr, dKdT, dKdt;
+        PetscScalar dQpdt, dQrdt, K, Qr, Qp, dKdT, dKdt;
         Qr = get_reaction_quotient_reactants( &Ap->reaction_parameters[i], A );
+        Qp = get_reaction_quotient_products( &Ap->reaction_parameters[i], A );
         dQpdt = get_reaction_quotient_products_time_derivative( &Ap->reaction_parameters[i], A, Ap );
         dQrdt = get_reaction_quotient_reactants_time_derivative( &Ap->reaction_parameters[i], A, Ap );
         K = get_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, C );
@@ -843,7 +844,13 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
         dKdt = dKdT * A->dtsurfdt;
         /* residual of reaction balance */
         //ff[Ap->n_volatiles + i] = 0.0; // for debugging
-        ff[Ap->n_volatiles + i] = dQpdt - K * dQrdt - Qr * dKdt;
+        /* below does not maintain scaling */
+        //ff[Ap->n_volatiles + i] = dQpdt - K * dQrdt - Qr * dKdt;
+        /* this version does */
+        ff[Ap->n_volatiles + i] = -Qp/PetscPowScalar(Qr,2.0) * dQrdt;
+        ff[Ap->n_volatiles + i] += 1.0/Qr * dQpdt;
+        ff[Ap->n_volatiles + i] -= dKdt;
+
     }
 
 #if 0
