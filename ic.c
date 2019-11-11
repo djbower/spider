@@ -681,27 +681,35 @@ static PetscErrorCode objective_function_initial_melt_abundance( SNES snes, Vec 
 
     for (i=0; i<Ap->n_reactions; ++i) {
 
-        PetscScalar Qp,Qr,K;
+        PetscScalar Qp,Qr,log10K,log10fO2,log10G,G;
 
         ReactionParameters const * reaction_parameters_ptr = &Ap->reaction_parameters[i];
+        ReactionParameters const reaction_parameters = *reaction_parameters_ptr;
 
         /* return the numerator and denominator separately to retain scalings,
            otherwise the non-linear solver has problems */
         /* since scaling by A->psurf, it may not be necessary any longer
            to split the reaction quotient into two parts, but nevertheless
            why fix something that is not broken? */
+        /* note that these do not account for fO2 anymore, since fO2 is typically
+           a tiny value and therefore is badly scaled */
         Qp = get_reaction_quotient_products( reaction_parameters_ptr, A );
         Qr = get_reaction_quotient_reactants( reaction_parameters_ptr, A );
 
-        K = get_equilibrium_constant( reaction_parameters_ptr, A->tsurf, C );
+        /* Equilibrium constant */
+        log10K = get_log10_equilibrium_constant( reaction_parameters_ptr, A->tsurf, C );
+        /* Oxygen fugacity */
+        log10fO2 = A->log10fO2;
+        /* Modified equilibrium constant that accounts for fO2, which ordinarily
+           would appear in the reaction quotient.  But by including it here, and
+           operating in log-space, we can retain precision by NOT multiplying
+           the partial pressures of other volatiles by a tiny fO2 */
+        log10G = log10K - reaction_parameters->fO2_stoichiometry * A->log10fO2;
+        G = PetscPowScalar( 10.0, log10G );
 
-        /* the form below was used for testing the simplewater reactions, but seems
-           to fail when fO2 is included (which changes the scaling by around 2-3
-           orders of magnitude) */
-        //ff[Ap->n_volatiles + i] = Qp - K * Qr;
-        /* the latest form, below, seems to work for all oxygen fugacity models
-           as well as the simplewater tests.  Perhaps a scaling is retained? */
-        ff[Ap->n_volatiles + i] = Qp/Qr - K;
+        /* this seems to work for all oxygen fugacity models as well as the simplewater
+           tests.  Multiplying through by Qr seems to lose a relevant scaling */
+        ff[Ap->n_volatiles + i] = Qp/Qr - G;
 
     }
 

@@ -341,7 +341,7 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
     /* Actually, for oxidised meteorite material this is almost
        certainly required, since O2 could be a dominant species */
     /* fO2 is set in set_interior_structure_from_solution */
-    A->psurf /= (1.0 - A->fO2);
+    A->psurf /= (1.0 - PetscPowScalar(10.0,A->log10fO2) );
 
     PetscFunctionReturn(0);
 }
@@ -681,11 +681,11 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     /* oxygen fugacity */
     /* the value itself is the non-dimensional oxygen fugacity, a la Schaefer and Fegley (2017) */
     scaling = 1.0;
-    ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "None", A->fO2, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "None", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
 
     /* multiplying by the scaling gives the oxygen fugacity (partial pressure) in bar */
     scaling = A->psurf * C->PRESSURE / 1.0E5; /* bar */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", A->fO2, data);CHKERRQ(ierr);
+    ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
 
     /* optical depth, non-dimensional */
     scaling = 1.0;
@@ -839,7 +839,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
         Qp = get_reaction_quotient_products( &Ap->reaction_parameters[i], A );
         dQpdt = get_reaction_quotient_products_time_derivative( &Ap->reaction_parameters[i], A, Ap );
         dQrdt = get_reaction_quotient_reactants_time_derivative( &Ap->reaction_parameters[i], A, Ap );
-        K = get_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, C );
+        K = get_log10_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, C );
         dKdT = get_equilibrium_constant_temperature_derivative( &Ap->reaction_parameters[i], A->tsurf, C );
         dKdt = dKdT * A->dtsurfdt;
         /* residual of reaction balance */
@@ -1121,8 +1121,11 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
 
     /* Remember that oxygen_fugacity is equivalent to a volume
        mixing ratio, and therefore does not need scaling */
-    A->fO2 = PetscPowScalar(10.0,func);
-    A->dfO2dT = A->fO2 * PetscLogReal(10.0) * dfuncdT;
+    A->log10fO2 = func;
+
+    // FIXME: below needs correcting for log10
+    A->dfO2dT = PetscPowScalar(10.0, A->log10fO2) * PetscLogReal(10.0) * dfuncdT;
+    // FIXME: above is not right!
 
     PetscFunctionReturn(0);
 
