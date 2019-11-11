@@ -849,6 +849,9 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
         /* this version does */
         ff[Ap->n_volatiles + i] = -Qp/PetscPowScalar(Qr,2.0) * dQrdt;
         ff[Ap->n_volatiles + i] += 1.0/Qr * dQpdt;
+        /* FIXME: line below needs updating to include influence of fO2 */
+        /* TODO: can maybe formulate to only multiply by dT/dt once? */
+        /* formulate using logs? */
         ff[Ap->n_volatiles + i] -= dKdt;
 
     }
