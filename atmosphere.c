@@ -853,32 +853,6 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 
     }
 
-#if 0
-    /* Objective function */
-    for (i=0; i<Ap->n_reactions; ++i) {
-      PetscBool is_simple;
-
-      ierr = PetscStrcmp(Ap->reaction_parameters[i]->type,"simple",&is_simple);CHKERRQ(ierr);
-      if (is_simple) {
-        const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-        const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
-
-        ff[Ap->n_volatiles + i] = Ap->reaction_parameters[i]->epsilon[v0] * A->volatiles[v0].dxdt * A->volatiles[v0].dpdx
-                                + Ap->reaction_parameters[i]->epsilon[v1] * A->volatiles[v1].dxdt * A->volatiles[v1].dpdx;
-      } else {
-        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction type %s not recognized",Ap->reaction_parameters[i]->type);
-      }
-    }
-
-    /* FIXME: this turns off all reactions, but allows test cases to run */
-    /* TODO: DJB needs to figure out and update the objective function for the time stepper */
-    /* Objective function */
-    for (i=0; i<Ap->n_reactions; ++i) {
-        ff[Ap->n_volatiles + i] = 0.0;
-    }
-#endif
-
-
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

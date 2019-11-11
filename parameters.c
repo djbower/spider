@@ -695,64 +695,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
     if( OXYGEN_FUGACITYset && Ap->n_reactions ) Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY;
   }
 
-#if 0
-  {
-    /* Do a brute-force search for all pairs of volatiles, looking for "simple" reactions */
-    PetscInt  v0,v1;
-
-    for (v0=0; v0<Ap->n_volatiles; ++v0) {
-      for (v1=v0+1; v1<Ap->n_volatiles; ++v1) {
-        char       option[256],option_value[256];
-        PetscBool  set;
-
-        ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s",Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v1].prefix);CHKERRQ(ierr);
-        ierr = PetscOptionsGetString(NULL,NULL,option,option_value,sizeof(option_value),&set);CHKERRQ(ierr);
-        if (!set) {
-          /* Also check for other ordering */
-          ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s",Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v0].prefix);CHKERRQ(ierr);
-        ierr = PetscOptionsGetString(NULL,NULL,option,option_value,sizeof(option_value),&set);CHKERRQ(ierr);
-        }
-        if (set) {
-          if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
-
-          /* Collect epsilon and gamma values for each volatile */
-          PetscReal epsilon[2],gamma[2];
-          PetscInt  v;
-
-          for (v=0; v<2; ++v) {
-            char      option[256];
-            PetscBool flg;
-
-            ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_epsilon_%s",Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
-            ierr = PetscOptionsGetReal(NULL,NULL,option,&epsilon[v],&flg);CHKERRQ(ierr);
-            if (!flg) {
-              /* Other ordering */
-              ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_epsilon_%s",Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
-              ierr = PetscOptionsGetReal(NULL,NULL,option,&epsilon[v],&flg);CHKERRQ(ierr);
-            }
-            if (!flg) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"You must supply an option like %s",option);
-          }
-          for (v=0; v<2; ++v) {
-            char      option[256];
-            PetscBool flg;
-
-            ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_gamma_%s",Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
-            ierr = PetscOptionsGetReal(NULL,NULL,option,&gamma[v],&flg);CHKERRQ(ierr);
-            if (!flg) {
-              /* Other ordering */
-              ierr = PetscSNPrintf(option,sizeof(option),"-reaction_%s_%s_gamma_%s",Ap->volatile_parameters[v1].prefix,Ap->volatile_parameters[v0].prefix,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
-              ierr = PetscOptionsGetReal(NULL,NULL,option,&gamma[v],&flg);CHKERRQ(ierr);
-            }
-            if (!flg) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"You must supply an option like %s",option);
-          }
-          ierr = ReactionParametersCreateSimple(&Ap->reaction_parameters[Ap->n_reactions],v0,v1,gamma[0],gamma[1],epsilon[0],epsilon[1]);CHKERRQ(ierr);
-          ++Ap->n_reactions;
-        }
-      }
-    }
-  }
-#endif
-
   /* radiogenic heating */
   /* aluminium 26 */
   al26->t0 = 0.0; // years
@@ -953,42 +895,6 @@ PetscErrorCode PrintParameters(Parameters const *P)
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%-10D %-15s (.. additional parameters omitted ..)\n",i,Ap->volatile_parameters[i].prefix);CHKERRQ(ierr);
     }
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
-
-#if 0
-    if (Ap->n_reactions > 0) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\n[Reaction] \n");CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
-    for (i=0; i<Ap->n_reactions; ++i) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"%-10D",i);CHKERRQ(ierr);
-      for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
-        const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
-        const char *sgn_str = Ap->reaction_parameters[i]->gamma[j] < 0.0 ? " - " : j==0 ? "" : " + ";
-        const PetscReal gamma_abs = PetscAbsReal(Ap->reaction_parameters[i]->gamma[j]);
-        ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%0.3g %s",sgn_str,(double) gamma_abs,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
-      }
-      ierr = PetscPrintf(PETSC_COMM_WORLD," = 0 ");CHKERRQ(ierr);
-      {
-        PetscBool flg;
-
-        ierr = PetscStrcmp(Ap->reaction_parameters[i]->type,"simple",&flg);
-        if (flg) {
-          ierr = PetscPrintf(PETSC_COMM_WORLD," (Simple equilibrium: ");CHKERRQ(ierr);
-          for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
-            const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
-            const char *sgn_str = Ap->reaction_parameters[i]->epsilon[j] < 0.0 ? " - " : j==0 ? "" : " + ";
-            const PetscReal epsilon_abs = PetscAbsReal(Ap->reaction_parameters[i]->epsilon[j]);
-            ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%0.3g %s",sgn_str,(double) epsilon_abs,Ap->volatile_parameters[v].prefix);CHKERRQ(ierr);
-          }
-          ierr = PetscPrintf(PETSC_COMM_WORLD," = 0) ");CHKERRQ(ierr);
-        } else {
-          ierr = PetscPrintf(PETSC_COMM_WORLD," (type: %s )",Ap->reaction_parameters[i]->type);CHKERRQ(ierr);
-        }
-      }
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"(.. additional parameters omitted ..)\n");CHKERRQ(ierr);
-    }
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
-    }
-#endif
   }
   if (P->postStepActive) {
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);

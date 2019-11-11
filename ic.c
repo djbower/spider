@@ -713,23 +713,6 @@ static PetscErrorCode objective_function_initial_melt_abundance( SNES snes, Vec 
 
     }
 
-#if 0
-    /* Objective function, "simple" reactions (2 species, constant epsilon) only */
-    for (i=0; i<Ap->n_reactions; ++i) {
-      PetscBool is_simple;
-
-      ierr = PetscStrcmp(Ap->reaction_parameters[i]->type,"simple",&is_simple);CHKERRQ(ierr);
-      if (is_simple) {
-        const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
-        const PetscInt v1 = Ap->reaction_parameters[i]->volatiles[1];
-
-        ff[Ap->n_volatiles + i] = Ap->reaction_parameters[i]->epsilon[v0] * A->volatiles[v0].p + Ap->reaction_parameters[i]->epsilon[v1] * A->volatiles[v1].p;
-      } else{
-        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Reaction type %s not recognized",Ap->reaction_parameters[i]->type);
-      }
-    }
-#endif
-
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
