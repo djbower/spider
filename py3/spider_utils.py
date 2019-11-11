@@ -217,7 +217,7 @@ class FigureData( object ):
         times=None, units='kyr' ):
         dd = {}
         self.data_d = dd
-        if times:
+        if times is not None:
             dd['time_l'] = times
             self.process_time_list()
         if units:
@@ -259,6 +259,8 @@ class FigureData( object ):
             time_l = [int(time_l)]
         except ValueError:
             time_l = [int(time) for time in time_l.split(',')]
+        except TypeError: # already a list
+            pass
         self.time = time_l
 
     def make_figure( self ):
@@ -271,7 +273,7 @@ class FigureData( object ):
         self.fig = fig
         self.ax = ax
 
-    def savefig( self, num ):
+    def savefig( self, num=None ):
         dd = self.data_d
         if dd['outname']:
             outname = dd['outname'] + '.pdf'
