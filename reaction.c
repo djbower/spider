@@ -327,6 +327,10 @@ PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, P
 
     dlog10KdT = -reaction_parameters->Keq_coeffs[0] / PetscPowScalar( temp, 2.0 );
 
+    /* TODO: check, must non-dimensionalise, since we used a scaled
+       (dimensional) temperature */
+    dlog10KdT *= C->TEMP;
+
     return dlog10KdT;
 
 }

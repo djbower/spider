@@ -1120,7 +1120,10 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
     /* Remember that oxygen_fugacity is equivalent to a volume
        mixing ratio, and therefore does not need scaling */
     A->log10fO2 = func;
-    A->dlog10fO2dT = dfuncdT;
+
+    /* TODO: check, must non-dimensionalise, because we used a scaled
+       (dimensional) temperature to compute the derivative */
+    A->dlog10fO2dT = dfuncdT * C->TEMP;
 
     PetscFunctionReturn(0);
 
