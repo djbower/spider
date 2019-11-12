@@ -459,7 +459,7 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
     else{
         /* TODO: maybe initialise these variables elsewhere? */
         A->log10fO2 = 0;
-        A->dfO2dT = 0;
+        A->dlog10fO2dT = 0;
     }
 
     PetscFunctionReturn(0);

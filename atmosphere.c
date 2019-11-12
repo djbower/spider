@@ -341,7 +341,12 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
     /* Actually, for oxidised meteorite material this is almost
        certainly required, since O2 could be a dominant species */
     /* fO2 is set in set_interior_structure_from_solution */
-    A->psurf /= (1.0 - PetscPowScalar(10.0,A->log10fO2) );
+    /* Oxygen fugacity must be set, otherwise A->log10f02 is 
+       zero due to initialisation and hence this results in
+       infinite A->psurf */
+    if( Ap->OXYGEN_FUGACITY ){
+        A->psurf /= (1.0 - PetscPowScalar(10.0,A->log10fO2) );
+    }
 
     PetscFunctionReturn(0);
 }
@@ -834,14 +839,17 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 
     /* chemical equilibrium constraints */
     for (i=0; i<Ap->n_reactions; ++i) {
-        PetscScalar dQpdt, dQrdt, K, Qr, Qp, dKdT, dKdt;
+        PetscScalar dQpdt, dQrdt, log10K, dlog10KdT, Qr, Qp, dGdt, G, log10G, dlog10fO2dT, log10fO2;
+
         Qr = get_reaction_quotient_reactants( &Ap->reaction_parameters[i], A );
         Qp = get_reaction_quotient_products( &Ap->reaction_parameters[i], A );
         dQpdt = get_reaction_quotient_products_time_derivative( &Ap->reaction_parameters[i], A, Ap );
         dQrdt = get_reaction_quotient_reactants_time_derivative( &Ap->reaction_parameters[i], A, Ap );
-        K = get_log10_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, C );
-        dKdT = get_equilibrium_constant_temperature_derivative( &Ap->reaction_parameters[i], A->tsurf, C );
-        dKdt = dKdT * A->dtsurfdt;
+        log10K = get_log10_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, C );
+        dlog10KdT = get_dlog10KdT( &Ap->reaction_parameters[i], A->tsurf, C );
+        //dKdt = dKdT * A->dtsurfdt;
+        log10fO2 = A->log10fO2;
+        dlog10fO2dT = A->dlog10fO2dT;
         /* residual of reaction balance */
         //ff[Ap->n_volatiles + i] = 0.0; // for debugging
         /* below does not maintain scaling */
@@ -852,7 +860,20 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
         /* FIXME: line below needs updating to include influence of fO2 */
         /* TODO: can maybe formulate to only multiply by dT/dt once? */
         /* formulate using logs? */
-        ff[Ap->n_volatiles + i] -= dKdt;
+        /* TODO: below can be consolidated into a separate function for a modified
+           equilibrium constant, since some of this is duplicated from the ic
+           calculation */
+        /* Modified equilibrium constant that accounts for fO2, which ordinarily
+           would appear in the reaction quotient.  But by including it here, and
+           operating in log-space, we can retain precision by NOT multiplying
+           the partial pressures of other volatiles by a tiny fO2 */
+        log10G = log10K - Ap->reaction_parameters[i]->fO2_stoichiometry * A->log10fO2;
+        G = PetscPowScalar( 10.0, log10G );
+        dGdt = G * PetscLogReal( 10.0 ); /* dG/dlog10G */
+        dGdt *= dlog10KdT - Ap->reaction_parameters[i]->fO2_stoichiometry * dlog10fO2dT; /* inc. dlog10G/dT */
+        dGdt *= A->dtsurfdt;
+
+        ff[Ap->n_volatiles + i] -= dGdt;
 
     }
 
@@ -1099,10 +1120,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
     /* Remember that oxygen_fugacity is equivalent to a volume
        mixing ratio, and therefore does not need scaling */
     A->log10fO2 = func;
-
-    // FIXME: below needs correcting for log10
-    A->dfO2dT = PetscPowScalar(10.0, A->log10fO2) * PetscLogReal(10.0) * dfuncdT;
-    // FIXME: above is not right!
+    A->dlog10fO2dT = dfuncdT;
 
     PetscFunctionReturn(0);
 

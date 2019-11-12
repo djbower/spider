@@ -317,22 +317,17 @@ PetscScalar get_log10_equilibrium_constant( const ReactionParameters * reaction_
 
 }
 
-/* Derivative of equilibrium constant with respect to temperature */
-PetscScalar get_equilibrium_constant_temperature_derivative( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
+/* Derivative of log10 equilibrium constant with respect to temperature */
+PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
-    PetscScalar        dKeqdT;
-
-   /* FIXME: need to refresh for log10 convention */
-   /* FIXME FIXME FIXME */
+    PetscScalar        dlog10KdT;
 
     temp *= C->TEMP;
 
-    dKeqdT = get_log10_equilibrium_constant( reaction_parameters_ptr, temp, C );
-    dKeqdT *= PetscLogReal(10.0);
-    dKeqdT *= -reaction_parameters->Keq_coeffs[0] / PetscPowScalar( temp, 2.0 );
+    dlog10KdT = -reaction_parameters->Keq_coeffs[0] / PetscPowScalar( temp, 2.0 );
 
-    return dKeqdT;
+    return dlog10KdT;
 
 }
 
