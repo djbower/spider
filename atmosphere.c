@@ -811,7 +811,7 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
 
 }
 
-PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
+PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, void *ptr)
 {
     PetscErrorCode             ierr;
     const PetscScalar          *xx;

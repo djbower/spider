@@ -314,7 +314,7 @@ PetscErrorCode solve_dxdts( Ctx *E )
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
-    ierr = SNESSetFunction(snes,r,FormFunction2,E);CHKERRQ(ierr);
+    ierr = SNESSetFunction(snes,r,objective_function_volatile_evolution,E);CHKERRQ(ierr);
 
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
