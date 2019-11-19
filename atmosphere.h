@@ -46,6 +46,7 @@ typedef struct Atmosphere_ {
     PetscScalar log10fO2; // oxygen fugacity (non-dimensional)
     PetscScalar dlog10fO2dT; // temp derivative of fO2
     PetscScalar psurf; // surface pressure
+    PetscScalar dpsurfdt; // time derivative of surface pressure
     PetscScalar tau; // aggregate optical depth at surface (non-dimensional)
     PetscScalar Fatm; // net upward atmosphere flux
     PetscScalar emissivity; // variable emissivity (see also EMISSIVITY0 in AtmosphereParameters)

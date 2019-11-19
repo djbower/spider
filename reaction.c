@@ -388,8 +388,8 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
     /* returns dQp/dt for SIGN=1 (products) and dQr/dt for SIGN=-1 (reactants) */
 
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
-    PetscInt           i,j,k;
-    PetscScalar        dQdt=0, dpsurfdt, dvdt;
+    PetscInt           j,k;
+    PetscScalar        dQdt=0, dvdt;
     PetscScalar        expon, prefactor;
     PetscBool          INCLUDE_PSURF = PETSC_FALSE;
 
@@ -400,14 +400,7 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
         INCLUDE_PSURF = PETSC_TRUE;
     }
 
-    /* TODO: dPsurf/dt is required in various locations, and should probably be computed
-       once and stored.  For example, this same calculation is in get_dxdt() */
-    dpsurfdt = 0.0;
-    /* NOTE: this is over all volatiles, and not just those volatiles in a
-       particular reaction */
-    for (i=0; i<Ap->n_volatiles; ++i) {
-        dpsurfdt += A->volatiles[i].dpdx * A->volatiles[i].dxdt;
-    }
+    /* dpsurf/dt previously updated in get_dxdt */
 
     /* what follows is the chain rule */
 
@@ -436,7 +429,7 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
             /* TODO: this is also a generic formula for the time derivative of the
                volume mixing ratio and appears elsewhere in the code */
             dvdt = (1.0/A->psurf) * A->volatiles[v].dxdt * A->volatiles[v].dpdx;
-            dvdt -= (A->volatiles[v].p / PetscPowScalar( A->psurf, 2.0 )) * dpsurfdt;
+            dvdt -= (A->volatiles[v].p / PetscPowScalar( A->psurf, 2.0 )) * A->dpsurfdt;
 
             /* so the contribution of this derivative is as follows */
             dvdt *= SIGN * reaction_parameters->stoichiometry[j] * PetscPowScalar( (A->volatiles[v].p/A->psurf), SIGN * reaction_parameters->stoichiometry[j] - 1.0 );
@@ -457,7 +450,7 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
         }
 
         /* now compute the time derivative of psurf */
-        dvdt = dpsurfdt;
+        dvdt = A->dpsurfdt;
 
         /* so the contribution is */
         dvdt *= SIGN * expon * PetscPowScalar( A->psurf, SIGN * expon - 1.0 );

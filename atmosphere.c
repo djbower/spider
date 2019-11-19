@@ -79,6 +79,7 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     A->tsurf = 1.0;
     A->dtsurfdt = 0.0;
     A->psurf = 0.0;
+    A->dpsurfdt = 0.0;
 
     /* initialise mass reaction terms to zero */
     {
@@ -885,7 +886,7 @@ PetscErrorCode FormFunction2( SNES snes, Vec x, Vec f, void *ptr)
 PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, const PetscScalar *dmrdt )
 {
 
-    PetscScalar               out, out2, massv, dpsurfdt, f_thermal_escape;
+    PetscScalar               out, out2, massv, f_thermal_escape;
     PetscInt                  j,k;
 
     /* remember that to this point, V->f_thermal_escape is always
@@ -899,15 +900,15 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
 
     out2 = 0.0;
 
-    /* dPsurf/dt */
-    dpsurfdt = 0.0;
+    /* compute and store dpsurf/dt here to avoid recomputation elsewhere */
+    A->dpsurfdt = 0.0;
     for (k=0; k<Ap->n_volatiles; ++k) {
-        dpsurfdt += A->volatiles[k].dpdx * A->volatiles[k].dxdt;
+        A->dpsurfdt += A->volatiles[k].dpdx * A->volatiles[k].dxdt;
     }
 
     for (j=0; j<Ap->n_volatiles; ++j) {
         out = 0.0;
-        out = -dpsurfdt * A->volatiles[j].p / A->psurf;
+        out = -A->dpsurfdt * A->volatiles[j].p / A->psurf;
         out += A->volatiles[j].dpdx * A->volatiles[j].dxdt;
         out *= Ap->volatile_parameters[j].molar_mass;
         out2 += out;
