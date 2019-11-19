@@ -840,39 +840,22 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
 
     /* chemical equilibrium constraints */
     for (i=0; i<Ap->n_reactions; ++i) {
-        PetscScalar dQpdt, dQrdt, log10K, dlog10KdT, Qr, Qp, dGdt, G, log10G, dlog10fO2dT, log10fO2;
+        PetscScalar dQpdt, dQrdt, Qr, Qp, dGdt, G, log10G, dlog10GdT;
 
         Qr = get_reaction_quotient_reactants( &Ap->reaction_parameters[i], A );
         Qp = get_reaction_quotient_products( &Ap->reaction_parameters[i], A );
         dQpdt = get_reaction_quotient_products_time_derivative( &Ap->reaction_parameters[i], A, Ap );
         dQrdt = get_reaction_quotient_reactants_time_derivative( &Ap->reaction_parameters[i], A, Ap );
-        log10K = get_log10_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, C );
-        dlog10KdT = get_dlog10KdT( &Ap->reaction_parameters[i], A->tsurf, C );
-        //dKdt = dKdT * A->dtsurfdt;
-        log10fO2 = A->log10fO2;
-        dlog10fO2dT = A->dlog10fO2dT;
-        /* residual of reaction balance */
-        //ff[Ap->n_volatiles + i] = 0.0; // for debugging
-        /* below does not maintain scaling */
-        //ff[Ap->n_volatiles + i] = dQpdt - K * dQrdt - Qr * dKdt;
-        /* this version does */
+        log10G = get_log10_modified_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, C, A );
+        dlog10GdT = get_dlog10GdT( &Ap->reaction_parameters[i], A->tsurf, C, A );
+
         ff[Ap->n_volatiles + i] = -Qp/PetscPowScalar(Qr,2.0) * dQrdt;
         ff[Ap->n_volatiles + i] += 1.0/Qr * dQpdt;
-        /* FIXME: line below needs updating to include influence of fO2 */
-        /* TODO: can maybe formulate to only multiply by dT/dt once? */
-        /* formulate using logs? */
-        /* TODO: below can be consolidated into a separate function for a modified
-           equilibrium constant, since some of this is duplicated from the ic
-           calculation */
-        /* Modified equilibrium constant that accounts for fO2, which ordinarily
-           would appear in the reaction quotient.  But by including it here, and
-           operating in log-space, we can retain precision by NOT multiplying
-           the partial pressures of other volatiles by a tiny fO2 */
-        log10G = log10K - Ap->reaction_parameters[i]->fO2_stoichiometry * A->log10fO2;
+
+        /* Modified equilibrium constant */
         G = PetscPowScalar( 10.0, log10G );
-        dGdt = G * PetscLogReal( 10.0 ); /* dG/dlog10G */
-        dGdt *= dlog10KdT - Ap->reaction_parameters[i]->fO2_stoichiometry * dlog10fO2dT; /* inc. dlog10G/dT */
-        dGdt *= A->dtsurfdt;
+        /* dG/dlog10G * dlog10G/dT * dT/dt */
+        dGdt = G * PetscLogReal( 10.0 ) * dlog10GdT * A->dtsurfdt;
 
         ff[Ap->n_volatiles + i] -= dGdt;
 
