@@ -463,6 +463,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     PetscInt             i;
     PetscScalar          mass;
     Parameters           *P = &E->parameters;
+    Constants            *C = &P->constants;
     Atmosphere           *A = &E->atmosphere;
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
 
@@ -508,6 +509,52 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
 
     /* the relevant updated values in the structs are mapped back to the sol
        Vec in the next function call following this return */
+
+    /* useful to report the equivalent present-day ocean mass
+           1.4E21 kg of H2O (Olson and Sharp, 2018)
+           1.55E20 kg of H2 (Olson and Sharp, 2018) */
+    /* FIXME: this is not general, and will break if other species contain H2,
+       e.g., CH4 */
+    PetscScalar mass_H2 = 0, mass_H2O = 0, molar_mass_H2 = 0, molar_mass_H2O = 0;
+    PetscBool   FLAG_H2, FLAG_H2O;
+    PetscScalar tmass_H2 = 0, tmass_H2O = 0;
+    PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+    for(i=0; i<Ap->n_volatiles; ++i){
+        PetscStrcmp( Ap->volatile_parameters[i].prefix, "H2", &FLAG_H2 );
+        if ( FLAG_H2 ){
+            mass_H2 = Ap->volatile_parameters[i].initial_total_abundance;
+            molar_mass_H2 = Ap->volatile_parameters[i].molar_mass;
+        }
+        PetscStrcmp( Ap->volatile_parameters[i].prefix, "H2O", &FLAG_H2O );
+        if ( FLAG_H2O ){
+            mass_H2O = Ap->volatile_parameters[i].initial_total_abundance;
+            molar_mass_H2O = Ap->volatile_parameters[i].molar_mass;
+        }
+    }
+
+    /* H2 */
+    if( FLAG_H2 ){
+        tmass_H2 = mass_H2;
+        if ( FLAG_H2O ){
+            tmass_H2 += mass_H2O * (molar_mass_H2 / molar_mass_H2O );
+        }
+    tmass_H2 *= scaling * (*Ap->mantle_mass_ptr); /* total physical mass */
+    tmass_H2 /= 1.55E20; /* non-dimensionalise according to ocean mass of H2 */
+    }
+
+    /* H2O */
+    if( FLAG_H2O ){
+        tmass_H2O = mass_H2O;
+        if ( FLAG_H2 ){
+            tmass_H2O += mass_H2 * (molar_mass_H2O / molar_mass_H2 );
+        }
+    tmass_H2O *= scaling * (*Ap->mantle_mass_ptr); /* total physical mass */
+    tmass_H2O /= 1.4E21; /* non-dimensionalise according to ocean mass of H2O */
+    }
+
+    /* TODO: add flags to only print if volatiles, H2 and/or H2O are active */
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"\n**************** Volatile content **************\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n\n","Equivalent present-day mass of ocean water",(double)tmass_H2O);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
