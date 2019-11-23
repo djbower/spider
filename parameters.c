@@ -824,7 +824,7 @@ static PetscErrorCode set_start_time_from_file( Parameters *P , const char * fil
 PetscErrorCode PrintParameters(Parameters const *P)
 {
   PetscErrorCode             ierr;
-  PetscInt                   i;//,j;
+  PetscInt                   i;
   Constants const            *C  = &P->constants;
   AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 

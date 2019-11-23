@@ -24,6 +24,7 @@ static PetscErrorCode solve_for_initial_melt_abundance( Ctx * );
 static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char *, const PetscInt *, PetscInt );
 static PetscErrorCode objective_function_initial_melt_abundance( SNES, Vec, Vec, void *);
 static PetscErrorCode conform_parameters_to_initial_condition( Ctx * );
+static PetscErrorCode print_ocean_masses( Ctx * );
 
 /* main function to set initial condition */
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
@@ -463,7 +464,6 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     PetscInt             i;
     PetscScalar          mass;
     Parameters           *P = &E->parameters;
-    Constants            *C = &P->constants;
     Atmosphere           *A = &E->atmosphere;
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
 
@@ -507,30 +507,68 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
         Ap->volatile_parameters[i].initial_atmos_pressure = A->volatiles[i].p;
     }
 
+    ierr = print_ocean_masses( E );CHKERRQ(ierr);
+
     /* the relevant updated values in the structs are mapped back to the sol
        Vec in the next function call following this return */
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode print_ocean_masses( Ctx *E )
+{
 
     /* useful to report the equivalent present-day ocean mass
            1.4E21 kg of H2O (Olson and Sharp, 2018)
            1.55E20 kg of H2 (Olson and Sharp, 2018) */
+
     /* FIXME: this is not general, and will break if other species contain H2,
-       e.g., CH4 */
-    PetscScalar mass_H2 = 0, mass_H2O = 0, molar_mass_H2 = 0, molar_mass_H2O = 0;
+       e.g., CH4.  Ideally, we should loop over all volatiles and identify
+       those that include H2 */
+
+    PetscErrorCode ierr;
+
+    PetscInt i;
+    PetscScalar mass_H2, mass_H2O, molar_mass_H2, molar_mass_H2O;
     PetscBool   FLAG_H2, FLAG_H2O;
-    PetscScalar tmass_H2 = 0, tmass_H2O = 0;
+    PetscScalar tmass_H2, tmass_H2O, p_H2, p_H2O;
+
+    Parameters *P = &E->parameters;
+    AtmosphereParameters *Ap = &P->atmosphere_parameters;
+    Constants *C = &P->constants;
+
     PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+    PetscScalar scaling2 = (1.0E6/C->VOLATILE) * PetscSqr(*Ap->radius_ptr) / -(*Ap->gravity_ptr);
+
+    PetscFunctionBeginUser;
+
+    /* this is ugly, but otherwise the flags get reset if they appear within
+       the same loop over volatiles */
     for(i=0; i<Ap->n_volatiles; ++i){
         PetscStrcmp( Ap->volatile_parameters[i].prefix, "H2", &FLAG_H2 );
         if ( FLAG_H2 ){
             mass_H2 = Ap->volatile_parameters[i].initial_total_abundance;
             molar_mass_H2 = Ap->volatile_parameters[i].molar_mass;
+            break;
         }
+    }
+
+    for(i=0; i<Ap->n_volatiles; ++i){
         PetscStrcmp( Ap->volatile_parameters[i].prefix, "H2O", &FLAG_H2O );
         if ( FLAG_H2O ){
             mass_H2O = Ap->volatile_parameters[i].initial_total_abundance;
             molar_mass_H2O = Ap->volatile_parameters[i].molar_mass;
+            break;
         }
     }
+
+    if( FLAG_H2 || FLAG_H2O ){
+         ierr = PetscPrintf(PETSC_COMM_WORLD,"\n**************** Volatile content **************\n");CHKERRQ(ierr);
+    }
+
+    /* the output below should report the same value, but it is a useful
+       check that everything is working as expected */
 
     /* H2 */
     if( FLAG_H2 ){
@@ -538,8 +576,14 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
         if ( FLAG_H2O ){
             tmass_H2 += mass_H2O * (molar_mass_H2 / molar_mass_H2O );
         }
-    tmass_H2 *= scaling * (*Ap->mantle_mass_ptr); /* total physical mass */
-    tmass_H2 /= 1.55E20; /* non-dimensionalise according to ocean mass of H2 */
+        tmass_H2 *= (*Ap->mantle_mass_ptr); /* total non-dimensional mass */
+        p_H2 = tmass_H2 / scaling2; /* equivalent surface pressure */
+        tmass_H2 *= scaling; /* total physical mass */
+        tmass_H2 /= 1.55E20; /* non-dimensionalise according to ocean mass of H2 */
+        p_H2 *= C->PRESSURE / 1.0E5; /* to bar */
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent present-day mass of ocean water from H2 (non-dimensional)",(double)tmass_H2);CHKERRQ(ierr);
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent atmospheric pressure of H2 (bar)",(double)p_H2);CHKERRQ(ierr);
+
     }
 
     /* H2O */
@@ -548,13 +592,22 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
         if ( FLAG_H2 ){
             tmass_H2O += mass_H2 * (molar_mass_H2O / molar_mass_H2 );
         }
-    tmass_H2O *= scaling * (*Ap->mantle_mass_ptr); /* total physical mass */
-    tmass_H2O /= 1.4E21; /* non-dimensionalise according to ocean mass of H2O */
+        tmass_H2O *= (*Ap->mantle_mass_ptr); /* total non-dimensional mass */
+        p_H2O = tmass_H2O / scaling2; /* equivalent surface pressure */
+        tmass_H2O *= scaling; /* total physical mass */
+        //tmass_H2O /= 1.4E21; /* non-dimensionalise according to ocean mass of H2O */
+        /* below I have taken the Olson and Sharp value for H2, and then scaled by the typical
+           molar mass for H2 and H2O, such that by construction, the ocean mass estimates from
+           both H2 and H2O are identical */
+        tmass_H2O /= 1.385185824553049e+21;
+        p_H2O *= C->PRESSURE / 1.0E5; /* to bar */ 
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent present-day mass of ocean water from H2O (non-dimensional)",(double)tmass_H2O);CHKERRQ(ierr);
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent atmospheric pressure of H2O (bar)",(double)p_H2O);CHKERRQ(ierr);
     }
 
-    /* TODO: add flags to only print if volatiles, H2 and/or H2O are active */
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"\n**************** Volatile content **************\n");CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n\n","Equivalent present-day mass of ocean water",(double)tmass_H2O);CHKERRQ(ierr);
+    if( FLAG_H2 || FLAG_H2O ){
+         ierr = PetscPrintf(PETSC_COMM_WORLD,"************************************************\n\n");CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
