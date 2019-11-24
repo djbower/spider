@@ -574,6 +574,7 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     if( FLAG_H2 ){
         tmass_H2 = mass_H2;
         if ( FLAG_H2O ){
+            /* equivalent mass of H2 in H2O */
             tmass_H2 += mass_H2O * (molar_mass_H2 / molar_mass_H2O );
         }
         tmass_H2 *= (*Ap->mantle_mass_ptr); /* total non-dimensional mass */
@@ -590,6 +591,7 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     if( FLAG_H2O ){
         tmass_H2O = mass_H2O;
         if ( FLAG_H2 ){
+            /* equivalent mass of H2O in H2 */
             tmass_H2O += mass_H2 * (molar_mass_H2O / molar_mass_H2 );
         }
         tmass_H2O *= (*Ap->mantle_mass_ptr); /* total non-dimensional mass */
