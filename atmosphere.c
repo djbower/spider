@@ -437,11 +437,11 @@ static PetscErrorCode set_volatile_masses_reactions( Atmosphere *A, const Atmosp
         /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
         /* introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
         /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-        factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass * (A->volatiles[v0].p/A->psurf);
+        factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass; // NEXT IS WRONG * (A->volatiles[v0].p/A->psurf);
         for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
             const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
             /* introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass * (A->volatiles[v].p/A->psurf);
+            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass; // NEXT IS WRONG * (A->volatiles[v].p/A->psurf);
             massv /= factor; /* +ve for reactants, -ve for products */
             A->volatiles[v].mass_reaction += massv * A->mass_reaction[i]; /* convention is mass loss of reactants, mass gain of products */
             /* but regarding above, convention is arbitrary since mass_r[i] will switch sign to balance */
