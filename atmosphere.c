@@ -918,9 +918,9 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
           /* i is the current volatile of interest */
           /* TODO: below should be v or k?, I think v is correct (was previously k) */
           if (v==i) {
-              massv = ( A->volatiles[v].p / A->volatiles[v0].p ) * dmrdt[j];
-              massv += ( A->mass_reaction[j] / A->volatiles[v0].p ) * A->volatiles[v].dpdx * A->volatiles[v].dxdt;
-              massv -= ( A->volatiles[v].p * A->mass_reaction[j] ) / PetscPowScalar( A->volatiles[v0].p, 2.0 ) * A->volatiles[v0].dpdx * A->volatiles[v0].dxdt;
+              massv = dmrdt[j]; // NEXT IS WRONG ( A->volatiles[v].p / A->volatiles[v0].p ) * dmrdt[j];
+              //massv += ( A->mass_reaction[j] / A->volatiles[v0].p ) * A->volatiles[v].dpdx * A->volatiles[v].dxdt;
+              //massv -= ( A->volatiles[v].p * A->mass_reaction[j] ) / PetscPowScalar( A->volatiles[v0].p, 2.0 ) * A->volatiles[v0].dpdx * A->volatiles[v0].dxdt;
               massv *= Ap->reaction_parameters[j]->stoichiometry[k] / Ap->reaction_parameters[j]->stoichiometry[0];
               massv *= Ap->volatile_parameters[v].molar_mass / Ap->volatile_parameters[v0].molar_mass;
               out2 += massv;
