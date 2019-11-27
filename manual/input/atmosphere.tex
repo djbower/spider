@@ -178,7 +178,7 @@ Effectively, this initialises the mass reaction term $\hat{m}^r_v$ to zero at th
 \subsection{Chemical Reactions}
 \label{sect:chemreact}
 \subsubsection{Simple example: $[\rm{H}_2O]\leftrightarrow \frac{1}{2} [\rm{O}_2] + [\rm{H}_2]$}
-A statement of chemical equilibrium is often conveniently expressed like Eq.~\ref{eq:volequil}, but practically this is manifest as a transfer of mass between volatiles.  For simplicity, again consider a single chemical reaction that transfers mass between two volatile species, taking the following as an example:
+For simplicity, again consider a single chemical reaction that transfers mass between two volatile species, taking the following as an example:
 \begin{equation}
     [\rm{H}_2O]\leftrightarrow \frac{1}{2} [\rm{O}_2] + [\rm{H}_2]
     \label{eq:reaction}
@@ -189,95 +189,21 @@ K=\frac{p_{\rm H_2} f_{\rm O_2}^{1/2}}{p_{\rm H_2\rm O}}
 \end{equation}
 Although chemical reactions are naturally expressed in terms of moles (or molecules), we need a formulation that considers mass, since ultimately we are tracking mass addition to, and removal from, interior and exterior reservoirs.  Mass is conserved:
 \begin{equation}
-m_{H_2O} \leftrightarrow m_{O_2} + m_{H_2}
+m_{H_2O} = m_{O2} + m_{H_2} \implies X_{H_2O} \mu_{H_2O} = X_{O_2} \mu_{O_2} + X_{H_2} \mu_{H_2}
 \label{eq:reaction_mass}
 \end{equation}
-We now need a relationship between $m_{H_2O}$ and $m_{H_2}$ to enable us to solve for the exchange of mass between the H$_2$O and H$_2$ reservoirs in order to maintain chemical equilibrium.  We do not track the evolution of O$_2$ explicitly, but rather relate this to the oxygen fugacity $f_{O_2}$ (which is assumed to have units of Pa):
+Where $X_y$ denotes the number of moles of a particular species.  Normalise by the mass of the H$_2$O reservoir:
+%\begin{equation}
+%m_{H_2O} = \frac{X_{tot}}{P_s} p_{H_2O} \mu_{H_2O}
+%\end{equation}
 \begin{equation}
-    \frac{1}{P_s} p_{H_2O} \leftrightarrow \frac{1}{P_s} \left( \frac{1}{2} f_{O_2} + p_{H_2} \right)
-    \label{eq:reactionp}
-\end{equation}
-Here we have introduced the total pressure $P_s$ to ensure the units are molar concentration (mol/mol).  We can now introduce the molar masses $\mu_v$ and the total number of moles $X_{tot}$ to derive a mass balance (kg):
-\begin{equation}
-    \frac{X_{tot}}{P_s} p_{H_2O} \mu_{H_2O} \leftrightarrow \frac{X_{tot}}{P_s} \left( \frac{1}{2} f_{O_2} \mu_{O_2} + p_{H_2} \mu_{H_2} \right)
-    \label{eq:reaction_mass2}
-\end{equation}
-where comparison with Eq.~\ref{eq:reaction_mass} reveals that:
-\begin{equation}
-m_{H_2O} = \frac{X_{tot}}{P_s} p_{H_2O} \mu_{H_2O}
+m_{O_2} = \left( \frac{X_{O_2}}{X_{H_2O}} \right) \left(\frac{\mu_{O_2}}{\mu_{H_2O}}\right) m_{H_2O} = \frac{1}{2} \left(\frac{\mu_{O_2}}{\mu_{H_2O}}\right) m_{H_2O}
 \end{equation}
 \begin{equation}
-m_{O_2} = \frac{X_{tot}}{P_s} \frac{1}{2} f_{O_2} \mu_{O_2}
+m_{H_2} = \left( \frac{X_{H_2}}{X_{H_2O}} \right) \left(\frac{\mu_{H_2}}{\mu_{H_2O}}\right) m_{H_2O} = \left(\frac{\mu_{H_2}}{\mu_{H_2O}}\right) m_{H_2O}
 \end{equation}
-\begin{equation}
-m_{H_2} = \frac{X_{tot}}{P_s} p_{H_2} \mu_{H_2}
-\end{equation}
-Divide through by the mass of the H$_2$ reservoir:
-\begin{equation}
-\frac{m_{H_2O}}{m_{H_2}} = \frac{p_{H_2O} \mu_{H_2O}}{p_{H_2} \mu_{H_2} } = \frac{\mu_{H_2O}}{\mu_{H_2}} \frac{f_{O_2}^{1/2}}{K} \implies m_{H_2O} = \frac{\mu_{H_2O}}{\mu_{H_2}} \frac{f_{O_2}^{1/2}}{K} m_{H_2}
-\end{equation}
-\begin{equation}
-\frac{m_{O_2}}{m_{H_2}} = \frac{1}{2} \frac{ f_{O_2} \mu_{O_2}}{p_{H_2} \mu_{H_2}} \implies m_{O_2} = \frac{1}{2} \frac{ f_{O_2} \mu_{O_2}}{p_{H_2} \mu_{H_2}} m_{H_2}
-\end{equation}
-Therefore, we have effectively introduced another unknown ($m_{H_2}$) which we can solve for using the equilibrium condition and the volatile mass balances for H$_2$O and H$_2$.  Since everything else is known, we can then derive the masses of the other volatile reservoirs (H$_2$O and O$_2$).
+So in short, we have one extra equation (the equilibrium expression), which can be used to solve for one extra quantity (the mass exchange of H$_2$O), from which we can recover the mass exchange for the other species using the stoichiometry of the reaction and mass balance.
 %%%%
-\subsubsection{Another simple example: $[\rm{CO}_2]\leftrightarrow [\rm{CO}] + \frac{1}{2} [\rm{O}_2]$}
-Following the methodology above:
-\begin{equation}
-    [\rm{CO}_2]\leftrightarrow [\rm{CO}] + \frac{1}{2} [\rm{O}_2]
-    \label{eq:reactionCO2}
-\end{equation}
-\begin{equation}
-\frac{m_{CO_2}}{m_{CO}} = \frac{p_{CO_2} \mu_{CO_2}}{p_{CO} \mu_{CO} } = \frac{\mu_{CO_2}}{\mu_{CO}} \frac{f_{O_2}^{1/2}}{K} \implies m_{CO_2} = \frac{\mu_{CO_2}}{\mu_{CO}} \frac{f_{O_2}^{1/2}}{K} m_{CO}
-\end{equation}
-\begin{equation}
-\frac{m_{O_2}}{m_{CO}} = \frac{1}{2} \frac{ f_{O_2} \mu_{O_2}}{p_{CO} \mu_{CO}} \implies m_{O_2} = \frac{1}{2} \frac{ f_{O_2} \mu_{O_2}}{p_{CO} \mu_{CO}} m_{CO}
-\end{equation}
-\subsubsection{Generalised simple example: $[\rm{A}]\leftrightarrow [\rm{B}] + c [\rm{O}_2]$}
-\begin{equation}
-\frac{m_{A}}{m_{B}} = \frac{p_{A} \mu_{A}}{p_{B} \mu_{B}} = \frac{\mu_{A}}{\mu_{B}} \frac{f_{O_2}^{c}}{K} \implies m_{A} = \frac{\mu_{A}}{\mu_{B}} \frac{f_{O_2}^{c}}{K} m_{B}
-\end{equation}
-\begin{equation}
-\frac{m_{O_2}}{m_{B}} = c \frac{ f_{O_2} \mu_{O_2}}{p_{B} \mu_{B}} \implies m_{O_2} = c \frac{ f_{O_2} \mu_{O_2}}{p_{B} \mu_{B}} m_{B}
-\end{equation}
-It's already becoming clear that a simple pattern is followed: taking the ratio of the partial pressures multiplied by the molar masses, scaled by a coefficient determined by stoichiometry.
-%%%%
-\subsubsection{More complicated example:}
-Still involving oxygen, but now coupling between three volatile species that are explicitly tracked through mass evolution equations.
-\begin{equation}
-    [\rm{CO}_2] + 2[\rm{H}_2] \leftrightarrow [\rm{CH}_4] + [\rm{O}_2]
-    \label{eq:reactionCO2}
-\end{equation}
-\begin{equation}
-K = \frac{p_{{\rm CH}_4} f_{\rm O_2}}{p_{{\rm CO}_2} p_{\rm H_2}^2}
-\end{equation}
-\begin{equation}
-    \frac{X_{tot}}{P_s} \left( p_{CO_2} \mu_{CO_2} + 2 p_{H_2} \mu_{H_2} \right)  \leftrightarrow \frac{X_{tot}}{P_s} \left( p_{CH_4} \mu_{CH_4} + f_{O_2} \mu_{O_2} \right)
-    \label{eq:reaction_mass_complicated}
-\end{equation}
-\begin{equation}
-m_{CO_2} = \frac{X_{tot}}{P_s} p_{CO_2} \mu_{CO_2}
-\end{equation}
-\begin{equation}
-m_{H_2} = \frac{X_{tot}}{P_s} 2 p_{H_2} \mu_{H_2}
-\end{equation}
-\begin{equation}
-m_{CH_4} = \frac{X_{tot}}{P_s} p_{CH_4} \mu_{CH_4}
-\end{equation}
-\begin{equation}
-m_{O_2} = \frac{X_{tot}}{P_s} f_{O_2} \mu_{O_2}
-\end{equation}
-Divide through by the mass of the H$_2$ reservoir:
-\begin{equation}
-\frac{m_{CO_2}}{m_{H_2}} = \frac{p_{CO_2} \mu_{CO_2}}{2 p_{H_2} \mu_{H_2} }
-\end{equation}
-\begin{equation}
-\frac{m_{CH_4}}{m_{H_2}} = \frac{p_{CH_4} \mu_{CH_4}}{2 p_{H_2} \mu_{H_2} }
-\end{equation}
-\begin{equation}
-\frac{m_{O_2}}{m_{H_2}} = \frac{f_{O_2} \mu_{O_2}}{2 p_{H_2} \mu_{H_2} }
-\end{equation}
-So actually, this is basically as simple as before.  For generality, we can use the equilibrium condition as the extra equation, and we solve for the ``chemical reaction'' mass of one particular volatile (H$_2$ is probably the most sensible default), and then compute the changes of mass based on the stoichiometry of the reaction.
 %%%%
 \subsubsection{General example}
 \label{sec:general_reaction}
@@ -294,38 +220,18 @@ K = \frac{C^c D^d}{A^a B^b}
 \frac{m_{A}}{m_{A}} = 1
 \end{equation}
 \begin{equation}
-\frac{m_{B}}{m_{A}} = \frac{b p_{B} \mu_{B}}{a p_{A} \mu_{A} }
+\frac{m_{B}}{m_{A}} = \frac{b \mu_{B}}{a \mu_{A} }
 \end{equation}
 \begin{equation}
-\frac{m_{C}}{m_{A}} = \frac{c p_{C} \mu_{C}}{a p_{A} \mu_{A} }
+\frac{m_{C}}{m_{A}} = \frac{c \mu_{C}}{a \mu_{A} }
 \end{equation}
 \begin{equation}
-\frac{m_{D}}{m_{A}} = \frac{d p_{D} \mu_{D}}{a p_{A} \mu_{A} }
+\frac{m_{D}}{m_{A}} = \frac{d \mu_{D}}{a \mu_{A} }
 \end{equation}
-where again we can use Eq.~\ref{eq:equilibrium_constant} as the extra equation, and then solve for $m_A$.  So for input, we need:
-\begin{itemize}
-\item Stoichiometry coefficients (4)
-\item Volatile identification (names)
-\item Volatile molar masses
-\item Parameters $a$ and $b$ for the equilibrium constant (in Table in draft paper)
-\item Oxygen fugacity model (also in Table in draft paper)
-\end{itemize}
-%%%%
-\subsubsection{General example evolution}
-Although the evolution equation is discussed in the next section, for convenience we compute the evolution equivalent of the above equation here.  We just need to focus on one example:
+where again we can use Eq.~\ref{eq:equilibrium_constant} as the extra equation, and then solve for $m_A$.  Also, the time derivatives are trivial, since the stoichiometry coefficients and molar masses are constants.  Hence, for example:
 \begin{equation}
-m_B = \frac{b \mu_B}{a \mu_A} \frac{p_B}{p_A} m_A
+\frac{\partial m_B}{\partial t} = \frac{b \mu_{B}}{a \mu_{A} } \frac{\partial m_A}{\partial t}
 \end{equation}
-And therefore the time derivative is:
-\begin{equation}
-\frac{\partial m_B}{\partial t} = \frac{b \mu_B}{a \mu_A} \left( \frac{p_B}{p_A} \frac{\partial m_A}{\partial t} + \frac{m_A}{p_A} \frac{\partial p_B}{\partial t} -\frac{p_B m_A}{{p_A}^2} \frac{\partial p_A}{\partial t} \right)
-\end{equation}
-%%%%
-%%%%
-%%%%
-%%%% DELETE BELOW EVENTUALLY %%%%
-%\dbnote{In the prototype code, the ratio of the molar masses is defined as \emph{-H2O\_factor}.  By default, \emph{-H2\_factor=1} since the reaction is calibrated (referenced) to H$_2$.  Also, \emph{-H2O\_sign=1} identifies H$_2$O as a product (by default), and \emph{-H2\_sign=-1} identifies H$_2$ as a reactant (by default).  We can also set \emph{-CO2\_sign=0} and/or \emph{-CO2\_factor=0} to explicitly exclude any chemical reactions that affect the volatile budget of CO$_2$.  In fact, if we set all the \emph{\_sign} and \emph{\_factor} quantities to zero we should recover the same behaviour as before without any chemical reactions.}
-%%%%
 %%%%
 %%%%
 \subsection{Evolution Equation}
