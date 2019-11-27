@@ -437,11 +437,10 @@ static PetscErrorCode set_volatile_masses_reactions( Atmosphere *A, const Atmosp
         /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
         /* introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
         /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
-        factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass; // NEXT IS WRONG * (A->volatiles[v0].p/A->psurf);
+        factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0].molar_mass;
         for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
             const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];
-            /* introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass; // NEXT IS WRONG * (A->volatiles[v].p/A->psurf);
+            massv = Ap->reaction_parameters[i]->stoichiometry[j] * Ap->volatile_parameters[v].molar_mass;
             massv /= factor; /* +ve for reactants, -ve for products */
             A->volatiles[v].mass_reaction += massv * A->mass_reaction[i]; /* convention is mass loss of reactants, mass gain of products */
             /* but regarding above, convention is arbitrary since mass_r[i] will switch sign to balance */
@@ -918,9 +917,7 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
           /* i is the current volatile of interest */
           /* TODO: below should be v or k?, I think v is correct (was previously k) */
           if (v==i) {
-              massv = dmrdt[j]; // NEXT IS WRONG ( A->volatiles[v].p / A->volatiles[v0].p ) * dmrdt[j];
-              //massv += ( A->mass_reaction[j] / A->volatiles[v0].p ) * A->volatiles[v].dpdx * A->volatiles[v].dxdt;
-              //massv -= ( A->volatiles[v].p * A->mass_reaction[j] ) / PetscPowScalar( A->volatiles[v0].p, 2.0 ) * A->volatiles[v0].dpdx * A->volatiles[v0].dxdt;
+              massv = dmrdt[j];
               massv *= Ap->reaction_parameters[j]->stoichiometry[k] / Ap->reaction_parameters[j]->stoichiometry[0];
               massv *= Ap->volatile_parameters[v].molar_mass / Ap->volatile_parameters[v0].molar_mass;
               out2 += massv;
