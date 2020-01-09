@@ -531,8 +531,10 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
 
     PetscInt i;
     PetscScalar mass_H2, mass_H2O, molar_mass_H2, molar_mass_H2O;
-    PetscBool   FLAG_H2, FLAG_H2O;
+    PetscScalar mass_CO, mass_CO2, molar_mass_CO, molar_mass_CO2;
+    PetscBool   FLAG_H2, FLAG_H2O, FLAG_CO, FLAG_CO2;
     PetscScalar tmass_H2, tmass_H2O, p_H2, p_H2O;
+    PetscScalar tmass_CO, tmass_CO2, p_CO, p_CO2;
 
     Parameters *P = &E->parameters;
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
@@ -563,7 +565,25 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
         }
     }
 
-    if( FLAG_H2 || FLAG_H2O ){
+    for(i=0; i<Ap->n_volatiles; ++i){
+        PetscStrcmp( Ap->volatile_parameters[i].prefix, "CO", &FLAG_CO );
+        if ( FLAG_CO ){
+            mass_CO = Ap->volatile_parameters[i].initial_total_abundance;
+            molar_mass_CO = Ap->volatile_parameters[i].molar_mass;
+            break;
+        }
+    }
+
+    for(i=0; i<Ap->n_volatiles; ++i){
+        PetscStrcmp( Ap->volatile_parameters[i].prefix, "CO2", &FLAG_CO2 );
+        if ( FLAG_CO2 ){
+            mass_CO2 = Ap->volatile_parameters[i].initial_total_abundance;
+            molar_mass_CO2 = Ap->volatile_parameters[i].molar_mass;
+            break;
+        }
+    }
+
+    if( FLAG_H2 || FLAG_H2O || FLAG_CO || FLAG_CO2 ){
          ierr = PetscPrintf(PETSC_COMM_WORLD,"\n**************** Volatile content **************\n");CHKERRQ(ierr);
     }
 
@@ -607,7 +627,44 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent atmospheric pressure of H2O (bar)",(double)p_H2O);CHKERRQ(ierr);
     }
 
-    if( FLAG_H2 || FLAG_H2O ){
+    /* CO */
+    if( FLAG_CO ){
+        tmass_CO = mass_CO;
+        if ( FLAG_CO2 ){
+            /* equivalent mass of CO in CO2 */
+            tmass_CO += mass_CO2 * (molar_mass_CO / molar_mass_CO2 );
+        }
+        tmass_CO *= (*Ap->mantle_mass_ptr); /* total non-dimensional mass */
+        p_CO = tmass_CO / scaling2; /* equivalent surface pressure */
+        tmass_CO *= scaling; /* total physical mass */
+        tmass_CO /= 2.153674821914003e+21; /* non-dimensionalise according to ocean mass of CO */
+        p_CO *= C->PRESSURE / 1.0E5; /* to bar */
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent present-day mass of ocean water from CO (non-dimensional)",(double)tmass_CO);CHKERRQ(ierr);
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent atmospheric pressure of CO (bar)",(double)p_CO);CHKERRQ(ierr);
+
+    }
+
+    /* CO2 */
+    if( FLAG_CO2 ){
+        tmass_CO2 = mass_CO2;
+        if ( FLAG_CO ){
+            /* equivalent mass of H2O in H2 */
+            tmass_CO2 += mass_CO * (molar_mass_CO2 / molar_mass_CO );
+        }
+        tmass_CO2 *= (*Ap->mantle_mass_ptr); /* total non-dimensional mass */
+        p_CO2 = tmass_CO2 / scaling2; /* equivalent surface pressure */
+        tmass_CO2 *= scaling; /* total physical mass */
+        //tmass_H2O /= 1.4E21; /* non-dimensionalise according to ocean mass of H2O */
+        /* below I have taken the Olson and Sharp value for H2, and then scaled by the typical
+           molar mass for H2 and H2O, such that by construction, the ocean mass estimates from
+           both H2 and H2O are identical */
+        tmass_CO2 /= 3.383906780165486e+21;
+        p_CO2 *= C->PRESSURE / 1.0E5; /* to bar */ 
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent present-day mass of ocean water from CO2 (non-dimensional)",(double)tmass_CO2);CHKERRQ(ierr);
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent atmospheric pressure of CO2 (bar)",(double)p_CO2);CHKERRQ(ierr);
+    }
+
+    if( FLAG_H2 || FLAG_H2O || FLAG_CO || FLAG_CO2 ){
          ierr = PetscPrintf(PETSC_COMM_WORLD,"************************************************\n\n");CHKERRQ(ierr);
     }
 
