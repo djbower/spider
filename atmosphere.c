@@ -1082,6 +1082,12 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
             b = -1.7;
             c = -2.0;
             break;
+        case 9:
+            /* Olson and Sharp (2019), IW-3 */
+            a = -2.75E6;
+            b = -1.7;
+            c = -3.0;
+            break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported OXYGEN_FUGACITY value %d provided",Ap->OXYGEN_FUGACITY);
             break;
