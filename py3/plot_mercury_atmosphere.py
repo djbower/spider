@@ -210,10 +210,15 @@ def plot_atmosphere():
     out_a = np.column_stack( (timeMyr_a, temperature_surface_a, temperature_mantle_a, emissivity_a, CO2_atmos_a, H2O_atmos_a ) )
     index = np.where( temperature_surface_a > 1500 )[0]
     index = index.tolist()
-    index.append( index[-1]+1 )
+    # TODO: this gives temp just below 1500 (if data available)
+    #index.append( index[-1]+1 )
+    # TODO: this gives temp just above 1500 (if data available)
+    index.append( index[-1] )
+    print(index)
+    print(out_a)
     out_a = out_a[index,:]
 
-    header = 'TIme (years), surface temperature (K), mantle potential temperature (K), emissivity (non-dim), CO2 surface partial pressure (bar), H2O surface partial pressure (bar)'
+    header = 'Time (years), surface temperature (K), mantle potential temperature (K), emissivity (non-dim), CO2 surface partial pressure (bar), H2O surface partial pressure (bar)'
 
     np.savetxt( 'out.dat', out_a, header=header )
 
