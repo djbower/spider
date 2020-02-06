@@ -90,8 +90,13 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
      could consider accounting for the extrapolation to the top
      (surface) basic node, as well as the influence of the ultra-thin
      thermal boundary layer parameterisation */
-  A->dtsurfdt = arr_dSdt_s[0] * arr_temp_s[0] / arr_cp_s[0];
+
+  /* A->dtsurfdt already contains contribution of dTsurf/dT */
+  /* By chain rule, just need dT/dt */
+  A->dtsurfdt *= arr_dSdt_s[0] * arr_temp_s[0] / arr_cp_s[0];
   /* TODO, add effect of gradient to above 0.5*d/dt (dS/dr) */
+
+
 
   ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);

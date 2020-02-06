@@ -13,6 +13,7 @@ static PetscErrorCode append_Hradio( Ctx *, PetscReal );
 static PetscErrorCode append_Htidal( Ctx *, PetscReal );
 static PetscScalar get_radiogenic_heat_production( RadiogenicIsotopeParameters const *, PetscReal );
 static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters * );
+static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters * );
 
 ///////////////////////////
 /* internal heat sources */
@@ -446,9 +447,11 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
         /* correct for ultra-thin thermal boundary layer at the surface */
         if( Ap->PARAM_UTBL ){
             A->tsurf = get_tsurf_using_parameterised_boundary_layer( temp0, Ap); // parameterised boundary layer
+            A->dtsurfdt = get_dtsurf_using_parameterised_boundary_layer( temp0, Ap); // dTsurf/dT
         }
         else{
             A->tsurf = temp0; // surface temperature is potential temperature
+            A->dtsurfdt = 1.0; // dTsurf/dT
         }
     }
 
@@ -482,4 +485,33 @@ static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar tem
     Ts = num / den;
 
     return Ts; 
+}
+
+static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters *Ap )
+{
+    PetscScalar dTsdT, c, fac1, fac2, fac3, num1, den1, num2, den2, part1, part2;
+    c = Ap->param_utbl_const;
+
+    fac1 = 27*PetscSqrtScalar(3) * PetscPowScalar(c,3) * temp;
+    fac2 = PetscSqrtScalar( PetscPowScalar(c,3) * (4.0 + 27.0 * PetscSqr(temp) ) );
+    fac3 = PetscSqrtScalar( PetscPowScalar(c,3) * (4.0 + 27.0 * PetscSqr(temp) * c ) );
+
+    num1 = PetscPowScalar(2.0/3.0,2.0/3.0) * (9 * PetscSqr(c) + fac1/fac2);
+    den1 = PetscPowScalar( 9.0*PetscSqr(c)*temp + PetscSqrtScalar(3) * fac2, 1.0/3.0 );
+    den1 *= PetscPowScalar( 9.0*PetscSqr(c)*temp + PetscSqrtScalar(3) * fac3, 1.0/3.0);
+    den1 *= 3.0 * c;
+
+    part1 = num1 / den1;
+
+    num2 = 9.0*PetscSqr(c);
+    num2 += (fac1*c) / fac3;
+    num2 *= (-2.0*PetscPowScalar(3,1.0/3.0)*c + PetscPowScalar(2.0,1.0/3.0) * PetscPowScalar(9.0*PetscSqr(c)*temp + PetscSqrtScalar(3)*fac2,2.0/3.0));
+    den2 = 3.0 * PetscPowScalar(6.0,2.0/3.0)*c * PetscPowScalar(9.0*PetscSqr(c)*temp + PetscSqrtScalar(3)*fac3,4.0/3.0);
+
+    part2 = num2 / den2;
+
+    dTsdT = part1 - part2;
+
+    return dTsdT;
+
 }
