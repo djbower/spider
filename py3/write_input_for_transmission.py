@@ -10,7 +10,7 @@ def main():
     #casenum = '9m'
     # for Mercury models
     #casenum = 'S3'
-    casenum = 'L3'
+    casenum = 'S3A'
     strcase = 'case' + str(casenum)
 
     # this is for short-cutting to generate data for transmission
@@ -27,8 +27,12 @@ def main():
         elif casenum == 'S3':
             # for Mercury models
             time_l = [9437]
+        elif casenum == 'S3A':
+            time_l = [2204]
         elif casenum == 'L3':
             time_l = [34397]
+        elif casenum == 'L3A':
+            time_l = [2805]
 
     else:
         # this is for looping over all date to compute the static structure
@@ -51,23 +55,31 @@ def main():
         outfile = open(outfilename,'w')
 
         myjson_o = su.MyJSON( 'output/{}.json'.format(time) )
-        rho_interp1d = myjson_o.get_rho_interp1d()
-        radius = su.solve_for_planetary_radius( rho_interp1d )
 
-        outfile.write('planetary radius (m)= {}\n'.format(radius))
-        pres_interp1d = myjson_o.get_atm_struct_depth_interp1d()
-        height1mb = pres_interp1d( 1.0E-3 )
-        height10mb = pres_interp1d( 1.0E-2 )
+        # commented out some sections for Mercury models, since radius not compatible
+        #rho_interp1d = myjson_o.get_rho_interp1d()
+        #radius = su.solve_for_planetary_radius( rho_interp1d )
 
-        outfile.write('height of 1mb contour (m)= {}\n'.format( height1mb ) )
-        outfile.write('height of 10mb contour (m)= {}\n'.format( height10mb ) )
+        #outfile.write('planetary radius (m)= {}\n'.format(radius))
+        #pres_interp1d = myjson_o.get_atm_struct_depth_interp1d()
+        #height1mb = pres_interp1d( 1.0E-3 )
+        #height10mb = pres_interp1d( 1.0E-2 )
+
+        #outfile.write('height of 1mb contour (m)= {}\n'.format( height1mb ) )
+        #outfile.write('height of 10mb contour (m)= {}\n'.format( height10mb ) )
         write_value_to_file( myjson_o, outfile, ['atmosphere','molar_mass'], time, 'atmosphere mean molar mass' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','molar_mass'], time, 'CO2 molar mass' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','molar_mass'], time, 'H2O molar mass' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','CO','molar_mass'], time, 'CO molar mass' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','H2','molar_mass'], time, 'H2 molar mass' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','mixing_ratio'], time, 'CO2 mixing ratio' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','mixing_ratio'], time, 'H2O mixing ratio' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','CO','mixing_ratio'], time, 'CO mixing ratio' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','H2','mixing_ratio'], time, 'H2 mixing ratio' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','CO2','atmosphere_kg'], time, 'CO2 mass (kg)' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','atmosphere_kg'], time, 'H2O mass (kg)' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','CO','atmosphere_kg'], time, 'CO mass (kg)' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','H2','atmosphere_kg'], time, 'H2 mass (kg)' )
 
         outfile.write('Temp (K), Pressure (bar), Optical depth, Height above surface (m)\n')
 
@@ -89,9 +101,9 @@ def main():
         f.close()
 
         # write radius data to file
-        outradiusfile.write( '{} {} {} {} {} {}\n'.format( time, radius, radius+height10mb, radius+height1mb, surface_temperature, phi_g ) )
+        #outradiusfile.write( '{} {} {} {} {} {}\n'.format( time, radius, radius+height10mb, radius+height1mb, surface_temperature, phi_g ) )
 
-    outradiusfile.close()
+    #outradiusfile.close()
 
 #====================================================================
 def write_value_to_file( myjson_o, outfile, keys, time, label ):

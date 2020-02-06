@@ -45,7 +45,9 @@ def plot_atmosphere():
                ('atmosphere','emissivity'),
                ('rheological_front_phi','phi_global'),
                ('atmosphere','Fatm'),
-               ('data','temp_b'))
+               ('data','temp_b'))#,
+      #         ('atmosphere','H2','atmosphere_bar'),
+      #         ('atmosphere','CO','atmosphere_bar'))
 
     data_a = su.get_dict_surface_values_for_times( keys_t, fig_o.time )
 
@@ -80,6 +82,9 @@ def plot_atmosphere():
     Fatm = data_a[16,:]
 
     temperature_mantle_a = data_a[17,:]
+
+#    H2_atmos_a = data_a[18,:]
+#    CO_atmos_a = data_a[19,:]
 
     #xticks = [1E-5,1E-4,1E-3,1E-2,1E-1]#,1]
     #xticks = [1.0E-2, 1.0E-1, 1.0E0, 1.0E1, 1.0E2,1.0E3] #[1E-6,1E-4,1E-2,1E0,1E2,1E4,1E6]#,1]
@@ -205,20 +210,22 @@ def plot_atmosphere():
     #ax3.set_ylim( 1E-4, 1E-2 )
     #ax3.set_xlim( 1E-5, 1 )
 
+    CO_atmos_a = np.zeros( np.size(timeMyr_a) )
+    H2_atmos_a = np.zeros( np.size(timeMyr_a) )
     # output (effective) emissivity for Bonati et al. (2018), a&a paper
     filename = 'out.dat'
-    out_a = np.column_stack( (timeMyr_a, temperature_surface_a, temperature_mantle_a, emissivity_a, CO2_atmos_a, H2O_atmos_a ) )
+    out_a = np.column_stack( (timeMyr_a, temperature_surface_a, temperature_mantle_a, emissivity_a, CO2_atmos_a, H2O_atmos_a, CO_atmos_a, H2_atmos_a ) )
     index = np.where( temperature_surface_a > 1500 )[0]
     index = index.tolist()
     # TODO: this gives temp just below 1500 (if data available)
     #index.append( index[-1]+1 )
     # TODO: this gives temp just above 1500 (if data available)
-    index.append( index[-1] )
+    #index.append( index[-1] )
     print(index)
     print(out_a)
     out_a = out_a[index,:]
 
-    header = 'Time (years), surface temperature (K), mantle potential temperature (K), emissivity (non-dim), CO2 surface partial pressure (bar), H2O surface partial pressure (bar)'
+    header = 'Time (years), surface temperature (K), mantle potential temperature (K), emissivity (non-dim), CO2 surface partial pressure (bar), H2O surface partial pressure (bar), CO partial pressure (bar), H2 partial pressure (bar)'
 
     np.savetxt( 'out.dat', out_a, header=header )
 
@@ -238,8 +245,13 @@ def plot_publication():
     fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.5)
 
     ax0 = fig_o.ax
+    # original directories here
+    #dir_l = ['S1_2500','S2_2500','S3_2500','L1_2500','L2_2500','L3_2500']
 
-    dir_l = ['S1_2500','S2_2500','S3_2500','L1_2500','L2_2500','L3_2500']
+    # revised directories here
+    dir_l = ['S1_2500','S2_2500','S3_2500','L1_2500','L2_2500','L3R_2500']
+
+
     title = 'Surface temperature of magma ocean'
     xlabel = 'Time (years)'
     ylabel = 'Temperature (K)'
@@ -255,9 +267,10 @@ def plot_publication():
         else:
             color = fig_o.get_color(8-nn)
 
-        infile = direct + '/out.dat'
+        infilename = direct.split('_')[0]
+        infile = direct + '/' + infilename + '.dat'
         try:
-            time, Ts, Tm, emiss = np.loadtxt( infile, unpack=True )
+            time, Ts, Tm, emiss = np.loadtxt( infile, unpack=True, usecols=(0,1,2,3) )
             label = direct.split('_')[0]
             h1, = ax0.semilogx( time, Ts, label=label, color=color )
             handle_l.append( h1 )
