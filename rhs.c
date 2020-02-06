@@ -85,18 +85,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   }
 
   /* dTsurf/dr */
-  /* TODO: this is an approximation of dTsurf/dt, because we are
-     just using the value at the top staggered node.  Formally, we
-     could consider accounting for the extrapolation to the top
-     (surface) basic node, as well as the influence of the ultra-thin
-     thermal boundary layer parameterisation */
-
   /* A->dtsurfdt already contains contribution of dTsurf/dT */
   /* By chain rule, just need dT/dt */
   A->dtsurfdt *= arr_dSdt_s[0] * arr_temp_s[0] / arr_cp_s[0];
   /* TODO, add effect of gradient to above 0.5*d/dt (dS/dr) */
-
-
+  /* but this should be a minor effect */
 
   ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
