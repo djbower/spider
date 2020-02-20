@@ -133,6 +133,12 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   vp->R_thermal_escape_value = 0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->R_thermal_escape_value,&set);CHKERRQ(ierr);
 
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_constant_escape_value");CHKERRQ(ierr);
+  vp->constant_escape_value = 0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->constant_escape_value,&set);CHKERRQ(ierr);
+  vp->constant_escape_value *= (1.0E6 * C->TIME) / (C->VOLATILE * C->MASS);
+  vp->constant_escape_value /= 4.0 * PETSC_PI;
+
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,&set);CHKERRQ(ierr);
   if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
@@ -541,6 +547,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   Ap->THERMAL_ESCAPE = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-THERMAL_ESCAPE",&Ap->THERMAL_ESCAPE,NULL);CHKERRQ(ierr);
+
+  Ap->CONSTANT_ESCAPE = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-CONSTANT_ESCAPE",&Ap->CONSTANT_ESCAPE,NULL);CHKERRQ(ierr);
 
   /* Gravitational constant (m^3/kg/s^2) */
   Ap->bigG = 6.67408E-11;

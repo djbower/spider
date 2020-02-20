@@ -56,7 +56,8 @@ typedef struct VolatileParameters_ {
     PetscScalar henry;
     PetscScalar henry_pow;
     PetscScalar jeans_value; // for thermal escape
-    PetscScalar R_thermal_escape_value; // for thermal escape
+    PetscScalar R_thermal_escape_value; // for thermal (Jean's) escape
+    PetscScalar constant_escape_value; // for constant escape
     PetscScalar molar_mass;
     PetscScalar cross_section;
     PetscReal   poststep_change; // allowable fractional change (only for -activate_poststep)
@@ -109,6 +110,7 @@ typedef struct AtmosphereParameters_ {
     OxygenFugacityType OXYGEN_FUGACITY; // for chemical reactions
     PetscBool VISCOUS_MANTLE_COOLING_RATE;
     PetscBool THERMAL_ESCAPE;
+    PetscBool CONSTANT_ESCAPE;
     PetscScalar surface_bc_value;
     // below are standard, also used for grey-body atmosphere
     PetscScalar emissivity0;

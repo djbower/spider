@@ -781,6 +781,9 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_kg", "kg", V->mass_atmos, data);CHKERRQ(ierr);
     /* volatile exchanges due to reactions (kg) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "reaction_kg", "kg", V->mass_reaction, data);CHKERRQ(ierr);
+    /* physical reservoir size */
+    val = V->mass_liquid + V->mass_solid + V->mass_atmos;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "physical_kg", "kg", val, data);CHKERRQ(ierr);
 
     /* kilograms (kg), without 4*pi */
     val = C->MASS * VP->molar_mass * 1.0E3;
@@ -868,7 +871,7 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
 PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, const PetscScalar *dmrdt )
 {
 
-    PetscScalar               out, out2, massv, f_thermal_escape;
+    PetscScalar               out, out2, massv, f_thermal_escape, f_constant_escape;
     PetscInt                  j,k;
 
     /* remember that to this point, V->f_thermal_escape is always
@@ -878,6 +881,14 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     }
     else{
         f_thermal_escape = 1.0;
+    }
+
+    /* constant escape, non-thermal (Jean's) contribution */
+    if(Ap->CONSTANT_ESCAPE){
+        f_constant_escape = Ap->volatile_parameters[i].constant_escape_value;
+    }
+    else{
+        f_constant_escape = 0.0;
     }
 
     out2 = 0.0;
@@ -904,8 +915,11 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     /* multiply by prefactors */
     out2 *= (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Ap->volatile_parameters[i].molar_mass / -(*Ap->gravity_ptr); // note negative gravity
 
-    /* thermal escape correction */
+    /* thermal (Jean's) escape correction */
     out2 *= f_thermal_escape;
+
+    /* non-thermal escape contribution */
+    out2 += f_constant_escape;
 
     /* chemical reactions. Loop through all reactions, check if they involve
        this volatile, and if so, add a term */

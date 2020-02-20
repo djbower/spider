@@ -54,7 +54,7 @@ m_v^g = X_v^g M^g = 4 \pi R_p^2 \left( \frac{\mu_v^g}{\bar{\mu}} \right) \frac{p
 p_v ( X_v ) = \left( \frac{X_v}{\alpha_v} \right)^{\beta_v}, \qquad \frac{dp_v}{d X_v} = \frac{\beta_v}{\alpha_v} \left( \frac{X_v}{\alpha_v} \right)^{\beta_v-1}
 \label{eq:Henry_mod}
 \end{equation}
-where $\alpha_v$ and $\beta_v$ are parameters for each volatile.  The ``standard'' Henry's law is recovered when $\beta_v=1$, but allowing a power-law form provides more flexibility for volatiles that do not follow Henry's law exactly ($\beta_v \neq 1$).  \myemph{From now on we will only consider the scaled mass which omits the $4 \pi$ factor associated with spherical geometry:}
+where $\alpha_v$ and $\beta_v$ are parameters for each volatile.  The ``standard'' Henry's law is recovered when $\beta_v=1$, but allowing a power-law form provides more flexibility for volatiles that do not follow Henry's law exactly ($\beta_v \neq 1$).  \myemph{From now on we will only consider the scaled mass which omits the $4 \pi$ factor associated with spherical geometry}.  Basically, we omit the $4 \pi$ scaling from $M^s$, $M^l$, and $M^m$, and drop the $4 \pi$ in front of the atmosphere term.  Similarly, $4 \pi$ is dropped from the other mass terms: $m_v^e$, $m_v^o$, and $m_v^r$:
 \boxedeq{eq:dimvolatile}{X_v (k_v M^s + M^l) + \frac{R_p^2}{g} \left( \frac{\mu_v^g}{\bar{\mu}} \right) p_v + m_v^e + m_v^o + m_v^r = X_v^{\rm init} M^m}
 And note, importantly, that we solve for the volatile mass fraction in the liquid phase, from which we can subsequently compute the volatile mass in the solid and gas phase.  The above equation also shows that the volatile abundances are coupled through the mean molecular weight:
 \begin{equation}
@@ -131,12 +131,12 @@ Now the scaling constants in the penultimate term on the LHS are, according to t
 \end{equation}
 %%%%
 \subsubsection{Volatile Mass Balance}
-Therefore the mass balance in non-dimensional form is, \myemph{where again, masses are scaled masses without the $4 \pi$ term}:
+Therefore the mass balance in non-dimensional form is, \myemph{where again, masses are scaled masses without the $4 \pi$ term}:  \dbnote{Note that here the terms such as escape $m_v^e$ are also now omitting the $4 \pi$ factor}
 \boxedeq{}{\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m \label{eq:volevo}}
 Compared to the dimensional form (Eq.~\ref{eq:dimvolatile}), there is an extra scaling factor in front of the atmospheric mass and other mass terms, to take account of the fact that we have converted mass fraction quantities to scaled ppm.  In the case of the atmospheric mass, this extra scaling factor cannot be absorbed by a $\hat{X_v}$ term since the volatile concentration is wrapped up inside the partial pressure formula.
 %%%%
 \subsubsection{Scaled Non-dimensional Mass}
-By inspection of Eq.~\ref{eq:volevo}, we can determine the scaled (i.e., without the prefactor of $4\pi$) non-dimensional masses of volatiles:
+By inspection of Eq.~\ref{eq:volevo}, \myemph{we can determine the scaled (i.e., without the prefactor of $4\pi$) non-dimensional masses of volatiles}:
 \begin{equation}
 \hat{m}_v^s = \hat{X_v} k_v \hat{M}^s
 \end{equation}
@@ -146,7 +146,7 @@ By inspection of Eq.~\ref{eq:volevo}, we can determine the scaled (i.e., without
 \begin{equation}
 \hat{m}_v^g = \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v}
 \end{equation}
-The remaining mass reservoirs (superscript $e$, $o$, and $r$) all follow this scaling (taking $m_v^e$ as an example):
+The remaining mass reservoirs (superscript $e$, $o$, and $r$) all follow this scaling (taking $m_v^e$ as an example, and noting that these quantities also omit the $4 \pi$ factor).
 \begin{equation}
 \hat{m}_v^e = \frac{10^6}{V_0} \frac{m_v^e}{M_0}
 \end{equation}
@@ -236,20 +236,25 @@ where again we can use Eq.~\ref{eq:equilibrium_constant} as the extra equation, 
 %%%%
 \subsection{Evolution Equation}
 \dbnote{I need to make the notation here consistent with that above, but for the sake of time I will continue regardless to add in the chemical reaction terms.}
-Remember that we compute a RHS in SPIDER that represents the time-derivative (update) of a solution quantity.  We are going to solve the volatile evolution equations within the system of equations that include the update to entropy, etc.  \textbf{Strictly speaking, it is not necessary to integrate to find the equilibrium volatile abundance in the melt in the simplest situations.  You could save computations (and accumulated error) by instead solving Eq.~\ref{eq:volevo}, but this would not allow you to introduce time-dependent atmospheric escape for example.}  Therefore, taking the time derivative of the volatile mass balance equation:
+Remember that we compute a RHS in SPIDER that represents the time-derivative (update) of a solution quantity.  We are going to solve the volatile evolution equations within the system of equations that include the update to entropy, etc.  \textbf{Strictly speaking, it is not necessary to integrate to find the equilibrium volatile abundance in the melt in the simplest situations.  You could save computations (and accumulated error) by instead solving Eq.~\ref{eq:volevo}, but this would not allow you to introduce time-dependent atmospheric escape for example.}  Therefore, we define a non-dimensional time (which is given by the existing parameters in the system by dimensional analysis) as:
+\begin{equation}
+t = \tau_0 \hat{t}
+\end{equation}
+And taking the time derivative of the volatile mass balance equation:
 \begin{align}
-&\frac{d \hat{X}^{\rm l}}{d t} (k_{\rm v} \hat{M}^{\rm s} + \hat{M}^{\rm l}) + \hat{X}^{\rm l} \left( k_{\rm v} \frac{d \hat{M}^{\rm s}}{d t} + \frac{d \hat{M}^{\rm l}}{d t} \right) + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}} \frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right)\\
-&\quad + \frac{10^6}{V_0 M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
+&\frac{d \hat{X}^{\rm l}}{d \hat{t}} (k_{\rm v} \hat{M}^{\rm s} + \hat{M}^{\rm l}) + \hat{X}^{\rm l} \left( k_{\rm v} \frac{d \hat{M}^{\rm s}}{d \hat{t}} + \frac{d \hat{M}^{\rm l}}{d \hat{t}} \right) + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}} \frac{d}{d\hat{t}} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right)\\
+&\quad + \frac{10^6}{V_0} \frac{\tau_0}{M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
 \end{align}
+Since the final term on the LHS has not been defined, we keep the terms dimensional inside the brackets.  \dbnote{Note that here the terms such as escape $m_v^e$ are still omitting the $4 \pi$ factor}
 \subsubsection{Mean molar mass of atmosphere}
 The mean molar mass $\hat{\mu}_{\rm t}$ of the atmosphere evolves during outgassing and therefore is a time-dependent quantity.  By the product rule:
 \begin{equation}
-\frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = \hat{p}(\hat{X}^{\rm l}) \frac{d}{dt} \left( \frac{1}{\hat{\mu}_{\rm t}} \right) + \frac{1}{\hat{\mu}_{\rm t}} \frac{d}{dt} \left( \hat{p}(\hat{X}^{\rm l}) \right)
+\frac{d}{d\hat{t}} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = \hat{p}(\hat{X}^{\rm l}) \frac{d}{d\hat{t}} \left( \frac{1}{\hat{\mu}_{\rm t}} \right) + \frac{1}{\hat{\mu}_{\rm t}} \frac{d}{d\hat{t}} \left( \hat{p}(\hat{X}^{\rm l}) \right)
 \label{eq:atmos_evo}
 \end{equation}
 The second term can be calculated using the chain rule:
 \begin{equation}
-\frac{1}{\hat{\mu}_{\rm t}} \frac{d}{dt} \left( \hat{p}(\hat{X}^{\rm l}) \right) = \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+\frac{1}{\hat{\mu}_{\rm t}} \frac{d}{d\hat{t}} \left( \hat{p}(\hat{X}^{\rm l}) \right) = \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d\hat{t}} \right)
 \end{equation}
 %%% two species only %%%
 \subsubsection{Two volatile species}
@@ -259,23 +264,23 @@ To deal with the first term, recall that for two species (Eq.~\ref{eq:atmosphere
 \end{equation}1
 where subscript $C$ denotes CO$_2$ and $H$ denotes H$_2$O, and $\hat{p}$ is partial pressure and $\hat{\mu}$ is molar mass.  Taking the time derivative of $\hat{\mu}_{\rm t}$ noting that only the $\mu$'s are independent of time:
 \begin{equation}
-\frac{d}{dt} \left( \frac{1}{\hat{\mu}_{\rm t}} \right) = -\hat{\mu}_{\rm t}^{-2} \frac{d}{dt} \hat{\mu}_{\rm t}
+\frac{d}{d\hat{t}} \left( \frac{1}{\hat{\mu}_{\rm t}} \right) = -\hat{\mu}_{\rm t}^{-2} \frac{d}{d\hat{t}} \hat{\mu}_{\rm t}
 \end{equation}
 \begin{equation}
-\frac{d}{dt} \hat{\mu}_{\rm t} = \frac{d}{dt} \left[ \left( \frac{\hat{p}_C}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_C + \left( \frac{\hat{p}_H}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_H \right]
+\frac{d}{d\hat{t}} \hat{\mu}_{\rm t} = \frac{d}{d\hat{t}} \left[ \left( \frac{\hat{p}_C}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_C + \left( \frac{\hat{p}_H}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_H \right]
 \end{equation}
 This is tedious but straightforward to compute (and Mathematica helps!):
 \begin{align}
-\frac{d}{dt} \hat{\mu}_{\rm t} &= \left( \frac{\hat{\mu}_C}{\hat{p}_C+\hat{p}_H} \right) \frac{d\hat{p}_C}{dt} - \frac{\hat{\mu}_C \hat{p}_C}{(\hat{p}_C+\hat{p}_H)^2} \left( \frac{d\hat{p}_C}{dt}+\frac{d\hat{p}_H}{dt} \right)\\
-&+ \left( \frac{\hat{\mu}_H}{\hat{p}_C+\hat{p}_H} \right) \frac{d\hat{p}_H}{dt} - \frac{\hat{\mu}_H \hat{p}_H}{(\hat{p}_C+\hat{p}_H)^2} \left( \frac{d\hat{p}_C}{dt}+\frac{d\hat{p}_H}{dt} \right)
+\frac{d}{d\hat{t}} \hat{\mu}_{\rm t} &= \left( \frac{\hat{\mu}_C}{\hat{p}_C+\hat{p}_H} \right) \frac{d\hat{p}_C}{d\hat{t}} - \frac{\hat{\mu}_C \hat{p}_C}{(\hat{p}_C+\hat{p}_H)^2} \left( \frac{d\hat{p}_C}{d\hat{t}}+\frac{d\hat{p}_H}{d\hat{t}} \right)\\
+&+ \left( \frac{\hat{\mu}_H}{\hat{p}_C+\hat{p}_H} \right) \frac{d\hat{p}_H}{d\hat{t}} - \frac{\hat{\mu}_H \hat{p}_H}{(\hat{p}_C+\hat{p}_H)^2} \left( \frac{d\hat{p}_C}{d\hat{t}}+\frac{d\hat{p}_H}{d\hat{t}} \right)
 \end{align}
 Simplifying:
 \begin{equation}
-\frac{d}{dt} \hat{\mu}_{\rm t} = \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{dt} - \hat{p}_C \frac{d\hat{p}_H}{dt} \right)
+\frac{d}{d\hat{t}} \hat{\mu}_{\rm t} = \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{d\hat{t}} - \hat{p}_C \frac{d\hat{p}_H}{d\hat{t}} \right)
 \end{equation}
 Putting it all together (i.e., returning to Eq.~\ref{eq:atmos_evo}):
 \begin{equation}
-\frac{d}{dt} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = -\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{dt} - \hat{p}_C \frac{d\hat{p}_H}{dt} \right) + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+\frac{d}{d\hat{t}} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = -\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \frac{(\hat{\mu}_C-\hat{\mu}_H)}{(\hat{p}_C+\hat{p}_H)^2} \left( \hat{p}_H \frac{d\hat{p}_C}{d\hat{t}} - \hat{p}_C \frac{d\hat{p}_H}{d\hat{t}} \right) + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d\hat{t}} \right)
 \end{equation}
 To recap, we are considering the concentration of a given volatile $\hat{X}^{\rm l}$, which can either be CO$_2$ or H$_2$O, and we need to know the time derivative of this quantity.  \myemph{Through the mean molar mass of the atmosphere, the volatiles are now coupled, and we can no longer determine the time derivative of either volatile independently of the other.  Rather we must solve a coupled system of equations at each time step to give us the time update of all the volatiles under consideration.}.  The above equations may be expressed slightly differently, but should be identical to the equations in \citet[Appendix A,][]{BKW19}.
 %%%%
@@ -312,25 +317,26 @@ Recall that:
 \hat{M}^{\rm s} + \hat{M}^{\rm l} = \hat{M}^{\rm m} \equiv \text{constant}
 \label{eq:mantle_mass}
 \end{equation}
-Therefore, we can now just express in terms of the total mantle mass and the mass of liquid (melt) and its time derivative.  \myemph{The evolution equation is, therefore:}
+Therefore, we can now just express in terms of the total mantle mass and the mass of liquid (melt) and its time derivative.  \myemph{The evolution equation is, therefore:} \dbnote{Note that here the terms such as escape $m_v^e$ are still omitting the $4 \pi$ factor}
 \begin{align}
-&\frac{d \hat{X}^{\rm l}}{d t} \left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
-+ \hat{X}^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
+&\frac{d \hat{X}^{\rm l}}{d\hat{t}} \left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
++ \hat{X}^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d\hat{t}} + \nonumber \\
 &\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
 \left[
--\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+-\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial \hat{t}} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial \hat{t}} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d \hat{t}} \right)
 \right]+ \nonumber \\
-& \qquad \frac{10^6}{V_0 M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
+& \qquad \frac{10^6}{V_0} \frac{\tau_0}{M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
 \end{align}
 This cannot be separated into the form of the time derivative equal to a RHS, so the time derivative must instead be numerically calculated within the time stepper.
 %%%%
 \subsubsection{Atmospheric escape formulation}
 %But remember that the reservoir of escaped volatile is not defined per se, but rather the rate at which volatiles escape (see subsequent sections).
-The expression for escape due to surface heating is \citep{JOY15}: % Eq. 2b
+The expression for escape due to surface heating is \citep{JOY15}: % Eq. 2b 
+\dbnote{Perhaps a bit confusing, since the first term is ultimately multiplied by a non-dimensional source (outgassing) term, where the $4 \pi$ factor has already been omitted.  But for the second term $\Phi$ we still need to scale (divide) by $4 \pi$.}
 \begin{equation}
-\frac{d m_v^e}{dt} = \left( \frac{d m_{\rm v}^{\rm g}}{dt} \right) \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) 
+\frac{d m_v^e}{dt} = \left( \frac{d m_{\rm v}^{\rm g}}{dt} \right) \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) + \Phi
 \end{equation}
-where $\mathcal{R}$ is a fitting parameter based on molecular kinetic simulations of N$_2$ \citep{VJT11,VTE11} and $\lambda_s$ is the surface value of the Jean's parameter $\lambda_s$.  For us, $\lambda_s$ and $\mathcal{R}$ may just be treated as a constant scaling for simplicity.  From dimensional analysis we can see that the terms following the mass derivative must be non-dimensional constants.
+The first term relates to Jean's escape and $\Phi$ enables us to assign a constant escape rate (a non-Jean's escape contribution).  $\mathcal{R}$ is a fitting parameter based on molecular kinetic simulations of N$_2$ \citep{VJT11,VTE11} and $\lambda_s$ is the surface value of the Jean's parameter $\lambda_s$.  For us, $\lambda_s$ and $\mathcal{R}$ may just be treated as a constant scaling for simplicity.  If $\mathcal{R}=0$ then clearly the Jean's escape is by definition zero (not included).  From dimensional analysis we can see that the terms following the mass derivative must be non-dimensional constants.
 \begin{equation}
 \lambda_s =  \frac{G M_p^{\rm p} \mu_{\rm v}}{R_p k_b T_s N_A} = \frac{g R_p \mu_{\rm v}}{k_b T_s N_A}
 \end{equation}
@@ -340,16 +346,17 @@ where $G$ is the gravitational constant, $g$ surface gravity, $M_p$ mass of the 
 \end{equation}
 We already computed the growth rate of the atmosphere, i.e. the source rate, and therefore:
 \begin{align}
-\frac{d \hat{m}_{\rm v}^{\rm esc}}{dt} &= \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
+\frac{d \hat{m}_{\rm v}^{\rm esc}}{d\hat{t}} &= \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
 \left[
--\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{d \hat{p}_i}{d t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{d P_s}{d t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
+-\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{d \hat{p}_i}{d \hat{t}} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{d P_s}{d \hat{t}} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d \hat{t}} \right)
 \right]\\
-& \times \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) 
+& \times \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) + \frac{10^6}{V_0} \frac{\tau_0}{M_0} \frac{\Phi}{4 \pi}
 \end{align}
-It is now obvious that we can scale the source time in the evolution equation by a factor to account for atmospheric escape:
+\dbnote{Explicitly introduced $4\pi$ back into the scaling of $\phi$}.  It is now obvious that we can scale the source time in the evolution equation by a factor to account for atmospheric escape due to Jean's escape:
 \begin{equation}
 \mathcal{F}_e = 1+\mathcal{R} (1 + \lambda_s) \exp(-\lambda_s)
 \end{equation}
+But we must additionally include the second term with $\Phi$ in the evolution equation (separate to $\mathcal{F}_e$ above) to enable a non-Jean's escape contribution.
 %%%%
 \subsubsection{Chemical reactions}
 \paragraph{Overview}
