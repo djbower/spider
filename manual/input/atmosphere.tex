@@ -61,6 +61,15 @@ And note, importantly, that we solve for the volatile mass fraction in the liqui
 \bar{\mu} = \sum_v^q \left( \frac{p_v \mu_v}{P_s} \right), \qquad P_s = \sum_v^q p_v
 \label{eq:atmosphere_molar_mass}
 \end{equation}
+\dbnote{New below}
+Instead, we could choose to represent the volatile mass balance using the partial pressure as the primary (solution) variable, by recognising that:
+\begin{equation}
+X_v^l = \alpha_v p_v ^{1/\beta}, \qquad \frac{dX_v^l}{d p_v} = \frac{\alpha_v}{\beta_v} \left( \frac{X_v}{\alpha_v} \right)^{1-\beta_v}
+\label{eq:Henry_mod2}
+\end{equation}
+where now a zero Henry coefficient ($\alpha_v=0$) will exclude a dissolved volatile content.  This is a crucial advantage of using partial pressure as the primary solution variable rather than the dissolved volatile content in the melt ($X_v^l$).  Following this approach, the mass balance instead is:
+\boxedeq{eq:dimvolatile2}{k_v^l \alpha_v p_v^{1/\beta} (k_v^s M^s + M^l) + \frac{R_p^2}{g} \left( \frac{\mu_v^g}{\bar{\mu}} \right) p_v + m_v^e + m_v^o + m_v^r = X_v^{\rm init} M^m}
+In fact, we don't need to follow this alternative derivation to the end.  We can just replace $X_v$ with $p_v$ by substitution.
 %%%%
 %%%%
 %%%%
@@ -328,6 +337,23 @@ Therefore, we can now just express in terms of the total mantle mass and the mas
 & \qquad \frac{10^6}{V_0} \frac{\tau_0}{M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
 \end{align}
 This cannot be separated into the form of the time derivative equal to a RHS, so the time derivative must instead be numerically calculated within the time stepper.
+We can also express the evolution equation using partial pressure as the primary (solution) variable, in which case:
+%%%
+%%% PRIMARY PV HERE
+%%%
+\begin{align}
+&\frac{d \hat{X}_v^{\rm l}}{d\hat{p}_v} \frac{d \hat{p}_v}{d\hat{t}}
+%&\frac{\hat{\alpha}_v}{\hat{\beta}_v} \left( \frac{\hat{X}_v}{\hat{\alpha}_v} \right)^{1-\beta_v}
+\left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
++ \hat{X}_v^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d\hat{t}} + \nonumber \\
+&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
+\left[
+\frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}_v}{d \hat{t}} \right)
+-\frac{\hat{p_v}}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial \hat{t}} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial \hat{t}} \right]
+\right]+ \nonumber \\
+& \qquad \frac{10^6}{V_0} \frac{\tau_0}{M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
+\end{align}
+Basically, any prescribed relationship between $X^l_v$ and $p_v$ can be used in this equation, whether it's Henry's law or a more sophisticated formulation.  This offers opportunity to investigate ``fugacity crisis'' scenarios \citep{KFS19,KFS20}
 %%%%
 \subsubsection{Atmospheric escape formulation}
 %But remember that the reservoir of escaped volatile is not defined per se, but rather the rate at which volatiles escape (see subsequent sections).
