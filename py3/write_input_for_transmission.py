@@ -28,11 +28,9 @@ def main():
             # for Mercury models
             time_l = [9437]
         elif casenum == 'S3A':
-            time_l = [2204]
-        elif casenum == 'L3':
-            time_l = [34397]
+            time_l = [1302]
         elif casenum == 'L3A':
-            time_l = [2805]
+            time_l = [2609]
 
     else:
         # this is for looping over all date to compute the static structure
