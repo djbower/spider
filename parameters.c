@@ -116,6 +116,10 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
   vp->kabs *= C->DENSITY * C->RADIUS;
 
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_SOLUBILITY");CHKERRQ(ierr);
+  vp->SOLUBILITY = 1; // Modified Henry's law
+  ierr = PetscOptionsGetInt(NULL,NULL,buf,&vp->SOLUBILITY,&set);CHKERRQ(ierr);
+
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry_pow");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry_pow,&set);CHKERRQ(ierr);
   if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);

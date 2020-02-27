@@ -116,7 +116,7 @@ PetscErrorCode set_volatile_abundances_from_solution( Ctx *E, Vec sol )
 
 }
 
-PetscErrorCode set_solution_from_volatile_abundances( Ctx *E, Vec sol )
+PetscErrorCode set_solution_from_partial_pressures( Ctx *E, Vec sol )
 {
     PetscErrorCode             ierr;
     Parameters                 *P = &E->parameters;
@@ -130,9 +130,9 @@ PetscErrorCode set_solution_from_volatile_abundances( Ctx *E, Vec sol )
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
-    /* volatile abundances */
+    /* partial pressures */
     for( i=0; i<Ap->n_volatiles; ++i) {
-        ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,A->volatiles[i].x,INSERT_VALUES);CHKERRQ(ierr);
+        ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,A->volatiles[i].p,INSERT_VALUES);CHKERRQ(ierr);
     }
 
     /* mass reaction terms */

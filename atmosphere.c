@@ -5,7 +5,8 @@
 #include "util.h"
 
 static PetscErrorCode initialise_volatiles( Atmosphere *, const AtmosphereParameters * );
-static PetscErrorCode set_atmosphere_pressures( Atmosphere *, const AtmosphereParameters *, const Constants * );
+//static PetscErrorCode set_atmosphere_pressures( Atmosphere *, const AtmosphereParameters *, const Constants * );
+static PetscErrorCode set_total_surface_pressure( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_liquid( Atmosphere *, const AtmosphereParameters * );
@@ -313,6 +314,8 @@ static PetscErrorCode set_f_thermal_escape( Atmosphere *A, PetscInt i )
 
 }
 
+// DJB TO REMOVE
+#if 0
 static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
     PetscInt                  i;
@@ -351,16 +354,80 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
 
     PetscFunctionReturn(0);
 }
+#endif
+
+static PetscErrorCode set_total_surface_pressure( Atmosphere *A, const AtmosphereParameters *Ap )
+{
+    PetscInt                  i;
+    Volatile                 *V;
+
+    PetscFunctionBeginUser;
+
+    /* total surface pressure */
+    A->psurf = 0.0;
+
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        V = &A->volatiles[i];
+        /* partial pressure of volatile */
+        A->psurf += V->p;
+    }
+
+    /* Oxygen is often treated as a trace species from the
+       perspective of computing the total atmospheric pressure, but
+       it is trivial to include: */
+    /* Actually, for oxidised meteorite material this is almost
+       certainly required, since O2 could be a dominant species */
+    /* fO2 is set in set_interior_structure_from_solution */
+    /* Oxygen fugacity must be set, otherwise A->log10f02 is 
+       zero due to initialisation and hence this results in
+       infinite A->psurf */
+    if( Ap->OXYGEN_FUGACITY ){
+        A->psurf /= (1.0 - PetscPowScalar(10.0,A->log10fO2) );
+    }
+
+    PetscFunctionReturn(0);
+}
 
 PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, const AtmosphereParameters *Ap )
 {
+
+    /* This function contains the solubility laws.  For each solubility law, you must give the relationship
+       between x and p, and the derivative */
+
     PetscInt i;
+    Volatile                 *V;
+    VolatileParameters const *Vp;
 
     PetscFunctionBeginUser;
 
     for (i=0; i<Ap->n_volatiles; ++i) {
-        A->volatiles[i].x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i].henry_pow );
-        A->volatiles[i].x *= Ap->volatile_parameters[i].henry;
+
+        /* partial pressure of volatile */
+        V = &A->volatiles[i];
+        Vp = &Ap->volatile_parameters[i];
+
+        switch( Vp->SOLUBILITY ){
+            case 1:
+                /* Modified Henry's law */
+
+                /* abundance in melt */
+                V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i].henry_pow );
+                V->x *= Ap->volatile_parameters[i].henry;
+                /* derivative of partial pressure of volatile */
+                /* TODO: could flip this (dxdp) */
+                V->dpdx = Vp->henry_pow / Vp->henry;
+                V->dpdx *= PetscPowScalar( V->x / Vp->henry, Vp->henry_pow-1.0 );
+
+                break;
+
+            /* TODO: include more solubility laws */
+
+            /* TODO: interface with self-consistent solubility calculation (PERPLEX) */
+
+            default:
+                SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLUBILITY value %d provided",Vp->SOLUBILITY);
+        }
+
     }
 
     PetscFunctionReturn(0);
@@ -471,7 +538,7 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
 
 }
 
-PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
+PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
     PetscErrorCode           ierr;
 
@@ -483,7 +550,12 @@ PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereP
        actually included in the model */
 
     /* order of these functions is very important! */
-    ierr = set_atmosphere_pressures( A, Ap, C );CHKERRQ(ierr);
+    // XXX PREVIOUS WHEN Xv WAS PRIMARY VARIABLE
+    //ierr = set_atmosphere_pressures( A, Ap, C );CHKERRQ(ierr);
+
+    ierr = set_total_surface_pressure( A, Ap );CHKERRQ(ierr);
+
+    ierr = set_volatile_abundances_from_partial_pressure( A, Ap );CHKERRQ(ierr);
 
     ierr = set_volume_mixing_ratios( A, Ap );CHKERRQ(ierr);
 

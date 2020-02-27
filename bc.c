@@ -31,7 +31,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       /* must be after A->tsurf is set for fO2 calculation */
       /* therefore set_surface_flux always called after set_interior_structure_from_solution */
-      ierr = set_atmosphere_volatile_content( A, Ap, C ); CHKERRQ(ierr);
+      ierr = set_reservoir_volatile_content( A, Ap, C ); CHKERRQ(ierr);
 
       /* determine surface flux */
       /* in all cases, compute flux and emissivity consistently */
