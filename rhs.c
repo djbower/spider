@@ -49,7 +49,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   /* below also sets reaction masses in Atmosphere struct (required
      for time-stepping) */
-  ierr = set_volatile_abundances_from_solution( E, sol_in );CHKERRQ(ierr);
+  ierr = set_partial_pressures_from_solution( E, sol_in );CHKERRQ(ierr);
 
   /* boundary conditions must be after all arrays are set */
   ierr = set_surface_flux( E );CHKERRQ(ierr);

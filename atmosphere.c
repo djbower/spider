@@ -408,7 +408,7 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
 
         switch( Vp->SOLUBILITY ){
             case 1:
-                /* Modified Henry's law */
+                /* Modified Henry's law (default) */
 
                 /* abundance in melt */
                 V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i].henry_pow );

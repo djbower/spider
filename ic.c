@@ -419,12 +419,11 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
         }
 
         /* all of the above are guaranteed to set Vec sol, for the
-           volatile abundances in the melt and the mass reaction
-           terms.  Now also ensure that A->volatiles[i].x and
-           A->mass_reaction[i] conform to the Vec sol, since these
-           are subsequently used to "correct" the mass reaction
-           to zero */
-        ierr = set_volatile_abundances_from_solution( E, sol );CHKERRQ(ierr);
+           partial pressures and the mass reaction terms.  Now also 
+           ensure that A->volatiles[i].p and A->mass_reaction[i]
+           conform to the Vec sol, since these are subsequently 
+           used to "correct" the mass reaction to zero */
+        ierr = set_partial_pressures_from_solution( E, sol );CHKERRQ(ierr);
 
         /* ensure all atmosphere quantities are consistent with current
            solution */
