@@ -430,7 +430,7 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
         INCLUDE_PSURF = PETSC_TRUE;
     }
 
-    /* dpsurf/dt previously updated in get_dxdt */
+    /* dpsurf/dt previously updated in get_dpdt */
 
     /* what follows is the chain rule */
 
@@ -458,7 +458,7 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
             /* compute the derivative of this volatile */
             /* TODO: this is also a generic formula for the time derivative of the
                volume mixing ratio and appears elsewhere in the code */
-            dvdt = (1.0/A->psurf) * A->volatiles[v].dxdt * A->volatiles[v].dpdx;
+            dvdt = (1.0/A->psurf) * A->volatiles[v].dpdt; // TODO: REMOVE:  * A->volatiles[v].dpdx;
             dvdt -= (A->volatiles[v].p / PetscPowScalar( A->psurf, 2.0 )) * A->dpsurfdt;
 
             /* so the contribution of this derivative is as follows */

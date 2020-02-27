@@ -101,7 +101,7 @@ static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParam
         /* these entries should match those in atmosphere.h */
         A->volatiles[i].x = 0.0;
         A->volatiles[i].p = 0.0;
-        A->volatiles[i].dxdt = 0.0;
+        A->volatiles[i].dpdt = 0.0;
         A->volatiles[i].dpdx = 0.0;
         A->volatiles[i].mass_atmos = 0.0;
         A->volatiles[i].mass_liquid = 0.0;
@@ -380,7 +380,7 @@ static PetscErrorCode set_total_surface_pressure( Atmosphere *A, const Atmospher
     /* fO2 is set in set_interior_structure_from_solution */
     /* Oxygen fugacity must be set, otherwise A->log10f02 is 
        zero due to initialisation and hence this results in
-       infinite A->psurf */
+       infinite A->psurf (TODO: still true?) */
     if( Ap->OXYGEN_FUGACITY ){
         A->psurf /= (1.0 - PetscPowScalar(10.0,A->log10fO2) );
     }
@@ -902,14 +902,14 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
 
     ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        A->volatiles[i].dxdt = xx[i];
+        A->volatiles[i].dpdt = xx[i];
     }
     dmrdt = &xx[Ap->n_volatiles];
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        ff[i] = get_dxdt( A, Ap, i, dmrdt );
+        ff[i] = get_dpdt( A, Ap, i, dmrdt );
     }
 
     /* chemical equilibrium constraints */
@@ -940,7 +940,7 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
     PetscFunctionReturn(0);
 }
 
-PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, const PetscScalar *dmrdt )
+PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, const PetscScalar *dmrdt )
 {
 
     PetscScalar               out, out2, massv, f_thermal_escape, f_constant_escape;
@@ -968,13 +968,13 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     /* compute and store dpsurf/dt here to avoid recomputation elsewhere */
     A->dpsurfdt = 0.0;
     for (k=0; k<Ap->n_volatiles; ++k) {
-        A->dpsurfdt += A->volatiles[k].dpdx * A->volatiles[k].dxdt;
+        A->dpsurfdt += A->volatiles[k].dpdt; // TODO: REMOVE:  x * A->volatiles[k].dxdt;
     }
 
     for (j=0; j<Ap->n_volatiles; ++j) {
         out = 0.0;
         out = -A->dpsurfdt * A->volatiles[j].p / A->psurf;
-        out += A->volatiles[j].dpdx * A->volatiles[j].dxdt;
+        out += A->volatiles[j].dpdt; // TODO: REMOVE: * A->volatiles[j].dxdt;
         out *= Ap->volatile_parameters[j].molar_mass;
         out2 += out;
     }
@@ -982,7 +982,7 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     out2 *= -A->volatiles[i].p / (A->psurf * PetscSqr(A->molar_mass));
 
     /* second part of atmosphere derivative */
-    out2 += ( 1.0 / A->molar_mass ) * A->volatiles[i].dpdx * A->volatiles[i].dxdt;
+    out2 += ( 1.0 / A->molar_mass ) * A->volatiles[i].dpdt; // TODO: REMOVE x * A->volatiles[i].dxdt;
 
     /* multiply by prefactors */
     out2 *= (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Ap->volatile_parameters[i].molar_mass / -(*Ap->gravity_ptr); // note negative gravity
@@ -1011,8 +1011,13 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
       }
     }
 
+    // TODO: remove (previous)
     /* solid and liquid reservoirs */
-    out2 += A->volatiles[i].dxdt * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
+    //out2 += A->volatiles[i].dxdt * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
+    //out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i].kdist) * A->dMliqdt;
+
+    /* solid and liquid reservoirs */
+    out2 += A->volatiles[i].dpdt * ( 1.0 / A->volatiles[i].dpdx ) * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
     out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i].kdist) * A->dMliqdt;
 
     return out2;

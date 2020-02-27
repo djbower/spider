@@ -116,9 +116,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* volatiles and reactions */
 
   if (Ap->n_volatiles){
-    ierr = solve_dxdts( E );
+    ierr = solve_dpdts( E );
     for (v=0; v<Ap->n_volatiles; ++v) {
-      ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,A->volatiles[v].dxdt,INSERT_VALUES);CHKERRQ(ierr);
+      ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,A->volatiles[v].dpdt,INSERT_VALUES);CHKERRQ(ierr);
     }
     for (v=0; v<Ap->n_reactions; ++v) {
       ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],v,A->reactions[v].dmrdt,INSERT_VALUES);CHKERRQ(ierr);

@@ -14,7 +14,7 @@
 typedef struct Volatile_ {
     PetscScalar x; // ppm in liquid mantle
     PetscScalar p; // partial pressure at surface (Pa)
-    PetscScalar dxdt;
+    PetscScalar dpdt;
     PetscScalar dpdx; // dp/dx (Pa/mass fraction)
     PetscScalar mass_atmos; // mass in atmosphere (kg)
     PetscScalar mass_liquid; // mass in liquid (kg)
@@ -75,7 +75,7 @@ PetscErrorCode set_reservoir_volatile_content( Atmosphere *, const AtmospherePar
 PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *, const AtmosphereParameters * );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters *, Atmosphere *, const char *, cJSON *);
 PetscErrorCode objective_function_volatile_evolution( SNES, Vec, Vec, void * );
-PetscScalar get_dxdt( Atmosphere *, const AtmosphereParameters *, PetscInt, const PetscScalar * );
+PetscScalar get_dpdt( Atmosphere *, const AtmosphereParameters *, PetscInt, const PetscScalar * );
 PetscErrorCode set_oxygen_fugacity( Atmosphere *, const AtmosphereParameters *, const Constants * );
 
 #endif
