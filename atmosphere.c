@@ -444,7 +444,7 @@ static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *A, const At
 
     for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].mass_atmos = PetscSqr((*Ap->radius_ptr)) * A->volatiles[i].p / -(*Ap->gravity_ptr);
-        A->volatiles[i].mass_atmos *= 1.0E6 / (*Ap->VOLATILE_ptr);
+        A->volatiles[i].mass_atmos /= (*Ap->VOLATILE_ptr);
         A->volatiles[i].mass_atmos *= Ap->volatile_parameters[i].molar_mass / A->molar_mass;
     }
 
@@ -803,7 +803,7 @@ static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosp
     data = cJSON_CreateObject();
 
     /* kilograms (kg) */
-    scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+    scaling = C->VOLATILE * 4.0 * PETSC_PI * C->MASS;
 
     for (v=0; v<Ap->n_reactions; ++v) {
         // FIXME: instead of "test", can we output the slot number (v)?
@@ -832,17 +832,17 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
 
     data = cJSON_CreateObject();
 
-    /* parts-per-million (ppm) */
-    scaling = C->VOLATILE;
-    /* initial volatile (ppm) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_ppm", "ppm", VP->initial_total_abundance, data);CHKERRQ(ierr);
-    /* volatile in liquid mantle (ppm) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_ppm", "ppm", V->x, data);CHKERRQ(ierr);
-    /* volatile in solid mantle (ppm) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "solid_ppm", "ppm", V->x*VP->kdist, data);CHKERRQ(ierr);
+    /* parts-per-million (ppmw) */
+    scaling = C->VOLATILE * 1.0E6; // VOLATILE to mass fraction, 1.0E6 to ppm
+    /* initial volatile (ppmw) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_ppmw", "ppmw", VP->initial_total_abundance, data);CHKERRQ(ierr);
+    /* volatile in liquid mantle (ppmw) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_ppmw", "ppmw", V->x, data);CHKERRQ(ierr);
+    /* volatile in solid mantle (ppmw) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "solid_ppmw", "ppmw", V->x*VP->kdist, data);CHKERRQ(ierr);
 
     /* kilograms (kg) */
-    scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+    scaling = C->VOLATILE * 4.0 * PETSC_PI * C->MASS;
     /* initial volatile (kg) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "initial_kg", "kg", VP->initial_total_abundance*(*Ap->mantle_mass_ptr), data);CHKERRQ(ierr);
     /* volatile in liquid mantle (kg) */
@@ -985,7 +985,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     out2 += ( 1.0 / A->molar_mass ) * A->volatiles[i].dpdt; // TODO: REMOVE x * A->volatiles[i].dxdt;
 
     /* multiply by prefactors */
-    out2 *= (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Ap->volatile_parameters[i].molar_mass / -(*Ap->gravity_ptr); // note negative gravity
+    out2 *= (1.0 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Ap->volatile_parameters[i].molar_mass / -(*Ap->gravity_ptr); // note negative gravity
 
     /* thermal (Jean's) escape correction */
     out2 *= f_thermal_escape;

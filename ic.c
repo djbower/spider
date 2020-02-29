@@ -539,8 +539,8 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
     Constants *C = &P->constants;
 
-    PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
-    PetscScalar scaling2 = (1.0E6/C->VOLATILE) * PetscSqr(*Ap->radius_ptr) / -(*Ap->gravity_ptr);
+    PetscScalar scaling = C->VOLATILE * 4.0 * PETSC_PI * C->MASS;
+    PetscScalar scaling2 = (1.0/C->VOLATILE) * PetscSqr(*Ap->radius_ptr) / -(*Ap->gravity_ptr);
 
     PetscFunctionBeginUser;
 

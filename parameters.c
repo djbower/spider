@@ -28,7 +28,7 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     C->TEMP      = TEMPERATURE; // K
     C->ENTROPY   = ENTROPY; // (specific) J/kg.K
     C->DENSITY   = DENSITY; // kg/m^3
-    C->VOLATILE  = VOLATILE; // ppm
+    C->VOLATILE  = VOLATILE;
     C->AREA      = PetscSqr( C->RADIUS ); // m^2
     C->VOLUME    = C->AREA * C->RADIUS; // m^3
     C->MASS      = C->DENSITY * C->VOLUME; // kg
@@ -81,7 +81,7 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-temperature0",&TEMPERATURE0,NULL);CHKERRQ(ierr);
     PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
     ierr = PetscOptionsGetScalar(NULL,NULL,"-density0",&DENSITY0,NULL);CHKERRQ(ierr);
-    PetscScalar VOLATILE0 = 1.0E2;
+    PetscScalar VOLATILE0 = 1.0;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-volatile0",&VOLATILE0,NULL);CHKERRQ(ierr);
     ierr = SetConstants(C,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
   }
@@ -100,7 +100,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_total_abundance");CHKERRQ(ierr);
   vp->initial_total_abundance = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_total_abundance,&set);CHKERRQ(ierr);
-  vp->initial_total_abundance /= C->VOLATILE;
+  vp->initial_total_abundance /= 1.0E6 * C->VOLATILE;
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_atmos_pressure");CHKERRQ(ierr);
   vp->initial_atmos_pressure = 0.0;
@@ -127,7 +127,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry,&set);CHKERRQ(ierr);
   if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
-  vp->henry /= C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/vp->henry_pow);
+  vp->henry /= 1.0E6 * C->VOLATILE * PetscPowScalar(C->PRESSURE, -1.0/vp->henry_pow);
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
   vp->jeans_value = 0;
@@ -140,7 +140,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, c
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_constant_escape_value");CHKERRQ(ierr);
   vp->constant_escape_value = 0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->constant_escape_value,&set);CHKERRQ(ierr);
-  vp->constant_escape_value *= (1.0E6 * C->TIME) / (C->VOLATILE * C->MASS);
+  vp->constant_escape_value *= C->TIME / (C->VOLATILE * C->MASS);
   vp->constant_escape_value /= 4.0 * PETSC_PI;
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
