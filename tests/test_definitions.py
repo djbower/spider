@@ -2,7 +2,7 @@ import os
 import re
 import pyTestHarness.test as pthtest
 
-def atmosphere(rootDir) :
+def atmosphere(rootDir, tol) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "atmosphere"
   ranks = 1
@@ -16,8 +16,8 @@ def atmosphere(rootDir) :
   expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere.txt')
 
   def comparefunc(t) :
-      t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
-      t.compareFloatingPointRelative(re.escape('val: '),    1e-5)
+      t.compareFloatingPointRelative(re.escape('scaling: '), tol)
+      t.compareFloatingPointRelative(re.escape('val: '), tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
   t.setComparisonFile('out.txt')
@@ -26,7 +26,7 @@ def atmosphere(rootDir) :
   t.setUseSandbox()
   return(t)
 
-def atmosphere_jeans(rootDir) :
+def atmosphere_jeans(rootDir, tol) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "atmosphere_jeans"
   ranks = 1
@@ -40,8 +40,8 @@ def atmosphere_jeans(rootDir) :
   expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_jeans.txt')
 
   def comparefunc(t) :
-      t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
-      t.compareFloatingPointRelative(re.escape('val: '),    1e-5)
+      t.compareFloatingPointRelative(re.escape('scaling: '), tol)
+      t.compareFloatingPointRelative(re.escape('val: '),    tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
   t.setComparisonFile('out.txt')
@@ -50,7 +50,7 @@ def atmosphere_jeans(rootDir) :
   t.setUseSandbox()
   return(t)
 
-def blackbody(rootDir) :
+def blackbody(rootDir, tol) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "blackbody"
   ranks = 1
@@ -62,8 +62,8 @@ def blackbody(rootDir) :
   expectedFile = os.path.join(thisDir,'expected_output','expected_blackbody.txt')
 
   def comparefunc(t) :
-      t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
-      t.compareFloatingPointRelative(re.escape('val: '),    1e-4)
+      t.compareFloatingPointRelative(re.escape('scaling: '), tol)
+      t.compareFloatingPointRelative(re.escape('val: '),    tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
   t.setComparisonFile('out.txt')
@@ -72,7 +72,8 @@ def blackbody(rootDir) :
   t.setUseSandbox()
   return(t)
 
-def blackbody_init_liquid(rootDir) :
+# Currently not a useful test, since it only returns the initial condition
+def blackbody_init_liquid(rootDir, tol) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "blackbody_init_liquid"
   ranks = 1
@@ -84,8 +85,8 @@ def blackbody_init_liquid(rootDir) :
   expectedFile = os.path.join(thisDir,'expected_output','expected_blackbody_init_liquid.txt')
 
   def comparefunc(t) :
-      t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
-      t.compareFloatingPointRelative(re.escape('val: '),    1e-5)
+      t.compareFloatingPointRelative(re.escape('scaling: '), tol)
+      t.compareFloatingPointRelative(re.escape('val: '),    tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
   t.setComparisonFile('out.txt')
@@ -95,7 +96,8 @@ def blackbody_init_liquid(rootDir) :
 
   return(t)
 
-def blackbody_init_mixed(rootDir) :
+# Currently not a useful test, since it only returns the initial condition
+def blackbody_init_mixed(rootDir, tol) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "blackbody_init_mixed"
   ranks = 1
@@ -107,8 +109,8 @@ def blackbody_init_mixed(rootDir) :
   expectedFile = os.path.join(thisDir,'expected_output','expected_blackbody_init_mixed.txt')
 
   def comparefunc(t) :
-      t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
-      t.compareFloatingPointRelative(re.escape('val: '),    1e-5)
+      t.compareFloatingPointRelative(re.escape('scaling: '), tol)
+      t.compareFloatingPointRelative(re.escape('val: '),    tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
   t.setComparisonFile('out.txt')
@@ -117,7 +119,8 @@ def blackbody_init_mixed(rootDir) :
   t.setUseSandbox()
   return(t)
 
-def blackbody_init_solid(rootDir) :
+# Currently not a useful test, since it only returns the initial condition
+def blackbody_init_solid(rootDir, tol) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
   testName = "blackbody_init_solid"
   ranks = 1
@@ -129,8 +132,8 @@ def blackbody_init_solid(rootDir) :
   expectedFile = os.path.join(thisDir,'expected_output','expected_blackbody_init_solid.txt')
 
   def comparefunc(t) :
-      t.compareFloatingPointRelative(re.escape('scaling: '),1e-14)
-      t.compareFloatingPointRelative(re.escape('val: '),    1e-10)
+      t.compareFloatingPointRelative(re.escape('scaling: '), tol)
+      t.compareFloatingPointRelative(re.escape('val: '),    tol)
 
   # Create Test Object
   t = pthtest.Test(testName,ranks,launch,expectedFile)
