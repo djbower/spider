@@ -56,10 +56,10 @@ def blackbody(rootDir, tol) :
   ranks = 1
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','tests','blackbody','bu_input.opts'),\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/100.json'),
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/1049.json'), # TODO: last timestep time may change?
           ]
 
-  expectedFile = os.path.join(thisDir,'expected_output','expected_blackbody.txt')
+  expectedFile = os.path.join(thisDir,'expected_output','expected_blackbody_1049.txt')
 
   def comparefunc(t) :
       t.compareFloatingPointRelative(re.escape('scaling: '), tol)
