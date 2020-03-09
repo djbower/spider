@@ -55,7 +55,7 @@ def blackbody(rootDir, tol) :
   testName = "blackbody"
   ranks = 1
   launch = [\
-          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','tests','blackbody','bu_input.opts'),\
+          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','blackbody.opts'),\
           os.path.join(rootDir,'tests','json_timestep_to_txt.py output/1049.json'), # TODO: last timestep time may change?
           ]
 
