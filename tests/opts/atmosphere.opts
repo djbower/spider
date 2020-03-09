@@ -1,10 +1,10 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 10
+-nstepsmacro 1
 
 # macro step size in years
--dtmacro 100000
+-dtmacro 50000
 
 # for the PETSc interface to SUNDIALS, matchstep is not
 # allowed, and in testing it doesn't appear that interpolate
@@ -14,8 +14,8 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-6
--ts_sundials_rtol 1.0e-6
+-ts_sundials_atol 1.0e-8
+-ts_sundials_rtol 1.0e-8
 
 # mesh
 # number of basic nodes
@@ -27,12 +27,12 @@
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
--radius0 6371000.0 # Earth radius
+-radius0 63710000.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
--density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
+-density0 1.0E-1 #4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
--volatile0 1.0E2
+-volatile0 1.0 #E2
 
 # energy fluxes and sources to include
 # [0] is off
@@ -88,7 +88,7 @@
 # [3] is conventional as [1] above, but additionally allows you to
 #      specify a mid-mantle interface
 
--mixing_length 1
+-mixing_length 2
 #-mixing_length_layer_radius 0.0 # non-dimensional radius
 
 # physical parameters
@@ -163,18 +163,18 @@
 # Define the volatiles
 -volatile_names CO2,H2O
 
--CO2_initial_total_abundance 100.0
+-CO2_initial_total_abundance 50.0
 -CO2_kdist 5.0E-4
 -CO2_kabs 0.05
 -CO2_henry 4.4E-6
 -CO2_henry_pow 1.0
 -CO2_molar_mass 0.04401 # kg/mol
 
--H2O_initial_total_abundance 500.0
+-H2O_initial_total_abundance 300.0
 -H2O_kdist 1.0E-4
--H2O_kabs 0.01 # absorption (m^2/kg)
--H2O_henry 6.8E-2 # ppm/Pa (Lebrun et al., 2013)
--H2O_henry_pow 1.4285714285714286 # Power for Henry's law (1.0/0.7) (Lebrun et al., 2013)
+-H2O_kabs 0.01
+-H2O_henry 6.8E-2
+-H2O_henry_pow 1.4285714285714286
 -H2O_molar_mass 0.01801528 # kg/mol
 
 # internal heat sources

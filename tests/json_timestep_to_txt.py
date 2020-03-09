@@ -12,10 +12,13 @@ if len(sys.argv) < 2 :
 else :
     filename = sys.argv[1]
 
-with open(filename) as json_data :
+timestep = filename.split('/')[-1].split('.json')[0]
+outfilename = '{}.txt'.format(timestep)
+
+with open(filename) as json_data:
     data_d = json.load(json_data)
     subdomain_data_array = data_d['solution']['subdomain data']
-    with open('out.txt','w') as outfile :
+    with open(outfilename,'w') as outfile :
         for e in subdomain_data_array:
             # DJB: no need to compare values if they do not exist
             # for example, if atmosphere and reactions are turned off then

@@ -57,9 +57,7 @@ test_create_output_dir :
 	mkdir -p ${SPIDER_TEST_DIR}
 
 # Basic Tests
-SPIDER_BASIC_TESTS=blackbody
-# DJB: tests below are not helpful currently
-#,blackbody_init_liquid #,blackbody_init_mixed,blackbody_init_solid
+SPIDER_BASIC_TESTS=blackbody,atmosphere_ic,atmosphere
 
 test : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t ${SPIDER_BASIC_TESTS} && cd -
