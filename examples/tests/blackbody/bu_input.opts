@@ -1,7 +1,7 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 15
+-nstepsmacro 10
 
 # macro step size in years
 -dtmacro 100
@@ -14,12 +14,12 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-8
--ts_sundials_rtol 1.0e-8
+-ts_sundials_atol 1.0e-6
+-ts_sundials_rtol 1.0e-6
 
 # mesh
 # number of basic nodes
--n 200
+-n 100
 
 # all units are SI unless indicated otherwise
 
@@ -72,8 +72,8 @@
 -IC_INTERIOR 1
 #-ic_interior_filename output/dSdr_b_aug_0.m
 # this next value is computed as the entropy at the base of the mantle for the liquidus
--ic_adiabat_entropy 2593.133034435059 #2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
--ic_dsdr -4.6978890285209187e-07 # initial dS/dr everywhere
+-ic_adiabat_entropy 2600.0 # 2593.133034435059 #2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
+-ic_dsdr -1.0E-5 # -4.6978890285209187e-07 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
 # set surface and core entropy (-1 is a flag to ignore, positive values are used)
 -ic_surface_entropy -1
