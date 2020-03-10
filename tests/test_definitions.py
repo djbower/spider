@@ -10,19 +10,19 @@ def atmosphere(rootDir, tol) :
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','atmosphere.opts') + ' -nstepsmacro 1',\
           #os.path.join(rootDir,'tests','copy_one_of.py') + ' ' + acceptable_files + ' -o to_check.json',\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/50001.json'),
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/50018.json'),
           ]
 
-  expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_50001.txt')
+  expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_50018.txt')
 
   def comparefunc(t) :
       t.compareFloatingPointRelative(re.escape('scaling: '), tol)
       t.compareFloatingPointRelative(re.escape('val: '), tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
-  t.setComparisonFile('50001.txt')
+  t.setComparisonFile('50018.txt')
   t.setVerifyMethod(comparefunc)
-  t.setWalltime(2) # minutes
+  t.setWalltime(3) # minutes
   t.setUseSandbox()
   return(t)
 

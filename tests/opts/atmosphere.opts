@@ -31,17 +31,17 @@
 #-atmosic_snes_converged_reason
 
 # suggested by PS
-#-atmosic_ksp_rtol 1e-11
-#-atmosic_ksp_atol 1e-11
+#-atmosic_ksp_rtol 1e-10
+#-atmosic_ksp_atol 1e-10
 #-atmosic_snes_linesearch_damping 0.01
 #-atmosic_snes_max_it 10000
 #-snes_linesearch_max_it 1000
 
 # tolerances for volatile evolution
-#-atmosts_snes_atol 1.0E-11
-#-atmosts_snes_rtol 1.0E-11
-#-atmosts_ksp_atol 1.0E-11
-#-atmosts_ksp_rtol 1.0E-11
+#-atmosts_snes_atol 1.0E-10
+#-atmosts_snes_rtol 1.0E-10
+#-atmosts_ksp_atol 1.0E-10
+#-atmosts_ksp_rtol 1.0E-10
 
 # all units are SI unless indicated otherwise
 
@@ -54,7 +54,7 @@
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 1.0E-1 #4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
--volatile0 1.0 #E2
+-volatile0 1.0E-6
 
 # energy fluxes and sources to include
 # [0] is off
