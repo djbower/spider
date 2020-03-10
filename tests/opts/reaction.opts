@@ -1,10 +1,10 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 20
+-nstepsmacro 10
 
 # macro step size in years
--dtmacro 50000
+-dtmacro 10000
 
 # for the PETSc interface to SUNDIALS, matchstep is not
 # allowed, and in testing it doesn't appear that interpolate
@@ -14,8 +14,8 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-8
--ts_sundials_rtol 1.0e-8
+-ts_sundials_atol 1.0e-10
+-ts_sundials_rtol 1.0e-10
 
 # mesh
 # number of basic nodes
@@ -26,22 +26,23 @@
 #-atmos_snes_monitor
 
 # tolerances for volatile initial condition
-#-atmosic_snes_verbose_monitor
+-atmosic_snes_verbose_monitor
 #-atmosic_snes_view
-#-atmosic_snes_converged_reason
+-atmosic_snes_converged_reason
 
 # suggested by PS
-#-atmosic_ksp_rtol 1e-11
-#-atmosic_ksp_atol 1e-11
-#-atmosic_snes_linesearch_damping 0.01
-#-atmosic_snes_max_it 10000
-#-snes_linesearch_max_it 1000
+-atmosic_snes_type newtontr
+-atmosic_ksp_rtol 1e-10
+-atmosic_ksp_atol 1e-10
+-atmosic_snes_linesearch_damping 0.01
+-atmosic_snes_max_it 10000
+-snes_linesearch_max_it 100000
 
 # tolerances for volatile evolution
-#-atmosts_snes_atol 1.0E-11
-#-atmosts_snes_rtol 1.0E-11
-#-atmosts_ksp_atol 1.0E-11
-#-atmosts_ksp_rtol 1.0E-11
+-atmosts_snes_atol 1.0E-10
+-atmosts_snes_rtol 1.0E-10
+-atmosts_ksp_atol 1.0E-10
+-atmosts_ksp_rtol 1.0E-10
 
 # all units are SI unless indicated otherwise
 
@@ -54,7 +55,7 @@
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 1.0E-1 #4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
--volatile0 1.0 #E2
+-volatile0 1.0E-6
 
 # energy fluxes and sources to include
 # [0] is off
@@ -183,7 +184,7 @@
 -P0 101325.0 # Pa (= 1 atm)
 
 # Define the volatiles
--volatile_names CO2,H2O
+-volatile_names CO2,H2O,CO,H2
 
 -CO2_initial_total_abundance 50.0
 -CO2_kdist 5.0E-4
@@ -198,6 +199,25 @@
 -H2O_henry 6.8E-2
 -H2O_henry_pow 1.4285714285714286
 -H2O_molar_mass 0.01801528 # kg/mol
+
+-CO_initial_total_abundance 0.0
+-CO_kdist 5.0E-4
+-CO_kabs 1.0E-5
+-CO_henry 1.6E-7 # ppm/Pa (Yoshioka et al., 2019)
+-CO_henry_pow 1.0 # power for Henry's law (Yoshioka et al., 2019)
+-CO_molar_mass 0.02801 # kg/mol
+
+-H2_initial_total_abundance 0.0
+-H2_kdist 0.0017
+-H2_kabs 5.0E-5 # absorption (m^2/kg)
+-H2_henry 2.572E-6 # ppm/Pa (fit to H2 data from T. Lichtenberg)
+-H2_henry_pow 1.0 # Power for Henry's law (fit to H2 data from T. Lichtenberg)
+-H2_molar_mass 0.00201588 # kg/mol
+
+-OXYGEN_FUGACITY 5
+
+-reaction_water1
+-reaction_carbondioxide1
 
 # internal heat sources
 # Al26 (extinct at present day)

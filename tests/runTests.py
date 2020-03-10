@@ -55,7 +55,9 @@ def main() :
     allTests = [
         blackbody(rootDir, tol),      \
         atmosphere_ic(rootDir, tol),     \
-        atmosphere(rootDir, tol),
+        atmosphere(rootDir, tol),     \
+        reaction_ic(rootDir, tol),    \
+        reaction(rootDir, tol)
     ]
 
     # Run tests

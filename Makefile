@@ -57,7 +57,7 @@ test_create_output_dir :
 	mkdir -p ${SPIDER_TEST_DIR}
 
 # Basic Tests
-SPIDER_BASIC_TESTS=blackbody,atmosphere_ic,atmosphere
+SPIDER_BASIC_TESTS=blackbody
 
 test : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t ${SPIDER_BASIC_TESTS} && cd -
@@ -71,7 +71,7 @@ test_check : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -t ${SPIDER_BASIC_TESTS} && cd -
 
 # Atmosphere tests
-SPIDER_ATMOS_TESTS=atmosphere,atmosphere_jeans
+SPIDER_ATMOS_TESTS=atmosphere_ic,atmosphere
 
 test_atmos : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t ${SPIDER_ATMOS_TESTS} && cd -
