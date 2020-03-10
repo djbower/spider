@@ -22,7 +22,7 @@ def atmosphere(rootDir, tol) :
   t = pthtest.Test(testName,ranks,launch,expectedFile)
   t.setComparisonFile('50018.txt')
   t.setVerifyMethod(comparefunc)
-  t.setWalltime(3) # minutes
+  t.setWalltime(2) # minutes
   t.setUseSandbox()
   return(t)
 
@@ -48,28 +48,51 @@ def atmosphere_ic(rootDir, tol) :
    t.setUseSandbox()
    return(t)
 
-# TODO: escape test
-def atmosphere_jeans(rootDir, tol) :
+def atmosphere_escape(rootDir, tol) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
-  testName = "atmosphere_jeans"
+  testName = "atmosphere_escape"
   ranks = 1
-  acceptable_files = ' '.join(['output/'+str(i)+'.json' for i in range(49990,50010)])
+  #acceptable_files = ' '.join(['output/'+str(i)+'.json' for i in range(49990,50010)])
   launch = [\
-          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'examples','tests','atmosphere_jeans','bu_input.opts') + ' -nstepsmacro 1',\
-          os.path.join(rootDir,'tests','copy_one_of.py') + ' ' + acceptable_files + ' -o to_check.json',\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py to_check.json'),
+          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','atmosphere_escape.opts') + ' -nstepsmacro 1',\
+          #os.path.join(rootDir,'tests','copy_one_of.py') + ' ' + acceptable_files + ' -o to_check.json',\
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/50039.json'),
           ]
 
-  expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_jeans.txt')
+  expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_escape_50039.txt')
 
   def comparefunc(t) :
       t.compareFloatingPointRelative(re.escape('scaling: '), tol)
       t.compareFloatingPointRelative(re.escape('val: '),    tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
-  t.setComparisonFile('out.txt')
+  t.setComparisonFile('50039.txt')
   t.setVerifyMethod(comparefunc)
-  t.setWalltime(10) # minutes
+  t.setWalltime(2) # minutes
+  t.setUseSandbox()
+  return(t)
+
+def atmosphere_escape_ic(rootDir, tol) :
+  thisDir = os.path.split(os.path.abspath(__file__))[0]
+  testName = "atmosphere_escape_ic"
+  ranks = 1
+  #acceptable_files = ' '.join(['output/'+str(i)+'.json' for i in range(49990,50010)])
+  launch = [\
+          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','atmosphere_escape.opts') + ' -nstepsmacro 0',\
+          #os.path.join(rootDir,'tests','copy_one_of.py') + ' ' + acceptable_files + ' -o to_check.json',\
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/0.json'),
+          ]
+
+  expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_escape_0.txt')
+
+  def comparefunc(t) :
+      t.compareFloatingPointRelative(re.escape('scaling: '), tol)
+      t.compareFloatingPointRelative(re.escape('val: '),    tol)
+
+  t = pthtest.Test(testName,ranks,launch,expectedFile)
+  t.setComparisonFile('0.txt')
+  t.setVerifyMethod(comparefunc)
+  t.setWalltime(1) # minutes
   t.setUseSandbox()
   return(t)
 
