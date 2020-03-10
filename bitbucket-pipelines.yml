@@ -34,7 +34,7 @@ pipelines:
             - ./runTests.py -d # create default config
 
             # Run all the tests (-f returns an error code)
-            - ./runTests.py -f
+            - ./runTests.py -t blackbody -f
   branches:
     master: *default-step
 definitions:
