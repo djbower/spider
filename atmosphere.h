@@ -16,6 +16,7 @@ typedef struct Volatile_ {
     PetscScalar p; // partial pressure at surface (Pa)
     PetscScalar dpdt;
     PetscScalar dpdx; // dp/dx (Pa/mass fraction)
+    PetscScalar dxdp; // dx/dp (mass fraction/Pa)
     PetscScalar mass_atmos; // mass in atmosphere (kg)
     PetscScalar mass_liquid; // mass in liquid (kg)
     PetscScalar mass_solid; // mass in solid (kg)

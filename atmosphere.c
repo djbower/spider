@@ -103,6 +103,7 @@ static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParam
         A->volatiles[i].p = 0.0;
         A->volatiles[i].dpdt = 0.0;
         A->volatiles[i].dpdx = 0.0;
+        A->volatiles[i].dxdp = 0.0;
         A->volatiles[i].mass_atmos = 0.0;
         A->volatiles[i].mass_liquid = 0.0;
         A->volatiles[i].mass_solid = 0.0;
@@ -417,7 +418,14 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 /* TODO: could flip this (dxdp) */
                 V->dpdx = Vp->henry_pow / Vp->henry;
                 V->dpdx *= PetscPowScalar( V->x / Vp->henry, Vp->henry_pow-1.0 );
-
+                /* TODO: clean this up */
+                if (Vp->henry > 0.0) {
+                    V->dxdp = Vp->henry / Vp->henry_pow;
+                    V->dxdp *= PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow);
+                }
+                else{
+                    V->dxdp = 0.0;
+                }
                 break;
 
             /* TODO: include more solubility laws */
@@ -1017,7 +1025,11 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     //out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i].kdist) * A->dMliqdt;
 
     /* solid and liquid reservoirs */
-    out2 += A->volatiles[i].dpdt * ( 1.0 / A->volatiles[i].dpdx ) * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
+    /* with dpdx */
+    out2 += A->volatiles[i].dpdt * (1.0 / A->volatiles[i].dpdx) * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
+    /* with dxdp */
+    //out2 += A->volatiles[i].dpdt * A->volatiles[i].dxdp * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
+
     out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i].kdist) * A->dMliqdt;
 
     return out2;
