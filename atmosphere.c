@@ -415,17 +415,18 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i].henry_pow );
                 V->x *= Ap->volatile_parameters[i].henry;
                 /* derivative of partial pressure of volatile */
-                /* TODO: could flip this (dxdp) */
                 V->dpdx = Vp->henry_pow / Vp->henry;
                 V->dpdx *= PetscPowScalar( V->x / Vp->henry, Vp->henry_pow-1.0 );
+
                 /* TODO: clean this up */
-                if (Vp->henry > 0.0) {
-                    V->dxdp = Vp->henry / Vp->henry_pow;
-                    V->dxdp *= PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow);
-                }
-                else{
-                    V->dxdp = 0.0;
-                }
+                //if (Vp->henry > 0.0) {
+                V->dxdp = Vp->henry / Vp->henry_pow;
+                V->dxdp *= PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow);
+                //}
+               // else{
+               // V->dxdp = 0.0;
+               // }
+
                 break;
 
             /* TODO: include more solubility laws */
@@ -887,6 +888,12 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     ierr = JSON_add_single_value_to_object(dm, scaling, "R_thermal_escape", "None", V->R_thermal_escape, data);CHKERRQ(ierr);
     ierr = JSON_add_single_value_to_object(dm, scaling, "f_thermal_escape", "None", V->f_thermal_escape, data);CHKERRQ(ierr);
 
+    /* other */
+    scaling = C->PRESSURE / C->VOLATILE;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "dp/dx", "Pa/mass fraction", V->dpdx, data);CHKERRQ(ierr);
+    scaling = C->VOLATILE / C->PRESSURE;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dp", "mass fraction/Pa", V->dxdp, data);CHKERRQ(ierr);
+
     cJSON_AddItemToObject(json,name,data);
 
     PetscFunctionReturn(0);
@@ -1026,9 +1033,9 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
 
     /* solid and liquid reservoirs */
     /* with dpdx */
-    out2 += A->volatiles[i].dpdt * (1.0 / A->volatiles[i].dpdx) * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
+    //out2 += A->volatiles[i].dpdt * (1.0 / A->volatiles[i].dpdx) * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
     /* with dxdp */
-    //out2 += A->volatiles[i].dpdt * A->volatiles[i].dxdp * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
+    out2 += A->volatiles[i].dpdt * A->volatiles[i].dxdp * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
 
     out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i].kdist) * A->dMliqdt;
 

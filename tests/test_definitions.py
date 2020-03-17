@@ -10,17 +10,17 @@ def atmosphere(rootDir, tol) :
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','atmosphere.opts') + ' -nstepsmacro 1',\
           #os.path.join(rootDir,'tests','copy_one_of.py') + ' ' + acceptable_files + ' -o to_check.json',\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/50018.json'),
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/50015.json'),
           ]
 
-  expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_50018.txt')
+  expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_50015.txt')
 
   def comparefunc(t) :
       t.compareFloatingPointRelative(re.escape('scaling: '), tol)
       t.compareFloatingPointRelative(re.escape('val: '), tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
-  t.setComparisonFile('50018.txt')
+  t.setComparisonFile('50015.txt')
   t.setVerifyMethod(comparefunc)
   t.setWalltime(2) # minutes
   t.setUseSandbox()
@@ -56,17 +56,17 @@ def atmosphere_escape(rootDir, tol) :
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','atmosphere_escape.opts') + ' -nstepsmacro 1',\
           #os.path.join(rootDir,'tests','copy_one_of.py') + ' ' + acceptable_files + ' -o to_check.json',\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/50039.json'),
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/50033.json'),
           ]
 
-  expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_escape_50039.txt')
+  expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_escape_50033.txt')
 
   def comparefunc(t) :
       t.compareFloatingPointRelative(re.escape('scaling: '), tol)
       t.compareFloatingPointRelative(re.escape('val: '),    tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
-  t.setComparisonFile('50039.txt')
+  t.setComparisonFile('50033.txt')
   t.setVerifyMethod(comparefunc)
   t.setWalltime(2) # minutes
   t.setUseSandbox()
