@@ -15,7 +15,7 @@ typedef struct Volatile_ {
     PetscScalar x; // ppm in liquid mantle
     PetscScalar p; // partial pressure at surface (Pa)
     PetscScalar dpdt;
-    PetscScalar dpdx; // dp/dx (Pa/mass fraction)
+    // TODO: REMOVE PetscScalar dpdx; // dp/dx (Pa/mass fraction)
     PetscScalar dxdp; // dx/dp (mass fraction/Pa)
     PetscScalar mass_atmos; // mass in atmosphere (kg)
     PetscScalar mass_liquid; // mass in liquid (kg)

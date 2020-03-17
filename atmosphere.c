@@ -5,7 +5,6 @@
 #include "util.h"
 
 static PetscErrorCode initialise_volatiles( Atmosphere *, const AtmosphereParameters * );
-//static PetscErrorCode set_atmosphere_pressures( Atmosphere *, const AtmosphereParameters *, const Constants * );
 static PetscErrorCode set_total_surface_pressure( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters * );
@@ -102,7 +101,6 @@ static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParam
         A->volatiles[i].x = 0.0;
         A->volatiles[i].p = 0.0;
         A->volatiles[i].dpdt = 0.0;
-        A->volatiles[i].dpdx = 0.0;
         A->volatiles[i].dxdp = 0.0;
         A->volatiles[i].mass_atmos = 0.0;
         A->volatiles[i].mass_liquid = 0.0;
@@ -315,48 +313,6 @@ static PetscErrorCode set_f_thermal_escape( Atmosphere *A, PetscInt i )
 
 }
 
-// DJB TO REMOVE
-#if 0
-static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
-{
-    PetscInt                  i;
-    Volatile                 *V;
-    VolatileParameters const *Vp;
-
-    PetscFunctionBeginUser;
-
-    /* total surface pressure */
-    A->psurf = 0.0;
-
-    for (i=0; i<Ap->n_volatiles; ++i) {
-        /* partial pressure of volatile */
-        V = &A->volatiles[i];
-        Vp = &Ap->volatile_parameters[i];
-        V->p = PetscPowScalar( V->x / Vp->henry, Vp->henry_pow );
-        /* derivative of partial pressure of volatile */
-        V->dpdx = Vp->henry_pow / Vp->henry;
-        V->dpdx *= PetscPowScalar( V->x / Vp->henry, Vp->henry_pow-1.0 );
-        /* total pressure by Dalton's law */
-        A->psurf += V->p;
-    }
-
-    /* Oxygen is often treated as a trace species from the
-       perspective of computing the total atmospheric pressure, but
-       it is trivial to include: */
-    /* Actually, for oxidised meteorite material this is almost
-       certainly required, since O2 could be a dominant species */
-    /* fO2 is set in set_interior_structure_from_solution */
-    /* Oxygen fugacity must be set, otherwise A->log10f02 is 
-       zero due to initialisation and hence this results in
-       infinite A->psurf */
-    if( Ap->OXYGEN_FUGACITY ){
-        A->psurf /= (1.0 - PetscPowScalar(10.0,A->log10fO2) );
-    }
-
-    PetscFunctionReturn(0);
-}
-#endif
-
 static PetscErrorCode set_total_surface_pressure( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     PetscInt                  i;
@@ -414,18 +370,9 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 /* abundance in melt */
                 V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i].henry_pow );
                 V->x *= Ap->volatile_parameters[i].henry;
-                /* derivative of partial pressure of volatile */
-                V->dpdx = Vp->henry_pow / Vp->henry;
-                V->dpdx *= PetscPowScalar( V->x / Vp->henry, Vp->henry_pow-1.0 );
 
-                /* TODO: clean this up */
-                //if (Vp->henry > 0.0) {
                 V->dxdp = Vp->henry / Vp->henry_pow;
                 V->dxdp *= PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow);
-                //}
-               // else{
-               // V->dxdp = 0.0;
-               // }
 
                 break;
 
@@ -559,9 +506,6 @@ PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmospherePa
        actually included in the model */
 
     /* order of these functions is very important! */
-    // XXX PREVIOUS WHEN Xv WAS PRIMARY VARIABLE
-    //ierr = set_atmosphere_pressures( A, Ap, C );CHKERRQ(ierr);
-
     ierr = set_total_surface_pressure( A, Ap );CHKERRQ(ierr);
 
     ierr = set_volatile_abundances_from_partial_pressure( A, Ap );CHKERRQ(ierr);
@@ -796,6 +740,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     PetscFunctionReturn(0);
 }
 
+/* TODO: was for temporary output during debugging, can probably now REMOVE */
 static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosphere const *A, cJSON *json )
 {
     PetscErrorCode ierr;
@@ -889,8 +834,6 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     ierr = JSON_add_single_value_to_object(dm, scaling, "f_thermal_escape", "None", V->f_thermal_escape, data);CHKERRQ(ierr);
 
     /* other */
-    scaling = C->PRESSURE / C->VOLATILE;
-    ierr = JSON_add_single_value_to_object(dm, scaling, "dp/dx", "Pa/mass fraction", V->dpdx, data);CHKERRQ(ierr);
     scaling = C->VOLATILE / C->PRESSURE;
     ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dp", "mass fraction/Pa", V->dxdp, data);CHKERRQ(ierr);
 
@@ -983,13 +926,13 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     /* compute and store dpsurf/dt here to avoid recomputation elsewhere */
     A->dpsurfdt = 0.0;
     for (k=0; k<Ap->n_volatiles; ++k) {
-        A->dpsurfdt += A->volatiles[k].dpdt; // TODO: REMOVE:  x * A->volatiles[k].dxdt;
+        A->dpsurfdt += A->volatiles[k].dpdt;
     }
 
     for (j=0; j<Ap->n_volatiles; ++j) {
         out = 0.0;
         out = -A->dpsurfdt * A->volatiles[j].p / A->psurf;
-        out += A->volatiles[j].dpdt; // TODO: REMOVE: * A->volatiles[j].dxdt;
+        out += A->volatiles[j].dpdt;
         out *= Ap->volatile_parameters[j].molar_mass;
         out2 += out;
     }
@@ -997,7 +940,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     out2 *= -A->volatiles[i].p / (A->psurf * PetscSqr(A->molar_mass));
 
     /* second part of atmosphere derivative */
-    out2 += ( 1.0 / A->molar_mass ) * A->volatiles[i].dpdt; // TODO: REMOVE x * A->volatiles[i].dxdt;
+    out2 += ( 1.0 / A->molar_mass ) * A->volatiles[i].dpdt;
 
     /* multiply by prefactors */
     out2 *= (1.0 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Ap->volatile_parameters[i].molar_mass / -(*Ap->gravity_ptr); // note negative gravity
@@ -1026,17 +969,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
       }
     }
 
-    // TODO: remove (previous)
-    /* solid and liquid reservoirs */
-    //out2 += A->volatiles[i].dxdt * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
-    //out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i].kdist) * A->dMliqdt;
-
-    /* solid and liquid reservoirs */
-    /* with dpdx */
-    //out2 += A->volatiles[i].dpdt * (1.0 / A->volatiles[i].dpdx) * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
-    /* with dxdp */
     out2 += A->volatiles[i].dpdt * A->volatiles[i].dxdp * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
-
     out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i].kdist) * A->dMliqdt;
 
     return out2;
