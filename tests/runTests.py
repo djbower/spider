@@ -32,7 +32,7 @@ from test_definitions import *
 
 def main() :
 
-    tol = 1.0E-9 # tolerance for checking values
+    tol = 1.0E-6 # tolerance for checking values
 
     # Check that the version of pyTestHarness is great enough
     pthMajor,pthMinor,pthPath = pthversion.getVersion()

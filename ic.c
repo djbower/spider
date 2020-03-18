@@ -751,11 +751,13 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
         // FIXME: guess is arbitrary, but solver breaks if this is zero!
-        xx[i] = 1.0E-6; // TODO: remove: Ap->volatile_parameters[i].initial_total_abundance;
+        /* this is physically motivated, since the PRESSURE scaling is typically set around 1 bar,
+           such that the volatile partial pressure will be some fraction of 1 */
+        xx[i] = 1.0E-1; /* typically around 1/10 bar for usual PRESSURE scaling */
     }
     /* Initial guesses for reaction masses */
     for (i=Ap->n_volatiles; i<Ap->n_volatiles + Ap->n_reactions; ++i) {
-      xx[i] = 0.0; // assume we are at equilibrium
+      xx[i] = 0.0; /* assume we are at equilibrium */
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 

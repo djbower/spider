@@ -105,5 +105,11 @@ scaling: 2993.025100070677
 val: 0.8686863334151804
 description: Volatile partial pressure
 scaling: 1207268.722106174
-val: 2.450645987437314
-val: 0.1327659415441766
+val: 0.1535096218636172
+val: 0.126260216871979
+val: 1.781794671004695
+val: 0.2592220087333649
+description: Reaction total mass
+scaling: 3.249620750537261e+17
+val:                0
+val:                0
