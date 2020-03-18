@@ -59,7 +59,8 @@ def main() :
         reaction_ic(rootDir, tol),    \
         reaction(rootDir, tol),    \
         atmosphere_escape_ic(rootDir, tol),    \
-        atmosphere_escape(rootDir, tol)
+        atmosphere_escape(rootDir, tol), \
+        atmosphere_escape_zerosol(rootDir, tol)
     ]
 
     # Run tests
