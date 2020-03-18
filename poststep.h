@@ -5,7 +5,7 @@
 #include <petscts.h>
 
 typedef struct {
-  PetscReal volatile_abundances[SPIDER_MAX_VOLATILE_SPECIES];
+  PetscReal volatile_partialp[SPIDER_MAX_VOLATILE_SPECIES];
   PetscReal tsurf;
 } PostStepData;
 

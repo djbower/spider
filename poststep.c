@@ -20,9 +20,9 @@ PetscErrorCode PostStepDataInitialize(Ctx *E)
      been updated to be consistent with the solution.  Therefore we can pull data
      from the ctx */
 
-  /* store volatile abundances to the poststep data struct */
+  /* store volatile partial pressures to the poststep data struct */
   for( i=0; i<Ap->n_volatiles; ++i) {
-     data->volatile_abundances[i] = A->volatiles[i].x;
+     data->volatile_partialp[i] = A->volatiles[i].p;
   }
 
   /* store surface temperature to the poststep data struct */
@@ -68,10 +68,10 @@ PetscErrorCode PostStep(TS ts)
      Volatile *V = &A->volatiles[i];
      maxx = P->atmosphere_parameters.volatile_parameters[i].poststep_change;
      if( maxx > 0 ){
-         relx = PetscAbsReal( (V->x-data->volatile_abundances[i]) / data->volatile_abundances[i] );
+         relx = PetscAbsReal( (V->x-data->volatile_partialp[i]) / data->volatile_partialp[i] );
          if ( relx > maxx ){
              //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, rolling back solution and setting flags\n",__fun    c__,__FILE__,__LINE__);
-             ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"volatile %d change exceeded (= %f, max= %f)\n",i,relx,maxx);
+             ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"volatile %d partial pressure change exceeded (= %f, max= %f)\n",i,relx,maxx);
              EVENT = PETSC_TRUE;
          }
      }
