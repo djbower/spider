@@ -455,7 +455,7 @@ static PetscErrorCode set_ic_atmosphere_default( Ctx *E, Vec sol )
 static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
 {
 
-    /* this function has authorisation to update the parameters struct
+    /* FIXME: this function has authorisation to update the parameters struct
        to ensure that parameters obey constraints imposed by the
        initial condition */
 
@@ -475,6 +475,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     /* conform initial_total_abundance */
     for (i=0; i<Ap->n_volatiles; ++i){
         if( Ap->IC_ATMOSPHERE==1 ){
+            /* TODO: check comment below, not sure it is actually the same */
             /* this is equivalent to the operation below for Ap->IC_ATMOSPHERE==3, but a shortcut since
                we do not need to sum all reservoirs to get to the initial total abundance */
             /* below we correct with -= */
@@ -492,6 +493,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     }
 
     /* re-solve to get volatile partial pressures (A->volatiles[i].p) */
+    /* TODO: is this required?  I think so for Ap->IC_ATMOSPHERE==1 above */
     ierr = solve_for_initial_partial_pressure( E ); CHKERRQ(ierr);
 
     /* Ap_>IC_ATMOSPHERE==1 will also set mass reactions close to (but not exactly)
