@@ -68,7 +68,8 @@ PetscErrorCode PostStep(TS ts)
      Volatile *V = &A->volatiles[i];
      maxx = P->atmosphere_parameters.volatile_parameters[i].poststep_change;
      if( maxx > 0 ){
-         relx = PetscAbsReal( (V->x-data->volatile_partialp[i]) / data->volatile_partialp[i] );
+         /* remember that the - is for minus! */
+         relx = PetscAbsReal( (V->p-data->volatile_partialp[i]) / data->volatile_partialp[i] );
          if ( relx > maxx ){
              //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, rolling back solution and setting flags\n",__fun    c__,__FILE__,__LINE__);
              ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"volatile %d partial pressure change exceeded (= %f, max= %f)\n",i,relx,maxx);

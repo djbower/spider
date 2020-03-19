@@ -38,7 +38,7 @@
 # TODO: Dan has not updated the following in light of the tsurf_poststep_change criteria!
 # data is read from 50008.json, and the time-stepper runs until the H2O partial pressure tration in the mantle exceed a
 # 5% change.  Two files are output in the output/ directory.  The first, output/50008.json is the first output
-# that reflects the new state of the system computed from the restart data. The second file output is XXXXX.json.
+# that reflects the new state of the system computed from the restart data. The second file output is 56710.json.
 # This output is triggered by the fact that H2O partial pressure now exceeds a 5% change, relative to the value
 # that was read in from 50008.json (you can easily see this by manually checking the values in the JSONs).
 
@@ -49,6 +49,7 @@
 # SPIDER to do it.
 
 # generate the restart file from the initial condition
+# this will output 50008.json in output/
 #spider -options_file bu_input.opts
 
 # main restart example is here:
