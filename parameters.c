@@ -202,6 +202,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   ierr = SetLookups(P);CHKERRQ(ierr);
 
   /* FIXME: eventually we need a switch to select use lookup data or analytical model */
+  /* for simplicity at the moment, we load the parameters here */
   ierr = set_rtpress_parameters( rtp );CHKERRQ(ierr);
 
   /* For each entry in parameters, we set a default value and immediately scale it.
