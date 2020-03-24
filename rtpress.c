@@ -111,7 +111,8 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx *E )
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<2; ++i) {
-        xx[i] = 0.0;
+        /* FIXME: improve initial guesses */
+        xx[i] = 100.0;
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
@@ -198,12 +199,16 @@ static PetscErrorCode objective_function_rtpress_volume_temperature( SNES snes, 
 
 PetscScalar get_rtpress_temperature( PetscScalar P, PetscScalar S, Ctx *E )
 {
-
+    Constants const            *C = &E->parameters.constants;
     EosEval                    *eos_eval = &E->eos_eval;
 
     /* store values to lookup in struct */
     eos_eval->P = P;
     eos_eval->S = S;
+
+    /* FIXME: I assume that the rtpress expressions are dimensional */
+    eos_eval->P *= C->PRESSURE;
+    eos_eval->S *= C->ENTROPY;
 
     /* below updates V and T in eos_eval */
     solve_for_rtpress_volume_temperature( E );

@@ -2,6 +2,7 @@
 #include "util.h"
 #include "lookup.h"
 #include "twophase.h"
+#include "rtpress.h"
 // FIXME
 //#include "composition.h"
 
@@ -144,10 +145,19 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
         temp_sol = get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
         cp_sol = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
 
+        /* FIXME: BELOW IS A TESTING AREA FOR ANALYTICAL RTPRESS */
+
         /* melt phase */
         L = &P->melt_prop;
         rho_mel = get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
+/* lookup (original) is below */
+#if 0
         temp_mel = get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
+#endif
+/* TODO: testing analytical rtpress */
+        temp_mel = get_rtpress_temperature( arr_pres_s[i], arr_S_s[i], E );
+/* TODO: above is testing */
+
         cp_mel = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
 
         /* mixed phase */
