@@ -57,6 +57,15 @@ typedef enum {
 static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr","S at surface","Volatile partial pressure","Reaction total mass"}; /* Order must match the enum! */
 static const char * const SpiderSolutionFieldUnits[]        = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "Pa", "kg"}; /* Order must match the enum! */
 
+/* A struct to use the analytical rtpress model */
+typedef struct EosEval_ {
+  PetscScalar P; /* pressure */
+  PetscScalar S; /* entropy */
+  PetscScalar V; /* volume */
+  PetscScalar T; /* temperature */
+  PetscScalar val; /* other output */
+} EosEval;
+
 /* A Context for the Solver */
 typedef struct Ctx_ {
   Mesh                   mesh;
@@ -72,6 +81,11 @@ typedef struct Ctx_ {
   DimensionalisableField solDF; /* The solution and attached scalings */
   RheologicalFront       rheological_front_phi;
   RheologicalFront       rheological_front_dynamic;
+
+  /* TODO: check with PS if this is the best way */
+  /* this is a struct to enable me to pass current P, S conditions and
+     update a value, according to the analytical rtpress model */
+  EosEval                eos_eval;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
