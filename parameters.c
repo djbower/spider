@@ -9,6 +9,7 @@ Custom PETSc command line options should only ever be parsed here.
 #include "parameters.h"
 #include "ctx.h"
 #include "ic.h"
+#include "rtpress.h"
 // FIXME
 //#include "composition.h"
 
@@ -176,6 +177,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
   Constants const      *C  = &P->constants;
+  Eos                  *rtp = &P->rtpress;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
   RadiogenicIsotopeParameters *fe60 = &P->fe60_parameters;
@@ -198,6 +200,9 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
      since lookups might be required to map temperature to entropy
      and vice versa for boundary conditions */
   ierr = SetLookups(P);CHKERRQ(ierr);
+
+  /* FIXME: eventually we need a switch to select use lookup data or analytical model */
+  ierr = set_rtpress_parameters( rtp );CHKERRQ(ierr);
 
   /* For each entry in parameters, we set a default value and immediately scale it.
      Dimensional/unscaled quantities are not explicitly stored.

@@ -39,6 +39,27 @@ typedef struct _Constants {
     PetscScalar HEATGEN;
 } Constants;
 
+/* struct to hold equation of state parameters */
+/* TODO: currently this is specific to the parameters
+   for the rtpress model, but could be generalised further */
+typedef struct _eos {
+    PetscScalar V0;
+    PetscScalar T0;
+    PetscScalar S0;
+    PetscScalar K0;
+    PetscScalar KP0;
+    PetscScalar E0;
+    PetscScalar gamma0;
+    PetscScalar gammaP0;
+    PetscScalar m;
+    PetscScalar b0;
+    PetscScalar b1;
+    PetscScalar b2;
+    PetscScalar b3;
+    PetscScalar b4;
+} Eos;
+
+
 /* Volatiles: each has an options_prefix, set with a particular option
    and used to look for additional options to populate the other data.
    SPIDER itself is agnostic to which set of volatiles you use or how many.
@@ -252,6 +273,9 @@ typedef struct _Parameters {
     RadiogenicIsotopeParameters th232_parameters;
     RadiogenicIsotopeParameters u235_parameters;
     RadiogenicIsotopeParameters u238_parameters;
+
+    // equation of state
+    Eos rtpress;
 
     // FIXME
     // Composition
