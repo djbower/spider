@@ -8,20 +8,25 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx * );
 
 PetscErrorCode set_rtpress_parameters( Eos *rtp )
 {
-    /* eos parameters for rtpress, taken from jupyter notebook
-       TODO: check units */
+    /* eos parameters for rtpress, taken from jupyter notebook */
+
+    /* for unit conversion */
+    PetscScalar PV_UNIT = 160.21766208; /* GPa*Ang^3/eV */
+    /* first value is KBOLTZ in units of eV/K */
+    PetscScalar KBOLTZ = 8.617333262145e-5 * PV_UNIT; /* GPa*Ang^3/K */
 
     PetscFunctionBeginUser;
 
-    rtp->V0 = 14.74;
-    rtp->T0 = 3000.0;
-    rtp->S0 = 0.0;
-    rtp->K0 = 9.77;
-    rtp->KP0 = 7.42;
-    rtp->E0 = -1097.490985248;
-    rtp->gamma0 = 0.282;
-    rtp->gammaP0 = -1.35;
-    rtp->m = 0.6;
+    rtp->V0 = 14.74; /* Ang^3/atom */
+    rtp->T0 = 3000.0; /* K */
+    rtp->S0 = 0.0; /* FIXME: units? */
+    rtp->K0 = 9.77; /* GPa */
+    rtp->KP0 = 7.42; /* non-dimensional */
+    rtp->E0 = -6.85 * PV_UNIT; /* GPa*Ang^3/atom */
+    rtp->gamma0 = 0.282; /* non-dimensional */
+    rtp->gammaP0 = -1.35; /* non-dimensional, since gammaP0 = V0 (dgamma/dV)_0 */
+    rtp->m = 0.6; /* non-dimensional */
+    /* b coefficients have different units to WB18, but are the same values */
     rtp->b0 = 2.5947702519786517;
     rtp->b1 = -0.11604518121550321;
     rtp->b2 = 4.8738976110511345;
