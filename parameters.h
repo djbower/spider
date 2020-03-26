@@ -57,6 +57,8 @@ typedef struct _eos {
     PetscScalar b2;
     PetscScalar b3;
     PetscScalar b4;
+    PetscScalar mavg;
+    PetscScalar Avogadro;
 } Eos;
 
 
