@@ -3,7 +3,8 @@
 
 #include "ctx.h"
 
+/* rtpress initialisation */
 PetscErrorCode set_rtpress_parameters( Eos * );
-PetscScalar get_rtpress_temperature( PetscScalar, PetscScalar, Ctx * );
+PetscErrorCode set_rtpress_struct( PetscScalar, PetscScalar, Ctx * );
 
 #endif
