@@ -57,13 +57,22 @@ typedef enum {
 static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr","S at surface","Volatile partial pressure","Reaction total mass"}; /* Order must match the enum! */
 static const char * const SpiderSolutionFieldUnits[]        = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "Pa", "kg"}; /* Order must match the enum! */
 
-/* A struct to use the analytical rtpress model */
+/* A (temporary) struct that is used to set the eos properties at a
+   given V,T or P, S */
 typedef struct EosEval_ {
   PetscScalar P; /* pressure */
   PetscScalar S; /* entropy */
   PetscScalar V; /* volume */
   PetscScalar T; /* temperature */
-  PetscScalar val; /* other output */
+  PetscScalar Cp; /* heat capacity at constant pressure */
+  PetscScalar Cv; /* heat capacity at constant volume */
+  PetscScalar alpha; /* thermal expansion */
+  PetscScalar rho; /* density */
+  PetscScalar dTdPs; /* adiabatic temperature gradient */
+  /* TODO could consider adding also, although these are
+     not strictly derived from the rtpress model */
+  /* PetscScalar cond; */
+  /* PetscScalar visc */
 } EosEval;
 
 /* A Context for the Solver */
