@@ -154,12 +154,15 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 #if 0
         temp_mel = get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
 #endif
-#if 1
+#if 0
 /* TODO: testing analytical rtpress */
         /* this updates everything to be consistent with current P and S conditions */
         set_rtpress_struct( arr_pres_s[i], arr_S_s[i], E );
         temp_mel = 0.0; //get_rtpress_temperature( arr_pres_s[i], arr_S_s[i], E );
 /* TODO: above is testing */
+#endif
+#if 1
+        temp_mel = get_rtpress_pressure_test( E );
 #endif
         cp_mel = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
 

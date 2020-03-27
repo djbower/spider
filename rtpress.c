@@ -97,6 +97,55 @@ static PetscScalar eV_to_joule( PetscScalar eV )
     return eV * 1.60218E-19;
 }
 
+PetscScalar get_rtpress_pressure_test( Ctx *E )
+{
+    /* test function (lldb, then step through to evaluate P for
+       the V, T conditions defined below.  Compare with pressure
+       plot in Jupyter notebook*/
+
+    /* seems to confirm P is correct
+       FIXME: need to truncate negative values?  Perhaps not for
+       smoothness of solver during inversion? */
+
+    PetscScalar P, T, V, volfrac;
+    Eos                        *rtp = &E->parameters.rtpress;
+
+    volfrac = 0.6;
+    T = 2500.0;
+    V = volfrac * rtp->V0;
+    P = get_rtpress_pressure( V, T, rtp ); /* 26.964412351908095 */
+
+    volfrac = 0.8;
+    T = 2500.0;
+    V = volfrac * rtp->V0;
+    P = get_rtpress_pressure( V, T, rtp ); /* 3.5394262799831875 */
+
+    volfrac = 1.0;
+    T = 2500.0;
+    V = volfrac * rtp->V0;
+    /* FIXME: note negative value */
+    P = get_rtpress_pressure( V, T, rtp ); /* -0.54571824296751803 */
+
+    volfrac = 0.6;
+    T = 5000.0;
+    V = volfrac * rtp->V0;
+    P = get_rtpress_pressure( V, T, rtp ); /* 38.568776519196767 */
+
+    volfrac = 0.8;
+    T = 5000.0;
+    V = volfrac * rtp->V0;
+    P = get_rtpress_pressure( V, T, rtp ); /* 10.39877886001743 */
+
+    volfrac = 1.0;
+    T = 5000.0;
+    V = volfrac * rtp->V0;
+    P = get_rtpress_pressure( V, T, rtp ); /* 2.107013748263614 */
+
+    return P;
+
+}
+
+
 static PetscScalar get_rtpress_pressure( PetscScalar V, PetscScalar T, Eos const *rtp )
 {
     /* pressure = function( volume, temperature ) */
