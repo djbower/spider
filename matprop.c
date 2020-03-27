@@ -162,7 +162,8 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 /* TODO: above is testing */
 #endif
 #if 1
-        temp_mel = get_rtpress_pressure_test( E );
+        temp_mel = get_rtpress_entropy_test( E );
+        // temp_mel = get_rtpress_pressure_test( E );
 #endif
         cp_mel = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
 
