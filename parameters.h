@@ -59,6 +59,9 @@ typedef struct _eos {
     PetscScalar b4;
     PetscScalar mavg;
     PetscScalar Avogadro;
+    PetscScalar PV_UNIT;
+    PetscScalar KBOLTZ;
+    PetscScalar bscale;
 } Eos;
 
 
