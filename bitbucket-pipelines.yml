@@ -26,7 +26,7 @@ pipelines:
             - make -j
 
             # Run valgrind (examine manually!)
-            - valgrind ./spider -nstepsmacro 1 -dtmacro_years 10
+            - valgrind ./spider -nstepsmacro 1 -dtmacro 10
 
             # Set up for Tests
             - cd tests
