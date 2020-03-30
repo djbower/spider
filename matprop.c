@@ -162,8 +162,13 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 /* TODO: above is testing */
 #endif
 #if 1
-        temp_mel = get_rtpress_entropy_test( E );
+        /* for testing entropy */
+        //temp_mel = get_rtpress_entropy_test( E );
+        /* for testing pressure */
         // temp_mel = get_rtpress_pressure_test( E );
+        /* for testing inverse function */
+        set_rtpress_struct( arr_pres_s[i], arr_S_s[i], E );
+        temp_mel = 0.0;
 #endif
         cp_mel = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
 
