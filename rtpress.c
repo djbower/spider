@@ -1,10 +1,11 @@
 #include "rtpress.h"
 #include "monitor.h"
 
-/* rtpress material propoerties */
+/* rtpress material properties */
 static PetscScalar get_rtpress_pressure( PetscScalar, PetscScalar, Eos const * );
 static PetscScalar get_rtpress_entropy( PetscScalar, PetscScalar, Eos const * );
 static PetscErrorCode set_rtpress_struct_SI( PetscScalar, PetscScalar, Ctx * );
+static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx * );
 static PetscErrorCode set_rtpress_density( Eos const *, EosEval * );
 static PetscErrorCode set_rtpress_thermal_expansion( Eos const *, EosEval * );
 static PetscErrorCode set_rtpress_heat_capacity_constant_volume( Eos const *, EosEval * );
@@ -34,6 +35,8 @@ PetscErrorCode set_rtpress_parameters( Eos *rtp )
     /* first value is KBOLTZ in units of eV/K */
     rtp->KBOLTZ = 8.617333262145e-5 * rtp->PV_UNIT; /* GPa*Ang^3/K, this is energy / temperature */
     /* TODO: check with ASW: is 3000=T0 and 0.6=m? */
+    /* 0.6 could instead be a reference compression? (V/V0) */
+    /* still seems likely that T0 is a reference temperature scale */
     rtp->bscale = 0.6/3000 * rtp->PV_UNIT / rtp->KBOLTZ; /* K/eV, FIXME: if leading constant are unitless */
 
     rtp->V0 = 14.74; /* Ang^3/atom */
@@ -112,8 +115,8 @@ PetscScalar get_rtpress_pressure_test( Ctx *E )
        FIXME: need to truncate negative values?  Perhaps not for
        smoothness of solver during inversion? */
 
+    Eos         *rtp = &E->parameters.rtpress;
     PetscScalar P, T, V, volfrac;
-    Eos                        *rtp = &E->parameters.rtpress;
 
     volfrac = 0.6;
     T = 2500.0;
