@@ -4,10 +4,12 @@
 /* rtpress material propoerties */
 static PetscScalar get_rtpress_pressure( PetscScalar, PetscScalar, Eos const * );
 static PetscScalar get_rtpress_entropy( PetscScalar, PetscScalar, Eos const * );
+static PetscErrorCode set_rtpress_struct_SI( PetscScalar, PetscScalar, Ctx * );
 static PetscErrorCode set_rtpress_density( Eos const *, EosEval * );
 static PetscErrorCode set_rtpress_thermal_expansion( Eos const *, EosEval * );
 static PetscErrorCode set_rtpress_heat_capacity_constant_volume( Eos const *, EosEval * );
 static PetscErrorCode set_rtpress_heat_capacity_constant_pressure( Eos const *, EosEval * );
+static PetscErrorCode set_rtpress_isentropic_gradient( Eos const *, EosEval * );
 
 /* helper functions */
 static PetscScalar per_atom_to_specific( PetscScalar, Eos const * );
@@ -21,7 +23,9 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx * );
 
 PetscErrorCode set_rtpress_parameters( Eos *rtp )
 {
-    /* eos parameters for rtpress, taken from jupyter notebook and Wolf and Bower (2018) */
+    /* EOS parameters for rtpress, taken from jupyter notebook and Wolf and Bower (2018).
+       Simplest to keep these in dimensional form and scale the returned values as a
+       last step */
 
     PetscFunctionBeginUser;
 
@@ -259,10 +263,10 @@ static PetscErrorCode set_rtpress_density( Eos const *rtp, EosEval *eos_eval )
 
     PetscFunctionBeginUser;
 
-    eos_eval->rho = mavg / V; /* kg/ang**3/mol */
+    eos_eval->rho = mavg / V; /* kg/Ang^3/mol */
 
     /* convert to SI */
-    eos_eval->rho *= PetscPowScalar( 10.0, 30.0); /* Ang^3 / m^3 */
+    eos_eval->rho *= PetscPowScalar( 10.0, 30.0 ); /* Ang^3/m^3 */
     eos_eval->rho /= rtp->Avogadro;
 
     PetscFunctionReturn(0);
@@ -273,6 +277,7 @@ static PetscErrorCode set_rtpress_density( Eos const *rtp, EosEval *eos_eval )
 static PetscErrorCode set_rtpress_thermal_expansion( Eos const *rtp, EosEval *eos_eval )
 {
     /* thermal expansion = function( volume, temperature ) */
+    /* returns thermal expansion coefficient in SI units, 1/K */
 
     PetscScalar const gamma0 = rtp->gamma0;
     PetscScalar const gammaP0 = rtp->gammaP0;
@@ -360,6 +365,22 @@ static PetscErrorCode set_rtpress_heat_capacity_constant_pressure( Eos const *rt
 
 }
 
+static PetscErrorCode set_rtpress_isentropic_gradient( Eos const *rtp, EosEval *eos_eval )
+{
+    PetscScalar const T = eos_eval->T;
+    PetscScalar const alpha = eos_eval->alpha;
+    PetscScalar const rho = eos_eval->rho;
+    PetscScalar const Cp = eos_eval->Cp;
+
+    PetscFunctionBeginUser;
+
+    /* FIXME: need to sort out units once units of Cp are known */
+    eos_eval->dTdPs = (T * alpha) / (rho * Cp);
+
+    PetscFunctionReturn(0);
+
+}
+
 static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -398,6 +419,8 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx *E )
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
+    /* TODO: using sympy we can presumably compute analytically the entries for the
+       Jacobian to improve convergence and speed */
      ierr = PetscOptionsSetValue(NULL,"-rtpress_snes_mf",NULL);CHKERRQ(ierr);
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
@@ -477,7 +500,7 @@ static PetscErrorCode objective_function_rtpress_volume_temperature( SNES snes, 
 
 }
 
-PetscErrorCode set_rtpress_struct( PetscScalar P, PetscScalar S, Ctx *E )
+static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *E )
 {
     /* solve for volume and temperature from pressure and entropy
        once, to avoid unnecessary computations.  This updates all the 
@@ -515,16 +538,54 @@ PetscErrorCode set_rtpress_struct( PetscScalar P, PetscScalar S, Ctx *E )
     /* eos_eval->T = 2500; */
 
     /* now update the struct with other material properties */
-    set_rtpress_density( rtp, eos_eval );
+    set_rtpress_density( rtp, eos_eval ); // THIS WORKS (SI UNITS)
 
-    set_rtpress_thermal_expansion( rtp, eos_eval );
+    set_rtpress_thermal_expansion( rtp, eos_eval ); // THIS WORKS (SI UNITS)
     /* eos_eval->alpha = 0.000028799762298150523 */ /* 1/K */
 
+    /* FIXME: heat capacities are not scaled correctly - why? */
     set_rtpress_heat_capacity_constant_volume( rtp, eos_eval );
     /* eos_eval->Cv = 0.056735422979028394 */ /* FIXME: units? */
 
     set_rtpress_heat_capacity_constant_pressure( rtp, eos_eval );
     /* eos_eval->Cp = 0.059432797887255438 */ /* FIXME: units? */
+
+    /* FIXME: units */
+    set_rtpress_isentropic_gradient( rtp, eos_eval );
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx *E )
+{
+    Constants const            *C = &E->parameters.constants;
+    EosEval                    *eos_eval = &E->eos_eval;
+
+    PetscFunctionBeginUser;
+
+    /* FIXME: for consistency should probably non-dimensionalise all
+       entries in this struct, and not just a selection */
+
+    eos_eval->rho /= C->DENSITY;
+    eos_eval->Cp /= C->ENTROPY;
+    eos_eval->Cv /= C->ENTROPY;
+    eos_eval->T /= C->TEMP;
+    eos_eval->alpha *= C->TEMP;
+    eos_eval->dTdPs /= C->DTDP;
+
+    PetscFunctionReturn(0);
+
+}
+
+PetscErrorCode set_rtpress_struct( PetscScalar P, PetscScalar S, Ctx *E )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = set_rtpress_struct_SI( P, S, E ); CHKERRQ(ierr);
+    ierr = set_rtpress_struct_non_dimensional( E ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
