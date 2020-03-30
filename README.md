@@ -14,22 +14,18 @@ https://blog.scottlowe.org/2015/01/27/using-fork-branch-git-workflow/
 
 https://help.github.com/articles/fork-a-repo/
 
-Whilst you are encouraged to develop the code for your own purposes, we expect that useful new feature(s) 
-will be merged into the mainline following publication of your work.  You can issue a pull request for this.  
-In the meantime, try and follow the structure and format of the existing code to ensure changes can be relatively easily merged.
-
-And of course, please issue pull requests for bugs immediately.
+Whilst you are encouraged to develop the code for your own purposes, we expect that useful new feature(s) will be merged into the mainline prior to or following publication of your work.  You can issue a pull request for this.  In the meantime, try and follow the structure and format of the existing code to ensure changes can be relatively easily merged.  And of course, please issue pull requests for bugs immediately.
 
 ## Citation
 
 ### 1. SPIDER code
-Bower, D.J., P. Sanan, and A.S. Wolf (2018), Numerical solution of a non-linear conservation law applicable to the interior dynamics of partially molten planets, Phys. Earth Planet. Inter., 274, 49-62, doi: 10.1016/j.pepi.2017.11.004.
+Bower, D.J., P. Sanan, and A.S. Wolf (2018), Numerical solution of a non-linear conservation law applicable to the interior dynamics of partially molten planets, Phys. Earth Planet. Inter., 274, 49-62, doi: 10.1016/j.pepi.2017.11.004, arXiv: https://arxiv.org/abs/1711.07303, EarthArXiv: https://eartharxiv.org/k6tgf
 
 ### 2. Use of MgSiO3 melt data tables (RTpress) within SPIDER
-Wolf, A.S. and D.J. Bower (2018), An equation of state for high pressure-temperature liquids (RTpress) with application to MgSiO3 melt, Phys. Earth Planet. Inter., 278, 59-74, doi: 10.1016/j.pepi.2018.02.004.
+Wolf, A.S. and D.J. Bower (2018), An equation of state for high pressure-temperature liquids (RTpress) with application to MgSiO3 melt, Phys. Earth Planet. Inter., 278, 59-74, doi: 10.1016/j.pepi.2018.02.004, EarthArXiv: https://eartharxiv.org/4c2s5
 
 ### 3. Use of volatiles / atmosphere coupling
-Bower, D.J., Kitzmann, D., Wolf, A.S., Sanan, P., Dorn, C., Oza, A.V. (2019), Linking the evolution of terrestrial interiors and an early outgassed atmosphere to astrophysical observations, Astron. Astrophys., in revision, url: https://arxiv.org/abs/1904.08300
+Bower, D.J., Kitzmann, D., Wolf, A.S., Sanan, P., Dorn, C., Oza, A.V. (2019), Linking the evolution of terrestrial interiors and an early outgassed atmosphere to astrophysical observations, Astron. Astrophys., 631, A103, doi: 10.1051/0004-6361/201935710, arXiv: https://arxiv.org/abs/1904.08300
 
 ## Building
 
@@ -164,12 +160,18 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc")
 
 5. Note the value of `PETSC_ARCH` (will look something like `arch-xxx-yyy`) for later
 
-### 3. C Code
+### 3. SPIDER C Code
 
 1. In your environment, set `PETSC_DIR` and `PETSC_ARCH` to the PETSc installation that you wish to use (either the quad or double precision, as above)
 
         export PETSC_DIR=/somewhere/to/install/petsc-double-direct # or /somewhere/to/install/petsc-quad-direct
         export PETSC_ARCH=arch-xxx-yyy
+
+2. Get the SPIDER C code:
+
+        cd /somewhere/to/install
+        git clone https://djbower@bitbucket.org/djbower/spider-dev.git spider-dev
+        cd spider-dev
 
 2. Make (from this directory)
 
@@ -180,9 +182,9 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc")
 
         make test
 
-4. Test atmosphere module:
+4. Test more functionality:
 
-        make testatmos
+        make test_all
 
 You should now be ready to use the code!
 
@@ -205,13 +207,14 @@ There is a manual located in ```manual/```, and you are strongly encouraged to u
 ### 6. Code development tips
 
 1. Ensure all previous tests pass (i.e., you haven't broken a part of the code that was previously working)
-2. Include a template input file in the ```examples/``` directory
-3. Use valgrind to confirm that your code is free of memory leaks (or alternatively, we will do this before merging your branch with master)
-4. Most importantly, comment comment comment!  And try to predict potential bugs as you code and add a commment about those as well!
+1. Use valgrind to confirm that your code is free of memory leaks (or alternatively, we will do this before merging your branch with master)
+1. Most importantly, comment comment comment!  And try to predict potential bugs as you code and add a commment about those as well!
 
 ## Running the code
 
 Add the installation directory to your `$PATH` so you can call the `spider` binary without requiring the absolute path.  Typically, you will set up a project folder elsewhere to store your models, i.e., outside the installation directory where the SPIDER source code resides.  You can run `spider` without an argument and standard parameters will be used for a simple magma ocean cooling model.  But in general, you will add an argument, i.e. `spider -options_file input.opts` to use the parameters specified in `input.opts` (this input filename is an example).  There are example input files in the `examples/` directory.
+
+Some of the following tutorial examples have been moved.  Instead, look in the tests/opts directory to find example model input (opts) files.
 
 ## Tutorial example 1: Simple magma ocean cooling
 
