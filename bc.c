@@ -31,7 +31,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       /* must be after A->tsurf is set for fO2 calculation */
       /* therefore set_surface_flux always called after set_interior_structure_from_solution */
-      ierr = set_atmosphere_volatile_content( A, Ap, C ); CHKERRQ(ierr);
+      ierr = set_reservoir_volatile_content( A, Ap, C ); CHKERRQ(ierr);
 
       /* determine surface flux */
       /* in all cases, compute flux and emissivity consistently */
@@ -289,7 +289,7 @@ static PetscScalar isothermal_or_cooling_cmb( const Ctx *E, PetscScalar cooling_
     return Qin;
 }
 
-PetscErrorCode solve_dxdts( Ctx *E )
+PetscErrorCode solve_dpdts( Ctx *E )
 {
     PetscErrorCode             ierr;
     SNES                       snes;
@@ -352,7 +352,7 @@ PetscErrorCode solve_dxdts( Ctx *E )
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        A->volatiles[i].dxdt = xx[i];
+        A->volatiles[i].dpdt = xx[i];
     }
     for (i=0; i<Ap->n_reactions; ++i) {
         A->reactions[i].dmrdt = xx[Ap->n_volatiles + i];

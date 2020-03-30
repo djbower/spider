@@ -32,6 +32,8 @@ from test_definitions import *
 
 def main() :
 
+    tol = 1.0E-6 # tolerance for checking values
+
     # Check that the version of pyTestHarness is great enough
     pthMajor,pthMinor,pthPath = pthversion.getVersion()
     if pthMinor < 3:
@@ -49,13 +51,18 @@ def main() :
 
     # The set of tests to run
     rootDir = os.path.join(thisDir,'..') # The SPIDER root directory
+
     allTests = [
-        blackbody_init_liquid(rootDir), \
-        blackbody_init_mixed(rootDir), \
-        blackbody_init_solid(rootDir), \
-        blackbody(rootDir),      \
-        atmosphere(rootDir),     \
-        atmosphere_jeans(rootDir)
+        blackbody(rootDir, tol),      \
+        atmosphere_ic(rootDir, tol),     \
+        atmosphere(rootDir, tol),     \
+        reaction_ic(rootDir, tol),    \
+        reaction(rootDir, tol),    \
+        atmosphere_escape_ic(rootDir, tol),    \
+        atmosphere_escape(rootDir, tol), \
+        atmosphere_escape_zerosol(rootDir, tol),  \
+        reaction_zerosol_ic(rootDir, tol),    \
+        reaction_zerosol(rootDir, tol),
     ]
 
     # Run tests

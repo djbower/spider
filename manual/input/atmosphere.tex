@@ -87,43 +87,52 @@ k_v X_v \hat{M}^s + X_v \hat{M}^l + \frac{R_p^2}{M_0 g} \left( \frac{\hat{\mu}_v
 Note that we have also non-dimensionalised the molar masses in this step, although since we take the ratio of these quantities it probably isn't required.
 %%%%
 \subsubsection{Volatile Concentration}
-It's more convenient to express volatile concentration as a scaled version of parts-per-million (ppm).  This scaling is to ensure we can scale the volatile evolution equations similar to other quantities in the system of equations (like entropy, entropy gradient, etc.):
+It's convenient to express volatile concentration as a scaled version of mass fraction.  This scaling is to ensure we can scale the volatile evolution equations similar to other quantities in the system of equations (like entropy, entropy gradient, etc.):
 \begin{equation}
-\hat{X_v} = \frac{X_{\rm ppm}}{V_0} = \frac{10^6 X_v}{V_0}
+X_v = V_0 \hat{X}_v
 \end{equation}
+If $V_0=10^{-6}$ then the units of $\hat{X}_v$ are parts-per-million (ppm)\\
+if $V_0=10^{-2}$ then the units of $\hat{X}_v$ are weight percent (wt\%)\\
+if $V_0=1$ then the units of $\hat{X}_v$ are mass fraction\\~\\
 Therefore, the mass balance:
 \begin{equation}
-k_v \frac{X_{\rm ppm}}{V_0} \hat{M}^s + \frac{X_{\rm ppm}}{V_0} \hat{M}^l + \frac{10^6}{V_0} \frac{R_p^2}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \frac{X_{\rm ppm}^{\rm init}}{V_0} \hat{M}^m
+k_v \hat{X}_v \hat{M}^s + \hat{X}_v \hat{M}^l + \frac{R_p^2}{V_0 M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{1}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
 \end{equation}
 Collect terms:
 \begin{equation}
-\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0}\frac{R_p^2}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
+\hat{X}_v (k_v \hat{M}^s + \hat{M}^l) + \frac{R_p^2}{V_0 M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) p_v + \frac{1}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
 \end{equation}
 Note that the $X_v$ within $p_v$ has \textbf{not} yet been non-dimensionalised (see below).
 %%%%
 \subsubsection{Partial Pressure}
-Convert the partial pressure expression to non-dimensional form.  First, introduce $\hat{X_v}$:
+A solubility relation defines the relationship between the dissolved volatile content and the partial pressure.  Here, we derive the scalings for the modified Henry's law.
+Convert the partial pressure expression to non-dimensional form.  First, introduce $\hat{X_v}$ and a non-dimensional pressure scale $P_0$:
 \begin{equation}
-p_v( X_v ) = \left( \frac{X_v}{\alpha_v} \right)^{\beta_v}
- = \left( \frac{10^6 V_0 X_v}{10^6 V_0 \alpha_v} \right)^{\beta_v}
+p_v( X_v ) = \left( \frac{X_v}{\alpha_v} \right)^{\beta_v} \implies
+ \hat{p}_v( \hat{X}_v ) = \frac{1}{P_0} \left( \frac{V_0 \hat{X}_v}{\alpha_v} \right)^{\beta_v}
  \end{equation}
 Therefore:
 \begin{equation}
-p_v( \hat{X_v} ) = \left( \frac{V_0 \hat{X_v}}{10^6 \alpha_v} \right)^{\beta_v}
+\hat{p}_v ( \hat{X_v} ) = \left( \frac{\hat{X_v}}{P_0^{1/\beta_v} V_0^{-1} \alpha_v} \right)^{\beta_v}
 \end{equation}
-Second, introduce the non-dimensional Henry's constant:
+Now we can define a non-dimensional Henry's constant:
 \begin{equation}
-\hat{\alpha_v} = \frac{10^6 \alpha_v}{V_0} P_0^\frac{1}{\beta_v}
+\hat{\alpha}_v = \alpha_v \frac{P_0^\frac{1}{\beta_v}}{V_0}
 \end{equation}
-$P_0$ is a pressure scale that relates to the primary non-dimensional quantities.  In the code, we input $\alpha_v$ in units of ppm/Pa$^{1/\beta}$.  So to non-dimensionalise the input we just need to divide by $V_0$ and multiply by $P_0^{1/\beta}$, as shown above (i.e., the factor of $10^6$ is include in the definition of ppm).  Therefore, the non-dimensional partial pressure is:
+$P_0$ is a pressure scale that relates to the primary non-dimensional quantities.  In the code, we input $\alpha_v$ in units of ppm/Pa$^{1/\beta}$.  So to \myemph{non-dimensionalise the Henry constant we must also account for the conversion from ppm to mass fraction}:
 \begin{equation}
-\hat{p_v} ( \hat{X_v} ) = \left( \frac{\hat{X_v}}{\hat{\alpha_v}} \right) ^ {\beta_v}, \qquad \frac{d \hat{p_v}}{d \hat{X_v}} = \frac{\beta_v}{\hat{\alpha_v}} \left( \frac{\hat{X_v}}{\hat{\alpha_v}} \right)^{\beta_v-1}
+\hat{\alpha}_v = \frac{\alpha_v^{\rm ppm}}{10^6} \frac{P_0^\frac{1}{\beta_v}}{V_0}
+\end{equation}
+Therefore, the non-dimensional partial pressure and its derivative are:
+\begin{equation}
+\hat{p}_v ( \hat{X}_v ) = \left( \frac{\hat{X}_v}{\hat{\alpha}_v} \right) ^ {\beta_v}, \qquad \frac{d \hat{p}_v}{d \hat{X}_v} = \frac{\beta_v}{\hat{\alpha}_v} \left( \frac{\hat{X}_v}{\hat{\alpha}_v} \right)^{\beta_v-1}
 \end{equation}
 Now the mass balance becomes, noting that a factor of $P_0$ appears in the numerator on the penultimate term on the LHS because we introduce the non-dimensional pressure:
 \begin{equation}
-\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0} \frac{R_p^2 P_0}{M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^{\rm m}
+\hat{X}_v (k_v \hat{M}^s + \hat{M}^l) + \frac{R_p^2 P_0}{V_0 M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p}_v + \frac{1}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
 \end{equation}
-Note that the as yet unspecified mass reservoirs in the last term on the LHS all exclude a factor of $4\pi$ since we are only considering scaled masses now.
+%%%%
+Note that the as yet unspecified mass reservoirs ($m_v^e$, $m_v^o$, and $m_v^r$) in the last term on the LHS all exclude a factor of $4\pi$ since we are only considering scaled masses now.
 %%%%
 \subsubsection{Gravity and Radius}
 Gravity is non-dimensionalised in SPIDER as:
@@ -132,7 +141,7 @@ g = \frac{S_0 T_0}{R_0} \hat{g}
 \end{equation}
 and the radius of the planet $R_p$ is non-dimensionalised by $R_0$.  Hence the mass balance becomes:
 \begin{equation}
-\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0}\frac{\hat{R}_p^2}{\hat{g}}\frac{P_0 R_0^3}{M_0 S_0 T_0} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
+\hat{X}_v (k_v \hat{M}^s + \hat{M}^l) + \frac{\hat{R}_p^2}{\hat{g}}\frac{P_0 R_0^3}{V_0 M_0 S_0 T_0} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p}_v + \frac{1}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
 \end{equation}
 Now the scaling constants in the penultimate term on the LHS are, according to the non-dimensional scheme in SPIDER:
 \begin{equation}
@@ -140,24 +149,23 @@ Now the scaling constants in the penultimate term on the LHS are, according to t
 \end{equation}
 %%%%
 \subsubsection{Volatile Mass Balance}
-Therefore the mass balance in non-dimensional form is, \myemph{where again, masses are scaled masses without the $4 \pi$ term}:  \dbnote{Note that here the terms such as escape $m_v^e$ are also now omitting the $4 \pi$ factor}
-\boxedeq{}{\hat{X_v} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v} + \frac{10^6}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m \label{eq:volevo}}
-Compared to the dimensional form (Eq.~\ref{eq:dimvolatile}), there is an extra scaling factor in front of the atmospheric mass and other mass terms, to take account of the fact that we have converted mass fraction quantities to scaled ppm.  In the case of the atmospheric mass, this extra scaling factor cannot be absorbed by a $\hat{X_v}$ term since the volatile concentration is wrapped up inside the partial pressure formula.
+Therefore the mass balance in non-dimensional form is, \myemph{where again, all reservoirs are scaled masses without the $4 \pi$ term}:
+\boxedeq{}{\hat{X}_v (k_v \hat{M}^s + \hat{M}^l) + \frac{\hat{R}_p^2}{V_0 \hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p}_v + \frac{1}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m \label{eq:volevo}}
 %%%%
 \subsubsection{Scaled Non-dimensional Mass}
 By inspection of Eq.~\ref{eq:volevo}, \myemph{we can determine the scaled (i.e., without the prefactor of $4\pi$) non-dimensional masses of volatiles}:
 \begin{equation}
-\hat{m}_v^s = \hat{X_v} k_v \hat{M}^s
+\hat{m}_v^s = \hat{X}_v k_v \hat{M}^s
 \end{equation}
 \begin{equation}
-\hat{m}_v^l = \hat{X_v} \hat{M}^l
+\hat{m}_v^l = \hat{X}_v \hat{M}^l
 \end{equation}
 \begin{equation}
-\hat{m}_v^g = \frac{10^6}{V_0} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p_v}
+\hat{m}_v^g = \frac{\hat{R}_p^2}{V_0 \hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p}_v
 \end{equation}
 The remaining mass reservoirs (superscript $e$, $o$, and $r$) all follow this scaling (taking $m_v^e$ as an example, and noting that these quantities also omit the $4 \pi$ factor).
 \begin{equation}
-\hat{m}_v^e = \frac{10^6}{V_0} \frac{m_v^e}{M_0}
+\hat{m}_v^e = \frac{m_v^e}{V_0 M_0}
 \end{equation}
 %%%%
 \subsubsection{Dimensional Physical Mass}
@@ -167,20 +175,20 @@ M^{\rm sp} = \hat{M}^{\rm s} \cdot 4 \pi M_0, \qquad M^{\rm lp} = \hat{M}^{\rm l
 \end{equation}
 For each volatile, we compute the dimensional mass for all reservoirs using the same scaling (taking $m_v^{sp}$ as an example):
 \begin{equation}
-m_v^{sp} = \hat{m}_v^s \cdot 4 \pi M_0 \cdot \left( \frac{V_0}{10^6} \right)
+m_v^{sp} = V_0 \cdot \hat{m}_v^s \cdot 4 \pi M_0
 \end{equation}
 %%%%
 %%%%
 %%%%
 \subsection{Initial Volatile Concentration}
-For an initial condition it is desirable to prescribe $\hat{X}_v^{\rm init}$, but we must then compute $\hat{X_v}$ according to the mass balance since this is the quantity that is actually solved for (i.e., evolved with time).  We also need to realise that our ``desired'' initial volatile concentration may be incompatible with the chemical equilibrium criteria that we (optionally) prescribe, and therefore some mass may be necessarily exchanged through chemical reactions.  In this regard, our prescribed initial abundances are really just initial guesses of $X_v$ that the code uses to iterate to find the correct $X_v$ that satisfies the mass balance.  Therefore, to determine the initial volatile abundances we solve Eq.~\ref{eq:volevo} for a given thermal state of the interior, i.e. the masses of solid and liquid are known.
+For an initial condition it is desirable to prescribe $\hat{X}_v^{\rm init}$, but we must then compute $\hat{p_v}$ according to the mass balance since this is the quantity that is actually solved for (i.e., evolved with time).  We also need to realise that our ``desired'' initial volatile concentration may be incompatible with the chemical equilibrium criteria that we (optionally) prescribe, and therefore some mass may be necessarily exchanged through chemical reactions.  Therefore, to determine the initial partial pressure we solve Eq.~\ref{eq:volevo} for a given thermal state of the interior, i.e. the masses of solid and liquid are known.
 
 For the case of no chemical reactions, $\hat{m}_v^r=0$ for all volatiles and hence the only coupling between volatiles is through their partial pressures, which all contribute to the total surface pressure.  For chemical reactions, we can solve for the initial volatile abundance that obeys the prescribed chemical equilibrium laws by rearranging:
 \begin{equation}
-\frac{\hat{X_v}}{\hat{M}^m} (k_v \hat{M}^s + \hat{M}^l) + \frac{10^6}{V_0 \hat{M}^m} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p_v} = \hat{X}_v^{\rm init} - \frac{\hat{m}_v^r}{\hat{M}^m} \equiv \hat{X}_v^{\rm new\ init} 
+\frac{\hat{X}_v}{\hat{M}^m} (k_v \hat{M}^s + \hat{M}^l) + \frac{1}{V_0 \hat{M}^m} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p}_v = \hat{X}_v^{\rm init} - \frac{\hat{m}_v^r}{\hat{M}^m} \equiv \hat{X}_v^{\rm new\ init} 
 \label{eq:volinit3}
 \end{equation}
-Effectively, this initialises the mass reaction term $\hat{m}^r_v$ to zero at the start of the model run, and computes both the new total initial volatile concentration $\hat{X}_v^{\rm new\ init}$ as well as the initial volatile abundance in the melt $\hat{X_v}$.  \dbnote{This implicitly assumes that the escape reservoir is initially zero, which it may not be if we are resuming from a previous output.  To look at this at some point.}
+Effectively, this initialises the mass reaction term $\hat{m}^r_v$ to zero at the start of the model run, and computes both the new total initial volatile concentration $\hat{X}_v^{\rm new\ init}$ as well as the initial volatile abundance in the melt $\hat{X}_v$.  \dbnote{TODO: this implicitly assumes that the escape reservoir is initially zero, which it may not be if we are resuming from a previous output.}
 %%%%
 %%%%
 %%%%
@@ -251,22 +259,25 @@ t = \tau_0 \hat{t}
 \end{equation}
 And taking the time derivative of the volatile mass balance equation:
 \begin{align}
-&\frac{d \hat{X}^{\rm l}}{d \hat{t}} (k_{\rm v} \hat{M}^{\rm s} + \hat{M}^{\rm l}) + \hat{X}^{\rm l} \left( k_{\rm v} \frac{d \hat{M}^{\rm s}}{d \hat{t}} + \frac{d \hat{M}^{\rm l}}{d \hat{t}} \right) + \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}} \frac{d}{d\hat{t}} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right)\\
-&\quad + \frac{10^6}{V_0} \frac{\tau_0}{M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
+& \frac{d \hat{X}_v}{d \hat{t}} (k_v \hat{M}^s + \hat{M}^l) +
+\hat{X}_v \left( k_v \frac{d \hat{M}^s}{d \hat{t}} + \frac{d \hat{M}^l}{d \hat{t}} \right) + 
+\frac{\hat{R}_p^2 \hat{\mu}_v^g}{V_0 \hat{g}} \frac{d}{d\hat{t}} \left( \frac{\hat{p}_v}{\hat{\bar{\mu}}} \right)\\
+&\quad + \frac{\tau_0}{V_0 M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
 \end{align}
-Since the final term on the LHS has not been defined, we keep the terms dimensional inside the brackets.  \dbnote{Note that here the terms such as escape $m_v^e$ are still omitting the $4 \pi$ factor}
+Since the final term on the LHS has not been defined, we keep the terms dimensional inside the brackets.  This is because we want to define some quantities in terms of SI units, such as escape rates (kg/s).  Note that here the terms such as escape $m_v^e$ are still omitting the $4 \pi$ factor.
 \subsubsection{Mean molar mass of atmosphere}
-The mean molar mass $\hat{\mu}_{\rm t}$ of the atmosphere evolves during outgassing and therefore is a time-dependent quantity.  By the product rule:
+The mean molar mass $\hat{\bar{\mu}}$ of the atmosphere evolves during outgassing and therefore is a time-dependent quantity.  By the product rule:
 \begin{equation}
-\frac{d}{d\hat{t}} \left( \frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}} \right) = \hat{p}(\hat{X}^{\rm l}) \frac{d}{d\hat{t}} \left( \frac{1}{\hat{\mu}_{\rm t}} \right) + \frac{1}{\hat{\mu}_{\rm t}} \frac{d}{d\hat{t}} \left( \hat{p}(\hat{X}^{\rm l}) \right)
+\frac{d}{d\hat{t}} \left( \frac{\hat{p}_v}{\hat{\bar{\mu}}} \right) = \hat{p}_v \frac{d}{d\hat{t}} \left( \frac{1}{\hat{\bar{\mu}}} \right) + \frac{1}{\hat{\bar{\mu}}} \frac{d}{d\hat{t}} \left( \hat{p}_v \right)
 \label{eq:atmos_evo}
 \end{equation}
 The second term can be calculated using the chain rule:
 \begin{equation}
-\frac{1}{\hat{\mu}_{\rm t}} \frac{d}{d\hat{t}} \left( \hat{p}(\hat{X}^{\rm l}) \right) = \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d\hat{t}} \right)
+\frac{1}{\hat{\bar{\mu}}} \frac{d}{d\hat{t}} \left( \hat{p}_v \right) = \frac{1}{\hat{\bar{\mu}}} \left( \frac{d \hat{p}_v}{d \hat{X}_v} \frac{d \hat{X}_v}{d\hat{t}} \right)
 \end{equation}
 %%% two species only %%%
 \subsubsection{Two volatile species}
+\dbnote{To update notation from this point}
 To deal with the first term, recall that for two species (Eq.~\ref{eq:atmosphere_molar_mass}):
 \begin{equation}
 \hat{\mu}_{\rm t} = \left( \frac{\hat{p}_C}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_C + \left( \frac{\hat{p}_H}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_H
@@ -328,32 +339,31 @@ Recall that:
 \end{equation}
 Therefore, we can now just express in terms of the total mantle mass and the mass of liquid (melt) and its time derivative.  \myemph{The evolution equation is, therefore:} \dbnote{Note that here the terms such as escape $m_v^e$ are still omitting the $4 \pi$ factor}
 \begin{align}
-&\frac{d \hat{X}^{\rm l}}{d\hat{t}} \left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
-+ \hat{X}^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d\hat{t}} + \nonumber \\
-&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
+&\frac{d \hat{X}_v}{d\hat{t}} \left(k_v \hat{M}^m + (1-k_v) \hat{M}^l \right)
++ \hat{X}_v (1-k_v) \frac{d \hat{M}^l}{d\hat{t}} + \nonumber \\
+&\quad \frac{\hat{R}_{\rm p}^2 \hat{\mu}_v^g}{V_0 \hat{g}}
 \left[
--\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial \hat{t}} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial \hat{t}} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d \hat{t}} \right)
+ \frac{1}{\hat{\bar{\mu}}} \left( \frac{d \hat{p}_v}{d \hat{X}_v} \frac{d \hat{X}_v}{d \hat{t}} \right)
+-\frac{\hat{p}_v}{\hat{\bar{\mu}}^2} \sum_i^n \frac{\hat{\mu}_i}{P_s} \left[ \frac{\partial \hat{p}_i}{\partial \hat{t}} - \frac{\hat{p}_i}{P_s} \frac{\partial P_s}{\partial \hat{t}} \right]
 \right]+ \nonumber \\
-& \qquad \frac{10^6}{V_0} \frac{\tau_0}{M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
+& \qquad \frac{\tau_0}{V_0 M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
 \end{align}
 This cannot be separated into the form of the time derivative equal to a RHS, so the time derivative must instead be numerically calculated within the time stepper.
-We can also express the evolution equation using partial pressure as the primary (solution) variable, in which case:
+\myemph{We can also express the evolution equation using partial pressure as the primary (solution) variable, in which case:}
 %%%
 %%% PRIMARY PV HERE
 %%%
 \begin{align}
-&\frac{d \hat{X}_v^{\rm l}}{d\hat{p}_v} \frac{d \hat{p}_v}{d\hat{t}}
-%&\frac{\hat{\alpha}_v}{\hat{\beta}_v} \left( \frac{\hat{X}_v}{\hat{\alpha}_v} \right)^{1-\beta_v}
-\left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
-+ \hat{X}_v^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d\hat{t}} + \nonumber \\
-&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
+& \frac{d \hat{X}_v}{d\hat{p}_v} \frac{d \hat{p}_v}{d\hat{t}} \left(k_v \hat{M}^m + (1-k_v) \hat{M}^l \right)
++ \hat{X}_v (1-k_v) \frac{d \hat{M}^l}{d\hat{t}} + \nonumber \\
+&\quad \frac{\hat{R}_p^2 \hat{\mu}_v^g}{V_0 \hat{g}}
 \left[
-\frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}_v}{d \hat{t}} \right)
--\frac{\hat{p_v}}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial \hat{t}} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial \hat{t}} \right]
+\frac{1}{\hat{\bar{\mu}}} \left( \frac{d \hat{p}_v}{d \hat{t}} \right)
+-\frac{\hat{p_v}}{\hat{\bar{\mu}}^2} \sum_i^n \frac{\hat{\mu}_i}{P_s} \left[ \frac{\partial \hat{p}_i}{\partial \hat{t}} - \frac{\hat{p}_i}{P_s} \frac{\partial P_s}{\partial \hat{t}} \right]
 \right]+ \nonumber \\
-& \qquad \frac{10^6}{V_0} \frac{\tau_0}{M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
+& \qquad \frac{\tau_0}{V_0 M_0} \left( \frac{dm_v^e}{dt} +  \frac{dm_v^o}{dt} + \frac{dm_v^r}{dt} \right) = 0
 \end{align}
-Basically, any prescribed relationship between $X^l_v$ and $p_v$ can be used in this equation, whether it's Henry's law or a more sophisticated formulation.  This offers opportunity to investigate ``fugacity crisis'' scenarios \citep{KFS19,KFS20}
+Basically, any prescribed relationship between $X_v$ and $p_v$ can be used in this equation, whether it's Henry's law or a more sophisticated formulation.  This offers opportunity to investigate ``fugacity crisis'' scenarios \citep{KFS19,KFS20}
 %%%%
 \subsubsection{Atmospheric escape formulation}
 %But remember that the reservoir of escaped volatile is not defined per se, but rather the rate at which volatiles escape (see subsequent sections).
@@ -484,90 +494,8 @@ And hence:
 \begin{equation}
 \frac{\partial T}{\partial t} = \frac{\partial S}{\partial t} \left( \frac{T}{c_P} \right)
 \end{equation}
-
-%%% OLD BELOW AND ALSO WRONG!
-%Similar to before, we use the differential form of the equilibrium condition (Eq.~\ref{eq:volequil}) to provide another update equation \dbnote{TODO: in reality, $\epsilon$ may also be a function of time}:
-%\begin{equation}
-%\frac{d\hat{p}_1}{dt} = \epsilon \frac{d\hat{p}_0}{dt}
-%\end{equation}
-%And likewise for the chemical reaction mass (Eq.~\ref{eq:mvr_final}):
-%\begin{equation}
-%\frac{dm_{H_2O}^r}{dt} = - \left( \frac{\mu_{H_2O}}{\mu_{H_2}} \right) \frac{dm_{H_2}^r}{dt}
-%\label{eq:mvr_final}
-%\end{equation}
 %%%%
 %%%%
-%%%%
-% the following were old notes from original working with Taylor Kutra.
-% but these are being/have been superseded with a newer approach
-%\input{input/atmosphere_old}
-%%%%
-%%%%
-%%%%
-\subsubsection{Building on the idea above}
-The evolution equation (described later) is:
-\begin{align}
-&\frac{d \hat{X}^{\rm l}}{d t} \left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
-+ \hat{X}^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
-&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
-\left[
--\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
-\right]+ \nonumber \\
-& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm o}}{dt} = 0
-\end{align}
-We can include (an as yet) unspecified change in mass due to chemical reactions.  Remove the condensation (ocean) mass source since this is currently not implemented, and recall that the escape term is known but not explicitly written out here:
-\begin{align}
-&\frac{d \hat{X}^{\rm l}}{d t} \left(k_{\rm v} \hat{M}^{\rm m} + (1-k_{\rm v}) \hat{M}^{\rm l} \right)
-+ \hat{X}^{\rm l} (1-k_{\rm v}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
-&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
-\left[
--\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d t} \right)
-\right]+ \nonumber \\
-& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{\rm v}^{\rm r}}{dt} = 0
-\end{align}
-For simplicity, again consider the reaction from H$_2$ to H$_2$O, so just 2 volatiles.  By our sign convention, mass of He ``lost'' must be equal to the mass of H$_2$O ``gained''.  So let's formulate the last term again:
-\begin{equation}
-\frac{1}{\mu_{H_2}} \frac{dm_{H_2}^{\rm r}}{dt} = - \frac{1}{\mu_{H_2O}} \frac{dm_{H_{2O}}^{\rm r}}{dt}
-\end{equation}
-Basically, here we are using molar masses to account for the fact that loss of 1 mole of H$_2$ is effectively a gain of 1 mole of H$_2$O, since we do not explicitly keep track of the mass balance of O.  Therefore:
-\begin{equation}
-\frac{dm_{H_2}^{\rm r}}{dt} = - \frac{\mu_{H_2}}{\mu_{H_2O}} \frac{dm_{H_{2O}}^{\rm r}}{dt} = -\gamma \frac{dm_{H_{2O}}^{\rm r}}{dt}
-\end{equation}
-This is analogous to the idea presented above.  So for H$_2$:
-\begin{align}
-&\frac{d \hat{X_{H_2}}^{\rm l}}{d t} \left(k_{H_2} \hat{M}^{\rm m} + (1-k_{H_2}) \hat{M}^{\rm l} \right)
-+ \hat{X_{H_2}}^{\rm l} (1-k_{H_2}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
-&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{H_2}^{\rm g}}{\hat{g}}
-\left[
--\frac{\hat{p_{H_2}}(\hat{X_{H_2}}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p_{H_2}}}{d \hat{X_{H_2}}^{\rm l}} \frac{d \hat{X_{H_2}}^{\rm l}}{d t} \right)
-\right]+ \nonumber \\
-& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{H_2}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{H_2}^{\rm r}}{dt} = 0
-\end{align}
-And for H$_2$O:
-\begin{align}
-&\frac{d \hat{X_{H_2O}}^{\rm l}}{d t} \left(k_{H_2O} \hat{M}^{\rm m} + (1-k_{H_2O}) \hat{M}^{\rm l} \right)
-+ \hat{X_{H_2O}}^{\rm l} (1-k_{H_2O}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
-&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{H_2O}^{\rm g}}{\hat{g}}
-\left[
--\frac{\hat{p_{H_2O}}(\hat{X_{H_2O}}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p_{H_2O}}}{d \hat{X_{H_2O}}^{\rm l}} \frac{d \hat{X_{H_2O}}^{\rm l}}{d t} \right)
-\right]+ \nonumber \\
-& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{H_2O}^{\rm e}}{dt} + \frac{10^6}{V_0 M_0} \frac{dm_{H_2O}^{\rm r}}{dt} = 0
-\end{align}
-Where we can sub in to replace the last term:
-\begin{align}
-&\frac{d \hat{X_{H_2O}}^{\rm l}}{d t} \left(k_{H_2O} \hat{M}^{\rm m} + (1-k_{H_2O}) \hat{M}^{\rm l} \right)
-+ \hat{X_{H_2O}}^{\rm l} (1-k_{H_2O}) \frac{d \hat{M}^{\rm l}}{d t} + \nonumber \\
-&\quad \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{H_2O}^{\rm g}}{\hat{g}}
-\left[
--\frac{\hat{p_{H_2O}}(\hat{X_{H_2O}}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{\partial \hat{p}_i}{\partial t} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{\partial P_s}{\partial t} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p_{H_2O}}}{d \hat{X_{H_2O}}^{\rm l}} \frac{d \hat{X_{H_2O}}^{\rm l}}{d t} \right)
-\right]+ \nonumber \\
-& \qquad \frac{10^6}{V_0 M_0} \frac{dm_{H_2O}^{\rm e}}{dt} - \frac{10^6}{V_0 M_0} \frac{1}{\gamma} \frac{dm_{H_2}^{\rm r}}{dt} = 0
-\end{align}
-Now we have two volatile update equations---one for H$_2$ and one for H$_2$O---but three unknowns because we also don't know the change in H$_2$ mass due to reactions.  But we also have an equation that must be satisfied to be at chemical equilibrium.  In differential form, this is:
-\begin{equation}
-\frac{d\hat{p_{H_2O}}}{dt} - \epsilon \frac{d\hat{p_{H_2}}}{dt} = 0
-\end{equation}
-So now we have 3 equations and 3 unknowns.  The unknowns are the time differential of the interior mass concentration of both H$_2$ and H$_2$O (which directly relates to their partial pressure updates), and the rate-of-change of H$_2$ mass to H$_2$O, that is: $dm^{\rm r}_{H_2}/dt$.  Therefore, we should have everything we now need to solve this system.
 %%%%
 \subsubsection{Global mass of liquid and solid}
 The current version of SPIDER computes the hydrostatic pressure profile \emph{a priori} based on the Adams-Williamson equation of state.  This means that for simplicity we can compute the liquid mass by multiplying the mass of a particular radial shell $d\hat{m}_i$, with some function $g$, and then sum:% the melt fraction $\phi$, and then sum:

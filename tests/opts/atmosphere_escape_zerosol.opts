@@ -1,10 +1,10 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 10
+-nstepsmacro 20
 
 # macro step size in years
--dtmacro 100
+-dtmacro 50000
 
 # for the PETSc interface to SUNDIALS, matchstep is not
 # allowed, and in testing it doesn't appear that interpolate
@@ -14,12 +14,34 @@
 #-ts_exact_final_time matchstep
 
 # tolerances
--ts_sundials_atol 1.0e-6
--ts_sundials_rtol 1.0e-6
+-ts_sundials_atol 1.0e-8
+-ts_sundials_rtol 1.0e-8
 
 # mesh
 # number of basic nodes
 -n 100
+
+#-atmosts_snes_view
+#-atmosts_snes_converged_reason
+#-atmos_snes_monitor
+
+# tolerances for volatile initial condition
+#-atmosic_snes_verbose_monitor
+#-atmosic_snes_view
+#-atmosic_snes_converged_reason
+
+# suggested by PS
+#-atmosic_ksp_rtol 1e-10
+#-atmosic_ksp_atol 1e-10
+#-atmosic_snes_linesearch_damping 0.01
+#-atmosic_snes_max_it 10000
+#-snes_linesearch_max_it 1000
+
+# tolerances for volatile evolution
+#-atmosts_snes_atol 1.0E-10
+#-atmosts_snes_rtol 1.0E-10
+#-atmosts_ksp_atol 1.0E-10
+#-atmosts_ksp_rtol 1.0E-10
 
 # all units are SI unless indicated otherwise
 
@@ -27,12 +49,12 @@
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
--radius0 6371000.0 # Earth radius
+-radius0 63710000.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
--density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
+-density0 1.0E-1 #4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
-#-volatile0 1.0E2
+-volatile0 1.0E-6
 
 # energy fluxes and sources to include
 # [0] is off
@@ -88,7 +110,7 @@
 # [3] is conventional as [1] above, but additionally allows you to
 #      specify a mid-mantle interface
 
--mixing_length 1
+-mixing_length 2
 #-mixing_length_layer_radius 0.0 # non-dimensional radius
 
 # physical parameters
@@ -141,7 +163,7 @@
 # [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
 # [4] heat flux (prescribe value using surface_bc_value)
 # [5] entropy
--SURFACE_BC 1
+-SURFACE_BC 3
 -surface_bc_value 0.0
 
 # if SURFACE_BC=1 or 2, the following constant emissivity is used
@@ -154,6 +176,32 @@
 # (often only a few cms thick) cannot be resolved by the choice of mesh
 -PARAM_UTBL 1 # flag to turn on parameterisation
 -param_utbl_const 1.0E-7 # value of parameterisation
+
+-IC_ATMOSPHERE 1
+
+-CONSTANT_ESCAPE
+
+# atmosphere reference pressure (Pa)
+-P0 101325.0 # Pa (= 1 atm)
+
+# Define the volatiles
+-volatile_names CO2,H2O
+
+-CO2_initial_total_abundance 50.0
+-CO2_kdist 5.0E-4
+-CO2_kabs 0.05
+-CO2_henry 0.0 #4.4E-6
+-CO2_henry_pow 1.0
+-CO2_molar_mass 0.04401 # kg/mol
+-CO2_constant_escape_value 1.0E5
+
+-H2O_initial_total_abundance 300.0
+-H2O_kdist 1.0E-4
+-H2O_kabs 0.01
+-H2O_henry 0.0 #6.8E-2
+-H2O_henry_pow 1.4285714285714286
+-H2O_molar_mass 0.01801528 # kg/mol
+-H2O_constant_escape_value 1.0E6
 
 # internal heat sources
 # Al26 (extinct at present day)

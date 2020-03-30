@@ -53,6 +53,7 @@ typedef struct VolatileParameters_ {
     PetscScalar initial_atmos_pressure;
     PetscScalar kdist;
     PetscScalar kabs; // note this is without pressure-dependence
+    PetscInt    SOLUBILITY;
     PetscScalar henry;
     PetscScalar henry_pow;
     PetscScalar jeans_value; // for thermal escape

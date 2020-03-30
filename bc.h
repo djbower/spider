@@ -5,6 +5,6 @@
 
 PetscErrorCode set_core_mantle_flux( Ctx * );
 PetscErrorCode set_surface_flux( Ctx * );
-PetscErrorCode solve_dxdts( Ctx * );
+PetscErrorCode solve_dpdts( Ctx * );
 
 #endif

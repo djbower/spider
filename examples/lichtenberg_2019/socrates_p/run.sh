@@ -12,7 +12,7 @@
 # -options_file bu_input.opts:     reads the options file to provide the parameters for SPIDER
 #                                  subsequent options on the command line over-ride these defaults
 # -IC_INTERIOR 2:                  read in interior ic from file (prescribed by -ic_interior_filename, see below)
-# -ic_interior filename 50003.json:JSON file to read in interior initial condition
+# -ic_interior filename 50013.json:JSON file to read in interior initial condition
 # -SURFACE_BC 4:                   constant heat flux boundary condition
 # -surface_bc_value 1.0E4:         prescribed surface heat flux (e.g., 10^4 W/m^2)
 #                                  this value will be determined by SOCRATES and passed in
@@ -35,4 +35,4 @@
 # -dtmacro 30000:                  delta time to advance by, here is 30,000 years
 
 # main restart example is here:
-spider -options_file bu_input.opts -IC_INTERIOR 2 -ic_interior_filename 50003.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -IC_ATMOSPHERE 3 -H2O_initial_atmos_pressure 101325 -CO2_initial_atmos_pressure 101325 -nstepsmacro 1 -dtmacro 30000
+spider -options_file bu_input.opts -IC_INTERIOR 2 -ic_interior_filename 50013.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -IC_ATMOSPHERE 3 -H2O_initial_atmos_pressure 101325 -CO2_initial_atmos_pressure 101325 -nstepsmacro 1 -dtmacro 30000

@@ -5,7 +5,7 @@
 #include "util.h"
 
 static PetscErrorCode initialise_volatiles( Atmosphere *, const AtmosphereParameters * );
-static PetscErrorCode set_atmosphere_pressures( Atmosphere *, const AtmosphereParameters *, const Constants * );
+static PetscErrorCode set_total_surface_pressure( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_volatile_masses_in_liquid( Atmosphere *, const AtmosphereParameters * );
@@ -100,8 +100,8 @@ static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParam
         /* these entries should match those in atmosphere.h */
         A->volatiles[i].x = 0.0;
         A->volatiles[i].p = 0.0;
-        A->volatiles[i].dxdt = 0.0;
-        A->volatiles[i].dpdx = 0.0;
+        A->volatiles[i].dpdt = 0.0;
+        A->volatiles[i].dxdp = 0.0;
         A->volatiles[i].mass_atmos = 0.0;
         A->volatiles[i].mass_liquid = 0.0;
         A->volatiles[i].mass_solid = 0.0;
@@ -313,11 +313,10 @@ static PetscErrorCode set_f_thermal_escape( Atmosphere *A, PetscInt i )
 
 }
 
-static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
+static PetscErrorCode set_total_surface_pressure( Atmosphere *A, const AtmosphereParameters *Ap )
 {
     PetscInt                  i;
     Volatile                 *V;
-    VolatileParameters const *Vp;
 
     PetscFunctionBeginUser;
 
@@ -325,14 +324,8 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
     A->psurf = 0.0;
 
     for (i=0; i<Ap->n_volatiles; ++i) {
-        /* partial pressure of volatile */
         V = &A->volatiles[i];
-        Vp = &Ap->volatile_parameters[i];
-        V->p = PetscPowScalar( V->x / Vp->henry, Vp->henry_pow );
-        /* derivative of partial pressure of volatile */
-        V->dpdx = Vp->henry_pow / Vp->henry;
-        V->dpdx *= PetscPowScalar( V->x / Vp->henry, Vp->henry_pow-1.0 );
-        /* total pressure by Dalton's law */
+        /* partial pressure of volatile */
         A->psurf += V->p;
     }
 
@@ -344,7 +337,7 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
     /* fO2 is set in set_interior_structure_from_solution */
     /* Oxygen fugacity must be set, otherwise A->log10f02 is 
        zero due to initialisation and hence this results in
-       infinite A->psurf */
+       infinite A->psurf (TODO: still true?) */
     if( Ap->OXYGEN_FUGACITY ){
         A->psurf /= (1.0 - PetscPowScalar(10.0,A->log10fO2) );
     }
@@ -354,13 +347,43 @@ static PetscErrorCode set_atmosphere_pressures( Atmosphere *A, const AtmosphereP
 
 PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, const AtmosphereParameters *Ap )
 {
+
+    /* This function contains the solubility laws.  For each solubility law, you must give the relationship
+       between x and p, and the derivative */
+
     PetscInt i;
+    Volatile                 *V;
+    VolatileParameters const *Vp;
 
     PetscFunctionBeginUser;
 
     for (i=0; i<Ap->n_volatiles; ++i) {
-        A->volatiles[i].x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i].henry_pow );
-        A->volatiles[i].x *= Ap->volatile_parameters[i].henry;
+
+        /* partial pressure of volatile */
+        V = &A->volatiles[i];
+        Vp = &Ap->volatile_parameters[i];
+
+        switch( Vp->SOLUBILITY ){
+            case 1:
+                /* Modified Henry's law (default) */
+
+                /* abundance in melt */
+                V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i].henry_pow );
+                V->x *= Ap->volatile_parameters[i].henry;
+
+                V->dxdp = Vp->henry / Vp->henry_pow;
+                V->dxdp *= PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow);
+
+                break;
+
+            /* TODO: include more solubility laws */
+
+            /* TODO: interface with self-consistent solubility calculation (PERPLEX) */
+
+            default:
+                SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLUBILITY value %d provided",Vp->SOLUBILITY);
+        }
+
     }
 
     PetscFunctionReturn(0);
@@ -377,7 +400,7 @@ static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *A, const At
 
     for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].mass_atmos = PetscSqr((*Ap->radius_ptr)) * A->volatiles[i].p / -(*Ap->gravity_ptr);
-        A->volatiles[i].mass_atmos *= 1.0E6 / (*Ap->VOLATILE_ptr);
+        A->volatiles[i].mass_atmos /= (*Ap->VOLATILE_ptr);
         A->volatiles[i].mass_atmos *= Ap->volatile_parameters[i].molar_mass / A->molar_mass;
     }
 
@@ -471,7 +494,7 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
 
 }
 
-PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
+PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
 {
     PetscErrorCode           ierr;
 
@@ -483,7 +506,9 @@ PetscErrorCode set_atmosphere_volatile_content( Atmosphere *A, const AtmosphereP
        actually included in the model */
 
     /* order of these functions is very important! */
-    ierr = set_atmosphere_pressures( A, Ap, C );CHKERRQ(ierr);
+    ierr = set_total_surface_pressure( A, Ap );CHKERRQ(ierr);
+
+    ierr = set_volatile_abundances_from_partial_pressure( A, Ap );CHKERRQ(ierr);
 
     ierr = set_volume_mixing_ratios( A, Ap );CHKERRQ(ierr);
 
@@ -715,6 +740,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     PetscFunctionReturn(0);
 }
 
+/* TODO: was for temporary output during debugging, can probably now REMOVE */
 static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosphere const *A, cJSON *json )
 {
     PetscErrorCode ierr;
@@ -731,7 +757,7 @@ static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosp
     data = cJSON_CreateObject();
 
     /* kilograms (kg) */
-    scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+    scaling = C->VOLATILE * 4.0 * PETSC_PI * C->MASS;
 
     for (v=0; v<Ap->n_reactions; ++v) {
         // FIXME: instead of "test", can we output the slot number (v)?
@@ -760,17 +786,17 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
 
     data = cJSON_CreateObject();
 
-    /* parts-per-million (ppm) */
-    scaling = C->VOLATILE;
-    /* initial volatile (ppm) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_ppm", "ppm", VP->initial_total_abundance, data);CHKERRQ(ierr);
-    /* volatile in liquid mantle (ppm) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_ppm", "ppm", V->x, data);CHKERRQ(ierr);
-    /* volatile in solid mantle (ppm) */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "solid_ppm", "ppm", V->x*VP->kdist, data);CHKERRQ(ierr);
+    /* parts-per-million (ppmw) */
+    scaling = C->VOLATILE * 1.0E6; // VOLATILE to mass fraction, 1.0E6 to ppm
+    /* initial volatile (ppmw) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_ppmw", "ppmw", VP->initial_total_abundance, data);CHKERRQ(ierr);
+    /* volatile in liquid mantle (ppmw) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "liquid_ppmw", "ppmw", V->x, data);CHKERRQ(ierr);
+    /* volatile in solid mantle (ppmw) */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "solid_ppmw", "ppmw", V->x*VP->kdist, data);CHKERRQ(ierr);
 
     /* kilograms (kg) */
-    scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
+    scaling = C->VOLATILE * 4.0 * PETSC_PI * C->MASS;
     /* initial volatile (kg) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "initial_kg", "kg", VP->initial_total_abundance*(*Ap->mantle_mass_ptr), data);CHKERRQ(ierr);
     /* volatile in liquid mantle (kg) */
@@ -807,6 +833,10 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     ierr = JSON_add_single_value_to_object(dm, scaling, "R_thermal_escape", "None", V->R_thermal_escape, data);CHKERRQ(ierr);
     ierr = JSON_add_single_value_to_object(dm, scaling, "f_thermal_escape", "None", V->f_thermal_escape, data);CHKERRQ(ierr);
 
+    /* other */
+    scaling = C->VOLATILE / C->PRESSURE;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dp", "mass fraction/Pa", V->dxdp, data);CHKERRQ(ierr);
+
     cJSON_AddItemToObject(json,name,data);
 
     PetscFunctionReturn(0);
@@ -830,14 +860,14 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
 
     ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        A->volatiles[i].dxdt = xx[i];
+        A->volatiles[i].dpdt = xx[i];
     }
     dmrdt = &xx[Ap->n_volatiles];
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        ff[i] = get_dxdt( A, Ap, i, dmrdt );
+        ff[i] = get_dpdt( A, Ap, i, dmrdt );
     }
 
     /* chemical equilibrium constraints */
@@ -868,7 +898,7 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
     PetscFunctionReturn(0);
 }
 
-PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, const PetscScalar *dmrdt )
+PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i, const PetscScalar *dmrdt )
 {
 
     PetscScalar               out, out2, massv, f_thermal_escape, f_constant_escape;
@@ -896,13 +926,13 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     /* compute and store dpsurf/dt here to avoid recomputation elsewhere */
     A->dpsurfdt = 0.0;
     for (k=0; k<Ap->n_volatiles; ++k) {
-        A->dpsurfdt += A->volatiles[k].dpdx * A->volatiles[k].dxdt;
+        A->dpsurfdt += A->volatiles[k].dpdt;
     }
 
     for (j=0; j<Ap->n_volatiles; ++j) {
         out = 0.0;
         out = -A->dpsurfdt * A->volatiles[j].p / A->psurf;
-        out += A->volatiles[j].dpdx * A->volatiles[j].dxdt;
+        out += A->volatiles[j].dpdt;
         out *= Ap->volatile_parameters[j].molar_mass;
         out2 += out;
     }
@@ -910,10 +940,10 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
     out2 *= -A->volatiles[i].p / (A->psurf * PetscSqr(A->molar_mass));
 
     /* second part of atmosphere derivative */
-    out2 += ( 1.0 / A->molar_mass ) * A->volatiles[i].dpdx * A->volatiles[i].dxdt;
+    out2 += ( 1.0 / A->molar_mass ) * A->volatiles[i].dpdt;
 
     /* multiply by prefactors */
-    out2 *= (1.0E6 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Ap->volatile_parameters[i].molar_mass / -(*Ap->gravity_ptr); // note negative gravity
+    out2 *= (1.0 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Ap->volatile_parameters[i].molar_mass / -(*Ap->gravity_ptr); // note negative gravity
 
     /* thermal (Jean's) escape correction */
     out2 *= f_thermal_escape;
@@ -939,8 +969,7 @@ PetscScalar get_dxdt( Atmosphere *A, const AtmosphereParameters *Ap, PetscInt i,
       }
     }
 
-    /* solid and liquid reservoirs */
-    out2 += A->volatiles[i].dxdt * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
+    out2 += A->volatiles[i].dpdt * A->volatiles[i].dxdp * ( Ap->volatile_parameters[i].kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i].kdist) * A->Mliq);
     out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i].kdist) * A->dMliqdt;
 
     return out2;

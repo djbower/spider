@@ -19,10 +19,10 @@ static PetscErrorCode set_ic_atmosphere_default( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Vec sol );
 static PetscErrorCode set_ic_atmosphere_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *, Vec );
-static PetscErrorCode solve_for_initial_melt_abundance( Ctx * );
+static PetscErrorCode solve_for_initial_partial_pressure( Ctx * );
 /* general */
 static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char *, const PetscInt *, PetscInt );
-static PetscErrorCode objective_function_initial_melt_abundance( SNES, Vec, Vec, void *);
+static PetscErrorCode objective_function_initial_partial_pressure( SNES, Vec, Vec, void *);
 static PetscErrorCode conform_parameters_to_initial_condition( Ctx * );
 static PetscErrorCode print_ocean_masses( Ctx * );
 
@@ -45,7 +45,7 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     ierr = conform_parameters_to_initial_condition( E );CHKERRQ(ierr);
 
     /* this also updates mass reaction terms */
-    ierr = set_solution_from_volatile_abundances( E, sol ); CHKERRQ(ierr);
+    ierr = set_solution_from_partial_pressures( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -419,16 +419,15 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
         }
 
         /* all of the above are guaranteed to set Vec sol, for the
-           volatile abundances in the melt and the mass reaction
-           terms.  Now also ensure that A->volatiles[i].x and
-           A->mass_reaction[i] conform to the Vec sol, since these
-           are subsequently used to "correct" the mass reaction
-           to zero */
-        ierr = set_volatile_abundances_from_solution( E, sol );CHKERRQ(ierr);
+           partial pressures and the mass reaction terms.  Now also 
+           ensure that A->volatiles[i].p and A->mass_reaction[i]
+           conform to the Vec sol, since these are subsequently 
+           used to "correct" the mass reaction to zero */
+        ierr = set_partial_pressures_from_solution( E, sol );CHKERRQ(ierr);
 
         /* ensure all atmosphere quantities are consistent with current
            solution */
-        ierr = set_atmosphere_volatile_content( A, Ap, C );CHKERRQ(ierr);
+        ierr = set_reservoir_volatile_content( A, Ap, C );CHKERRQ(ierr);
 
         /* again, note that mass reaction terms are not yet
            (necessarily) zero! */
@@ -456,7 +455,7 @@ static PetscErrorCode set_ic_atmosphere_default( Ctx *E, Vec sol )
 static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
 {
 
-    /* this function has authorisation to update the parameters struct
+    /* FIXME: this function has authorisation to update the parameters struct
        to ensure that parameters obey constraints imposed by the
        initial condition */
 
@@ -476,6 +475,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     /* conform initial_total_abundance */
     for (i=0; i<Ap->n_volatiles; ++i){
         if( Ap->IC_ATMOSPHERE==1 ){
+            /* TODO: check comment below, not sure it is actually the same */
             /* this is equivalent to the operation below for Ap->IC_ATMOSPHERE==3, but a shortcut since
                we do not need to sum all reservoirs to get to the initial total abundance */
             /* below we correct with -= */
@@ -492,8 +492,9 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
         }
     }
 
-    /* re-solve to get volatile abundances in the melt (A->volatiles[i].x) */
-    ierr = solve_for_initial_melt_abundance( E ); CHKERRQ(ierr);
+    /* re-solve to get volatile partial pressures (A->volatiles[i].p) */
+    /* TODO: is this required?  I think so for Ap->IC_ATMOSPHERE==1 above */
+    ierr = solve_for_initial_partial_pressure( E ); CHKERRQ(ierr);
 
     /* Ap_>IC_ATMOSPHERE==1 will also set mass reactions close to (but not exactly)
        to zero.  Explicitly zero the entries here */
@@ -540,8 +541,8 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
     Constants *C = &P->constants;
 
-    PetscScalar scaling = (C->VOLATILE/1.0E6) * 4.0 * PETSC_PI * C->MASS;
-    PetscScalar scaling2 = (1.0E6/C->VOLATILE) * PetscSqr(*Ap->radius_ptr) / -(*Ap->gravity_ptr);
+    PetscScalar scaling = C->VOLATILE * 4.0 * PETSC_PI * C->MASS;
+    PetscScalar scaling2 = (1.0/C->VOLATILE) * PetscSqr(*Ap->radius_ptr) / -(*Ap->gravity_ptr);
 
     PetscFunctionBeginUser;
 
@@ -678,12 +679,12 @@ static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Ve
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_initial_total_abundance()\n");CHKERRQ(ierr);
 
-    ierr = solve_for_initial_melt_abundance( E );CHKERRQ(ierr);
+    ierr = solve_for_initial_partial_pressure( E );CHKERRQ(ierr);
 
     /* below will also update mass reaction terms, which can be
        non-zero.  We "correct" the mass reaction to be zero in
        conform_parameters_to_initial_condition() */
-    ierr = set_solution_from_volatile_abundances( E, sol );CHKERRQ(ierr);
+    ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -703,22 +704,23 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
         A->volatiles[i].p = Ap->volatile_parameters[i].initial_atmos_pressure;
     }
 
+    /* TODO: remove: not required anymore */
     /* compute initial volatile abundance in melt */
-    ierr = set_volatile_abundances_from_partial_pressure( A, Ap );CHKERRQ(ierr);
+    //ierr = set_volatile_abundances_from_partial_pressure( A, Ap );CHKERRQ(ierr);
 
     /* mass reaction has not been updated, so should still be zero */
     /* TODO: this initial condition is not compatible with reactions,
        but nor does it need to be, since this initial condition is
        used when codes are coupled (e.g. to VULCAN) */
-    ierr = set_solution_from_volatile_abundances( E, sol );CHKERRQ(ierr);
+    ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode solve_for_initial_melt_abundance( Ctx *E )
+static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
 {
 
-    /* returns both volatile abundances in the melt and reaction
+    /* returns both volatile partial pressures and reaction
        masses, both of which can be non-zero */
 
     PetscErrorCode ierr;
@@ -731,7 +733,7 @@ static PetscErrorCode solve_for_initial_melt_abundance( Ctx *E )
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"solve_for_initial_melt_abundance()\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"solve_for_initial_partial_pressure()\n");CHKERRQ(ierr);
 
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
 
@@ -745,16 +747,19 @@ static PetscErrorCode solve_for_initial_melt_abundance( Ctx *E )
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
-    ierr = SNESSetFunction(snes,r,objective_function_initial_melt_abundance,E);CHKERRQ(ierr);
+    ierr = SNESSetFunction(snes,r,objective_function_initial_partial_pressure,E);CHKERRQ(ierr);
 
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        xx[i] = Ap->volatile_parameters[i].initial_total_abundance;
+        // FIXME: guess is arbitrary, but solver breaks if this is zero!
+        /* this is physically motivated, since the PRESSURE scaling is typically set around 1 bar,
+           such that the volatile partial pressure will be some fraction of 1 */
+        xx[i] = 1.0E-1; /* typically around 1/10 bar for usual PRESSURE scaling */
     }
     /* Initial guesses for reaction masses */
     for (i=Ap->n_volatiles; i<Ap->n_volatiles + Ap->n_reactions; ++i) {
-      xx[i] = 0.0; // assume we are at equilibrium
+      xx[i] = 0.0; /* assume we are at equilibrium */
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
@@ -784,13 +789,13 @@ static PetscErrorCode solve_for_initial_melt_abundance( Ctx *E )
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        if( A->volatiles[i].x < 0.0 ){
+        if( A->volatiles[i].p < 0.0 ){
             /* Sanity check on solution (since it's non-unique) */
             SETERRQ2(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
-                "Unphysical initial total volatile abundance: volatile %d, x: %g",i,A->volatiles[i].x);
+                "Unphysical initial volatile partial pressure: volatile %d, x: %g",i,A->volatiles[i].p);
         }
         else{
-            A->volatiles[i].x = xx[i];
+            A->volatiles[i].p = xx[i];
         }
     }
     /* Save mass offset to reset initial volatile */
@@ -807,7 +812,7 @@ static PetscErrorCode solve_for_initial_melt_abundance( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode objective_function_initial_melt_abundance( SNES snes, Vec x, Vec f, void *ptr)
+static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Vec x, Vec f, void *ptr)
 {
     PetscErrorCode             ierr;
     const PetscScalar          *xx;
@@ -825,13 +830,13 @@ static PetscErrorCode objective_function_initial_melt_abundance( SNES snes, Vec 
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
 
     for (i=0; i<Ap->n_volatiles; ++i) {
-        A->volatiles[i].x = xx[i];
+        A->volatiles[i].p = xx[i];
     }
     for (i=0; i<Ap->n_reactions; ++i) {
         A->mass_reaction[i] = xx[Ap->n_volatiles+i];
     }
 
-    ierr = set_atmosphere_volatile_content( A, Ap, C ); CHKERRQ(ierr);
+    ierr = set_reservoir_volatile_content( A, Ap, C ); CHKERRQ(ierr);
 
     /* mass conservation for each volatile */
     for (i=0; i<Ap->n_volatiles; ++i) {
