@@ -58,7 +58,7 @@ PetscErrorCode set_eos( Parameters *P )
             break;
         case 2:
             /* analytical RTpress */
-            set_rtpress_parameters( &P->eos1 );
+            set_rtpress_parameters( &P->eos1_parameters );
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported MELT_EOS value %d provided",P->MELT_EOS);
@@ -432,7 +432,7 @@ PetscScalar get_rtpress_pressure_test( Ctx *E )
        FIXME: need to truncate negative values?  Perhaps not for
        smoothness of solver during inversion? */
 
-    EosParameters *rtp = &E->parameters.eos1;
+    EosParameters *rtp = &E->parameters.eos1_parameters;
     PetscScalar   P, T, V, volfrac;
 
     volfrac = 0.6;
@@ -507,7 +507,7 @@ PetscScalar get_rtpress_entropy_test( Ctx *E )
 
     /* seems to confirm S is correct */
 
-    EosParameters *rtp = &E->parameters.eos1;
+    EosParameters *rtp = &E->parameters.eos1_parameters;
     PetscScalar   S, T, V, volfrac;
 
     volfrac = 0.6;
@@ -719,7 +719,7 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx *E )
     Vec            x,r;
     PetscScalar    *xx;
     PetscInt       i;
-    EosParameters  *rtp = &E->parameters.eos1;
+    EosParameters  *rtp = &E->parameters.eos1_parameters;
     EosEval        *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
@@ -804,7 +804,7 @@ static PetscErrorCode objective_function_rtpress_volume_temperature( SNES snes, 
     PetscScalar                *ff;
     PetscScalar                V, T, P, S;
     Ctx                        *E = (Ctx*) ptr;
-    EosParameters              *rtp = &E->parameters.eos1;
+    EosParameters              *rtp = &E->parameters.eos1_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
     PetscScalar Ptarget = eos_eval->P;
     PetscScalar Starget = eos_eval->S;
@@ -838,7 +838,7 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
        eos_eval struct with the material properties */
 
     Constants const            *C = &E->parameters.constants;
-    EosParameters              *rtp = &E->parameters.eos1;
+    EosParameters              *rtp = &E->parameters.eos1_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
