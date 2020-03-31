@@ -125,9 +125,9 @@ static PetscErrorCode set_liquidus( Ctx *E )
     PetscFunctionBeginUser;
 
     S = &E->solution;
-    interp = &P->melt_prop.liquidus;
-    interpR = &P->melt_prop.rho;
-    interpT = &P->melt_prop.temp;
+    interp = &P->eos1_parameters.lookup.liquidus;
+    interpR = &P->eos1_parameters.lookup.rho;
+    interpT = &P->eos1_parameters.lookup.temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
@@ -192,9 +192,9 @@ static PetscErrorCode set_solidus( Ctx *E )
 
     PetscFunctionBeginUser;
     S = &E->solution;
-    interp = &P->solid_prop.solidus;
-    interpR = &P->solid_prop.rho;
-    interpT = &P->solid_prop.temp;
+    interp = &P->eos2_parameters.lookup.solidus;
+    interpR = &P->eos2_parameters.lookup.rho;
+    interpT = &P->eos2_parameters.lookup.temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;

@@ -42,7 +42,7 @@ typedef struct _Constants {
 /* struct to hold equation of state parameters */
 /* TODO: currently this is specific to the parameters
    for the rtpress model, but could be generalised further */
-typedef struct _Eos {
+typedef struct _EosParameters {
     PetscScalar V0;
     PetscScalar T0;
     PetscScalar S0;
@@ -62,6 +62,9 @@ typedef struct _Eos {
     PetscScalar PV_UNIT;
     PetscScalar KBOLTZ;
     PetscScalar bscale;
+    /* if the user wants to use lookup tables, these are effectively
+       the same as EOS parameters */
+    Lookup lookup;
 } EosParameters;
 
 
@@ -197,6 +200,8 @@ typedef struct _Parameters {
     PetscBool monitor;
     char outputDirectory[PETSC_MAX_PATH_LEN];
 
+    PetscInt    SOLID_EOS;
+    PetscInt    MELT_EOS;
     // Lookup tables
     char        liquidusFilename[PETSC_MAX_PATH_LEN];
     char        solidusFilename[PETSC_MAX_PATH_LEN];
@@ -210,8 +215,11 @@ typedef struct _Parameters {
     char        rhoMelFilename[PETSC_MAX_PATH_LEN];
     char        tempSolFilename[PETSC_MAX_PATH_LEN];
     char        tempMelFilename[PETSC_MAX_PATH_LEN];
-    Lookup      melt_prop;
+
+/* FIXME: eventually remove this */
+/*    Lookup      melt_prop;
     Lookup      solid_prop;
+*/
 
     //  "Standard" parameters
     MagmaOceanCoreType CORE_BC;
@@ -264,9 +272,6 @@ typedef struct _Parameters {
     PetscInt    VISCOUS_LID;
     PetscScalar lid_log10visc;
     PetscScalar lid_thickness;
-
-    PetscInt    SOLID_EOS;
-    PetscInt    MELT_EOS;
 
     // Additional Atmosphere Parameters
     AtmosphereParameters atmosphere_parameters;

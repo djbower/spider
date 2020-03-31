@@ -4,10 +4,10 @@
 #include "parameters.h"
 
 /* lookup material properties (default) */
-static PetscErrorCode set_solid_eos_lookup( Parameters * );
-static PetscErrorCode set_melt_eos_lookup( Parameters * );
-static PetscErrorCode set_liquidus_lookup( Parameters * );
-static PetscErrorCode set_solidus_lookup( Parameters * );
+static PetscErrorCode set_solid_eos_lookup( EosParameters *, Parameters * );
+static PetscErrorCode set_melt_eos_lookup( EosParameters *, Parameters * );
+static PetscErrorCode set_liquidus_lookup( EosParameters *, EosParameters *, Parameters * );
+static PetscErrorCode set_solidus_lookup( EosParameters *, EosParameters *, Parameters * );
 
 /* rtpress material properties (Wolf and Bower, 2018) */
 static PetscErrorCode set_rtpress_parameters( EosParameters * );
@@ -43,7 +43,7 @@ PetscErrorCode set_eos( Parameters *P )
     switch( P->SOLID_EOS ){
         case 1:
             /* lookup */
-            ierr = set_solid_eos_lookup( P );CHKERRQ(ierr);
+            ierr = set_solid_eos_lookup( &P->eos2_parameters, P );CHKERRQ(ierr);
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLID_EOS value %d provided",P->SOLID_EOS);
@@ -54,7 +54,7 @@ PetscErrorCode set_eos( Parameters *P )
     switch( P->MELT_EOS ){
         case 1:
             /* lookup */
-            ierr = set_melt_eos_lookup( P );CHKERRQ(ierr);
+            ierr = set_melt_eos_lookup( &P->eos1_parameters, P );CHKERRQ(ierr);
             break;
         case 2:
             /* analytical RTpress */
@@ -69,8 +69,8 @@ PetscErrorCode set_eos( Parameters *P )
     /* TODO: could also have analytical functions for these as well by using
        a case structure as above */
 
-    ierr = set_liquidus_lookup( P );CHKERRQ(ierr);
-    ierr = set_solidus_lookup( P );CHKERRQ(ierr);
+    ierr = set_liquidus_lookup( &P->eos1_parameters, &P->eos2_parameters, P );CHKERRQ(ierr);
+    ierr = set_solidus_lookup( &P->eos1_parameters, &P->eos2_parameters, P );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -103,7 +103,7 @@ static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 #undef SPIDER_ROOT_DIR_STR
 
 
-static PetscErrorCode set_melt_eos_lookup( Parameters *P )
+static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters *P )
 {
   PetscErrorCode  ierr;
   Constants const *C = &P->constants;
@@ -173,21 +173,21 @@ static PetscErrorCode set_melt_eos_lookup( Parameters *P )
 
   /* melt lookups */
   /* 2d */
-  ierr = set_interp2d( P->alphaMelFilename, &P->melt_prop.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
-  ierr = set_interp2d( P->cpMelFilename, &P->melt_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
-  ierr = set_interp2d( P->dtdpsMelFilename, &P->melt_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
-  ierr = set_interp2d( P->rhoMelFilename, &P->melt_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
-  ierr = set_interp2d( P->tempMelFilename, &P->melt_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
+  ierr = set_interp2d( P->alphaMelFilename, &eosp->lookup.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
+  ierr = set_interp2d( P->cpMelFilename, &eosp->lookup.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp2d( P->dtdpsMelFilename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
+  ierr = set_interp2d( P->rhoMelFilename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
+  ierr = set_interp2d( P->tempMelFilename, &eosp->lookup.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
   /* const */
   // TODO: remove this redundancy
-  P->melt_prop.cond = P->cond_mel;
-  P->melt_prop.log10visc = P->log10visc_mel;
+  eosp->lookup.cond = P->cond_mel;
+  eosp->lookup.log10visc = P->log10visc_mel;
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_solid_eos_lookup( Parameters *P )
+static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters *P )
 {
   PetscErrorCode  ierr;
   Constants const *C = &P->constants;
@@ -255,22 +255,24 @@ static PetscErrorCode set_solid_eos_lookup( Parameters *P )
     }
   }
 
-  ierr= set_interp2d( P->alphaSolFilename, &P->solid_prop.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
-  ierr = set_interp2d( P->cpSolFilename, &P->solid_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
-  ierr = set_interp2d( P->dtdpsSolFilename, &P->solid_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
-  ierr = set_interp2d( P->rhoSolFilename, &P->solid_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
-  ierr = set_interp2d( P->tempSolFilename, &P->solid_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
+  ierr= set_interp2d( P->alphaSolFilename, &eosp->lookup.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
+  ierr = set_interp2d( P->cpSolFilename, &eosp->lookup.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp2d( P->dtdpsSolFilename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
+  ierr = set_interp2d( P->rhoSolFilename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
+  ierr = set_interp2d( P->tempSolFilename, &eosp->lookup.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
   /* const */
   // TODO: remove this redundancy
-  P->solid_prop.cond = P->cond_sol;
-  P->solid_prop.log10visc = P->log10visc_sol;
+  eosp->lookup.cond = P->cond_sol;
+  eosp->lookup.log10visc = P->log10visc_sol;
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_liquidus_lookup( Parameters *P )
+static PetscErrorCode set_liquidus_lookup( EosParameters *eosp1, EosParameters *eosp2, Parameters *P )
 {
+  /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
+
   PetscErrorCode  ierr;
   Constants const *C = &P->constants;
 
@@ -294,15 +296,17 @@ static PetscErrorCode set_liquidus_lookup( Parameters *P )
   }
 
   /* FIXME: unnecessary duplication? */
-  ierr = set_interp1d( P->liquidusFilename, &P->solid_prop.liquidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
-  ierr = set_interp1d( P->liquidusFilename, &P->melt_prop.liquidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp1d( P->liquidusFilename, &eosp1->lookup.liquidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp1d( P->liquidusFilename, &eosp2->lookup.liquidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_solidus_lookup( Parameters *P )
+static PetscErrorCode set_solidus_lookup( EosParameters *eosp1, EosParameters *eosp2, Parameters *P )
 {
+  /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
+
   PetscErrorCode  ierr;
   Constants const *C = &P->constants;
 
@@ -326,8 +330,8 @@ static PetscErrorCode set_solidus_lookup( Parameters *P )
   }
 
   /* FIXME: unnecessary duplication? */
-  ierr = set_interp1d( P->solidusFilename, &P->solid_prop.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
-  ierr = set_interp1d( P->solidusFilename, &P->melt_prop.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp1d( P->solidusFilename, &eosp1->lookup.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp1d( P->solidusFilename, &eosp2->lookup.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
