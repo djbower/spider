@@ -144,24 +144,26 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
 
   /* destroy malloc arrays in interp objects */
   /* interp1d */
-  free_interp1d( &P->solid_prop.liquidus );
-  free_interp1d( &P->solid_prop.solidus );
-  free_interp1d( &P->melt_prop.liquidus );
-  free_interp1d( &P->melt_prop.solidus );
+  free_interp1d( &P->eos2_parameters.lookup.liquidus );
+  free_interp1d( &P->eos2_parameters.lookup.solidus );
+  free_interp1d( &P->eos1_parameters.lookup.liquidus );
+  free_interp1d( &P->eos1_parameters.lookup.solidus );
 
   /* interp2d */
-  free_interp2d( &P->solid_prop.alpha );
-  free_interp2d( &P->solid_prop.cp );
-  free_interp2d( &P->solid_prop.dTdPs );
-  free_interp2d( &P->solid_prop.rho );
-  free_interp2d( &P->solid_prop.temp );
+  free_interp2d( &P->eos2_parameters.lookup.alpha );
+  free_interp2d( &P->eos2_parameters.lookup.cp );
+  free_interp2d( &P->eos2_parameters.lookup.dTdPs );
+  free_interp2d( &P->eos2_parameters.lookup.rho );
+  free_interp2d( &P->eos2_parameters.lookup.temp );
 
   /* interp2d */
-  free_interp2d( &P->melt_prop.alpha );
-  free_interp2d( &P->melt_prop.cp );
-  free_interp2d( &P->melt_prop.dTdPs );
-  free_interp2d( &P->melt_prop.rho );
-  free_interp2d( &P->melt_prop.temp );
+  /* FIXME: if these are not allocated due to using a different EOS
+     option, also do not need to destroy them here */
+  free_interp2d( &P->eos1_parameters.lookup.alpha );
+  free_interp2d( &P->eos1_parameters.lookup.cp );
+  free_interp2d( &P->eos1_parameters.lookup.dTdPs );
+  free_interp2d( &P->eos1_parameters.lookup.rho );
+  free_interp2d( &P->eos1_parameters.lookup.temp );
 
   /* Destroy data allocated in Ctx */
   ierr = DimensionalisableFieldDestroy(&ctx->solDF);CHKERRQ(ierr);
