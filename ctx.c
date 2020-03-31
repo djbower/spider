@@ -144,26 +144,31 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
 
   /* destroy malloc arrays in interp objects */
   /* interp1d */
+  /* TODO: if we have different options for the melting curves (e.g. analytic)
+     then we may not allocate memory (and thus should not try to deallocate
+     here) */
   free_interp1d( &P->eos2_parameters.lookup.liquidus );
   free_interp1d( &P->eos2_parameters.lookup.solidus );
   free_interp1d( &P->eos1_parameters.lookup.liquidus );
   free_interp1d( &P->eos1_parameters.lookup.solidus );
 
-  /* interp2d */
-  free_interp2d( &P->eos2_parameters.lookup.alpha );
-  free_interp2d( &P->eos2_parameters.lookup.cp );
-  free_interp2d( &P->eos2_parameters.lookup.dTdPs );
-  free_interp2d( &P->eos2_parameters.lookup.rho );
-  free_interp2d( &P->eos2_parameters.lookup.temp );
+  /* interp2d if allocated */
+  if( P->SOLID_EOS == 1 ){
+      free_interp2d( &P->eos2_parameters.lookup.alpha );
+      free_interp2d( &P->eos2_parameters.lookup.cp );
+      free_interp2d( &P->eos2_parameters.lookup.dTdPs );
+      free_interp2d( &P->eos2_parameters.lookup.rho );
+      free_interp2d( &P->eos2_parameters.lookup.temp );
+  }
 
-  /* interp2d */
-  /* FIXME: if these are not allocated due to using a different EOS
-     option, also do not need to destroy them here */
-  free_interp2d( &P->eos1_parameters.lookup.alpha );
-  free_interp2d( &P->eos1_parameters.lookup.cp );
-  free_interp2d( &P->eos1_parameters.lookup.dTdPs );
-  free_interp2d( &P->eos1_parameters.lookup.rho );
-  free_interp2d( &P->eos1_parameters.lookup.temp );
+  /* interp2d if allocated */
+  if( P->MELT_EOS == 1 ){
+      free_interp2d( &P->eos1_parameters.lookup.alpha );
+      free_interp2d( &P->eos1_parameters.lookup.cp );
+      free_interp2d( &P->eos1_parameters.lookup.dTdPs );
+      free_interp2d( &P->eos1_parameters.lookup.rho );
+      free_interp2d( &P->eos1_parameters.lookup.temp );
+  }
 
   /* Destroy data allocated in Ctx */
   ierr = DimensionalisableFieldDestroy(&ctx->solDF);CHKERRQ(ierr);
