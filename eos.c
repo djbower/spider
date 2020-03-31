@@ -255,7 +255,7 @@ static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters *P )
     }
   }
 
-  ierr= set_interp2d( P->alphaSolFilename, &eosp->lookup.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
+  ierr = set_interp2d( P->alphaSolFilename, &eosp->lookup.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
   ierr = set_interp2d( P->cpSolFilename, &eosp->lookup.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
   ierr = set_interp2d( P->dtdpsSolFilename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
   ierr = set_interp2d( P->rhoSolFilename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
