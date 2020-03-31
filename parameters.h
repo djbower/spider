@@ -216,11 +216,6 @@ typedef struct _Parameters {
     char        tempSolFilename[PETSC_MAX_PATH_LEN];
     char        tempMelFilename[PETSC_MAX_PATH_LEN];
 
-/* FIXME: eventually remove this */
-/*    Lookup      melt_prop;
-    Lookup      solid_prop;
-*/
-
     //  "Standard" parameters
     MagmaOceanCoreType CORE_BC;
     PetscScalar core_bc_value;
