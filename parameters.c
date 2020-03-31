@@ -9,7 +9,7 @@ Custom PETSc command line options should only ever be parsed here.
 #include "parameters.h"
 #include "ctx.h"
 #include "ic.h"
-#include "rtpress.h"
+#include "eos.h"
 // FIXME
 //#include "composition.h"
 
@@ -177,7 +177,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
   Constants const      *C  = &P->constants;
-  Eos                  *rtp = &P->rtpress;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
   RadiogenicIsotopeParameters *fe60 = &P->fe60_parameters;
@@ -199,11 +198,27 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* must be after setting constants, but before boundary conditions
      since lookups might be required to map temperature to entropy
      and vice versa for boundary conditions */
+  /* TODO: if we have an option of analytical EOSs, we might not need to set the lookups
+     for every model run */
+
+  P->SOLID_EOS = 1;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-SOLID_EOS",&P->SOLID_EOS,NULL);CHKERRQ(ierr);
+
+  P->MELT_EOS = 1;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-MELT_EOS",&P->MELT_EOS,NULL);CHKERRQ(ierr);
+
+  /* this determines whether to set EOS from lookup or analytical model */
+  ierr = set_eos( P );CHKERRQ(ierr);
+
+/* FIXME: below was previous, can be eventually removed */
+#if 0
+
   ierr = SetLookups(P);CHKERRQ(ierr);
 
   /* FIXME: eventually we need a switch to select use lookup data or analytical model */
   /* for simplicity at the moment, we load the parameters here */
   ierr = set_rtpress_parameters( rtp );CHKERRQ(ierr);
+#endif
 
   /* For each entry in parameters, we set a default value and immediately scale it.
      Dimensional/unscaled quantities are not explicitly stored.
@@ -922,6 +937,7 @@ PetscErrorCode PrintParameters(Parameters const *P)
   PetscFunctionReturn(0);
 }
 
+#if 0
 /* Helper routine to prepend the root directory to a relative path */
 /* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
 #define STRINGIFY(x) STRINGIFY2(x)
@@ -1121,6 +1137,7 @@ PetscErrorCode SetLookups( Parameters *P )
 
   PetscFunctionReturn(0);
 }
+#endif
 
 PetscErrorCode AtmosphereParametersDestroy(AtmosphereParameters* Ap)
 {

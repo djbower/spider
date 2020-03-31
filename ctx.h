@@ -58,7 +58,7 @@ static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Erro
 static const char * const SpiderSolutionFieldUnits[]        = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "Pa", "kg"}; /* Order must match the enum! */
 
 /* A (temporary) struct that is used to set the eos properties at a
-   given V,T or P, S */
+   given V,T or P, S.  There should be as  */
 typedef struct EosEval_ {
   PetscScalar P; /* pressure */
   PetscScalar S; /* entropy */
@@ -69,8 +69,8 @@ typedef struct EosEval_ {
   PetscScalar alpha; /* thermal expansion */
   PetscScalar rho; /* density */
   PetscScalar dTdPs; /* adiabatic temperature gradient */
-  /* TODO could consider adding also, although these are
-     not strictly derived from the rtpress model */
+  /* TODO could consider adding the following, although these are
+     not usually derived from an EOS */
   /* PetscScalar cond; */
   /* PetscScalar visc */
 } EosEval;
@@ -93,8 +93,11 @@ typedef struct Ctx_ {
 
   /* TODO: check with PS if this is the best way */
   /* this is a struct to enable me to pass current P, S conditions and
-     update a value, according to the analytical rtpress model */
-  EosEval                eos_eval;
+     update all material propoerties, according to a chosen EOS model.
+     Currently need one for solid and one for melt, but could extend to
+     multiple phases */
+  EosEval                eos1_eval; /* melt */
+  EosEval                eos2_eval; /* solid */
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
