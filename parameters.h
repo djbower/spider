@@ -42,7 +42,7 @@ typedef struct _Constants {
 /* struct to hold equation of state parameters */
 /* TODO: currently this is specific to the parameters
    for the rtpress model, but could be generalised further */
-typedef struct _eos {
+typedef struct _Eos {
     PetscScalar V0;
     PetscScalar T0;
     PetscScalar S0;
@@ -295,7 +295,7 @@ typedef struct _Parameters {
 /* Parameters Methods */
 PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *parameters);
 PetscErrorCode PrintParameters(Parameters const *parameters);
-PetscErrorCode SetLookups( Parameters * );
+//PetscErrorCode SetLookups( Parameters * );
 PetscErrorCode ParametersDestroy(Parameters *parameters);
 
 /* ReactionParameters Methods */
