@@ -43,7 +43,7 @@ PetscErrorCode set_eos( Parameters *P )
     switch( P->SOLID_EOS ){
         case 1:
             /* lookup */
-            set_solid_eos_lookup( P );
+            ierr = set_solid_eos_lookup( P );CHKERRQ(ierr);
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLID_EOS value %d provided",P->SOLID_EOS);
@@ -54,11 +54,11 @@ PetscErrorCode set_eos( Parameters *P )
     switch( P->MELT_EOS ){
         case 1:
             /* lookup */
-            set_melt_eos_lookup( P );
+            ierr = set_melt_eos_lookup( P );CHKERRQ(ierr);
             break;
         case 2:
             /* analytical RTpress */
-            set_rtpress_parameters( &P->eos1_parameters );
+            ierr = set_rtpress_parameters( &P->eos1_parameters );CHKERRQ(ierr);
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported MELT_EOS value %d provided",P->MELT_EOS);
