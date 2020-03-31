@@ -2,6 +2,7 @@
 Parameter Management
 
 Parameters should only ever be set by the functions in this file. That is, everywhere else they should be considered read-only.
+TODO: now we have the flexibility for different eos formulations, some parameters are also set in eos.c
 
 Custom PETSc command line options should only ever be parsed here.
 */

@@ -62,7 +62,7 @@ typedef struct _eos {
     PetscScalar PV_UNIT;
     PetscScalar KBOLTZ;
     PetscScalar bscale;
-} Eos;
+} EosParameters;
 
 
 /* Volatiles: each has an options_prefix, set with a particular option
@@ -283,8 +283,8 @@ typedef struct _Parameters {
     RadiogenicIsotopeParameters u238_parameters;
 
     // equation of state
-    Eos eos1; /* for melt */
-    Eos eos2; /* for solid */
+    EosParameters eos1; /* for melt */
+    EosParameters eos2; /* for solid */
 
     // FIXME
     // Composition
