@@ -282,9 +282,9 @@ typedef struct _Parameters {
     RadiogenicIsotopeParameters u235_parameters;
     RadiogenicIsotopeParameters u238_parameters;
 
-    // equation of state
-    EosParameters eos1; /* for melt */
-    EosParameters eos2; /* for solid */
+    // equation of state for melt and solid
+    EosParameters eos1_parameters; /* for melt */
+    EosParameters eos2_parameters; /* for solid */
 
     // FIXME
     // Composition
