@@ -2,7 +2,7 @@
 #include "util.h"
 #include "lookup.h"
 #include "twophase.h"
-#include "rtpress.h"
+#include "eos.h"
 // FIXME
 //#include "composition.h"
 
@@ -151,7 +151,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
         L = &P->melt_prop;
         rho_mel = get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
 /* lookup (original) is below */
-#if 0
+#if 1
         temp_mel = get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
 #endif
 #if 0
@@ -161,7 +161,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
         temp_mel = 0.0; //get_rtpress_temperature( arr_pres_s[i], arr_S_s[i], E );
 /* TODO: above is testing */
 #endif
-#if 1
+#if 0
         /* for testing entropy */
         //temp_mel = get_rtpress_entropy_test( E );
         /* for testing pressure */

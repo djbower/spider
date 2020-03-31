@@ -1,7 +1,16 @@
-#include "rtpress.h"
+#include "eos.h"
+#include "lookup.h"
 #include "monitor.h"
+#include "parameters.h"
 
-/* rtpress material properties */
+/* lookup material properties (default) */
+static PetscErrorCode set_solid_eos_lookup( Parameters * );
+static PetscErrorCode set_melt_eos_lookup( Parameters * );
+static PetscErrorCode set_liquidus_lookup( Parameters * );
+static PetscErrorCode set_solidus_lookup( Parameters * );
+
+/* rtpress material properties (Wolf and Bower, 2018) */
+static PetscErrorCode set_rtpress_parameters( Eos * );
 static PetscScalar get_rtpress_pressure( PetscScalar, PetscScalar, Eos const * );
 static PetscScalar get_rtpress_entropy( PetscScalar, PetscScalar, Eos const * );
 static PetscErrorCode set_rtpress_struct_SI( PetscScalar, PetscScalar, Ctx * );
@@ -11,6 +20,9 @@ static PetscErrorCode set_rtpress_thermal_expansion( Eos const *, EosEval * );
 static PetscErrorCode set_rtpress_heat_capacity_constant_volume( Eos const *, EosEval * );
 static PetscErrorCode set_rtpress_heat_capacity_constant_pressure( Eos const *, EosEval * );
 static PetscErrorCode set_rtpress_isentropic_gradient( Eos const *, EosEval * );
+/* solve for volume and temperature from pressure and entropy */
+static PetscErrorCode objective_function_rtpress_volume_temperature( SNES, Vec, Vec, void * );
+static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx * );
 
 /* helper functions */
 static PetscScalar per_atom_to_specific( PetscScalar, Eos const * );
@@ -18,9 +30,314 @@ static PetscScalar specific_to_per_atom( PetscScalar, Eos const * );
 static PetscScalar joule_to_eV( PetscScalar );
 static PetscScalar eV_to_joule( PetscScalar );
 
-/* solve for volume and temperature from pressure and entropy */
-static PetscErrorCode objective_function_rtpress_volume_temperature( SNES, Vec, Vec, void * );
-static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx * );
+/* set equation of state (EOS).  Currently for a melt and a solid phase, but
+   can be extended for more phases in the future */
+
+PetscErrorCode set_eos( Parameters *P )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    /* set solid eos */
+    switch( P->SOLID_EOS ){
+        case 1:
+            /* lookup */
+            set_solid_eos_lookup( P );
+            break;
+        default:
+            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLID_EOS value %d provided",P->SOLID_EOS);
+            break;
+    }
+
+    /* set melt eos */
+    switch( P->MELT_EOS ){
+        case 1:
+            /* lookup */
+            set_melt_eos_lookup( P );
+            break;
+        case 2:
+            /* analytical RTpress */
+            set_rtpress_parameters( &P->eos1 );
+            break;
+        default:
+            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported MELT_EOS value %d provided",P->MELT_EOS);
+            break;
+    }
+
+    /* set liquidus and solidus from lookup */
+    /* TODO: could also have analytical functions for these as well by using
+       a case structure as above */
+
+    ierr = set_liquidus_lookup( P );CHKERRQ(ierr);
+    ierr = set_solidus_lookup( P );CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+
+
+/*
+ ******************************************************************************
+ * Lookup EOS from data files
+ ******************************************************************************
+*/
+
+/* Helper routine to prepend the root directory to a relative path */
+/* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
+#define STRINGIFY(x) STRINGIFY2(x)
+#define STRINGIFY2(x) #x
+#define SPIDER_ROOT_DIR_STR STRINGIFY(SPIDER_ROOT_DIR)
+static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
+  PetscErrorCode ierr;
+  char tmp[PETSC_MAX_PATH_LEN];
+
+  PetscFunctionBeginUser;
+  ierr = PetscStrcpy(tmp,path);CHKERRQ(ierr);
+  ierr = PetscStrcpy(path,SPIDER_ROOT_DIR_STR);CHKERRQ(ierr); /* lookup.h */
+  ierr = PetscStrcat(path,"/");CHKERRQ(ierr); /* not portable */
+  ierr = PetscStrcat(path,tmp);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+#undef SPIDER_ROOT_DIR_STR
+
+
+static PetscErrorCode set_melt_eos_lookup( Parameters *P )
+{
+  PetscErrorCode  ierr;
+  Constants const *C = &P->constants;
+
+  PetscFunctionBeginUser;
+
+  /* Based on input options, determine which files to load.
+     Options ending with _rel_to_src indicate a path relative
+     to the source code. In this case we prepend a string, SPIDER_ROOT_DIR_STR,
+     and /. The corresponding option without this overrides.
+     See lookup.h for the default paths, relative to the source */
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->alphaMelFilename,"lookup_data/RTmelt/thermal_exp_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename_rel_to_src",P->alphaMelFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->alphaMelFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename",P->alphaMelFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -alphaMel_filename_rel_to_src  ignored because -alphaMel_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->cpMelFilename,"lookup_data/RTmelt/heat_capacity_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpMel_filename_rel_to_src",P->cpMelFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->cpMelFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpMel_filename",P->cpMelFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -cpMel_filename_rel_to_src  ignored because -cpMel_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->dtdpsMelFilename,"lookup_data/RTmelt/adiabat_temp_grad_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsMel_filename_rel_to_src",P->dtdpsMelFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->dtdpsMelFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsMel_filename",P->dtdpsMelFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -dtdpsMel_filename_rel_to_src  ignored because -dtdpsMel_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->rhoMelFilename,"lookup_data/RTmelt/density_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoMel_filename_rel_to_src",P->rhoMelFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->rhoMelFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoMel_filename",P->rhoMelFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -rhoMel_filename_rel_to_src  ignored because -rhoMel_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->tempMelFilename,"lookup_data/RTmelt/temperature_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempMel_filename_rel_to_src",P->tempMelFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->tempMelFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempMel_filename",P->tempMelFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -tempMel_filename_rel_to_src  ignored because -tempMel_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  /* melt lookups */
+  /* 2d */
+  ierr = set_interp2d( P->alphaMelFilename, &P->melt_prop.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
+  ierr = set_interp2d( P->cpMelFilename, &P->melt_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp2d( P->dtdpsMelFilename, &P->melt_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
+  ierr = set_interp2d( P->rhoMelFilename, &P->melt_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
+  ierr = set_interp2d( P->tempMelFilename, &P->melt_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
+  /* const */
+  // TODO: remove this redundancy
+  P->melt_prop.cond = P->cond_mel;
+  P->melt_prop.log10visc = P->log10visc_mel;
+
+  PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_solid_eos_lookup( Parameters *P )
+{
+  PetscErrorCode  ierr;
+  Constants const *C = &P->constants;
+
+  PetscFunctionBeginUser;
+
+  /* Based on input options, determine which files to load.
+     Options ending with _rel_to_src indicate a path relative
+     to the source code. In this case we prepend a string, SPIDER_ROOT_DIR_STR,
+     and /. The corresponding option without this overrides.
+     See lookup.h for the default paths, relative to the source */
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->alphaSolFilename,"lookup_data/RTmelt/thermal_exp_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaSol_filename_rel_to_src",P->alphaSolFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->alphaSolFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaSol_filename",P->alphaSolFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -alphaSol_filename_rel_to_src  ignored because -alphaSol_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->cpSolFilename,"lookup_data/RTmelt/heat_capacity_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpSol_filename_rel_to_src",P->cpSolFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->cpSolFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpSol_filename",P->cpSolFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -cpSol_filename_rel_to_src  ignored because -cpSol_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->dtdpsSolFilename,"lookup_data/RTmelt/adiabat_temp_grad_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsSol_filename_rel_to_src",P->dtdpsSolFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->dtdpsSolFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsSol_filename",P->dtdpsSolFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -dtdpsSol_filename_rel_to_src  ignored because -dtdpsSol_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->rhoSolFilename,"lookup_data/RTmelt/density_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoSol_filename_rel_to_src",P->rhoSolFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->rhoSolFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoSol_filename",P->rhoSolFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -rhoSol_filename_rel_to_src  ignored because -rhoSol_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->tempSolFilename,"lookup_data/RTmelt/temperature_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempSol_filename_rel_to_src",P->tempSolFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->tempSolFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempSol_filename",P->tempSolFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -tempSol_filename_rel_to_src  ignored because -tempSol_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  ierr= set_interp2d( P->alphaSolFilename, &P->solid_prop.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
+  ierr = set_interp2d( P->cpSolFilename, &P->solid_prop.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp2d( P->dtdpsSolFilename, &P->solid_prop.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
+  ierr = set_interp2d( P->rhoSolFilename, &P->solid_prop.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
+  ierr = set_interp2d( P->tempSolFilename, &P->solid_prop.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
+  /* const */
+  // TODO: remove this redundancy
+  P->solid_prop.cond = P->cond_sol;
+  P->solid_prop.log10visc = P->log10visc_sol;
+
+  PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_liquidus_lookup( Parameters *P )
+{
+  PetscErrorCode  ierr;
+  Constants const *C = &P->constants;
+
+  PetscFunctionBeginUser;
+
+  /* Based on input options, determine which files to load.
+     Options ending with _rel_to_src indicate a path relative
+     to the source code. In this case we prepend a string, SPIDER_ROOT_DIR_STR,
+     and /. The corresponding option without this overrides.
+     See lookup.h for the default paths, relative to the source */
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->liquidusFilename,"lookup_data/RTmelt/liquidus_andrault2011.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename_rel_to_src",P->liquidusFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->liquidusFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename",P->liquidusFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -liquidus_filename_rel_to_src  ignored because -liquidus_filename provided\n");CHKERRQ(ierr);
+    }      
+  }
+
+  /* FIXME: unnecessary duplication? */
+  ierr = set_interp1d( P->liquidusFilename, &P->solid_prop.liquidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp1d( P->liquidusFilename, &P->melt_prop.liquidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode set_solidus_lookup( Parameters *P )
+{
+  PetscErrorCode  ierr;
+  Constants const *C = &P->constants;
+
+  PetscFunctionBeginUser;
+
+  /* Based on input options, determine which files to load.
+     Options ending with _rel_to_src indicate a path relative
+     to the source code. In this case we prepend a string, SPIDER_ROOT_DIR_STR,
+     and /. The corresponding option without this overrides.
+     See lookup.h for the default paths, relative to the source */
+
+  {
+    PetscBool set_rel_to_src,set;
+    ierr = PetscStrcpy(P->solidusFilename,"lookup_data/RTmelt/solidus_andrault2011.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename_rel_to_src",P->solidusFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(P->solidusFilename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename",P->solidusFilename,PETSC_MAX_PATH_LEN,&set);
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -solidus_filename_rel_to_src  ignored because -solidus_filename provided\n");CHKERRQ(ierr);
+    }
+  }
+
+  /* FIXME: unnecessary duplication? */
+  ierr = set_interp1d( P->solidusFilename, &P->solid_prop.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = set_interp1d( P->solidusFilename, &P->melt_prop.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+
+}
+
+/*
+ ******************************************************************************
+ * RTpress model (analytical) from Wolf and Bower (2018)
+ ******************************************************************************
+*/
 
 PetscErrorCode set_rtpress_parameters( Eos *rtp )
 {
@@ -115,7 +432,7 @@ PetscScalar get_rtpress_pressure_test( Ctx *E )
        FIXME: need to truncate negative values?  Perhaps not for
        smoothness of solver during inversion? */
 
-    Eos         *rtp = &E->parameters.rtpress;
+    Eos         *rtp = &E->parameters.eos1;
     PetscScalar P, T, V, volfrac;
 
     volfrac = 0.6;
@@ -190,7 +507,7 @@ PetscScalar get_rtpress_entropy_test( Ctx *E )
 
     /* seems to confirm S is correct */
 
-    Eos         *rtp = &E->parameters.rtpress;
+    Eos         *rtp = &E->parameters.eos1;
     PetscScalar S, T, V, volfrac;
 
     volfrac = 0.6;
@@ -402,8 +719,8 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx *E )
     Vec            x,r;
     PetscScalar    *xx;
     PetscInt       i;
-    Eos                        *rtp = &E->parameters.rtpress;
-    EosEval        *eos_eval = &E->eos_eval;
+    Eos                        *rtp = &E->parameters.eos1;
+    EosEval        *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"solve_for_rtpress_volume_temperature()\n");CHKERRQ(ierr);
@@ -487,8 +804,8 @@ static PetscErrorCode objective_function_rtpress_volume_temperature( SNES snes, 
     PetscScalar                *ff;
     PetscScalar                V, T, P, S;
     Ctx                        *E = (Ctx*) ptr;
-    Eos                        *rtp = &E->parameters.rtpress;
-    EosEval                    *eos_eval = &E->eos_eval;
+    Eos                        *rtp = &E->parameters.eos1;
+    EosEval                    *eos_eval = &E->eos1_eval;
     PetscScalar Ptarget = eos_eval->P;
     PetscScalar Starget = eos_eval->S;
 
@@ -521,8 +838,8 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
        eos_eval struct with the material properties */
 
     Constants const            *C = &E->parameters.constants;
-    Eos                        *rtp = &E->parameters.rtpress;
-    EosEval                    *eos_eval = &E->eos_eval;
+    Eos                        *rtp = &E->parameters.eos1;
+    EosEval                    *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
 
@@ -574,7 +891,7 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
 static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx *E )
 {
     Constants const            *C = &E->parameters.constants;
-    EosEval                    *eos_eval = &E->eos_eval;
+    EosEval                    *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
 

@@ -31,16 +31,16 @@ typedef struct _Interp2d {
 typedef struct _Lookup {
     Interp2d rho; /* density, kg / m^3 */
     Interp2d dTdPs; /* adiabatic temperature gradient, K / Pa */
-    Interp2d cp; /* heat capacity, J / (kg K) */
+    Interp2d cp; /* heat capacity, J / kg / K */
     Interp2d temp; /* temperature, K */
     Interp2d alpha; /* thermal expansion, 1/K */
-    PetscScalar cond; /* thermal conductivity, W / (m K) */
+    PetscScalar cond; /* thermal conductivity, W / m / K */
     PetscScalar log10visc; /* log base 10 of viscosity */
-    /*for single component system these are the same for both solid
+    /* for single component system these are the same for both solid
       and melt phases, but formulating it this way might provide a
       a way forward for a multicomponent system */
-    Interp1d liquidus; /* liquidus, J / (kg K) */
-    Interp1d solidus; /* solidus, J / (kg K) */
+    Interp1d liquidus; /* liquidus, J / kg / K */
+    Interp1d solidus; /* solidus, J / kg / K */
 } Lookup;
 
 PetscErrorCode set_interp1d( const char *, Interp1d *, PetscScalar, PetscScalar );

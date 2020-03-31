@@ -265,6 +265,9 @@ typedef struct _Parameters {
     PetscScalar lid_log10visc;
     PetscScalar lid_thickness;
 
+    PetscInt    SOLID_EOS;
+    PetscInt    MELT_EOS;
+
     // Additional Atmosphere Parameters
     AtmosphereParameters atmosphere_parameters;
 
@@ -280,7 +283,8 @@ typedef struct _Parameters {
     RadiogenicIsotopeParameters u238_parameters;
 
     // equation of state
-    Eos rtpress;
+    Eos eos1; /* for melt */
+    Eos eos2; /* for solid */
 
     // FIXME
     // Composition
