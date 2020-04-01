@@ -2,9 +2,13 @@
 #define PARAMETERS_H_
 
 #include <petsc.h>
-#include "lookup.h"
 
-/* dimensionalising constants */
+/*
+ ******************************************************************************
+ * Dimensional constants
+ ******************************************************************************
+ */
+
 typedef struct _Constants {
     // primary
     PetscScalar RADIUS;
@@ -39,9 +43,54 @@ typedef struct _Constants {
     PetscScalar HEATGEN;
 } Constants;
 
-/* struct to hold equation of state parameters */
-/* TODO: currently this is specific to the parameters
-   for the rtpress model, but could be generalised further */
+/*
+ ******************************************************************************
+ * Equation of state parameters
+ ******************************************************************************
+ */
+
+/* 1-D lookup */
+typedef struct _Interp1d {
+    PetscInt    NX; 
+    PetscScalar *xa;
+    PetscScalar xmin;
+    PetscScalar xmax;
+    PetscScalar *ya;
+    PetscScalar ymin;
+    PetscScalar ymax;
+} Interp1d;
+
+/* 2-D lookup */
+typedef struct _Interp2d {
+    PetscInt    NX; 
+    PetscScalar *xa;
+    PetscScalar xmin;
+    PetscScalar xmax;
+    PetscScalar dx; 
+    PetscInt    NY; 
+    PetscScalar *ya;
+    PetscScalar ymin;
+    PetscScalar ymax;
+    PetscScalar dy; 
+    PetscScalar **za;
+} Interp2d;
+
+/* lookup */
+typedef struct _Lookup {
+    Interp2d rho; /* density, kg/m^3 */
+    Interp2d dTdPs; /* adiabatic temperature gradient, K/Pa */
+    Interp2d cp; /* heat capacity, J/kg/K */
+    Interp2d temp; /* temperature, K */
+    Interp2d alpha; /* thermal expansion, 1/K */
+    PetscScalar cond; /* thermal conductivity, W/m/K */
+    PetscScalar log10visc; /* log base 10 of viscosity */
+    /* TODO: might be better to store melting curve data
+       in a different struct */
+    Interp1d liquidus; /* liquidus, J/kg/K */
+    Interp1d solidus; /* solidus, J/kg/K */
+} Lookup;
+
+/* EOS */
 typedef struct _EosParameters {
     PetscScalar V0;
     PetscScalar T0;
@@ -62,11 +111,14 @@ typedef struct _EosParameters {
     PetscScalar PV_UNIT;
     PetscScalar KBOLTZ;
     PetscScalar bscale;
-    /* if the user wants to use lookup tables, these are effectively
-       the same as EOS parameters */
     Lookup lookup;
 } EosParameters;
 
+/*
+ ******************************************************************************
+ * Volatile parameters
+ ******************************************************************************
+ */
 
 /* Volatiles: each has an options_prefix, set with a particular option
    and used to look for additional options to populate the other data.
@@ -94,22 +146,23 @@ typedef struct VolatileParameters_ {
 } VolatileParameters;
 
 /*
+ ******************************************************************************
+ * Reaction parameters
+ ******************************************************************************
+ */
+
+/*
 ReactionParameters: an object which describes a particular type of chemical equilibrium.
 
-Specifically, it represents the situation where two or more volatiles in the
-liquid phase (in the mantle) can be converted (reversibly, unconditionally) to
-one another by means of chemical reactions, and where these volatiles are in
-(instantaneous, quasi-static) equilibrium, as described by some
-(time-and-state-dependent) function.
+Specifically, it represents the situation where two or more volatiles can be 
+converted (reversibly, unconditionally) to one another by means of chemical 
+reactions, and where these volatiles are in (instantaneous, quasi-static) 
+equilibrium, as described by some (time-and-state-dependent) function.
 
 Thus, the data are:
 - A set of N volatiles, identified by indices corresponding to volatile species.
 - A set of N coefficients stoichiometry_i
   The sign of these defines the direction of the reaction; positive implies a product, negative a reactant.
-
-Developers' Note: this class's name should change if we ever want to consider
-reactions occuring anywhere except in the liquid mantle, e.g. in the
-atmosphere.
 
 Developers' Note: this class is done "properly", in that Reaction is a pointer
 to a struct, not itself a struct.  Other classes in SPIDER aren't (yet) all
@@ -129,7 +182,12 @@ typedef data_ReactionParameters* ReactionParameters;
    ReactionParameters could be dynamically allocated and freed.*/
 #define SPIDER_MAX_REACTIONS 8
 
-/* for storing atmosphere outputs */
+/*
+ ******************************************************************************
+ * Atmosphere parameters
+ ******************************************************************************
+ */
+
 typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY} MagmaOceanAtmosphereType;
 typedef enum {OXYGEN_FUGACITY_NONE=0,OXYGEN_FUGACITY_CI,OXYGEN_FUGACITY_CV,OXYGEN_FUGACITY_H,OXYGEN_FUGACITY_EH,OXYGEN_FUGACITY_EUCRITE,OXYGEN_FUGACITY_IW,OXYGEN_FUGACITY_IW_MINUS_ONE,OXYGEN_FUGACITY_IW_MINUS_TWO,OXYGEN_FUGACITY_IW_MINUS_THREE} OxygenFugacityType;
 typedef struct AtmosphereParameters_ {
@@ -165,7 +223,12 @@ typedef struct AtmosphereParameters_ {
     PetscScalar const * mantle_mass_ptr;
 } AtmosphereParameters;
 
-/* radiogenic heating */
+/*
+ ******************************************************************************
+ * Radiogenic heating parameters
+ ******************************************************************************
+ */
+
 typedef struct RadiogenicIsotopeParameters_ {
     PetscScalar t0;
     PetscScalar abundance; // isotopic abundance at t0
@@ -183,6 +246,12 @@ typedef struct CompositionParameters_ {
     PetscScalar BSE_Brg_mass_ratio_at_liquidus; // computed by code, but fixed with time
 } CompositionParameters;
 #endif
+
+/*
+ ******************************************************************************
+ * Main parameters structure
+ ******************************************************************************
+*/
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct _Parameters {
@@ -293,20 +362,19 @@ typedef struct _Parameters {
 } Parameters;
 
 /* Parameters Methods */
-PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *parameters);
-PetscErrorCode PrintParameters(Parameters const *parameters);
-//PetscErrorCode SetLookups( Parameters * );
-PetscErrorCode ParametersDestroy(Parameters *parameters);
+PetscErrorCode InitializeParametersAndSetFromOptions( Parameters * );
+PetscErrorCode PrintParameters( Parameters const * );
+PetscErrorCode ParametersDestroy( Parameters * );
 
 /* ReactionParameters Methods */
-PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters*,const AtmosphereParameters*);
-PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters*,const AtmosphereParameters*);
-PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters*,const AtmosphereParameters*);
-PetscErrorCode ReactionParametersCreateWater1(ReactionParameters*,const AtmosphereParameters*);
-PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters*,const AtmosphereParameters*);
-PetscErrorCode ReactionParametersCreateSimpleWater2(ReactionParameters*,const AtmosphereParameters*);
-PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters*,const AtmosphereParameters*);
-PetscErrorCode ReactionParametersCreateMiddleWater2(ReactionParameters*,const AtmosphereParameters*);
-PetscErrorCode ReactionParametersDestroy(ReactionParameters*);
+PetscErrorCode ReactionParametersCreateAmmonia1( ReactionParameters *, const AtmosphereParameters * );
+PetscErrorCode ReactionParametersCreateCarbonDioxide1( ReactionParameters *, const AtmosphereParameters * );
+PetscErrorCode ReactionParametersCreateMethane1( ReactionParameters *, const AtmosphereParameters * );
+PetscErrorCode ReactionParametersCreateWater1( ReactionParameters *, const AtmosphereParameters * );
+PetscErrorCode ReactionParametersCreateSimpleWater1( ReactionParameters *, const AtmosphereParameters * );
+PetscErrorCode ReactionParametersCreateSimpleWater2( ReactionParameters *, const AtmosphereParameters * );
+PetscErrorCode ReactionParametersCreateSimpleWater3( ReactionParameters *, const AtmosphereParameters * );
+PetscErrorCode ReactionParametersCreateMiddleWater2( ReactionParameters *, const AtmosphereParameters * );
+PetscErrorCode ReactionParametersDestroy( ReactionParameters *);
 
 #endif

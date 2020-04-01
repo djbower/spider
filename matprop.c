@@ -1,6 +1,5 @@
 #include "matprop.h"
 #include "util.h"
-#include "lookup.h"
 #include "twophase.h"
 #include "eos.h"
 // FIXME
