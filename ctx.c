@@ -1,5 +1,4 @@
 #include "ctx.h"
-#include "eos.h"
 #include "mesh.h"
 #include "twophase.h"
 #include "util.h"
@@ -140,26 +139,6 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   Parameters *P = &ctx->parameters;
 
   PetscFunctionBeginUser;
-
-  /* destroy malloc arrays in interp objects */
-  /* interp1d */
-  /* TODO: if we have different options for the melting curves (e.g. analytic)
-     then we may not allocate memory (and thus should not try to deallocate
-     here) */
-  Interp1dDestroy( &P->eos2_parameters.lookup.liquidus );
-  Interp1dDestroy( &P->eos2_parameters.lookup.solidus );
-  Interp1dDestroy( &P->eos1_parameters.lookup.liquidus );
-  Interp1dDestroy( &P->eos1_parameters.lookup.solidus );
-
-  /* interp2d if allocated */
-  if( P->SOLID_EOS == 1 ){
-      EosParametersInterp2dDestroy( &P->eos2_parameters );
-  }
-
-  /* interp2d if allocated */
-  if( P->MELT_EOS == 1 ){
-      EosParametersInterp2dDestroy( &P->eos1_parameters );
-  }
 
   /* Destroy data allocated in Ctx */
   ierr = DimensionalisableFieldDestroy(&ctx->solDF);CHKERRQ(ierr);
