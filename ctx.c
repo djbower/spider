@@ -1,9 +1,8 @@
 #include "ctx.h"
-#include "lookup.h"
+#include "eos.h"
 #include "mesh.h"
 #include "twophase.h"
 #include "util.h"
-#include "atmosphere.h"
 // FIXME
 //#include "composition.h"
 

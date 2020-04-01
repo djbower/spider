@@ -12,4 +12,11 @@ PetscErrorCode set_rtpress_struct( PetscScalar, PetscScalar, Ctx * );
 PetscScalar get_rtpress_pressure_test( Ctx * );
 PetscScalar get_rtpress_entropy_test( Ctx * );
 
+/* to free memory */
+void free_interp1d( Interp1d * );
+void free_interp2d( Interp2d * );
+
+PetscScalar get_val1d( Interp1d const *, PetscScalar );
+PetscScalar get_val2d( Interp2d const *, PetscScalar, PetscScalar );
+
 #endif

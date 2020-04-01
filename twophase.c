@@ -1,7 +1,7 @@
 #include "dimensionalisablefield.h"
 #include "twophase.h"
 #include "util.h"
-#include "lookup.h"
+#include "eos.h"
 #include "rheologicalfront.h"
 
 static PetscErrorCode set_liquidus( Ctx * );
