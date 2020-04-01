@@ -1,7 +1,6 @@
 #ifndef ATMOSPHERE_H_
 #define ATMOSPHERE_H_
 
-#include <petsc.h>
 #include "parameters.h"
 #include "cJSON.h"
 #include "dimensionalisablefield.h"
