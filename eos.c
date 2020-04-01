@@ -10,6 +10,10 @@ static PetscErrorCode set_solid_eos_lookup( EosParameters *, Parameters * );
 static PetscErrorCode set_melt_eos_lookup( EosParameters *, Parameters * );
 static PetscErrorCode set_liquidus_lookup( EosParameters *, EosParameters *, Parameters * );
 static PetscErrorCode set_solidus_lookup( EosParameters *, EosParameters *, Parameters * );
+static void Interp1dDestroy( Interp1d * );
+static void Interp2dDestroy( Interp2d * );
+static void EosParametersInterp1dDestroy( EosParameters * );
+static void EosParametersInterp2dDestroy( EosParameters * );
 
 /* rtpress material properties (Wolf and Bower, 2018) */
 static PetscErrorCode set_rtpress_parameters( EosParameters * );
@@ -86,7 +90,7 @@ PetscErrorCode set_eos( Parameters *P )
  ******************************************************************************
 */
 
-PetscErrorCode EosParametersCreateInterp1d( const char * filename, Interp1d *interp, PetscScalar xconst, PetscScalar yconst )
+static PetscErrorCode EosParametersCreateInterp1d( const char * filename, Interp1d *interp, PetscScalar xconst, PetscScalar yconst )
 {
     FILE *fp;
     PetscInt i=0;
@@ -178,7 +182,7 @@ PetscErrorCode EosParametersCreateInterp1d( const char * filename, Interp1d *int
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode EosParametersCreateInterp2d( const char * filename, Interp2d *interp, PetscScalar xconst, PetscScalar yconst, PetscScalar zconst )
+static PetscErrorCode EosParametersCreateInterp2d( const char * filename, Interp2d *interp, PetscScalar xconst, PetscScalar yconst, PetscScalar zconst )
 {
     FILE *fp;
     PetscInt i=0, j=0, k=0;
@@ -464,14 +468,14 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     return result;
 }
 
-void Interp1dDestroy( Interp1d *interp ){
+static void Interp1dDestroy( Interp1d *interp ){
 
     free( interp->xa );
     free( interp->ya );
 
 }
                                                              
-void Interp2dDestroy( Interp2d *interp ){
+static void Interp2dDestroy( Interp2d *interp ){
 
     PetscInt i;
     PetscInt NX = interp->NX;
@@ -484,14 +488,38 @@ void Interp2dDestroy( Interp2d *interp ){
     free( interp->ya );
 }
 
-void EosParametersInterp2dDestroy( EosParameters *eosp )
+static void EosParametersInterp1dDestroy( EosParameters *eosp )
 {
+    Interp1dDestroy( &eosp->lookup.liquidus );
+    Interp1dDestroy( &eosp->lookup.solidus );
 
+}
+
+static void EosParametersInterp2dDestroy( EosParameters *eosp )
+{
     Interp2dDestroy( &eosp->lookup.alpha );
     Interp2dDestroy( &eosp->lookup.cp );
     Interp2dDestroy( &eosp->lookup.dTdPs );
     Interp2dDestroy( &eosp->lookup.rho );
     Interp2dDestroy( &eosp->lookup.temp );
+
+}
+
+void EosParametersDestroy( Parameters *P )
+{
+
+    EosParametersInterp1dDestroy( &P->eos2_parameters );
+    EosParametersInterp1dDestroy( &P->eos1_parameters );
+
+    /* interp2d if allocated */
+    if( P->SOLID_EOS == 1 ){
+        EosParametersInterp2dDestroy( &P->eos2_parameters );
+    }
+
+    /* interp2d if allocated */
+    if( P->MELT_EOS == 1 ){
+        EosParametersInterp2dDestroy( &P->eos1_parameters );
+    }
 
 }
 

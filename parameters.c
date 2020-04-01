@@ -927,7 +927,7 @@ PetscErrorCode PrintParameters(Parameters const *P)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode AtmosphereParametersDestroy(AtmosphereParameters* Ap)
+static PetscErrorCode AtmosphereParametersDestroy(AtmosphereParameters* Ap)
 {
   PetscErrorCode ierr;
   PetscInt       i;
@@ -946,5 +946,6 @@ PetscErrorCode ParametersDestroy(Parameters* parameters)
 
   PetscFunctionBeginUser;
   ierr = AtmosphereParametersDestroy(&parameters->atmosphere_parameters);CHKERRQ(ierr);
+  EosParametersDestroy(parameters);
   PetscFunctionReturn(0);
 }
