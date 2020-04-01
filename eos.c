@@ -92,6 +92,7 @@ PetscErrorCode set_eos( Parameters *P )
 
 static PetscErrorCode EosParametersCreateInterp1d( const char * filename, Interp1d *interp, PetscScalar xconst, PetscScalar yconst )
 {
+    PetscErrorCode ierr;
     FILE *fp;
     PetscInt i=0;
     char string[PETSC_MAX_PATH_LEN];
@@ -120,8 +121,8 @@ static PetscErrorCode EosParametersCreateInterp1d( const char * filename, Interp
                elsewhere in the code will also break) */
             sscanf( string, "%d %d", &HEAD, &NX );
             /* make arrays based on the sizes in the header */
-            interp->xa = Make1DPetscScalarArray( NX );
-            interp->ya = Make1DPetscScalarArray( NX );
+            ierr = PetscMalloc1( NX, &interp->xa ); CHKERRQ(ierr);
+            ierr = PetscMalloc1( NX, &interp->ya ); CHKERRQ(ierr);
         }
 
         /* get column scalings from last line of header */
@@ -184,6 +185,7 @@ static PetscErrorCode EosParametersCreateInterp1d( const char * filename, Interp
 
 static PetscErrorCode EosParametersCreateInterp2d( const char * filename, Interp2d *interp, PetscScalar xconst, PetscScalar yconst, PetscScalar zconst )
 {
+    PetscErrorCode ierr;
     FILE *fp;
     PetscInt i=0, j=0, k=0;
     char string[PETSC_MAX_PATH_LEN];
@@ -218,8 +220,8 @@ static PetscErrorCode EosParametersCreateInterp2d( const char * filename, Interp
                elsewhere in the code will also break) */
             sscanf( string, "%d %d %d", &HEAD, &NX, &NY );
             /* make arrays based on the sizes in the header */
-            interp->xa = Make1DPetscScalarArray( NX );
-            interp->ya = Make1DPetscScalarArray( NY );
+            ierr = PetscMalloc1( NX, &interp->xa ); CHKERRQ(ierr);
+            ierr = PetscMalloc1( NY, &interp->ya ); CHKERRQ(ierr);
             interp->za = Make2DPetscScalarArray( NX, NY );
         }   
 
@@ -490,8 +492,8 @@ static void Interp2dDestroy( Interp2d *interp ){
         free( interp->za[i] );
     }
     free( interp->za );
-    free( interp->xa );
-    free( interp->ya );
+    PetscFree( interp->xa );
+    PetscFree( interp->ya );
 }
 
 static PetscErrorCode EosParametersInterp1dDestroy( EosParameters *eosp )
