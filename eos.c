@@ -10,9 +10,9 @@ static PetscErrorCode set_solid_eos_lookup( EosParameters *, Parameters * );
 static PetscErrorCode set_melt_eos_lookup( EosParameters *, Parameters * );
 static PetscErrorCode set_liquidus_lookup( EosParameters *, EosParameters *, Parameters * );
 static PetscErrorCode set_solidus_lookup( EosParameters *, EosParameters *, Parameters * );
-static void Interp1dDestroy( Interp1d * );
+static PetscErrorCode Interp1dDestroy( Interp1d * );
 static void Interp2dDestroy( Interp2d * );
-static void EosParametersInterp1dDestroy( EosParameters * );
+static PetscErrorCode EosParametersInterp1dDestroy( EosParameters * );
 static void EosParametersInterp2dDestroy( EosParameters * );
 
 /* rtpress material properties (Wolf and Bower, 2018) */
@@ -468,10 +468,16 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     return result;
 }
 
-static void Interp1dDestroy( Interp1d *interp ){
+static PetscErrorCode Interp1dDestroy( Interp1d *interp ){
 
-    free( interp->xa );
-    free( interp->ya );
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscFree( interp->xa ); CHKERRQ(ierr);
+    ierr = PetscFree( interp->ya ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
 
 }
                                                              
@@ -488,10 +494,16 @@ static void Interp2dDestroy( Interp2d *interp ){
     free( interp->ya );
 }
 
-static void EosParametersInterp1dDestroy( EosParameters *eosp )
+static PetscErrorCode EosParametersInterp1dDestroy( EosParameters *eosp )
 {
-    Interp1dDestroy( &eosp->lookup.liquidus );
-    Interp1dDestroy( &eosp->lookup.solidus );
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = Interp1dDestroy( &eosp->lookup.liquidus ); CHKERRQ(ierr);
+    ierr = Interp1dDestroy( &eosp->lookup.solidus ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
 
 }
 
