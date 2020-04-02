@@ -332,7 +332,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       cp_sol = get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
       temp_sol = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
       alpha_sol = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
-      cond_sol = P->cond_sol;
+      cond_sol = P->eos2_parameters.cond;
       log10visc_sol = get_log10_viscosity_solid( temp_sol, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
 
       /* melt phase */
@@ -342,7 +342,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       cp_mel = get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
       temp_mel = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
       alpha_mel = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
-      cond_mel = P->cond_mel;
+      cond_mel = P->eos1_parameters.cond;
       log10visc_mel = get_log10_viscosity_melt( temp_mel, arr_pres[i], arr_layer_b[i], P );
 
       /* mixed phase */
@@ -369,7 +369,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       cp_mix = arr_cp_mix[i];
       temp_mix = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
       alpha_mix = -arr_fusion_rho[i] / arr_fusion_temp[i] / rho_mix;
-      cond_mix = combine_matprop( arr_phi[i], P->cond_mel, P->cond_sol );
+      cond_mix = combine_matprop( arr_phi[i], P->eos1_parameters.cond, P->eos2_parameters.cond );
       /* need to get viscosity of melt and solid phases at the liquidus and solidus temperature,
          since this is consistent with the notion of ignoring temperature effects in the mixed
          phase region (e.g., for density) */
@@ -556,13 +556,13 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
     
 
     /* reference viscosity */
-    lvisc = P->log10visc_sol; // i.e., log10(eta_0)
+    lvisc = P->eos2_parameters.log10visc; // i.e., log10(eta_0)
 
     /* temperature and pressure contribution
     A(T,P) = (E_a + V_a P) / RT
     eta = eta_0 * exp(A)
     log10(eta) = log10(eta0) + log10(exp(A))
-    log10(eta) = P->log10visc_sol + A/ln(10) */
+    log10(eta) = P->eos2_parameters.log10visc + A/ln(10) */
     A = 0.0;
     if(Ea>0.0)
         A += Ea;
@@ -626,7 +626,7 @@ static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScala
 
     PetscScalar lvisc;
 
-    lvisc = P->log10visc_mel;
+    lvisc = P->eos1_parameters.log10visc;
 
     lvisc = get_log10_viscosity_cutoff( lvisc, P );
 

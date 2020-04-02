@@ -92,10 +92,7 @@ typedef struct _Lookup {
     Interp2d cp; /* heat capacity, J/kg/K */
     Interp2d temp; /* temperature, K */
     Interp2d alpha; /* thermal expansion, 1/K */
-    PetscScalar cond; /* thermal conductivity, W/m/K */
-    PetscScalar log10visc; /* log base 10 of viscosity */
-    /* TODO: might be better to store melting curve data
-       in a different struct */
+    /* TODO: eventually melting curves may move elsewhere */
     Interp1d liquidus; /* liquidus, J/kg/K */
     Interp1d solidus; /* solidus, J/kg/K */
 } Lookup;
@@ -121,6 +118,9 @@ typedef struct _EosParameters {
     PetscScalar PV_UNIT;
     PetscScalar KBOLTZ;
     PetscScalar bscale;
+    /* include thermal and transport properties */
+    PetscScalar cond; /* thermal conductivity, W/m/K */
+    PetscScalar log10visc; /* log base 10 of viscosity */
     Lookup lookup;
 } EosParameters;
 
@@ -282,22 +282,9 @@ typedef struct _Parameters {
     PetscInt    SOLID_EOS;
     PetscInt    MELT_EOS;
 
-// FIXME: MOVED INTO EOS PARAMETERS, LOOKUP
     // Lookup tables
     char        liquidusFilename[PETSC_MAX_PATH_LEN];
     char        solidusFilename[PETSC_MAX_PATH_LEN];
-#if 0
-    char        alphaSolFilename[PETSC_MAX_PATH_LEN];
-    char        alphaMelFilename[PETSC_MAX_PATH_LEN];
-    char        cpSolFilename[PETSC_MAX_PATH_LEN];
-    char        cpMelFilename[PETSC_MAX_PATH_LEN];
-    char        dtdpsSolFilename[PETSC_MAX_PATH_LEN];
-    char        dtdpsMelFilename[PETSC_MAX_PATH_LEN];
-    char        rhoSolFilename[PETSC_MAX_PATH_LEN];
-    char        rhoMelFilename[PETSC_MAX_PATH_LEN];
-    char        tempSolFilename[PETSC_MAX_PATH_LEN];
-    char        tempMelFilename[PETSC_MAX_PATH_LEN];
-#endif
 
     //  "Standard" parameters
     MagmaOceanCoreType CORE_BC;

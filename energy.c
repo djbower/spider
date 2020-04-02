@@ -389,7 +389,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     ierr = VecScale( S->Jgrav, P->gravity );CHKERRQ(ierr);
     ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, F );CHKERRQ(ierr);
     // arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
-    ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, P->log10visc_mel));CHKERRQ(ierr);
+    ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, P->eos1_parameters.log10visc));CHKERRQ(ierr);
 
     ierr = VecDestroy(&cond1);CHKERRQ(ierr);
     ierr = VecDestroy(&cond2);CHKERRQ(ierr);

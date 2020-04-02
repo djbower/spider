@@ -2,7 +2,6 @@
 Parameter Management
 
 Parameters should only ever be set by the functions in this file. That is, everywhere else they should be considered read-only.
-TODO: now we have the flexibility for different eos formulations, some parameters are also set in eos.c
 
 Custom PETSc command line options should only ever be parsed here.
 */
@@ -403,11 +402,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   P->matprop_smooth_width = 1.0E-2;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-matprop_smooth_width",&P->matprop_smooth_width,NULL);CHKERRQ(ierr);
 
-  /* solid viscosity (Pa.s)
-     this is a prefactor if activation_energy_sol or activation_volume_sol are non-zero */
-  P->log10visc_sol = 21.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_sol",&P->log10visc_sol,NULL);CHKERRQ(ierr);
-  P->log10visc_sol -= C->LOG10VISC;
+  /* TODO: primary viscosity is stored with the EOS parameters, and may these should be too.  Or setup
+     a viscosity struct to contain viscosity-related parameters */
 
   /* solid activation energy (J/mol) */
   PetscScalar Rgas = 8.314; // gas constant (J/K/mol)
@@ -435,21 +431,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   if( P->log10visc_max > 0.0 ){
       P->log10visc_max -= C->LOG10VISC;
   }
-
-  /* solid conductivity (W/m-K) */
-  P->cond_sol = 4.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_sol",&P->cond_sol,NULL);CHKERRQ(ierr);
-  P->cond_sol /= C->COND;
-
-  /* melt viscosity (Pa.s) */
-  P->log10visc_mel = 2.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_mel",&P->log10visc_mel,NULL);CHKERRQ(ierr);
-  P->log10visc_mel -= C->LOG10VISC;
-
-  /* melt conductivity (W/m-K) */
-  P->cond_mel = 4.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_mel",&P->cond_mel,NULL);CHKERRQ(ierr);
-  P->cond_mel /= C->COND;
 
   /* option to scale eddy diffusivities for temperature and chemistry, or set as constants */
   P->eddy_diffusivity_thermal = 1.0;
