@@ -570,68 +570,69 @@ static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters *P )
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->alphaMelFilename,"lookup_data/RTmelt/thermal_exp_melt.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename_rel_to_src",P->alphaMelFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->alphaMelFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename",P->alphaMelFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup.alpha_filename,"lookup_data/RTmelt/thermal_exp_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename_rel_to_src",eosp->lookup.alpha_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup.alpha_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename",eosp->lookup.alpha_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -alphaMel_filename_rel_to_src  ignored because -alphaMel_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -alphaMel_filename_rel_to_src ignored because -alphaMel_filename provided\n");CHKERRQ(ierr);
     }
   }
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->cpMelFilename,"lookup_data/RTmelt/heat_capacity_melt.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-cpMel_filename_rel_to_src",P->cpMelFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->cpMelFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-cpMel_filename",P->cpMelFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup.cp_filename,"lookup_data/RTmelt/heat_capacity_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpMel_filename_rel_to_src",eosp->lookup.cp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup.cp_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpMel_filename",eosp->lookup.cp_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -cpMel_filename_rel_to_src  ignored because -cpMel_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -cpMel_filename_rel_to_src ignored because -cpMel_filename provided\n");CHKERRQ(ierr);
     }
   }
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->dtdpsMelFilename,"lookup_data/RTmelt/adiabat_temp_grad_melt.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsMel_filename_rel_to_src",P->dtdpsMelFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->dtdpsMelFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsMel_filename",P->dtdpsMelFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup.dTdPs_filename,"lookup_data/RTmelt/adiabat_temp_grad_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsMel_filename_rel_to_src",eosp->lookup.dTdPs_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup.dTdPs_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsMel_filename",eosp->lookup.dTdPs_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -dtdpsMel_filename_rel_to_src  ignored because -dtdpsMel_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -dtdpsMel_filename_rel_to_src ignored because -dtdpsMel_filename provided\n");CHKERRQ(ierr);
     }
   }
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->rhoMelFilename,"lookup_data/RTmelt/density_melt.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-rhoMel_filename_rel_to_src",P->rhoMelFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->rhoMelFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-rhoMel_filename",P->rhoMelFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup.rho_filename,"lookup_data/RTmelt/density_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoMel_filename_rel_to_src",eosp->lookup.rho_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup.rho_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoMel_filename",eosp->lookup.rho_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -rhoMel_filename_rel_to_src  ignored because -rhoMel_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -rhoMel_filename_rel_to_src ignored because -rhoMel_filename provided\n");CHKERRQ(ierr);
     }
   }
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->tempMelFilename,"lookup_data/RTmelt/temperature_melt.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-tempMel_filename_rel_to_src",P->tempMelFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->tempMelFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-tempMel_filename",P->tempMelFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup.temp_filename,"lookup_data/RTmelt/temperature_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempMel_filename_rel_to_src",eosp->lookup.temp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup.temp_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempMel_filename",eosp->lookup.temp_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -tempMel_filename_rel_to_src  ignored because -tempMel_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -tempMel_filename_rel_to_src ignored because -tempMel_filename provided\n");CHKERRQ(ierr);
     }
   }
 
   /* melt lookups */
   /* 2d */
-  ierr = EosParametersCreateInterp2d( P->alphaMelFilename, &eosp->lookup.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( P->cpMelFilename, &eosp->lookup.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( P->dtdpsMelFilename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( P->rhoMelFilename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( P->tempMelFilename, &eosp->lookup.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.alpha_filename, &eosp->lookup.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.cp_filename, &eosp->lookup.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.dTdPs_filename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.rho_filename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.temp_filename, &eosp->lookup.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
   /* const */
   // TODO: remove this redundancy
+  /* FIXME: move into struct above to avoid passing in parameters */
   eosp->lookup.cond = P->cond_mel;
   eosp->lookup.log10visc = P->log10visc_mel;
 
@@ -653,64 +654,64 @@ static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters *P )
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->alphaSolFilename,"lookup_data/RTmelt/thermal_exp_solid.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-alphaSol_filename_rel_to_src",P->alphaSolFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->alphaSolFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-alphaSol_filename",P->alphaSolFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup.alpha_filename,"lookup_data/RTmelt/thermal_exp_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaSol_filename_rel_to_src",eosp->lookup.alpha_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup.alpha_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaSol_filename",eosp->lookup.alpha_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -alphaSol_filename_rel_to_src  ignored because -alphaSol_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -alphaSol_filename_rel_to_src ignored because -alphaSol_filename provided\n");CHKERRQ(ierr);
     }
   }
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->cpSolFilename,"lookup_data/RTmelt/heat_capacity_solid.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-cpSol_filename_rel_to_src",P->cpSolFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->cpSolFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-cpSol_filename",P->cpSolFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup.cp_filename,"lookup_data/RTmelt/heat_capacity_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpSol_filename_rel_to_src",eosp->lookup.cp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup.cp_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpSol_filename",eosp->lookup.cp_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -cpSol_filename_rel_to_src  ignored because -cpSol_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -cpSol_filename_rel_to_src ignored because -cpSol_filename provided\n");CHKERRQ(ierr);
     }
   }
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->dtdpsSolFilename,"lookup_data/RTmelt/adiabat_temp_grad_solid.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsSol_filename_rel_to_src",P->dtdpsSolFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->dtdpsSolFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsSol_filename",P->dtdpsSolFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup.dTdPs_filename,"lookup_data/RTmelt/adiabat_temp_grad_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsSol_filename_rel_to_src",eosp->lookup.dTdPs_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup.dTdPs_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsSol_filename",eosp->lookup.dTdPs_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -dtdpsSol_filename_rel_to_src  ignored because -dtdpsSol_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -dtdpsSol_filename_rel_to_src ignored because -dtdpsSol_filename provided\n");CHKERRQ(ierr);
     }
   }
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->rhoSolFilename,"lookup_data/RTmelt/density_solid.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-rhoSol_filename_rel_to_src",P->rhoSolFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->rhoSolFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-rhoSol_filename",P->rhoSolFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup.rho_filename,"lookup_data/RTmelt/density_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoSol_filename_rel_to_src",eosp->lookup.rho_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup.rho_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoSol_filename",eosp->lookup.rho_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -rhoSol_filename_rel_to_src  ignored because -rhoSol_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -rhoSol_filename_rel_to_src ignored because -rhoSol_filename provided\n");CHKERRQ(ierr);
     }
   }
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->tempSolFilename,"lookup_data/RTmelt/temperature_solid.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-tempSol_filename_rel_to_src",P->tempSolFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->tempSolFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-tempSol_filename",P->tempSolFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup.temp_filename,"lookup_data/RTmelt/temperature_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempSol_filename_rel_to_src",eosp->lookup.temp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup.temp_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempSol_filename",eosp->lookup.temp_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -tempSol_filename_rel_to_src  ignored because -tempSol_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -tempSol_filename_rel_to_src ignored because -tempSol_filename provided\n");CHKERRQ(ierr);
     }
   }
 
-  ierr = EosParametersCreateInterp2d( P->alphaSolFilename, &eosp->lookup.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( P->cpSolFilename, &eosp->lookup.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( P->dtdpsSolFilename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( P->rhoSolFilename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( P->tempSolFilename, &eosp->lookup.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.alpha_filename, &eosp->lookup.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.cp_filename, &eosp->lookup.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.dTdPs_filename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.rho_filename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.temp_filename, &eosp->lookup.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
   /* const */
   // TODO: remove this redundancy
   eosp->lookup.cond = P->cond_sol;
@@ -741,7 +742,7 @@ static PetscErrorCode set_liquidus_lookup( EosParameters *eosp1, EosParameters *
     ierr = MakeRelativeToSourcePathAbsolute(P->liquidusFilename);CHKERRQ(ierr);
     ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename",P->liquidusFilename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -liquidus_filename_rel_to_src  ignored because -liquidus_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -liquidus_filename_rel_to_src ignored because -liquidus_filename provided\n");CHKERRQ(ierr);
     }      
   }
 
@@ -774,7 +775,7 @@ static PetscErrorCode set_solidus_lookup( EosParameters *eosp1, EosParameters *e
     ierr = MakeRelativeToSourcePathAbsolute(P->solidusFilename);CHKERRQ(ierr);
     ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename",P->solidusFilename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -solidus_filename_rel_to_src  ignored because -solidus_filename provided\n");CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -solidus_filename_rel_to_src ignored because -solidus_filename provided\n");CHKERRQ(ierr);
     }
   }
 

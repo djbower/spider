@@ -77,6 +77,16 @@ typedef struct _Interp2d {
 
 /* lookup */
 typedef struct _Lookup {
+    /* lookup data filenames */
+    char        rho_filename[PETSC_MAX_PATH_LEN];
+    char        dTdPs_filename[PETSC_MAX_PATH_LEN];
+    char        cp_filename[PETSC_MAX_PATH_LEN];
+    char        temp_filename[PETSC_MAX_PATH_LEN];
+    char        alpha_filename[PETSC_MAX_PATH_LEN];
+    /* TODO: eventually melting curves may move elsewhere */
+    char        liquidus_filename[PETSC_MAX_PATH_LEN];
+    char        solidus_filename[PETSC_MAX_PATH_LEN];
+    /* lookup objects to evaluate */
     Interp2d rho; /* density, kg/m^3 */
     Interp2d dTdPs; /* adiabatic temperature gradient, K/Pa */
     Interp2d cp; /* heat capacity, J/kg/K */
@@ -271,9 +281,12 @@ typedef struct _Parameters {
 
     PetscInt    SOLID_EOS;
     PetscInt    MELT_EOS;
+
+// FIXME: MOVED INTO EOS PARAMETERS, LOOKUP
     // Lookup tables
     char        liquidusFilename[PETSC_MAX_PATH_LEN];
     char        solidusFilename[PETSC_MAX_PATH_LEN];
+#if 0
     char        alphaSolFilename[PETSC_MAX_PATH_LEN];
     char        alphaMelFilename[PETSC_MAX_PATH_LEN];
     char        cpSolFilename[PETSC_MAX_PATH_LEN];
@@ -284,6 +297,7 @@ typedef struct _Parameters {
     char        rhoMelFilename[PETSC_MAX_PATH_LEN];
     char        tempSolFilename[PETSC_MAX_PATH_LEN];
     char        tempMelFilename[PETSC_MAX_PATH_LEN];
+#endif
 
     //  "Standard" parameters
     MagmaOceanCoreType CORE_BC;
