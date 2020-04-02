@@ -1,3 +1,4 @@
+#include <petsc.h>
 #include "atmosphere.h"
 #include "ctx.h"
 #include "dimensionalisablefield.h"
