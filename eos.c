@@ -42,6 +42,9 @@ static PetscScalar eV_to_joule( PetscScalar );
 PetscErrorCode set_eos( Parameters *P )
 {
     PetscErrorCode ierr;
+    Constants *C = &P->constants;
+    EosParameters *eosp1 = &P->eos1_parameters; /* melt */
+    EosParameters *eosp2 = &P->eos2_parameters; /* solid */
 
     PetscFunctionBeginUser;
 
@@ -49,7 +52,7 @@ PetscErrorCode set_eos( Parameters *P )
     switch( P->SOLID_EOS ){
         case 1:
             /* lookup */
-            ierr = set_solid_eos_lookup( &P->eos2_parameters, P );CHKERRQ(ierr);
+            ierr = set_solid_eos_lookup( eosp2, P );CHKERRQ(ierr);
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLID_EOS value %d provided",P->SOLID_EOS);
@@ -60,16 +63,33 @@ PetscErrorCode set_eos( Parameters *P )
     switch( P->MELT_EOS ){
         case 1:
             /* lookup */
-            ierr = set_melt_eos_lookup( &P->eos1_parameters, P );CHKERRQ(ierr);
+            ierr = set_melt_eos_lookup( eosp1, P );CHKERRQ(ierr);
             break;
         case 2:
             /* analytical RTpress */
-            ierr = set_rtpress_parameters( &P->eos1_parameters );CHKERRQ(ierr);
+            ierr = set_rtpress_parameters( eosp1 );CHKERRQ(ierr);
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported MELT_EOS value %d provided",P->MELT_EOS);
             break;
     }
+
+    /* conductivity (W/m/K) */
+    eosp2->cond = 4.0;
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_sol",&eosp2->cond,NULL);CHKERRQ(ierr);
+    eosp2->cond /= C->COND;
+    eosp1->cond = 4.0;
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_mel",&eosp1->cond,NULL);CHKERRQ(ierr);
+    eosp1->cond /= C->COND;
+
+    /* viscosity (Pa.s) */
+    /* for solid, this is a prefactor if activation_energy_sol or activation_volume_sol are non-zero */
+    eosp2->log10visc = 21.0;
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_sol",&eosp2->log10visc,NULL);CHKERRQ(ierr);
+    eosp2->log10visc -= C->LOG10VISC;
+    eosp1->log10visc = 2.0;
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_mel",&eosp1->log10visc,NULL);CHKERRQ(ierr);
+    eosp1->log10visc -= C->LOG10VISC;
 
     /* set liquidus and solidus from lookup */
     /* TODO: could also have analytical functions for these as well by using
@@ -630,11 +650,6 @@ static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters *P )
   ierr = EosParametersCreateInterp2d( eosp->lookup.dTdPs_filename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
   ierr = EosParametersCreateInterp2d( eosp->lookup.rho_filename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
   ierr = EosParametersCreateInterp2d( eosp->lookup.temp_filename, &eosp->lookup.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
-  /* const */
-  // TODO: remove this redundancy
-  /* FIXME: move into struct above to avoid passing in parameters */
-  eosp->lookup.cond = P->cond_mel;
-  eosp->lookup.log10visc = P->log10visc_mel;
 
   PetscFunctionReturn(0);
 
@@ -712,10 +727,6 @@ static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters *P )
   ierr = EosParametersCreateInterp2d( eosp->lookup.dTdPs_filename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
   ierr = EosParametersCreateInterp2d( eosp->lookup.rho_filename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
   ierr = EosParametersCreateInterp2d( eosp->lookup.temp_filename, &eosp->lookup.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
-  /* const */
-  // TODO: remove this redundancy
-  eosp->lookup.cond = P->cond_sol;
-  eosp->lookup.log10visc = P->log10visc_sol;
 
   PetscFunctionReturn(0);
 
