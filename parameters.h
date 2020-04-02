@@ -1,7 +1,7 @@
 #ifndef PARAMETERS_H_
 #define PARAMETERS_H_
 
-#include "petsc.h"
+#include <petsc.h>
 
 /*
  ******************************************************************************

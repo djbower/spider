@@ -1,6 +1,7 @@
 #ifndef CTX_H_
 #define CTX_H_
 
+#include <petsc.h>
 #include "parameters.h"
 #include "dimensionalisablefield.h"
 #include "rheologicalfront.h"
