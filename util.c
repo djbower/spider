@@ -325,6 +325,9 @@ static PetscErrorCode set_d_dr_linear( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+/* TODO: can this function be converted to PetscMalloc calls?  Also, the pointer
+   should be read in as an argument, rather than returned, to be consistent with
+   other functions */
 PetscScalar** Make2DPetscScalarArray( PetscInt arraySizeX, PetscInt arraySizeY)
 {
 
