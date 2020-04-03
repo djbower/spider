@@ -61,6 +61,33 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants * fundamental_constants_ptr, Constants *C )
+{
+    PetscErrorCode ierr;
+    FundamentalConstants fundamental_constants;
+
+    PetscFunctionBeginUser;
+    ierr = PetscMalloc1(1,fundamental_constants_ptr);CHKERRQ(ierr);
+    fundamental_constants = *fundamental_constants_ptr;
+
+    fundamental_constants->AVOGADRO = 6.02214076E23; /* 1/mol */
+
+    fundamental_constants->GAS = 8.3144598; /* J/K/mol */
+    fundamental_constants->GAS *= C->TEMP / C->ENERGY;
+
+    /* BOLTZMANN is 1.380649E-23 J/K */
+    fundamental_constants->BOLTZMANN = fundamental_constants->GAS / fundamental_constants->AVOGADRO;
+
+    fundamental_constants->GRAVITATIONAL = 6.67408E-11; /* m^3/kg/s^2 */
+    fundamental_constants->GRAVITATIONAL *= C->DENSITY * PetscPowScalar( C->TIME, 2.0 );
+
+    fundamental_constants->STEFAN_BOLTZMANN = 5.670367e-08; /* W/m^2/K^4 */
+    fundamental_constants->STEFAN_BOLTZMANN /= C->SIGMA;
+
+    PetscFunctionReturn(0);
+
+}
+
 /* Initialize Constants, checking for command line arguments.
    For now we only allow a single flag to set all scaling to 1 (hence running
    in "dimensional mode") */
@@ -193,6 +220,8 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* Constants (scalings) must be set first, as they are used to scale
      other parameters */
   ierr = InitializeConstantsAndSetFromOptions(&P->constants);CHKERRQ(ierr);
+
+  ierr = FundamentalConstantsCreate( &P->fundamental_constants, &P->constants);CHKERRQ(ierr);
 
   /* Must set EOS after setting constants, but before boundary conditions
      since EOS might be required to map temperature to entropy
@@ -921,6 +950,18 @@ static PetscErrorCode AtmosphereParametersDestroy(AtmosphereParameters* Ap)
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode FundamentalConstantsDestroy( FundamentalConstants *fundamental_constants_ptr )
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+
+  ierr = PetscFree(*fundamental_constants_ptr);CHKERRQ(ierr);
+  *fundamental_constants_ptr = NULL;
+  PetscFunctionReturn(0);
+
+}
+
 PetscErrorCode ParametersDestroy(Parameters* parameters)
 {
   PetscErrorCode ierr;
@@ -928,5 +969,6 @@ PetscErrorCode ParametersDestroy(Parameters* parameters)
   PetscFunctionBeginUser;
   ierr = AtmosphereParametersDestroy(&parameters->atmosphere_parameters);CHKERRQ(ierr);
   EosParametersDestroy(parameters);
+  ierr = FundamentalConstantsDestroy(&parameters->fundamental_constants);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
