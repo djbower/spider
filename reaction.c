@@ -3,8 +3,8 @@
 static PetscScalar get_psurf_exponent( const ReactionParameters * );
 static PetscScalar get_reaction_quotient( const ReactionParameters *, const Atmosphere *, PetscInt );
 static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters *, const Atmosphere *, const AtmosphereParameters *, PetscInt );
-static PetscScalar get_log10_equilibrium_constant( const ReactionParameters *, PetscScalar, const Constants * );
-static PetscScalar get_dlog10KdT( const ReactionParameters *, PetscScalar, const Constants * );
+static PetscScalar get_log10_equilibrium_constant( const ReactionParameters *, PetscScalar, const Constants );
+static PetscScalar get_dlog10KdT( const ReactionParameters *, PetscScalar, const Constants );
 
 /* Note: this could logically be included in parameters.c, but that file was getting crowded */
 
@@ -269,7 +269,7 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
    but rather time-dependent quantities */
 
 /* Compute equilibrium constant */
-static PetscScalar get_log10_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
+static PetscScalar get_log10_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants C )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        log10Keq;
@@ -285,7 +285,7 @@ static PetscScalar get_log10_equilibrium_constant( const ReactionParameters * re
 }
 
 /* Derivative of log10 equilibrium constant with respect to temperature */
-PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
+PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants C )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        dlog10KdT;
@@ -304,7 +304,7 @@ PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, P
 
 /* Compute modified equilibrium constant */
 /* This includes fO2, which helps numerically since the total quantity is better scaled */
-PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C, const Atmosphere *A )
+PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants C, const Atmosphere *A )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        log10G, log10K; 
@@ -318,7 +318,7 @@ PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters * 
 }
 
 /* Derivative of log10 modified equilibrium constant with respect to temperature */
-PetscScalar get_dlog10GdT( const  ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C, const Atmosphere *A )
+PetscScalar get_dlog10GdT( const  ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants C, const Atmosphere *A )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        dlog10KdT, dlog10GdT;

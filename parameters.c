@@ -16,11 +16,16 @@ Custom PETSc command line options should only ever be parsed here.
 static PetscErrorCode set_start_time_from_file( Parameters * , const char * );
 
 
-static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
+static PetscErrorCode ConstantsCreate( Constants * constants_ptr, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
+    PetscErrorCode ierr;
     PetscScalar SQRTST;
+    Constants C;
 
     PetscFunctionBeginUser;
+    ierr = PetscMalloc(1,constants_ptr);CHKERRQ(ierr);
+    C = *constants_ptr;
+
     /* 29 constants to set (excluding SQRTST which is a convenience
        parameter) */
     SQRTST = PetscSqrtScalar( ENTROPY * TEMPERATURE );
@@ -61,28 +66,28 @@ static PetscErrorCode SetConstants( Constants *C, PetscReal RADIUS, PetscReal TE
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants * fundamental_constants_ptr, Constants *C )
+static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants * fundamental_constants_ptr, Constants C )
 {
     PetscErrorCode ierr;
-    FundamentalConstants fundamental_constants;
+    FundamentalConstants FC;
 
     PetscFunctionBeginUser;
     ierr = PetscMalloc1(1,fundamental_constants_ptr);CHKERRQ(ierr);
-    fundamental_constants = *fundamental_constants_ptr;
+    FC = *fundamental_constants_ptr;
 
-    fundamental_constants->AVOGADRO = 6.02214076E23; /* 1/mol */
+    FC->AVOGADRO = 6.02214076E23; /* 1/mol */
 
-    fundamental_constants->GAS = 8.3144598; /* J/K/mol */
-    fundamental_constants->GAS *= C->TEMP / C->ENERGY;
+    FC->GAS = 8.3144598; /* J/K/mol */
+    FC->GAS *= C->TEMP / C->ENERGY;
 
     /* BOLTZMANN is 1.380649E-23 J/K */
-    fundamental_constants->BOLTZMANN = fundamental_constants->GAS / fundamental_constants->AVOGADRO;
+    FC->BOLTZMANN = FC->GAS / FC->AVOGADRO;
 
-    fundamental_constants->GRAVITATIONAL = 6.67408E-11; /* m^3/kg/s^2 */
-    fundamental_constants->GRAVITATIONAL *= C->DENSITY * PetscPowScalar( C->TIME, 2.0 );
+    FC->GRAVITATIONAL = 6.67408E-11; /* m^3/kg/s^2 */
+    FC->GRAVITATIONAL *= C->DENSITY * PetscPowScalar( C->TIME, 2.0 );
 
-    fundamental_constants->STEFAN_BOLTZMANN = 5.670367e-08; /* W/m^2/K^4 */
-    fundamental_constants->STEFAN_BOLTZMANN /= C->SIGMA;
+    FC->STEFAN_BOLTZMANN = 5.670367e-08; /* W/m^2/K^4 */
+    FC->STEFAN_BOLTZMANN /= C->SIGMA;
 
     PetscFunctionReturn(0);
 
@@ -91,7 +96,7 @@ static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants * fundame
 /* Initialize Constants, checking for command line arguments.
    For now we only allow a single flag to set all scaling to 1 (hence running
    in "dimensional mode") */
-static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
+static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C_ptr)
 {
   PetscErrorCode ierr;
   PetscBool      dimensionalMode = PETSC_FALSE;
@@ -99,7 +104,7 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
   PetscFunctionBeginUser;
   ierr = PetscOptionsGetBool(NULL,NULL,"-dimensional",&dimensionalMode,NULL);CHKERRQ(ierr);
   if (dimensionalMode) {
-    ierr = SetConstants(C,1.0,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
+    ierr = ConstantsCreate(C_ptr,1.0,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
   } else {
     PetscScalar RADIUS0 = 6371000.0; // m
     ierr = PetscOptionsGetScalar(NULL,NULL,"-radius0",&RADIUS0,NULL);CHKERRQ(ierr);
@@ -111,12 +116,12 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-density0",&DENSITY0,NULL);CHKERRQ(ierr);
     PetscScalar VOLATILE0 = 1.0;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-volatile0",&VOLATILE0,NULL);CHKERRQ(ierr);
-    ierr = SetConstants(C,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
+    ierr = ConstantsCreate(C_ptr,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, const Constants *C)
+static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, const Constants C)
 {
   PetscErrorCode ierr;
   char           buf[1024]; /* max size */
@@ -203,7 +208,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
-  Constants const      *C  = &P->constants;
+ // REMOVE Constants const      C; // REMOVE  = P->constants;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
   RadiogenicIsotopeParameters *fe60 = &P->fe60_parameters;
@@ -219,9 +224,12 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* Constants (scalings) must be set first, as they are used to scale
      other parameters */
-  ierr = InitializeConstantsAndSetFromOptions(&P->constants);CHKERRQ(ierr);
+  ierr = InitializeConstantsAndSetFromOptions( &P->constants );CHKERRQ(ierr);
+  Constants const C = P->constants;
 
-  ierr = FundamentalConstantsCreate( &P->fundamental_constants, &P->constants);CHKERRQ(ierr);
+  ierr = FundamentalConstantsCreate( &P->fundamental_constants, P->constants);CHKERRQ(ierr);
+
+  //Constants const C = P->constants;
 
   /* Must set EOS after setting constants, but before boundary conditions
      since EOS might be required to map temperature to entropy
@@ -579,14 +587,19 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->CONSTANT_ESCAPE = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-CONSTANT_ESCAPE",&Ap->CONSTANT_ESCAPE,NULL);CHKERRQ(ierr);
 
+// REMOVE
+#if 1
   /* Gravitational constant (m^3/kg/s^2) */
   Ap->bigG = 6.67408E-11;
   Ap->bigG *= C->DENSITY;
   Ap->bigG *= PetscPowScalar( C->TIME, 2.0 );
+#endif
 
+#if 1
   /* Stefan-Boltzmann constant (W/m^2K^4) */
   Ap->sigma = 5.670367e-08;
   Ap->sigma /= C->SIGMA;
+#endif
 
   /* equilibrium temperature of the planet (K) */
   Ap->teqm = 273.0;
@@ -621,14 +634,20 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   Ap->radius_ptr = &P->radius;
   Ap->VOLATILE_ptr = &C->VOLATILE;
 
+// REMOVE
+#if 1
   /* FIXME the gas constant above is scaled differently for the viscosity laws added by Rob Spaargaren
      this one below is for computing the 1-D atmosphere structure. Should merge together and make consistent */
   Ap->Rgas = 8.3144598; // gas constant (J/K/mol)
   Ap->Rgas *= C->TEMP / C->ENERGY;
+#endif
 
+// REMOVE
+#if 1
   /* Boltzmann constant (J/K) */
   Ap->Avogadro = 6.02214076E23; // 1/mol
   Ap->kB = Ap->Rgas / Ap->Avogadro;
+#endif
 
   /* Look for command-line option to determine number of volatiles
      and options prefix for each, e.g -volatile_names CO2,H2O */
@@ -862,7 +881,7 @@ PetscErrorCode PrintParameters(Parameters const *P)
 {
   PetscErrorCode             ierr;
   PetscInt                   i;
-  Constants const            *C  = &P->constants;
+  Constants const            C  = P->constants;
   AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
   PetscFunctionBeginUser;
@@ -950,7 +969,19 @@ static PetscErrorCode AtmosphereParametersDestroy(AtmosphereParameters* Ap)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode FundamentalConstantsDestroy( FundamentalConstants *fundamental_constants_ptr )
+static PetscErrorCode ConstantsDestroy( Constants* constants_ptr )
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+
+  ierr = PetscFree(*constants_ptr);CHKERRQ(ierr);
+  *constants_ptr = NULL;
+  PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode FundamentalConstantsDestroy( FundamentalConstants* fundamental_constants_ptr )
 {
   PetscErrorCode ierr;
 
@@ -969,6 +1000,7 @@ PetscErrorCode ParametersDestroy(Parameters* parameters)
   PetscFunctionBeginUser;
   ierr = AtmosphereParametersDestroy(&parameters->atmosphere_parameters);CHKERRQ(ierr);
   EosParametersDestroy(parameters);
+  ierr = ConstantsDestroy(&parameters->constants);CHKERRQ(ierr);
   ierr = FundamentalConstantsDestroy(&parameters->fundamental_constants);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }

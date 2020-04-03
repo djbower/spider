@@ -54,7 +54,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
      This is intended to catch errors when we change the number of fields we are
      simultaneously solving for. */
   {
-    Constants const *C = &ctx->parameters.constants;
+    Constants const C = ctx->parameters.constants;
     PetscInt i,f;
     PetscScalar *sol_scalings;
 
@@ -116,7 +116,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   set_d_dr( ctx );
   set_twophase(ctx);
 
-  ierr = initialise_atmosphere( &ctx->atmosphere, &ctx->parameters.atmosphere_parameters, &ctx->parameters.constants );CHKERRQ(ierr);
+  ierr = initialise_atmosphere( &ctx->atmosphere, &ctx->parameters.atmosphere_parameters, ctx->parameters.constants );CHKERRQ(ierr);
 
   // FIXME
   //if(P->COMPOSITION){
@@ -182,7 +182,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
 static PetscErrorCode CtxCreateFields(Ctx* ctx)
 {
   PetscErrorCode ierr;
-  Constants const *C = &ctx->parameters.constants;
+  Constants const C = ctx->parameters.constants;
 
   PetscFunctionBeginUser;
   /* basic nodes */

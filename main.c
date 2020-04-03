@@ -97,7 +97,7 @@ int main(int argc, char ** argv)
        and proceeding again */
 
     ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Starting at t0 = %f, Will perform %D macro (output) steps of length %f = %f years\n",
-        P->t0,P->nstepsmacro,(double) P->dtmacro, (double) (P->dtmacro*P->constants.TIMEYRS) );CHKERRQ(ierr);
+        P->t0,P->nstepsmacro,(double) P->dtmacro, (double) (P->dtmacro*(*P->constants).TIMEYRS) );CHKERRQ(ierr);
     time = P->t0;
     ierr = TSSetTime(ts,time);CHKERRQ(ierr);
     nexttime = P->t0 + P->dtmacro;

@@ -416,7 +416,7 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
     Atmosphere           *A  = &E->atmosphere;
     Parameters           const *P  = &E->parameters;
     Solution             const *S  = &E->solution;
-    Constants            const *C  = &P->constants;
+    Constants            const C  = P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
