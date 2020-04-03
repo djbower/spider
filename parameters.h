@@ -43,6 +43,16 @@ typedef struct _Constants {
     PetscScalar HEATGEN;
 } Constants;
 
+/* fundamental constants */
+typedef struct {
+    PetscScalar AVOGADRO;
+    PetscScalar BOLTZMANN;
+    PetscScalar GAS;
+    PetscScalar GRAVITATIONAL;
+    PetscScalar STEFAN_BOLTZMANN;
+} data_FundamentalConstants;
+typedef data_FundamentalConstants* FundamentalConstants;
+
 /*
  ******************************************************************************
  * Equation of state parameters
@@ -343,6 +353,8 @@ typedef struct _Parameters {
 
     // Scaling factors / dimensionalising constants
     Constants constants;
+
+    FundamentalConstants fundamental_constants;
 
     // Radiogenic heating parameters
     RadiogenicIsotopeParameters al26_parameters;
