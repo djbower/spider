@@ -27,7 +27,7 @@ static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParamet
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_depth( Atmosphere *, const AtmosphereParameters * );
 
-PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
+PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap, const Constants C )
 {
     PetscErrorCode ierr;
     PetscScalar    scaling;
@@ -495,7 +495,7 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
 
 }
 
-PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
+PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap, const Constants C )
 {
     PetscErrorCode           ierr;
 
@@ -560,7 +560,7 @@ PetscScalar get_grey_body_flux( const Atmosphere *A, const AtmosphereParameters 
     return Fsurf;
 }
 
-PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const Constants *C )
+PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const Constants C )
 {
     PetscScalar       Tsurf, Fsurf;
 
@@ -674,7 +674,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     PetscErrorCode ierr;
     cJSON          *data;
     PetscScalar    scaling, val;
-    Constants      const *C = &P->constants;
+    Constants      const C = P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     PetscInt       v;
 
@@ -748,7 +748,7 @@ static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosp
     cJSON          *data;
     PetscScalar    scaling;
     PetscInt       v;
-    Constants      const *C = &P->constants;
+    Constants      const C = P->constants;
     char const     *name = "mass_reaction";
     //char           str[1]; // FIXME: will break for more than 9 reactions!
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -780,7 +780,7 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     PetscErrorCode  ierr;
     cJSON           *data;
     PetscScalar     scaling, val;
-    Constants       const *C = &P->constants;
+    Constants       const C = P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
@@ -854,7 +854,7 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
     const PetscScalar          *dmrdt;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
-    Constants            const *C = &P->constants;
+    Constants            const C = P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
@@ -1051,7 +1051,7 @@ PetscScalar get_residual_volatile_mass( Atmosphere *A, const AtmosphereParameter
     return out;
 }
 
-PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const Constants *C )
+PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const Constants C )
 {
 
     /* These are oxygen fugacity fits for individual meteoritic materials as

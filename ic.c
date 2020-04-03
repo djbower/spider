@@ -391,7 +391,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     Parameters const           *P  = &E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     Atmosphere                 *A = &E->atmosphere;
-    Constants const            *C = &P->constants;
+    Constants const            C = P->constants;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere()\n");CHKERRQ(ierr);
@@ -539,7 +539,7 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
 
     Parameters *P = &E->parameters;
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
-    Constants *C = &P->constants;
+    Constants C = P->constants;
 
     PetscScalar scaling = C->VOLATILE * 4.0 * PETSC_PI * C->MASS;
     PetscScalar scaling2 = (1.0/C->VOLATILE) * PetscSqr(*Ap->radius_ptr) / -(*Ap->gravity_ptr);
@@ -821,7 +821,7 @@ static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Ve
     Ctx                        *E = (Ctx*) ptr;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const *P = &E->parameters;
-    Constants            const *C = &P->constants;
+    Constants            const C = P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;

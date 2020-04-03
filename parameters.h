@@ -9,7 +9,9 @@
  ******************************************************************************
  */
 
-typedef struct _Constants {
+/* scalings of the physical problem, largely determined by numerical
+   considerations */
+typedef struct {
     // primary
     PetscScalar RADIUS;
     PetscScalar TEMP;
@@ -41,7 +43,8 @@ typedef struct _Constants {
     PetscScalar LHS;
     PetscScalar RHS;
     PetscScalar HEATGEN;
-} Constants;
+} data_Constants;
+typedef data_Constants* Constants;
 
 /* fundamental constants */
 typedef struct {
@@ -351,7 +354,7 @@ typedef struct _Parameters {
     // Additional Atmosphere Parameters
     AtmosphereParameters atmosphere_parameters;
 
-    // Scaling factors / dimensionalising constants
+    // Scaling factors / dimensional constants
     Constants constants;
 
     FundamentalConstants fundamental_constants;
