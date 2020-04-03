@@ -18,7 +18,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     Atmosphere           *A  = &E->atmosphere;
     Mesh                 const *M  = &E->mesh;
     Parameters           const *P  = &E->parameters;
-    Constants            const *C  = &P->constants;
+    Constants            const C  = P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     Solution             *S  = &E->solution;
 

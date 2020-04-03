@@ -27,7 +27,11 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 # Extra flags
 # Use -O0 to turn off optimization, to debug with LLDB/GDB
 # You can specify this from the command line, e.g.
-#   make clean; make -j CFLAGS_EXTRA="-O0"
+# Available sanitizer flags with OSX
+# with Address Sanitizer
+#   make clean; make -j CFLAGS_EXTRA="-O0 -fsanitize=address"
+# with UndefinedBehaviorSanitizer
+#   make clean; make -j CFLAGS_EXTRA="-O0 -fsanitize=undefined"
 CFLAGS+=${CFLAGS_EXTRA}
 
 # Generate dependency (.d) files as we compile

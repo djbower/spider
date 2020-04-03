@@ -42,7 +42,7 @@ static PetscScalar eV_to_joule( PetscScalar );
 PetscErrorCode set_eos( Parameters *P )
 {
     PetscErrorCode ierr;
-    Constants *C = &P->constants;
+    Constants C = P->constants;
     EosParameters *eosp1 = &P->eos1_parameters; /* melt */
     EosParameters *eosp2 = &P->eos2_parameters; /* solid */
 
@@ -579,7 +579,7 @@ static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters *P )
 {
   PetscErrorCode  ierr;
-  Constants const *C = &P->constants;
+  Constants const C = P->constants;
 
   PetscFunctionBeginUser;
 
@@ -658,7 +658,7 @@ static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters *P )
 static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters *P )
 {
   PetscErrorCode  ierr;
-  Constants const *C = &P->constants;
+  Constants const C = P->constants;
 
   PetscFunctionBeginUser;
 
@@ -737,7 +737,7 @@ static PetscErrorCode set_liquidus_lookup( EosParameters *eosp1, EosParameters *
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
 
   PetscErrorCode  ierr;
-  Constants const *C = &P->constants;
+  Constants const C = P->constants;
 
   PetscFunctionBeginUser;
 
@@ -770,7 +770,7 @@ static PetscErrorCode set_solidus_lookup( EosParameters *eosp1, EosParameters *e
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
 
   PetscErrorCode  ierr;
-  Constants const *C = &P->constants;
+  Constants const C = P->constants;
 
   PetscFunctionBeginUser;
 
@@ -1302,7 +1302,7 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
        once, to avoid unnecessary computations.  This updates all the 
        eos_eval struct with the material properties */
 
-    Constants const            *C = &E->parameters.constants;
+    Constants const            C = E->parameters.constants;
     EosParameters              *rtp = &E->parameters.eos1_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
 
@@ -1355,7 +1355,7 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
 
 static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx *E )
 {
-    Constants const            *C = &E->parameters.constants;
+    Constants const            C = E->parameters.constants;
     EosEval                    *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
