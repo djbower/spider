@@ -23,7 +23,7 @@ static PetscErrorCode ConstantsCreate( Constants * constants_ptr, PetscReal RADI
     Constants C;
 
     PetscFunctionBeginUser;
-    ierr = PetscMalloc(1,constants_ptr);CHKERRQ(ierr);
+    ierr = PetscMalloc1(1,constants_ptr);CHKERRQ(ierr);
     C = *constants_ptr;
 
     /* 29 constants to set (excluding SQRTST which is a convenience
@@ -208,7 +208,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
- // REMOVE Constants const      C; // REMOVE  = P->constants;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
   RadiogenicIsotopeParameters *fe60 = &P->fe60_parameters;
@@ -216,7 +215,6 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   RadiogenicIsotopeParameters *u235 = &P->u235_parameters;
   RadiogenicIsotopeParameters *u238 = &P->u238_parameters;
   PetscInt             v;
-
   // FIXME
   //CompositionParameters      *Compp = &P->composition_parameters;
 
@@ -225,11 +223,11 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   /* Constants (scalings) must be set first, as they are used to scale
      other parameters */
   ierr = InitializeConstantsAndSetFromOptions( &P->constants );CHKERRQ(ierr);
+
+  /* I think this has to be after constants has been initialised */
   Constants const C = P->constants;
 
   ierr = FundamentalConstantsCreate( &P->fundamental_constants, P->constants);CHKERRQ(ierr);
-
-  //Constants const C = P->constants;
 
   /* Must set EOS after setting constants, but before boundary conditions
      since EOS might be required to map temperature to entropy
