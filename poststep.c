@@ -6,7 +6,7 @@ PetscErrorCode PostStepDataInitialize(Ctx *E)
 {
   PetscErrorCode             ierr;
   Atmosphere                 *A = &E->atmosphere;
-  Parameters const           *P = &E->parameters;
+  Parameters const           P = E->parameters;
   AtmosphereParameters const *Ap = &P->atmosphere_parameters;
   PostStepData               *data;
   PetscInt                   i;
@@ -39,7 +39,7 @@ PetscErrorCode PostStep(TS ts)
   Ctx                  *E;
   PostStepData         *data;
   Atmosphere           *A;
-  Parameters           *P;
+  Parameters           P;
   AtmosphereParameters *Ap;
   Vec                  sol_in;
   PetscScalar          maxx, relx;
@@ -50,9 +50,9 @@ PetscErrorCode PostStep(TS ts)
   ierr = TSGetTimeStepNumber(ts,&stepNumber);CHKERRQ(ierr);
   ierr = TSGetApplicationContext(ts,&E);CHKERRQ(ierr);
   A = &E->atmosphere;
-  P = &E->parameters;
+  P = E->parameters;
   Ap = &P->atmosphere_parameters;
-  if (!E->parameters.rollBackActive) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_SUP,"You must run with -activate_rollback");
+  if (!E->parameters->rollBackActive) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_SUP,"You must run with -activate_rollback");
   data = (PostStepData*) E->postStepData;
   //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, x_CO2 is %g\n",__func__,__FILE__,__LINE__,data->x_CO2);
   //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, x_H2O is %g\n",__func__,__FILE__,__LINE__,data->x_H2O);

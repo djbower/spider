@@ -25,7 +25,7 @@ int main(int argc, char ** argv)
   TS               ts;                 /* ODE solver object */
   Vec              sol;                /* Solution Vector (packed vector from several DMs) */
   Ctx              ctx;                /* Solver context */
-  Parameters const *P=&ctx.parameters;
+  Parameters const P=ctx.parameters;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 

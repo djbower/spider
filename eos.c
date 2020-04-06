@@ -6,10 +6,10 @@
 /* lookup material properties (default) */
 static PetscErrorCode EosParametersCreateInterp1d( const char *, Interp1d *, PetscScalar, PetscScalar );
 static PetscErrorCode EosParametersCreateInterp2d( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
-static PetscErrorCode set_solid_eos_lookup( EosParameters *, Parameters * );
-static PetscErrorCode set_melt_eos_lookup( EosParameters *, Parameters * );
-static PetscErrorCode set_liquidus_lookup( EosParameters *, EosParameters *, Parameters * );
-static PetscErrorCode set_solidus_lookup( EosParameters *, EosParameters *, Parameters * );
+static PetscErrorCode set_solid_eos_lookup( EosParameters *, Parameters );
+static PetscErrorCode set_melt_eos_lookup( EosParameters *, Parameters );
+static PetscErrorCode set_liquidus_lookup( EosParameters *, EosParameters *, Parameters );
+static PetscErrorCode set_solidus_lookup( EosParameters *, EosParameters *, Parameters );
 static PetscErrorCode Interp1dDestroy( Interp1d * );
 static void Interp2dDestroy( Interp2d * );
 static PetscErrorCode EosParametersInterp1dDestroy( EosParameters * );
@@ -39,7 +39,7 @@ static PetscScalar eV_to_joule( PetscScalar );
 /* set equation of state (EOS).  Currently for a melt and a solid phase, but
    can be extended for more phases in the future */
 
-PetscErrorCode set_eos( Parameters *P )
+PetscErrorCode set_eos( Parameters P )
 {
     PetscErrorCode ierr;
     Constants C = P->constants;
@@ -539,7 +539,7 @@ static void EosParametersInterp2dDestroy( EosParameters *eosp )
 
 }
 
-void EosParametersDestroy( Parameters *P )
+void EosParametersDestroy( Parameters P )
 {
 
     EosParametersInterp1dDestroy( &P->eos2_parameters );
@@ -576,7 +576,7 @@ static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 #undef SPIDER_ROOT_DIR_STR
 
 
-static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters *P )
+static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters P )
 {
   PetscErrorCode  ierr;
   Constants const C = P->constants;
@@ -655,7 +655,7 @@ static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters *P )
 
 }
 
-static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters *P )
+static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters P )
 {
   PetscErrorCode  ierr;
   Constants const C = P->constants;
@@ -732,7 +732,7 @@ static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters *P )
 
 }
 
-static PetscErrorCode set_liquidus_lookup( EosParameters *eosp1, EosParameters *eosp2, Parameters *P )
+static PetscErrorCode set_liquidus_lookup( EosParameters *eosp1, EosParameters *eosp2, Parameters P )
 {
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
 
@@ -765,7 +765,7 @@ static PetscErrorCode set_liquidus_lookup( EosParameters *eosp1, EosParameters *
 
 }
 
-static PetscErrorCode set_solidus_lookup( EosParameters *eosp1, EosParameters *eosp2, Parameters *P )
+static PetscErrorCode set_solidus_lookup( EosParameters *eosp1, EosParameters *eosp2, Parameters P )
 {
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
 
@@ -897,7 +897,7 @@ PetscScalar get_rtpress_pressure_test( Ctx *E )
        FIXME: need to truncate negative values?  Perhaps not for
        smoothness of solver during inversion? */
 
-    EosParameters *rtp = &E->parameters.eos1_parameters;
+    EosParameters *rtp = &E->parameters->eos1_parameters;
     PetscScalar   P, T, V, volfrac;
 
     volfrac = 0.6;
@@ -972,7 +972,7 @@ PetscScalar get_rtpress_entropy_test( Ctx *E )
 
     /* seems to confirm S is correct */
 
-    EosParameters *rtp = &E->parameters.eos1_parameters;
+    EosParameters *rtp = &E->parameters->eos1_parameters;
     PetscScalar   S, T, V, volfrac;
 
     volfrac = 0.6;
@@ -1184,7 +1184,7 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx *E )
     Vec            x,r;
     PetscScalar    *xx;
     PetscInt       i;
-    EosParameters  *rtp = &E->parameters.eos1_parameters;
+    EosParameters  *rtp = &E->parameters->eos1_parameters;
     EosEval        *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
@@ -1269,7 +1269,7 @@ static PetscErrorCode objective_function_rtpress_volume_temperature( SNES snes, 
     PetscScalar                *ff;
     PetscScalar                V, T, P, S;
     Ctx                        *E = (Ctx*) ptr;
-    EosParameters              *rtp = &E->parameters.eos1_parameters;
+    EosParameters              *rtp = &E->parameters->eos1_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
     PetscScalar Ptarget = eos_eval->P;
     PetscScalar Starget = eos_eval->S;
@@ -1302,8 +1302,8 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
        once, to avoid unnecessary computations.  This updates all the 
        eos_eval struct with the material properties */
 
-    Constants const            C = E->parameters.constants;
-    EosParameters              *rtp = &E->parameters.eos1_parameters;
+    Constants const            C = E->parameters->constants;
+    EosParameters              *rtp = &E->parameters->eos1_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
@@ -1355,7 +1355,7 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
 
 static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx *E )
 {
-    Constants const            C = E->parameters.constants;
+    Constants const            C = E->parameters->constants;
     EosEval                    *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;

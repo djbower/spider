@@ -11,8 +11,9 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx);
 PetscErrorCode SetupCtx(Ctx* ctx)
 {
   PetscErrorCode             ierr;
-  Parameters const           *P = &ctx->parameters;
-  AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+// FIXME: REMOVE
+//  Parameters const           *P = &ctx->parameters;
+//  AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
   PetscFunctionBeginUser;
 
@@ -25,7 +26,15 @@ PetscErrorCode SetupCtx(Ctx* ctx)
      and ctx->parameters should never change (meaning that we can and should use
      pointers-to-constants to refer to ctx->parameters).
     */
-  ierr = InitializeParametersAndSetFromOptions(&ctx->parameters);CHKERRQ(ierr); /* Note we use ctx->parameters, not P! */
+
+// REMOVE
+//  ierr = InitializeParametersAndSetFromOptions(&ctx->parameters);CHKERRQ(ierr); /* Note we use ctx->parameters, not P! */
+
+  ierr = ParametersCreate(&ctx->parameters);
+
+  Parameters const           P = ctx->parameters;
+  AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+
   ierr = PrintParameters(P);CHKERRQ(ierr);
 
   /* Set up a parallel structured grid as DMComposite with several included DMDAs
@@ -54,7 +63,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
      This is intended to catch errors when we change the number of fields we are
      simultaneously solving for. */
   {
-    Constants const C = ctx->parameters.constants;
+    Constants const C = ctx->parameters->constants;
     PetscInt i,f;
     PetscScalar *sol_scalings;
 
@@ -116,7 +125,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   set_d_dr( ctx );
   set_twophase(ctx);
 
-  ierr = initialise_atmosphere( &ctx->atmosphere, &ctx->parameters.atmosphere_parameters, ctx->parameters.constants );CHKERRQ(ierr);
+  ierr = initialise_atmosphere( &ctx->atmosphere, &ctx->parameters->atmosphere_parameters, ctx->parameters->constants );CHKERRQ(ierr);
 
   // FIXME
   //if(P->COMPOSITION){
@@ -136,7 +145,6 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
 {
   PetscErrorCode ierr;
   PetscInt       i;
-  Parameters *P = &ctx->parameters;
 
   PetscFunctionBeginUser;
 
@@ -158,7 +166,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
   ierr = destroy_atmosphere( &ctx->atmosphere );CHKERRQ(ierr);
 
   /* Destroy parameter data */
-  ierr = ParametersDestroy(P);CHKERRQ(ierr);
+  ierr = ParametersDestroy(&ctx->parameters);CHKERRQ(ierr);
 
   ierr = PetscFree2(ctx->solutionFieldIDs,ctx->solutionSlots);CHKERRQ(ierr);
   ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
@@ -182,7 +190,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
 static PetscErrorCode CtxCreateFields(Ctx* ctx)
 {
   PetscErrorCode ierr;
-  Constants const C = ctx->parameters.constants;
+  Constants const C = ctx->parameters->constants;
 
   PetscFunctionBeginUser;
   /* basic nodes */
