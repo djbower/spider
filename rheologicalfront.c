@@ -1,7 +1,7 @@
 #include "rheologicalfront.h"
 #include "dimensionalisablefield.h"
 
-static PetscErrorCode JSON_add_rheological_front_mantle_properties( DM, Constants, RheologicalFrontMantleProperties *, const char *, cJSON * );
+static PetscErrorCode JSON_add_rheological_front_mantle_properties( DM, ScalingConstants, RheologicalFrontMantleProperties *, const char *, cJSON * );
 
 PetscInt get_crossover_index( DM dm, const Vec vec, PetscScalar value, PetscInt offset )
 {
@@ -96,7 +96,7 @@ PetscErrorCode set_rheological_front_mask( DM dm, PetscInt index, Vec mask )
 }
 #endif
 
-PetscErrorCode JSON_add_rheological_front( DM dm, Constants C, RheologicalFront *Rf, const char *name, cJSON *json )
+PetscErrorCode JSON_add_rheological_front( DM dm, ScalingConstants C, RheologicalFront *Rf, const char *name, cJSON *json )
 {
     PetscErrorCode  ierr;
     cJSON           *data;
@@ -122,7 +122,7 @@ PetscErrorCode JSON_add_rheological_front( DM dm, Constants C, RheologicalFront 
 
 }
 
-static PetscErrorCode JSON_add_rheological_front_mantle_properties( DM dm, Constants C, RheologicalFrontMantleProperties *Rfmp, char const *name, cJSON *json )
+static PetscErrorCode JSON_add_rheological_front_mantle_properties( DM dm, ScalingConstants C, RheologicalFrontMantleProperties *Rfmp, char const *name, cJSON *json )
 {
     PetscErrorCode ierr;
     cJSON          *data;

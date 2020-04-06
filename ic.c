@@ -391,7 +391,6 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     Parameters const           P  = E->parameters;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     Atmosphere                 *A = &E->atmosphere;
-    Constants const            C = P->constants;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere()\n");CHKERRQ(ierr);
@@ -427,7 +426,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
         /* ensure all atmosphere quantities are consistent with current
            solution */
-        ierr = set_reservoir_volatile_content( A, Ap, C );CHKERRQ(ierr);
+        ierr = set_reservoir_volatile_content( A, Ap );CHKERRQ(ierr);
 
         /* again, note that mass reaction terms are not yet
            (necessarily) zero! */
@@ -542,10 +541,10 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
 
     Parameters P = E->parameters;
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
-    Constants C = P->constants;
+    ScalingConstants const SC = P->scaling_constants;
 
-    PetscScalar scaling = C->VOLATILE * 4.0 * PETSC_PI * C->MASS;
-    PetscScalar scaling2 = (1.0/C->VOLATILE) * PetscSqr(*Ap->radius_ptr) / -(*Ap->gravity_ptr);
+    PetscScalar scaling = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS;
+    PetscScalar scaling2 = (1.0/SC->VOLATILE) * PetscSqr(*Ap->radius_ptr) / -(*Ap->gravity_ptr);
 
     PetscFunctionBeginUser;
 
@@ -605,7 +604,7 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
         p_H2 = tmass_H2 / scaling2; /* equivalent surface pressure */
         tmass_H2 *= scaling; /* total physical mass */
         tmass_H2 /= 1.55E20; /* non-dimensionalise according to ocean mass of H2 */
-        p_H2 *= C->PRESSURE / 1.0E5; /* to bar */
+        p_H2 *= SC->PRESSURE / 1.0E5; /* to bar */
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent present-day mass of ocean water from H2 (non-dimensional)",(double)tmass_H2);CHKERRQ(ierr);
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent atmospheric pressure of H2 (bar)",(double)p_H2);CHKERRQ(ierr);
 
@@ -626,7 +625,7 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
            molar mass for H2 and H2O, such that by construction, the ocean mass estimates from
            both H2 and H2O are identical */
         tmass_H2O /= 1.385185824553049e+21;
-        p_H2O *= C->PRESSURE / 1.0E5; /* to bar */ 
+        p_H2O *= SC->PRESSURE / 1.0E5; /* to bar */ 
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent present-day mass of ocean water from H2O (non-dimensional)",(double)tmass_H2O);CHKERRQ(ierr);
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent atmospheric pressure of H2O (bar)",(double)p_H2O);CHKERRQ(ierr);
     }
@@ -642,7 +641,7 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
         p_CO = tmass_CO / scaling2; /* equivalent surface pressure */
         tmass_CO *= scaling; /* total physical mass */
         tmass_CO /= 2.153674821914003e+21; /* non-dimensionalise according to ocean mass of CO */
-        p_CO *= C->PRESSURE / 1.0E5; /* to bar */
+        p_CO *= SC->PRESSURE / 1.0E5; /* to bar */
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent present-day mass of ocean water from CO (non-dimensional)",(double)tmass_CO);CHKERRQ(ierr);
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent atmospheric pressure of CO (bar)",(double)p_CO);CHKERRQ(ierr);
 
@@ -663,7 +662,7 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
            molar mass for H2 and H2O, such that by construction, the ocean mass estimates from
            both H2 and H2O are identical */
         tmass_CO2 /= 3.383906780165486e+21;
-        p_CO2 *= C->PRESSURE / 1.0E5; /* to bar */ 
+        p_CO2 *= SC->PRESSURE / 1.0E5; /* to bar */ 
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent present-day mass of ocean water from CO2 (non-dimensional)",(double)tmass_CO2);CHKERRQ(ierr);
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent atmospheric pressure of CO2 (bar)",(double)p_CO2);CHKERRQ(ierr);
     }
@@ -824,7 +823,7 @@ static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Ve
     Ctx                        *E = (Ctx*) ptr;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const P = E->parameters;
-    Constants            const C = P->constants;
+    ScalingConstants     const SC = P->scaling_constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
@@ -839,7 +838,7 @@ static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Ve
         A->mass_reaction[i] = xx[Ap->n_volatiles+i];
     }
 
-    ierr = set_reservoir_volatile_content( A, Ap, C ); CHKERRQ(ierr);
+    ierr = set_reservoir_volatile_content( A, Ap ); CHKERRQ(ierr);
 
     /* mass conservation for each volatile */
     for (i=0; i<Ap->n_volatiles; ++i) {
@@ -854,7 +853,7 @@ static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Ve
         Qp = get_reaction_quotient_products( &Ap->reaction_parameters[i], A );
         Qr = get_reaction_quotient_reactants( &Ap->reaction_parameters[i], A );
         /* (Modified) equilibrium constant that accommodates fO2 */
-        log10G = get_log10_modified_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, C, A );
+        log10G = get_log10_modified_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, SC, A );
         G = PetscPowScalar( 10.0, log10G );
 
         ff[Ap->n_volatiles + i] = Qp/Qr - G;
