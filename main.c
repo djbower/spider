@@ -25,7 +25,8 @@ int main(int argc, char ** argv)
   TS               ts;                 /* ODE solver object */
   Vec              sol;                /* Solution Vector (packed vector from several DMs) */
   Ctx              ctx;                /* Solver context */
-  Parameters const P=ctx.parameters;
+  // FIXME: remove below
+  //Parameters const P=ctx.parameters;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
@@ -42,6 +43,9 @@ int main(int argc, char ** argv)
   /* Perform all initialization for our problem, allocating data
      Note that this checks all command-line options. */
   ierr = SetupCtx(&ctx);CHKERRQ(ierr);
+
+  // important this is here
+  Parameters const P=ctx.parameters;
 
   /* Print out the quantities we're solving for */
   ierr = PrintFields(&ctx);CHKERRQ(ierr);
