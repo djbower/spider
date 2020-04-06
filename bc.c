@@ -18,7 +18,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     Atmosphere           *A  = &E->atmosphere;
     Mesh                 const *M  = &E->mesh;
     Parameters           const P  = E->parameters;
-    Constants            const C  = P->constants;
+    ScalingConstants     const SC  = P->scaling_constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     Solution             *S  = &E->solution;
 
@@ -31,7 +31,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       /* must be after A->tsurf is set for fO2 calculation */
       /* therefore set_surface_flux always called after set_interior_structure_from_solution */
-      ierr = set_reservoir_volatile_content( A, Ap, C ); CHKERRQ(ierr);
+      ierr = set_reservoir_volatile_content( A, Ap ); CHKERRQ(ierr);
 
       /* determine surface flux */
       /* in all cases, compute flux and emissivity consistently */
@@ -43,7 +43,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
         case 2:
           // Zahnle steam atmosphere
-          Qout = get_steam_atmosphere_zahnle_1988_flux( A, C );
+          Qout = get_steam_atmosphere_zahnle_1988_flux( A, SC );
           A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
           break;
         case 3:

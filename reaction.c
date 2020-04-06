@@ -3,8 +3,8 @@
 static PetscScalar get_psurf_exponent( const ReactionParameters * );
 static PetscScalar get_reaction_quotient( const ReactionParameters *, const Atmosphere *, PetscInt );
 static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters *, const Atmosphere *, const AtmosphereParameters *, PetscInt );
-static PetscScalar get_log10_equilibrium_constant( const ReactionParameters *, PetscScalar, const Constants );
-static PetscScalar get_dlog10KdT( const ReactionParameters *, PetscScalar, const Constants );
+static PetscScalar get_log10_equilibrium_constant( const ReactionParameters *, PetscScalar, const ScalingConstants );
+static PetscScalar get_dlog10KdT( const ReactionParameters *, PetscScalar, const ScalingConstants );
 
 /* Note: this could logically be included in parameters.c, but that file was getting crowded */
 
@@ -269,12 +269,12 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
    but rather time-dependent quantities */
 
 /* Compute equilibrium constant */
-static PetscScalar get_log10_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants C )
+static PetscScalar get_log10_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const ScalingConstants SC )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        log10Keq;
 
-    temp *= C->TEMP;
+    temp *= SC->TEMP;
 
     /* log10Keq = a/T + b is a standard form for computing an equilibrium constant */
     /* e.g., Schaefer and Fegley (2017) */
@@ -285,18 +285,18 @@ static PetscScalar get_log10_equilibrium_constant( const ReactionParameters * re
 }
 
 /* Derivative of log10 equilibrium constant with respect to temperature */
-PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants C )
+PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const ScalingConstants SC )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        dlog10KdT;
 
-    temp *= C->TEMP;
+    temp *= SC->TEMP;
 
     dlog10KdT = -reaction_parameters->Keq_coeffs[0] / PetscPowScalar( temp, 2.0 );
 
     /* TODO: check, must non-dimensionalise, since we used a scaled
        (dimensional) temperature */
-    dlog10KdT *= C->TEMP;
+    dlog10KdT *= SC->TEMP;
 
     return dlog10KdT;
 
@@ -304,12 +304,12 @@ PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, P
 
 /* Compute modified equilibrium constant */
 /* This includes fO2, which helps numerically since the total quantity is better scaled */
-PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants C, const Atmosphere *A )
+PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const ScalingConstants SC, const Atmosphere *A )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        log10G, log10K; 
 
-    log10K = get_log10_equilibrium_constant( reaction_parameters_ptr, temp, C );
+    log10K = get_log10_equilibrium_constant( reaction_parameters_ptr, temp, SC );
 
     log10G = log10K - reaction_parameters->fO2_stoichiometry * A->log10fO2;
 
@@ -318,12 +318,12 @@ PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters * 
 }
 
 /* Derivative of log10 modified equilibrium constant with respect to temperature */
-PetscScalar get_dlog10GdT( const  ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants C, const Atmosphere *A )
+PetscScalar get_dlog10GdT( const  ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const ScalingConstants SC, const Atmosphere *A )
 {
     ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        dlog10KdT, dlog10GdT;
 
-    dlog10KdT = get_dlog10KdT( reaction_parameters_ptr, A->tsurf, C );
+    dlog10KdT = get_dlog10KdT( reaction_parameters_ptr, A->tsurf, SC );
 
     dlog10GdT = dlog10KdT - reaction_parameters->fO2_stoichiometry * A->dlog10fO2dT;
 
