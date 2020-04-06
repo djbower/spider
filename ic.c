@@ -534,7 +534,7 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     PetscScalar mass_H2, mass_H2O, molar_mass_H2, molar_mass_H2O;
     PetscScalar mass_CO, mass_CO2, molar_mass_CO, molar_mass_CO2;
     PetscBool   FLAG_H2 = PETSC_FALSE;
-    PetscBool   FLAG_H2O = PETSC_FALSE; 
+    PetscBool   FLAG_H2O = PETSC_FALSE;
     PetscBool   FLAG_CO = PETSC_FALSE;
     PetscBool   FLAG_CO2 = PETSC_FALSE;
     PetscScalar tmass_H2, tmass_H2O, p_H2, p_H2O;
