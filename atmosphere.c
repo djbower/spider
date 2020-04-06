@@ -19,15 +19,15 @@ static PetscErrorCode set_column_density_volatile( Atmosphere *, const Atmospher
 static PetscErrorCode set_Knudsen_number( Atmosphere *, const AtmosphereParameters *, PetscInt );
 static PetscErrorCode set_R_thermal_escape( Atmosphere *, const AtmosphereParameters *, PetscInt );
 static PetscErrorCode set_f_thermal_escape( Atmosphere *, PetscInt );
-static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
+static PetscErrorCode JSON_add_volatile( DM, Parameters const, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
 static PetscErrorCode JSON_add_atm_struct( Atmosphere *, const AtmosphereParameters *, cJSON * );
-static PetscErrorCode JSON_add_reaction_mass( DM , Parameters const *, Atmosphere const *, cJSON * );
+static PetscErrorCode JSON_add_reaction_mass( DM , Parameters const, Atmosphere const *, cJSON * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_depth( Atmosphere *, const AtmosphereParameters * );
 
-PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap, const Constants C )
+PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters *Ap, const ScalingConstants SC )
 {
     PetscErrorCode ierr;
     PetscScalar    scaling;
@@ -49,19 +49,19 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     ierr = DimensionalisableFieldSetName(A->atm_struct[0],"atm_struct_tau");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[0],"None");CHKERRQ(ierr);
 
-    scaling = C->TEMP;
+    scaling = SC->TEMP;
     ierr = DimensionalisableFieldCreate(&A->atm_struct[1],A->da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[1],&A->atm_struct_temp);
     ierr = DimensionalisableFieldSetName(A->atm_struct[1],"atm_struct_temp");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[1],"K");CHKERRQ(ierr);
 
-    scaling = C->PRESSURE / 1.0E5; // bar
+    scaling = SC->PRESSURE / 1.0E5; // bar
     ierr = DimensionalisableFieldCreate(&A->atm_struct[2],A->da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[2],&A->atm_struct_pressure);
     ierr = DimensionalisableFieldSetName(A->atm_struct[2],"atm_struct_pressure");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[2],"bar");CHKERRQ(ierr);
 
-    scaling = C->RADIUS;
+    scaling = SC->RADIUS;
     ierr = DimensionalisableFieldCreate(&A->atm_struct[3],A->da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(A->atm_struct[3],&A->atm_struct_depth);
     ierr = DimensionalisableFieldSetName(A->atm_struct[3],"atm_struct_depth");CHKERRQ(ierr);
@@ -495,7 +495,7 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
 
 }
 
-PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap, const Constants C )
+PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmosphereParameters *Ap  )
 {
     PetscErrorCode           ierr;
 
@@ -560,7 +560,7 @@ PetscScalar get_grey_body_flux( const Atmosphere *A, const AtmosphereParameters 
     return Fsurf;
 }
 
-PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const Constants C )
+PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const ScalingConstants SC )
 {
     PetscScalar       Tsurf, Fsurf;
 
@@ -568,9 +568,9 @@ PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const Co
        Eqn. 40.  Expressed dimensionally so must convert here using
        TEMP and FLUX scalings */
 
-    Tsurf = A->tsurf * C->TEMP;
+    Tsurf = A->tsurf * SC->TEMP;
     Fsurf = 1.5E2 + 1.02E-5 * PetscExpScalar(0.011*Tsurf);
-    Fsurf /= C->FLUX; // non-dimensionalise
+    Fsurf /= SC->FLUX; // non-dimensionalise
 
     return Fsurf;
 
@@ -669,12 +669,12 @@ static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *Ap, 
 
 }
 
-PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, const char *name, cJSON *json )
+PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, const char *name, cJSON *json )
 {
     PetscErrorCode ierr;
     cJSON          *data;
     PetscScalar    scaling, val;
-    Constants      const C = P->constants;
+    ScalingConstants      const SC = P->scaling_constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
     PetscInt       v;
 
@@ -688,7 +688,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     }
 
     /* total liquid mass of mantle, kg */
-    scaling = 4.0 * PETSC_PI * C->MASS; // includes 4*PI for spherical geometry
+    scaling = 4.0 * PETSC_PI * SC->MASS; // includes 4*PI for spherical geometry
     ierr = JSON_add_single_value_to_object(dm, scaling, "mass_liquid", "kg", A->Mliq, data);CHKERRQ(ierr);
     /* total solid mass of mantle, kg */
     ierr = JSON_add_single_value_to_object(dm, scaling, "mass_solid", "kg", A->Msol, data);CHKERRQ(ierr);
@@ -698,15 +698,15 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     ierr = JSON_add_single_value_to_object(dm, scaling, "mass_core", "kg", P->coremass, data);CHKERRQ(ierr);
 
     /* kg, without 4*pi */
-    val = C->MASS * A->molar_mass * 1.0E3;
+    val = SC->MASS * A->molar_mass * 1.0E3;
     ierr = JSON_add_single_value_to_object(dm, 1.0, "molar_mass", "g/mol", val, data);CHKERRQ(ierr);
 
     /* surface temperature, K */
-    scaling = C->TEMP;
+    scaling = SC->TEMP;
     ierr = JSON_add_single_value_to_object(dm, scaling, "temperature_surface", "K", A->tsurf, data);CHKERRQ(ierr);
 
     /* surface pressure, bar */
-    scaling = C->PRESSURE / 1.0E5; /* bar */
+    scaling = SC->PRESSURE / 1.0E5; /* bar */
     ierr = JSON_add_single_value_to_object(dm, scaling, "pressure_surface", "bar", A->psurf, data);CHKERRQ(ierr);
 
     /* oxygen fugacity */
@@ -715,7 +715,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "None", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
 
     /* multiplying by the scaling gives the oxygen fugacity (partial pressure) in bar */
-    scaling = A->psurf * C->PRESSURE / 1.0E5; /* bar */
+    scaling = A->psurf * SC->PRESSURE / 1.0E5; /* bar */
     ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
 
     /* optical depth, non-dimensional */
@@ -725,7 +725,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
     ierr = JSON_add_single_value_to_object(dm, scaling, "emissivity", "None", A->emissivity, data);CHKERRQ(ierr);
 
     /* net upward atmospheric flux */
-    scaling = C->FLUX;
+    scaling = SC->FLUX;
     ierr = JSON_add_single_value_to_object(dm, scaling, "Fatm", "W m$^{-2}$", A->Fatm, data);CHKERRQ(ierr);
 
     /* Volatiles */
@@ -742,13 +742,13 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
 }
 
 /* TODO: was for temporary output during debugging, can probably now REMOVE */
-static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosphere const *A, cJSON *json )
+static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const P, Atmosphere const *A, cJSON *json )
 {
     PetscErrorCode ierr;
     cJSON          *data;
     PetscScalar    scaling;
     PetscInt       v;
-    Constants      const C = P->constants;
+    ScalingConstants const SC = P->scaling_constants;
     char const     *name = "mass_reaction";
     //char           str[1]; // FIXME: will break for more than 9 reactions!
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
@@ -758,7 +758,7 @@ static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosp
     data = cJSON_CreateObject();
 
     /* kilograms (kg) */
-    scaling = C->VOLATILE * 4.0 * PETSC_PI * C->MASS;
+    scaling = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS;
 
     for (v=0; v<Ap->n_reactions; ++v) {
         // FIXME: instead of "test", can we output the slot number (v)?
@@ -775,12 +775,12 @@ static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosp
 
 }
 
-static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatileParameters const *VP, Volatile const *V, Atmosphere const *A, char const *name, cJSON *json )
+static PetscErrorCode JSON_add_volatile( DM dm, Parameters const P, VolatileParameters const *VP, Volatile const *V, Atmosphere const *A, char const *name, cJSON *json )
 {
     PetscErrorCode  ierr;
     cJSON           *data;
     PetscScalar     scaling, val;
-    Constants       const C = P->constants;
+    ScalingConstants     const SC = P->scaling_constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
@@ -788,7 +788,7 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     data = cJSON_CreateObject();
 
     /* parts-per-million (ppmw) */
-    scaling = C->VOLATILE * 1.0E6; // VOLATILE to mass fraction, 1.0E6 to ppm
+    scaling = SC->VOLATILE * 1.0E6; // VOLATILE to mass fraction, 1.0E6 to ppm
     /* initial volatile (ppmw) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "initial_ppmw", "ppmw", VP->initial_total_abundance, data);CHKERRQ(ierr);
     /* volatile in liquid mantle (ppmw) */
@@ -797,7 +797,7 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     ierr = JSON_add_single_value_to_object(dm, scaling, "solid_ppmw", "ppmw", V->x*VP->kdist, data);CHKERRQ(ierr);
 
     /* kilograms (kg) */
-    scaling = C->VOLATILE * 4.0 * PETSC_PI * C->MASS;
+    scaling = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS;
     /* initial volatile (kg) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "initial_kg", "kg", VP->initial_total_abundance*(*Ap->mantle_mass_ptr), data);CHKERRQ(ierr);
     /* volatile in liquid mantle (kg) */
@@ -813,16 +813,16 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     ierr = JSON_add_single_value_to_object(dm, scaling, "physical_kg", "kg", val, data);CHKERRQ(ierr);
 
     /* kilograms (kg), without 4*pi */
-    val = C->MASS * VP->molar_mass * 1.0E3;
+    val = SC->MASS * VP->molar_mass * 1.0E3;
     ierr = JSON_add_single_value_to_object(dm, 1.0, "molar_mass", "g/mol", val, data);CHKERRQ(ierr);
 
     /* bar (bar) */
     /* volatile in atmosphere (bar) */
-    scaling = C->PRESSURE / 1.0E5; /* bar */
+    scaling = SC->PRESSURE / 1.0E5; /* bar */
     ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_bar", "bar", V->p, data);CHKERRQ(ierr);
 
     /* area */
-    scaling = 1.0 / (C->AREA * 1.0E4); // 1/cm^2
+    scaling = 1.0 / (SC->AREA * 1.0E4); // 1/cm^2
     ierr = JSON_add_single_value_to_object(dm, scaling, "column_density", "1/cm^2", V->column_density, data);CHKERRQ(ierr);
 
     /* non-dimensional */
@@ -835,7 +835,7 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatilePar
     ierr = JSON_add_single_value_to_object(dm, scaling, "f_thermal_escape", "None", V->f_thermal_escape, data);CHKERRQ(ierr);
 
     /* other */
-    scaling = C->VOLATILE / C->PRESSURE;
+    scaling = SC->VOLATILE / SC->PRESSURE;
     ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dp", "mass fraction/Pa", V->dxdp, data);CHKERRQ(ierr);
 
     cJSON_AddItemToObject(json,name,data);
@@ -853,8 +853,8 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
     PetscInt                   i;
     const PetscScalar          *dmrdt;
     Atmosphere                 *A = &E->atmosphere;
-    Parameters           const *P = &E->parameters;
-    Constants            const C = P->constants;
+    Parameters           const P = E->parameters;
+    ScalingConstants     const SC = P->scaling_constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
@@ -879,8 +879,8 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
         Qp = get_reaction_quotient_products( &Ap->reaction_parameters[i], A );
         dQpdt = get_reaction_quotient_products_time_derivative( &Ap->reaction_parameters[i], A, Ap );
         dQrdt = get_reaction_quotient_reactants_time_derivative( &Ap->reaction_parameters[i], A, Ap );
-        log10G = get_log10_modified_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, C, A );
-        dlog10GdT = get_dlog10GdT( &Ap->reaction_parameters[i], A->tsurf, C, A );
+        log10G = get_log10_modified_equilibrium_constant( &Ap->reaction_parameters[i], A->tsurf, SC, A );
+        dlog10GdT = get_dlog10GdT( &Ap->reaction_parameters[i], A->tsurf, SC, A );
 
         ff[Ap->n_volatiles + i] = -Qp/PetscPowScalar(Qr,2.0) * dQrdt;
         ff[Ap->n_volatiles + i] += 1.0/Qr * dQpdt;
@@ -1051,7 +1051,7 @@ PetscScalar get_residual_volatile_mass( Atmosphere *A, const AtmosphereParameter
     return out;
 }
 
-PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const Constants C )
+PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *Ap, const ScalingConstants SC )
 {
 
     /* These are oxygen fugacity fits for individual meteoritic materials as
@@ -1060,7 +1060,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
 
     PetscScalar a,b,c,d,f,func,dfuncdT;
     /* temperature must be dimensional in K */
-    PetscScalar temp = A->tsurf * C->TEMP;
+    PetscScalar temp = A->tsurf * SC->TEMP;
 
     PetscFunctionBeginUser;
 
@@ -1154,7 +1154,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters *A
 
     /* TODO: check, must non-dimensionalise, because we used a scaled
        (dimensional) temperature to compute the derivative */
-    A->dlog10fO2dT = dfuncdT * C->TEMP;
+    A->dlog10fO2dT = dfuncdT * SC->TEMP;
 
     PetscFunctionReturn(0);
 

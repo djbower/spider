@@ -15,7 +15,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 {
   PetscErrorCode    ierr;
   Ctx                  *E = (Ctx*) ptr;
-  Parameters           *P = &E->parameters;
+  Parameters           P = E->parameters;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
   Atmosphere           *A = &E->atmosphere;
   Mesh                 *M = &E->mesh;

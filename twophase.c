@@ -34,7 +34,7 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
 
     PetscErrorCode ierr;
     DM             da_s=E->da_s, da_b=E->da_b;
-    Parameters     *P = &E->parameters;
+    Parameters     P = E->parameters;
     Solution       *S = &E->solution;
     PetscInt       i, ilo_s, ihi_s, w_s, ilo, ihi, w;
     PetscScalar    *arr_gphi_s, *arr_fwtl_s, *arr_fwts_s, *arr_gphi, *arr_fwtl, *arr_fwts;
@@ -120,7 +120,7 @@ static PetscErrorCode set_liquidus( Ctx *E )
     Interp1d const    *interp;
     Interp2d const    *interpR, *interpT;
     Solution          *S;
-    Parameters const  *P = &E->parameters;
+    Parameters const  P = E->parameters;
 
     PetscFunctionBeginUser;
 
@@ -188,7 +188,7 @@ static PetscErrorCode set_solidus( Ctx *E )
     Interp1d const    *interp;
     Interp2d const    *interpR, *interpT;
     Solution          *S;
-    Parameters const  *P = &E->parameters;
+    Parameters const  P = E->parameters;
 
     PetscFunctionBeginUser;
     S = &E->solution;
@@ -445,7 +445,7 @@ PetscErrorCode set_rheological_front( Ctx *E )
     PetscErrorCode    ierr;
     DM                da_s = E->da_s;
     DM                da_b = E->da_b;
-    Parameters        *P = &E->parameters;
+    Parameters        P = E->parameters;
     Solution          *S = &E->solution;
     RheologicalFront  *Rfp = &E->rheological_front_phi;
     RheologicalFront  *Rfd = &E->rheological_front_dynamic;
@@ -486,7 +486,7 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
     PetscErrorCode   ierr;
     const DM         da_s = E->da_s;
     const Mesh       *M = &E->mesh;
-    const Parameters *P = &E->parameters;
+    const Parameters P = E->parameters;
     const Solution   *S = &E->solution;
     PetscScalar      phi, radius, pressure, temperature;
     PetscInt         numpts_s, index_above, index_below;

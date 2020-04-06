@@ -9,16 +9,16 @@
  ******************************************************************************
  */
 
-/* scalings of the physical problem, largely determined by numerical
+/* constants to scale the physical problem, largely chosen based on numerical
    considerations */
 typedef struct {
-    // primary
+    /* primary */
     PetscScalar RADIUS;
     PetscScalar TEMP;
     PetscScalar ENTROPY;
     PetscScalar DENSITY;
     PetscScalar VOLATILE;
-    // derived from primary
+    /* derived from primary */
     PetscScalar AREA;
     PetscScalar VOLUME;
     PetscScalar MASS;
@@ -43,8 +43,8 @@ typedef struct {
     PetscScalar LHS;
     PetscScalar RHS;
     PetscScalar HEATGEN;
-} data_Constants;
-typedef data_Constants* Constants;
+} data_ScalingConstants;
+typedef data_ScalingConstants* ScalingConstants;
 
 /* fundamental constants */
 typedef struct {
@@ -277,7 +277,7 @@ typedef struct CompositionParameters_ {
 */
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
-typedef struct _Parameters {
+typedef struct {
 
     // Discretization parameters
     PetscInt    nstepsmacro,maxsteps;
@@ -355,7 +355,7 @@ typedef struct _Parameters {
     AtmosphereParameters atmosphere_parameters;
 
     // Scaling factors / dimensional constants
-    Constants constants;
+    ScalingConstants scaling_constants;
 
     FundamentalConstants fundamental_constants;
 
@@ -375,11 +375,12 @@ typedef struct _Parameters {
     // Composition
     //CompositionParameters composition_parameters;
 
-} Parameters;
+} data_Parameters;
+typedef data_Parameters* Parameters;
 
 /* Parameters Methods */
-PetscErrorCode InitializeParametersAndSetFromOptions( Parameters * );
-PetscErrorCode PrintParameters( Parameters const * );
+PetscErrorCode PrintParameters( Parameters const );
+PetscErrorCode ParametersCreate( Parameters * );
 PetscErrorCode ParametersDestroy( Parameters * );
 
 /* ReactionParameters Methods */

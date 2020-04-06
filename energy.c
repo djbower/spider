@@ -22,7 +22,7 @@ static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, c
 PetscErrorCode set_Htot( Ctx *E, PetscReal time )
 {
     PetscErrorCode ierr;
-    Parameters     const *P = &E->parameters;
+    Parameters     const P = E->parameters;
     Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -57,7 +57,7 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal time )
     PetscErrorCode ierr;
     PetscScalar H;
     Solution       *S = &E->solution;
-    Parameters const *P = &E->parameters;
+    Parameters const P = E->parameters;
     RadiogenicIsotopeParameters const *al26 = &P->al26_parameters;
     RadiogenicIsotopeParameters const *k40 = &P->k40_parameters;
     RadiogenicIsotopeParameters const *fe60 = &P->fe60_parameters;
@@ -155,7 +155,7 @@ PetscErrorCode set_Etot( Ctx *E )
 static PetscErrorCode set_Jtot( Ctx *E )
 {
     PetscErrorCode ierr;
-    Parameters     const *P = &E->parameters;
+    Parameters     const P = E->parameters;
     Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -299,7 +299,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     Vec rho = S->rho;
     Vec rhol = S->liquidus_rho;
     Vec rhos = S->solidus_rho;
-    Parameters *P = &E->parameters;
+    Parameters P = E->parameters;
 
 //rho, rhol, rhos, F;
     PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
@@ -414,9 +414,9 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
     PetscScalar          temp0;
     PetscInt             const ind0 = 0;
     Atmosphere           *A  = &E->atmosphere;
-    Parameters           const *P  = &E->parameters;
+    Parameters           const P  = E->parameters;
     Solution             const *S  = &E->solution;
-    Constants            const C  = P->constants;
+    ScalingConstants     const SC  = P->scaling_constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
@@ -457,7 +457,7 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
 
     /* must be after A->tsurf is set for fO2 calculation */
     if( Ap->OXYGEN_FUGACITY ){
-        ierr = set_oxygen_fugacity( A, Ap, C );CHKERRQ(ierr);
+        ierr = set_oxygen_fugacity( A, Ap, SC );CHKERRQ(ierr);
     }
     else{
         /* TODO: maybe initialise these variables elsewhere? */

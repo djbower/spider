@@ -7,12 +7,12 @@
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );
-static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const *);
+static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const);
 static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
-static PetscScalar get_log10_viscosity_melt( PetscScalar, PetscScalar, PetscInt, Parameters const *);
-static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, PetscScalar, Parameters const * );
-static PetscScalar get_log10_viscosity_cutoff( PetscScalar, Parameters const * );
-static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const * );
+static PetscScalar get_log10_viscosity_melt( PetscScalar, PetscScalar, PetscInt, Parameters const );
+static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, PetscScalar, Parameters const );
+static PetscScalar get_log10_viscosity_cutoff( PetscScalar, Parameters const );
+static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -59,7 +59,7 @@ PetscErrorCode set_melt_fraction_staggered( Ctx *E )
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s=E->da_s;
-    Parameters        *P = &E->parameters;
+    Parameters        P = E->parameters;
     Solution          *S = &E->solution;
     PetscScalar       *arr_phi_s;
 
@@ -98,7 +98,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     DM                da_s=E->da_s;
     Lookup const      *L;
     Mesh              *M = &E->mesh;
-    Parameters const  *P = &E->parameters;
+    Parameters const  P = E->parameters;
     // FIXME
     //CompositionalParameters const *Comp = &P->compositional_parameters;
     Solution          *S = &E->solution;
@@ -260,7 +260,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscScalar       rho_mix, dTdrs_mix, cp_mix, temp_mix, alpha_mix, cond_mix, log10visc_mel_mix, log10visc_sol_mix, log10visc_mix;
     Lookup const      *L;
     Mesh              *M = &E->mesh;
-    Parameters const  *P = &E->parameters;
+    Parameters const  P = E->parameters;
     // FIXME
     //CompositionalParameters const *Comp = &P->compositional_parameters;
     Solution          *S = &E->solution;
@@ -519,7 +519,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar get_log10_viscosity_cutoff( PetscScalar in_visc, Parameters const *P )
+static PetscScalar get_log10_viscosity_cutoff( PetscScalar in_visc, Parameters const P )
 {
 
     PetscScalar out_visc;
@@ -541,7 +541,7 @@ static PetscScalar get_log10_viscosity_cutoff( PetscScalar in_visc, Parameters c
 
 }
 
-static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, PetscScalar radius, Parameters const *P )
+static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, PetscScalar radius, Parameters const P )
 {
 
     PetscScalar Ea = P->activation_energy_sol; // activation energy (non-dimensional)
@@ -618,7 +618,7 @@ static PetscScalar add_compositional_viscosity( PetscScalar lvisc, PetscScalar M
     return lvisc;
 }
 
-static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const *P )
+static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const P )
 {
 
     /* melt viscosity is currently a constant, but this retains symmetry with the function used
@@ -634,7 +634,7 @@ static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScala
 
 }
 
-static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10visc_mel, PetscScalar log10visc_sol, Parameters const *P )
+static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10visc_mel, PetscScalar log10visc_sol, Parameters const P )
 {
     PetscScalar fwt, lvisc;
 
@@ -648,7 +648,7 @@ static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10
     return lvisc;
 }
 
-static PetscScalar get_viscosity_mix_no_skew( PetscScalar meltf, Parameters const *P )
+static PetscScalar get_viscosity_mix_no_skew( PetscScalar meltf, Parameters const P )
 {
     /* viscosity in mixed phase region with no skew */
 

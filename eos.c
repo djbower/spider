@@ -6,10 +6,10 @@
 /* lookup material properties (default) */
 static PetscErrorCode EosParametersCreateInterp1d( const char *, Interp1d *, PetscScalar, PetscScalar );
 static PetscErrorCode EosParametersCreateInterp2d( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
-static PetscErrorCode set_solid_eos_lookup( EosParameters *, Parameters * );
-static PetscErrorCode set_melt_eos_lookup( EosParameters *, Parameters * );
-static PetscErrorCode set_liquidus_lookup( EosParameters *, EosParameters *, Parameters * );
-static PetscErrorCode set_solidus_lookup( EosParameters *, EosParameters *, Parameters * );
+static PetscErrorCode set_solid_eos_lookup( EosParameters *, Parameters );
+static PetscErrorCode set_melt_eos_lookup( EosParameters *, Parameters );
+static PetscErrorCode set_liquidus_lookup( EosParameters *, EosParameters *, Parameters );
+static PetscErrorCode set_solidus_lookup( EosParameters *, EosParameters *, Parameters );
 static PetscErrorCode Interp1dDestroy( Interp1d * );
 static void Interp2dDestroy( Interp2d * );
 static PetscErrorCode EosParametersInterp1dDestroy( EosParameters * );
@@ -39,10 +39,10 @@ static PetscScalar eV_to_joule( PetscScalar );
 /* set equation of state (EOS).  Currently for a melt and a solid phase, but
    can be extended for more phases in the future */
 
-PetscErrorCode set_eos( Parameters *P )
+PetscErrorCode set_eos( Parameters P )
 {
     PetscErrorCode ierr;
-    Constants C = P->constants;
+    ScalingConstants const SC = P->scaling_constants;
     EosParameters *eosp1 = &P->eos1_parameters; /* melt */
     EosParameters *eosp2 = &P->eos2_parameters; /* solid */
 
@@ -77,19 +77,19 @@ PetscErrorCode set_eos( Parameters *P )
     /* conductivity (W/m/K) */
     eosp2->cond = 4.0;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_sol",&eosp2->cond,NULL);CHKERRQ(ierr);
-    eosp2->cond /= C->COND;
+    eosp2->cond /= SC->COND;
     eosp1->cond = 4.0;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-cond_mel",&eosp1->cond,NULL);CHKERRQ(ierr);
-    eosp1->cond /= C->COND;
+    eosp1->cond /= SC->COND;
 
     /* viscosity (Pa.s) */
     /* for solid, this is a prefactor if activation_energy_sol or activation_volume_sol are non-zero */
     eosp2->log10visc = 21.0;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_sol",&eosp2->log10visc,NULL);CHKERRQ(ierr);
-    eosp2->log10visc -= C->LOG10VISC;
+    eosp2->log10visc -= SC->LOG10VISC;
     eosp1->log10visc = 2.0;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_mel",&eosp1->log10visc,NULL);CHKERRQ(ierr);
-    eosp1->log10visc -= C->LOG10VISC;
+    eosp1->log10visc -= SC->LOG10VISC;
 
     /* set liquidus and solidus from lookup */
     /* TODO: could also have analytical functions for these as well by using
@@ -539,7 +539,7 @@ static void EosParametersInterp2dDestroy( EosParameters *eosp )
 
 }
 
-void EosParametersDestroy( Parameters *P )
+void EosParametersDestroy( Parameters P )
 {
 
     EosParametersInterp1dDestroy( &P->eos2_parameters );
@@ -576,10 +576,10 @@ static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 #undef SPIDER_ROOT_DIR_STR
 
 
-static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters *P )
+static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters P )
 {
   PetscErrorCode  ierr;
-  Constants const C = P->constants;
+  ScalingConstants const SC = P->scaling_constants;
 
   PetscFunctionBeginUser;
 
@@ -645,20 +645,20 @@ static PetscErrorCode set_melt_eos_lookup( EosParameters *eosp, Parameters *P )
 
   /* melt lookups */
   /* 2d */
-  ierr = EosParametersCreateInterp2d( eosp->lookup.alpha_filename, &eosp->lookup.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( eosp->lookup.cp_filename, &eosp->lookup.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( eosp->lookup.dTdPs_filename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( eosp->lookup.rho_filename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( eosp->lookup.temp_filename, &eosp->lookup.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.alpha_filename, &eosp->lookup.alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.cp_filename, &eosp->lookup.cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.dTdPs_filename, &eosp->lookup.dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.rho_filename, &eosp->lookup.rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.temp_filename, &eosp->lookup.temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters *P )
+static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters P )
 {
   PetscErrorCode  ierr;
-  Constants const C = P->constants;
+  ScalingConstants const SC = P->scaling_constants;
 
   PetscFunctionBeginUser;
 
@@ -722,22 +722,22 @@ static PetscErrorCode set_solid_eos_lookup( EosParameters *eosp, Parameters *P )
     }
   }
 
-  ierr = EosParametersCreateInterp2d( eosp->lookup.alpha_filename, &eosp->lookup.alpha, C->PRESSURE, C->ENTROPY, 1.0/C->TEMP );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( eosp->lookup.cp_filename, &eosp->lookup.cp, C->PRESSURE, C->ENTROPY, C->ENTROPY );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( eosp->lookup.dTdPs_filename, &eosp->lookup.dTdPs, C->PRESSURE, C->ENTROPY, C->DTDP );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( eosp->lookup.rho_filename, &eosp->lookup.rho, C->PRESSURE, C->ENTROPY, C->DENSITY );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp2d( eosp->lookup.temp_filename, &eosp->lookup.temp, C->PRESSURE, C->ENTROPY, C->TEMP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.alpha_filename, &eosp->lookup.alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.cp_filename, &eosp->lookup.cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.dTdPs_filename, &eosp->lookup.dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.rho_filename, &eosp->lookup.rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp2d( eosp->lookup.temp_filename, &eosp->lookup.temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_liquidus_lookup( EosParameters *eosp1, EosParameters *eosp2, Parameters *P )
+static PetscErrorCode set_liquidus_lookup( EosParameters *eosp1, EosParameters *eosp2, Parameters P )
 {
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
 
   PetscErrorCode  ierr;
-  Constants const C = P->constants;
+  ScalingConstants const SC = P->scaling_constants;
 
   PetscFunctionBeginUser;
 
@@ -758,19 +758,19 @@ static PetscErrorCode set_liquidus_lookup( EosParameters *eosp1, EosParameters *
   }
 
   /* FIXME: unnecessary duplication? */
-  ierr = EosParametersCreateInterp1d( P->liquidusFilename, &eosp1->lookup.liquidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp1d( P->liquidusFilename, &eosp2->lookup.liquidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp1d( P->liquidusFilename, &eosp1->lookup.liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp1d( P->liquidusFilename, &eosp2->lookup.liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_solidus_lookup( EosParameters *eosp1, EosParameters *eosp2, Parameters *P )
+static PetscErrorCode set_solidus_lookup( EosParameters *eosp1, EosParameters *eosp2, Parameters P )
 {
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
 
   PetscErrorCode  ierr;
-  Constants const C = P->constants;
+  ScalingConstants const SC = P->scaling_constants;
 
   PetscFunctionBeginUser;
 
@@ -791,8 +791,8 @@ static PetscErrorCode set_solidus_lookup( EosParameters *eosp1, EosParameters *e
   }
 
   /* FIXME: unnecessary duplication? */
-  ierr = EosParametersCreateInterp1d( P->solidusFilename, &eosp1->lookup.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
-  ierr = EosParametersCreateInterp1d( P->solidusFilename, &eosp2->lookup.solidus, C->PRESSURE, C->ENTROPY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp1d( P->solidusFilename, &eosp1->lookup.solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = EosParametersCreateInterp1d( P->solidusFilename, &eosp2->lookup.solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
@@ -897,7 +897,7 @@ PetscScalar get_rtpress_pressure_test( Ctx *E )
        FIXME: need to truncate negative values?  Perhaps not for
        smoothness of solver during inversion? */
 
-    EosParameters *rtp = &E->parameters.eos1_parameters;
+    EosParameters *rtp = &E->parameters->eos1_parameters;
     PetscScalar   P, T, V, volfrac;
 
     volfrac = 0.6;
@@ -972,7 +972,7 @@ PetscScalar get_rtpress_entropy_test( Ctx *E )
 
     /* seems to confirm S is correct */
 
-    EosParameters *rtp = &E->parameters.eos1_parameters;
+    EosParameters *rtp = &E->parameters->eos1_parameters;
     PetscScalar   S, T, V, volfrac;
 
     volfrac = 0.6;
@@ -1184,7 +1184,7 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx *E )
     Vec            x,r;
     PetscScalar    *xx;
     PetscInt       i;
-    EosParameters  *rtp = &E->parameters.eos1_parameters;
+    EosParameters  *rtp = &E->parameters->eos1_parameters;
     EosEval        *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
@@ -1269,7 +1269,7 @@ static PetscErrorCode objective_function_rtpress_volume_temperature( SNES snes, 
     PetscScalar                *ff;
     PetscScalar                V, T, P, S;
     Ctx                        *E = (Ctx*) ptr;
-    EosParameters              *rtp = &E->parameters.eos1_parameters;
+    EosParameters              *rtp = &E->parameters->eos1_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
     PetscScalar Ptarget = eos_eval->P;
     PetscScalar Starget = eos_eval->S;
@@ -1302,8 +1302,8 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
        once, to avoid unnecessary computations.  This updates all the 
        eos_eval struct with the material properties */
 
-    Constants const            C = E->parameters.constants;
-    EosParameters              *rtp = &E->parameters.eos1_parameters;
+    ScalingConstants const            SC = E->parameters->scaling_constants;
+    EosParameters              *rtp = &E->parameters->eos1_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
@@ -1312,11 +1312,11 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
        analytical expressions */
     /* rtpress wants GPa */
     eos_eval->P = P;
-    eos_eval->P *= C->PRESSURE * 1.0E-9;
+    eos_eval->P *= SC->PRESSURE * 1.0E-9;
 
     /* rtpress wants eV/atom/K FIXME: K correct? */
     eos_eval->S = S;
-    eos_eval->S *= C->ENTROPY;
+    eos_eval->S *= SC->ENTROPY;
     eos_eval->S = specific_to_per_atom( eos_eval->S, rtp ); 
     eos_eval->S = joule_to_eV( eos_eval->S );
 
@@ -1355,7 +1355,7 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
 
 static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx *E )
 {
-    Constants const            C = E->parameters.constants;
+    ScalingConstants const     SC = E->parameters->scaling_constants;
     EosEval                    *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
@@ -1363,12 +1363,12 @@ static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx *E )
     /* FIXME: for consistency should probably non-dimensionalise all
        entries in this struct, and not just a selection */
 
-    eos_eval->rho /= C->DENSITY;
-    eos_eval->Cp /= C->ENTROPY;
-    eos_eval->Cv /= C->ENTROPY;
-    eos_eval->T /= C->TEMP;
-    eos_eval->alpha *= C->TEMP;
-    eos_eval->dTdPs /= C->DTDP;
+    eos_eval->rho /= SC->DENSITY;
+    eos_eval->Cp /= SC->ENTROPY;
+    eos_eval->Cv /= SC->ENTROPY;
+    eos_eval->T /= SC->TEMP;
+    eos_eval->alpha *= SC->TEMP;
+    eos_eval->dTdPs /= SC->DTDP;
 
     PetscFunctionReturn(0);
 
