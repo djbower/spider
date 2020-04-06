@@ -19,9 +19,9 @@ static PetscErrorCode set_column_density_volatile( Atmosphere *, const Atmospher
 static PetscErrorCode set_Knudsen_number( Atmosphere *, const AtmosphereParameters *, PetscInt );
 static PetscErrorCode set_R_thermal_escape( Atmosphere *, const AtmosphereParameters *, PetscInt );
 static PetscErrorCode set_f_thermal_escape( Atmosphere *, PetscInt );
-static PetscErrorCode JSON_add_volatile( DM, Parameters const *, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
+static PetscErrorCode JSON_add_volatile( DM, Parameters const, VolatileParameters const *, Volatile const *, Atmosphere const *, char const *name, cJSON * );
 static PetscErrorCode JSON_add_atm_struct( Atmosphere *, const AtmosphereParameters *, cJSON * );
-static PetscErrorCode JSON_add_reaction_mass( DM , Parameters const *, Atmosphere const *, cJSON * );
+static PetscErrorCode JSON_add_reaction_mass( DM , Parameters const, Atmosphere const *, cJSON * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParameters * );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmosphereParameters * );
@@ -669,7 +669,7 @@ static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters *Ap, 
 
 }
 
-PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, const char *name, cJSON *json )
+PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, const char *name, cJSON *json )
 {
     PetscErrorCode ierr;
     cJSON          *data;
@@ -742,7 +742,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const *P, Atmosphere *A, c
 }
 
 /* TODO: was for temporary output during debugging, can probably now REMOVE */
-static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosphere const *A, cJSON *json )
+static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const P, Atmosphere const *A, cJSON *json )
 {
     PetscErrorCode ierr;
     cJSON          *data;
@@ -775,7 +775,7 @@ static PetscErrorCode JSON_add_reaction_mass( DM dm, Parameters const *P, Atmosp
 
 }
 
-static PetscErrorCode JSON_add_volatile( DM dm, Parameters const *P, VolatileParameters const *VP, Volatile const *V, Atmosphere const *A, char const *name, cJSON *json )
+static PetscErrorCode JSON_add_volatile( DM dm, Parameters const P, VolatileParameters const *VP, Volatile const *V, Atmosphere const *A, char const *name, cJSON *json )
 {
     PetscErrorCode  ierr;
     cJSON           *data;
@@ -853,7 +853,7 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
     PetscInt                   i;
     const PetscScalar          *dmrdt;
     Atmosphere                 *A = &E->atmosphere;
-    Parameters           const *P = &E->parameters;
+    Parameters           const P = E->parameters;
     Constants            const C = P->constants;
     AtmosphereParameters const *Ap = &P->atmosphere_parameters;
 

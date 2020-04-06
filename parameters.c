@@ -13,18 +13,21 @@ Custom PETSc command line options should only ever be parsed here.
 // FIXME
 //#include "composition.h"
 
-static PetscErrorCode set_start_time_from_file( Parameters * , const char * );
+static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 
 
-static PetscErrorCode ConstantsCreate( Constants * constants_ptr, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
+static PetscErrorCode ConstantsSet( Constants C, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
-    PetscErrorCode ierr;
+    // FIXME: REMOVE UNUSED VARIABLE
+    //PetscErrorCode ierr;
     PetscScalar SQRTST;
-    Constants C;
+
+// FIXME: REMOVE
+//    Constants C;
 
     PetscFunctionBeginUser;
-    ierr = PetscMalloc1(1,constants_ptr);CHKERRQ(ierr);
-    C = *constants_ptr;
+//    ierr = PetscMalloc1(1,constants_ptr);CHKERRQ(ierr);
+//    C = *constants_ptr;
 
     /* 29 constants to set (excluding SQRTST which is a convenience
        parameter) */
@@ -66,14 +69,17 @@ static PetscErrorCode ConstantsCreate( Constants * constants_ptr, PetscReal RADI
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants * fundamental_constants_ptr, Constants C )
+static PetscErrorCode FundamentalConstantsSet( FundamentalConstants FC, Constants const C )
 {
-    PetscErrorCode ierr;
-    FundamentalConstants FC;
+    /// FIXME: REMOVE
+    //PetscErrorCode ierr;
+
+//FIXME: REMOVE
+//    FundamentalConstants FC;
 
     PetscFunctionBeginUser;
-    ierr = PetscMalloc1(1,fundamental_constants_ptr);CHKERRQ(ierr);
-    FC = *fundamental_constants_ptr;
+//    ierr = PetscMalloc1(1,fundamental_constants_ptr);CHKERRQ(ierr);
+//    FC = *fundamental_constants_ptr;
 
     FC->AVOGADRO = 6.02214076E23; /* 1/mol */
 
@@ -93,22 +99,15 @@ static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants * fundame
 
 }
 
-/* Initialize Constants, checking for command line arguments.
-   For now we only allow a single flag to set all scaling to 1 (hence running
-   in "dimensional mode") */
-static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C_ptr)
+static PetscErrorCode ConstantsSetFromOptions( Constants C )
 {
-  PetscErrorCode ierr;
-  PetscBool      dimensionalMode = PETSC_FALSE;
+    PetscErrorCode ierr;
 
-  PetscFunctionBeginUser;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-dimensional",&dimensionalMode,NULL);CHKERRQ(ierr);
-  if (dimensionalMode) {
-    ierr = ConstantsCreate(C_ptr,1.0,1.0,1.0,1.0,1.0);CHKERRQ(ierr);
-  } else {
+    PetscFunctionBeginUser;
+
     PetscScalar RADIUS0 = 6371000.0; // m
     ierr = PetscOptionsGetScalar(NULL,NULL,"-radius0",&RADIUS0,NULL);CHKERRQ(ierr);
-    PetscScalar ENTROPY0 = 2993.025100070677; // J/kg K
+    PetscScalar ENTROPY0 = 2993.025100070677; // J/kg/K
     ierr = PetscOptionsGetScalar(NULL,NULL,"-entropy0",&ENTROPY0,NULL);CHKERRQ(ierr);
     PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
     ierr = PetscOptionsGetScalar(NULL,NULL,"-temperature0",&TEMPERATURE0,NULL);CHKERRQ(ierr);
@@ -116,9 +115,9 @@ static PetscErrorCode InitializeConstantsAndSetFromOptions(Constants *C_ptr)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-density0",&DENSITY0,NULL);CHKERRQ(ierr);
     PetscScalar VOLATILE0 = 1.0;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-volatile0",&VOLATILE0,NULL);CHKERRQ(ierr);
-    ierr = ConstantsCreate(C_ptr,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
-  }
-  PetscFunctionReturn(0);
+    ierr = ConstantsSet(C,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
 }
 
 static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, const Constants C)
@@ -204,10 +203,12 @@ but they are all stored in non-dimensional (scaled) form.
 
  */
 
-PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
+PetscErrorCode ParametersSetFromOptions(Parameters P)
 {
   PetscErrorCode       ierr;
   AtmosphereParameters *Ap = &P->atmosphere_parameters;
+  /* convenient shorthand to user below */
+  Constants const C = P->constants;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
   RadiogenicIsotopeParameters *fe60 = &P->fe60_parameters;
@@ -222,12 +223,14 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
 
   /* Constants (scalings) must be set first, as they are used to scale
      other parameters */
-  ierr = InitializeConstantsAndSetFromOptions( &P->constants );CHKERRQ(ierr);
+  /* since this sets constants, cannot use C shorthand above which is read only */
+  ierr = ConstantsSetFromOptions( P->constants );CHKERRQ(ierr);
 
+  // REMOVE
   /* I think this has to be after constants has been initialised */
-  Constants const C = P->constants;
+  //Constants const C = P->constants;
 
-  ierr = FundamentalConstantsCreate( &P->fundamental_constants, P->constants);CHKERRQ(ierr);
+  ierr = FundamentalConstantsSet( P->fundamental_constants, P->constants);CHKERRQ(ierr);
 
   /* Must set EOS after setting constants, but before boundary conditions
      since EOS might be required to map temperature to entropy
@@ -853,7 +856,7 @@ PetscErrorCode InitializeParametersAndSetFromOptions(Parameters *P)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_start_time_from_file( Parameters *P , const char * filename )
+static PetscErrorCode set_start_time_from_file( Parameters P , const char * filename )
 {
 
     PetscErrorCode   ierr;
@@ -875,7 +878,7 @@ static PetscErrorCode set_start_time_from_file( Parameters *P , const char * fil
 
 }
 
-PetscErrorCode PrintParameters(Parameters const *P)
+PetscErrorCode PrintParameters(Parameters const P)
 {
   PetscErrorCode             ierr;
   PetscInt                   i;
@@ -967,38 +970,91 @@ static PetscErrorCode AtmosphereParametersDestroy(AtmosphereParameters* Ap)
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode ConstantsCreate( Constants* constants_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,constants_ptr);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 static PetscErrorCode ConstantsDestroy( Constants* constants_ptr )
 {
-  PetscErrorCode ierr;
+    PetscErrorCode ierr;
 
-  PetscFunctionBeginUser;
-
-  ierr = PetscFree(*constants_ptr);CHKERRQ(ierr);
-  *constants_ptr = NULL;
-  PetscFunctionReturn(0);
+    PetscFunctionBeginUser;
+ 
+    ierr = PetscFree(*constants_ptr);CHKERRQ(ierr);
+    *constants_ptr = NULL;
+    PetscFunctionReturn(0);
 
 }
+
+static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants* fundamental_constants_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,fundamental_constants_ptr);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
 
 static PetscErrorCode FundamentalConstantsDestroy( FundamentalConstants* fundamental_constants_ptr )
 {
-  PetscErrorCode ierr;
+    PetscErrorCode ierr;
 
-  PetscFunctionBeginUser;
+    PetscFunctionBeginUser;
 
-  ierr = PetscFree(*fundamental_constants_ptr);CHKERRQ(ierr);
-  *fundamental_constants_ptr = NULL;
-  PetscFunctionReturn(0);
+    ierr = PetscFree(*fundamental_constants_ptr);CHKERRQ(ierr);
+    *fundamental_constants_ptr = NULL;
+    PetscFunctionReturn(0);
 
 }
 
-PetscErrorCode ParametersDestroy(Parameters* parameters)
+PetscErrorCode ParametersCreate( Parameters* parameters_ptr )
 {
-  PetscErrorCode ierr;
+    PetscErrorCode ierr;
+    Parameters P;
 
-  PetscFunctionBeginUser;
-  ierr = AtmosphereParametersDestroy(&parameters->atmosphere_parameters);CHKERRQ(ierr);
-  EosParametersDestroy(parameters);
-  ierr = ConstantsDestroy(&parameters->constants);CHKERRQ(ierr);
-  ierr = FundamentalConstantsDestroy(&parameters->fundamental_constants);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
+    /* main parameters struct */
+    PetscFunctionBeginUser;
+    ierr = PetscMalloc1(1,parameters_ptr);CHKERRQ(ierr);
+    P = *parameters_ptr;
+
+    /* constants */
+    ierr = ConstantsCreate( &P->constants );CHKERRQ(ierr);
+    ierr = FundamentalConstantsCreate( &P->fundamental_constants );CHKERRQ(ierr);
+
+    /* memory allocated, now populate parameters with data */
+    ierr = ParametersSetFromOptions( P );CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
+{
+    /* destroy in reverse order to Create */
+
+    PetscErrorCode ierr;
+    Parameters P = *parameters_ptr;
+
+    PetscFunctionBeginUser;
+
+    ierr = FundamentalConstantsDestroy(&P->fundamental_constants);CHKERRQ(ierr);
+    ierr = ConstantsDestroy(&P->constants);CHKERRQ(ierr);
+
+    ierr = AtmosphereParametersDestroy(&P->atmosphere_parameters);CHKERRQ(ierr);
+    EosParametersDestroy(P);
+
+    ierr = PetscFree(*parameters_ptr);CHKERRQ(ierr);
+    *parameters_ptr = NULL;
+    PetscFunctionReturn(0);
 }
