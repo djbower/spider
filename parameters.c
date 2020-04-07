@@ -910,16 +910,16 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"liquidus data file"         ,P->liquidusFilename                          );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"solidus data file"          ,P->solidusFilename                           );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaSol data file"         ,P->eos2_parameters->lookup.alpha_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaMel data file"         ,P->eos1_parameters->lookup.alpha_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpSol data file"            ,P->eos2_parameters->lookup.cp_filename        );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpMel data file"            ,P->eos1_parameters->lookup.cp_filename        );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsSol data file"         ,P->eos2_parameters->lookup.dTdPs_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsMel data file"         ,P->eos1_parameters->lookup.dTdPs_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoSol data file"           ,P->eos2_parameters->lookup.rho_filename       );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"           ,P->eos1_parameters->lookup.rho_filename       );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"          ,P->eos2_parameters->lookup.temp_filename      );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"          ,P->eos1_parameters->lookup.temp_filename      );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaSol data file"         ,P->eos2_parameters->lookup->alpha_filename     );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaMel data file"         ,P->eos1_parameters->lookup->alpha_filename     );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpSol data file"            ,P->eos2_parameters->lookup->cp_filename        );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpMel data file"            ,P->eos1_parameters->lookup->cp_filename        );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsSol data file"         ,P->eos2_parameters->lookup->dTdPs_filename     );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsMel data file"         ,P->eos1_parameters->lookup->dTdPs_filename     );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoSol data file"           ,P->eos2_parameters->lookup->rho_filename       );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"           ,P->eos1_parameters->lookup->rho_filename       );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"          ,P->eos2_parameters->lookup->temp_filename      );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"          ,P->eos1_parameters->lookup->temp_filename      );CHKERRQ(ierr);
   if (Ap->n_volatiles > 0) {
     ierr = PetscPrintf(PETSC_COMM_WORLD,"\n[Volatile] prefix/name\n");CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
@@ -945,23 +945,63 @@ PetscErrorCode PrintParameters(Parameters const P)
  ******************************************************************************
  */
 
+static PetscErrorCode LookupCreate( Lookup* lookup_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,lookup_ptr);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode LookupDestroy( Lookup* lookup_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscFree(*lookup_ptr);CHKERRQ(ierr);
+    *lookup_ptr = NULL;
+    PetscFunctionReturn(0);
+
+}
 
 static PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
 {
     PetscErrorCode ierr;
+    EosParameters eos_parameters;
+    Lookup * lookup_ptr;
 
     PetscFunctionBeginUser;
 
     ierr = PetscMalloc1(1,eos_parameters_ptr);CHKERRQ(ierr);
 
+    eos_parameters = *eos_parameters_ptr;
+    lookup_ptr = &eos_parameters->lookup;
+
+    /* TODO: we don't need to create this if lookups are not used for
+       a particular EOS */
+    ierr = LookupCreate( lookup_ptr );
+
     PetscFunctionReturn(0);
+
 }
 
 static PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
 {
     PetscErrorCode ierr;
+    EosParameters eos_parameters;
+    Lookup * lookup_ptr;
 
     PetscFunctionBeginUser;
+
+    eos_parameters = *eos_parameters_ptr;
+    lookup_ptr = &eos_parameters->lookup;
+
+    ierr = LookupDestroy( lookup_ptr );CHKERRQ(ierr);
 
     ierr = PetscFree(*eos_parameters_ptr);CHKERRQ(ierr);
     *eos_parameters_ptr = NULL;
