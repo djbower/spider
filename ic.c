@@ -118,7 +118,7 @@ static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
 {
     PetscErrorCode ierr;
     Parameters const P = E->parameters;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
     /* subdomains to use, i.e. volatile abundances */
     PetscInt const arr[2] = {2, 3};
 
@@ -389,7 +389,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     PetscErrorCode             ierr;
     Parameters const           P  = E->parameters;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
     Atmosphere                 *A = &E->atmosphere;
 
     PetscFunctionBeginUser;
@@ -463,7 +463,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     PetscScalar          mass;
     Parameters           P = E->parameters;
     Atmosphere           *A = &E->atmosphere;
-    AtmosphereParameters *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"conform_parameters_to_initial_condition()\n");CHKERRQ(ierr);
@@ -540,7 +540,7 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     PetscScalar tmass_CO, tmass_CO2, p_CO, p_CO2;
 
     Parameters P = E->parameters;
-    AtmosphereParameters *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters Ap = P->atmosphere_parameters;
     ScalingConstants const SC = P->scaling_constants;
 
     PetscScalar scaling = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS;
@@ -696,7 +696,7 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
     PetscErrorCode       ierr;
     PetscInt             i;
     Atmosphere           *A = &E->atmosphere;
-    AtmosphereParameters *Ap = &E->parameters->atmosphere_parameters;
+    AtmosphereParameters Ap = E->parameters->atmosphere_parameters;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_partial_pressure()\n");CHKERRQ(ierr);
@@ -732,7 +732,7 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     PetscInt       i;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const P = E->parameters;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"solve_for_initial_partial_pressure()\n");CHKERRQ(ierr);
@@ -824,7 +824,7 @@ static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Ve
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const P = E->parameters;
     ScalingConstants     const SC = P->scaling_constants;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
 

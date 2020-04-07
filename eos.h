@@ -8,7 +8,7 @@ PetscErrorCode set_eos( Parameters );
 /* TODO: below probably moves elsewhere eventually (becomes static?) */
 PetscErrorCode set_rtpress_struct( PetscScalar, PetscScalar, Ctx * );
 
-void EosParametersDestroy( Parameters );
+void EosParametersNestedDestroy( Parameters );
 
 /* for function testing */
 PetscScalar get_rtpress_pressure_test( Ctx * );

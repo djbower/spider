@@ -192,7 +192,7 @@ but they are all stored in non-dimensional (scaled) form.
 PetscErrorCode ParametersSetFromOptions(Parameters P)
 {
   PetscErrorCode       ierr;
-  AtmosphereParameters *Ap = &P->atmosphere_parameters;
+  AtmosphereParameters Ap = P->atmosphere_parameters;
   /* convenient shorthand to user below */
   ScalingConstants const SC = P->scaling_constants;
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
@@ -865,7 +865,7 @@ PetscErrorCode PrintParameters(Parameters const P)
   PetscErrorCode             ierr;
   PetscInt                   i;
   ScalingConstants const     SC  = P->scaling_constants;
-  AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+  AtmosphereParameters const Ap = P->atmosphere_parameters;
 
   PetscFunctionBeginUser;
   ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"                                                                                                    );CHKERRQ(ierr);
@@ -910,16 +910,16 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"liquidus data file"         ,P->liquidusFilename                          );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"solidus data file"          ,P->solidusFilename                           );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaSol data file"         ,P->eos2_parameters.lookup.alpha_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaMel data file"         ,P->eos1_parameters.lookup.alpha_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpSol data file"            ,P->eos2_parameters.lookup.cp_filename        );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpMel data file"            ,P->eos1_parameters.lookup.cp_filename        );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsSol data file"         ,P->eos2_parameters.lookup.dTdPs_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsMel data file"         ,P->eos1_parameters.lookup.dTdPs_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoSol data file"           ,P->eos2_parameters.lookup.rho_filename       );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"           ,P->eos1_parameters.lookup.rho_filename       );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"          ,P->eos2_parameters.lookup.temp_filename      );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"          ,P->eos1_parameters.lookup.temp_filename      );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaSol data file"         ,P->eos2_parameters->lookup.alpha_filename     );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaMel data file"         ,P->eos1_parameters->lookup.alpha_filename     );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpSol data file"            ,P->eos2_parameters->lookup.cp_filename        );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpMel data file"            ,P->eos1_parameters->lookup.cp_filename        );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsSol data file"         ,P->eos2_parameters->lookup.dTdPs_filename     );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsMel data file"         ,P->eos1_parameters->lookup.dTdPs_filename     );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoSol data file"           ,P->eos2_parameters->lookup.rho_filename       );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"           ,P->eos1_parameters->lookup.rho_filename       );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"          ,P->eos2_parameters->lookup.temp_filename      );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"          ,P->eos1_parameters->lookup.temp_filename      );CHKERRQ(ierr);
   if (Ap->n_volatiles > 0) {
     ierr = PetscPrintf(PETSC_COMM_WORLD,"\n[Volatile] prefix/name\n");CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
@@ -939,17 +939,34 @@ PetscErrorCode PrintParameters(Parameters const P)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode AtmosphereParametersDestroy(AtmosphereParameters* Ap)
-{
-  PetscErrorCode ierr;
-  PetscInt       i;
+/*
+ ******************************************************************************
+ * Create and Destroy functions for parameter structs
+ ******************************************************************************
+ */
 
-  PetscFunctionBeginUser;
-  for (i=0; i<Ap->n_reactions; ++i) {
-    ierr = ReactionParametersDestroy(&Ap->reaction_parameters[i]);CHKERRQ(ierr);
-  }
-  Ap->n_reactions = 0;
-  PetscFunctionReturn(0);
+
+static PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,eos_parameters_ptr);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscFree(*eos_parameters_ptr);CHKERRQ(ierr);
+    *eos_parameters_ptr = NULL;
+    PetscFunctionReturn(0);
+
 }
 
 static PetscErrorCode ScalingConstantsCreate( ScalingConstants* scaling_constants_ptr )
@@ -987,7 +1004,6 @@ static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants* fundamen
 
 }
 
-
 static PetscErrorCode FundamentalConstantsDestroy( FundamentalConstants* fundamental_constants_ptr )
 {
     PetscErrorCode ierr;
@@ -996,6 +1012,37 @@ static PetscErrorCode FundamentalConstantsDestroy( FundamentalConstants* fundame
 
     ierr = PetscFree(*fundamental_constants_ptr);CHKERRQ(ierr);
     *fundamental_constants_ptr = NULL;
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode AtmosphereParametersCreate( AtmosphereParameters* atmosphere_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,atmosphere_parameters_ptr);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode AtmosphereParametersDestroy( AtmosphereParameters* atmosphere_parameters_ptr )
+{
+    PetscErrorCode ierr;
+    PetscInt       i;
+    AtmosphereParameters Ap = *atmosphere_parameters_ptr;
+
+    PetscFunctionBeginUser;
+
+    for (i=0; i<Ap->n_reactions; ++i) {
+        ierr = ReactionParametersDestroy(&Ap->reaction_parameters[i]);CHKERRQ(ierr);
+    }
+    Ap->n_reactions = 0;
+
+    ierr = PetscFree(*atmosphere_parameters_ptr);CHKERRQ(ierr);
+    *atmosphere_parameters_ptr = NULL;
     PetscFunctionReturn(0);
 
 }
@@ -1014,6 +1061,12 @@ PetscErrorCode ParametersCreate( Parameters* parameters_ptr )
     ierr = ScalingConstantsCreate( &P->scaling_constants );CHKERRQ(ierr);
     ierr = FundamentalConstantsCreate( &P->fundamental_constants );CHKERRQ(ierr);
 
+    /* nested parameters */
+    ierr = AtmosphereParametersCreate( &P->atmosphere_parameters );CHKERRQ(ierr);
+
+    ierr = EosParametersCreate( &P->eos1_parameters );CHKERRQ(ierr);
+    ierr = EosParametersCreate( &P->eos2_parameters );CHKERRQ(ierr);
+
     /* memory allocated, now populate parameters with data */
     ierr = ParametersSetFromOptions( P );CHKERRQ(ierr);
 
@@ -1023,18 +1076,19 @@ PetscErrorCode ParametersCreate( Parameters* parameters_ptr )
 
 PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
 {
-    /* destroy in reverse order to Create */
-
     PetscErrorCode ierr;
     Parameters P = *parameters_ptr;
 
     PetscFunctionBeginUser;
 
-    ierr = FundamentalConstantsDestroy(&P->fundamental_constants);CHKERRQ(ierr);
     ierr = ScalingConstantsDestroy(&P->scaling_constants);CHKERRQ(ierr);
-
+    ierr = FundamentalConstantsDestroy(&P->fundamental_constants);CHKERRQ(ierr);
     ierr = AtmosphereParametersDestroy(&P->atmosphere_parameters);CHKERRQ(ierr);
-    EosParametersDestroy(P);
+
+    /* FIXME: clean up */
+    EosParametersNestedDestroy( P );CHKERRQ(ierr); // destroys nested structs
+    ierr = EosParametersDestroy(&P->eos1_parameters);CHKERRQ(ierr);
+    ierr = EosParametersDestroy(&P->eos2_parameters);CHKERRQ(ierr);
 
     ierr = PetscFree(*parameters_ptr);CHKERRQ(ierr);
     *parameters_ptr = NULL;

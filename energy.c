@@ -12,8 +12,8 @@ static PetscErrorCode append_Jgrav( Ctx * );
 static PetscErrorCode append_Hradio( Ctx *, PetscReal );
 static PetscErrorCode append_Htidal( Ctx *, PetscReal );
 static PetscScalar get_radiogenic_heat_production( RadiogenicIsotopeParameters const *, PetscReal );
-static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters * );
-static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters * );
+static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
+static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
 
 ///////////////////////////
 /* internal heat sources */
@@ -389,7 +389,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     ierr = VecScale( S->Jgrav, P->gravity );CHKERRQ(ierr);
     ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, F );CHKERRQ(ierr);
     // arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
-    ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, P->eos1_parameters.log10visc));CHKERRQ(ierr);
+    ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, P->eos1_parameters->log10visc));CHKERRQ(ierr);
 
     ierr = VecDestroy(&cond1);CHKERRQ(ierr);
     ierr = VecDestroy(&cond2);CHKERRQ(ierr);
@@ -417,7 +417,7 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
     Parameters           const P  = E->parameters;
     Solution             const *S  = &E->solution;
     ScalingConstants     const SC  = P->scaling_constants;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
@@ -469,7 +469,7 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
 
 }
 
-static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters *Ap )
+static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters Ap )
 {
     PetscScalar Ts, c, fac, num, den;
     c = Ap->param_utbl_const;
@@ -487,7 +487,7 @@ static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar tem
     return Ts; 
 }
 
-static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters *Ap )
+static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters Ap )
 {
     PetscScalar dTsdT, c, fac1, fac2, fac3, num1, den1, num2, den2, part1, part2;
     c = Ap->param_utbl_const;

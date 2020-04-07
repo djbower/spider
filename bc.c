@@ -19,7 +19,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     Mesh                 const *M  = &E->mesh;
     Parameters           const P  = E->parameters;
     ScalingConstants     const SC  = P->scaling_constants;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
     Solution             *S  = &E->solution;
 
     PetscFunctionBeginUser;
@@ -298,7 +298,7 @@ PetscErrorCode solve_dpdts( Ctx *E )
     PetscInt                   i;
     Atmosphere                 *A  = &E->atmosphere;
     Parameters const           P  = E->parameters;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
 

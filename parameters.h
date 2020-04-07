@@ -111,7 +111,7 @@ typedef struct _Lookup {
 } Lookup;
 
 /* EOS */
-typedef struct _EosParameters {
+typedef struct {
     PetscScalar V0;
     PetscScalar T0;
     PetscScalar S0;
@@ -135,7 +135,8 @@ typedef struct _EosParameters {
     PetscScalar cond; /* thermal conductivity, W/m/K */
     PetscScalar log10visc; /* log base 10 of viscosity */
     Lookup lookup;
-} EosParameters;
+} data_EosParameters;
+typedef data_EosParameters* EosParameters;
 
 /*
  ******************************************************************************
@@ -213,7 +214,7 @@ typedef data_ReactionParameters* ReactionParameters;
 
 typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY} MagmaOceanAtmosphereType;
 typedef enum {OXYGEN_FUGACITY_NONE=0,OXYGEN_FUGACITY_CI,OXYGEN_FUGACITY_CV,OXYGEN_FUGACITY_H,OXYGEN_FUGACITY_EH,OXYGEN_FUGACITY_EUCRITE,OXYGEN_FUGACITY_IW,OXYGEN_FUGACITY_IW_MINUS_ONE,OXYGEN_FUGACITY_IW_MINUS_TWO,OXYGEN_FUGACITY_IW_MINUS_THREE} OxygenFugacityType;
-typedef struct AtmosphereParameters_ {
+typedef struct {
     // input parameters
     PetscInt IC_ATMOSPHERE;
     char ic_atmosphere_filename[PETSC_MAX_PATH_LEN];
@@ -244,7 +245,8 @@ typedef struct AtmosphereParameters_ {
     PetscScalar const * radius_ptr;
     PetscScalar const * VOLATILE_ptr;
     PetscScalar const * mantle_mass_ptr;
-} AtmosphereParameters;
+} data_AtmosphereParameters;
+typedef data_AtmosphereParameters* AtmosphereParameters;
 
 /*
  ******************************************************************************
@@ -384,14 +386,14 @@ PetscErrorCode ParametersCreate( Parameters * );
 PetscErrorCode ParametersDestroy( Parameters * );
 
 /* ReactionParameters Methods */
-PetscErrorCode ReactionParametersCreateAmmonia1( ReactionParameters *, const AtmosphereParameters * );
-PetscErrorCode ReactionParametersCreateCarbonDioxide1( ReactionParameters *, const AtmosphereParameters * );
-PetscErrorCode ReactionParametersCreateMethane1( ReactionParameters *, const AtmosphereParameters * );
-PetscErrorCode ReactionParametersCreateWater1( ReactionParameters *, const AtmosphereParameters * );
-PetscErrorCode ReactionParametersCreateSimpleWater1( ReactionParameters *, const AtmosphereParameters * );
-PetscErrorCode ReactionParametersCreateSimpleWater2( ReactionParameters *, const AtmosphereParameters * );
-PetscErrorCode ReactionParametersCreateSimpleWater3( ReactionParameters *, const AtmosphereParameters * );
-PetscErrorCode ReactionParametersCreateMiddleWater2( ReactionParameters *, const AtmosphereParameters * );
+PetscErrorCode ReactionParametersCreateAmmonia1( ReactionParameters *, const AtmosphereParameters );
+PetscErrorCode ReactionParametersCreateCarbonDioxide1( ReactionParameters *, const AtmosphereParameters );
+PetscErrorCode ReactionParametersCreateMethane1( ReactionParameters *, const AtmosphereParameters );
+PetscErrorCode ReactionParametersCreateWater1( ReactionParameters *, const AtmosphereParameters );
+PetscErrorCode ReactionParametersCreateSimpleWater1( ReactionParameters *, const AtmosphereParameters );
+PetscErrorCode ReactionParametersCreateSimpleWater2( ReactionParameters *, const AtmosphereParameters );
+PetscErrorCode ReactionParametersCreateSimpleWater3( ReactionParameters *, const AtmosphereParameters );
+PetscErrorCode ReactionParametersCreateMiddleWater2( ReactionParameters *, const AtmosphereParameters );
 PetscErrorCode ReactionParametersDestroy( ReactionParameters *);
 
 #endif

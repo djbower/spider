@@ -31,7 +31,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   ierr = ParametersCreate(&ctx->parameters);CHKERRQ(ierr);
 
   Parameters const           P = ctx->parameters;
-  AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+  AtmosphereParameters const Ap = P->atmosphere_parameters;
 
   ierr = PrintParameters(P);CHKERRQ(ierr);
 
@@ -124,7 +124,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   set_d_dr( ctx );
   set_twophase(ctx);
 
-  ierr = initialise_atmosphere( &ctx->atmosphere, &ctx->parameters->atmosphere_parameters, ctx->parameters->scaling_constants );CHKERRQ(ierr);
+  ierr = initialise_atmosphere( &ctx->atmosphere, ctx->parameters->atmosphere_parameters, ctx->parameters->scaling_constants );CHKERRQ(ierr);
 
   // FIXME
   //if(P->COMPOSITION){
