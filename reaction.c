@@ -2,14 +2,14 @@
 
 static PetscScalar get_psurf_exponent( const ReactionParameters * );
 static PetscScalar get_reaction_quotient( const ReactionParameters *, const Atmosphere *, PetscInt );
-static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters *, const Atmosphere *, const AtmosphereParameters *, PetscInt );
+static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters *, const Atmosphere *, const AtmosphereParameters, PetscInt );
 static PetscScalar get_log10_equilibrium_constant( const ReactionParameters *, PetscScalar, const ScalingConstants );
 static PetscScalar get_dlog10KdT( const ReactionParameters *, PetscScalar, const ScalingConstants );
 
 /* Note: this could logically be included in parameters.c, but that file was getting crowded */
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -45,7 +45,7 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_par
 }
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -84,7 +84,7 @@ PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_par
 /* This one is used for testing, since it assumes constant fO2 and K */
 /* K = pH2/pH2O = 10**2.0 = 100 */
 /* simplified version used in thesis work of Taylor Kutra (2019) */
-PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -119,7 +119,7 @@ PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters* reaction
 /* A named reaction */
 /* This one is used for testing, since it assumes constant fO2 and K */
 /* K = pH2/pH2O = 10**1.0 = 10 */
-PetscErrorCode ReactionParametersCreateSimpleWater2(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateSimpleWater2(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -154,7 +154,7 @@ PetscErrorCode ReactionParametersCreateSimpleWater2(ReactionParameters* reaction
 /* A named reaction */
 /* This one is used for testing, since it assumes constant fO2 and K */
 /* K = pH2/pH2O = 10**0.0 = 1 */
-PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -187,7 +187,7 @@ PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters* reaction
 }
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -220,7 +220,7 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
 }
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -398,14 +398,14 @@ static PetscScalar get_reaction_quotient( const ReactionParameters * reaction_pa
 
 }
 
-PetscScalar get_reaction_quotient_products_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap )
+PetscScalar get_reaction_quotient_products_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters Ap )
 {
 
     return get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, 1 );
 
 }
 
-PetscScalar get_reaction_quotient_reactants_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap )
+PetscScalar get_reaction_quotient_reactants_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters Ap )
 {
 
     return  get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, -1 );
@@ -413,7 +413,7 @@ PetscScalar get_reaction_quotient_reactants_time_derivative( const ReactionParam
 }
 
 /* compute reaction quotient (products, numerator) derivative with respect to time t */
-static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap, PetscInt SIGN )
+static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters Ap, PetscInt SIGN )
 {
     /* returns dQp/dt for SIGN=1 (products) and dQr/dt for SIGN=-1 (reactants) */
 

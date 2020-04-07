@@ -86,7 +86,7 @@ PetscErrorCode set_partial_pressures_from_solution( Ctx *E, Vec sol )
     PetscErrorCode             ierr;
     Atmosphere                 *A = &E->atmosphere;
     Parameters                 P = E->parameters;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
     PetscInt                    i;
     PetscMPIInt                 size;
     Vec                        *subVecs;
@@ -121,7 +121,7 @@ PetscErrorCode set_solution_from_partial_pressures( Ctx *E, Vec sol )
     PetscErrorCode             ierr;
     Parameters                 P = E->parameters;
     Atmosphere                 *A = &E->atmosphere;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
     PetscInt                   i;
     Vec                        *subVecs;
 
