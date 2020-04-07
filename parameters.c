@@ -1005,6 +1005,7 @@ static PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
 
     ierr = PetscFree(*eos_parameters_ptr);CHKERRQ(ierr);
     *eos_parameters_ptr = NULL;
+
     PetscFunctionReturn(0);
 
 }

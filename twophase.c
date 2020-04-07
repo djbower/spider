@@ -118,17 +118,17 @@ static PetscErrorCode set_liquidus( Ctx *E )
     Vec               pres_b,pres_s;
     PetscScalar       z,*arr_liquidus,*arr_liquidus_rho,*arr_liquidus_temp,*arr_liquidus_s,*arr_liquidus_rho_s,*arr_liquidus_temp_s;
     const PetscScalar *arr_pres_b,*arr_pres_s;
-    Interp1d const    *interp;
-    Interp2d const    *interpR, *interpT;
+    Interp1d          interp;
+    Interp2d          interpR, interpT;
     Solution          *S;
     Parameters const  P = E->parameters;
 
     PetscFunctionBeginUser;
 
     S = &E->solution;
-    interp = &P->eos1_parameters->lookup->liquidus;
-    interpR = &P->eos1_parameters->lookup->rho;
-    interpT = &P->eos1_parameters->lookup->temp;
+    interp = P->eos1_parameters->lookup->liquidus;
+    interpR = P->eos1_parameters->lookup->rho;
+    interpT = P->eos1_parameters->lookup->temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
@@ -186,16 +186,16 @@ static PetscErrorCode set_solidus( Ctx *E )
     Vec               pres_b,pres_s;
     PetscScalar       z,*arr_solidus,*arr_solidus_rho,*arr_solidus_temp,*arr_solidus_s,*arr_solidus_rho_s,*arr_solidus_temp_s;
     const PetscScalar *arr_pres_b,*arr_pres_s;
-    Interp1d const    *interp;
-    Interp2d const    *interpR, *interpT;
+    Interp1d          interp;
+    Interp2d          interpR, interpT;
     Solution          *S;
     Parameters const  P = E->parameters;
 
     PetscFunctionBeginUser;
     S = &E->solution;
-    interp = &P->eos2_parameters->lookup->solidus;
-    interpR = &P->eos2_parameters->lookup->rho;
-    interpT = &P->eos2_parameters->lookup->temp;
+    interp = P->eos2_parameters->lookup->solidus;
+    interpR = P->eos2_parameters->lookup->rho;
+    interpT = P->eos2_parameters->lookup->temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;

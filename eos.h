@@ -14,7 +14,7 @@ void EosParametersNestedDestroy( Parameters );
 PetscScalar get_rtpress_pressure_test( Ctx * );
 PetscScalar get_rtpress_entropy_test( Ctx * );
 
-PetscScalar get_val1d( Interp1d const *, PetscScalar );
-PetscScalar get_val2d( Interp2d const *, PetscScalar, PetscScalar );
+PetscScalar get_val1d( Interp1d const, PetscScalar );
+PetscScalar get_val2d( Interp2d const, PetscScalar, PetscScalar );
 
 #endif

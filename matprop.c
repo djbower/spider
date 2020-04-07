@@ -141,18 +141,18 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 
         /* solid phase */
         L = P->eos2_parameters->lookup;
-        rho_sol = get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
-        temp_sol = get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
-        cp_sol = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
+        rho_sol = get_val2d( L->rho, arr_pres_s[i], arr_S_s[i] );
+        temp_sol = get_val2d( L->temp, arr_pres_s[i], arr_S_s[i] );
+        cp_sol = get_val2d( L->cp, arr_pres_s[i], arr_S_s[i] );
 
         /* FIXME: BELOW IS A TESTING AREA FOR ANALYTICAL RTPRESS */
 
         /* melt phase */
         L = P->eos1_parameters->lookup;
-        rho_mel = get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
+        rho_mel = get_val2d( L->rho, arr_pres_s[i], arr_S_s[i] );
 /* lookup (original) is below */
 #if 1
-        temp_mel = get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
+        temp_mel = get_val2d( L->temp, arr_pres_s[i], arr_S_s[i] );
 #endif
 #if 0
 /* TODO: testing analytical rtpress */
@@ -170,7 +170,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
         set_rtpress_struct( arr_pres_s[i], arr_S_s[i], E );
         temp_mel = 0.0;
 #endif
-        cp_mel = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
+        cp_mel = get_val2d( L->cp, arr_pres_s[i], arr_S_s[i] );
 
         /* mixed phase */
         /* volume additivity, excluding temperature (since phase effect dominant) */
@@ -328,21 +328,21 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 
       /* solid phase */
       L = P->eos2_parameters->lookup;
-      rho_sol = get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
-      dTdrs_sol = arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
-      cp_sol = get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
-      temp_sol = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
-      alpha_sol = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
+      rho_sol = get_val2d( L->rho, arr_pres[i], arr_S_b[i] );
+      dTdrs_sol = arr_dPdr_b[i] * get_val2d( L->dTdPs, arr_pres[i], arr_S_b[i] );
+      cp_sol = get_val2d( L->cp, arr_pres[i], arr_S_b[i] );
+      temp_sol = get_val2d( L->temp, arr_pres[i], arr_S_b[i] );
+      alpha_sol = get_val2d( L->alpha, arr_pres[i], arr_S_b[i] );
       cond_sol = P->eos2_parameters->cond;
       log10visc_sol = get_log10_viscosity_solid( temp_sol, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
 
       /* melt phase */
       L = P->eos1_parameters->lookup;
-      rho_mel = get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
-      dTdrs_mel = arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
-      cp_mel = get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
-      temp_mel = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
-      alpha_mel = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
+      rho_mel = get_val2d( L->rho, arr_pres[i], arr_S_b[i] );
+      dTdrs_mel = arr_dPdr_b[i] * get_val2d( L->dTdPs, arr_pres[i], arr_S_b[i] );
+      cp_mel = get_val2d( L->cp, arr_pres[i], arr_S_b[i] );
+      temp_mel = get_val2d( L->temp, arr_pres[i], arr_S_b[i] );
+      alpha_mel = get_val2d( L->alpha, arr_pres[i], arr_S_b[i] );
       cond_mel = P->eos1_parameters->cond;
       log10visc_mel = get_log10_viscosity_melt( temp_mel, arr_pres[i], arr_layer_b[i], P );
 
