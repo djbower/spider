@@ -89,7 +89,7 @@ typedef struct _Interp2d {
 } Interp2d;
 
 /* lookup */
-typedef struct _Lookup {
+typedef struct {
     /* lookup data filenames */
     char        rho_filename[PETSC_MAX_PATH_LEN];
     char        dTdPs_filename[PETSC_MAX_PATH_LEN];
@@ -108,7 +108,8 @@ typedef struct _Lookup {
     /* TODO: eventually melting curves may move elsewhere */
     Interp1d liquidus; /* liquidus, J/kg/K */
     Interp1d solidus; /* solidus, J/kg/K */
-} Lookup;
+} data_Lookup;
+typedef data_Lookup* Lookup;
 
 /* EOS */
 typedef struct {
