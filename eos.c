@@ -11,7 +11,7 @@ static PetscErrorCode set_melt_eos_lookup( EosParameters, Parameters );
 static PetscErrorCode set_liquidus_lookup( EosParameters, EosParameters, Parameters );
 static PetscErrorCode set_solidus_lookup( EosParameters, EosParameters, Parameters );
 static PetscErrorCode Interp1dDestroy( Interp1d * );
-static void Interp2dDestroy( Interp2d * );
+static PetscErrorCode Interp2dDestroy( Interp2d * );
 static PetscErrorCode EosParametersInterp1dDestroy( EosParameters );
 static void EosParametersInterp2dDestroy( EosParameters );
 
@@ -110,9 +110,10 @@ PetscErrorCode set_eos( Parameters P )
  ******************************************************************************
 */
 
-static PetscErrorCode EosParametersCreateInterp1d( const char * filename, Interp1d *interp, PetscScalar xconst, PetscScalar yconst )
+static PetscErrorCode EosParametersCreateInterp1d( const char * filename, Interp1d *interp_ptr, PetscScalar xconst, PetscScalar yconst )
 {
     PetscErrorCode ierr;
+    Interp1d interp;
     FILE *fp;
     PetscInt i=0;
     char string[PETSC_MAX_PATH_LEN];
@@ -123,6 +124,10 @@ static PetscErrorCode EosParametersCreateInterp1d( const char * filename, Interp
     PetscInt HEAD, NX;
 
     PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,interp_ptr);CHKERRQ(ierr);
+    interp = *interp_ptr;
+
     fp = fopen( filename, "r" );
 
     if (!fp) {
@@ -203,9 +208,10 @@ static PetscErrorCode EosParametersCreateInterp1d( const char * filename, Interp
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode EosParametersCreateInterp2d( const char * filename, Interp2d *interp, PetscScalar xconst, PetscScalar yconst, PetscScalar zconst )
+static PetscErrorCode EosParametersCreateInterp2d( const char * filename, Interp2d *interp_ptr, PetscScalar xconst, PetscScalar yconst, PetscScalar zconst )
 {
     PetscErrorCode ierr;
+    Interp2d interp;
     FILE *fp;
     PetscInt i=0, j=0, k=0;
     char string[PETSC_MAX_PATH_LEN];
@@ -220,6 +226,10 @@ static PetscErrorCode EosParametersCreateInterp2d( const char * filename, Interp
     PetscInt xind, yind;
 
     PetscFunctionBeginUser;
+
+    // NEW - allocate memory for struct
+    ierr = PetscMalloc1(1, interp_ptr);CHKERRQ(ierr);
+    interp = *interp_ptr;
 
     fp = fopen( filename, "r" );
 
@@ -332,7 +342,7 @@ static PetscErrorCode EosParametersCreateInterp2d( const char * filename, Interp
     PetscFunctionReturn(0);
 }
 
-PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
+PetscScalar get_val1d( Interp1d const interp, PetscScalar x )
 {   
     /* wrapper for evaluating a 1-D lookup
        linear interpolation with truncation for values
@@ -386,7 +396,7 @@ PetscScalar get_val1d( Interp1d const *interp, PetscScalar x )
     return result;
 }
 
-PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
+PetscScalar get_val2d( Interp2d const interp, PetscScalar x, PetscScalar y )
 {
     /* wrapper for evaluating a 2-D lookup using bilinear
        interpolation.
@@ -490,20 +500,30 @@ PetscScalar get_val2d( Interp2d const *interp, PetscScalar x, PetscScalar y )
     return result;
 }
 
-static PetscErrorCode Interp1dDestroy( Interp1d *interp ){
-
+static PetscErrorCode Interp1dDestroy( Interp1d *interp_ptr )
+{
     PetscErrorCode ierr;
+    Interp1d interp = *interp_ptr;
 
     PetscFunctionBeginUser;
 
     ierr = PetscFree( interp->xa ); CHKERRQ(ierr);
     ierr = PetscFree( interp->ya ); CHKERRQ(ierr);
 
+    ierr = PetscFree(*interp_ptr);CHKERRQ(ierr);
+    *interp_ptr = NULL;
+
     PetscFunctionReturn(0);
 
 }
                                                              
-static void Interp2dDestroy( Interp2d *interp ){
+static PetscErrorCode Interp2dDestroy( Interp2d *interp_ptr )
+{
+
+    PetscErrorCode ierr;
+    Interp2d interp = *interp_ptr;
+
+    PetscFunctionBeginUser;
 
     PetscInt i;
     PetscInt NX = interp->NX;
@@ -514,6 +534,12 @@ static void Interp2dDestroy( Interp2d *interp ){
     free( interp->za );
     PetscFree( interp->xa );
     PetscFree( interp->ya );
+
+    ierr = PetscFree(*interp_ptr);CHKERRQ(ierr);
+    *interp_ptr = NULL;
+
+    PetscFunctionReturn(0);
+
 }
 
 static PetscErrorCode EosParametersInterp1dDestroy( EosParameters eosp )

@@ -63,7 +63,7 @@ typedef data_FundamentalConstants* FundamentalConstants;
  */
 
 /* 1-D lookup */
-typedef struct _Interp1d {
+typedef struct {
     PetscInt    NX; 
     PetscScalar *xa;
     PetscScalar xmin;
@@ -71,10 +71,11 @@ typedef struct _Interp1d {
     PetscScalar *ya;
     PetscScalar ymin;
     PetscScalar ymax;
-} Interp1d;
+} data_Interp1d;
+typedef data_Interp1d* Interp1d;
 
 /* 2-D lookup */
-typedef struct _Interp2d {
+typedef struct {
     PetscInt    NX; 
     PetscScalar *xa;
     PetscScalar xmin;
@@ -86,7 +87,8 @@ typedef struct _Interp2d {
     PetscScalar ymax;
     PetscScalar dy; 
     PetscScalar **za;
-} Interp2d;
+} data_Interp2d;
+typedef data_Interp2d* Interp2d;
 
 /* lookup */
 typedef struct {
@@ -100,6 +102,8 @@ typedef struct {
     char        liquidus_filename[PETSC_MAX_PATH_LEN];
     char        solidus_filename[PETSC_MAX_PATH_LEN];
     /* lookup objects to evaluate */
+    /* memory is not necessarily allocated to these lookup
+       objects if they are not required */
     Interp2d rho; /* density, kg/m^3 */
     Interp2d dTdPs; /* adiabatic temperature gradient, K/Pa */
     Interp2d cp; /* heat capacity, J/kg/K */
