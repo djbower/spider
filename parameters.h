@@ -15,7 +15,7 @@ typedef struct {
     /* primary */
     PetscScalar RADIUS;
     PetscScalar TEMP;
-    PetscScalar ENTROPY;
+    PetscScalar ENTROPY; /* note: specific entropy */
     PetscScalar DENSITY;
     PetscScalar VOLATILE;
     /* derived from primary */
@@ -24,7 +24,7 @@ typedef struct {
     PetscScalar MASS;
     PetscScalar TIME;
     PetscScalar TIMEYRS;
-    PetscScalar SENERGY;
+    PetscScalar SENERGY; /* specific energy */
     PetscScalar ENERGY;
     PetscScalar PRESSURE;
     PetscScalar POWER;
@@ -32,8 +32,9 @@ typedef struct {
     PetscScalar DPDR;
     PetscScalar GRAVITY;
     PetscScalar KAPPA;
-    PetscScalar DTDP;
+    PetscScalar DSDP;
     PetscScalar DSDR;
+    PetscScalar DTDP;
     PetscScalar DTDR;
     PetscScalar GSUPER;
     PetscScalar VISC;

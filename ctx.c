@@ -96,7 +96,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_reactions);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_REACTIONS;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
-    sol_scalings[f] = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS; // physical reservoir mass scaling
+    sol_scalings[f] = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS; // physical volatile reservoir mass scaling
     ++f;
 
     ierr = DMCompositeGetNumberDM(ctx->dm_sol,&ctx->numFields);CHKERRQ(ierr); /* For convenience */
