@@ -40,7 +40,6 @@ typedef struct {
     PetscScalar LOG10VISC;
     PetscScalar COND;
     PetscScalar SIGMA;
-    PetscScalar LHS;
     PetscScalar RHS;
     PetscScalar HEATGEN;
 } data_ScalingConstants;

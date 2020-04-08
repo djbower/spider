@@ -60,7 +60,6 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
     SC->LOG10VISC = PetscLog10Real( SC->VISC ); // log10(Pa.s)
     SC->COND      = SC->ENTROPY * SC->DENSITY * SC->KAPPA; // W/m/K
     SC->SIGMA     = SC->FLUX * 1.0 / PetscPowScalar( SC->TEMP, 4.0 ); // W/m^2/K^4
-    SC->LHS       = SC->MASS * SC->TEMP; // kg.K
     SC->HEATGEN   = PetscPowScalar( SC->ENTROPY*SC->TEMP, 3.0/2.0 ) / SC->RADIUS; // W/kg
     /* the full rhs vector contains various quantities
        with different units, so we cannot scale simply by multiplying
@@ -883,7 +882,7 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Radius"     ,"",(double)SC->RADIUS             ,"m"           );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Temperature","",(double)SC->TEMP               ,"K"           );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Entropy"    ,"",(double)SC->ENTROPY            ,"J/kg-K"      );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Entropy"    ,"",(double)SC->ENTROPY            ,"J/kg/K"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Density"    ,"",(double)SC->DENSITY            ,"kg/m^3"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s (%.6g years)\n","Time"       ,"",(double)SC->TIME               ,"s",(double)SC->TIMEYRS);CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Area"       ,"",(double)SC->AREA               ,"m^2"         );CHKERRQ(ierr);
@@ -898,15 +897,14 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Gravity"    ,"",(double)SC->GRAVITY            ,"m/s^2"       );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Kappa"      ,"",(double)SC->KAPPA              ,"m^2/s"       );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dT/dP"      ,"",(double)SC->DTDP               ,"K/Pa"        );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dS/dR"      ,"",(double)SC->DSDR               ,"J/kg-K-m"    );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dS/dR"      ,"",(double)SC->DSDR               ,"J/kg/K/m"    );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"dT/dR"      ,"",(double)SC->DTDR               ,"K/m"         );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"GSuper"     ,"",(double)SC->GSUPER             ,"K/s^2"       );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Visc"       ,"",(double)SC->VISC               ,"Pa-s"        );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Log10 Visc" ,"",(double)SC->LOG10VISC          ,"log10(Pa-s)" );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Cond"       ,"",(double)SC->COND               ,"W/m-K"       );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Sigma"      ,"",(double)SC->SIGMA              ,"W/m^2-K^4"   );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Lhs"        ,"",(double)SC->LHS                ,"kg-K"        );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Rhs"        ,"",(double)SC->RHS                ,"W/kg-K"      );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Cond"       ,"",(double)SC->COND               ,"W/m/K"       );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Sigma"      ,"",(double)SC->SIGMA              ,"W/m^2/K^4"   );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Rhs"        ,"",(double)SC->RHS                ,"W/kg/K"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"                                                                                                    );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15s %s\n"    ,"[Parameter]","Non-dim. Value","Dim. Value"                 ,"Units"       );CHKERRQ(ierr);

@@ -33,8 +33,8 @@ PetscErrorCode set_capacitance_staggered( Ctx *E )
     //}
 
     ierr = set_matprop_staggered( E ); CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->lhs_s,S->temp_s,S->rho_s); CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,M->volume_s); CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->capacitance_s,S->temp_s,S->rho_s); CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->capacitance_s,S->capacitance_s,M->volume_s); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 

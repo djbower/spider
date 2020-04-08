@@ -812,7 +812,7 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const P, VolatilePara
     val = V->mass_liquid + V->mass_solid + V->mass_atmos;
     ierr = JSON_add_single_value_to_object(dm, scaling, "physical_kg", "kg", val, data);CHKERRQ(ierr);
 
-    /* kilograms (kg), without 4*pi */
+    /* grams (g), without 4*pi */
     val = SC->MASS * VP->molar_mass * 1.0E3;
     ierr = JSON_add_single_value_to_object(dm, 1.0, "molar_mass", "g/mol", val, data);CHKERRQ(ierr);
 

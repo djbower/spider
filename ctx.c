@@ -191,6 +191,9 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
   PetscErrorCode ierr;
   ScalingConstants const SC = ctx->parameters->scaling_constants;
 
+  /* note: the scalings include the factors of 4 pi associated with spherical
+     geometry, since these are required for the output routines */
+
   PetscFunctionBeginUser;
   /* basic nodes */
   { // alpha
@@ -587,10 +590,10 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[12],"W kg$^{-1}$");CHKERRQ(ierr);
   }
   {
-    PetscScalar scaling = SC->LHS * 4.0 * PETSC_PI;
+    PetscScalar scaling = SC->MASS * SC->TEMP * 4.0 * PETSC_PI; // kg K
     ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_s[13],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[13],&ctx->solution.lhs_s); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_s[13],"lhs_s");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[13],&ctx->solution.capacitance_s); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_s[13],"capacitance_s");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[13],"kg K");CHKERRQ(ierr);
   }
   {
