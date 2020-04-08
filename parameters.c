@@ -962,7 +962,6 @@ static PetscErrorCode ScalingConstantsDestroy( ScalingConstants* scaling_constan
     ierr = PetscFree(*scaling_constants_ptr);CHKERRQ(ierr);
     *scaling_constants_ptr = NULL;
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants* fundamental_constants_ptr )
@@ -974,7 +973,6 @@ static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants* fundamen
     ierr = PetscMalloc1(1,fundamental_constants_ptr);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode FundamentalConstantsDestroy( FundamentalConstants* fundamental_constants_ptr )
@@ -987,7 +985,6 @@ static PetscErrorCode FundamentalConstantsDestroy( FundamentalConstants* fundame
     *fundamental_constants_ptr = NULL;
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode VolatileParametersCreate( VolatileParameters* volatile_parameters_ptr )
@@ -999,7 +996,6 @@ static PetscErrorCode VolatileParametersCreate( VolatileParameters* volatile_par
     ierr = PetscMalloc1(1,volatile_parameters_ptr);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode VolatileParametersDestroy( VolatileParameters* volatile_parameters_ptr )
@@ -1012,7 +1008,6 @@ static PetscErrorCode VolatileParametersDestroy( VolatileParameters* volatile_pa
     *volatile_parameters_ptr = NULL;
 
     PetscFunctionReturn(0);
-
 }
 
 
@@ -1025,7 +1020,6 @@ static PetscErrorCode AtmosphereParametersCreate( AtmosphereParameters* atmosphe
     ierr = PetscMalloc1(1,atmosphere_parameters_ptr);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode AtmosphereParametersDestroy( AtmosphereParameters* atmosphere_parameters_ptr )
@@ -1049,7 +1043,6 @@ static PetscErrorCode AtmosphereParametersDestroy( AtmosphereParameters* atmosph
     ierr = PetscFree(*atmosphere_parameters_ptr);CHKERRQ(ierr);
     *atmosphere_parameters_ptr = NULL;
     PetscFunctionReturn(0);
-
 }
 
 PetscErrorCode ParametersCreate( Parameters* parameters_ptr )
@@ -1062,17 +1055,14 @@ PetscErrorCode ParametersCreate( Parameters* parameters_ptr )
     ierr = PetscMalloc1(1,parameters_ptr);CHKERRQ(ierr);
     P = *parameters_ptr;
 
-    /* constants */
+    /* nested structs */
     ierr = ScalingConstantsCreate( &P->scaling_constants );CHKERRQ(ierr);
     ierr = FundamentalConstantsCreate( &P->fundamental_constants );CHKERRQ(ierr);
-
-    /* nested parameters */
     ierr = AtmosphereParametersCreate( &P->atmosphere_parameters );CHKERRQ(ierr);
-
     ierr = EosParametersCreate( &P->eos1_parameters );CHKERRQ(ierr);
     ierr = EosParametersCreate( &P->eos2_parameters );CHKERRQ(ierr);
 
-    /* memory allocated, now populate parameters with data */
+    /* populate structs with data */
     ierr = ParametersSetFromOptions( P );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -1090,10 +1080,9 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
     ierr = FundamentalConstantsDestroy(&P->fundamental_constants);CHKERRQ(ierr);
     ierr = AtmosphereParametersDestroy(&P->atmosphere_parameters);CHKERRQ(ierr);
 
-    /* FIXME: clean up */
-    EosParametersNestedDestroy( P );CHKERRQ(ierr); // destroys nested structs
-    ierr = EosParametersDestroy(&P->eos1_parameters);CHKERRQ(ierr);
-    ierr = EosParametersDestroy(&P->eos2_parameters);CHKERRQ(ierr);
+    /* FIXME: update the PETSC_TRUE flag below depending on user input */
+    ierr = EosParametersDestroy(&P->eos1_parameters, PETSC_TRUE);CHKERRQ(ierr);
+    ierr = EosParametersDestroy(&P->eos2_parameters, PETSC_TRUE);CHKERRQ(ierr);
 
     ierr = PetscFree(*parameters_ptr);CHKERRQ(ierr);
     *parameters_ptr = NULL;
