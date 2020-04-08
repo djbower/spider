@@ -9,10 +9,10 @@ static PetscErrorCode Interp1dDestroy( Interp1d * );
 static PetscErrorCode Interp2dCreateAndSet( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode Interp2dDestroy( Interp2d * );
 
-static PetscErrorCode set_solid_eos_lookup( EosParameters, Parameters );
-static PetscErrorCode set_melt_eos_lookup( EosParameters, Parameters );
-static PetscErrorCode set_liquidus_lookup( EosParameters, EosParameters, Parameters );
-static PetscErrorCode set_solidus_lookup( EosParameters, EosParameters, Parameters );
+static PetscErrorCode set_solid_eos_lookup( EosParameters, const ScalingConstants );
+static PetscErrorCode set_melt_eos_lookup( EosParameters, const ScalingConstants );
+static PetscErrorCode set_liquidus_lookup( EosParameters, const ScalingConstants );
+static PetscErrorCode set_solidus_lookup( EosParameters, const ScalingConstants );
 
 /* rtpress material properties (Wolf and Bower, 2018) */
 static PetscErrorCode set_rtpress_parameters( EosParameters );
@@ -51,7 +51,7 @@ PetscErrorCode set_eos( Parameters P )
     switch( P->SOLID_EOS ){
         case 1:
             /* lookup */
-            ierr = set_solid_eos_lookup( eosp2, P );CHKERRQ(ierr);
+            ierr = set_solid_eos_lookup( eosp2, SC );CHKERRQ(ierr);
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLID_EOS value %d provided",P->SOLID_EOS);
@@ -62,7 +62,7 @@ PetscErrorCode set_eos( Parameters P )
     switch( P->MELT_EOS ){
         case 1:
             /* lookup */
-            ierr = set_melt_eos_lookup( eosp1, P );CHKERRQ(ierr);
+            ierr = set_melt_eos_lookup( eosp1, SC );CHKERRQ(ierr);
             break;
         case 2:
             /* analytical RTpress */
@@ -93,9 +93,12 @@ PetscErrorCode set_eos( Parameters P )
     /* set liquidus and solidus from lookup */
     /* TODO: could also have analytical functions for these as well by using
        a case structure as above */
-
-    ierr = set_liquidus_lookup( P->eos1_parameters, P->eos2_parameters, P );CHKERRQ(ierr);
-    ierr = set_solidus_lookup( P->eos1_parameters, P->eos2_parameters, P );CHKERRQ(ierr);
+    /* TODO: currently, melting curves are stored in both the solid and the
+       melt Eos struct */
+    ierr = set_liquidus_lookup( P->eos1_parameters, SC );CHKERRQ(ierr);
+    ierr = set_liquidus_lookup( P->eos2_parameters, SC );CHKERRQ(ierr);
+    ierr = set_solidus_lookup( P->eos1_parameters, SC );CHKERRQ(ierr);
+    ierr = set_solidus_lookup( P->eos2_parameters, SC );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -560,10 +563,9 @@ static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 #undef SPIDER_ROOT_DIR_STR
 
 
-static PetscErrorCode set_melt_eos_lookup( EosParameters eosp, Parameters P )
+static PetscErrorCode set_melt_eos_lookup( EosParameters eosp, ScalingConstants const SC )
 {
   PetscErrorCode  ierr;
-  ScalingConstants const SC = P->scaling_constants;
 
   PetscFunctionBeginUser;
 
@@ -639,10 +641,9 @@ static PetscErrorCode set_melt_eos_lookup( EosParameters eosp, Parameters P )
 
 }
 
-static PetscErrorCode set_solid_eos_lookup( EosParameters eosp, Parameters P )
+static PetscErrorCode set_solid_eos_lookup( EosParameters eosp, const ScalingConstants SC )
 {
   PetscErrorCode  ierr;
-  ScalingConstants const SC = P->scaling_constants;
 
   PetscFunctionBeginUser;
 
@@ -716,12 +717,11 @@ static PetscErrorCode set_solid_eos_lookup( EosParameters eosp, Parameters P )
 
 }
 
-static PetscErrorCode set_liquidus_lookup( EosParameters eosp1, EosParameters eosp2, Parameters P )
+static PetscErrorCode set_liquidus_lookup( EosParameters eosp, ScalingConstants const SC )
 {
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
 
   PetscErrorCode  ierr;
-  ScalingConstants const SC = P->scaling_constants;
 
   PetscFunctionBeginUser;
 
@@ -732,29 +732,26 @@ static PetscErrorCode set_liquidus_lookup( EosParameters eosp1, EosParameters eo
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->liquidusFilename,"lookup_data/RTmelt/liquidus_andrault2011.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename_rel_to_src",P->liquidusFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->liquidusFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename",P->liquidusFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup->liquidus_filename,"lookup_data/RTmelt/liquidus_andrault2011.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename_rel_to_src",eosp->lookup->liquidus_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->liquidus_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename",eosp->lookup->liquidus_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -liquidus_filename_rel_to_src ignored because -liquidus_filename provided\n");CHKERRQ(ierr);
     }      
   }
 
-  /* FIXME: unnecessary duplication? */
-  ierr = Interp1dCreateAndSet( P->liquidusFilename, &eosp1->lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
-  ierr = Interp1dCreateAndSet( P->liquidusFilename, &eosp2->lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( eosp->lookup->liquidus_filename, &eosp->lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_solidus_lookup( EosParameters eosp1, EosParameters eosp2, Parameters P )
+static PetscErrorCode set_solidus_lookup( EosParameters eosp, ScalingConstants const SC )
 {
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
 
   PetscErrorCode  ierr;
-  ScalingConstants const SC = P->scaling_constants;
 
   PetscFunctionBeginUser;
 
@@ -765,18 +762,16 @@ static PetscErrorCode set_solidus_lookup( EosParameters eosp1, EosParameters eos
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(P->solidusFilename,"lookup_data/RTmelt/solidus_andrault2011.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename_rel_to_src",P->solidusFilename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(P->solidusFilename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename",P->solidusFilename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(eosp->lookup->solidus_filename,"lookup_data/RTmelt/solidus_andrault2011.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename_rel_to_src",eosp->lookup->solidus_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->solidus_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename",eosp->lookup->solidus_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -solidus_filename_rel_to_src ignored because -solidus_filename provided\n");CHKERRQ(ierr);
     }
   }
 
-  /* FIXME: unnecessary duplication? */
-  ierr = Interp1dCreateAndSet( P->solidusFilename, &eosp1->lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
-  ierr = Interp1dCreateAndSet( P->solidusFilename, &eosp2->lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( eosp->lookup->solidus_filename, &eosp->lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
