@@ -4,16 +4,15 @@
 #include "util.h"
 
 /* lookup material properties (default) */
-static PetscErrorCode Interp1dCreate( const char *, Interp1d *, PetscScalar, PetscScalar );
-static PetscErrorCode Interp2dCreate( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
+static PetscErrorCode Interp1dCreateAndSet( const char *, Interp1d *, PetscScalar, PetscScalar );
+static PetscErrorCode Interp1dDestroy( Interp1d * );
+static PetscErrorCode Interp2dCreateAndSet( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
+static PetscErrorCode Interp2dDestroy( Interp2d * );
+
 static PetscErrorCode set_solid_eos_lookup( EosParameters, Parameters );
 static PetscErrorCode set_melt_eos_lookup( EosParameters, Parameters );
 static PetscErrorCode set_liquidus_lookup( EosParameters, EosParameters, Parameters );
 static PetscErrorCode set_solidus_lookup( EosParameters, EosParameters, Parameters );
-static PetscErrorCode Interp1dDestroy( Interp1d * );
-static PetscErrorCode Interp2dDestroy( Interp2d * );
-static PetscErrorCode EosParametersInterp1dDestroy( EosParameters );
-static void EosParametersInterp2dDestroy( EosParameters );
 
 /* rtpress material properties (Wolf and Bower, 2018) */
 static PetscErrorCode set_rtpress_parameters( EosParameters );
@@ -110,7 +109,7 @@ PetscErrorCode set_eos( Parameters P )
  ******************************************************************************
 */
 
-static PetscErrorCode Interp1dCreate( const char * filename, Interp1d *interp_ptr, PetscScalar xconst, PetscScalar yconst )
+static PetscErrorCode Interp1dCreateAndSet( const char * filename, Interp1d *interp_ptr, PetscScalar xconst, PetscScalar yconst )
 {
     PetscErrorCode ierr;
     Interp1d interp;
@@ -208,7 +207,7 @@ static PetscErrorCode Interp1dCreate( const char * filename, Interp1d *interp_pt
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode Interp2dCreate( const char * filename, Interp2d *interp_ptr, PetscScalar xconst, PetscScalar yconst, PetscScalar zconst )
+static PetscErrorCode Interp2dCreateAndSet( const char * filename, Interp2d *interp_ptr, PetscScalar xconst, PetscScalar yconst, PetscScalar zconst )
 {
     PetscErrorCode ierr;
     Interp2d interp;
@@ -542,47 +541,6 @@ static PetscErrorCode Interp2dDestroy( Interp2d *interp_ptr )
 
 }
 
-static PetscErrorCode EosParametersInterp1dDestroy( EosParameters eosp )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = Interp1dDestroy( &eosp->lookup->liquidus ); CHKERRQ(ierr);
-    ierr = Interp1dDestroy( &eosp->lookup->solidus ); CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-
-}
-
-static void EosParametersInterp2dDestroy( EosParameters eosp )
-{
-    Interp2dDestroy( &eosp->lookup->alpha );
-    Interp2dDestroy( &eosp->lookup->cp );
-    Interp2dDestroy( &eosp->lookup->dTdPs );
-    Interp2dDestroy( &eosp->lookup->rho );
-    Interp2dDestroy( &eosp->lookup->temp );
-
-}
-
-void EosParametersNestedDestroy( Parameters P )
-{
-
-    EosParametersInterp1dDestroy( P->eos2_parameters );
-    EosParametersInterp1dDestroy( P->eos1_parameters );
-
-    /* interp2d if allocated */
-    if( P->SOLID_EOS == 1 ){
-        EosParametersInterp2dDestroy( P->eos2_parameters );
-    }
-
-    /* interp2d if allocated */
-    if( P->MELT_EOS == 1 ){
-        EosParametersInterp2dDestroy( P->eos1_parameters );
-    }
-
-}
-
 /* Helper routine to prepend the root directory to a relative path */
 /* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
 #define STRINGIFY(x) STRINGIFY2(x)
@@ -671,11 +629,11 @@ static PetscErrorCode set_melt_eos_lookup( EosParameters eosp, Parameters P )
 
   /* melt lookups */
   /* 2d */
-  ierr = Interp2dCreate( eosp->lookup->alpha_filename, &eosp->lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
-  ierr = Interp2dCreate( eosp->lookup->cp_filename, &eosp->lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
-  ierr = Interp2dCreate( eosp->lookup->dTdPs_filename, &eosp->lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
-  ierr = Interp2dCreate( eosp->lookup->rho_filename, &eosp->lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
-  ierr = Interp2dCreate( eosp->lookup->temp_filename, &eosp->lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( eosp->lookup->alpha_filename, &eosp->lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( eosp->lookup->cp_filename, &eosp->lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( eosp->lookup->dTdPs_filename, &eosp->lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( eosp->lookup->rho_filename, &eosp->lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( eosp->lookup->temp_filename, &eosp->lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
@@ -748,11 +706,11 @@ static PetscErrorCode set_solid_eos_lookup( EosParameters eosp, Parameters P )
     }
   }
 
-  ierr = Interp2dCreate( eosp->lookup->alpha_filename, &eosp->lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
-  ierr = Interp2dCreate( eosp->lookup->cp_filename, &eosp->lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
-  ierr = Interp2dCreate( eosp->lookup->dTdPs_filename, &eosp->lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
-  ierr = Interp2dCreate( eosp->lookup->rho_filename, &eosp->lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
-  ierr = Interp2dCreate( eosp->lookup->temp_filename, &eosp->lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( eosp->lookup->alpha_filename, &eosp->lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( eosp->lookup->cp_filename, &eosp->lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( eosp->lookup->dTdPs_filename, &eosp->lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( eosp->lookup->rho_filename, &eosp->lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( eosp->lookup->temp_filename, &eosp->lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
@@ -784,8 +742,8 @@ static PetscErrorCode set_liquidus_lookup( EosParameters eosp1, EosParameters eo
   }
 
   /* FIXME: unnecessary duplication? */
-  ierr = Interp1dCreate( P->liquidusFilename, &eosp1->lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
-  ierr = Interp1dCreate( P->liquidusFilename, &eosp2->lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( P->liquidusFilename, &eosp1->lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( P->liquidusFilename, &eosp2->lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
@@ -817,8 +775,8 @@ static PetscErrorCode set_solidus_lookup( EosParameters eosp1, EosParameters eos
   }
 
   /* FIXME: unnecessary duplication? */
-  ierr = Interp1dCreate( P->solidusFilename, &eosp1->lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
-  ierr = Interp1dCreate( P->solidusFilename, &eosp2->lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( P->solidusFilename, &eosp1->lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( P->solidusFilename, &eosp2->lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
@@ -1457,20 +1415,37 @@ PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
     lookup_ptr = &eos_parameters->lookup;
     ierr = LookupCreate( lookup_ptr );
 
+    /* the Interp1d and Interp2d structs within Lookup are created and set
+       later by (for example) Interp1dCreateAndSet() */
+
     PetscFunctionReturn(0);
 
 }
 
-PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
+PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr, PetscBool LOOKUP_FLAG )
 {
     PetscErrorCode ierr;
     EosParameters eos_parameters;
     Lookup * lookup_ptr;
+    Lookup lookup;
 
     PetscFunctionBeginUser;
 
     eos_parameters = *eos_parameters_ptr;
     lookup_ptr = &eos_parameters->lookup;
+    lookup = *lookup_ptr;
+
+    /* melting curves are (currently) always read in and stored as a lookup */
+    ierr = Interp1dDestroy( &lookup->liquidus ); CHKERRQ(ierr);
+    ierr = Interp1dDestroy( &lookup->solidus ); CHKERRQ(ierr);
+
+    if( LOOKUP_FLAG ){
+        ierr = Interp2dDestroy( &lookup->alpha ); CHKERRQ(ierr);
+        ierr = Interp2dDestroy( &lookup->cp ); CHKERRQ(ierr);
+        ierr = Interp2dDestroy( &lookup->dTdPs ); CHKERRQ(ierr);
+        ierr = Interp2dDestroy( &lookup->rho ); CHKERRQ(ierr);
+        ierr = Interp2dDestroy( &lookup->temp ); CHKERRQ(ierr);
+    }
 
     ierr = LookupDestroy( lookup_ptr );CHKERRQ(ierr);
     ierr = PetscFree(*eos_parameters_ptr);CHKERRQ(ierr);
