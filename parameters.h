@@ -156,7 +156,7 @@ typedef data_EosParameters* EosParameters;
    this could be changed to dynamically allocate and deallocate, everywhere
    this constant is used: */
 #define SPIDER_MAX_VOLATILE_SPECIES 16
-typedef struct VolatileParameters_ {
+typedef struct {
     char        prefix[128];  /* Maximum prefix length */
     /* next three (initial_) are not mutually exclusive */
     PetscScalar initial_total_abundance;
@@ -172,7 +172,8 @@ typedef struct VolatileParameters_ {
     PetscScalar molar_mass;
     PetscScalar cross_section;
     PetscReal   poststep_change; // allowable fractional change (only for -activate_poststep)
-} VolatileParameters;
+} data_VolatileParameters;
+typedef data_VolatileParameters* VolatileParameters;
 
 /*
  ******************************************************************************

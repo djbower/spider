@@ -33,11 +33,11 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_par
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"CO2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CH4",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"CH4",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[2] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -69,11 +69,11 @@ PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_par
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"N2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"N2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"NH3",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"NH3",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[2] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -107,9 +107,9 @@ PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters* reaction
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2O",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -142,9 +142,9 @@ PetscErrorCode ReactionParametersCreateSimpleWater2(ReactionParameters* reaction
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2O",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -177,9 +177,9 @@ PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters* reaction
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2O",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -210,9 +210,9 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2O",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -243,9 +243,9 @@ PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reacti
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"CO2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"CO",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);

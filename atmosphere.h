@@ -67,7 +67,7 @@ PetscErrorCode destroy_atmosphere( Atmosphere * );
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters );
 PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const ScalingConstants );
 PetscScalar get_emissivity_abe_matsui( Atmosphere *, const AtmosphereParameters);
-PetscScalar get_residual_volatile_mass( Atmosphere *, const AtmosphereParameters, const VolatileParameters *,  const Volatile *);
+PetscScalar get_residual_volatile_mass( Atmosphere *, const AtmosphereParameters, const VolatileParameters, const Volatile *);
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters, PetscScalar );
 PetscErrorCode set_surface_temperature_from_flux( Atmosphere *, const AtmosphereParameters );
 PetscErrorCode set_reservoir_volatile_content( Atmosphere *, const AtmosphereParameters );
