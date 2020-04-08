@@ -3,6 +3,8 @@
 
 #include "ctx.h"
 
+PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr );
+PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr );
 PetscErrorCode set_eos( Parameters );
 
 /* TODO: below probably moves elsewhere eventually (becomes static?) */

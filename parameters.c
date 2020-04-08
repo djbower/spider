@@ -212,7 +212,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   /* since this sets constants, cannot use C shorthand above which is read only */
   ierr = ConstantsSetFromOptions( P->scaling_constants );CHKERRQ(ierr);
 
-  ierr = FundamentalConstantsSet( P->fundamental_constants, P->scaling_constants);CHKERRQ(ierr);
+  ierr = FundamentalConstantsSet( P->fundamental_constants, SC );CHKERRQ(ierr);
 
   /* Must set EOS after setting constants, but before boundary conditions
      since EOS might be required to map temperature to entropy
@@ -945,70 +945,7 @@ PetscErrorCode PrintParameters(Parameters const P)
  ******************************************************************************
  */
 
-static PetscErrorCode LookupCreate( Lookup* lookup_ptr )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscMalloc1(1,lookup_ptr);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode LookupDestroy( Lookup* lookup_ptr )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscFree(*lookup_ptr);CHKERRQ(ierr);
-    *lookup_ptr = NULL;
-    PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
-{
-    PetscErrorCode ierr;
-    EosParameters eos_parameters;
-    Lookup * lookup_ptr;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscMalloc1(1,eos_parameters_ptr);CHKERRQ(ierr);
-
-    eos_parameters = *eos_parameters_ptr;
-    lookup_ptr = &eos_parameters->lookup;
-
-    /* TODO: we don't need to create this if lookups are not used for
-       a particular EOS */
-    ierr = LookupCreate( lookup_ptr );
-
-    PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
-{
-    PetscErrorCode ierr;
-    EosParameters eos_parameters;
-    Lookup * lookup_ptr;
-
-    PetscFunctionBeginUser;
-
-    eos_parameters = *eos_parameters_ptr;
-    lookup_ptr = &eos_parameters->lookup;
-
-    ierr = LookupDestroy( lookup_ptr );CHKERRQ(ierr);
-
-    ierr = PetscFree(*eos_parameters_ptr);CHKERRQ(ierr);
-    *eos_parameters_ptr = NULL;
-
-    PetscFunctionReturn(0);
-
-}
+/* Note: functions to Create and Destroy eos-related structs are in eos.c */
 
 static PetscErrorCode ScalingConstantsCreate( ScalingConstants* scaling_constants_ptr )
 {

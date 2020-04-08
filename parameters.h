@@ -386,9 +386,9 @@ typedef struct {
 typedef data_Parameters* Parameters;
 
 /* Parameters Methods */
-PetscErrorCode PrintParameters( Parameters const );
 PetscErrorCode ParametersCreate( Parameters * );
 PetscErrorCode ParametersDestroy( Parameters * );
+PetscErrorCode PrintParameters( Parameters const );
 
 /* ReactionParameters Methods */
 PetscErrorCode ReactionParametersCreateAmmonia1( ReactionParameters *, const AtmosphereParameters );

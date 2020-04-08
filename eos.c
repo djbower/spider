@@ -1412,3 +1412,70 @@ PetscErrorCode set_rtpress_struct( PetscScalar P, PetscScalar S, Ctx *E )
     PetscFunctionReturn(0);
 
 }
+
+/*
+ ******************************************************************************
+ * Create and Destroy functions for parameter structs
+ ******************************************************************************
+ */
+
+static PetscErrorCode LookupCreate( Lookup* lookup_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,lookup_ptr);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode LookupDestroy( Lookup* lookup_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscFree(*lookup_ptr);CHKERRQ(ierr);
+    *lookup_ptr = NULL;
+
+    PetscFunctionReturn(0);
+
+}
+
+PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
+{
+    PetscErrorCode ierr;
+    EosParameters eos_parameters;
+    Lookup * lookup_ptr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,eos_parameters_ptr);CHKERRQ(ierr);
+    eos_parameters = *eos_parameters_ptr;
+    lookup_ptr = &eos_parameters->lookup;
+    ierr = LookupCreate( lookup_ptr );
+
+    PetscFunctionReturn(0);
+
+}
+
+PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
+{
+    PetscErrorCode ierr;
+    EosParameters eos_parameters;
+    Lookup * lookup_ptr;
+
+    PetscFunctionBeginUser;
+
+    eos_parameters = *eos_parameters_ptr;
+    lookup_ptr = &eos_parameters->lookup;
+
+    ierr = LookupDestroy( lookup_ptr );CHKERRQ(ierr);
+    ierr = PetscFree(*eos_parameters_ptr);CHKERRQ(ierr);
+    *eos_parameters_ptr = NULL;
+
+    PetscFunctionReturn(0);
+
+}
