@@ -513,7 +513,7 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[1],"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
   }
   {
-    PetscScalar scaling = SC->RHS; // note: SC->RHS is 1.0 (see parameters.c)
+    PetscScalar scaling = SC->ENTROPY / SC->TIME;
     ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_s[2],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[2],&ctx->solution.dSdt_s); // Just for convenience - can always get this vector out when you need it
     ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_s[2],"dSdt_s");CHKERRQ(ierr);
