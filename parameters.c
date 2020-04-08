@@ -61,10 +61,6 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
     SC->COND      = SC->ENTROPY * SC->DENSITY * SC->KAPPA; // W/m/K
     SC->SIGMA     = SC->FLUX * 1.0 / PetscPowScalar( SC->TEMP, 4.0 ); // W/m^2/K^4
     SC->HEATGEN   = PetscPowScalar( SC->ENTROPY*SC->TEMP, 3.0/2.0 ) / SC->RADIUS; // W/kg
-    /* the full rhs vector contains various quantities
-       with different units, so we cannot scale simply by multiplying
-       by a constant value */
-    SC->RHS       = 1.0; // no scaling, as per comment above
 
     PetscFunctionReturn(0);
 }
@@ -904,7 +900,6 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Log10 Visc" ,"",(double)SC->LOG10VISC          ,"log10(Pa-s)" );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Cond"       ,"",(double)SC->COND               ,"W/m/K"       );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Sigma"      ,"",(double)SC->SIGMA              ,"W/m^2/K^4"   );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Rhs"        ,"",(double)SC->RHS                ,"W/kg/K"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"                                                                                                    );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15s %s\n"    ,"[Parameter]","Non-dim. Value","Dim. Value"                 ,"Units"       );CHKERRQ(ierr);
