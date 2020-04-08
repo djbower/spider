@@ -478,7 +478,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
             /* this is equivalent to the operation below for Ap->IC_ATMOSPHERE==3, but a shortcut since
                we do not need to sum all reservoirs to get to the initial total abundance */
             /* below we correct with -= */
-            Ap->volatile_parameters[i].initial_total_abundance -= A->volatiles[i].mass_reaction / (*Ap->mantle_mass_ptr);
+            Ap->volatile_parameters[i]->initial_total_abundance -= A->volatiles[i].mass_reaction / (*Ap->mantle_mass_ptr);
         }
 
         /* do not conform if Ap->IC_ATMOSPHERE==2, since we assume the user wants to resume from the exact state as
@@ -487,7 +487,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
         else if( Ap->IC_ATMOSPHERE==3 ){
             mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos + A->volatiles[i].mass_reaction;
             /* below we set with = */
-            Ap->volatile_parameters[i].initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
+            Ap->volatile_parameters[i]->initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
         }
     }
 
@@ -504,7 +504,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     }
 
     for(i=0; i<Ap->n_volatiles; ++i){
-        Ap->volatile_parameters[i].initial_atmos_pressure = A->volatiles[i].p;
+        Ap->volatile_parameters[i]->initial_atmos_pressure = A->volatiles[i].p;
     }
 
     ierr = print_ocean_masses( E );CHKERRQ(ierr);
@@ -551,37 +551,37 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     /* this is ugly, but otherwise the flags get reset if they appear within
        the same loop over volatiles */
     for(i=0; i<Ap->n_volatiles; ++i){
-        PetscStrcmp( Ap->volatile_parameters[i].prefix, "H2", &FLAG_H2 );
+        PetscStrcmp( Ap->volatile_parameters[i]->prefix, "H2", &FLAG_H2 );
         if ( FLAG_H2 ){
-            mass_H2 = Ap->volatile_parameters[i].initial_total_abundance;
-            molar_mass_H2 = Ap->volatile_parameters[i].molar_mass;
+            mass_H2 = Ap->volatile_parameters[i]->initial_total_abundance;
+            molar_mass_H2 = Ap->volatile_parameters[i]->molar_mass;
             break;
         }
     }
 
     for(i=0; i<Ap->n_volatiles; ++i){
-        PetscStrcmp( Ap->volatile_parameters[i].prefix, "H2O", &FLAG_H2O );
+        PetscStrcmp( Ap->volatile_parameters[i]->prefix, "H2O", &FLAG_H2O );
         if ( FLAG_H2O ){
-            mass_H2O = Ap->volatile_parameters[i].initial_total_abundance;
-            molar_mass_H2O = Ap->volatile_parameters[i].molar_mass;
+            mass_H2O = Ap->volatile_parameters[i]->initial_total_abundance;
+            molar_mass_H2O = Ap->volatile_parameters[i]->molar_mass;
             break;
         }
     }
 
     for(i=0; i<Ap->n_volatiles; ++i){
-        PetscStrcmp( Ap->volatile_parameters[i].prefix, "CO", &FLAG_CO );
+        PetscStrcmp( Ap->volatile_parameters[i]->prefix, "CO", &FLAG_CO );
         if ( FLAG_CO ){
-            mass_CO = Ap->volatile_parameters[i].initial_total_abundance;
-            molar_mass_CO = Ap->volatile_parameters[i].molar_mass;
+            mass_CO = Ap->volatile_parameters[i]->initial_total_abundance;
+            molar_mass_CO = Ap->volatile_parameters[i]->molar_mass;
             break;
         }
     }
 
     for(i=0; i<Ap->n_volatiles; ++i){
-        PetscStrcmp( Ap->volatile_parameters[i].prefix, "CO2", &FLAG_CO2 );
+        PetscStrcmp( Ap->volatile_parameters[i]->prefix, "CO2", &FLAG_CO2 );
         if ( FLAG_CO2 ){
-            mass_CO2 = Ap->volatile_parameters[i].initial_total_abundance;
-            molar_mass_CO2 = Ap->volatile_parameters[i].molar_mass;
+            mass_CO2 = Ap->volatile_parameters[i]->initial_total_abundance;
+            molar_mass_CO2 = Ap->volatile_parameters[i]->molar_mass;
             break;
         }
     }
@@ -703,7 +703,7 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
 
     /* set initial partial pressure to A->volatiles[i].p */
     for (i=0; i<Ap->n_volatiles; ++i) {
-        A->volatiles[i].p = Ap->volatile_parameters[i].initial_atmos_pressure;
+        A->volatiles[i].p = Ap->volatile_parameters[i]->initial_atmos_pressure;
     }
 
     /* TODO: remove: not required anymore */
@@ -842,7 +842,7 @@ static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Ve
 
     /* mass conservation for each volatile */
     for (i=0; i<Ap->n_volatiles; ++i) {
-        ff[i] = get_residual_volatile_mass( A, Ap, &Ap->volatile_parameters[i], &A->volatiles[i]);
+        ff[i] = get_residual_volatile_mass( A, Ap, Ap->volatile_parameters[i], &A->volatiles[i]);
     }
 
     for (i=0; i<Ap->n_reactions; ++i) {

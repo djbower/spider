@@ -66,7 +66,7 @@ PetscErrorCode PostStep(TS ts)
 
   for( i=0; i<Ap->n_volatiles; ++i) {
      Volatile *V = &A->volatiles[i];
-     maxx = P->atmosphere_parameters->volatile_parameters[i].poststep_change;
+     maxx = P->atmosphere_parameters->volatile_parameters[i]->poststep_change;
      if( maxx > 0 ){
          /* remember that the - is for minus! */
          relx = PetscAbsReal( (V->p-data->volatile_partialp[i]) / data->volatile_partialp[i] );

@@ -14,10 +14,14 @@ Custom PETSc command line options should only ever be parsed here.
 //#include "composition.h"
 
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
+static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
 
-
-static PetscErrorCode ConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
+static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
+    /* constants used to scale the physical problem are largely chosen based on numerical considerations.
+       Factors of 4 pi associated with spherical geometry are excluded, but are reintroduced in output
+       routines to give the correct (meaningful) physical values */
+
     PetscScalar SQRTST;
 
     PetscFunctionBeginUser;
@@ -26,11 +30,15 @@ static PetscErrorCode ConstantsSet( ScalingConstants SC, PetscReal RADIUS, Petsc
        parameter) */
     SQRTST = PetscSqrtScalar( ENTROPY * TEMPERATURE );
 
+    /* these 5 scaling constants can be set by the user, and the others
+       subsequently derived */
     SC->RADIUS    = RADIUS; // m
     SC->TEMP      = TEMPERATURE; // K
-    SC->ENTROPY   = ENTROPY; // (specific) J/kg.K
+    SC->ENTROPY   = ENTROPY; // (specific) J/kg/K
     SC->DENSITY   = DENSITY; // kg/m^3
     SC->VOLATILE  = VOLATILE;
+    /* below are derived from above */
+    /* note: factors of 4 pi are excluded */
     SC->AREA      = PetscSqr( SC->RADIUS ); // m^2
     SC->VOLUME    = SC->AREA * SC->RADIUS; // m^3
     SC->MASS      = SC->DENSITY * SC->VOLUME; // kg
@@ -45,13 +53,13 @@ static PetscErrorCode ConstantsSet( ScalingConstants SC, PetscReal RADIUS, Petsc
     SC->GRAVITY   = SC->ENTROPY * SC->TEMP / SC->RADIUS; // m/s^2
     SC->KAPPA     = SC->RADIUS * SQRTST; // m^2/s
     SC->DTDP      = 1.0 / (SC->DENSITY * SC->ENTROPY); // K/Pa
-    SC->DSDR      = SC->ENTROPY / SC->RADIUS; // J/kg.K.m
+    SC->DSDR      = SC->ENTROPY / SC->RADIUS; // J/kg/K/m
     SC->DTDR      = SC->TEMP / SC->RADIUS; // K/m
     SC->GSUPER    = SC->GRAVITY * SC->DTDR;
     SC->VISC      = SC->DENSITY * SC->KAPPA; // Pa.s
     SC->LOG10VISC = PetscLog10Real( SC->VISC ); // log10(Pa.s)
-    SC->COND      = SC->ENTROPY * SC->DENSITY * SC->KAPPA; // W/m.K
-    SC->SIGMA     = SC->FLUX * 1.0 / PetscPowScalar( SC->TEMP, 4.0 ); // W/m^2.K^4
+    SC->COND      = SC->ENTROPY * SC->DENSITY * SC->KAPPA; // W/m/K
+    SC->SIGMA     = SC->FLUX * 1.0 / PetscPowScalar( SC->TEMP, 4.0 ); // W/m^2/K^4
     SC->LHS       = SC->MASS * SC->TEMP; // kg.K
     SC->HEATGEN   = PetscPowScalar( SC->ENTROPY*SC->TEMP, 3.0/2.0 ) / SC->RADIUS; // W/kg
     /* the full rhs vector contains various quantities
@@ -85,7 +93,7 @@ static PetscErrorCode FundamentalConstantsSet( FundamentalConstants FC, ScalingC
 
 }
 
-static PetscErrorCode ConstantsSetFromOptions( ScalingConstants SC )
+static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
 {
     PetscErrorCode ierr;
 
@@ -101,12 +109,12 @@ static PetscErrorCode ConstantsSetFromOptions( ScalingConstants SC )
     ierr = PetscOptionsGetScalar(NULL,NULL,"-density0",&DENSITY0,NULL);CHKERRQ(ierr);
     PetscScalar VOLATILE0 = 1.0;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-volatile0",&VOLATILE0,NULL);CHKERRQ(ierr);
-    ierr = ConstantsSet(SC,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
+    ierr = ScalingConstantsSet(SC,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters *vp, const ScalingConstants SC)
+static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, const ScalingConstants SC)
 {
   PetscErrorCode ierr;
   char           buf[1024]; /* max size */
@@ -210,7 +218,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   /* Constants (scalings) must be set first, as they are used to scale
      other parameters */
   /* since this sets constants, cannot use C shorthand above which is read only */
-  ierr = ConstantsSetFromOptions( P->scaling_constants );CHKERRQ(ierr);
+  ierr = ScalingConstantsSetFromOptions( P->scaling_constants );CHKERRQ(ierr);
 
   ierr = FundamentalConstantsSet( P->fundamental_constants, SC );CHKERRQ(ierr);
 
@@ -646,7 +654,8 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
       Ap->n_volatiles = n_volatiles;
       for (v=0; v<Ap->n_volatiles; ++v) {
-        ierr = PetscStrncpy(Ap->volatile_parameters[v].prefix,prefixes[v],sizeof(Ap->volatile_parameters[v].prefix));CHKERRQ(ierr);
+        ierr = VolatileParametersCreate(&Ap->volatile_parameters[v]);CHKERRQ(ierr);
+        ierr = PetscStrncpy(Ap->volatile_parameters[v]->prefix,prefixes[v],sizeof(Ap->volatile_parameters[v]->prefix));CHKERRQ(ierr);
         ierr = PetscFree(prefixes[v]);CHKERRQ(ierr);
       }
     }
@@ -654,7 +663,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
   /* Get command-line values for all volatiles species */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = VolatileParametersSetFromOptions(&Ap->volatile_parameters[v], SC);CHKERRQ(ierr);
+    ierr = VolatileParametersSetFromOptions(Ap->volatile_parameters[v], SC);CHKERRQ(ierr);
   }
 
   /* Reactions: look for command-line options to determine the number of reactions
@@ -924,7 +933,7 @@ PetscErrorCode PrintParameters(Parameters const P)
     ierr = PetscPrintf(PETSC_COMM_WORLD,"\n[Volatile] prefix/name\n");CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"%-10D %-15s (.. additional parameters omitted ..)\n",i,Ap->volatile_parameters[i].prefix);CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"%-10D %-15s (.. additional parameters omitted ..)\n",i,Ap->volatile_parameters[i]->prefix);CHKERRQ(ierr);
     }
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
   }
@@ -990,9 +999,36 @@ static PetscErrorCode FundamentalConstantsDestroy( FundamentalConstants* fundame
 
     ierr = PetscFree(*fundamental_constants_ptr);CHKERRQ(ierr);
     *fundamental_constants_ptr = NULL;
+
     PetscFunctionReturn(0);
 
 }
+
+static PetscErrorCode VolatileParametersCreate( VolatileParameters* volatile_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,volatile_parameters_ptr);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode VolatileParametersDestroy( VolatileParameters* volatile_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscFree(*volatile_parameters_ptr);CHKERRQ(ierr);
+    *volatile_parameters_ptr = NULL;
+
+    PetscFunctionReturn(0);
+
+}
+
 
 static PetscErrorCode AtmosphereParametersCreate( AtmosphereParameters* atmosphere_parameters_ptr )
 {
@@ -1018,6 +1054,11 @@ static PetscErrorCode AtmosphereParametersDestroy( AtmosphereParameters* atmosph
         ierr = ReactionParametersDestroy(&Ap->reaction_parameters[i]);CHKERRQ(ierr);
     }
     Ap->n_reactions = 0;
+
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        ierr = VolatileParametersDestroy(&Ap->volatile_parameters[i]);CHKERRQ(ierr);
+    }
+    Ap->n_volatiles = 0;
 
     ierr = PetscFree(*atmosphere_parameters_ptr);CHKERRQ(ierr);
     *atmosphere_parameters_ptr = NULL;
