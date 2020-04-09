@@ -4,8 +4,8 @@
 #include "ctx.h"
 #include "parameters.h"
 
-PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr );
-PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr, PetscBool );
+PetscErrorCode EosParametersCreate( EosParameters* );
+PetscErrorCode EosParametersDestroy( EosParameters* );
 PetscErrorCode set_eos( Parameters );
 
 /* TODO: below probably moves elsewhere eventually (becomes static?) */

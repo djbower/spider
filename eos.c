@@ -1419,7 +1419,7 @@ PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
 
 }
 
-PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr, PetscBool LOOKUP_FLAG )
+PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
 {
     PetscErrorCode ierr;
     EosParameters eos_parameters;

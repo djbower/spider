@@ -1082,8 +1082,8 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
     ierr = AtmosphereParametersDestroy(&P->atmosphere_parameters);CHKERRQ(ierr);
 
     /* FIXME: update the PETSC_TRUE flag below depending on user input */
-    ierr = EosParametersDestroy(&P->eos1_parameters, PETSC_TRUE);CHKERRQ(ierr);
-    ierr = EosParametersDestroy(&P->eos2_parameters, PETSC_TRUE);CHKERRQ(ierr);
+    ierr = EosParametersDestroy(&P->eos1_parameters);CHKERRQ(ierr);
+    ierr = EosParametersDestroy(&P->eos2_parameters);CHKERRQ(ierr);
 
     ierr = PetscFree(*parameters_ptr);CHKERRQ(ierr);
     *parameters_ptr = NULL;
