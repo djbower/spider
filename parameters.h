@@ -263,13 +263,15 @@ typedef data_AtmosphereParameters* AtmosphereParameters;
  ******************************************************************************
  */
 
-typedef struct RadiogenicIsotopeParameters_ {
+typedef struct {
+    char        prefix[128];  /* Maximum prefix length */
     PetscScalar t0;
     PetscScalar abundance; // isotopic abundance at t0
     PetscScalar concentration; // elemental concentration at t0
     PetscScalar heat_production;
     PetscScalar half_life;
-} RadiogenicIsotopeParameters;
+} data_RadionuclideParameters;
+typedef data_RadionuclideParameters* RadionuclideParameters;
 
 #if 0
 /* compositional differentiation */
@@ -286,6 +288,8 @@ typedef struct CompositionParameters_ {
  * Main parameters structure
  ******************************************************************************
 */
+
+#define SPIDER_MAX_RADIONUCLIDES 8
 
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct {
@@ -362,6 +366,9 @@ typedef struct {
     PetscScalar lid_log10visc;
     PetscScalar lid_thickness;
 
+    PetscInt    n_radionuclides;
+    RadionuclideParameters radionuclide_parameters[SPIDER_MAX_RADIONUCLIDES];
+
     // Additional Atmosphere Parameters
     AtmosphereParameters atmosphere_parameters;
 
@@ -371,12 +378,13 @@ typedef struct {
     FundamentalConstants fundamental_constants;
 
     // Radiogenic heating parameters
-    RadiogenicIsotopeParameters al26_parameters;
-    RadiogenicIsotopeParameters k40_parameters;
-    RadiogenicIsotopeParameters fe60_parameters;
-    RadiogenicIsotopeParameters th232_parameters;
-    RadiogenicIsotopeParameters u235_parameters;
-    RadiogenicIsotopeParameters u238_parameters;
+    // FIXME: REMOVE
+   // RadiogenicIsotopeParameters al26_parameters;
+   // RadiogenicIsotopeParameters k40_parameters;
+   // RadiogenicIsotopeParameters fe60_parameters;
+   // RadiogenicIsotopeParameters th232_parameters;
+   // RadiogenicIsotopeParameters u235_parameters;
+   // RadiogenicIsotopeParameters u238_parameters;
 
     // equation of state for melt and solid
     EosParameters eos1_parameters; /* for melt */
