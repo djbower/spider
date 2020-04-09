@@ -367,12 +367,12 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_melt_pressure",&P->ic_melt_pressure,NULL); CHKERRQ(ierr);
   }
 
-  /* initial entropy at top of adiabat (J/kg-K) */
+  /* initial entropy at top of adiabat (J/kg/K) */
   P->ic_adiabat_entropy = 3052.885602072091;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_adiabat_entropy",&P->ic_adiabat_entropy,NULL);CHKERRQ(ierr);
   P->ic_adiabat_entropy /= SC->ENTROPY;
 
-  /* initial entropy gradient (J/kg-K-m) */
+  /* initial entropy gradient (J/kg/K/m) */
   P->ic_dsdr = -4.6978890285209187e-07;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_dsdr",&P->ic_dsdr,NULL);CHKERRQ(ierr);
   P->ic_dsdr /= SC->DSDR;
@@ -444,7 +444,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->coremass = 1.0/3.0 * PetscPowScalar( P->coresize, 3.0) * PetscPowScalar( P->radius, 3.0 );
   P->coremass *= P->rho_core;
 
-  /* heat capacity of core (J/kg-K) */
+  /* heat capacity of core (J/kg/K) */
   P->cp_core = 880.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-cp_core",&P->cp_core,NULL);CHKERRQ(ierr);
   P->cp_core /= SC->ENTROPY;
