@@ -15,6 +15,7 @@ Custom PETSc command line options should only ever be parsed here.
 
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
+static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
 
 static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
@@ -110,6 +111,42 @@ static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode RadionuclideParametersSetFromOptions(RadionuclideParameters rp, const ScalingConstants SC)
+{
+  PetscErrorCode ierr;
+  char           buf[1024]; /* max size */
+  PetscBool      set;
+
+  PetscFunctionBeginUser;
+  /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
+     if they are missing. Note that this code has a lot of duplication */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_t0");CHKERRQ(ierr);
+  rp->t0 = 0.0; // years
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &rp->t0,&set);CHKERRQ(ierr);
+  rp->t0 /= SC->TIMEYRS;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_abundance");CHKERRQ(ierr);
+  rp->abundance = 0.0; // fractional
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &rp->abundance,&set);CHKERRQ(ierr);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_concentration");CHKERRQ(ierr);
+  rp->concentration = 0.0; // ppmw
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&rp->concentration,&set);CHKERRQ(ierr);
+  /* FIXME: convert concentration to mass fraction? */
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_heat_production");CHKERRQ(ierr);
+  rp->heat_production = 0.0; // W/kg
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&rp->heat_production,&set);CHKERRQ(ierr);
+  rp->heat_production /= SC->HEATGEN;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_half_life");CHKERRQ(ierr);
+  rp->half_life = 0.0; // years /* TODO: undefined problem with zero? */
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&rp->half_life,&set);CHKERRQ(ierr);
+  rp->half_life /= SC->TIMEYRS;
+
+  PetscFunctionReturn(0);
+}
+
 static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, const ScalingConstants SC)
 {
   PetscErrorCode ierr;
@@ -199,13 +236,17 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   AtmosphereParameters Ap = P->atmosphere_parameters;
   /* convenient shorthand to user below */
   ScalingConstants const SC = P->scaling_constants;
+
+// FIXME: REMOVE
+#if 0
   RadiogenicIsotopeParameters *al26 = &P->al26_parameters;
   RadiogenicIsotopeParameters *k40 = &P->k40_parameters;
   RadiogenicIsotopeParameters *fe60 = &P->fe60_parameters;
   RadiogenicIsotopeParameters *th232 = &P->th232_parameters;
   RadiogenicIsotopeParameters *u235 = &P->u235_parameters;
   RadiogenicIsotopeParameters *u238 = &P->u238_parameters;
-  PetscInt             v;
+#endif
+  PetscInt             v; // FIXME: required?
   // FIXME
   //CompositionParameters      *Compp = &P->composition_parameters;
 
@@ -241,7 +282,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   /* Time frame parameters */
   P->maxsteps    = 100000000; /* Effectively infinite */
 
-  P->nstepsmacro = 18;
+  P->nstepsmacro = 2;
   ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,NULL);CHKERRQ(ierr);
 
   /* start time (years) P->t0 is set further down, since it may
@@ -636,6 +677,32 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   Ap->kB = Ap->Rgas / Ap->Avogadro;
 #endif
 
+  /* Look for command-line option to determine number of radionuclides
+     and options prefix for each e.g. -radionuclides_names al26, k40 */
+  P->n_radionuclides = 0;
+  {
+    char      *prefixes[SPIDER_MAX_RADIONUCLIDES];
+    PetscInt  n_radionuclides = SPIDER_MAX_RADIONUCLIDES;
+    PetscBool set;
+
+    ierr = PetscOptionsGetStringArray(NULL,NULL,"-radionuclides_names",prefixes,&n_radionuclides,&set);CHKERRQ(ierr);
+    if (set) { 
+      PetscInt r;
+
+      P->n_radionuclides = n_radionuclides;
+      for (r=0; r<P->n_radionuclides; ++r) {
+        ierr = RadionuclideParametersCreate(&P->radionuclide_parameters[r]);CHKERRQ(ierr);
+        ierr = PetscStrncpy(P->radionuclide_parameters[r]->prefix,prefixes[r],sizeof(P->radionuclide_parameters[r]->prefix));CHKERRQ(ierr);
+        ierr = PetscFree(prefixes[r]);CHKERRQ(ierr);
+      }
+    }
+  }
+
+  /* Get command-line values for all radionuclides */
+  for (v=0; v<P->n_radionuclides; ++v) {
+    ierr = RadionuclideParametersSetFromOptions(P->radionuclide_parameters[v], SC);CHKERRQ(ierr);
+  }
+
   /* Look for command-line option to determine number of volatiles
      and options prefix for each, e.g -volatile_names CO2,H2O */
   Ap->n_volatiles = 0;
@@ -732,6 +799,8 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     if( OXYGEN_FUGACITYset && Ap->n_reactions ) Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY;
   }
 
+// FIXME: REMOVE
+#if 0
   /* radiogenic heating */
   /* aluminium 26 */
   al26->t0 = 0.0; // years
@@ -822,6 +891,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   u238->half_life = 4468E6; // years (Ruedas, 2017)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_half_life",&u238->half_life,NULL);CHKERRQ(ierr);
   u238->half_life /= SC->TIMEYRS;
+#endif
 
 #if 0
   /* compositional parameters */
@@ -1011,6 +1081,28 @@ static PetscErrorCode VolatileParametersDestroy( VolatileParameters* volatile_pa
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters* radionuclide_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,radionuclide_parameters_ptr);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode RadionuclideParametersDestroy( RadionuclideParameters* radionuclide_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscFree(*radionuclide_parameters_ptr);CHKERRQ(ierr);
+    *radionuclide_parameters_ptr = NULL;
+
+    PetscFunctionReturn(0);
+}
 
 static PetscErrorCode AtmosphereParametersCreate( AtmosphereParameters* atmosphere_parameters_ptr )
 {
@@ -1073,7 +1165,8 @@ PetscErrorCode ParametersCreate( Parameters* parameters_ptr )
 PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
 {
     PetscErrorCode ierr;
-    Parameters P = *parameters_ptr;
+    PetscInt       i;
+    Parameters     P = *parameters_ptr;
 
     PetscFunctionBeginUser;
 
@@ -1084,6 +1177,12 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
     /* FIXME: update the PETSC_TRUE flag below depending on user input */
     ierr = EosParametersDestroy(&P->eos1_parameters);CHKERRQ(ierr);
     ierr = EosParametersDestroy(&P->eos2_parameters);CHKERRQ(ierr);
+
+    /* radionuclides */
+    for (i=0; i<P->n_radionuclides; ++i) {
+        ierr = RadionuclideParametersDestroy(&P->radionuclide_parameters[i]);CHKERRQ(ierr);
+    }
+    P->n_radionuclides = 0;
 
     ierr = PetscFree(*parameters_ptr);CHKERRQ(ierr);
     *parameters_ptr = NULL;

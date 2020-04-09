@@ -11,7 +11,7 @@ static PetscErrorCode append_Jmix( Ctx * );
 static PetscErrorCode append_Jgrav( Ctx * );
 static PetscErrorCode append_Hradio( Ctx *, PetscReal );
 static PetscErrorCode append_Htidal( Ctx *, PetscReal );
-static PetscScalar get_radiogenic_heat_production( RadiogenicIsotopeParameters const *, PetscReal );
+static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const, PetscReal );
 static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
 static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
 
@@ -55,18 +55,33 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal time )
 {
 
     PetscErrorCode ierr;
+    PetscInt i;
     PetscScalar H;
     Solution       *S = &E->solution;
     Parameters const P = E->parameters;
+    RadionuclideParameters Rp;
+
+// FIXME: REMOVE
+#if 0
     RadiogenicIsotopeParameters const *al26 = &P->al26_parameters;
     RadiogenicIsotopeParameters const *k40 = &P->k40_parameters;
     RadiogenicIsotopeParameters const *fe60 = &P->fe60_parameters;
     RadiogenicIsotopeParameters const *th232 = &P->th232_parameters;
     RadiogenicIsotopeParameters const *u235 = &P->u235_parameters;
     RadiogenicIsotopeParameters const *u238 = &P->u238_parameters;
+#endif
 
     PetscFunctionBeginUser;
 
+    for (i=0;i<P->n_radionuclides; ++i){
+
+        Rp = P->radionuclide_parameters[i];
+        H = get_radiogenic_heat_production( Rp, time );
+        ierr = VecShift( S->Hradio_s, H ); CHKERRQ(ierr);
+    }
+
+//FIXME: REMOVE
+#if 0
     // al26
     H = get_radiogenic_heat_production( al26, time );
     ierr = VecSet(S->Hal26_s,H);CHKERRQ(ierr);
@@ -91,6 +106,7 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal time )
     H = get_radiogenic_heat_production( u238, time );
     ierr = VecSet(S->Hu238_s,H);CHKERRQ(ierr);
     ierr = VecAXPY( S->Hradio_s, 1.0, S->Hu238_s ); CHKERRQ(ierr);
+#endif
 
     // append total of radiogenic heating to total heating vector
     ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
@@ -118,7 +134,7 @@ static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar get_radiogenic_heat_production( RadiogenicIsotopeParameters const *Iso, PetscReal time )
+static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const Iso, PetscReal time )
 {
     PetscScalar H;
 
