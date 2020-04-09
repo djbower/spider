@@ -26,6 +26,30 @@ def atmosphere(rootDir, tol) :
   t.setUseSandbox()
   return(t)
 
+def atmosphere_radionuclides(rootDir, tol) :
+  thisDir = os.path.split(os.path.abspath(__file__))[0]
+  testName = "atmosphere_radionuclides"
+  ranks = 1
+  acceptable_files = ' '.join(['output/'+str(i)+'.json' for i in range(49950,50050)])
+  launch = [\
+          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','atmosphere_radionuclides.opts') + ' -nstepsmacro 1',\
+          os.path.join(rootDir,'tests','copy_one_of.py') + ' ' + acceptable_files + ' -o to_check.json',\
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py to_check.json'),
+          ]
+
+  expectedFile = os.path.join(thisDir,'expected_output','expected_atmosphere_radionuclides.txt')
+
+  def comparefunc(t) :
+      t.compareFloatingPointRelative(re.escape('scaling: '), tol)
+      t.compareFloatingPointRelative(re.escape('val: '), tol)
+
+  t = pthtest.Test(testName,ranks,launch,expectedFile)
+  t.setComparisonFile('to_check.txt')
+  t.setVerifyMethod(comparefunc)
+  t.setWalltime(2) # minutes
+  t.setUseSandbox()
+  return(t);
+
 def atmosphere_ic(rootDir, tol) :
    thisDir = os.path.split(os.path.abspath(__file__))[0]
    testName = "atmosphere_ic"
