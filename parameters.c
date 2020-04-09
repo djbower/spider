@@ -26,8 +26,6 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
 
     PetscFunctionBeginUser;
 
-    /* 29 constants to set (excluding SQRTST which is a convenience
-       parameter) */
     SQRTST = PetscSqrtScalar( ENTROPY * TEMPERATURE );
 
     /* these 5 scaling constants can be set by the user, and the others
@@ -68,6 +66,8 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
 
 static PetscErrorCode FundamentalConstantsSet( FundamentalConstants FC, ScalingConstants const SC )
 {
+    /* fundamental physical and chemical constants are all here, and should
+       always be accessed from this struct to avoid duplication */
 
     PetscFunctionBeginUser;
 
