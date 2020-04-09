@@ -141,6 +141,7 @@ typedef struct {
     /* include thermal and transport properties */
     PetscScalar cond; /* thermal conductivity, W/m/K */
     PetscScalar log10visc; /* log base 10 of viscosity */
+    PetscBool LOOKUP_FLAG; /* flag if lookup data included */
     Lookup lookup;
 } data_EosParameters;
 typedef data_EosParameters* EosParameters;
