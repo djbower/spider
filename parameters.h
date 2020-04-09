@@ -117,6 +117,8 @@ typedef data_Lookup* Lookup;
 
 /* EOS */
 typedef struct {
+    /* below are specific to RTpress (Wolf and Bower, 2018), but other
+       Eos forms can easily be included */
     PetscScalar V0;
     PetscScalar T0;
     PetscScalar S0;
