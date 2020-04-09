@@ -32,12 +32,16 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal time )
     /* initialise to zero */
     ierr = VecSet( S->Hradio_s, 0.0 );CHKERRQ(ierr);
     ierr = VecSet( S->Htot_s, 0.0 );CHKERRQ(ierr);
+
+    // FIXME: REMOVE
+#if 0
     ierr = VecSet( S->Hal26_s, 0.0 );CHKERRQ(ierr);
     ierr = VecSet( S->Hk40_s, 0.0 );CHKERRQ(ierr);
     ierr = VecSet( S->Hfe60_s, 0.0 );CHKERRQ(ierr);
     ierr = VecSet( S->Hth232_s, 0.0 );CHKERRQ(ierr);
     ierr = VecSet( S->Hu235_s, 0.0 );CHKERRQ(ierr);
     ierr = VecSet( S->Hu238_s, 0.0 );CHKERRQ(ierr);
+#endif
 
     /* total internal heat generation by summing terms */
     if (P->HRADIO){

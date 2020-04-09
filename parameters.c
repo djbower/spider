@@ -685,7 +685,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     PetscInt  n_radionuclides = SPIDER_MAX_RADIONUCLIDES;
     PetscBool set;
 
-    ierr = PetscOptionsGetStringArray(NULL,NULL,"-radionuclides_names",prefixes,&n_radionuclides,&set);CHKERRQ(ierr);
+    ierr = PetscOptionsGetStringArray(NULL,NULL,"-radionuclide_names",prefixes,&n_radionuclides,&set);CHKERRQ(ierr);
     if (set) { 
       PetscInt r;
 

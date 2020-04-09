@@ -199,6 +199,8 @@
 -H2O_henry_pow 1.4285714285714286
 -H2O_molar_mass 0.01801528 # kg/mol
 
+-radionuclide_names al26,k40,fe60,th232,u235,u238
+
 # internal heat sources
 # Al26 (extinct at present day)
 -al26_t0 0.0 # time in years (post-formation) when the isotopic abundance and elemental concentration is defined
