@@ -33,16 +33,6 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal time )
     ierr = VecSet( S->Hradio_s, 0.0 );CHKERRQ(ierr);
     ierr = VecSet( S->Htot_s, 0.0 );CHKERRQ(ierr);
 
-    // FIXME: REMOVE
-#if 0
-    ierr = VecSet( S->Hal26_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hk40_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hfe60_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hth232_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hu235_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hu238_s, 0.0 );CHKERRQ(ierr);
-#endif
-
     /* total internal heat generation by summing terms */
     if (P->HRADIO){
       ierr = append_Hradio( E, time ); CHKERRQ(ierr);
@@ -65,16 +55,6 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal time )
     Parameters const P = E->parameters;
     RadionuclideParameters Rp;
 
-// FIXME: REMOVE
-#if 0
-    RadiogenicIsotopeParameters const *al26 = &P->al26_parameters;
-    RadiogenicIsotopeParameters const *k40 = &P->k40_parameters;
-    RadiogenicIsotopeParameters const *fe60 = &P->fe60_parameters;
-    RadiogenicIsotopeParameters const *th232 = &P->th232_parameters;
-    RadiogenicIsotopeParameters const *u235 = &P->u235_parameters;
-    RadiogenicIsotopeParameters const *u238 = &P->u238_parameters;
-#endif
-
     PetscFunctionBeginUser;
 
     for (i=0;i<P->n_radionuclides; ++i){
@@ -83,34 +63,6 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal time )
         H = get_radiogenic_heat_production( Rp, time );
         ierr = VecShift( S->Hradio_s, H ); CHKERRQ(ierr);
     }
-
-//FIXME: REMOVE
-#if 0
-    // al26
-    H = get_radiogenic_heat_production( al26, time );
-    ierr = VecSet(S->Hal26_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hal26_s ); CHKERRQ(ierr);
-    // k40
-    H = get_radiogenic_heat_production( k40, time );
-    ierr = VecSet(S->Hk40_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hk40_s ); CHKERRQ(ierr);
-    // fe60
-    H = get_radiogenic_heat_production( fe60, time );
-    ierr = VecSet(S->Hfe60_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hfe60_s ); CHKERRQ(ierr);
-    // th232
-    H = get_radiogenic_heat_production( th232, time );
-    ierr = VecSet(S->Hth232_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hth232_s ); CHKERRQ(ierr);
-    // u235
-    H = get_radiogenic_heat_production( u235, time );
-    ierr = VecSet(S->Hu235_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hu235_s ); CHKERRQ(ierr);
-    // u238
-    H = get_radiogenic_heat_production( u238, time );
-    ierr = VecSet(S->Hu238_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hu238_s ); CHKERRQ(ierr);
-#endif
 
     // append total of radiogenic heating to total heating vector
     ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
