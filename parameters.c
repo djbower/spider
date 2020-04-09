@@ -740,7 +740,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   al26->abundance = 0.0; // fractional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-al26_abundance",&al26->abundance,NULL);CHKERRQ(ierr);
   al26->concentration = 0.0; // ppm
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-al_concentration",&al26->concentration,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-al26_concentration",&al26->concentration,NULL);CHKERRQ(ierr);
   al26->heat_production = 0.3583; // W/kg (Ruedas, 2017)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-al26_heat_production",&al26->heat_production,NULL);CHKERRQ(ierr);
   al26->heat_production /= SC->HEATGEN;
@@ -755,7 +755,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   k40->abundance = 1.1668E-4; // fractional (Ruedas, 2017)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-k40_abundance",&k40->abundance,NULL);CHKERRQ(ierr);
   k40->concentration = 0.0; // ppm
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-k_concentration",&k40->concentration,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-k40_concentration",&k40->concentration,NULL);CHKERRQ(ierr);
   k40->heat_production = 2.8761E-5; // W/kg (Ruedas, 2017)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-k40_heat_production",&k40->heat_production,NULL);CHKERRQ(ierr);
   k40->heat_production /= SC->HEATGEN;
@@ -770,7 +770,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   fe60->abundance = 0.0; // fractional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-fe60_abundance",&fe60->abundance,NULL);CHKERRQ(ierr);
   fe60->concentration = 0.0; // ppm
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-fe_concentration",&fe60->concentration,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-fe60_concentration",&fe60->concentration,NULL);CHKERRQ(ierr);
   fe60->heat_production = 3.6579E-2; // W/kg (Ruedas, 2017)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-fe60_heat_production",&fe60->heat_production,NULL);CHKERRQ(ierr);
   fe60->heat_production /= SC->HEATGEN;
@@ -785,7 +785,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   th232->abundance = 1.0; // fractional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-th232_abundance",&th232->abundance,NULL);CHKERRQ(ierr);
   th232->concentration = 0.0; // ppm
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-th_concentration",&th232->concentration,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-th232_concentration",&th232->concentration,NULL);CHKERRQ(ierr);
   th232->heat_production = 2.6368E-5; // W/kg (Ruedas, 2017)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-th232_heat_production",&th232->heat_production,NULL);CHKERRQ(ierr);
   th232->heat_production /= SC->HEATGEN;
@@ -800,7 +800,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   u235->abundance = 0.0072045; // fractional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-u235_abundance",&u235->abundance,NULL);CHKERRQ(ierr);
   u235->concentration = 0.0; // ppm
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-u_concentration",&u235->concentration,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u235_concentration",&u235->concentration,NULL);CHKERRQ(ierr);
   u235->heat_production = 5.68402E-4; // W/kg (Ruedas, 2017)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-u235_heat_production",&u235->heat_production,NULL);CHKERRQ(ierr);
   u235->heat_production /= SC->HEATGEN;
@@ -815,7 +815,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   u238->abundance = 0.0; // fractional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_abundance",&u238->abundance,NULL);CHKERRQ(ierr);
   u238->concentration = 0.0; // ppm
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-u_concentration",&u238->concentration,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_concentration",&u238->concentration,NULL);CHKERRQ(ierr);
   u238->heat_production = 9.4946E-5; // W/kg (Ruedas, 2017)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-u238_heat_production",&u238->heat_production,NULL);CHKERRQ(ierr);
   u238->heat_production /= SC->HEATGEN;

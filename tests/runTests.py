@@ -62,7 +62,8 @@ def main() :
         atmosphere_escape(rootDir, tol), \
         atmosphere_escape_zerosol(rootDir, tol),  \
         reaction_zerosol_ic(rootDir, tol),    \
-        reaction_zerosol(rootDir, tol),
+        reaction_zerosol(rootDir, tol),    \
+        atmosphere_radionuclides(rootDir, tol)
     ]
 
     # Run tests
