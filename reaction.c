@@ -1,10 +1,10 @@
 #include "reaction.h"
 
-static PetscScalar get_psurf_exponent( const ReactionParameters * );
-static PetscScalar get_reaction_quotient( const ReactionParameters *, const Atmosphere *, PetscInt );
-static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters *, const Atmosphere *, const AtmosphereParameters, PetscInt );
-static PetscScalar get_log10_equilibrium_constant( const ReactionParameters *, PetscScalar, const ScalingConstants );
-static PetscScalar get_dlog10KdT( const ReactionParameters *, PetscScalar, const ScalingConstants );
+static PetscScalar get_psurf_exponent( const ReactionParameters );
+static PetscScalar get_reaction_quotient( const ReactionParameters, const Atmosphere *, PetscInt );
+static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters, const Atmosphere *, const AtmosphereParameters, PetscInt );
+static PetscScalar get_log10_equilibrium_constant( const ReactionParameters, PetscScalar, const ScalingConstants );
+static PetscScalar get_dlog10KdT( const ReactionParameters, PetscScalar, const ScalingConstants );
 
 /* Note: this could logically be included in parameters.c, but that file was getting crowded */
 
@@ -269,9 +269,8 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
    but rather time-dependent quantities */
 
 /* Compute equilibrium constant */
-static PetscScalar get_log10_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const ScalingConstants SC )
+static PetscScalar get_log10_equilibrium_constant( const ReactionParameters reaction_parameters, PetscScalar temp, const ScalingConstants SC )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        log10Keq;
 
     temp *= SC->TEMP;
@@ -285,9 +284,8 @@ static PetscScalar get_log10_equilibrium_constant( const ReactionParameters * re
 }
 
 /* Derivative of log10 equilibrium constant with respect to temperature */
-PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const ScalingConstants SC )
+PetscScalar get_dlog10KdT( const ReactionParameters reaction_parameters, PetscScalar temp, const ScalingConstants SC )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        dlog10KdT;
 
     temp *= SC->TEMP;
@@ -304,12 +302,11 @@ PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, P
 
 /* Compute modified equilibrium constant */
 /* This includes fO2, which helps numerically since the total quantity is better scaled */
-PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const ScalingConstants SC, const Atmosphere *A )
+PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters reaction_parameters, PetscScalar temp, const ScalingConstants SC, const Atmosphere *A )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        log10G, log10K; 
 
-    log10K = get_log10_equilibrium_constant( reaction_parameters_ptr, temp, SC );
+    log10K = get_log10_equilibrium_constant( reaction_parameters, temp, SC );
 
     log10G = log10K - reaction_parameters->fO2_stoichiometry * A->log10fO2;
 
@@ -318,12 +315,11 @@ PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters * 
 }
 
 /* Derivative of log10 modified equilibrium constant with respect to temperature */
-PetscScalar get_dlog10GdT( const  ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const ScalingConstants SC, const Atmosphere *A )
+PetscScalar get_dlog10GdT( const  ReactionParameters reaction_parameters, PetscScalar temp, const ScalingConstants SC, const Atmosphere *A )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        dlog10KdT, dlog10GdT;
 
-    dlog10KdT = get_dlog10KdT( reaction_parameters_ptr, A->tsurf, SC );
+    dlog10KdT = get_dlog10KdT( reaction_parameters, A->tsurf, SC );
 
     dlog10GdT = dlog10KdT - reaction_parameters->fO2_stoichiometry * A->dlog10fO2dT;
 
@@ -332,9 +328,8 @@ PetscScalar get_dlog10GdT( const  ReactionParameters * reaction_parameters_ptr, 
 }
 
 /* Exponent of extra factor of psurf to ensure reaction quotient is non-dimensional */
-static PetscScalar get_psurf_exponent( const ReactionParameters * reaction_parameters_ptr )
+static PetscScalar get_psurf_exponent( const ReactionParameters reaction_parameters )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt    j;
     PetscScalar expon = 0;
 
@@ -348,27 +343,26 @@ static PetscScalar get_psurf_exponent( const ReactionParameters * reaction_param
 
 /* Compute reaction quotient (products, numerator) */
 
-PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
+PetscScalar get_reaction_quotient_products( const ReactionParameters reaction_parameters, const Atmosphere *A )
 {
 
-    return get_reaction_quotient( reaction_parameters_ptr, A, 1 );
+    return get_reaction_quotient( reaction_parameters, A, 1 );
 
 }
 
-PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
+PetscScalar get_reaction_quotient_reactants( const ReactionParameters reaction_parameters, const Atmosphere *A )
 {
 
-    return get_reaction_quotient( reaction_parameters_ptr, A, -1 );
+    return get_reaction_quotient( reaction_parameters, A, -1 );
 
 }
 
-static PetscScalar get_reaction_quotient( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, PetscInt SIGN )
+static PetscScalar get_reaction_quotient( const ReactionParameters reaction_parameters, const Atmosphere *A, PetscInt SIGN )
 {
     /* returns numerator for SIGN=1 (products) and denominator for SIGN=-1 (reactants) */
     /* note: excludes fO2 since this is badly scaled.  fO2 is dealt with at the same time
        as the equilibrium constant */
 
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt           j;
     PetscScalar        Q = 1;
     PetscScalar        expon;
@@ -389,7 +383,7 @@ static PetscScalar get_reaction_quotient( const ReactionParameters * reaction_pa
        we must account for the extra factors of A->psurf to ensure that
        Q=Qp/Qr is non-dimensional */
     /* TODO: keep here for the time being, but could maybe move this elsewhere */
-    expon = get_psurf_exponent( reaction_parameters_ptr );
+    expon = get_psurf_exponent( reaction_parameters );
     if( SIGN * expon > 0.0 ){
         Q *= PetscPowScalar( A->psurf, SIGN * expon );
     }
@@ -398,26 +392,25 @@ static PetscScalar get_reaction_quotient( const ReactionParameters * reaction_pa
 
 }
 
-PetscScalar get_reaction_quotient_products_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters Ap )
+PetscScalar get_reaction_quotient_products_time_derivative( const ReactionParameters reaction_parameters, const Atmosphere *A, const AtmosphereParameters Ap )
 {
 
-    return get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, 1 );
+    return get_reaction_quotient_time_derivative( reaction_parameters, A, Ap, 1 );
 
 }
 
-PetscScalar get_reaction_quotient_reactants_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters Ap )
+PetscScalar get_reaction_quotient_reactants_time_derivative( const ReactionParameters reaction_parameters, const Atmosphere *A, const AtmosphereParameters Ap )
 {
 
-    return  get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, -1 );
+    return  get_reaction_quotient_time_derivative( reaction_parameters, A, Ap, -1 );
 
 }
 
 /* compute reaction quotient (products, numerator) derivative with respect to time t */
-static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters Ap, PetscInt SIGN )
+static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters reaction_parameters, const Atmosphere *A, const AtmosphereParameters Ap, PetscInt SIGN )
 {
     /* returns dQp/dt for SIGN=1 (products) and dQr/dt for SIGN=-1 (reactants) */
 
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt           j,k;
     PetscScalar        dQdt=0, dvdt;
     PetscScalar        expon, prefactor;
@@ -425,7 +418,7 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
 
     /* this is a bit ugly, because I decide whether to include the scaling of surface pressure in the
        numerator if the stoichiometry is positive (otherwise it is included in the denominator */
-    expon = get_psurf_exponent( reaction_parameters_ptr );
+    expon = get_psurf_exponent( reaction_parameters );
     if( SIGN * expon > 0.0 ){
         INCLUDE_PSURF = PETSC_TRUE;
     }
