@@ -867,8 +867,8 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-28s %-2s %-15.6g %-6s\n"             ,"S     (surface entropy)"     ,"",(double)SC->ENTROPY,"J/kg/K"      );CHKERRQ(ierr);
   PetscScalar const PRESSUREBAR = SC->PRESSURE * 1.0E-5; // bar usual units for atmosphere
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-28s %-2s %-15.6g %-6s (%.6g bar)\n"  ,"Pv    (atmospheric pressure)","",(double)SC->PRESSURE,"Pa",(double)PRESSUREBAR);CHKERRQ(ierr);
-  /* TODO: is it necessary to include the 4 * pi scaling? */
-  PetscScalar const VOLMASS = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS; // physical volatile reservoir mass scaling
+  /* TODO: is it necessary to include the 4 * pi scaling for the physical reservoir scaling? */
+  PetscScalar const VOLMASS = SC->VOLATILE * SC->MASS; // volatile reservoir mass scaling
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-28s %-2s %-15.6g %-6s\n"             ,"Mv    (volatile mass)"       ,"",(double)VOLMASS,"kg"              );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"                                                                                                    );CHKERRQ(ierr);
