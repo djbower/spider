@@ -265,11 +265,15 @@ typedef data_AtmosphereParameters* AtmosphereParameters;
 
 typedef struct {
     char        prefix[128];  /* Maximum prefix length */
-    PetscScalar t0;
-    PetscScalar abundance; // isotopic abundance at t0
+    PetscScalar t0; // time for which concentration is known
+    /* abundance and concentration are simply multiplied in the code.  This is
+       because it is sometimes more convenient to give the concentration in
+       ppmw of Uranium and then express the relative abundance of U235 and
+       U238 */
+    PetscScalar abundance; // radionuclide abundance at t0
     PetscScalar concentration; // elemental concentration at t0
-    PetscScalar heat_production;
-    PetscScalar half_life;
+    PetscScalar heat_production; // W/kg
+    PetscScalar half_life; // years
 } data_RadionuclideParameters;
 typedef data_RadionuclideParameters* RadionuclideParameters;
 
