@@ -8,29 +8,31 @@ static PetscErrorCode Interp1dCreateAndSet( const char *, Interp1d *, PetscScala
 static PetscErrorCode Interp1dDestroy( Interp1d * );
 static PetscErrorCode Interp2dCreateAndSet( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode Interp2dDestroy( Interp2d * );
-static PetscErrorCode LookupSolidCreate( EosParameters, const ScalingConstants );
-static PetscErrorCode LookupMeltCreate( EosParameters, const ScalingConstants );
-static PetscErrorCode LookupLiquidusCreate( EosParameters, const ScalingConstants );
-static PetscErrorCode LookupSolidusCreate( EosParameters, const ScalingConstants );
+static PetscErrorCode LookupSolidCreate( Lookup, const ScalingConstants );
+static PetscErrorCode LookupMeltCreate( Lookup, const ScalingConstants );
+static PetscErrorCode LookupLiquidusCreate( Lookup, const ScalingConstants );
+static PetscErrorCode LookupSolidusCreate( Lookup, const ScalingConstants );
 
 /* rtpress material properties (Wolf and Bower, 2018) */
-static PetscErrorCode set_rtpress_parameters( EosParameters );
-static PetscScalar get_rtpress_pressure( PetscScalar, PetscScalar, EosParameters const );
-static PetscScalar get_rtpress_entropy( PetscScalar, PetscScalar, EosParameters const );
+static PetscErrorCode RTpressParametersCreate( RTpressParameters * );
+static PetscErrorCode RTpressParametersCreateAndSet( RTpressParameters *, const FundamentalConstants );
+static PetscErrorCode RTpressParametersDestroy( RTpressParameters * );
+static PetscScalar get_rtpress_pressure( PetscScalar, PetscScalar, const RTpressParameters );
+static PetscScalar get_rtpress_entropy( PetscScalar, PetscScalar,  const RTpressParameters );
 static PetscErrorCode set_rtpress_struct_SI( PetscScalar, PetscScalar, Ctx * );
 static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx * );
-static PetscErrorCode set_rtpress_density( EosParameters const, EosEval * );
-static PetscErrorCode set_rtpress_thermal_expansion( EosParameters const, EosEval * );
-static PetscErrorCode set_rtpress_heat_capacity_constant_volume( EosParameters const, EosEval * );
-static PetscErrorCode set_rtpress_heat_capacity_constant_pressure( EosParameters const, EosEval * );
-static PetscErrorCode set_rtpress_isentropic_gradient( EosParameters const, EosEval * );
+static PetscErrorCode set_rtpress_density( RTpressParameters const, EosEval * );
+static PetscErrorCode set_rtpress_thermal_expansion( RTpressParameters const, EosEval * );
+static PetscErrorCode set_rtpress_heat_capacity_constant_volume( RTpressParameters const, EosEval * );
+static PetscErrorCode set_rtpress_heat_capacity_constant_pressure( RTpressParameters const, EosEval * );
+static PetscErrorCode set_rtpress_isentropic_gradient( RTpressParameters const, EosEval * );
 /* solve for volume and temperature from pressure and entropy */
 static PetscErrorCode objective_function_rtpress_volume_temperature( SNES, Vec, Vec, void * );
 static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx * );
 
 /* helper functions */
-static PetscScalar per_atom_to_specific( PetscScalar, EosParameters const );
-static PetscScalar specific_to_per_atom( PetscScalar, EosParameters const );
+static PetscScalar per_atom_to_specific( PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar specific_to_per_atom( PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar joule_to_eV( PetscScalar );
 static PetscScalar eV_to_joule( PetscScalar );
 
@@ -50,7 +52,9 @@ PetscErrorCode set_eos( Parameters P )
     switch( P->SOLID_EOS ){
         case 1:
             /* lookup */
-            ierr = LookupSolidCreate( eosp2, SC );CHKERRQ(ierr);
+            eosp2->LOOKUP_FLAG = PETSC_TRUE;
+            eosp2->RTPRESS_FLAG = PETSC_FALSE;
+            ierr = LookupSolidCreate( eosp2->lookup, SC );CHKERRQ(ierr);
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLID_EOS value %d provided",P->SOLID_EOS);
@@ -61,11 +65,15 @@ PetscErrorCode set_eos( Parameters P )
     switch( P->MELT_EOS ){
         case 1:
             /* lookup */
-            ierr = LookupMeltCreate( eosp1, SC );CHKERRQ(ierr);
+            eosp1->LOOKUP_FLAG = PETSC_TRUE;
+            eosp1->RTPRESS_FLAG = PETSC_FALSE;
+            ierr = LookupMeltCreate( eosp1->lookup, SC );CHKERRQ(ierr);
             break;
         case 2:
             /* analytical RTpress */
-            ierr = set_rtpress_parameters( eosp1 );CHKERRQ(ierr);
+            eosp1->LOOKUP_FLAG = PETSC_FALSE;
+            eosp1->RTPRESS_FLAG = PETSC_TRUE;
+            ierr = RTpressParametersCreateAndSet( &eosp1->rtpress_parameters, P->fundamental_constants );CHKERRQ(ierr);
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported MELT_EOS value %d provided",P->MELT_EOS);
@@ -94,10 +102,10 @@ PetscErrorCode set_eos( Parameters P )
        a case structure as above */
     /* TODO: currently, melting curves are stored in both the solid and the
        melt Eos struct */
-    ierr = LookupLiquidusCreate( P->eos1_parameters, SC );CHKERRQ(ierr);
-    ierr = LookupLiquidusCreate( P->eos2_parameters, SC );CHKERRQ(ierr);
-    ierr = LookupSolidusCreate( P->eos1_parameters, SC );CHKERRQ(ierr);
-    ierr = LookupSolidusCreate( P->eos2_parameters, SC );CHKERRQ(ierr);
+    ierr = LookupLiquidusCreate( eosp1->lookup, SC );CHKERRQ(ierr);
+    ierr = LookupLiquidusCreate( eosp2->lookup, SC );CHKERRQ(ierr);
+    ierr = LookupSolidusCreate( eosp1->lookup, SC );CHKERRQ(ierr);
+    ierr = LookupSolidusCreate( eosp2->lookup, SC );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -561,13 +569,11 @@ static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 #undef SPIDER_ROOT_DIR_STR
 
 
-static PetscErrorCode LookupMeltCreate( EosParameters eosp, ScalingConstants const SC )
+static PetscErrorCode LookupMeltCreate( Lookup lookup, ScalingConstants const SC )
 {
   PetscErrorCode  ierr;
 
   PetscFunctionBeginUser;
-
-  eosp->LOOKUP_FLAG = PETSC_TRUE;
 
   /* Based on input options, determine which files to load.
      Options ending with _rel_to_src indicate a path relative
@@ -576,10 +582,10 @@ static PetscErrorCode LookupMeltCreate( EosParameters eosp, ScalingConstants con
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->alpha_filename,"lookup_data/RTmelt/thermal_exp_melt.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename_rel_to_src",eosp->lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->alpha_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename",eosp->lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->alpha_filename,"lookup_data/RTmelt/thermal_exp_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename_rel_to_src",lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->alpha_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename",lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -alphaMel_filename_rel_to_src ignored because -alphaMel_filename provided\n");CHKERRQ(ierr);
     }
@@ -587,10 +593,10 @@ static PetscErrorCode LookupMeltCreate( EosParameters eosp, ScalingConstants con
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->cp_filename,"lookup_data/RTmelt/heat_capacity_melt.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-cpMel_filename_rel_to_src",eosp->lookup->cp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->cp_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-cpMel_filename",eosp->lookup->cp_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->cp_filename,"lookup_data/RTmelt/heat_capacity_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpMel_filename_rel_to_src",lookup->cp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->cp_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpMel_filename",lookup->cp_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -cpMel_filename_rel_to_src ignored because -cpMel_filename provided\n");CHKERRQ(ierr);
     }
@@ -598,10 +604,10 @@ static PetscErrorCode LookupMeltCreate( EosParameters eosp, ScalingConstants con
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->dTdPs_filename,"lookup_data/RTmelt/adiabat_temp_grad_melt.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsMel_filename_rel_to_src",eosp->lookup->dTdPs_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->dTdPs_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsMel_filename",eosp->lookup->dTdPs_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->dTdPs_filename,"lookup_data/RTmelt/adiabat_temp_grad_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsMel_filename_rel_to_src",lookup->dTdPs_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->dTdPs_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsMel_filename",lookup->dTdPs_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -dtdpsMel_filename_rel_to_src ignored because -dtdpsMel_filename provided\n");CHKERRQ(ierr);
     }
@@ -609,10 +615,10 @@ static PetscErrorCode LookupMeltCreate( EosParameters eosp, ScalingConstants con
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->rho_filename,"lookup_data/RTmelt/density_melt.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-rhoMel_filename_rel_to_src",eosp->lookup->rho_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->rho_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-rhoMel_filename",eosp->lookup->rho_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->rho_filename,"lookup_data/RTmelt/density_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoMel_filename_rel_to_src",lookup->rho_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->rho_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoMel_filename",lookup->rho_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -rhoMel_filename_rel_to_src ignored because -rhoMel_filename provided\n");CHKERRQ(ierr);
     }
@@ -620,10 +626,10 @@ static PetscErrorCode LookupMeltCreate( EosParameters eosp, ScalingConstants con
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->temp_filename,"lookup_data/RTmelt/temperature_melt.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-tempMel_filename_rel_to_src",eosp->lookup->temp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->temp_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-tempMel_filename",eosp->lookup->temp_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->temp_filename,"lookup_data/RTmelt/temperature_melt.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempMel_filename_rel_to_src",lookup->temp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->temp_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempMel_filename",lookup->temp_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -tempMel_filename_rel_to_src ignored because -tempMel_filename provided\n");CHKERRQ(ierr);
     }
@@ -631,23 +637,21 @@ static PetscErrorCode LookupMeltCreate( EosParameters eosp, ScalingConstants con
 
   /* melt lookups */
   /* 2d */
-  ierr = Interp2dCreateAndSet( eosp->lookup->alpha_filename, &eosp->lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet( eosp->lookup->cp_filename, &eosp->lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet( eosp->lookup->dTdPs_filename, &eosp->lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet( eosp->lookup->rho_filename, &eosp->lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet( eosp->lookup->temp_filename, &eosp->lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( lookup->alpha_filename, &lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( lookup->cp_filename, &lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( lookup->dTdPs_filename, &lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( lookup->rho_filename, &lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( lookup->temp_filename, &lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode LookupSolidCreate( EosParameters eosp, const ScalingConstants SC )
+static PetscErrorCode LookupSolidCreate( Lookup lookup, const ScalingConstants SC )
 {
   PetscErrorCode  ierr;
 
   PetscFunctionBeginUser;
-
-  eosp->LOOKUP_FLAG = PETSC_TRUE;
 
   /* Based on input options, determine which files to load.
      Options ending with _rel_to_src indicate a path relative
@@ -656,10 +660,10 @@ static PetscErrorCode LookupSolidCreate( EosParameters eosp, const ScalingConsta
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->alpha_filename,"lookup_data/RTmelt/thermal_exp_solid.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-alphaSol_filename_rel_to_src",eosp->lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->alpha_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-alphaSol_filename",eosp->lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->alpha_filename,"lookup_data/RTmelt/thermal_exp_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaSol_filename_rel_to_src",lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->alpha_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-alphaSol_filename",lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -alphaSol_filename_rel_to_src ignored because -alphaSol_filename provided\n");CHKERRQ(ierr);
     }
@@ -667,10 +671,10 @@ static PetscErrorCode LookupSolidCreate( EosParameters eosp, const ScalingConsta
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->cp_filename,"lookup_data/RTmelt/heat_capacity_solid.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-cpSol_filename_rel_to_src",eosp->lookup->cp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->cp_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-cpSol_filename",eosp->lookup->cp_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->cp_filename,"lookup_data/RTmelt/heat_capacity_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpSol_filename_rel_to_src",lookup->cp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->cp_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-cpSol_filename",lookup->cp_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -cpSol_filename_rel_to_src ignored because -cpSol_filename provided\n");CHKERRQ(ierr);
     }
@@ -678,10 +682,10 @@ static PetscErrorCode LookupSolidCreate( EosParameters eosp, const ScalingConsta
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->dTdPs_filename,"lookup_data/RTmelt/adiabat_temp_grad_solid.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsSol_filename_rel_to_src",eosp->lookup->dTdPs_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->dTdPs_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsSol_filename",eosp->lookup->dTdPs_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->dTdPs_filename,"lookup_data/RTmelt/adiabat_temp_grad_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsSol_filename_rel_to_src",lookup->dTdPs_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->dTdPs_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-dtdpsSol_filename",lookup->dTdPs_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -dtdpsSol_filename_rel_to_src ignored because -dtdpsSol_filename provided\n");CHKERRQ(ierr);
     }
@@ -689,10 +693,10 @@ static PetscErrorCode LookupSolidCreate( EosParameters eosp, const ScalingConsta
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->rho_filename,"lookup_data/RTmelt/density_solid.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-rhoSol_filename_rel_to_src",eosp->lookup->rho_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->rho_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-rhoSol_filename",eosp->lookup->rho_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->rho_filename,"lookup_data/RTmelt/density_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoSol_filename_rel_to_src",lookup->rho_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->rho_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-rhoSol_filename",lookup->rho_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -rhoSol_filename_rel_to_src ignored because -rhoSol_filename provided\n");CHKERRQ(ierr);
     }
@@ -700,26 +704,26 @@ static PetscErrorCode LookupSolidCreate( EosParameters eosp, const ScalingConsta
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->temp_filename,"lookup_data/RTmelt/temperature_solid.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-tempSol_filename_rel_to_src",eosp->lookup->temp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->temp_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-tempSol_filename",eosp->lookup->temp_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->temp_filename,"lookup_data/RTmelt/temperature_solid.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempSol_filename_rel_to_src",lookup->temp_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->temp_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-tempSol_filename",lookup->temp_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -tempSol_filename_rel_to_src ignored because -tempSol_filename provided\n");CHKERRQ(ierr);
     }
   }
 
-  ierr = Interp2dCreateAndSet( eosp->lookup->alpha_filename, &eosp->lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet( eosp->lookup->cp_filename, &eosp->lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet( eosp->lookup->dTdPs_filename, &eosp->lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet( eosp->lookup->rho_filename, &eosp->lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet( eosp->lookup->temp_filename, &eosp->lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( lookup->alpha_filename, &lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( lookup->cp_filename, &lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( lookup->dTdPs_filename, &lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( lookup->rho_filename, &lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
+  ierr = Interp2dCreateAndSet( lookup->temp_filename, &lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode LookupLiquidusCreate( EosParameters eosp, ScalingConstants const SC )
+static PetscErrorCode LookupLiquidusCreate( Lookup lookup, ScalingConstants const SC )
 {
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
 
@@ -734,22 +738,22 @@ static PetscErrorCode LookupLiquidusCreate( EosParameters eosp, ScalingConstants
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->liquidus_filename,"lookup_data/RTmelt/liquidus_andrault2011.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename_rel_to_src",eosp->lookup->liquidus_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->liquidus_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename",eosp->lookup->liquidus_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->liquidus_filename,"lookup_data/RTmelt/liquidus_andrault2011.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename_rel_to_src",lookup->liquidus_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->liquidus_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-liquidus_filename",lookup->liquidus_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -liquidus_filename_rel_to_src ignored because -liquidus_filename provided\n");CHKERRQ(ierr);
     }      
   }
 
-  ierr = Interp1dCreateAndSet( eosp->lookup->liquidus_filename, &eosp->lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( lookup->liquidus_filename, &lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode LookupSolidusCreate( EosParameters eosp, ScalingConstants const SC )
+static PetscErrorCode LookupSolidusCreate( Lookup lookup, ScalingConstants const SC )
 {
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
 
@@ -764,16 +768,16 @@ static PetscErrorCode LookupSolidusCreate( EosParameters eosp, ScalingConstants 
 
   {
     PetscBool set_rel_to_src,set;
-    ierr = PetscStrcpy(eosp->lookup->solidus_filename,"lookup_data/RTmelt/solidus_andrault2011.dat");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename_rel_to_src",eosp->lookup->solidus_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-    ierr = MakeRelativeToSourcePathAbsolute(eosp->lookup->solidus_filename);CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename",eosp->lookup->solidus_filename,PETSC_MAX_PATH_LEN,&set);
+    ierr = PetscStrcpy(lookup->solidus_filename,"lookup_data/RTmelt/solidus_andrault2011.dat");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename_rel_to_src",lookup->solidus_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup->solidus_filename);CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-solidus_filename",lookup->solidus_filename,PETSC_MAX_PATH_LEN,&set);
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: -solidus_filename_rel_to_src ignored because -solidus_filename provided\n");CHKERRQ(ierr);
     }
   }
 
-  ierr = Interp1dCreateAndSet( eosp->lookup->solidus_filename, &eosp->lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( lookup->solidus_filename, &lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
@@ -785,17 +789,24 @@ static PetscErrorCode LookupSolidusCreate( EosParameters eosp, ScalingConstants 
  ******************************************************************************
 */
 
-PetscErrorCode set_rtpress_parameters( EosParameters rtp )
+PetscErrorCode RTpressParametersCreateAndSet( RTpressParameters* rtpress_parameters_ptr, const FundamentalConstants FC )
 {
     /* EOS parameters for rtpress, taken from jupyter notebook and Wolf and Bower (2018).
-       Simplest to keep these in dimensional form and scale the returned values as a
-       last step */
+       TODO: Simplest to keep these in dimensional form and scale the returned values as a
+       last step? Ideally, would scale everything here instead, as with parameters.c */
+
+    PetscErrorCode    ierr;
+    RTpressParameters rtp;
 
     PetscFunctionBeginUser;
+
+    ierr = RTpressParametersCreate( rtpress_parameters_ptr );CHKERRQ(ierr);
+    rtp = *rtpress_parameters_ptr;
 
     /* for unit conversion */
     rtp->PV_UNIT = 160.21766208; /* GPa*Ang^3/eV */
     /* first value is KBOLTZ in units of eV/K */
+    /* TODO: use BOLTZMANN from FundamentalConstants */
     rtp->KBOLTZ = 8.617333262145e-5 * rtp->PV_UNIT; /* GPa*Ang^3/K, this is energy / temperature */
     /* TODO: check with ASW: is 3000=T0 and 0.6=m? */
     /* 0.6 could instead be a reference compression? (V/V0) */
@@ -821,33 +832,31 @@ PetscErrorCode set_rtpress_parameters( EosParameters rtp )
     /* So (average) molar mass of an atom is 20 g/mol/atom */
     rtp->mavg = 20.0E-3; /* kg/mol/atom */
 
-    /* TODO: Avodagro's constant also appears in Ap struct
-       avoid duplication? */
-    rtp->Avogadro = 6.02214076E23; // 1/mol
+    rtp->AVOGADRO_ptr = &FC->AVOGADRO;
 
     PetscFunctionReturn(0);
 
 }
 
-static PetscScalar per_atom_to_specific( PetscScalar per_atom_value, EosParameters const rtp )
+static PetscScalar per_atom_to_specific( PetscScalar per_atom_value, PetscScalar mavg, PetscScalar Avogadro )
 {
     /* convert from per atom to specific */
 
     PetscScalar specific_value;
 
-    specific_value = per_atom_value * rtp->Avogadro / rtp->mavg;
+    specific_value = per_atom_value * Avogadro / mavg;
 
     return specific_value;
 
 }
 
-static PetscScalar specific_to_per_atom( PetscScalar specific_value, EosParameters const rtp )
+static PetscScalar specific_to_per_atom( PetscScalar specific_value, PetscScalar mavg, PetscScalar Avogadro )
 {
     /* convert from specific to per atom */
 
     PetscScalar per_atom_value;
 
-    per_atom_value = specific_value * rtp->mavg / rtp->Avogadro;
+    per_atom_value = specific_value * mavg / Avogadro;
 
     return per_atom_value;
 
@@ -878,7 +887,7 @@ PetscScalar get_rtpress_pressure_test( Ctx *E )
        FIXME: need to truncate negative values?  Perhaps not for
        smoothness of solver during inversion? */
 
-    EosParameters rtp = E->parameters->eos1_parameters;
+    RTpressParameters rtp = E->parameters->eos1_parameters->rtpress_parameters;
     PetscScalar   P, T, V, volfrac;
 
     volfrac = 0.6;
@@ -917,7 +926,7 @@ PetscScalar get_rtpress_pressure_test( Ctx *E )
 }
 
 
-static PetscScalar get_rtpress_pressure( PetscScalar V, PetscScalar T, EosParameters const rtp )
+static PetscScalar get_rtpress_pressure( PetscScalar V, PetscScalar T, RTpressParameters const rtp )
 {
     /* pressure = function( volume, temperature ) */
 
@@ -953,7 +962,7 @@ PetscScalar get_rtpress_entropy_test( Ctx *E )
 
     /* seems to confirm S is correct */
 
-    EosParameters rtp = E->parameters->eos1_parameters;
+    RTpressParameters rtp = E->parameters->eos1_parameters->rtpress_parameters;
     PetscScalar   S, T, V, volfrac;
 
     volfrac = 0.6;
@@ -996,7 +1005,7 @@ PetscScalar get_rtpress_entropy_test( Ctx *E )
 
 }
 
-static PetscScalar get_rtpress_entropy( PetscScalar V, PetscScalar T, EosParameters const rtp )
+static PetscScalar get_rtpress_entropy( PetscScalar V, PetscScalar T, RTpressParameters const rtp )
 {
     /* entropy = function( volume, temperature ) */
 
@@ -1019,7 +1028,7 @@ static PetscScalar get_rtpress_entropy( PetscScalar V, PetscScalar T, EosParamet
 
 }
 
-static PetscErrorCode set_rtpress_density( EosParameters const rtp, EosEval *eos_eval )
+static PetscErrorCode set_rtpress_density( RTpressParameters const rtp, EosEval *eos_eval )
 {
 
     /* returns density in SI units, kg/m^3 */
@@ -1033,14 +1042,14 @@ static PetscErrorCode set_rtpress_density( EosParameters const rtp, EosEval *eos
 
     /* convert to SI */
     eos_eval->rho *= PetscPowScalar( 10.0, 30.0 ); /* Ang^3/m^3 */
-    eos_eval->rho /= rtp->Avogadro;
+    eos_eval->rho /= *rtp->AVOGADRO_ptr;
 
     PetscFunctionReturn(0);
 
 }
 
 
-static PetscErrorCode set_rtpress_thermal_expansion( EosParameters const rtp, EosEval *eos_eval )
+static PetscErrorCode set_rtpress_thermal_expansion( RTpressParameters const rtp, EosEval *eos_eval )
 {
     /* thermal expansion = function( volume, temperature ) */
     /* returns thermal expansion coefficient in SI units, 1/K */
@@ -1069,7 +1078,7 @@ static PetscErrorCode set_rtpress_thermal_expansion( EosParameters const rtp, Eo
 
 }
 
-static PetscErrorCode set_rtpress_heat_capacity_constant_volume( EosParameters const rtp, EosEval *eos_eval )
+static PetscErrorCode set_rtpress_heat_capacity_constant_volume( RTpressParameters const rtp, EosEval *eos_eval )
 {
     /* thermal heat capacity at constant volume = function( volume, temperature ) */
 
@@ -1091,14 +1100,14 @@ static PetscErrorCode set_rtpress_heat_capacity_constant_volume( EosParameters c
 
     /* FIXME: possibly wrong */
     /* convert to SI */
-    eos_eval->Cv = per_atom_to_specific( eos_eval->Cv, rtp );
+    eos_eval->Cv = per_atom_to_specific( eos_eval->Cv, rtp->mavg, *rtp->AVOGADRO_ptr );
     eos_eval->Cv = eV_to_joule( eos_eval->Cv );
 
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_rtpress_heat_capacity_constant_pressure( EosParameters const rtp, EosEval *eos_eval )
+static PetscErrorCode set_rtpress_heat_capacity_constant_pressure( RTpressParameters const rtp, EosEval *eos_eval )
 {
     /* thermal heat capacity at constant pressure = function( volume, temperature ) */
 
@@ -1124,14 +1133,14 @@ static PetscErrorCode set_rtpress_heat_capacity_constant_pressure( EosParameters
 
     /* FIXME: possibly wrong */
     /* convert to SI */
-    eos_eval->Cp = per_atom_to_specific( eos_eval->Cp, rtp );
+    eos_eval->Cp = per_atom_to_specific( eos_eval->Cp, rtp->mavg, *rtp->AVOGADRO_ptr );
     eos_eval->Cp = eV_to_joule( eos_eval->Cp );
 
     PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode set_rtpress_isentropic_gradient( EosParameters const rtp, EosEval *eos_eval )
+static PetscErrorCode set_rtpress_isentropic_gradient( RTpressParameters const rtp, EosEval *eos_eval )
 {
 
     PetscScalar const K0 = rtp->K0;
@@ -1165,7 +1174,7 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx *E )
     Vec            x,r;
     PetscScalar    *xx;
     PetscInt       i;
-    EosParameters  rtp = E->parameters->eos1_parameters;
+    RTpressParameters  rtp = E->parameters->eos1_parameters->rtpress_parameters;
     EosEval        *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
@@ -1250,7 +1259,7 @@ static PetscErrorCode objective_function_rtpress_volume_temperature( SNES snes, 
     PetscScalar                *ff;
     PetscScalar                V, T, P, S;
     Ctx                        *E = (Ctx*) ptr;
-    EosParameters              rtp = E->parameters->eos1_parameters;
+    RTpressParameters          rtp = E->parameters->eos1_parameters->rtpress_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
     PetscScalar Ptarget = eos_eval->P;
     PetscScalar Starget = eos_eval->S;
@@ -1284,7 +1293,7 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
        eos_eval struct with the material properties */
 
     ScalingConstants const     SC = E->parameters->scaling_constants;
-    EosParameters              rtp = E->parameters->eos1_parameters;
+    RTpressParameters          rtp = E->parameters->eos1_parameters->rtpress_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
@@ -1298,7 +1307,7 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
     /* rtpress wants eV/atom/K FIXME: K correct? */
     eos_eval->S = S;
     eos_eval->S *= SC->ENTROPY;
-    eos_eval->S = specific_to_per_atom( eos_eval->S, rtp ); 
+    eos_eval->S = specific_to_per_atom( eos_eval->S, rtp->mavg, *rtp->AVOGADRO_ptr ); 
     eos_eval->S = joule_to_eV( eos_eval->S );
 
     /* ensure solver is working */
@@ -1399,6 +1408,29 @@ static PetscErrorCode LookupDestroy( Lookup* lookup_ptr )
 
 }
 
+static PetscErrorCode RTpressParametersCreate( RTpressParameters* rtpress_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(1,rtpress_parameters_ptr);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode RTpressParametersDestroy( RTpressParameters* rtpress_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscFree(*rtpress_parameters_ptr);CHKERRQ(ierr);
+    *rtpress_parameters_ptr = NULL;
+
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
 {
     PetscErrorCode ierr;
@@ -1435,6 +1467,10 @@ PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
     /* melting curves are (currently) always read in and stored as a lookup */
     ierr = Interp1dDestroy( &lookup->liquidus ); CHKERRQ(ierr);
     ierr = Interp1dDestroy( &lookup->solidus ); CHKERRQ(ierr);
+
+    if( eos_parameters->RTPRESS_FLAG ){
+        ierr = RTpressParametersDestroy( &eos_parameters->rtpress_parameters );CHKERRQ(ierr);
+    }
 
     if( eos_parameters->LOOKUP_FLAG ){
         ierr = Interp2dDestroy( &lookup->alpha ); CHKERRQ(ierr);

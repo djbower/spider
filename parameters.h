@@ -115,10 +115,8 @@ typedef struct {
 } data_Lookup;
 typedef data_Lookup* Lookup;
 
-/* EOS */
+/* RTpress (Wolf and Bower, 2018) */
 typedef struct {
-    /* below are specific to RTpress (Wolf and Bower, 2018), but other
-       Eos forms can easily be included */
     PetscScalar V0;
     PetscScalar T0;
     PetscScalar S0;
@@ -134,15 +132,23 @@ typedef struct {
     PetscScalar b3;
     PetscScalar b4;
     PetscScalar mavg;
-    PetscScalar Avogadro;
     PetscScalar PV_UNIT;
     PetscScalar KBOLTZ;
     PetscScalar bscale;
+    PetscScalar const * AVOGADRO_ptr;
+} data_RTpressParameters;
+typedef data_RTpressParameters* RTpressParameters;
+
+/* EOS */
+typedef struct {
+    /* Eos choices */
+    PetscBool LOOKUP_FLAG; /* flag if lookup data included */
+    Lookup lookup;
+    PetscBool RTPRESS_FLAG; /* flag if analytical rtpress included */
+    RTpressParameters rtpress_parameters;
     /* include thermal and transport properties */
     PetscScalar cond; /* thermal conductivity, W/m/K */
     PetscScalar log10visc; /* log base 10 of viscosity */
-    PetscBool LOOKUP_FLAG; /* flag if lookup data included */
-    Lookup lookup;
 } data_EosParameters;
 typedef data_EosParameters* EosParameters;
 
