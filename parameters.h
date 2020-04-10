@@ -373,7 +373,7 @@ typedef struct {
     PetscInt    n_radionuclides;
     RadionuclideParameters radionuclide_parameters[SPIDER_MAX_RADIONUCLIDES];
 
-    // Additional Atmosphere Parameters
+    // Atmosphere Parameters
     AtmosphereParameters atmosphere_parameters;
 
     // Scaling factors / dimensional constants

@@ -16,6 +16,7 @@ Custom PETSc command line options should only ever be parsed here.
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
 static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
+static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, ScalingConstants );
 
 static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
@@ -232,11 +233,9 @@ but they are all stored in non-dimensional (scaled) form.
 
 PetscErrorCode ParametersSetFromOptions(Parameters P)
 {
-  PetscErrorCode       ierr;
-  AtmosphereParameters Ap = P->atmosphere_parameters;
-  /* convenient shorthand to user below */
+  PetscErrorCode         ierr;
   ScalingConstants const SC = P->scaling_constants;
-  PetscInt             v; // FIXME: required?
+  PetscInt               i; // FIXME: required?
   // FIXME
   //CompositionParameters      *Compp = &P->composition_parameters;
 
@@ -355,7 +354,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     ierr = set_start_time_from_file( P, P->ic_interior_filename ); CHKERRQ(ierr);
   }
   else{
-    PetscScalar   t0 = 0.0;
+    PetscScalar t0 = 0.0;
     PetscBool t0_set = PETSC_FALSE;
     ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&t0,&t0_set);CHKERRQ(ierr);
     if( t0_set ) P->t0 = t0;
@@ -545,128 +544,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
       break;
   }
 
-  /* initial condition for atmosphere */
-  Ap->IC_ATMOSPHERE = 1;
-  ierr = PetscOptionsGetInt(NULL,NULL,"-IC_ATMOSPHERE",&Ap->IC_ATMOSPHERE,NULL);CHKERRQ(ierr);
-
-  ierr = PetscStrcpy(Ap->ic_atmosphere_filename,"restart.json"); CHKERRQ(ierr);
-  if ( (Ap->IC_ATMOSPHERE==2) || (Ap->IC_ATMOSPHERE==3) ){
-    ierr = PetscOptionsGetString(NULL,NULL,"-ic_atmosphere_filename",Ap->ic_atmosphere_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
-  }
-
-  /* (top) surface boundary condition */
-  Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
-  {
-    PetscInt  SURFACE_BC = 0;
-    PetscBool SURFACE_BCset = PETSC_FALSE;
-    ierr = PetscOptionsGetInt(NULL,NULL,"-SURFACE_BC",&SURFACE_BC,&SURFACE_BCset);CHKERRQ(ierr);
-    if( SURFACE_BCset ) Ap->SURFACE_BC = SURFACE_BC;
-  }
-  Ap->surface_bc_value = 0.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-surface_bc_value",&Ap->surface_bc_value,NULL);CHKERRQ(ierr);
-  switch( Ap->SURFACE_BC ){
-    case 1:
-      /* SURFACE_BC = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body
-         do nothing */
-      break;
-    case 2:
-      /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ZAHNLE: steam atmosphere
-         do nothing */
-      break;
-    case 3:
-      /* SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
-           with CO2 and H2O volatile using plane-parallel radiative equilibrium model
-           of Abe and Matsui (1985)
-         do nothing */
-      break;
-    case 4:
-      // MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed)
-      Ap->surface_bc_value /= SC->FLUX;
-      break;
-    case 5:
-      /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy
-         do nothing */
-      break;
-    default:
-      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
-      break;
-  }
-
-  Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
-
-  /* emissivity is constant for SURFACE_BC != MO_ATMOSPHERE_TYPE_VOLATILES */
-  Ap->emissivity0 = 1.0; // non-dimensional
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-emissivity0",&Ap->emissivity0,NULL);CHKERRQ(ierr);
-
-  Ap->THERMAL_ESCAPE = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-THERMAL_ESCAPE",&Ap->THERMAL_ESCAPE,NULL);CHKERRQ(ierr);
-
-  Ap->CONSTANT_ESCAPE = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-CONSTANT_ESCAPE",&Ap->CONSTANT_ESCAPE,NULL);CHKERRQ(ierr);
-
-// REMOVE
-#if 1
-  /* Gravitational constant (m^3/kg/s^2) */
-  Ap->bigG = 6.67408E-11;
-  Ap->bigG *= SC->DENSITY;
-  Ap->bigG *= PetscPowScalar( SC->TIME, 2.0 );
-#endif
-
-#if 1
-  /* Stefan-Boltzmann constant (W/m^2K^4) */
-  Ap->sigma = 5.670367e-08;
-  Ap->sigma /= SC->SIGMA;
-#endif
-
-  /* equilibrium temperature of the planet (K) */
-  Ap->teqm = 273.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-teqm",&Ap->teqm,NULL);CHKERRQ(ierr);
-  Ap->teqm /= SC->TEMP;
-
-  Ap->tsurf_poststep_change = -1; // (K) (negative value is OFF)
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-tsurf_poststep_change",&Ap->tsurf_poststep_change,NULL);CHKERRQ(ierr);
-  Ap->tsurf_poststep_change /= SC->TEMP;
-
-  /* for radiative boundary condition at the top surface
-     dT = param_utbl_const * [Surface temperature]**3 */
-  Ap->PARAM_UTBL = PETSC_TRUE;
-  Ap->param_utbl_const = 1.0e-7;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-PARAM_UTBL",&Ap->PARAM_UTBL,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-param_utbl_const",&Ap->param_utbl_const,NULL);CHKERRQ(ierr);
-  if (Ap->PARAM_UTBL){
-      Ap->param_utbl_const *= PetscSqr(SC->TEMP);
-  } else {
-      Ap->param_utbl_const = 0.0;
-  }
-
-  /* below here are only used for SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES */
-
-  /* atmosphere reference pressure (Pa) */
-  Ap->P0 = 101325.0; // Pa (= 1 atm)
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-P0",&Ap->P0,NULL);CHKERRQ(ierr);
-  Ap->P0 /= SC->PRESSURE;
-
-  /* TODO: check with PS as to whether this is the best approach */
-  Ap->gravity_ptr = &P->gravity;
-  Ap->radius_ptr = &P->radius;
-  Ap->VOLATILE_ptr = &SC->VOLATILE;
-
-// REMOVE
-#if 1
-  /* FIXME the gas constant above is scaled differently for the viscosity laws added by Rob Spaargaren
-     this one below is for computing the 1-D atmosphere structure. Should merge together and make consistent */
-  Ap->Rgas = 8.3144598; // gas constant (J/K/mol)
-  Ap->Rgas *= SC->TEMP / SC->ENERGY;
-#endif
-
-// REMOVE
-#if 1
-  /* Boltzmann constant (J/K) */
-  Ap->Avogadro = 6.02214076E23; // 1/mol
-  Ap->kB = Ap->Rgas / Ap->Avogadro;
-#endif
-
   /* Look for command-line option to determine number of radionuclides
      and options prefix for each e.g. -radionuclides_names al26, k40 */
   P->n_radionuclides = 0;
@@ -689,40 +566,174 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   }
 
   /* Get command-line values for all radionuclides */
-  for (v=0; v<P->n_radionuclides; ++v) {
-    ierr = RadionuclideParametersSetFromOptions(P->radionuclide_parameters[v], SC);CHKERRQ(ierr);
+  for (i=0; i<P->n_radionuclides; ++i) {
+    ierr = RadionuclideParametersSetFromOptions(P->radionuclide_parameters[i], SC);CHKERRQ(ierr);
   }
 
-  /* Look for command-line option to determine number of volatiles
-     and options prefix for each, e.g -volatile_names CO2,H2O */
-  Ap->n_volatiles = 0;
-  {
-    char      *prefixes[SPIDER_MAX_VOLATILE_SPECIES];
-    PetscInt  n_volatiles = SPIDER_MAX_VOLATILE_SPECIES;
-    PetscBool set;
+  ierr = AtmosphereParametersSetFromOptions( P, SC ); CHKERRQ(ierr);
 
-    ierr = PetscOptionsGetStringArray(NULL,NULL,"-volatile_names",prefixes,&n_volatiles,&set);CHKERRQ(ierr);
-    if (set) {
-      PetscInt v;
+  PetscFunctionReturn(0);
 
-      Ap->n_volatiles = n_volatiles;
-      for (v=0; v<Ap->n_volatiles; ++v) {
-        ierr = VolatileParametersCreate(&Ap->volatile_parameters[v]);CHKERRQ(ierr);
-        ierr = PetscStrncpy(Ap->volatile_parameters[v]->prefix,prefixes[v],sizeof(Ap->volatile_parameters[v]->prefix));CHKERRQ(ierr);
-        ierr = PetscFree(prefixes[v]);CHKERRQ(ierr);
-      }
+}
+
+static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingConstants SC )
+{
+    PetscErrorCode       ierr;
+    AtmosphereParameters Ap = P->atmosphere_parameters;
+    PetscInt             v;
+
+    PetscFunctionBeginUser;
+
+    /* initial condition for atmosphere */
+    Ap->IC_ATMOSPHERE = 1;
+    ierr = PetscOptionsGetInt(NULL,NULL,"-IC_ATMOSPHERE",&Ap->IC_ATMOSPHERE,NULL);CHKERRQ(ierr);
+
+    ierr = PetscStrcpy(Ap->ic_atmosphere_filename,"restart.json"); CHKERRQ(ierr);
+    if ( (Ap->IC_ATMOSPHERE==2) || (Ap->IC_ATMOSPHERE==3) ){
+        ierr = PetscOptionsGetString(NULL,NULL,"-ic_atmosphere_filename",Ap->ic_atmosphere_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
     }
-  }
 
-  /* Get command-line values for all volatiles species */
-  for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = VolatileParametersSetFromOptions(Ap->volatile_parameters[v], SC);CHKERRQ(ierr);
-  }
+    /* (top) surface boundary condition */
+    Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
+    {
+        PetscInt  SURFACE_BC = 0;
+        PetscBool SURFACE_BCset = PETSC_FALSE;
+        ierr = PetscOptionsGetInt(NULL,NULL,"-SURFACE_BC",&SURFACE_BC,&SURFACE_BCset);CHKERRQ(ierr);
+        if( SURFACE_BCset ) Ap->SURFACE_BC = SURFACE_BC;
+    }
+    Ap->surface_bc_value = 0.0;
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-surface_bc_value",&Ap->surface_bc_value,NULL);CHKERRQ(ierr);
+    switch( Ap->SURFACE_BC ){
+    case 1:
+        /* SURFACE_BC = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body
+           do nothing */
+        break;
+    case 2:
+        /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ZAHNLE: steam atmosphere
+           do nothing */
+        break;
+    case 3:
+        /* SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
+           with CO2 and H2O volatile using plane-parallel radiative equilibrium model
+           of Abe and Matsui (1985)
+           do nothing */
+        break;
+    case 4:
+        // MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed)
+        Ap->surface_bc_value /= SC->FLUX;
+        break;
+    case 5:
+        /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy
+           do nothing */
+        break;
+    default:
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
+        break;
+    }
 
-  /* Reactions: look for command-line options to determine the number of reactions
-     and options for each. These include named reactions and "simple" reactions.
-     These are defined with respect to the prefixes for the volatiles, which are translated to integer ids */
-  Ap->n_reactions = 0;
+    Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
+    ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
+
+    /* emissivity is constant for SURFACE_BC != MO_ATMOSPHERE_TYPE_VOLATILES */
+    Ap->emissivity0 = 1.0; // non-dimensional
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-emissivity0",&Ap->emissivity0,NULL);CHKERRQ(ierr);
+
+    Ap->THERMAL_ESCAPE = PETSC_FALSE;
+    ierr = PetscOptionsGetBool(NULL,NULL,"-THERMAL_ESCAPE",&Ap->THERMAL_ESCAPE,NULL);CHKERRQ(ierr);
+
+    Ap->CONSTANT_ESCAPE = PETSC_FALSE;
+    ierr = PetscOptionsGetBool(NULL,NULL,"-CONSTANT_ESCAPE",&Ap->CONSTANT_ESCAPE,NULL);CHKERRQ(ierr);
+
+// REMOVE
+#if 1
+    /* Gravitational constant (m^3/kg/s^2) */
+    Ap->bigG = 6.67408E-11;
+    Ap->bigG *= SC->DENSITY;
+    Ap->bigG *= PetscPowScalar( SC->TIME, 2.0 );
+#endif
+
+#if 1
+    /* Stefan-Boltzmann constant (W/m^2K^4) */
+    Ap->sigma = 5.670367e-08;
+    Ap->sigma /= SC->SIGMA;
+#endif
+
+    /* equilibrium temperature of the planet (K) */
+    Ap->teqm = 273.0;
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-teqm",&Ap->teqm,NULL);CHKERRQ(ierr);
+    Ap->teqm /= SC->TEMP;
+
+    Ap->tsurf_poststep_change = -1; // (K) (negative value is OFF)
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-tsurf_poststep_change",&Ap->tsurf_poststep_change,NULL);CHKERRQ(ierr);
+    Ap->tsurf_poststep_change /= SC->TEMP;
+
+    /* for radiative boundary condition at the top surface
+       dT = param_utbl_const * [Surface temperature]**3 */
+    Ap->PARAM_UTBL = PETSC_TRUE;
+    Ap->param_utbl_const = 1.0e-7;
+    ierr = PetscOptionsGetBool(NULL,NULL,"-PARAM_UTBL",&Ap->PARAM_UTBL,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-param_utbl_const",&Ap->param_utbl_const,NULL);CHKERRQ(ierr);
+    if (Ap->PARAM_UTBL){
+        Ap->param_utbl_const *= PetscSqr(SC->TEMP);
+    } else {
+        Ap->param_utbl_const = 0.0;
+    }
+
+    /* below here are only used for SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES */
+
+    /* atmosphere reference pressure (Pa) */
+    Ap->P0 = 101325.0; // Pa (= 1 atm)
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-P0",&Ap->P0,NULL);CHKERRQ(ierr);
+    Ap->P0 /= SC->PRESSURE;
+
+    Ap->gravity_ptr = &P->gravity;
+    Ap->radius_ptr = &P->radius;
+    Ap->VOLATILE_ptr = &SC->VOLATILE;
+
+// REMOVE
+#if 1
+    /* FIXME the gas constant above is scaled differently for the viscosity laws added by Rob Spaargaren
+       this one below is for computing the 1-D atmosphere structure. Should merge together and make consistent */
+    Ap->Rgas = 8.3144598; // gas constant (J/K/mol)
+    Ap->Rgas *= SC->TEMP / SC->ENERGY;
+#endif
+
+// REMOVE
+#if 1
+    /* Boltzmann constant (J/K) */
+    Ap->Avogadro = 6.02214076E23; // 1/mol
+    Ap->kB = Ap->Rgas / Ap->Avogadro;
+#endif
+
+    /* Look for command-line option to determine number of volatiles
+       and options prefix for each, e.g -volatile_names CO2,H2O */
+    Ap->n_volatiles = 0;
+   {
+      char      *prefixes[SPIDER_MAX_VOLATILE_SPECIES];
+      PetscInt  n_volatiles = SPIDER_MAX_VOLATILE_SPECIES;
+      PetscBool set;
+
+      ierr = PetscOptionsGetStringArray(NULL,NULL,"-volatile_names",prefixes,&n_volatiles,&set);CHKERRQ(ierr);
+      if (set) {
+        PetscInt v;
+        Ap->n_volatiles = n_volatiles;
+          for (v=0; v<Ap->n_volatiles; ++v) {
+            ierr = VolatileParametersCreate(&Ap->volatile_parameters[v]);CHKERRQ(ierr);
+            ierr = PetscStrncpy(Ap->volatile_parameters[v]->prefix,prefixes[v],sizeof(Ap->volatile_parameters[v]->prefix));CHKERRQ(ierr);
+            ierr = PetscFree(prefixes[v]);CHKERRQ(ierr);
+          }
+       }
+    }
+
+    /* Get command-line values for all volatiles species */
+    for (v=0; v<Ap->n_volatiles; ++v) {
+        ierr = VolatileParametersSetFromOptions(Ap->volatile_parameters[v], SC);CHKERRQ(ierr);
+    }
+
+    /* Reactions: look for command-line options to determine the number of reactions
+       and options for each. These include named reactions and "simple" reactions.
+       These are defined with respect to the prefixes for the volatiles, which are translated to integer ids */
+    Ap->n_reactions = 0;
 
   /* Special "named" reactions */
   {
@@ -1070,7 +1081,6 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
     ierr = FundamentalConstantsDestroy(&P->fundamental_constants);CHKERRQ(ierr);
     ierr = AtmosphereParametersDestroy(&P->atmosphere_parameters);CHKERRQ(ierr);
 
-    /* FIXME: update the PETSC_TRUE flag below depending on user input */
     ierr = EosParametersDestroy(&P->eos1_parameters);CHKERRQ(ierr);
     ierr = EosParametersDestroy(&P->eos2_parameters);CHKERRQ(ierr);
 
