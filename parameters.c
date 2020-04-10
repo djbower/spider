@@ -132,7 +132,7 @@ static PetscErrorCode RadionuclideParametersSetFromOptions(RadionuclideParameter
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_concentration");CHKERRQ(ierr);
   rp->concentration = 0.0; // ppmw
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&rp->concentration,&set);CHKERRQ(ierr);
-  /* FIXME: convert concentration to mass fraction? */
+  rp->concentration *= 1.0E-6; // to mass fraction
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_heat_production");CHKERRQ(ierr);
   rp->heat_production = 0.0; // W/kg
