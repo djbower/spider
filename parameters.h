@@ -387,15 +387,6 @@ typedef struct {
 
     FundamentalConstants fundamental_constants;
 
-    // Radiogenic heating parameters
-    // FIXME: REMOVE
-   // RadiogenicIsotopeParameters al26_parameters;
-   // RadiogenicIsotopeParameters k40_parameters;
-   // RadiogenicIsotopeParameters fe60_parameters;
-   // RadiogenicIsotopeParameters th232_parameters;
-   // RadiogenicIsotopeParameters u235_parameters;
-   // RadiogenicIsotopeParameters u238_parameters;
-
     // equation of state for melt and solid
     EosParameters eos1_parameters; /* for melt */
     EosParameters eos2_parameters; /* for solid */
