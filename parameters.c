@@ -1159,6 +1159,12 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
     }
     P->n_radionuclides = 0;
 
+    /* phases */
+    for (i=0; i<P->n_phases; ++i) {
+        ierr = EosParametersDestroy(&P->eos_parameters[i]);CHKERRQ(ierr);
+    }
+    P->n_phases = 0;
+
     ierr = PetscFree(*parameters_ptr);CHKERRQ(ierr);
     *parameters_ptr = NULL;
     PetscFunctionReturn(0);
