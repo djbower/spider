@@ -90,14 +90,15 @@ static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const Iso, PetscReal time )
+static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const Rp, PetscReal time )
 {
     PetscScalar H;
 
-    H = (Iso->t0-time) * PetscLogScalar(2.0);
-    H /= Iso->half_life;
+    H = (Rp->t0-time) * PetscLogScalar(2.0);
+    H /= Rp->half_life;
     H = PetscExpScalar(H);
     H *= Iso->heat_production * Iso->abundance * Iso->concentration * 1.0E-6; // since ppm
+    H *= Rp->heat_production * Rp->abundance * Rp->concentration;
 
     return H;
 
