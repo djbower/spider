@@ -28,6 +28,8 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 # Use -O0 to turn off optimization, to debug with LLDB/GDB
 # You can specify this from the command line, e.g.
 # Available sanitizer flags with OSX
+# With debugging
+#  make clean; make -j CFLAGS_EXTRA="-O0"
 # with Address Sanitizer
 #   make clean; make -j CFLAGS_EXTRA="-O0 -fsanitize=address"
 # with UndefinedBehaviorSanitizer
