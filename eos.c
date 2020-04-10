@@ -1441,6 +1441,8 @@ PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
 
     ierr = PetscMalloc1(1,eos_parameters_ptr);CHKERRQ(ierr);
     eos_parameters = *eos_parameters_ptr;
+    /* TODO: eventually should not necessarily create lookup,
+       but currently always required for melting curves */
     lookup_ptr = &eos_parameters->lookup;
     ierr = LookupCreate( lookup_ptr );
 

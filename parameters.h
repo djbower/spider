@@ -140,7 +140,9 @@ typedef struct {
 typedef data_RTpressParameters* RTpressParameters;
 
 /* EOS */
+#define SPIDER_MAX_PHASES 2
 typedef struct {
+    char prefix[128];  /* Maximum prefix length */
     /* Eos choices */
     PetscBool LOOKUP_FLAG; /* flag if lookup data included */
     Lookup lookup;
@@ -387,9 +389,15 @@ typedef struct {
 
     FundamentalConstants fundamental_constants;
 
+    PetscInt    n_phases;
+    EosParameters eos_parameters[SPIDER_MAX_PHASES];
+
+#if 1
+// FIXME: REMOVE
     // equation of state for melt and solid
     EosParameters eos1_parameters; /* for melt */
     EosParameters eos2_parameters; /* for solid */
+#endif
 
     // FIXME
     // Composition
