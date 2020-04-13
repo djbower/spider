@@ -52,9 +52,7 @@ PetscErrorCode set_eos( Parameters P )
     switch( P->SOLID_EOS ){
         case 1:
             /* lookup */
-            //eosp2->LOOKUP_FLAG = PETSC_TRUE;
-            //eosp2->RTPRESS_FLAG = PETSC_FALSE;
-            /* FIXME, eventually this will be based on TYPE */
+            /* FIXME, eventually type will be the flag (rather than SOLID_EOS etc.) */
             eosp2->TYPE = 1;
             ierr = LookupSolidCreate( eosp2->lookup, SC );CHKERRQ(ierr);
             break;
@@ -67,15 +65,11 @@ PetscErrorCode set_eos( Parameters P )
     switch( P->MELT_EOS ){
         case 1:
             /* lookup */
-            //eosp1->LOOKUP_FLAG = PETSC_TRUE;
-            //eosp1->RTPRESS_FLAG = PETSC_FALSE;
             eosp1->TYPE = 1;
             ierr = LookupMeltCreate( eosp1->lookup, SC );CHKERRQ(ierr);
             break;
         case 2:
             /* analytical RTpress */
-            //eosp1->LOOKUP_FLAG = PETSC_FALSE;
-            //eosp1->RTPRESS_FLAG = PETSC_TRUE;
             eosp2->TYPE = 2;
             ierr = RTpressParametersCreateAndSet( &eosp1->rtpress_parameters, P->fundamental_constants );CHKERRQ(ierr);
             break;
@@ -553,6 +547,9 @@ static PetscErrorCode Interp2dDestroy( Interp2d *interp_ptr )
     PetscFunctionReturn(0);
 
 }
+
+/* FIXME: this next routine has been duplicated in parameters.c for new form of eos_parameters */
+/* TO REMOVE from here once new eos_parameters is working */
 
 /* Helper routine to prepend the root directory to a relative path */
 /* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */

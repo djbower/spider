@@ -51,12 +51,15 @@
 
 -phase_names melt,solid
 
+-melt_TYPE 1
 -melt_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
+#-melt_alpha_filename /Users/dan/Programs/spider-dev/lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
 -melt_cp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_melt.dat
 -melt_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_melt.dat
 -melt_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_melt.dat
 -melt_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_melt.dat
 
+-solid_TYPE 1
 -solid_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_solid.dat
 -solid_cp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_solid.dat
 -solid_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_solid.dat
