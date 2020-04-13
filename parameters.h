@@ -321,9 +321,6 @@ typedef struct {
     PetscBool monitor;
     char outputDirectory[PETSC_MAX_PATH_LEN];
 
-    PetscInt    SOLID_EOS;
-    PetscInt    MELT_EOS;
-
     // Lookup tables
     char        liquidusFilename[PETSC_MAX_PATH_LEN];
     char        solidusFilename[PETSC_MAX_PATH_LEN];

@@ -358,12 +358,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   /* TODO: if we have an option of analytical EOSs, we might not need to set the lookups
      for every model run */
 
-  P->SOLID_EOS = 1;
-  ierr = PetscOptionsGetInt(NULL,NULL,"-SOLID_EOS",&P->SOLID_EOS,NULL);CHKERRQ(ierr);
-
-  P->MELT_EOS = 1;
-  ierr = PetscOptionsGetInt(NULL,NULL,"-MELT_EOS",&P->MELT_EOS,NULL);CHKERRQ(ierr);
-
+  /* FIXME: update to use new eos_parameters and move to end! */
   /* function is in eos.c */
   ierr = set_eos( P );CHKERRQ(ierr);
 
