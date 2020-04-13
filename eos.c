@@ -52,8 +52,10 @@ PetscErrorCode set_eos( Parameters P )
     switch( P->SOLID_EOS ){
         case 1:
             /* lookup */
-            eosp2->LOOKUP_FLAG = PETSC_TRUE;
-            eosp2->RTPRESS_FLAG = PETSC_FALSE;
+            //eosp2->LOOKUP_FLAG = PETSC_TRUE;
+            //eosp2->RTPRESS_FLAG = PETSC_FALSE;
+            /* FIXME, eventually this will be based on TYPE */
+            eosp2->TYPE = 1;
             ierr = LookupSolidCreate( eosp2->lookup, SC );CHKERRQ(ierr);
             break;
         default:
@@ -65,14 +67,16 @@ PetscErrorCode set_eos( Parameters P )
     switch( P->MELT_EOS ){
         case 1:
             /* lookup */
-            eosp1->LOOKUP_FLAG = PETSC_TRUE;
-            eosp1->RTPRESS_FLAG = PETSC_FALSE;
+            //eosp1->LOOKUP_FLAG = PETSC_TRUE;
+            //eosp1->RTPRESS_FLAG = PETSC_FALSE;
+            eosp1->TYPE = 1;
             ierr = LookupMeltCreate( eosp1->lookup, SC );CHKERRQ(ierr);
             break;
         case 2:
             /* analytical RTpress */
-            eosp1->LOOKUP_FLAG = PETSC_FALSE;
-            eosp1->RTPRESS_FLAG = PETSC_TRUE;
+            //eosp1->LOOKUP_FLAG = PETSC_FALSE;
+            //eosp1->RTPRESS_FLAG = PETSC_TRUE;
+            eosp2->TYPE = 2;
             ierr = RTpressParametersCreateAndSet( &eosp1->rtpress_parameters, P->fundamental_constants );CHKERRQ(ierr);
             break;
         default:
@@ -1470,16 +1474,17 @@ PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
     ierr = Interp1dDestroy( &lookup->liquidus ); CHKERRQ(ierr);
     ierr = Interp1dDestroy( &lookup->solidus ); CHKERRQ(ierr);
 
-    if( eos_parameters->RTPRESS_FLAG ){
-        ierr = RTpressParametersDestroy( &eos_parameters->rtpress_parameters );CHKERRQ(ierr);
-    }
-
-    if( eos_parameters->LOOKUP_FLAG ){
-        ierr = Interp2dDestroy( &lookup->alpha ); CHKERRQ(ierr);
-        ierr = Interp2dDestroy( &lookup->cp ); CHKERRQ(ierr);
-        ierr = Interp2dDestroy( &lookup->dTdPs ); CHKERRQ(ierr);
-        ierr = Interp2dDestroy( &lookup->rho ); CHKERRQ(ierr);
-        ierr = Interp2dDestroy( &lookup->temp ); CHKERRQ(ierr);
+    switch( eos_parameters->TYPE ){
+        case 1:
+            ierr = Interp2dDestroy( &lookup->alpha ); CHKERRQ(ierr);
+            ierr = Interp2dDestroy( &lookup->cp ); CHKERRQ(ierr);
+            ierr = Interp2dDestroy( &lookup->dTdPs ); CHKERRQ(ierr);
+            ierr = Interp2dDestroy( &lookup->rho ); CHKERRQ(ierr);
+            ierr = Interp2dDestroy( &lookup->temp ); CHKERRQ(ierr);
+            break;
+        case 2:
+            ierr = RTpressParametersDestroy( &eos_parameters->rtpress_parameters );CHKERRQ(ierr);
+            break;
     }
 
     ierr = LookupDestroy( lookup_ptr );CHKERRQ(ierr);
@@ -1487,5 +1492,4 @@ PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
     *eos_parameters_ptr = NULL;
 
     PetscFunctionReturn(0);
-
 }

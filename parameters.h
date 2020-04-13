@@ -143,10 +143,12 @@ typedef data_RTpressParameters* RTpressParameters;
 #define SPIDER_MAX_PHASES 2
 typedef struct {
     char prefix[128];  /* Maximum prefix length */
-    /* Eos choices */
-    PetscBool LOOKUP_FLAG; /* flag if lookup data included */
+    /* Eos TYPE
+       1. Lookup
+       2. Rtpress
+    */
+    PetscInt TYPE;
     Lookup lookup;
-    PetscBool RTPRESS_FLAG; /* flag if analytical rtpress included */
     RTpressParameters rtpress_parameters;
     /* include thermal and transport properties */
     PetscScalar cond; /* thermal conductivity, W/m/K */
