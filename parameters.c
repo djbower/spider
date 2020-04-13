@@ -112,11 +112,61 @@ static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
     PetscFunctionReturn(0);
 }
 
+/* Helper routine to prepend the root directory to a relative path */
+/* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
+#define STRINGIFY(x) STRINGIFY2(x)
+#define STRINGIFY2(x) #x
+#define SPIDER_ROOT_DIR_STR STRINGIFY(SPIDER_ROOT_DIR)
+static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
+  PetscErrorCode ierr;
+  char tmp[PETSC_MAX_PATH_LEN];
+
+  PetscFunctionBeginUser;
+  ierr = PetscStrcpy(tmp,path);CHKERRQ(ierr);
+  ierr = PetscStrcpy(path,SPIDER_ROOT_DIR_STR);CHKERRQ(ierr);
+  ierr = PetscStrcat(path,"/");CHKERRQ(ierr); /* not portable */
+  ierr = PetscStrcat(path,tmp);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+#undef SPIDER_ROOT_DIR_STR
+
+static PetscErrorCode SetLookupFilename( const char* property, char* prefix, char* lookup_filename )
+{
+    PetscErrorCode ierr;
+    char           buf1[1024]; /* max size */
+    char           buf2[1024]; /* max size */
+    PetscBool      set_rel_to_src,set;
+
+    PetscFunctionBeginUser;
+
+    /* Based on input options, determine which files to load.  Options ending
+       with _rel_to_src indicate a path relative to the source code. In this 
+       case we prepend a string, SPIDER_ROOT_DIR_STR, and /. The corresponding
+       option without this overrides. */          
+
+    ierr = PetscSNPrintf(buf1,sizeof(buf1),"%s%s%s%s%s","-",prefix,"_",property,"_filename_rel_to_src");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,buf1,lookup_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);CHKERRQ(ierr);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup_filename);CHKERRQ(ierr);
+    /* check for absolute path name */
+    ierr = PetscSNPrintf(buf2,sizeof(buf2),"%s%s%s%s%s","-",prefix,"_",property,"_filename");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,buf2,lookup_filename,PETSC_MAX_PATH_LEN,&set);CHKERRQ(ierr);
+
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%s%s%s%s","Warning: ",buf1," ignored because ",buf2," provided\n");CHKERRQ(ierr);
+//alpha_filename_rel_to_src ignored because alpha_filename provided\n");CHKERRQ(ierr);
+    }
+
+    PetscFunctionReturn(0);
+
+}
+
+
 static PetscErrorCode EosParametersSetFromOptions(EosParameters Ep, const ScalingConstants SC)
 {
   PetscErrorCode ierr;
   char           buf[1024]; /* max size */
   PetscBool      set;
+  Lookup         lookup;
 
   PetscFunctionBeginUser;
 
@@ -125,6 +175,50 @@ static PetscErrorCode EosParametersSetFromOptions(EosParameters Ep, const Scalin
 
   /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
      if they are missing. Note that this code has a lot of duplication */
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_TYPE");CHKERRQ(ierr);
+  Ep->TYPE = 1; /* lookup be default */
+  ierr = PetscOptionsGetInt(NULL,NULL,buf, &Ep->TYPE,&set);CHKERRQ(ierr);
+
+  switch( Ep->TYPE ){
+      case 1:
+          /* lookup, set filenames (does not allocate memory for Interp structs) */
+          lookup = Ep->lookup;
+          ierr = SetLookupFilename( "alpha", Ep->prefix, lookup->alpha_filename );CHKERRQ(ierr);
+          ierr = SetLookupFilename( "cp", Ep->prefix, lookup->cp_filename ); CHKERRQ(ierr);
+          ierr = SetLookupFilename( "dTdPs", Ep->prefix, lookup->dTdPs_filename );CHKERRQ(ierr);
+          ierr = SetLookupFilename( "rho", Ep->prefix, lookup->rho_filename );CHKERRQ(ierr);
+          ierr = SetLookupFilename( "temp", Ep->prefix, lookup->temp_filename );CHKERRQ(ierr);
+
+// REMOVE
+#if 0
+          {
+            PetscBool set_rel_to_src,set;
+            /* TODO: does it make sense to assign a default? */
+            //ierr = PetscStrcpy(lookup->alpha_filename,"lookup_data/RTmelt/thermal_exp_melt.dat");CHKERRQ(ierr);
+            ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_alpha_filename_rel_to_src");CHKERRQ(ierr);
+            ierr = PetscOptionsGetString(NULL,NULL,buf,lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);CHKERRQ(ierr);
+            ierr = MakeRelativeToSourcePathAbsolute(lookup->alpha_filename);CHKERRQ(ierr);
+            /* check for absolute path name */
+            ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_alpha_filename");CHKERRQ(ierr);
+            ierr = PetscOptionsGetString(NULL,NULL,buf,lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set);CHKERRQ(ierr);
+
+       // REMOVE OLD BELOW
+        //    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename_rel_to_src",lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
+     //       ierr = MakeRelativeToSourcePathAbsolute(lookup->alpha_filename);CHKERRQ(ierr);
+      //      ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename",lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set);
+            if (set && set_rel_to_src) {
+              ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: alpha_filename_rel_to_src ignored because alpha_filename provided\n");CHKERRQ(ierr);
+            }    
+          }
+#endif
+
+      case 2:
+          /* analytical RTpress */
+          /* do nothing, parameters are hard-coded (see eos.c) */
+          ;
+  }
+
 #if 0
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_t0");CHKERRQ(ierr);
   rp->t0 = 0.0; // years
