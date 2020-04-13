@@ -43,8 +43,8 @@ PetscErrorCode set_eos( Parameters P )
 {
     PetscErrorCode ierr;
     ScalingConstants const SC = P->scaling_constants;
-    EosParameters eosp1 = P->eos1_parameters; /* melt */
-    EosParameters eosp2 = P->eos2_parameters; /* solid */
+    EosParameters eosp1 = P->eos_parameters[0]; /* melt */
+    EosParameters eosp2 = P->eos_parameters[1]; /* solid */
 
     PetscFunctionBeginUser;
 
@@ -888,7 +888,7 @@ PetscScalar get_rtpress_pressure_test( Ctx *E )
        FIXME: need to truncate negative values?  Perhaps not for
        smoothness of solver during inversion? */
 
-    RTpressParameters rtp = E->parameters->eos1_parameters->rtpress_parameters;
+    RTpressParameters rtp = E->parameters->eos_parameters[0]->rtpress_parameters;
     PetscScalar   P, T, V, volfrac;
 
     volfrac = 0.6;
@@ -963,7 +963,7 @@ PetscScalar get_rtpress_entropy_test( Ctx *E )
 
     /* seems to confirm S is correct */
 
-    RTpressParameters rtp = E->parameters->eos1_parameters->rtpress_parameters;
+    RTpressParameters rtp = E->parameters->eos_parameters[0]->rtpress_parameters;
     PetscScalar   S, T, V, volfrac;
 
     volfrac = 0.6;
@@ -1175,7 +1175,7 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx *E )
     Vec            x,r;
     PetscScalar    *xx;
     PetscInt       i;
-    RTpressParameters  rtp = E->parameters->eos1_parameters->rtpress_parameters;
+    RTpressParameters  rtp = E->parameters->eos_parameters[0]->rtpress_parameters;
     EosEval        *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
@@ -1260,7 +1260,7 @@ static PetscErrorCode objective_function_rtpress_volume_temperature( SNES snes, 
     PetscScalar                *ff;
     PetscScalar                V, T, P, S;
     Ctx                        *E = (Ctx*) ptr;
-    RTpressParameters          rtp = E->parameters->eos1_parameters->rtpress_parameters;
+    RTpressParameters          rtp = E->parameters->eos_parameters[0]->rtpress_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
     PetscScalar Ptarget = eos_eval->P;
     PetscScalar Starget = eos_eval->S;
@@ -1294,7 +1294,7 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
        eos_eval struct with the material properties */
 
     ScalingConstants const     SC = E->parameters->scaling_constants;
-    RTpressParameters          rtp = E->parameters->eos1_parameters->rtpress_parameters;
+    RTpressParameters          rtp = E->parameters->eos_parameters[0]->rtpress_parameters;
     EosEval                    *eos_eval = &E->eos1_eval;
 
     PetscFunctionBeginUser;
@@ -1451,7 +1451,6 @@ PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
        later by (for example) Interp1dCreateAndSet() */
 
     PetscFunctionReturn(0);
-
 }
 
 PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )

@@ -394,7 +394,7 @@ typedef struct {
     PetscInt    n_phases;
     EosParameters eos_parameters[SPIDER_MAX_PHASES];
 
-#if 1
+#if 0
 // FIXME: REMOVE
     // equation of state for melt and solid
     EosParameters eos1_parameters; /* for melt */

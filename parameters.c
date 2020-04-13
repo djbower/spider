@@ -697,7 +697,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
   /* Get command-line values for all radionuclides */
   for (i=0; i<P->n_phases; ++i) {
-    // FIXME: this function doesn't do anything yet
     ierr = EosParametersSetFromOptions(P->eos_parameters[i], SC);CHKERRQ(ierr);
   }
 
@@ -1012,6 +1011,7 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","ic_adiabat_entropy"     ,(double)P->ic_adiabat_entropy       ,(double)(P->ic_adiabat_entropy*SC->ENTROPY) ,"J/kg/K"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
   /* TODO: liquidus and solidus data is duplicated in the melt and solid eos parameters struct */
+#if 0
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"liquidus data file"         ,P->eos1_parameters->lookup->liquidus_filename          );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"solidus data file"          ,P->eos1_parameters->lookup->solidus_filename           );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaSol data file"         ,P->eos2_parameters->lookup->alpha_filename     );CHKERRQ(ierr);
@@ -1024,6 +1024,7 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"           ,P->eos1_parameters->lookup->rho_filename       );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"          ,P->eos2_parameters->lookup->temp_filename      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"          ,P->eos1_parameters->lookup->temp_filename      );CHKERRQ(ierr);
+#endif
   if (Ap->n_volatiles > 0) {
     ierr = PetscPrintf(PETSC_COMM_WORLD,"\n[Volatile] prefix/name\n");CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);
@@ -1179,7 +1180,7 @@ static PetscErrorCode AtmosphereParametersDestroy( AtmosphereParameters* atmosph
 PetscErrorCode ParametersCreate( Parameters* parameters_ptr )
 {
     PetscErrorCode ierr;
-    Parameters P;
+    Parameters     P;
 
     /* main parameters struct */
     PetscFunctionBeginUser;
@@ -1190,8 +1191,13 @@ PetscErrorCode ParametersCreate( Parameters* parameters_ptr )
     ierr = ScalingConstantsCreate( &P->scaling_constants );CHKERRQ(ierr);
     ierr = FundamentalConstantsCreate( &P->fundamental_constants );CHKERRQ(ierr);
     ierr = AtmosphereParametersCreate( &P->atmosphere_parameters );CHKERRQ(ierr);
+
+
+// FIXME: REMOVE
+#if 0
     ierr = EosParametersCreate( &P->eos1_parameters );CHKERRQ(ierr);
     ierr = EosParametersCreate( &P->eos2_parameters );CHKERRQ(ierr);
+#endif
 
     /* populate structs with data */
     ierr = ParametersSetFromOptions( P );CHKERRQ(ierr);
@@ -1212,8 +1218,11 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
     ierr = FundamentalConstantsDestroy(&P->fundamental_constants);CHKERRQ(ierr);
     ierr = AtmosphereParametersDestroy(&P->atmosphere_parameters);CHKERRQ(ierr);
 
+// FIXME: REMOVE
+#if 0
     ierr = EosParametersDestroy(&P->eos1_parameters);CHKERRQ(ierr);
     ierr = EosParametersDestroy(&P->eos2_parameters);CHKERRQ(ierr);
+#endif
 
     /* radionuclides */
     for (i=0; i<P->n_radionuclides; ++i) {
