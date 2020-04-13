@@ -130,7 +130,7 @@ static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 }
 #undef SPIDER_ROOT_DIR_STR
 
-static PetscErrorCode SetLookupFilename( const char* property, char* prefix, char* lookup_filename )
+static PetscErrorCode SetLookupFilename( const char* property, const char* prefix, char* lookup_filename )
 {
     PetscErrorCode ierr;
     char           buf1[1024]; /* max size */
@@ -144,20 +144,25 @@ static PetscErrorCode SetLookupFilename( const char* property, char* prefix, cha
        case we prepend a string, SPIDER_ROOT_DIR_STR, and /. The corresponding
        option without this overrides. */          
 
-    ierr = PetscSNPrintf(buf1,sizeof(buf1),"%s%s%s%s%s","-",prefix,"_",property,"_filename_rel_to_src");CHKERRQ(ierr);
+    /* TODO: add default file location */
+
+    /* check for relative path name */
+    ierr = PetscSNPrintf(buf1,sizeof(buf1),"%s%s%s%s","-",prefix,property,"_filename_rel_to_src");CHKERRQ(ierr);
     ierr = PetscOptionsGetString(NULL,NULL,buf1,lookup_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);CHKERRQ(ierr);
     ierr = MakeRelativeToSourcePathAbsolute(lookup_filename);CHKERRQ(ierr);
     /* check for absolute path name */
-    ierr = PetscSNPrintf(buf2,sizeof(buf2),"%s%s%s%s%s","-",prefix,"_",property,"_filename");CHKERRQ(ierr);
+    ierr = PetscSNPrintf(buf2,sizeof(buf2),"%s%s%s%s","-",prefix,property,"_filename");CHKERRQ(ierr);
     ierr = PetscOptionsGetString(NULL,NULL,buf2,lookup_filename,PETSC_MAX_PATH_LEN,&set);CHKERRQ(ierr);
+
+    if (!set && !set_rel_to_src){
+      SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s or %s",buf1,buf2);
+    }
 
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%s%s%s%s","Warning: ",buf1," ignored because ",buf2," provided\n");CHKERRQ(ierr);
-//alpha_filename_rel_to_src ignored because alpha_filename provided\n");CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
-
 }
 
 
@@ -170,12 +175,6 @@ static PetscErrorCode EosParametersSetFromOptions(EosParameters Ep, const Scalin
 
   PetscFunctionBeginUser;
 
-  /* TODO: here, can now process input argument using similar calls as in LookupMeltCreate
-     Then Create function can just deal with creating the lookup structs if necessary */
-
-  /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
-     if they are missing. Note that this code has a lot of duplication */
-
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_TYPE");CHKERRQ(ierr);
   Ep->TYPE = 1; /* lookup be default */
   ierr = PetscOptionsGetInt(NULL,NULL,buf, &Ep->TYPE,&set);CHKERRQ(ierr);
@@ -183,35 +182,14 @@ static PetscErrorCode EosParametersSetFromOptions(EosParameters Ep, const Scalin
   switch( Ep->TYPE ){
       case 1:
           /* lookup, set filenames (does not allocate memory for Interp structs) */
+          /* leading underscore is clunky, but to enable the same function to
+             process a variety of input strings */
           lookup = Ep->lookup;
-          ierr = SetLookupFilename( "alpha", Ep->prefix, lookup->alpha_filename );CHKERRQ(ierr);
-          ierr = SetLookupFilename( "cp", Ep->prefix, lookup->cp_filename ); CHKERRQ(ierr);
-          ierr = SetLookupFilename( "dTdPs", Ep->prefix, lookup->dTdPs_filename );CHKERRQ(ierr);
-          ierr = SetLookupFilename( "rho", Ep->prefix, lookup->rho_filename );CHKERRQ(ierr);
-          ierr = SetLookupFilename( "temp", Ep->prefix, lookup->temp_filename );CHKERRQ(ierr);
-
-// REMOVE
-#if 0
-          {
-            PetscBool set_rel_to_src,set;
-            /* TODO: does it make sense to assign a default? */
-            //ierr = PetscStrcpy(lookup->alpha_filename,"lookup_data/RTmelt/thermal_exp_melt.dat");CHKERRQ(ierr);
-            ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_alpha_filename_rel_to_src");CHKERRQ(ierr);
-            ierr = PetscOptionsGetString(NULL,NULL,buf,lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);CHKERRQ(ierr);
-            ierr = MakeRelativeToSourcePathAbsolute(lookup->alpha_filename);CHKERRQ(ierr);
-            /* check for absolute path name */
-            ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_alpha_filename");CHKERRQ(ierr);
-            ierr = PetscOptionsGetString(NULL,NULL,buf,lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set);CHKERRQ(ierr);
-
-       // REMOVE OLD BELOW
-        //    ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename_rel_to_src",lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);
-     //       ierr = MakeRelativeToSourcePathAbsolute(lookup->alpha_filename);CHKERRQ(ierr);
-      //      ierr = PetscOptionsGetString(NULL,NULL,"-alphaMel_filename",lookup->alpha_filename,PETSC_MAX_PATH_LEN,&set);
-            if (set && set_rel_to_src) {
-              ierr = PetscPrintf(PETSC_COMM_WORLD,"Warning: alpha_filename_rel_to_src ignored because alpha_filename provided\n");CHKERRQ(ierr);
-            }    
-          }
-#endif
+          ierr = SetLookupFilename( "_alpha", Ep->prefix, lookup->alpha_filename );CHKERRQ(ierr);
+          ierr = SetLookupFilename( "_cp", Ep->prefix, lookup->cp_filename ); CHKERRQ(ierr);
+          ierr = SetLookupFilename( "_dTdPs", Ep->prefix, lookup->dTdPs_filename );CHKERRQ(ierr);
+          ierr = SetLookupFilename( "_rho", Ep->prefix, lookup->rho_filename );CHKERRQ(ierr);
+          ierr = SetLookupFilename( "_temp", Ep->prefix, lookup->temp_filename );CHKERRQ(ierr);
 
       case 2:
           /* analytical RTpress */
@@ -219,31 +197,21 @@ static PetscErrorCode EosParametersSetFromOptions(EosParameters Ep, const Scalin
           ;
   }
 
-#if 0
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_t0");CHKERRQ(ierr);
-  rp->t0 = 0.0; // years
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &rp->t0,&set);CHKERRQ(ierr);
-  rp->t0 /= SC->TIMEYRS;
+  /* conductivity (w/m/K) */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_cond");CHKERRQ(ierr);
+  Ep->cond = 4.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->cond,NULL);CHKERRQ(ierr);
+  Ep->cond /= SC->COND;
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_abundance");CHKERRQ(ierr);
-  rp->abundance = 0.0; // fractional
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &rp->abundance,&set);CHKERRQ(ierr);
+  /* viscosity-related, may eventually move into their own struct */
+  Ep->log10visc = 21.0; // FIXME: default is for solid only
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->log10visc,NULL);CHKERRQ(ierr);
+  Ep->log10visc -= SC->LOG10VISC;
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_concentration");CHKERRQ(ierr);
-  rp->concentration = 0.0; // ppmw
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&rp->concentration,&set);CHKERRQ(ierr);
-  rp->concentration *= 1.0E-6; // to mass fraction
-
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_heat_production");CHKERRQ(ierr);
-  rp->heat_production = 0.0; // W/kg
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&rp->heat_production,&set);CHKERRQ(ierr);
-  rp->heat_production /= SC->HEATGEN;
-
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",rp->prefix,"_half_life");CHKERRQ(ierr);
-  rp->half_life = 0.0; // years /* TODO: undefined problem with zero? */
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&rp->half_life,&set);CHKERRQ(ierr);
-  rp->half_life /= SC->TIMEYRS;
-#endif
+  /* melting curves */
+  const char str = '\0'; // empty string
+  ierr = SetLookupFilename( "liquidus", &str, lookup->liquidus_filename );CHKERRQ(ierr);
+  ierr = SetLookupFilename( "solidus", &str, lookup->solidus_filename );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
