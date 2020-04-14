@@ -8,10 +8,15 @@ static PetscErrorCode Interp1dCreateAndSet( const char *, Interp1d *, PetscScala
 static PetscErrorCode Interp1dDestroy( Interp1d * );
 static PetscErrorCode Interp2dCreateAndSet( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode Interp2dDestroy( Interp2d * );
+static PetscErrorCode LookupFilenameSet( const char *, const char *, char * );
+
+// FIXME: REMOVE
+#if 0
 static PetscErrorCode LookupSolidCreate( Lookup, const ScalingConstants );
 static PetscErrorCode LookupMeltCreate( Lookup, const ScalingConstants );
 static PetscErrorCode LookupLiquidusCreate( Lookup, const ScalingConstants );
 static PetscErrorCode LookupSolidusCreate( Lookup, const ScalingConstants );
+#endif
 
 /* rtpress material properties (Wolf and Bower, 2018) */
 static PetscErrorCode RTpressParametersCreate( RTpressParameters * );
@@ -36,9 +41,67 @@ static PetscScalar specific_to_per_atom( PetscScalar, PetscScalar, PetscScalar )
 static PetscScalar joule_to_eV( PetscScalar );
 static PetscScalar eV_to_joule( PetscScalar );
 
-/* set equation of state (EOS).  Currently for a melt and a solid phase, but
-   can be extended for more phases in the future */
+PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalConstants FC, const ScalingConstants SC)
+{
+  /* creates and sets the structs that are nested within EosParameters */
 
+  PetscErrorCode ierr;
+  char           buf[1024]; /* max size */
+  PetscBool      set; 
+  Lookup         lookup = Ep->lookup;
+
+  PetscFunctionBeginUser;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_TYPE");CHKERRQ(ierr);
+  Ep->TYPE = 1; /* default is lookup */
+  ierr = PetscOptionsGetInt(NULL,NULL,buf, &Ep->TYPE,&set);CHKERRQ(ierr);
+  //if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",bur);
+
+  switch( Ep->TYPE ){
+      case 1:
+          /* lookup, set filenames (does not allocate memory for Interp structs) */
+          /* leading underscore is clunky, but to enable the same function to
+             process a variety of input strings */
+          ierr = LookupFilenameSet( "_alpha", Ep->prefix, lookup->alpha_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( lookup->alpha_filename, &lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_cp", Ep->prefix, lookup->cp_filename ); CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( lookup->cp_filename, &lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_dTdPs", Ep->prefix, lookup->dTdPs_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( lookup->dTdPs_filename, &lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_rho", Ep->prefix, lookup->rho_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( lookup->rho_filename, &lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_temp", Ep->prefix, lookup->temp_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( lookup->temp_filename, &lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
+
+      case 2:
+          /* analytical RTpress */
+          /* do nothing, parameters are hard-coded (see eos.c) */
+          ierr = RTpressParametersCreateAndSet( &Ep->rtpress_parameters, FC );CHKERRQ(ierr);
+          break;
+  }
+
+  /* conductivity (w/m/K) */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_cond");CHKERRQ(ierr);
+  Ep->cond = 4.0; 
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->cond,NULL);CHKERRQ(ierr);
+  Ep->cond /= SC->COND;
+
+  /* viscosity-related, may eventually move into their own struct */
+  Ep->log10visc = 21.0; // FIXME: default is for solid only
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->log10visc,NULL);CHKERRQ(ierr);
+  Ep->log10visc -= SC->LOG10VISC;
+
+  /* melting curves */
+  const char str = '\0'; // empty string
+  ierr = LookupFilenameSet( "liquidus", &str, lookup->liquidus_filename );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( lookup->liquidus_filename, &lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = LookupFilenameSet( "solidus", &str, lookup->solidus_filename );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( lookup->solidus_filename, &lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+}
+
+# if 0
 PetscErrorCode set_eos( Parameters P )
 {
     PetscErrorCode ierr;
@@ -108,7 +171,7 @@ PetscErrorCode set_eos( Parameters P )
     PetscFunctionReturn(0);
 
 }
-
+#endif
 
 /*
  ******************************************************************************
@@ -569,7 +632,43 @@ static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 }
 #undef SPIDER_ROOT_DIR_STR
 
+static PetscErrorCode LookupFilenameSet( const char* property, const char* prefix, char* lookup_filename )
+{
+    PetscErrorCode ierr;
+    char           buf1[1024]; /* max size */
+    char           buf2[1024]; /* max size */
+    PetscBool      set_rel_to_src,set;
 
+    PetscFunctionBeginUser;
+
+    /* Based on input options, determine which files to load.  Options ending
+       with _rel_to_src indicate a path relative to the source code. In this 
+       case we prepend a string, SPIDER_ROOT_DIR_STR, and /. The corresponding
+       option without this overrides. */     
+
+    /* TODO: add default file location */
+
+    /* check for relative path name */
+    ierr = PetscSNPrintf(buf1,sizeof(buf1),"%s%s%s%s","-",prefix,property,"_filename_rel_to_src");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,buf1,lookup_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);CHKERRQ(ierr);
+    ierr = MakeRelativeToSourcePathAbsolute(lookup_filename);CHKERRQ(ierr);
+    /* check for absolute path name */
+    ierr = PetscSNPrintf(buf2,sizeof(buf2),"%s%s%s%s","-",prefix,property,"_filename");CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,buf2,lookup_filename,PETSC_MAX_PATH_LEN,&set);CHKERRQ(ierr);
+
+    if (!set && !set_rel_to_src){
+      SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s or %s",buf1,buf2);
+    }    
+
+    if (set && set_rel_to_src) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%s%s%s%s","Warning: ",buf1," ignored because ",buf2," provided\n");CHKERRQ(ierr);
+    }    
+
+    PetscFunctionReturn(0);
+}
+
+// FIXME: REMOVE
+#if 0
 static PetscErrorCode LookupMeltCreate( Lookup lookup, ScalingConstants const SC )
 {
   PetscErrorCode  ierr;
@@ -647,7 +746,9 @@ static PetscErrorCode LookupMeltCreate( Lookup lookup, ScalingConstants const SC
   PetscFunctionReturn(0);
 
 }
+#endif
 
+#if 0
 static PetscErrorCode LookupSolidCreate( Lookup lookup, const ScalingConstants SC )
 {
   PetscErrorCode  ierr;
@@ -723,7 +824,9 @@ static PetscErrorCode LookupSolidCreate( Lookup lookup, const ScalingConstants S
   PetscFunctionReturn(0);
 
 }
+#endif
 
+#if 0
 static PetscErrorCode LookupLiquidusCreate( Lookup lookup, ScalingConstants const SC )
 {
   /* TODO: this is not ideal, since the liquidus lookup is stored to both eos structs */
@@ -783,6 +886,7 @@ static PetscErrorCode LookupSolidusCreate( Lookup lookup, ScalingConstants const
   PetscFunctionReturn(0);
 
 }
+#endif
 
 /*
  ******************************************************************************
