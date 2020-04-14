@@ -112,6 +112,7 @@ static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
     PetscFunctionReturn(0);
 }
 
+#if 0
 /* Helper routine to prepend the root directory to a relative path */
 /* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
 #define STRINGIFY(x) STRINGIFY2(x)
@@ -129,7 +130,9 @@ static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
   PetscFunctionReturn(0);
 }
 #undef SPIDER_ROOT_DIR_STR
+#endif
 
+#if 0
 static PetscErrorCode SetLookupFilename( const char* property, const char* prefix, char* lookup_filename )
 {
     PetscErrorCode ierr;
@@ -164,8 +167,10 @@ static PetscErrorCode SetLookupFilename( const char* property, const char* prefi
 
     PetscFunctionReturn(0);
 }
+#endif
 
-
+// FIXME: REMOVE: moved elsewhere into eos.c
+#if 0
 static PetscErrorCode EosParametersSetFromOptions(EosParameters Ep, const ScalingConstants SC)
 {
   PetscErrorCode ierr;
@@ -215,6 +220,8 @@ static PetscErrorCode EosParametersSetFromOptions(EosParameters Ep, const Scalin
 
   PetscFunctionReturn(0);
 }
+#endif
+
 
 static PetscErrorCode RadionuclideParametersSetFromOptions(RadionuclideParameters Rp, const ScalingConstants SC)
 {
@@ -337,9 +344,10 @@ but they are all stored in non-dimensional (scaled) form.
 
 PetscErrorCode ParametersSetFromOptions(Parameters P)
 {
-  PetscErrorCode         ierr;
-  ScalingConstants const SC = P->scaling_constants;
-  PetscInt               i; // FIXME: required?
+  PetscErrorCode             ierr;
+  FundamentalConstants const FC = P->fundamental_constants;
+  ScalingConstants const     SC = P->scaling_constants;
+  PetscInt                   i; // FIXME: required?
   // FIXME
   //CompositionParameters      *Compp = &P->composition_parameters;
 
@@ -357,10 +365,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
      and vice versa for boundary conditions */
   /* TODO: if we have an option of analytical EOSs, we might not need to set the lookups
      for every model run */
-
-  /* FIXME: update to use new eos_parameters and move to end! */
-  /* function is in eos.c */
-  ierr = set_eos( P );CHKERRQ(ierr);
 
   /* For each entry in parameters, we set a default value and immediately scale it.
      Dimensional/unscaled quantities are not explicitly stored.
@@ -686,14 +690,18 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
         ierr = EosParametersCreate(&P->eos_parameters[r]);CHKERRQ(ierr);
         ierr = PetscStrncpy(P->eos_parameters[r]->prefix,prefixes[r],sizeof(P->eos_parameters[r]->prefix));CHKERRQ(ierr);
         ierr = PetscFree(prefixes[r]);CHKERRQ(ierr);
+        ierr = EosParametersSetFromOptions(P->eos_parameters[r], FC, SC);CHKERRQ(ierr);
       }
     }
   }
 
+// FIXME: REMOVE
+#if 0
   /* Get command-line values for all radionuclides */
   for (i=0; i<P->n_phases; ++i) {
     ierr = EosParametersSetFromOptions(P->eos_parameters[i], SC);CHKERRQ(ierr);
   }
+#endif
 
   ierr = AtmosphereParametersSetFromOptions( P, SC ); CHKERRQ(ierr);
 
