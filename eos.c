@@ -87,6 +87,7 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   Ep->cond /= SC->COND;
 
   /* viscosity-related, may eventually move into their own struct */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_log10visc");CHKERRQ(ierr);
   Ep->log10visc = 21.0; // FIXME: default is for solid only
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->log10visc,NULL);CHKERRQ(ierr);
   Ep->log10visc -= SC->LOG10VISC;
