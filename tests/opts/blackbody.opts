@@ -47,8 +47,6 @@
 # output directory
 -outputDirectory output
 
-# new form of Eos data below
-
 -phase_names melt,solid
 
 -melt_TYPE 1
@@ -58,6 +56,8 @@
 -melt_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_melt.dat
 -melt_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_melt.dat
 -melt_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_melt.dat
+-melt_log10visc 2.0
+-melt_cond # conductivity of melt
 
 -solid_TYPE 1
 -solid_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_solid.dat
@@ -65,28 +65,13 @@
 -solid_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_solid.dat
 -solid_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_solid.dat
 -solid_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_solid.dat
-
-#end of new form
+-solid_log10visc 21.0
+-solid_cond 4.0 # conductivity of solid
 
 # melting curves
 # for bottom-up crystallisation (double precision OK)
 -liquidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/liquidus_A11_H13.dat
 -solidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
-
-# TODO: keep alive whilst testing against old method
-# melt lookup data
--alphaMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
--cpMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_melt.dat
--dtdpsMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_melt.dat
--rhoMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_melt.dat
--tempMel_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_melt.dat
-
-# solid lookup data
--alphaSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_solid.dat
--cpSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_solid.dat
--dtdpsSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_solid.dat
--rhoSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_solid.dat
--tempSol_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_solid.dat
 
 # initial condition
 # [1] is set dS/dr to constant everywhere
@@ -131,8 +116,6 @@
 -eddy_diffusivity_chemical 1.0
 
 # material properties
--cond_sol 4.0 # conductivity of solid
--cond_mel 4.0 # conductivity of melt
 -grain 1.0E-3 # grain size (m)
 
 # smoothing of material properties across liquidus and solidus
@@ -140,8 +123,6 @@
 -matprop_smooth_width 1.0E-2
 
 # viscosity
--log10visc_sol 21.0 # solid viscosity (log10)
--log10visc_mel 2.0 # melt viscosity (log10)
 -phi_critical 0.4 # transition melt fraction (non-dimensional)
 -phi_width 0.15 # transition width (non-dimensional)
 

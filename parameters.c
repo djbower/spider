@@ -695,11 +695,11 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     }
   }
 
-// FIXME: REMOVE
+// FIXME: REMOVE(?)
 #if 0
   /* Get command-line values for all radionuclides */
   for (i=0; i<P->n_phases; ++i) {
-    ierr = EosParametersSetFromOptions(P->eos_parameters[i], SC);CHKERRQ(ierr);
+    ierr = EosParametersSetFromOptions(P->eos_parameters[i], FC, SC);CHKERRQ(ierr);
   }
 #endif
 
