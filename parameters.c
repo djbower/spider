@@ -112,117 +112,6 @@ static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
     PetscFunctionReturn(0);
 }
 
-#if 0
-/* Helper routine to prepend the root directory to a relative path */
-/* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
-#define STRINGIFY(x) STRINGIFY2(x)
-#define STRINGIFY2(x) #x
-#define SPIDER_ROOT_DIR_STR STRINGIFY(SPIDER_ROOT_DIR)
-static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
-  PetscErrorCode ierr;
-  char tmp[PETSC_MAX_PATH_LEN];
-
-  PetscFunctionBeginUser;
-  ierr = PetscStrcpy(tmp,path);CHKERRQ(ierr);
-  ierr = PetscStrcpy(path,SPIDER_ROOT_DIR_STR);CHKERRQ(ierr);
-  ierr = PetscStrcat(path,"/");CHKERRQ(ierr); /* not portable */
-  ierr = PetscStrcat(path,tmp);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-#undef SPIDER_ROOT_DIR_STR
-#endif
-
-#if 0
-static PetscErrorCode SetLookupFilename( const char* property, const char* prefix, char* lookup_filename )
-{
-    PetscErrorCode ierr;
-    char           buf1[1024]; /* max size */
-    char           buf2[1024]; /* max size */
-    PetscBool      set_rel_to_src,set;
-
-    PetscFunctionBeginUser;
-
-    /* Based on input options, determine which files to load.  Options ending
-       with _rel_to_src indicate a path relative to the source code. In this 
-       case we prepend a string, SPIDER_ROOT_DIR_STR, and /. The corresponding
-       option without this overrides. */          
-
-    /* TODO: add default file location */
-
-    /* check for relative path name */
-    ierr = PetscSNPrintf(buf1,sizeof(buf1),"%s%s%s%s","-",prefix,property,"_filename_rel_to_src");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,buf1,lookup_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);CHKERRQ(ierr);
-    ierr = MakeRelativeToSourcePathAbsolute(lookup_filename);CHKERRQ(ierr);
-    /* check for absolute path name */
-    ierr = PetscSNPrintf(buf2,sizeof(buf2),"%s%s%s%s","-",prefix,property,"_filename");CHKERRQ(ierr);
-    ierr = PetscOptionsGetString(NULL,NULL,buf2,lookup_filename,PETSC_MAX_PATH_LEN,&set);CHKERRQ(ierr);
-
-    if (!set && !set_rel_to_src){
-      SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s or %s",buf1,buf2);
-    }
-
-    if (set && set_rel_to_src) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%s%s%s%s","Warning: ",buf1," ignored because ",buf2," provided\n");CHKERRQ(ierr);
-    }
-
-    PetscFunctionReturn(0);
-}
-#endif
-
-// FIXME: REMOVE: moved elsewhere into eos.c
-#if 0
-static PetscErrorCode EosParametersSetFromOptions(EosParameters Ep, const ScalingConstants SC)
-{
-  PetscErrorCode ierr;
-  char           buf[1024]; /* max size */
-  PetscBool      set;
-  Lookup         lookup;
-
-  PetscFunctionBeginUser;
-
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_TYPE");CHKERRQ(ierr);
-  Ep->TYPE = 1; /* lookup be default */
-  ierr = PetscOptionsGetInt(NULL,NULL,buf, &Ep->TYPE,&set);CHKERRQ(ierr);
-
-  switch( Ep->TYPE ){
-      case 1:
-          /* lookup, set filenames (does not allocate memory for Interp structs) */
-          /* leading underscore is clunky, but to enable the same function to
-             process a variety of input strings */
-          lookup = Ep->lookup;
-          ierr = SetLookupFilename( "_alpha", Ep->prefix, lookup->alpha_filename );CHKERRQ(ierr);
-          ierr = SetLookupFilename( "_cp", Ep->prefix, lookup->cp_filename ); CHKERRQ(ierr);
-          ierr = SetLookupFilename( "_dTdPs", Ep->prefix, lookup->dTdPs_filename );CHKERRQ(ierr);
-          ierr = SetLookupFilename( "_rho", Ep->prefix, lookup->rho_filename );CHKERRQ(ierr);
-          ierr = SetLookupFilename( "_temp", Ep->prefix, lookup->temp_filename );CHKERRQ(ierr);
-
-      case 2:
-          /* analytical RTpress */
-          /* do nothing, parameters are hard-coded (see eos.c) */
-          ;
-  }
-
-  /* conductivity (w/m/K) */
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_cond");CHKERRQ(ierr);
-  Ep->cond = 4.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->cond,NULL);CHKERRQ(ierr);
-  Ep->cond /= SC->COND;
-
-  /* viscosity-related, may eventually move into their own struct */
-  Ep->log10visc = 21.0; // FIXME: default is for solid only
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->log10visc,NULL);CHKERRQ(ierr);
-  Ep->log10visc -= SC->LOG10VISC;
-
-  /* melting curves */
-  const char str = '\0'; // empty string
-  ierr = SetLookupFilename( "liquidus", &str, lookup->liquidus_filename );CHKERRQ(ierr);
-  ierr = SetLookupFilename( "solidus", &str, lookup->solidus_filename );CHKERRQ(ierr);
-
-  PetscFunctionReturn(0);
-}
-#endif
-
-
 static PetscErrorCode RadionuclideParametersSetFromOptions(RadionuclideParameters Rp, const ScalingConstants SC)
 {
   PetscErrorCode ierr;
@@ -347,7 +236,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   PetscErrorCode             ierr;
   FundamentalConstants const FC = P->fundamental_constants;
   ScalingConstants const     SC = P->scaling_constants;
-  PetscInt                   i; // FIXME: required?
   // FIXME
   //CompositionParameters      *Compp = &P->composition_parameters;
 
@@ -664,14 +552,11 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
         ierr = RadionuclideParametersCreate(&P->radionuclide_parameters[r]);CHKERRQ(ierr);
         ierr = PetscStrncpy(P->radionuclide_parameters[r]->prefix,prefixes[r],sizeof(P->radionuclide_parameters[r]->prefix));CHKERRQ(ierr);
         ierr = PetscFree(prefixes[r]);CHKERRQ(ierr);
+        ierr = RadionuclideParametersSetFromOptions(P->radionuclide_parameters[r], SC);CHKERRQ(ierr);
       }
     }
   }
 
-  /* Get command-line values for all radionuclides */
-  for (i=0; i<P->n_radionuclides; ++i) {
-    ierr = RadionuclideParametersSetFromOptions(P->radionuclide_parameters[i], SC);CHKERRQ(ierr);
-  }
 
   /* Look for command-line option to determine number of phases
      and options prefix for each e.g. -phase_names melt, solid */
@@ -694,14 +579,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
       }
     }
   }
-
-// FIXME: REMOVE(?)
-#if 0
-  /* Get command-line values for all radionuclides */
-  for (i=0; i<P->n_phases; ++i) {
-    ierr = EosParametersSetFromOptions(P->eos_parameters[i], FC, SC);CHKERRQ(ierr);
-  }
-#endif
 
   ierr = AtmosphereParametersSetFromOptions( P, SC ); CHKERRQ(ierr);
 
@@ -1195,13 +1072,6 @@ PetscErrorCode ParametersCreate( Parameters* parameters_ptr )
     ierr = FundamentalConstantsCreate( &P->fundamental_constants );CHKERRQ(ierr);
     ierr = AtmosphereParametersCreate( &P->atmosphere_parameters );CHKERRQ(ierr);
 
-
-// FIXME: REMOVE
-#if 0
-    ierr = EosParametersCreate( &P->eos1_parameters );CHKERRQ(ierr);
-    ierr = EosParametersCreate( &P->eos2_parameters );CHKERRQ(ierr);
-#endif
-
     /* populate structs with data */
     ierr = ParametersSetFromOptions( P );CHKERRQ(ierr);
 
@@ -1220,12 +1090,6 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
     ierr = ScalingConstantsDestroy(&P->scaling_constants);CHKERRQ(ierr);
     ierr = FundamentalConstantsDestroy(&P->fundamental_constants);CHKERRQ(ierr);
     ierr = AtmosphereParametersDestroy(&P->atmosphere_parameters);CHKERRQ(ierr);
-
-// FIXME: REMOVE
-#if 0
-    ierr = EosParametersDestroy(&P->eos1_parameters);CHKERRQ(ierr);
-    ierr = EosParametersDestroy(&P->eos2_parameters);CHKERRQ(ierr);
-#endif
 
     /* radionuclides */
     for (i=0; i<P->n_radionuclides; ++i) {
