@@ -7,8 +7,6 @@
 PetscErrorCode EosParametersCreate( EosParameters * );
 PetscErrorCode EosParametersDestroy( EosParameters * );
 PetscErrorCode EosParametersSetFromOptions( EosParameters, const FundamentalConstants, const ScalingConstants );
-// FIXME: REMOVE
-//PetscErrorCode set_eos( Parameters );
 
 /* TODO: below probably moves elsewhere eventually (becomes static?) */
 PetscErrorCode set_rtpress_struct( PetscScalar, PetscScalar, Ctx * );
