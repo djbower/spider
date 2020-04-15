@@ -97,7 +97,6 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s=E->da_s;
-    // FIXME REMOVE Lookup            L;
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     // FIXME
@@ -139,56 +138,17 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 
     for(i=ilo_s; i<ihi_s; ++i){
 
-        SetEosEvalFromLookup( P->eos_parameters[1]->lookup, arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );
-
-#if 0
         /* solid phase */
-        L = P->eos_parameters[1]->lookup;
-        rho_sol = get_val2d( L->rho, arr_pres_s[i], arr_S_s[i] );
-        temp_sol = get_val2d( L->temp, arr_pres_s[i], arr_S_s[i] );
-        cp_sol = get_val2d( L->cp, arr_pres_s[i], arr_S_s[i] );
-#endif
-
+        SetEosEvalFromLookup( P->eos_parameters[1]->lookup, arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );
         rho_sol = E->eos_evals[1].rho;
         temp_sol = E->eos_evals[1].T;
         cp_sol = E->eos_evals[1].Cp;
 
-        /* FIXME: BELOW IS A TESTING AREA FOR ANALYTICAL RTPRESS */
-
         /* melt phase */
-
         SetEosEvalFromLookup( P->eos_parameters[0]->lookup, arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );
         rho_mel = E->eos_evals[0].rho;
         temp_mel = E->eos_evals[0].T;
         cp_mel = E->eos_evals[0].Cp;
-
-#if 0
-        L = P->eos_parameters[0]->lookup;
-        rho_mel = get_val2d( L->rho, arr_pres_s[i], arr_S_s[i] );
-#endif
-/* lookup (original) is below */
-#if 0
-        temp_mel = get_val2d( L->temp, arr_pres_s[i], arr_S_s[i] );
-#endif
-#if 0
-/* TODO: testing analytical rtpress */
-        /* this updates everything to be consistent with current P and S conditions */
-        set_rtpress_struct( arr_pres_s[i], arr_S_s[i], E );
-        temp_mel = 0.0; //get_rtpress_temperature( arr_pres_s[i], arr_S_s[i], E );
-/* TODO: above is testing */
-#endif
-#if 0
-        /* for testing entropy */
-        //temp_mel = get_rtpress_entropy_test( E );
-        /* for testing pressure */
-        // temp_mel = get_rtpress_pressure_test( E );
-        /* for testing inverse function */
-        set_rtpress_struct( arr_pres_s[i], arr_S_s[i], E );
-        temp_mel = 0.0;
-#endif
-#if 0
-        cp_mel = get_val2d( L->cp, arr_pres_s[i], arr_S_s[i] );
-#endif
 
         /* mixed phase */
         /* volume additivity, excluding temperature (since phase effect dominant) */
@@ -277,7 +237,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscScalar       rho_sol, dTdrs_sol, cp_sol, temp_sol, alpha_sol, cond_sol, log10visc_sol;
     PetscScalar       rho_mel, dTdrs_mel, cp_mel, temp_mel, alpha_mel, cond_mel, log10visc_mel;
     PetscScalar       rho_mix, dTdrs_mix, cp_mix, temp_mix, alpha_mix, cond_mix, log10visc_mel_mix, log10visc_sol_mix, log10visc_mix;
-   // FIXME REMOVE Lookup            L;
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     // FIXME
@@ -344,43 +303,23 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       /* truncate melt fraction */
       arr_phi[i] = get_melt_fraction_truncated( arr_phi[i] );
 
-      /* solid phase */
-      // FIXME: REMOVE L = P->eos_parameters[1]->lookup;
-
+      /* solid */
       SetEosEvalFromLookup( P->eos_parameters[1]->lookup, arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
-
       rho_sol = E->eos_evals[1].rho;
       dTdrs_sol = arr_dPdr_b[i] * E->eos_evals[1].dTdPs;
       cp_sol = E->eos_evals[1].Cp;
       temp_sol = E->eos_evals[1].T;
       alpha_sol = E->eos_evals[1].alpha;
-#if 0
-      rho_sol = get_val2d( L->rho, arr_pres[i], arr_S_b[i] );
-      dTdrs_sol = arr_dPdr_b[i] * get_val2d( L->dTdPs, arr_pres[i], arr_S_b[i] );
-      cp_sol = get_val2d( L->cp, arr_pres[i], arr_S_b[i] );
-      temp_sol = get_val2d( L->temp, arr_pres[i], arr_S_b[i] );
-      alpha_sol = get_val2d( L->alpha, arr_pres[i], arr_S_b[i] );
-#endif
       cond_sol = P->eos_parameters[1]->cond;
       log10visc_sol = get_log10_viscosity_solid( temp_sol, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
 
       /* melt phase */
-
       SetEosEvalFromLookup( P->eos_parameters[0]->lookup, arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
-
       rho_mel = E->eos_evals[0].rho;
       dTdrs_mel = arr_dPdr_b[i] * E->eos_evals[0].dTdPs;
       cp_mel = E->eos_evals[0].Cp;
       temp_mel = E->eos_evals[0].T;
       alpha_mel = E->eos_evals[0].alpha;
-#if 0
-      L = P->eos_parameters[0]->lookup;
-      rho_mel = get_val2d( L->rho, arr_pres[i], arr_S_b[i] );
-      dTdrs_mel = arr_dPdr_b[i] * get_val2d( L->dTdPs, arr_pres[i], arr_S_b[i] );
-      cp_mel = get_val2d( L->cp, arr_pres[i], arr_S_b[i] );
-      temp_mel = get_val2d( L->temp, arr_pres[i], arr_S_b[i] );
-      alpha_mel = get_val2d( L->alpha, arr_pres[i], arr_S_b[i] );
-#endif
       cond_mel = P->eos_parameters[0]->cond;
       log10visc_mel = get_log10_viscosity_melt( temp_mel, arr_pres[i], arr_layer_b[i], P );
 
