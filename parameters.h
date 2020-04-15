@@ -377,17 +377,20 @@ typedef struct {
     PetscScalar lid_log10visc;
     PetscScalar lid_thickness;
 
+    /* Scaling constants */
+    ScalingConstants scaling_constants;
+
+    /* Fundamental constants */
+    FundamentalConstants fundamental_constants;
+
+    /* Atmosphere parameters */
+    AtmosphereParameters atmosphere_parameters;
+
+    /* Radionuclides */
     PetscInt    n_radionuclides;
     RadionuclideParameters radionuclide_parameters[SPIDER_MAX_RADIONUCLIDES];
 
-    // Atmosphere Parameters
-    AtmosphereParameters atmosphere_parameters;
-
-    // Scaling factors / dimensional constants
-    ScalingConstants scaling_constants;
-
-    FundamentalConstants fundamental_constants;
-
+    /* Materials (EOS) */
     PetscInt    n_phases;
     EosParameters eos_parameters[SPIDER_MAX_PHASES];
 
