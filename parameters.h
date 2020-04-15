@@ -361,16 +361,12 @@ typedef struct {
     PetscScalar cp_core;
     PetscScalar tfac_core_avg;
     PetscScalar matprop_smooth_width;
-    PetscScalar log10visc_sol;
     PetscScalar activation_energy_sol;
     PetscScalar activation_volume_sol;
     PetscScalar log10visc_min;
     PetscScalar log10visc_max;
     PetscScalar Mg_Si0;
     PetscScalar Mg_Si1;
-    PetscScalar cond_sol;
-    PetscScalar log10visc_mel;
-    PetscScalar cond_mel;
     PetscScalar eddy_diffusivity_thermal;
     PetscScalar eddy_diffusivity_chemical;
     PetscInt    VISCOUS_LID;
