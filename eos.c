@@ -20,7 +20,6 @@ static PetscErrorCode RTpressParametersCreateAndSet( RTpressParameters *, const 
 static PetscErrorCode RTpressParametersDestroy( RTpressParameters * );
 static PetscScalar GetRTpressPressure( const RTpressParameters, PetscScalar, PetscScalar );
 static PetscScalar GetRTpressEntropy( const RTpressParameters, PetscScalar, PetscScalar );
-/* TODO: sort out Ctx argument below */
 static PetscErrorCode GetRTpressVolumeTemperature( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar *, PetscScalar * );
 static PetscErrorCode GetRTpressRho( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode GetRTpressAlpha( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
@@ -553,7 +552,7 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode SetEosEvalFromLookup( const Lookup lookup, PetscScalar P, PetscScalar S, EosEval *eos_eval )
+static PetscErrorCode SetEosEvalFromLookup( const Lookup lookup, PetscScalar P, PetscScalar S, EosEval *eos_eval )
 {
     PetscFunctionBeginUser;
 
@@ -597,7 +596,7 @@ static PetscErrorCode RTpressParametersDestroy( RTpressParameters* rtpress_param
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode RTpressParametersCreateAndSet( RTpressParameters* rtpress_parameters_ptr, const FundamentalConstants FC )
+static PetscErrorCode RTpressParametersCreateAndSet( RTpressParameters* rtpress_parameters_ptr, const FundamentalConstants FC )
 {
     /* EOS parameters for rtpress, taken from jupyter notebook and Wolf and Bower (2018).
        TODO: Simplest to keep these in dimensional form and scale the returned values as a
@@ -1064,6 +1063,24 @@ static PetscErrorCode GetRTpressVolumeTemperature( const RTpressParameters rtp, 
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters rtp, PetscScalar P, PetscScalar S, EosEval *eos_eval )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    eos_eval->P = P;
+    eos_eval->S = S;
+    ierr = GetRTpressVolumeTemperature( rtp, P, S, &eos_eval->V, &eos_eval->T );CHKERRQ(ierr);
+    ierr = GetRTpressdTdPs( rtp, eos_eval->V, eos_eval->T, &eos_eval->dTdPs );
+    ierr = GetRTpressCp( rtp, eos_eval->V, eos_eval->T, &eos_eval->Cp );
+    ierr = GetRTpressCv( rtp, eos_eval->V, eos_eval->T, &eos_eval->Cv );
+    ierr = GetRTpressRho( rtp, eos_eval->V, eos_eval->T, &eos_eval->rho );
+    ierr = GetRTpressAlpha( rtp, eos_eval->V, eos_eval->T, &eos_eval->alpha );
+
+    PetscFunctionReturn(0);
+}
+
 #if 0
 static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *E )
 {
@@ -1271,24 +1288,6 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = Interp1dCreateAndSet( lookup->solidus_filename, &lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
-}
-
-static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters rtp, PetscScalar P, PetscScalar S, EosEval *eos_eval )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    eos_eval->P = P;
-    eos_eval->S = S;
-    ierr = GetRTpressVolumeTemperature( rtp, P, S, &eos_eval->V, &eos_eval->T );CHKERRQ(ierr);
-    ierr = GetRTpressdTdPs( rtp, eos_eval->V, eos_eval->T, &eos_eval->dTdPs );
-    ierr = GetRTpressCp( rtp, eos_eval->V, eos_eval->T, &eos_eval->Cp );
-    ierr = GetRTpressCv( rtp, eos_eval->V, eos_eval->T, &eos_eval->Cv );
-    ierr = GetRTpressRho( rtp, eos_eval->V, eos_eval->T, &eos_eval->rho );
-    ierr = GetRTpressAlpha( rtp, eos_eval->V, eos_eval->T, &eos_eval->alpha );
-
-    PetscFunctionReturn(0);
 }
 
 PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S, EosEval *eos_eval )
