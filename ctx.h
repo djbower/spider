@@ -71,8 +71,8 @@ typedef struct EosEval_ {
   PetscScalar dTdPs; /* adiabatic temperature gradient */
   /* TODO could consider adding the following, although these are
      not usually derived from an EOS */
-  /* PetscScalar cond; */
-  /* PetscScalar visc */
+  PetscScalar cond;
+  PetscScalar log10visc;
 } EosEval;
 
 /* A Context for the Solver */
@@ -96,8 +96,7 @@ typedef struct Ctx_ {
      update all material propoerties, according to a chosen EOS model.
      Currently need one for solid and one for melt, but could extend to
      multiple phases */
-  EosEval                eos1_eval; /* melt */
-  EosEval                eos2_eval; /* solid */
+  EosEval                eos_evals[2]; // FIXME: hard-coded for two phases
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
