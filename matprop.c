@@ -139,13 +139,13 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     for(i=ilo_s; i<ihi_s; ++i){
 
         /* solid phase */
-        SetEosEvalFromLookup( P->eos_parameters[1]->lookup, arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );
+        SetEosEval( P->eos_parameters[1], arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );
         rho_sol = E->eos_evals[1].rho;
         temp_sol = E->eos_evals[1].T;
         cp_sol = E->eos_evals[1].Cp;
 
         /* melt phase */
-        SetEosEvalFromLookup( P->eos_parameters[0]->lookup, arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );
+        SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );
         rho_mel = E->eos_evals[0].rho;
         temp_mel = E->eos_evals[0].T;
         cp_mel = E->eos_evals[0].Cp;
@@ -304,7 +304,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       arr_phi[i] = get_melt_fraction_truncated( arr_phi[i] );
 
       /* solid */
-      SetEosEvalFromLookup( P->eos_parameters[1]->lookup, arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
+      SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
       rho_sol = E->eos_evals[1].rho;
       dTdrs_sol = arr_dPdr_b[i] * E->eos_evals[1].dTdPs;
       cp_sol = E->eos_evals[1].Cp;
@@ -314,7 +314,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       log10visc_sol = get_log10_viscosity_solid( temp_sol, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
 
       /* melt phase */
-      SetEosEvalFromLookup( P->eos_parameters[0]->lookup, arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
+      SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
       rho_mel = E->eos_evals[0].rho;
       dTdrs_mel = arr_dPdr_b[i] * E->eos_evals[0].dTdPs;
       cp_mel = E->eos_evals[0].Cp;

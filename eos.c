@@ -12,10 +12,7 @@ static PetscErrorCode Interp1dCreateAndSet( const char *, Interp1d *, PetscScala
 static PetscErrorCode Interp1dDestroy( Interp1d * );
 static PetscErrorCode Interp2dCreateAndSet( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode Interp2dDestroy( Interp2d * );
-#if 0
-static PetscErrorCode GetInterp1dValue( const Interp1d, PetscScalar );
-static PetscErrorCode GetInterp2dValue( const Interp2d, PetscScalar, PetscScalar );
-#endif
+static PetscErrorCode SetEosEvalFromLookup( const Lookup, PetscScalar, PetscScalar, EosEval * );
 
 /* rtpress material properties (Wolf and Bower, 2018) */
 static PetscErrorCode RTpressParametersCreate( RTpressParameters * );
@@ -24,7 +21,7 @@ static PetscErrorCode RTpressParametersDestroy( RTpressParameters * );
 static PetscScalar GetRTpressPressure( const RTpressParameters, PetscScalar, PetscScalar );
 static PetscScalar GetRTpressEntropy( const RTpressParameters, PetscScalar, PetscScalar );
 /* TODO: sort out Ctx argument below */
-static PetscErrorCode GetRTpressVolumeTemperature( const RTpressParameters, PetscScalar *, PetscScalar *, Ctx * );
+static PetscErrorCode GetRTpressVolumeTemperature( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar *, PetscScalar * );
 static PetscErrorCode GetRTpressRho( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode GetRTpressAlpha( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode GetRTpressCv( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
@@ -32,6 +29,7 @@ static PetscErrorCode GetRTpressCp( const RTpressParameters, PetscScalar, PetscS
 static PetscErrorCode GetRTpressdTdPs( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
 /* solve for volume and temperature from pressure and entropy */
 static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES, Vec, Vec, void * );
+static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
 #if 0
 /* TODO: update these to general framework for evaluating Eos */
@@ -566,6 +564,9 @@ PetscErrorCode SetEosEvalFromLookup( const Lookup lookup, PetscScalar P, PetscSc
     eos_eval->rho = GetInterp2dValue( lookup->rho, P, S );
     eos_eval->dTdPs = GetInterp2dValue( lookup->dTdPs, P, S );
     eos_eval->alpha = GetInterp2dValue( lookup->alpha, P, S );
+    /* lookup does not know about these quantities */
+    eos_eval->Cv = 0.0;
+    eos_eval->V = 0.0;
 
     PetscFunctionReturn(0);
 }
@@ -876,7 +877,7 @@ static PetscErrorCode GetRTpressCp( const RTpressParameters rtp, PetscScalar V, 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode SetRTpressdTdPs( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *dTdPs_ptr )
+static PetscErrorCode GetRTpressdTdPs( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *dTdPs_ptr )
 {
 
     PetscScalar dTdPs = *dTdPs_ptr;
@@ -951,16 +952,11 @@ PetscScalar GetRTpressPressure_test( Ctx *E )
 
 static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES snes, Vec x, Vec f, void *ptr)
 {
-    PetscErrorCode             ierr;
-    const PetscScalar          *xx;
-    PetscScalar                *ff;
-    PetscScalar                V, T, P, S;
-    /* TODO FIX BELOW */
-    Ctx                        *E = (Ctx*) ptr;
-    RTpressParameters          rtp = E->parameters->eos_parameters[0]->rtpress_parameters;
-    EosEval                    *eos_eval = &E->eos_evals[0];
-    PetscScalar Ptarget = eos_eval->P;
-    PetscScalar Starget = eos_eval->S;
+    PetscErrorCode     ierr;
+    const PetscScalar  *xx;
+    PetscScalar        *ff;
+    PetscScalar        V, T, P, S;
+    RTpressEval        *rtpress_eval = (RTpressEval*) ptr;
 
     PetscFunctionBeginUser;
 
@@ -970,12 +966,12 @@ static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES snes, Vec 
     V = xx[0];
     T = xx[1];
 
-    P = GetRTpressPressure( rtp, V, T );
-    S = GetRTpressEntropy( rtp, V, T );
+    P = GetRTpressPressure( rtpress_eval->rtp, V, T );
+    S = GetRTpressEntropy( rtpress_eval->rtp, V, T );
 
     /* compute residual */
-    ff[0] = P - Ptarget;
-    ff[1] = S - Starget;
+    ff[0] = P - rtpress_eval->P;
+    ff[1] = S - rtpress_eval->S;
 
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
@@ -983,7 +979,7 @@ static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES snes, Vec 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetRTpressVolumeTemperature( const RTpressParameters rtp, PetscScalar *V, PetscScalar *T, Ctx *E )
+static PetscErrorCode GetRTpressVolumeTemperature( const RTpressParameters rtp, PetscScalar P, PetscScalar S, PetscScalar *V, PetscScalar *T )
 {
     PetscErrorCode ierr;
     SNES           snes;
@@ -1005,7 +1001,10 @@ static PetscErrorCode GetRTpressVolumeTemperature( const RTpressParameters rtp, 
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
-    ierr = SNESSetFunction(snes,r,RTpressObjectiveFunctionVolumeTemperature,E);CHKERRQ(ierr);
+    /* temporary struct to pass arguments to solver */
+    RTpressEval rtpress_eval = {.P=P, .S=S, .rtp=rtp };
+
+    ierr = SNESSetFunction(snes,r,RTpressObjectiveFunctionVolumeTemperature,&rtpress_eval);CHKERRQ(ierr);
 
     /* initialise vector x with initial guess */
     /* TODO: could get initial guess from reference pressure profile ? */
@@ -1214,7 +1213,7 @@ PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
 }
 
 
-PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalConstants FC, const ScalingConstants SC)
+PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalConstants FC, const ScalingConstants SC )
 {
   /* creates and sets the structs that are nested within EosParameters */
 
@@ -1270,6 +1269,47 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = Interp1dCreateAndSet( lookup->liquidus_filename, &lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
   ierr = LookupFilenameSet( "solidus", &str, lookup->solidus_filename );CHKERRQ(ierr);
   ierr = Interp1dCreateAndSet( lookup->solidus_filename, &lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters rtp, PetscScalar P, PetscScalar S, EosEval *eos_eval )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    eos_eval->P = P;
+    eos_eval->S = S;
+    ierr = GetRTpressVolumeTemperature( rtp, P, S, &eos_eval->V, &eos_eval->T );CHKERRQ(ierr);
+    ierr = GetRTpressdTdPs( rtp, eos_eval->V, eos_eval->T, &eos_eval->dTdPs );
+    ierr = GetRTpressCp( rtp, eos_eval->V, eos_eval->T, &eos_eval->Cp );
+    ierr = GetRTpressCv( rtp, eos_eval->V, eos_eval->T, &eos_eval->Cv );
+    ierr = GetRTpressRho( rtp, eos_eval->V, eos_eval->T, &eos_eval->rho );
+    ierr = GetRTpressAlpha( rtp, eos_eval->V, eos_eval->T, &eos_eval->alpha );
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S, EosEval *eos_eval )
+{
+  /* TODO: could instead use function pointers, rather than pushing every evaluation of an EOS
+     through this switch case */
+
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+
+  switch( Ep->TYPE ){
+      case 1:
+          /* lookup */
+           ierr = SetEosEvalFromLookup( Ep->lookup, P, S, eos_eval );CHKERRQ(ierr);
+           break;
+      case 2:
+          /* analytical RTpress */
+          ierr = SetEosEvalFromRTpress( Ep->rtpress_parameters, P, S, eos_eval );CHKERRQ(ierr);
+          break;
+  }
 
   PetscFunctionReturn(0);
 }
