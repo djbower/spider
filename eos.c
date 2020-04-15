@@ -33,67 +33,6 @@ static PetscScalar specific_to_per_atom( PetscScalar, PetscScalar, PetscScalar )
 static PetscScalar joule_to_eV( PetscScalar );
 static PetscScalar eV_to_joule( PetscScalar );
 
-PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalConstants FC, const ScalingConstants SC)
-{
-  /* creates and sets the structs that are nested within EosParameters */
-
-  PetscErrorCode ierr;
-  char           buf[1024]; /* max size */
-  PetscBool      set; 
-  Lookup         lookup = Ep->lookup;
-
-  PetscFunctionBeginUser;
-
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_TYPE");CHKERRQ(ierr);
-  Ep->TYPE = 1; /* default is lookup */
-  ierr = PetscOptionsGetInt(NULL,NULL,buf, &Ep->TYPE,&set);CHKERRQ(ierr);
-  //if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",bur);
-
-  switch( Ep->TYPE ){
-      case 1:
-          /* lookup, set filenames (does not allocate memory for Interp structs) */
-          /* leading underscore is clunky, but to enable the same function to
-             process a variety of input strings */
-          ierr = LookupFilenameSet( "_alpha", Ep->prefix, lookup->alpha_filename );CHKERRQ(ierr);
-          ierr = Interp2dCreateAndSet( lookup->alpha_filename, &lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_cp", Ep->prefix, lookup->cp_filename ); CHKERRQ(ierr);
-          ierr = Interp2dCreateAndSet( lookup->cp_filename, &lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_dTdPs", Ep->prefix, lookup->dTdPs_filename );CHKERRQ(ierr);
-          ierr = Interp2dCreateAndSet( lookup->dTdPs_filename, &lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_rho", Ep->prefix, lookup->rho_filename );CHKERRQ(ierr);
-          ierr = Interp2dCreateAndSet( lookup->rho_filename, &lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_temp", Ep->prefix, lookup->temp_filename );CHKERRQ(ierr);
-          ierr = Interp2dCreateAndSet( lookup->temp_filename, &lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
-
-      case 2:
-          /* analytical RTpress */
-          /* do nothing, parameters are hard-coded (see eos.c) */
-          ierr = RTpressParametersCreateAndSet( &Ep->rtpress_parameters, FC );CHKERRQ(ierr);
-          break;
-  }
-
-  /* conductivity (w/m/K) */
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_cond");CHKERRQ(ierr);
-  Ep->cond = 4.0; 
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->cond,NULL);CHKERRQ(ierr);
-  Ep->cond /= SC->COND;
-
-  /* viscosity-related, may eventually move into their own struct */
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_log10visc");CHKERRQ(ierr);
-  Ep->log10visc = 21.0; // FIXME: default is for solid only
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->log10visc,NULL);CHKERRQ(ierr);
-  Ep->log10visc -= SC->LOG10VISC;
-
-  /* melting curves */
-  const char str = '\0'; // empty string
-  ierr = LookupFilenameSet( "liquidus", &str, lookup->liquidus_filename );CHKERRQ(ierr);
-  ierr = Interp1dCreateAndSet( lookup->liquidus_filename, &lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
-  ierr = LookupFilenameSet( "solidus", &str, lookup->solidus_filename );CHKERRQ(ierr);
-  ierr = Interp1dCreateAndSet( lookup->solidus_filename, &lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
-
-  PetscFunctionReturn(0);
-}
-
 /*
  ******************************************************************************
  * Lookup EOS from data files
@@ -591,6 +530,25 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
  ******************************************************************************
 */
 
+static PetscErrorCode RTpressParametersCreate( RTpressParameters* rtpress_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+    ierr = PetscMalloc1(1,rtpress_parameters_ptr);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode RTpressParametersDestroy( RTpressParameters* rtpress_parameters_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+    ierr = PetscFree(*rtpress_parameters_ptr);CHKERRQ(ierr);
+    *rtpress_parameters_ptr = NULL;
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode RTpressParametersCreateAndSet( RTpressParameters* rtpress_parameters_ptr, const FundamentalConstants FC )
 {
     /* EOS parameters for rtpress, taken from jupyter notebook and Wolf and Bower (2018).
@@ -637,7 +595,6 @@ PetscErrorCode RTpressParametersCreateAndSet( RTpressParameters* rtpress_paramet
     rtp->AVOGADRO_ptr = &FC->AVOGADRO;
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscScalar per_atom_to_specific( PetscScalar per_atom_value, PetscScalar mavg, PetscScalar Avogadro )
@@ -645,11 +602,8 @@ static PetscScalar per_atom_to_specific( PetscScalar per_atom_value, PetscScalar
     /* convert from per atom to specific */
 
     PetscScalar specific_value;
-
     specific_value = per_atom_value * Avogadro / mavg;
-
     return specific_value;
-
 }
 
 static PetscScalar specific_to_per_atom( PetscScalar specific_value, PetscScalar mavg, PetscScalar Avogadro )
@@ -657,76 +611,21 @@ static PetscScalar specific_to_per_atom( PetscScalar specific_value, PetscScalar
     /* convert from specific to per atom */
 
     PetscScalar per_atom_value;
-
     per_atom_value = specific_value * mavg / Avogadro;
-
     return per_atom_value;
-
 }
 
 static PetscScalar joule_to_eV( PetscScalar joule )
 {
     /* convert from joules to eV */
-
     return joule * 6.242E18;
-
 }
 
 static PetscScalar eV_to_joule( PetscScalar eV )
 {
     /* convert from eV to joules */
-
     return eV * 1.60218E-19;
 }
-
-PetscScalar get_rtpress_pressure_test( Ctx *E )
-{
-    /* test function (lldb, then step through to evaluate P for
-       the V, T conditions defined below.  Compare with pressure
-       plot in Jupyter notebook*/
-
-    /* seems to confirm P is correct
-       FIXME: need to truncate negative values?  Perhaps not for
-       smoothness of solver during inversion? */
-
-    RTpressParameters rtp = E->parameters->eos_parameters[0]->rtpress_parameters;
-    PetscScalar   P, T, V, volfrac;
-
-    volfrac = 0.6;
-    T = 2500.0;
-    V = volfrac * rtp->V0;
-    P = get_rtpress_pressure( V, T, rtp ); /* 26.964412351908095 */
-
-    volfrac = 0.8;
-    T = 2500.0;
-    V = volfrac * rtp->V0;
-    P = get_rtpress_pressure( V, T, rtp ); /* 3.5394262799831875 */
-
-    volfrac = 1.0;
-    T = 2500.0;
-    V = volfrac * rtp->V0;
-    /* FIXME: note negative value */
-    P = get_rtpress_pressure( V, T, rtp ); /* -0.54571824296751803 */
-
-    volfrac = 0.6;
-    T = 5000.0;
-    V = volfrac * rtp->V0;
-    P = get_rtpress_pressure( V, T, rtp ); /* 38.568776519196767 */
-
-    volfrac = 0.8;
-    T = 5000.0;
-    V = volfrac * rtp->V0;
-    P = get_rtpress_pressure( V, T, rtp ); /* 10.39877886001743 */
-
-    volfrac = 1.0;
-    T = 5000.0;
-    V = volfrac * rtp->V0;
-    P = get_rtpress_pressure( V, T, rtp ); /* 2.107013748263614 */
-
-    return P;
-
-}
-
 
 static PetscScalar get_rtpress_pressure( PetscScalar V, PetscScalar T, RTpressParameters const rtp )
 {
@@ -804,30 +703,6 @@ PetscScalar get_rtpress_entropy_test( Ctx *E )
     S /= rtp->KBOLTZ; /* 1.9650669895370627 */
 
     return S;
-
-}
-
-static PetscScalar get_rtpress_entropy( PetscScalar V, PetscScalar T, RTpressParameters const rtp )
-{
-    /* entropy = function( volume, temperature ) */
-
-    PetscScalar S;
-    PetscScalar const gamma0 = rtp->gamma0;
-    PetscScalar const gammaP0 = rtp->gammaP0;
-    PetscScalar const V0 = rtp->V0;
-    PetscScalar const S0 = rtp->S0;
-    PetscScalar const T0 = rtp->T0;
-    PetscScalar const m = rtp->m;
-    PetscScalar const b0 = rtp->b0;
-    PetscScalar const b1 = rtp->b1;
-    PetscScalar const b2 = rtp->b2;
-    PetscScalar const b3 = rtp->b3;
-    PetscScalar const b4 = rtp->b4;
-
-    S = S0 + T*(0.027612979772501833*PetscPowScalar(T, m)*T0*(2 - 2*m)*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/PetscPowScalar(2*T*m - 2*T, 2) + 0.027612979772501833*PetscPowScalar(T, m)*T0*m*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/(T*(2*T*m - 2*T)) + 0.041419469658752747*m/(T*(2*m - 2)) - 0.041419469658752747/(T*(2*m - 2))) + 0.027612979772501833*PetscPowScalar(T, m)*T0*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/(2*T*m - 2*T) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) + 0.041419469658752747*m*PetscLogScalar(T)/(2*m - 2) - 0.041419469658752747*m*PetscLogScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))/(2*m - 2) - 0.020709734829376374 - 0.041419469658752747*PetscLogScalar(T)/(2*m - 2) + 0.041419469658752747*PetscLogScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))/(2*m - 2) - 0.013806489886250916*PetscPowScalar(T, m)*T0*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/T;
-
-    return S;
-
 }
 
 static PetscErrorCode set_rtpress_density( RTpressParameters const rtp, EosEval *eos_eval )
@@ -847,9 +722,7 @@ static PetscErrorCode set_rtpress_density( RTpressParameters const rtp, EosEval 
     eos_eval->rho /= *rtp->AVOGADRO_ptr;
 
     PetscFunctionReturn(0);
-
 }
-
 
 static PetscErrorCode set_rtpress_thermal_expansion( RTpressParameters const rtp, EosEval *eos_eval )
 {
@@ -906,7 +779,6 @@ static PetscErrorCode set_rtpress_heat_capacity_constant_volume( RTpressParamete
     eos_eval->Cv = eV_to_joule( eos_eval->Cv );
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_rtpress_heat_capacity_constant_pressure( RTpressParameters const rtp, EosEval *eos_eval )
@@ -939,7 +811,6 @@ static PetscErrorCode set_rtpress_heat_capacity_constant_pressure( RTpressParame
     eos_eval->Cp = eV_to_joule( eos_eval->Cp );
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_rtpress_isentropic_gradient( RTpressParameters const rtp, EosEval *eos_eval )
@@ -1051,41 +922,6 @@ static PetscErrorCode solve_for_rtpress_volume_temperature( Ctx *E )
     ierr = SNESDestroy(&snes);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode objective_function_rtpress_volume_temperature( SNES snes, Vec x, Vec f, void *ptr)
-{
-    PetscErrorCode             ierr;
-    const PetscScalar          *xx;
-    PetscScalar                *ff;
-    PetscScalar                V, T, P, S;
-    Ctx                        *E = (Ctx*) ptr;
-    RTpressParameters          rtp = E->parameters->eos_parameters[0]->rtpress_parameters;
-    EosEval                    *eos_eval = &E->eos1_eval;
-    PetscScalar Ptarget = eos_eval->P;
-    PetscScalar Starget = eos_eval->S;
-
-    PetscFunctionBeginUser;
-
-    ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
-    ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
-
-    V = xx[0];
-    T = xx[1];
-
-    P = get_rtpress_pressure( V, T, rtp );
-    S = get_rtpress_entropy( V, T, rtp );
-
-    /* compute residual */
-    ff[0] = P - Ptarget;
-    ff[1] = S - Starget;
-
-    ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
-    ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *E )
@@ -1142,7 +978,6 @@ static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *
     set_rtpress_isentropic_gradient( rtp, eos_eval );
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx *E )
@@ -1163,7 +998,6 @@ static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx *E )
     eos_eval->dTdPs /= SC->DTDP;
 
     PetscFunctionReturn(0);
-
 }
 
 PetscErrorCode set_rtpress_struct( PetscScalar P, PetscScalar S, Ctx *E )
@@ -1176,7 +1010,6 @@ PetscErrorCode set_rtpress_struct( PetscScalar P, PetscScalar S, Ctx *E )
     ierr = set_rtpress_struct_non_dimensional( E ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 /*
@@ -1190,11 +1023,8 @@ static PetscErrorCode LookupCreate( Lookup* lookup_ptr )
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-
     ierr = PetscMalloc1(1,lookup_ptr);CHKERRQ(ierr);
-
     PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode LookupDestroy( Lookup* lookup_ptr )
@@ -1202,34 +1032,8 @@ static PetscErrorCode LookupDestroy( Lookup* lookup_ptr )
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-
     ierr = PetscFree(*lookup_ptr);CHKERRQ(ierr);
     *lookup_ptr = NULL;
-
-    PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode RTpressParametersCreate( RTpressParameters* rtpress_parameters_ptr )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscMalloc1(1,rtpress_parameters_ptr);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode RTpressParametersDestroy( RTpressParameters* rtpress_parameters_ptr )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscFree(*rtpress_parameters_ptr);CHKERRQ(ierr);
-    *rtpress_parameters_ptr = NULL;
-
     PetscFunctionReturn(0);
 }
 
@@ -1289,4 +1093,66 @@ PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
     *eos_parameters_ptr = NULL;
 
     PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalConstants FC, const ScalingConstants SC)
+{
+  /* creates and sets the structs that are nested within EosParameters */
+
+  PetscErrorCode ierr;
+  char           buf[1024]; /* max size */
+  PetscBool      set; 
+  Lookup         lookup = Ep->lookup;
+
+  PetscFunctionBeginUser;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_TYPE");CHKERRQ(ierr);
+  Ep->TYPE = 1; /* default is lookup */
+  ierr = PetscOptionsGetInt(NULL,NULL,buf, &Ep->TYPE,&set);CHKERRQ(ierr);
+  //if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",bur);
+
+  switch( Ep->TYPE ){
+      case 1:
+          /* lookup, set filenames (does not allocate memory for Interp structs) */
+          /* leading underscore is clunky, but to enable the same function to
+             process a variety of input strings */
+          ierr = LookupFilenameSet( "_alpha", Ep->prefix, lookup->alpha_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( lookup->alpha_filename, &lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_cp", Ep->prefix, lookup->cp_filename ); CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( lookup->cp_filename, &lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_dTdPs", Ep->prefix, lookup->dTdPs_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( lookup->dTdPs_filename, &lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_rho", Ep->prefix, lookup->rho_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( lookup->rho_filename, &lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_temp", Ep->prefix, lookup->temp_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( lookup->temp_filename, &lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
+
+      case 2:
+          /* analytical RTpress */
+          /* do nothing, parameters are hard-coded (see eos.c) */
+          ierr = RTpressParametersCreateAndSet( &Ep->rtpress_parameters, FC );CHKERRQ(ierr);
+          break;
+  }
+
+  /* conductivity (w/m/K) */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_cond");CHKERRQ(ierr);
+  Ep->cond = 4.0; 
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->cond,NULL);CHKERRQ(ierr);
+  Ep->cond /= SC->COND;
+
+  /* viscosity-related, may eventually move into their own struct */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_log10visc");CHKERRQ(ierr);
+  Ep->log10visc = 21.0; // FIXME: default is for solid only
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->log10visc,NULL);CHKERRQ(ierr);
+  Ep->log10visc -= SC->LOG10VISC;
+
+  /* melting curves */
+  const char str = '\0'; // empty string
+  ierr = LookupFilenameSet( "liquidus", &str, lookup->liquidus_filename );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( lookup->liquidus_filename, &lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = LookupFilenameSet( "solidus", &str, lookup->solidus_filename );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( lookup->solidus_filename, &lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
 }
