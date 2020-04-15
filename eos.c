@@ -12,6 +12,10 @@ static PetscErrorCode Interp1dCreateAndSet( const char *, Interp1d *, PetscScala
 static PetscErrorCode Interp1dDestroy( Interp1d * );
 static PetscErrorCode Interp2dCreateAndSet( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode Interp2dDestroy( Interp2d * );
+#if 0
+static PetscErrorCode GetInterp1dValue( const Interp1d, PetscScalar );
+static PetscErrorCode GetInterp2dValue( const Interp2d, PetscScalar, PetscScalar );
+#endif
 
 /* rtpress material properties (Wolf and Bower, 2018) */
 static PetscErrorCode RTpressParametersCreate( RTpressParameters * );
@@ -298,7 +302,7 @@ static PetscErrorCode Interp2dCreateAndSet( const char * filename, Interp2d *int
     PetscFunctionReturn(0);
 }
 
-PetscScalar get_val1d( Interp1d const interp, PetscScalar x )
+PetscScalar GetInterp1dValue( const Interp1d interp, PetscScalar x )
 {   
     /* wrapper for evaluating a 1-D lookup
        linear interpolation with truncation for values
@@ -352,7 +356,7 @@ PetscScalar get_val1d( Interp1d const interp, PetscScalar x )
     return result;
 }
 
-PetscScalar get_val2d( Interp2d const interp, PetscScalar x, PetscScalar y )
+PetscScalar GetInterp2dValue( const Interp2d interp, PetscScalar x, PetscScalar y )
 {
     /* wrapper for evaluating a 2-D lookup using bilinear
        interpolation.
@@ -550,6 +554,22 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
 
     PetscFunctionReturn(0);
 }
+
+PetscErrorCode SetEosEvalFromLookup( const Lookup lookup, PetscScalar P, PetscScalar S, EosEval *eos_eval )
+{
+    PetscFunctionBeginUser;
+
+    eos_eval->P = P;
+    eos_eval->S = S;
+    eos_eval->T = GetInterp2dValue( lookup->temp, P, S );
+    eos_eval->Cp = GetInterp2dValue( lookup->cp, P, S );
+    eos_eval->rho = GetInterp2dValue( lookup->rho, P, S );
+    eos_eval->dTdPs = GetInterp2dValue( lookup->dTdPs, P, S );
+    eos_eval->alpha = GetInterp2dValue( lookup->alpha, P, S );
+
+    PetscFunctionReturn(0);
+}
+
 
 /*
  ******************************************************************************
@@ -938,7 +958,7 @@ static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES snes, Vec 
     /* TODO FIX BELOW */
     Ctx                        *E = (Ctx*) ptr;
     RTpressParameters          rtp = E->parameters->eos_parameters[0]->rtpress_parameters;
-    EosEval                    *eos_eval = &E->eos1_eval;
+    EosEval                    *eos_eval = &E->eos_evals[0];
     PetscScalar Ptarget = eos_eval->P;
     PetscScalar Starget = eos_eval->S;
 
