@@ -4,12 +4,17 @@
 #include "ctx.h"
 #include "parameters.h"
 
+typedef struct RTpressEval_ {
+  PetscScalar P; /* pressure */
+  PetscScalar S; /* entropy */
+  RTpressParameters rtp;
+} RTpressEval;
+
 PetscErrorCode EosParametersCreate( EosParameters * );
 PetscErrorCode EosParametersDestroy( EosParameters * );
 PetscErrorCode EosParametersSetFromOptions( EosParameters, const FundamentalConstants, const ScalingConstants );
 
-/* TODO: need equivalent function for RTpress */
-PetscErrorCode SetEosEvalFromLookup( const Lookup, PetscScalar, PetscScalar, EosEval * );
+PetscErrorCode SetEosEval( const EosParameters, PetscScalar, PetscScalar, EosEval * );
 
 /* TODO: below probably moves elsewhere eventually (becomes static?) */
 //PetscErrorCode set_rtpress_struct( PetscScalar, PetscScalar, Ctx * );

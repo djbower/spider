@@ -61,6 +61,8 @@ static const char * const SpiderSolutionFieldUnits[]        = { "Undefined! Erro
    given V,T or P, S.  There should be as  */
 typedef struct EosEval_ {
   PetscScalar P; /* pressure */
+  /* TODO: could eventually implement function pointers, as below? */
+  //PetscErrorCode (*fpAlpha)(const EosParameters, PetscScalar, PetscScalar, PetscScalar *);
   PetscScalar S; /* entropy */
   PetscScalar V; /* volume */
   PetscScalar T; /* temperature */
@@ -71,8 +73,8 @@ typedef struct EosEval_ {
   PetscScalar dTdPs; /* adiabatic temperature gradient */
   /* TODO could consider adding the following, although these are
      not usually derived from an EOS */
-  PetscScalar cond;
-  PetscScalar log10visc;
+  //PetscScalar cond;
+  //PetscScalar log10visc;
 } EosEval;
 
 /* A Context for the Solver */

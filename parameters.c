@@ -575,7 +575,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
         ierr = EosParametersCreate(&P->eos_parameters[r]);CHKERRQ(ierr);
         ierr = PetscStrncpy(P->eos_parameters[r]->prefix,prefixes[r],sizeof(P->eos_parameters[r]->prefix));CHKERRQ(ierr);
         ierr = PetscFree(prefixes[r]);CHKERRQ(ierr);
-        ierr = EosParametersSetFromOptions(P->eos_parameters[r], FC, SC);CHKERRQ(ierr);
+        ierr = EosParametersSetFromOptions(P->eos_parameters[r], FC, SC );CHKERRQ(ierr);
       }
     }
   }
