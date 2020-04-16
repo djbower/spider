@@ -13,6 +13,7 @@ typedef struct RTpressEval_ {
 PetscErrorCode EosParametersCreate( EosParameters * );
 PetscErrorCode EosParametersDestroy( EosParameters * );
 PetscErrorCode EosParametersSetFromOptions( EosParameters, const FundamentalConstants, const ScalingConstants );
+PetscErrorCode PhaseBoundarySetFromOptions( PhaseBoundary, PetscInt, const EosParameters [], const ScalingConstants );
 
 PetscErrorCode SetEosEval( const EosParameters, PetscScalar, PetscScalar, EosEval * );
 

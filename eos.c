@@ -1312,3 +1312,36 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
 
   PetscFunctionReturn(0);
 }
+
+
+PetscErrorCode PhaseBoundarySetFromOptions(PhaseBoundary Pb, PetscInt n_phases, const EosParameters eos_parameters[], const ScalingConstants SC)
+{
+  PetscErrorCode ierr;
+  PetscBool      flg;
+  PetscInt       i;
+  char           buf[1024];
+  char           eos[1024];
+
+  PetscFunctionBeginUser;
+
+  ierr = LookupFilenameSet( "\0", Pb->prefix, Pb->filename );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( Pb->filename, &Pb->boundary, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+
+  /* this locates which phase should be used to evaluate the properties along the
+     phase boundary */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Pb->prefix,"_eos");CHKERRQ(ierr);
+  ierr = PetscOptionsGetString(NULL,NULL,buf,eos,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
+
+  for(i=0; i<n_phases; ++i) {
+    ierr = PetscStrcmp(eos_parameters[i]->prefix,eos,&flg);CHKERRQ(ierr);
+    /* within this phase boundary struct, we can now access the phase
+       to compute the properties along the phase boundary (e.g. temp,
+       rho, etc. ) */
+    if(flg){ 
+      Pb->eos_parameters = eos_parameters[i];
+      break;
+    }
+  }
+
+  PetscFunctionReturn(0);
+}
