@@ -142,22 +142,6 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
         rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
         rho_mix = 1.0 / rho_mix;
 
-        /* FIXME: run this past Aaron */
-        /*if(P->COMPOSITION){
-            rho_mel *= Comp->mass_ratio_liquidus;
-            rho_mix = arr_liquidus_rho_s[i];
-            if(i < Comp->rheological_front_index){
-                rho_mix *= Comp->mo_mass_ratio;
-            }
-            else{
-                rho_mix *= Comp->mass_ratio_liquidus;
-            }
-        }
-        else{
-            rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
-            rho_mix = 1.0 / rho_mix;
-        }*/
-
         temp_mix = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
         cp_mix = arr_cp_mix_s[i];
 
