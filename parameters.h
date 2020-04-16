@@ -287,16 +287,6 @@ typedef struct {
 } data_RadionuclideParameters;
 typedef data_RadionuclideParameters* RadionuclideParameters;
 
-#if 0
-/* compositional differentiation */
-typedef struct CompositionParameters_ {
-    PetscScalar Brg_initial_fraction; // user-defined
-    PetscScalar Res_Brg_mass_ratio; // user-defined
-    /* next scales the density at the liquidus */
-    PetscScalar BSE_Brg_mass_ratio_at_liquidus; // computed by code, but fixed with time
-} CompositionParameters;
-#endif
-
 /*
  ******************************************************************************
  * Main parameters structure
@@ -337,7 +327,6 @@ typedef struct {
     PetscBool HTIDAL;
     PetscBool SOLID_CONVECTION_ONLY; // solid convection only
     PetscBool LIQUID_CONVECTION_ONLY; // liquid convection only
-    PetscBool COMPOSITION; // Brg and Res compositional model
     PetscInt mixing_length;
     PetscScalar mixing_length_layer_radius;
     PetscInt IC_INTERIOR;
@@ -389,10 +378,6 @@ typedef struct {
     /* Materials (EOS) */
     PetscInt    n_phases;
     EosParameters eos_parameters[SPIDER_MAX_PHASES];
-
-    // FIXME
-    // Composition
-    //CompositionParameters composition_parameters;
 
 } data_Parameters;
 typedef data_Parameters* Parameters;

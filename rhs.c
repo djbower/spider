@@ -6,8 +6,6 @@
 #include "rheologicalfront.h"
 #include "twophase.h"
 #include "util.h"
-// FIXME
-//#include "composition.h"
 
 #undef __FUNCT__
 #define __FUNCT__ "RHSFunction"
