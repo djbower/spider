@@ -2,8 +2,6 @@
 #include "mesh.h"
 #include "twophase.h"
 #include "util.h"
-// FIXME
-//#include "composition.h"
 
 static PetscErrorCode CtxCreateFields(Ctx* ctx);
 
@@ -125,11 +123,6 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   set_twophase(ctx);
 
   ierr = initialise_atmosphere( &ctx->atmosphere, ctx->parameters->atmosphere_parameters, ctx->parameters->scaling_constants );CHKERRQ(ierr);
-
-  // FIXME
-  //if(P->COMPOSITION){
-  //    initialise_composition(ctx);
- // }
 
   /* Initialize PostStep reference data */
   ctx->postStepData = NULL;

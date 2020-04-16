@@ -3,8 +3,6 @@
 #include "util.h"
 #include "twophase.h"
 #include "eos.h"
-// FIXME
-//#include "composition.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );
@@ -19,18 +17,9 @@ PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
     PetscErrorCode    ierr;
     Mesh              *M = &E->mesh;
-    //Parameters        *P = &E->parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
-
-    /* useful to passively compute crystal and Bridgmanite fraction,
-       even if they do not feedback into the density calculation */
-    /* determine values to implement compositional differentiation */
-    // FIXME
-    //if(P->COMPOSITION){
-    //ierr = set_composition( E ); CHKERRQ(ierr);
-    //}
 
     ierr = set_matprop_staggered( E ); CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->capacitance_s,S->temp_s,S->rho_s); CHKERRQ(ierr);
@@ -99,8 +88,6 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     DM                da_s=E->da_s;
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
-    // FIXME
-    //CompositionalParameters const *Comp = &P->compositional_parameters;
     Solution          *S = &E->solution;
     Vec               pres_s = M->pressure_s;
     // material properties that are updated here
@@ -239,8 +226,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscScalar       rho_mix, dTdrs_mix, cp_mix, temp_mix, alpha_mix, cond_mix, log10visc_mel_mix, log10visc_sol_mix, log10visc_mix;
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
-    // FIXME
-    //CompositionalParameters const *Comp = &P->compositional_parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;

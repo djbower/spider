@@ -10,8 +10,6 @@ Custom PETSc command line options should only ever be parsed here.
 #include "ctx.h"
 #include "ic.h"
 #include "eos.h"
-// FIXME
-//#include "composition.h"
 
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
@@ -236,8 +234,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   PetscErrorCode             ierr;
   FundamentalConstants const FC = P->fundamental_constants;
   ScalingConstants const     SC = P->scaling_constants;
-  // FIXME
-  //CompositionParameters      *Compp = &P->composition_parameters;
 
   PetscFunctionBegin;
 
@@ -809,23 +805,6 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
        used to also adjust the total atmosphere pressure */
     if( OXYGEN_FUGACITYset && Ap->n_reactions ) Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY;
   }
-
-#if 0
-  /* compositional parameters */
-  P->COMPOSITION = PETSC_FALSE;
-  Compp->Brg_initial_fraction = 0.794;
-  Compp->Res_Brg_mass_ratio = 1.2362;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-COMPOSITION",&P->COMPOSITION,NULL);CHKERRQ(ierr);
-  if( P->COMPOSITION ){
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-Brg_initial_fraction",&Compp->Brg_initial_fraction,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-Res_Brg_mass_ratio",&Compp->Res_Brg_mass_ratio,NULL);CHKERRQ(ierr);
-  }
-  Compp->BSE_Brg_mass_ratio_at_liquidus = get_BSE_Brg_mass_ratio( Compp->Brg_initial_fraction, Compp->Res_Brg_mass_ratio);
-
-  /* FIXME below should be initialised elsewhere */
-  //Comp->mo_bridgmanite_fraction = -1.0; // updated by code, but initialise here
-  //Comp->mo_mass_ratio = -1.0; // updated by code, but initialise here
-#endif
 
   PetscFunctionReturn(0);
 }
