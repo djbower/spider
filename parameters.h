@@ -156,6 +156,17 @@ typedef struct {
 } data_EosParameters;
 typedef data_EosParameters* EosParameters;
 
+/* Phase boundary */
+#define SPIDER_MAX_PHASE_BOUNDARIES 2
+typedef struct {
+    char prefix[128];  /* Maximum prefix length */
+    char filename[PETSC_MAX_PATH_LEN];
+    Interp1d boundary; /* pressure-entropy space, J/kg/K */
+    /* which eos parameters to compute phase boundary properties */
+    EosParameters eos_parameters;
+} data_PhaseBoundary;
+typedef data_PhaseBoundary* PhaseBoundary;
+
 /*
  ******************************************************************************
  * Volatile parameters
@@ -375,9 +386,13 @@ typedef struct {
     PetscInt    n_radionuclides;
     RadionuclideParameters radionuclide_parameters[SPIDER_MAX_RADIONUCLIDES];
 
-    /* Materials (EOS) */
+    /* Phases (EOS) */
     PetscInt    n_phases;
     EosParameters eos_parameters[SPIDER_MAX_PHASES];
+
+    /* Phase Boundaries */
+    PetscInt    n_phase_boundaries;
+    PhaseBoundary phase_boundaries[SPIDER_MAX_PHASE_BOUNDARIES];
 
 } data_Parameters;
 typedef data_Parameters* Parameters;
