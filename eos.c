@@ -1223,6 +1223,7 @@ PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
             ierr = Interp2dDestroy( &lookup->temp ); CHKERRQ(ierr);
             ierr = LookupDestroy( lookup_ptr );CHKERRQ(ierr);
             break;
+
         case 2:
             ierr = RTpressParametersDestroy( &eos_parameters->rtpress_parameters );CHKERRQ(ierr);
             break;
@@ -1274,6 +1275,7 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
           ierr = Interp2dCreateAndSet( Ep->lookup->rho_filename, &Ep->lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
           ierr = LookupFilenameSet( "_temp", Ep->prefix, Ep->lookup->temp_filename, NULL );CHKERRQ(ierr);
           ierr = Interp2dCreateAndSet( Ep->lookup->temp_filename, &Ep->lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
+          break;
 
       case 2:
           /* analytical RTpress */
