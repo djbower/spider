@@ -1195,13 +1195,9 @@ PetscErrorCode set_rtpress_struct( PetscScalar P, PetscScalar S, Ctx *E )
 PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
 {
     PetscErrorCode ierr;
-    EosParameters eos_parameters;
 
     PetscFunctionBeginUser;
-
     ierr = PetscMalloc1(1,eos_parameters_ptr);CHKERRQ(ierr);
-    eos_parameters = *eos_parameters_ptr;
-
     PetscFunctionReturn(0);
 }
 
