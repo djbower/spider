@@ -14,7 +14,6 @@ Custom PETSc command line options should only ever be parsed here.
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
 static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
-static PetscErrorCode PhaseBoundaryCreate( PhaseBoundary * );
 static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, ScalingConstants );
 
 static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
@@ -577,30 +576,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     }
   }
 
-
-  /* Look for command-line option to determine number of phases
-     and options prefix for each e.g. -phase_names melt, solid */
-  P->n_phase_boundaries = 0;
-  {
-    char      *prefixes[SPIDER_MAX_PHASE_BOUNDARIES];
-    PetscInt  n_phase_boundaries = SPIDER_MAX_PHASE_BOUNDARIES;
-    PetscBool set;
-
-    ierr = PetscOptionsGetStringArray(NULL,NULL,"-phase_boundary_names",prefixes,&n_phase_boundaries,&set);CHKERRQ(ierr);
-    if (set) { 
-      PetscInt r;
-
-      P->n_phase_boundaries = n_phase_boundaries;
-      for (r=0; r<P->n_phase_boundaries; ++r) {
-        ierr = PhaseBoundaryCreate(&P->phase_boundaries[r]);CHKERRQ(ierr);
-        ierr = PetscStrncpy(P->phase_boundaries[r]->prefix,prefixes[r],sizeof(P->phase_boundaries[r]->prefix));CHKERRQ(ierr);
-        ierr = PetscFree(prefixes[r]);CHKERRQ(ierr);
-        ierr = PhaseBoundarySetFromOptions(P->phase_boundaries[r], P->n_phases, P->eos_parameters, SC );CHKERRQ(ierr);
-      }
-    }
-  }
-
-
   ierr = AtmosphereParametersSetFromOptions( P, SC ); CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
@@ -1027,29 +1002,6 @@ static PetscErrorCode RadionuclideParametersDestroy( RadionuclideParameters* rad
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode PhaseBoundaryCreate( PhaseBoundary* phase_boundary_ptr )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscMalloc1(1,phase_boundary_ptr);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode PhaseBoundaryDestroy( PhaseBoundary* phase_boundary_ptr )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscFree(*phase_boundary_ptr);CHKERRQ(ierr);
-    *phase_boundary_ptr = NULL;
-
-    PetscFunctionReturn(0);
-}
-
 static PetscErrorCode AtmosphereParametersCreate( AtmosphereParameters* atmosphere_parameters_ptr )
 {
     PetscErrorCode ierr;
@@ -1129,12 +1081,6 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
         ierr = EosParametersDestroy(&P->eos_parameters[i]);CHKERRQ(ierr);
     }
     P->n_phases = 0;
-
-    /* phase boundaries */
-    for (i=0; i<P->n_phase_boundaries; ++i) {
-        ierr = PhaseBoundaryDestroy(&P->phase_boundaries[i]);CHKERRQ(ierr);
-    }
-    P->n_phase_boundaries=0;
 
     ierr = PetscFree(*parameters_ptr);CHKERRQ(ierr);
     *parameters_ptr = NULL;

@@ -98,9 +98,6 @@ typedef struct {
     char        cp_filename[PETSC_MAX_PATH_LEN];
     char        temp_filename[PETSC_MAX_PATH_LEN];
     char        alpha_filename[PETSC_MAX_PATH_LEN];
-    /* TODO: eventually melting curves may move elsewhere */
-    char        liquidus_filename[PETSC_MAX_PATH_LEN];
-    char        solidus_filename[PETSC_MAX_PATH_LEN];
     /* lookup objects to evaluate */
     /* memory is not necessarily allocated to these lookup
        objects if they are not required */
@@ -109,9 +106,6 @@ typedef struct {
     Interp2d cp; /* heat capacity, J/kg/K */
     Interp2d temp; /* temperature, K */
     Interp2d alpha; /* thermal expansion, 1/K */
-    /* TODO: eventually melting curves may move elsewhere */
-    Interp1d liquidus; /* liquidus, J/kg/K */
-    Interp1d solidus; /* solidus, J/kg/K */
 } data_Lookup;
 typedef data_Lookup* Lookup;
 
@@ -153,19 +147,12 @@ typedef struct {
     /* include thermal and transport properties */
     PetscScalar cond; /* thermal conductivity, W/m/K */
     PetscScalar log10visc; /* log base 10 of viscosity */
+    /* phase boundary which is evaluated using this EOS */
+    PetscBool PHASE_BOUNDARY; /* is a phase boundary for this EOS defined? */
+    char phase_boundary_filename[PETSC_MAX_PATH_LEN];
+    Interp1d phase_boundary; /* pressure-entropy space, J/kg/K */
 } data_EosParameters;
 typedef data_EosParameters* EosParameters;
-
-/* Phase boundary */
-#define SPIDER_MAX_PHASE_BOUNDARIES 2
-typedef struct {
-    char prefix[128];  /* Maximum prefix length */
-    char filename[PETSC_MAX_PATH_LEN];
-    Interp1d boundary; /* pressure-entropy space, J/kg/K */
-    /* which eos parameters to compute phase boundary properties */
-    EosParameters eos_parameters;
-} data_PhaseBoundary;
-typedef data_PhaseBoundary* PhaseBoundary;
 
 /*
  ******************************************************************************
@@ -389,10 +376,6 @@ typedef struct {
     /* Phases (EOS) */
     PetscInt    n_phases;
     EosParameters eos_parameters[SPIDER_MAX_PHASES];
-
-    /* Phase Boundaries */
-    PetscInt    n_phase_boundaries;
-    PhaseBoundary phase_boundaries[SPIDER_MAX_PHASE_BOUNDARIES];
 
 } data_Parameters;
 typedef data_Parameters* Parameters;
