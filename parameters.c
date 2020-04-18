@@ -576,6 +576,19 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     }
   }
 
+  /* Look for composite phases */
+  P->n_composite_phases = 0;
+  {
+    PetscBool flg;
+
+    ierr = PetscOptionsGetBool(NULL,NULL,"-eos_composite_two_phase",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (P->n_composite_phases >= SPIDER_MAX_COMPOSITE_PHASES) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many composite phases. Increase SPIDER_MAX_COMPOSITE_PHASES (currently %d) in the source",SPIDER_MAX_COMPOSITE_PHASES);
+        ierr = EosCompositeCreateTwoPhase(&P->eos_composites[P->n_composite_phases],P->eos_parameters,P->n_phases);CHKERRQ(ierr);
+        ++P->n_composite_phases;
+    }
+  }
+
   ierr = AtmosphereParametersSetFromOptions( P, SC ); CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
@@ -1081,6 +1094,12 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
         ierr = EosParametersDestroy(&P->eos_parameters[i]);CHKERRQ(ierr);
     }
     P->n_phases = 0;
+
+    /* composite phases */
+    for (i=0; i<P->n_composite_phases; ++i) {
+        ierr = EosCompositeDestroy(&P->eos_composites[i]);CHKERRQ(ierr);
+    }
+    P->n_composite_phases = 0;
 
     ierr = PetscFree(*parameters_ptr);CHKERRQ(ierr);
     *parameters_ptr = NULL;
