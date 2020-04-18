@@ -543,11 +543,11 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
 
     if (!set && !set_rel_to_src){
       SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s or %s",buf1,buf2);
-    }    
+    }
 
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%s%s%s%s","Warning: ",buf1," ignored because ",buf2," provided\n");CHKERRQ(ierr);
-    }    
+    }
 
     PetscFunctionReturn(0);
 }
@@ -563,7 +563,8 @@ static PetscErrorCode SetEosEvalFromLookup( const Lookup lookup, PetscScalar P, 
     eos_eval->rho = GetInterp2dValue( lookup->rho, P, S );
     eos_eval->dTdPs = GetInterp2dValue( lookup->dTdPs, P, S );
     eos_eval->alpha = GetInterp2dValue( lookup->alpha, P, S );
-    /* lookup does not know about these quantities */
+    /* lookup does not know about these quantities, since they are not used by
+       SPIDER */
     eos_eval->Cv = 0.0;
     eos_eval->V = 0.0;
 
@@ -1175,19 +1176,11 @@ PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
 {
     PetscErrorCode ierr;
     EosParameters eos_parameters;
-    Lookup * lookup_ptr;
 
     PetscFunctionBeginUser;
 
     ierr = PetscMalloc1(1,eos_parameters_ptr);CHKERRQ(ierr);
     eos_parameters = *eos_parameters_ptr;
-    /* TODO: eventually should not necessarily create lookup,
-       but currently always required for melting curves */
-    lookup_ptr = &eos_parameters->lookup;
-    ierr = LookupCreate( lookup_ptr );
-
-    /* the Interp1d and Interp2d structs within Lookup are created and set
-       later by (for example) Interp1dCreateAndSet() */
 
     PetscFunctionReturn(0);
 }
@@ -1202,27 +1195,29 @@ PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
     PetscFunctionBeginUser;
 
     eos_parameters = *eos_parameters_ptr;
-    lookup_ptr = &eos_parameters->lookup;
-    lookup = *lookup_ptr;
-
-    /* melting curves are (currently) always read in and stored as a lookup */
-    ierr = Interp1dDestroy( &lookup->liquidus ); CHKERRQ(ierr);
-    ierr = Interp1dDestroy( &lookup->solidus ); CHKERRQ(ierr);
 
     switch( eos_parameters->TYPE ){
         case 1:
+            lookup_ptr = &eos_parameters->lookup;
+            lookup = *lookup_ptr;
             ierr = Interp2dDestroy( &lookup->alpha ); CHKERRQ(ierr);
             ierr = Interp2dDestroy( &lookup->cp ); CHKERRQ(ierr);
             ierr = Interp2dDestroy( &lookup->dTdPs ); CHKERRQ(ierr);
             ierr = Interp2dDestroy( &lookup->rho ); CHKERRQ(ierr);
             ierr = Interp2dDestroy( &lookup->temp ); CHKERRQ(ierr);
+            ierr = LookupDestroy( lookup_ptr );CHKERRQ(ierr);
             break;
         case 2:
             ierr = RTpressParametersDestroy( &eos_parameters->rtpress_parameters );CHKERRQ(ierr);
             break;
     }
 
-    ierr = LookupDestroy( lookup_ptr );CHKERRQ(ierr);
+    if( eos_parameters->PHASE_BOUNDARY ){
+        ierr = Interp1dDestroy( &eos_parameters->phase_boundary ); CHKERRQ(ierr);
+    }
+
+// FIXME: REMOVE
+//    ierr = LookupDestroy( lookup_ptr );CHKERRQ(ierr);
     ierr = PetscFree(*eos_parameters_ptr);CHKERRQ(ierr);
     *eos_parameters_ptr = NULL;
 
@@ -1237,7 +1232,6 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   PetscErrorCode ierr;
   char           buf[1024]; /* max size */
   PetscBool      set; 
-  Lookup         lookup = Ep->lookup;
 
   PetscFunctionBeginUser;
 
@@ -1251,16 +1245,17 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
           /* lookup, set filenames (does not allocate memory for Interp structs) */
           /* leading underscore is clunky, but to enable the same function to
              process a variety of input strings */
-          ierr = LookupFilenameSet( "_alpha", Ep->prefix, lookup->alpha_filename );CHKERRQ(ierr);
-          ierr = Interp2dCreateAndSet( lookup->alpha_filename, &lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_cp", Ep->prefix, lookup->cp_filename ); CHKERRQ(ierr);
-          ierr = Interp2dCreateAndSet( lookup->cp_filename, &lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_dTdPs", Ep->prefix, lookup->dTdPs_filename );CHKERRQ(ierr);
-          ierr = Interp2dCreateAndSet( lookup->dTdPs_filename, &lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_rho", Ep->prefix, lookup->rho_filename );CHKERRQ(ierr);
-          ierr = Interp2dCreateAndSet( lookup->rho_filename, &lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_temp", Ep->prefix, lookup->temp_filename );CHKERRQ(ierr);
-          ierr = Interp2dCreateAndSet( lookup->temp_filename, &lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
+          ierr = LookupCreate( &Ep->lookup );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_alpha", Ep->prefix, Ep->lookup->alpha_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( Ep->lookup->alpha_filename, &Ep->lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_cp", Ep->prefix, Ep->lookup->cp_filename ); CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( Ep->lookup->cp_filename, &Ep->lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_dTdPs", Ep->prefix, Ep->lookup->dTdPs_filename  );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( Ep->lookup->dTdPs_filename, &Ep->lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_rho", Ep->prefix, Ep->lookup->rho_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( Ep->lookup->rho_filename, &Ep->lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_temp", Ep->prefix, Ep->lookup->temp_filename );CHKERRQ(ierr);
+          ierr = Interp2dCreateAndSet( Ep->lookup->temp_filename, &Ep->lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
 
       case 2:
           /* analytical RTpress */
@@ -1280,12 +1275,9 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->log10visc,NULL);CHKERRQ(ierr);
   Ep->log10visc -= SC->LOG10VISC;
 
-  /* melting curves */
-  const char str = '\0'; // empty string
-  ierr = LookupFilenameSet( "liquidus", &str, lookup->liquidus_filename );CHKERRQ(ierr);
-  ierr = Interp1dCreateAndSet( lookup->liquidus_filename, &lookup->liquidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
-  ierr = LookupFilenameSet( "solidus", &str, lookup->solidus_filename );CHKERRQ(ierr);
-  ierr = Interp1dCreateAndSet( lookup->solidus_filename, &lookup->solidus, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  /* phase boundary */
+  ierr = LookupFilenameSet( "_phase_boundary", Ep->prefix, Ep->phase_boundary_filename );CHKERRQ(ierr);
+  ierr = Interp1dCreateAndSet( Ep->phase_boundary_filename, &Ep->phase_boundary, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
@@ -1308,39 +1300,6 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
           /* analytical RTpress */
           ierr = SetEosEvalFromRTpress( Ep->rtpress_parameters, P, S, eos_eval );CHKERRQ(ierr);
           break;
-  }
-
-  PetscFunctionReturn(0);
-}
-
-
-PetscErrorCode PhaseBoundarySetFromOptions(PhaseBoundary Pb, PetscInt n_phases, const EosParameters eos_parameters[], const ScalingConstants SC)
-{
-  PetscErrorCode ierr;
-  PetscBool      flg;
-  PetscInt       i;
-  char           buf[1024];
-  char           eos[1024];
-
-  PetscFunctionBeginUser;
-
-  ierr = LookupFilenameSet( "\0", Pb->prefix, Pb->filename );CHKERRQ(ierr);
-  ierr = Interp1dCreateAndSet( Pb->filename, &Pb->boundary, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
-
-  /* this locates which phase should be used to evaluate the properties along the
-     phase boundary */
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Pb->prefix,"_eos");CHKERRQ(ierr);
-  ierr = PetscOptionsGetString(NULL,NULL,buf,eos,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
-
-  for(i=0; i<n_phases; ++i) {
-    ierr = PetscStrcmp(eos_parameters[i]->prefix,eos,&flg);CHKERRQ(ierr);
-    /* within this phase boundary struct, we can now access the phase
-       to compute the properties along the phase boundary (e.g. temp,
-       rho, etc. ) */
-    if(flg){ 
-      Pb->eos_parameters = eos_parameters[i];
-      break;
-    }
   }
 
   PetscFunctionReturn(0);

@@ -126,7 +126,7 @@ static PetscErrorCode set_liquidus( Ctx *E )
     PetscFunctionBeginUser;
 
     S = &E->solution;
-    interp = P->eos_parameters[0]->lookup->liquidus;
+    interp = P->eos_parameters[0]->phase_boundary;
     interpR = P->eos_parameters[0]->lookup->rho;
     interpT = P->eos_parameters[0]->lookup->temp;
 
@@ -193,7 +193,7 @@ static PetscErrorCode set_solidus( Ctx *E )
 
     PetscFunctionBeginUser;
     S = &E->solution;
-    interp = P->eos_parameters[1]->lookup->solidus;
+    interp = P->eos_parameters[1]->phase_boundary;
     interpR = P->eos_parameters[1]->lookup->rho;
     interpT = P->eos_parameters[1]->lookup->temp;
 
