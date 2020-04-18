@@ -1344,7 +1344,7 @@ PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *eos_composite_ptr, cons
 
     PetscFunctionBeginUser;
 
-    ierr = PetscMalloc(1,eos_composite_ptr);CHKERRQ(ierr);
+    ierr = PetscMalloc1(1,eos_composite_ptr);CHKERRQ(ierr);
     eos_composite = *eos_composite_ptr;
     eos_composite->prefix = "twophase";
 
