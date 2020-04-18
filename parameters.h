@@ -154,6 +154,13 @@ typedef struct {
 } data_EosParameters;
 typedef data_EosParameters* EosParameters;
 
+#define SPIDER_MAX_COMPOSITE_PHASES 1 
+typedef struct {
+    char prefix[128];  /* Maximum prefix length */
+    EosParameters eos_parameters[SPIDER_MAX_PHASES];
+} data_EosComposite;
+typedef data_EosComposite* EosComposite;
+
 /*
  ******************************************************************************
  * Volatile parameters
@@ -372,6 +379,7 @@ typedef struct {
     /* Phases (EOS) */
     PetscInt    n_phases;
     EosParameters eos_parameters[SPIDER_MAX_PHASES];
+    EosComposite eos_composites[SPIDER_MAX_COMPOSITE_PHASES];
 
 } data_Parameters;
 typedef data_Parameters* Parameters;
