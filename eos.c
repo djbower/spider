@@ -1254,6 +1254,10 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = PetscOptionsGetInt(NULL,NULL,buf, &Ep->TYPE,&set);CHKERRQ(ierr);
   //if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",bur);
 
+  /* probably a good idea to initialise pointers to NULL */
+  Ep->rtpress_parameters = NULL;
+  Ep->lookup = NULL;
+
   switch( Ep->TYPE ){
       case 1:
           /* lookup, set filenames (does not allocate memory for Interp structs) */
