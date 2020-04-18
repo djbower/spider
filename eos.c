@@ -30,6 +30,10 @@ static PetscErrorCode GetRTpressdTdPs( const RTpressParameters, PetscScalar, Pet
 static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES, Vec, Vec, void * );
 static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
+/* two phase composite eos */
+
+
+
 #if 0
 /* TODO: update these to general framework for evaluating Eos */
 static PetscErrorCode set_rtpress_struct_SI( PetscScalar, PetscScalar, Ctx * );
@@ -1319,4 +1323,52 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
   }
 
   PetscFunctionReturn(0);
+}
+
+/*
+ ******************************************************************************
+ * EOS composite
+ ******************************************************************************
+*/
+
+PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *eos_composite_ptr, const EosParameters eos_parameters[], PetscInt n_phases )
+{
+    PetscErrorCode ierr;
+    PetscInt i,j;
+    char *composite_phase_names[SPIDER_MAX_PHASES];
+    PetscInt n_composite_phases = SPIDER_MAX_PHASES;
+    PetscBool set,flg;
+    EosComposite eos_composite;
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc(1,eos_composite_ptr);CHKERRQ(ierr);
+    eos_composite = *eos_composite_ptr;
+    eos_composite->prefix = "twophase";
+
+    ierr = PetscOptionsGetStringArray(NULL,NULL,"-eos_composite_two_phase_names",composite_phase_names,&n_composite_phases,&set);CHKERRQ(ierr);
+
+    /* must only be two phases selected */
+    if (n_composite_phases!=2) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"-eos_composite_two_phase_names only supports 2 phases (currently %d)",n_composite_phases);
+
+    for(i=0; i<n_phases; ++i) {
+        for(j=0; j<n_composite_phases; ++j){
+            ierr = PetscStrcmp(eos_parameters[i]->prefix,composite_phase_names[j],&flg);CHKERRQ(ierr);
+            if(flg){ 
+                eos_composite->eos_parameters[j] = eos_parameters[i];
+            }
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode EosCompositeDestroy( EosComposite *eos_composite_ptr )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+    ierr = PetscFree(*eos_composite_ptr);CHKERRQ(ierr);
+    *eos_composite_ptr = NULL;
+    PetscFunctionReturn(0);
 }

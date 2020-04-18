@@ -16,6 +16,9 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters, const FundamentalCons
 
 PetscErrorCode SetEosEval( const EosParameters, PetscScalar, PetscScalar, EosEval * );
 
+PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *, const EosParameters[], PetscInt );
+PetscErrorCode EosCompositeDestroy( EosComposite * );
+
 /* TODO: below probably moves elsewhere eventually (becomes static?) */
 //PetscErrorCode set_rtpress_struct( PetscScalar, PetscScalar, Ctx * );
 
