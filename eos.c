@@ -1347,13 +1347,14 @@ PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *eos_composite_ptr, cons
     /* must only be two phases selected */
     if (n_composite_phases!=2) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"-eos_composite_two_phase_names only supports 2 phases (currently %d)",n_composite_phases);
 
-    for(i=0; i<n_phases; ++i) {
-        for(j=0; j<n_composite_phases; ++j){
+    for(j=0; j<n_composite_phases; ++j){
+        for(i=0; i<n_phases; ++i) {
             ierr = PetscStrcmp(eos_parameters[i]->prefix,composite_phase_names[j],&flg);CHKERRQ(ierr);
             if(flg){ 
                 eos_composite->eos_parameters[j] = eos_parameters[i];
             }
         }
+        ierr = PetscFree(composite_phase_names[j]);CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
