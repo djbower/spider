@@ -7,7 +7,7 @@
 static PetscErrorCode LookupCreate( Lookup * );
 static PetscErrorCode LookupDestroy( Lookup * );
 static PetscErrorCode MakeRelativeToSourcePathAbsolute( char * );
-static PetscErrorCode LookupFilenameSet( const char *, const char *, char * );
+static PetscErrorCode LookupFilenameSet( const char *, const char *, char *, PetscBool * );
 static PetscErrorCode Interp1dCreateAndSet( const char *, Interp1d *, PetscScalar, PetscScalar );
 static PetscErrorCode Interp1dDestroy( Interp1d * );
 static PetscErrorCode Interp2dCreateAndSet( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
@@ -517,7 +517,8 @@ static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 }
 #undef SPIDER_ROOT_DIR_STR
 
-static PetscErrorCode LookupFilenameSet( const char* property, const char* prefix, char* lookup_filename )
+
+static PetscErrorCode LookupFilenameSet( const char* property, const char* prefix, char* lookup_filename, PetscBool *IS_SET )
 {
     PetscErrorCode ierr;
     char           buf1[1024]; /* max size */
@@ -541,10 +542,25 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
     ierr = PetscSNPrintf(buf2,sizeof(buf2),"%s%s%s%s","-",prefix,property,"_filename");CHKERRQ(ierr);
     ierr = PetscOptionsGetString(NULL,NULL,buf2,lookup_filename,PETSC_MAX_PATH_LEN,&set);CHKERRQ(ierr);
 
-    if (!set && !set_rel_to_src){
-      SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s or %s",buf1,buf2);
+    /* if IS_SET is NULL, then we require a valid lookup_filename to be returned */
+    if( IS_SET==NULL ){
+        /* must return a valid lookup_filename */
+        if ( !set && !set_rel_to_src ){
+            SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s or %s",buf1,buf2);
+        }
     }
 
+    /* if IS_SET is not NULL, then a valid lookup_filename is optional */
+    if( IS_SET!=NULL ){
+        if( set || set_rel_to_src ){
+            *IS_SET = PETSC_TRUE;
+        }
+        else{
+            *IS_SET = PETSC_FALSE;
+        }
+    }
+
+    /* absolute path name always overrides relative path name */
     if (set && set_rel_to_src) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%s%s%s%s%s","Warning: ",buf1," ignored because ",buf2," provided\n");CHKERRQ(ierr);
     }
@@ -1216,8 +1232,6 @@ PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
         ierr = Interp1dDestroy( &eos_parameters->phase_boundary ); CHKERRQ(ierr);
     }
 
-// FIXME: REMOVE
-//    ierr = LookupDestroy( lookup_ptr );CHKERRQ(ierr);
     ierr = PetscFree(*eos_parameters_ptr);CHKERRQ(ierr);
     *eos_parameters_ptr = NULL;
 
@@ -1246,15 +1260,15 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
           /* leading underscore is clunky, but to enable the same function to
              process a variety of input strings */
           ierr = LookupCreate( &Ep->lookup );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_alpha", Ep->prefix, Ep->lookup->alpha_filename );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_alpha", Ep->prefix, Ep->lookup->alpha_filename, NULL );CHKERRQ(ierr);
           ierr = Interp2dCreateAndSet( Ep->lookup->alpha_filename, &Ep->lookup->alpha, SC->PRESSURE, SC->ENTROPY, 1.0/SC->TEMP );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_cp", Ep->prefix, Ep->lookup->cp_filename ); CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_cp", Ep->prefix, Ep->lookup->cp_filename, NULL ); CHKERRQ(ierr);
           ierr = Interp2dCreateAndSet( Ep->lookup->cp_filename, &Ep->lookup->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_dTdPs", Ep->prefix, Ep->lookup->dTdPs_filename  );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_dTdPs", Ep->prefix, Ep->lookup->dTdPs_filename, NULL  );CHKERRQ(ierr);
           ierr = Interp2dCreateAndSet( Ep->lookup->dTdPs_filename, &Ep->lookup->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_rho", Ep->prefix, Ep->lookup->rho_filename );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_rho", Ep->prefix, Ep->lookup->rho_filename, NULL );CHKERRQ(ierr);
           ierr = Interp2dCreateAndSet( Ep->lookup->rho_filename, &Ep->lookup->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY );CHKERRQ(ierr);
-          ierr = LookupFilenameSet( "_temp", Ep->prefix, Ep->lookup->temp_filename );CHKERRQ(ierr);
+          ierr = LookupFilenameSet( "_temp", Ep->prefix, Ep->lookup->temp_filename, NULL );CHKERRQ(ierr);
           ierr = Interp2dCreateAndSet( Ep->lookup->temp_filename, &Ep->lookup->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP );CHKERRQ(ierr);
 
       case 2:
@@ -1276,8 +1290,10 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   Ep->log10visc -= SC->LOG10VISC;
 
   /* phase boundary */
-  ierr = LookupFilenameSet( "_phase_boundary", Ep->prefix, Ep->phase_boundary_filename );CHKERRQ(ierr);
-  ierr = Interp1dCreateAndSet( Ep->phase_boundary_filename, &Ep->phase_boundary, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  ierr = LookupFilenameSet( "_phase_boundary", Ep->prefix, Ep->phase_boundary_filename, &Ep->PHASE_BOUNDARY );CHKERRQ(ierr);
+  if( Ep->PHASE_BOUNDARY ){
+      ierr = Interp1dCreateAndSet( Ep->phase_boundary_filename, &Ep->phase_boundary, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  }
 
   PetscFunctionReturn(0);
 }
