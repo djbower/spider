@@ -1352,6 +1352,7 @@ PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *eos_composite_ptr, cons
             ierr = PetscStrcmp(eos_parameters[i]->prefix,composite_phase_names[j],&flg);CHKERRQ(ierr);
             if(flg){ 
                 eos_composite->eos_parameters[j] = eos_parameters[i];
+                break;
             }
         }
         ierr = PetscFree(composite_phase_names[j]);CHKERRQ(ierr);
