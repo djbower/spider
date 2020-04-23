@@ -72,6 +72,7 @@
 
 # new format for mixed phase region(s)
 -eos_composite_two_phase
+# liquidus phase (melt) must be first in list, followed by solidus phase (solid) */
 -eos_composite_two_phase_names melt,solid
 
 # initial condition

@@ -31,7 +31,10 @@ static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES, Vec, Vec,
 static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
 /* two phase composite eos (for mixed phase region) */
+static PetscErrorCode GetTwoPhaseLiquidus( const EosComposite, PetscScalar, PetscScalar * );
+static PetscErrorCode GetTwoPhaseSolidus( const EosComposite, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhaseFusion( const EosComposite, PetscScalar, PetscScalar * );
+static PetscErrorCode GetTwoPhasePhaseFraction( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhaseTemperature( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhaseCp( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhaseRho( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
@@ -1361,7 +1364,10 @@ PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *eos_composite_ptr, cons
     for(j=0; j<n_composite_phases; ++j){
         for(i=0; i<n_phases; ++i) {
             ierr = PetscStrcmp(eos_parameters[i]->prefix,composite_phase_names[j],&flg);CHKERRQ(ierr);
-            if(flg){ 
+            if(flg){
+                /* FIXME: this relies on the user specifying the liquidus phase first in the list, and the
+                   solidus phase second.  The input file notes this should be the case, but still a possibility
+                   for bugs to be introduced here. */
                 eos_composite->eos_parameters[j] = eos_parameters[i];
                 break;
             }
@@ -1382,56 +1388,120 @@ PetscErrorCode EosCompositeDestroy( EosComposite *eos_composite_ptr )
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode GetTwoPhaseLiquidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *liquidus )
+{
+    PetscFunctionBeginUser;
+    *liquidus = GetInterp1dValue( eos_composite->eos_parameters[0]->phase_boundary, P ); /* solidus entropy */
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode GetTwoPhaseSolidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *solidus )
+{
+    PetscFunctionBeginUser;
+    *solidus = GetInterp1dValue( eos_composite->eos_parameters[1]->phase_boundary, P ); /* solidus entropy */
+    PetscFunctionReturn(0);
+}
+
 static PetscErrorCode GetTwoPhaseFusion( const EosComposite eos_composite, PetscScalar P, PetscScalar *fusion )
 {
-    PetscInt i;
+    PetscErrorCode ierr;
+    PetscScalar liquidus, solidus;
 
     PetscFunctionBeginUser;
 
-    *fusion = 0;
-
-    for( i=0; i<eos_composite->n_eos; ++i) {
-        /* want to keep loop format for future developments, but this is just differencing the liquidus
-           and the solidus */
-        *fusion += PetscPowScalar(-1.0,i) * GetInterp1dValue( eos_composite->eos_parameters[i]->phase_boundary, P );
-    }
-
-    /* fusion must be positive (independent of if liquidus or solidus is specified first in the loop */
-    *fusion = PetscAbsScalar( *fusion );
+    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
+    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    *fusion = liquidus - solidus;
 
     PetscFunctionReturn(0);
-
 }
 
-static PetscErrorCode GetTwoPhaseTemperature( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *T )
+static PetscErrorCode GetTwoPhasePhaseFraction( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
+{
+    PetscErrorCode ierr;
+    PetscScalar solidus, fusion;
+
+    PetscFunctionBeginUser;
+
+    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    ierr = GetTwoPhaseFusion( eos_composite, P, &fusion ); CHKERRQ(ierr);
+
+    *phase_fraction = ( S - solidus ) / fusion;
+
+    /* FIXME: need to truncate value?  Perhaps not if this is dealt with later in the code */
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode GetTwoPhaseTemperature( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *T_ptr )
+{
+    PetscErrorCode ierr;
+    EosEval eos_eval_melt, eos_eval_solid;
+    PetscScalar solidus, liquidus, phase_fraction;
+
+    PetscFunctionBeginUser;
+
+    ierr = GetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
+    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
+    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+
+    /* TODO?: it is not necessary to evaluate all eos properties, but this function
+       is robust against stale data.  Unless this is really a bottleneck in the computational
+       time, it's probably OK */
+    ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
+    ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
+
+    /* linear temperature between liquidus and solidus */
+    *T_ptr = phase_fraction * eos_eval_melt.T;
+    *T_ptr *= (1-phase_fraction) * eos_eval_solid.T;
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode GetTwoPhaseCp( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *Cp_ptr )
 {
     PetscFunctionBeginUser;
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseCp( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *Cp )
+static PetscErrorCode GetTwoPhaseRho( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *rho_ptr )
+{
+    /* TODO(?) much of this overlaps with the calculation of the mixed phase temperature.  Could
+       combine to avoid recalculating the EosEval structs */
+
+    PetscErrorCode ierr;
+    EosEval eos_eval_melt, eos_eval_solid;
+    PetscScalar solidus, liquidus, phase_fraction;
+
+    PetscFunctionBeginUser;
+
+    ierr = GetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
+    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
+    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+
+    /* TODO?: it is not necessary to evaluate all eos properties, but this function
+       is robust against stale data.  Unless this is really a bottleneck in the computational
+       time, it's probably OK */
+    ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
+    ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
+
+    /* volume additivity (excludes temperature effect) */
+    *rho_ptr = phase_fraction / eos_eval_melt.rho;
+    *rho_ptr *= (1-phase_fraction) / eos_eval_solid.rho;
+    *rho_ptr = 1.0/(*rho_ptr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode GetTwoPhasedTdPs( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *dTdPs_ptr )
 {
     PetscFunctionBeginUser;
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseRho( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *rho )
-{
-    PetscFunctionBeginUser;
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode GetTwoPhasedTdPs( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *dTdPs )
-{
-    PetscFunctionBeginUser;
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode GetTwoPhaseAlpha( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *alpha )
+static PetscErrorCode GetTwoPhaseAlpha( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *alpha_ptr )
 {
     PetscFunctionBeginUser;
 
