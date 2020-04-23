@@ -30,9 +30,14 @@ static PetscErrorCode GetRTpressdTdPs( const RTpressParameters, PetscScalar, Pet
 static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES, Vec, Vec, void * );
 static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
-/* two phase composite eos */
-
-
+/* two phase composite eos (for mixed phase region) */
+static PetscErrorCode GetTwoPhaseFusion( const EosComposite, PetscScalar, PetscScalar * );
+static PetscErrorCode GetTwoPhaseTemperature( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode GetTwoPhaseCp( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode GetTwoPhaseRho( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode GetTwoPhasedTdPs( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode GetTwoPhaseAlpha( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite, PetscScalar, PetscScalar, EosEval *);
 
 #if 0
 /* TODO: update these to general framework for evaluating Eos */
@@ -1375,4 +1380,96 @@ PetscErrorCode EosCompositeDestroy( EosComposite *eos_composite_ptr )
     ierr = PetscFree(*eos_composite_ptr);CHKERRQ(ierr);
     *eos_composite_ptr = NULL;
     PetscFunctionReturn(0);
+}
+
+static PetscErrorCode GetTwoPhaseFusion( const EosComposite eos_composite, PetscScalar P, PetscScalar *fusion )
+{
+    PetscInt i;
+
+    PetscFunctionBeginUser;
+
+    *fusion = 0;
+
+    for( i=0; i<eos_composite->n_eos; ++i) {
+        /* want to keep loop format for future developments, but this is just differencing the liquidus
+           and the solidus */
+        *fusion += PetscPowScalar(-1.0,i) * GetInterp1dValue( eos_composite->eos_parameters[i]->phase_boundary, P );
+    }
+
+    /* fusion must be positive (independent of if liquidus or solidus is specified first in the loop */
+    *fusion = PetscAbsScalar( *fusion );
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode GetTwoPhaseTemperature( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *T )
+{
+    PetscFunctionBeginUser;
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode GetTwoPhaseCp( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *Cp )
+{
+    PetscFunctionBeginUser;
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode GetTwoPhaseRho( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *rho )
+{
+    PetscFunctionBeginUser;
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode GetTwoPhasedTdPs( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *dTdPs )
+{
+    PetscFunctionBeginUser;
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode GetTwoPhaseAlpha( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *alpha )
+{
+    PetscFunctionBeginUser;
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_composite, PetscScalar P, PetscScalar S, EosEval *eos_eval)
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    eos_eval->P = P;
+    eos_eval->S = S;
+    ierr = GetTwoPhaseTemperature( eos_composite, P, S, &eos_eval->T );CHKERRQ(ierr);
+    ierr = GetTwoPhaseCp( eos_composite, P, S, &eos_eval->Cp );CHKERRQ(ierr);
+    ierr = GetTwoPhaseRho( eos_composite, P, S, &eos_eval->rho );CHKERRQ(ierr);
+    ierr = GetTwoPhasedTdPs( eos_composite, P, S, &eos_eval->dTdPs );CHKERRQ(ierr);
+    ierr = GetTwoPhaseAlpha( eos_composite, P, S, &eos_eval->alpha );CHKERRQ(ierr);
+    /* lookup does not know about these quantities, since they are not used by
+       SPIDER */
+    eos_eval->Cv = 0.0;
+    eos_eval->V = 0.0;
+
+    PetscFunctionReturn(0);
+
+}
+
+PetscErrorCode SetEosCompositeEval( const EosComposite eos_composite, PetscScalar P, PetscScalar S, EosEval *eos_eval )
+{
+
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+
+  /* currently only simple two phase implemented */
+  ierr = SetEosCompositeEvalFromTwoPhase( eos_composite, P, S, eos_eval ); CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+
 }

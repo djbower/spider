@@ -158,6 +158,7 @@ typedef data_EosParameters* EosParameters;
 typedef struct {
     const char *prefix;  /* Maximum prefix length */
     EosParameters eos_parameters[SPIDER_MAX_PHASES];
+    PetscInt n_eos;
 } data_EosComposite;
 typedef data_EosComposite* EosComposite;
 

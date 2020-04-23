@@ -585,6 +585,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     if (flg) {
       if (P->n_composite_phases >= SPIDER_MAX_COMPOSITE_PHASES) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many composite phases. Increase SPIDER_MAX_COMPOSITE_PHASES (currently %d) in the source",SPIDER_MAX_COMPOSITE_PHASES);
         ierr = EosCompositeCreateTwoPhase(&P->eos_composites[P->n_composite_phases],P->eos_parameters,P->n_phases);CHKERRQ(ierr);
+        P->eos_composites[P->n_composite_phases]->n_eos = 2; /* useful for looping over constituent eos for this composite */
         ++P->n_composite_phases;
     }
   }
