@@ -35,4 +35,8 @@
 # -dtmacro 30000:                  delta time to advance by, here is 30,000 years
 
 # main restart example is here:
-spider -options_file bu_input.opts -IC_INTERIOR 2 -ic_interior_filename 50013.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -IC_ATMOSPHERE 3 -H2O_initial_atmos_pressure 101325 -CO2_initial_atmos_pressure 101325 -nstepsmacro 1 -dtmacro 30000
+#spider -options_file bu_input.opts -IC_INTERIOR 2 -ic_interior_filename 50013.json -SURFACE_BC 4 -surface_bc_value 1.0E4 -activate_rollback -activate_poststep -H2O_poststep_change 0.05 -CO2_poststep_change 0.05 -IC_ATMOSPHERE 3 -H2O_initial_atmos_pressure 101325 -CO2_initial_atmos_pressure 101325 -nstepsmacro 1 -dtmacro 30000
+
+# modify the tolerances to enable convergence (see issue #71 on bitbucket)
+# e.g. for double precision
+spider -options_file bu_input.opts -outputDirectory output -IC_INTERIOR 2 -IC_ATMOSPHERE 1 -SURFACE_BC 4 -surface_bc_value 1886.6475830078125 -tsurf_poststep_change 50.0 -nstepsmacro 199 -dtmacro 50000.0 -radius 6371000.0 -coresize 0.55 -volatile_names H2 -H2_initial_total_abundance 100.0 -H2_henry 2.572e-06 -H2_henry_pow 1.0 -H2_kdist 0.0 -H2_kabs 0.0 -H2_molar_mass 0.00201588 -ic_interior_filename 63745.json -activate_poststep -activate_rollback -H2_poststep_change 0.05 -ts_sundials_atol 1.0E-10 -ts_sundials_rtol 1.0e-10
