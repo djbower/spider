@@ -531,14 +531,17 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     PetscErrorCode ierr;
 
     PetscInt i;
-    PetscScalar mass_H2, mass_H2O, molar_mass_H2, molar_mass_H2O;
-    PetscScalar mass_CO, mass_CO2, molar_mass_CO, molar_mass_CO2;
+    /* TODO: for an arbitrary number of volatile species, would be better to somehow
+       automate this output, rather than making it specific to reduced and oxidised
+       phases of hydrogen and oxygen */
     PetscBool   FLAG_H2 = PETSC_FALSE;
     PetscBool   FLAG_H2O = PETSC_FALSE; 
     PetscBool   FLAG_CO = PETSC_FALSE;
     PetscBool   FLAG_CO2 = PETSC_FALSE;
-    PetscScalar tmass_H2, tmass_H2O, p_H2, p_H2O;
-    PetscScalar tmass_CO, tmass_CO2, p_CO, p_CO2;
+    PetscScalar mass_H2 = 0.0, molar_mass_H2 = 0.0, tmass_H2 = 0.0, p_H2 = 0.0;
+    PetscScalar mass_H2O = 0.0, molar_mass_H2O = 0.0, tmass_H2O = 0.0, p_H2O = 0.0;
+    PetscScalar mass_CO = 0.0, molar_mass_CO = 0.0, tmass_CO = 0.0, p_CO = 0.0;
+    PetscScalar mass_CO2 = 0.0, molar_mass_CO2 = 0.0, tmass_CO2 = 0.0, p_CO2 = 0.0;
 
     Parameters *P = &E->parameters;
     AtmosphereParameters *Ap = &P->atmosphere_parameters;
