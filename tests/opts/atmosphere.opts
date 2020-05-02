@@ -80,6 +80,7 @@
 -melt_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_melt.dat
 -melt_log10visc 2.0 
 -melt_cond # conductivity of melt
+-melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/liquidus_A11_H13.dat
 
 -solid_TYPE 1
 -solid_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_solid.dat
@@ -89,11 +90,12 @@
 -solid_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_solid.dat
 -solid_log10visc 21.0
 -solid_cond 4.0 # conductivity of solid
+-melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/liquidus_A11_H13.dat
 
-# melting curves
-# for bottom-up crystallisation (double precision OK)
--liquidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/liquidus_A11_H13.dat
--solidus_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
+# new format for mixed phase region(s)
+-eos_composite_two_phase
+# liquidus phase (melt) must be first in list, followed by solidus phase (solid) */
+-eos_composite_two_phase_names melt,solid
 
 # initial condition
 # [1] is set dS/dr to constant everywhere
