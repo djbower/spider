@@ -26,7 +26,7 @@ pipelines:
             - make -j
 
             # Run valgrind (examine manually!)
-            - valgrind ./spider -- -options_file tests/opts/blackbody.opt -nstepsmacro 1 -dtmacro 0.01
+            - valgrind ./spider -- -options_file tests/opts/blackbody.opts -nstepsmacro 1 -dtmacro 0.01
 
             # Set up for Tests
             - cd tests
