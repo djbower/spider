@@ -85,8 +85,8 @@ PetscErrorCode set_partial_pressures_from_solution( Ctx *E, Vec sol )
 {
     PetscErrorCode             ierr;
     Atmosphere                 *A = &E->atmosphere;
-    Parameters                 *P = &E->parameters;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    Parameters                 P = E->parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
     PetscInt                    i;
     PetscMPIInt                 size;
     Vec                        *subVecs;
@@ -119,9 +119,9 @@ PetscErrorCode set_partial_pressures_from_solution( Ctx *E, Vec sol )
 PetscErrorCode set_solution_from_partial_pressures( Ctx *E, Vec sol )
 {
     PetscErrorCode             ierr;
-    Parameters                 *P = &E->parameters;
+    Parameters                 P = E->parameters;
     Atmosphere                 *A = &E->atmosphere;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
     PetscInt                   i;
     Vec                        *subVecs;
 
@@ -325,16 +325,11 @@ static PetscErrorCode set_d_dr_linear( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-PetscScalar* Make1DPetscScalarArray( PetscInt arraySize ){
-
-    PetscScalar* theArray;
-
-    theArray = (PetscScalar *) malloc(arraySize*sizeof(PetscScalar));
-
-    return theArray;
-}
-
-PetscScalar** Make2DPetscScalarArray( PetscInt arraySizeX, PetscInt arraySizeY) {
+/* TODO: can this function be converted to PetscMalloc calls?  Also, the pointer
+   should be read in as an argument, rather than returned, to be consistent with
+   other functions */
+PetscScalar** Make2DPetscScalarArray( PetscInt arraySizeX, PetscInt arraySizeY)
+{
 
     PetscScalar** theArray;
     PetscInt i;

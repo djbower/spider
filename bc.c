@@ -17,9 +17,9 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscInt             const ind0=0;
     Atmosphere           *A  = &E->atmosphere;
     Mesh                 const *M  = &E->mesh;
-    Parameters           const *P  = &E->parameters;
-    Constants            const *C  = &P->constants;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    Parameters           const P  = E->parameters;
+    ScalingConstants     const SC  = P->scaling_constants;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
     Solution             *S  = &E->solution;
 
     PetscFunctionBeginUser;
@@ -31,7 +31,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       /* must be after A->tsurf is set for fO2 calculation */
       /* therefore set_surface_flux always called after set_interior_structure_from_solution */
-      ierr = set_reservoir_volatile_content( A, Ap, C ); CHKERRQ(ierr);
+      ierr = set_reservoir_volatile_content( A, Ap ); CHKERRQ(ierr);
 
       /* determine surface flux */
       /* in all cases, compute flux and emissivity consistently */
@@ -43,7 +43,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
         case 2:
           // Zahnle steam atmosphere
-          Qout = get_steam_atmosphere_zahnle_1988_flux( A, C );
+          Qout = get_steam_atmosphere_zahnle_1988_flux( A, SC );
           A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
           break;
         case 3:
@@ -111,7 +111,7 @@ static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qi
     PetscScalar    G0, R0, R1, R2, E0, E1, E2, Q2, fwt, phi0;
     PetscInt       ind;
     Mesh           const *M = &E->mesh;
-    Parameters     const *P = &E->parameters;
+    Parameters     const P = E->parameters;
     Solution       const *S = &E->solution;
 
     /* enable the ability for the magma ocean to cool at a rate dictated
@@ -151,7 +151,7 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
     PetscMPIInt       rank,size;
 
     Mesh        const *M = &E->mesh;
-    Parameters  const *P = &E->parameters;
+    Parameters  const P = E->parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -213,7 +213,7 @@ static PetscScalar get_core_cooling_factor( const Ctx *E )
     PetscInt ix2,numpts_b;
     PetscScalar fac,vol,vol_core,rho_cmb,cp_cmb;
     Mesh const *M = &E->mesh;
-    Parameters const *P = &E->parameters;
+    Parameters const P = E->parameters;
     Solution const *S = &E->solution;
 
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
@@ -297,8 +297,8 @@ PetscErrorCode solve_dpdts( Ctx *E )
     PetscScalar                *xx;
     PetscInt                   i;
     Atmosphere                 *A  = &E->atmosphere;
-    Parameters const           *P  = &E->parameters;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    Parameters const           P  = E->parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
 

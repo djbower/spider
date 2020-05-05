@@ -1,7 +1,8 @@
+#include "parameters.h"
 #include "dimensionalisablefield.h"
 #include "twophase.h"
 #include "util.h"
-#include "lookup.h"
+#include "eos.h"
 #include "rheologicalfront.h"
 
 static PetscErrorCode set_liquidus( Ctx * );
@@ -34,7 +35,7 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
 
     PetscErrorCode ierr;
     DM             da_s=E->da_s, da_b=E->da_b;
-    Parameters     *P = &E->parameters;
+    Parameters     P = E->parameters;
     Solution       *S = &E->solution;
     PetscInt       i, ilo_s, ihi_s, w_s, ilo, ihi, w;
     PetscScalar    *arr_gphi_s, *arr_fwtl_s, *arr_fwts_s, *arr_gphi, *arr_fwtl, *arr_fwts;
@@ -117,17 +118,17 @@ static PetscErrorCode set_liquidus( Ctx *E )
     Vec               pres_b,pres_s;
     PetscScalar       z,*arr_liquidus,*arr_liquidus_rho,*arr_liquidus_temp,*arr_liquidus_s,*arr_liquidus_rho_s,*arr_liquidus_temp_s;
     const PetscScalar *arr_pres_b,*arr_pres_s;
-    Interp1d const    *interp;
-    Interp2d const    *interpR, *interpT;
+    Interp1d          interp;
+    Interp2d          interpR, interpT;
     Solution          *S;
-    Parameters const  *P = &E->parameters;
+    Parameters const  P = E->parameters;
 
     PetscFunctionBeginUser;
 
     S = &E->solution;
-    interp = &P->melt_prop.liquidus;
-    interpR = &P->melt_prop.rho;
-    interpT = &P->melt_prop.temp;
+    interp = P->eos_parameters[0]->phase_boundary;
+    interpR = P->eos_parameters[0]->lookup->rho;
+    interpT = P->eos_parameters[0]->lookup->temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
@@ -144,10 +145,10 @@ static PetscErrorCode set_liquidus( Ctx *E )
     ierr = DMDAVecGetArray(da_b,S->liquidus_rho,&arr_liquidus_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->liquidus_temp,&arr_liquidus_temp);CHKERRQ(ierr);
     for(i=ilo_b;i<ihi_b;++i){
-        z = get_val1d( interp, arr_pres_b[i] );
+        z = GetInterp1dValue( interp, arr_pres_b[i] );
         arr_liquidus[i] = z;
-        arr_liquidus_rho[i] = get_val2d( interpR, arr_pres_b[i], z );
-        arr_liquidus_temp[i] = get_val2d( interpT, arr_pres_b[i], z );
+        arr_liquidus_rho[i] = GetInterp2dValue( interpR, arr_pres_b[i], z );
+        arr_liquidus_temp[i] = GetInterp2dValue( interpT, arr_pres_b[i], z );
     }
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->liquidus,&arr_liquidus);CHKERRQ(ierr);
@@ -162,10 +163,10 @@ static PetscErrorCode set_liquidus( Ctx *E )
     ierr = DMDAVecGetArray(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
-        z = get_val1d( interp, arr_pres_s[i] );
+        z = GetInterp1dValue( interp, arr_pres_s[i] );
         arr_liquidus_s[i] = z;
-        arr_liquidus_rho_s[i] = get_val2d( interpR, arr_pres_s[i], z );
-        arr_liquidus_temp_s[i] = get_val2d( interpT, arr_pres_s[i], z );
+        arr_liquidus_rho_s[i] = GetInterp2dValue( interpR, arr_pres_s[i], z );
+        arr_liquidus_temp_s[i] = GetInterp2dValue( interpT, arr_pres_s[i], z );
     }
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->liquidus_s,&arr_liquidus_s);CHKERRQ(ierr);
@@ -185,16 +186,16 @@ static PetscErrorCode set_solidus( Ctx *E )
     Vec               pres_b,pres_s;
     PetscScalar       z,*arr_solidus,*arr_solidus_rho,*arr_solidus_temp,*arr_solidus_s,*arr_solidus_rho_s,*arr_solidus_temp_s;
     const PetscScalar *arr_pres_b,*arr_pres_s;
-    Interp1d const    *interp;
-    Interp2d const    *interpR, *interpT;
+    Interp1d          interp;
+    Interp2d          interpR, interpT;
     Solution          *S;
-    Parameters const  *P = &E->parameters;
+    Parameters const  P = E->parameters;
 
     PetscFunctionBeginUser;
     S = &E->solution;
-    interp = &P->solid_prop.solidus;
-    interpR = &P->solid_prop.rho;
-    interpT = &P->solid_prop.temp;
+    interp = P->eos_parameters[1]->phase_boundary;
+    interpR = P->eos_parameters[1]->lookup->rho;
+    interpT = P->eos_parameters[1]->lookup->temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
@@ -210,10 +211,10 @@ static PetscErrorCode set_solidus( Ctx *E )
     ierr = DMDAVecGetArray(da_b,S->solidus_rho,&arr_solidus_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
     for(i=ilo_b;i<ihi_b;++i){
-        z = get_val1d( interp, arr_pres_b[i] );
+        z = GetInterp1dValue( interp, arr_pres_b[i] );
         arr_solidus[i] = z;
-        arr_solidus_rho[i] = get_val2d( interpR, arr_pres_b[i], z );
-        arr_solidus_temp[i] = get_val2d( interpT, arr_pres_b[i], z );
+        arr_solidus_rho[i] = GetInterp2dValue( interpR, arr_pres_b[i], z );
+        arr_solidus_temp[i] = GetInterp2dValue( interpT, arr_pres_b[i], z );
     }
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
@@ -227,10 +228,10 @@ static PetscErrorCode set_solidus( Ctx *E )
     ierr = DMDAVecGetArray(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
-        z = get_val1d( interp, arr_pres_s[i] );
+        z = GetInterp1dValue( interp, arr_pres_s[i] );
         arr_solidus_s[i] = z;
-        arr_solidus_rho_s[i] = get_val2d( interpR, arr_pres_s[i], z );
-        arr_solidus_temp_s[i] = get_val2d( interpT, arr_pres_s[i], z );
+        arr_solidus_rho_s[i] = GetInterp2dValue( interpR, arr_pres_s[i], z );
+        arr_solidus_temp_s[i] = GetInterp2dValue( interpT, arr_pres_s[i], z );
     }
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->solidus_s,&arr_solidus_s);CHKERRQ(ierr);
@@ -445,7 +446,7 @@ PetscErrorCode set_rheological_front( Ctx *E )
     PetscErrorCode    ierr;
     DM                da_s = E->da_s;
     DM                da_b = E->da_b;
-    Parameters        *P = &E->parameters;
+    Parameters        P = E->parameters;
     Solution          *S = &E->solution;
     RheologicalFront  *Rfp = &E->rheological_front_phi;
     RheologicalFront  *Rfd = &E->rheological_front_dynamic;
@@ -486,7 +487,7 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
     PetscErrorCode   ierr;
     const DM         da_s = E->da_s;
     const Mesh       *M = &E->mesh;
-    const Parameters *P = &E->parameters;
+    const Parameters P = E->parameters;
     const Solution   *S = &E->solution;
     PetscScalar      phi, radius, pressure, temperature;
     PetscInt         numpts_s, index_above, index_below;

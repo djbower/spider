@@ -25,7 +25,6 @@ int main(int argc, char ** argv)
   TS               ts;                 /* ODE solver object */
   Vec              sol;                /* Solution Vector (packed vector from several DMs) */
   Ctx              ctx;                /* Solver context */
-  Parameters const *P=&ctx.parameters;
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
@@ -42,6 +41,9 @@ int main(int argc, char ** argv)
   /* Perform all initialization for our problem, allocating data
      Note that this checks all command-line options. */
   ierr = SetupCtx(&ctx);CHKERRQ(ierr);
+
+  // important this is here
+  Parameters const P=ctx.parameters;
 
   /* Print out the quantities we're solving for */
   ierr = PrintFields(&ctx);CHKERRQ(ierr);
@@ -97,7 +99,7 @@ int main(int argc, char ** argv)
        and proceeding again */
 
     ierr = PetscPrintf(PETSC_COMM_WORLD,"*** Starting at t0 = %f, Will perform %D macro (output) steps of length %f = %f years\n",
-        P->t0,P->nstepsmacro,(double) P->dtmacro, (double) (P->dtmacro*P->constants.TIMEYRS) );CHKERRQ(ierr);
+        P->t0,P->nstepsmacro,(double) P->dtmacro, (double) (P->dtmacro*(*P->scaling_constants).TIMEYRS) );CHKERRQ(ierr);
     time = P->t0;
     ierr = TSSetTime(ts,time);CHKERRQ(ierr);
     nexttime = P->t0 + P->dtmacro;

@@ -6,8 +6,8 @@ PetscErrorCode PostStepDataInitialize(Ctx *E)
 {
   PetscErrorCode             ierr;
   Atmosphere                 *A = &E->atmosphere;
-  Parameters const           *P = &E->parameters;
-  AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+  Parameters const           P = E->parameters;
+  AtmosphereParameters const Ap = P->atmosphere_parameters;
   PostStepData               *data;
   PetscInt                   i;
 
@@ -39,8 +39,8 @@ PetscErrorCode PostStep(TS ts)
   Ctx                  *E;
   PostStepData         *data;
   Atmosphere           *A;
-  Parameters           *P;
-  AtmosphereParameters *Ap;
+  Parameters           P;
+  AtmosphereParameters Ap;
   Vec                  sol_in;
   PetscScalar          maxx, relx;
   PetscInt             i;
@@ -50,9 +50,9 @@ PetscErrorCode PostStep(TS ts)
   ierr = TSGetTimeStepNumber(ts,&stepNumber);CHKERRQ(ierr);
   ierr = TSGetApplicationContext(ts,&E);CHKERRQ(ierr);
   A = &E->atmosphere;
-  P = &E->parameters;
-  Ap = &P->atmosphere_parameters;
-  if (!E->parameters.rollBackActive) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_SUP,"You must run with -activate_rollback");
+  P = E->parameters;
+  Ap = P->atmosphere_parameters;
+  if (!E->parameters->rollBackActive) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_SUP,"You must run with -activate_rollback");
   data = (PostStepData*) E->postStepData;
   //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, x_CO2 is %g\n",__func__,__FILE__,__LINE__,data->x_CO2);
   //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, x_H2O is %g\n",__func__,__FILE__,__LINE__,data->x_H2O);
@@ -66,7 +66,7 @@ PetscErrorCode PostStep(TS ts)
 
   for( i=0; i<Ap->n_volatiles; ++i) {
      Volatile *V = &A->volatiles[i];
-     maxx = P->atmosphere_parameters.volatile_parameters[i].poststep_change;
+     maxx = P->atmosphere_parameters->volatile_parameters[i]->poststep_change;
      if( maxx > 0 ){
          /* remember that the - is for minus! */
          relx = PetscAbsReal( (V->p-data->volatile_partialp[i]) / data->volatile_partialp[i] );

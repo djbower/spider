@@ -6,12 +6,10 @@
 EXNAME = spider
 
 # Source files, each corresponding to a .o object file and .d dependency file
-SRC_C = main.c ctx.c rhs.c ic.c mesh.c lookup.c bc.c util.c twophase.c \
-        monitor.c energy.c matprop.c \
-        dimensionalisablefield.c rheologicalfront.c \
-        cJSON.c rollback.c poststep.c \
-        parameters.c atmosphere.c \
-        reaction.c \
+SRC_C = main.c ctx.c rhs.c ic.c mesh.c bc.c util.c twophase.c \
+        monitor.c energy.c matprop.c dimensionalisablefield.c rheologicalfront.c \
+        cJSON.c rollback.c poststep.c parameters.c atmosphere.c \
+        reaction.c eos.c \
 
 # Main Target
 all :: ${EXNAME}
@@ -29,7 +27,13 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 # Extra flags
 # Use -O0 to turn off optimization, to debug with LLDB/GDB
 # You can specify this from the command line, e.g.
-#   make clean; make -j CFLAGS_EXTRA="-O0"
+# Available sanitizer flags with OSX
+# With debugging
+#  make clean; make -j CFLAGS_EXTRA="-O0"
+# with Address Sanitizer
+#   make clean; make -j CFLAGS_EXTRA="-O0 -fsanitize=address"
+# with UndefinedBehaviorSanitizer
+#   make clean; make -j CFLAGS_EXTRA="-O0 -fsanitize=undefined"
 CFLAGS+=${CFLAGS_EXTRA}
 
 # Generate dependency (.d) files as we compile

@@ -1,39 +1,29 @@
+#include "parameters.h"
 #include "matprop.h"
 #include "util.h"
-#include "lookup.h"
 #include "twophase.h"
-// FIXME
-//#include "composition.h"
+#include "eos.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );
-static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const *);
+static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const);
 static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
-static PetscScalar get_log10_viscosity_melt( PetscScalar, PetscScalar, PetscInt, Parameters const *);
-static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, PetscScalar, Parameters const * );
-static PetscScalar get_log10_viscosity_cutoff( PetscScalar, Parameters const * );
-static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const * );
+static PetscScalar get_log10_viscosity_melt( PetscScalar, PetscScalar, PetscInt, Parameters const );
+static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, PetscScalar, Parameters const );
+static PetscScalar get_log10_viscosity_cutoff( PetscScalar, Parameters const );
+static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
     PetscErrorCode    ierr;
     Mesh              *M = &E->mesh;
-    //Parameters        *P = &E->parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
 
-    /* useful to passively compute crystal and Bridgmanite fraction,
-       even if they do not feedback into the density calculation */
-    /* determine values to implement compositional differentiation */
-    // FIXME
-    //if(P->COMPOSITION){
-    //ierr = set_composition( E ); CHKERRQ(ierr);
-    //}
-
     ierr = set_matprop_staggered( E ); CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->lhs_s,S->temp_s,S->rho_s); CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->lhs_s,S->lhs_s,M->volume_s); CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->capacitance_s,S->temp_s,S->rho_s); CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->capacitance_s,S->capacitance_s,M->volume_s); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -59,7 +49,7 @@ PetscErrorCode set_melt_fraction_staggered( Ctx *E )
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s=E->da_s;
-    Parameters        *P = &E->parameters;
+    Parameters        P = E->parameters;
     Solution          *S = &E->solution;
     PetscScalar       *arr_phi_s;
 
@@ -96,11 +86,8 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s=E->da_s;
-    Lookup const      *L;
     Mesh              *M = &E->mesh;
-    Parameters const  *P = &E->parameters;
-    // FIXME
-    //CompositionalParameters const *Comp = &P->compositional_parameters;
+    Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
     Vec               pres_s = M->pressure_s;
     // material properties that are updated here
@@ -139,37 +126,21 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     for(i=ilo_s; i<ihi_s; ++i){
 
         /* solid phase */
-        L = &P->solid_prop;
-        rho_sol = get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
-        temp_sol = get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
-        cp_sol = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
+        SetEosEval( P->eos_parameters[1], arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );
+        rho_sol = E->eos_evals[1].rho;
+        temp_sol = E->eos_evals[1].T;
+        cp_sol = E->eos_evals[1].Cp;
 
         /* melt phase */
-        L = &P->melt_prop;
-        rho_mel = get_val2d( &L->rho, arr_pres_s[i], arr_S_s[i] );
-        temp_mel = get_val2d( &L->temp, arr_pres_s[i], arr_S_s[i] );
-        cp_mel = get_val2d( &L->cp, arr_pres_s[i], arr_S_s[i] );
+        SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );
+        rho_mel = E->eos_evals[0].rho;
+        temp_mel = E->eos_evals[0].T;
+        cp_mel = E->eos_evals[0].Cp;
 
         /* mixed phase */
         /* volume additivity, excluding temperature (since phase effect dominant) */
         rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
         rho_mix = 1.0 / rho_mix;
-
-        /* FIXME: run this past Aaron */
-        /*if(P->COMPOSITION){
-            rho_mel *= Comp->mass_ratio_liquidus;
-            rho_mix = arr_liquidus_rho_s[i];
-            if(i < Comp->rheological_front_index){
-                rho_mix *= Comp->mo_mass_ratio;
-            }
-            else{
-                rho_mix *= Comp->mass_ratio_liquidus;
-            }
-        }
-        else{
-            rho_mix = combine_matprop( arr_phi_s[i], 1.0/arr_liquidus_rho_s[i], 1.0/arr_solidus_rho_s[i] );
-            rho_mix = 1.0 / rho_mix;
-        }*/
 
         temp_mix = combine_matprop( arr_phi_s[i], arr_liquidus_temp_s[i], arr_solidus_temp_s[i] );
         cp_mix = arr_cp_mix_s[i];
@@ -237,11 +208,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscScalar       rho_sol, dTdrs_sol, cp_sol, temp_sol, alpha_sol, cond_sol, log10visc_sol;
     PetscScalar       rho_mel, dTdrs_mel, cp_mel, temp_mel, alpha_mel, cond_mel, log10visc_mel;
     PetscScalar       rho_mix, dTdrs_mix, cp_mix, temp_mix, alpha_mix, cond_mix, log10visc_mel_mix, log10visc_sol_mix, log10visc_mix;
-    Lookup const      *L;
     Mesh              *M = &E->mesh;
-    Parameters const  *P = &E->parameters;
-    // FIXME
-    //CompositionalParameters const *Comp = &P->compositional_parameters;
+    Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -304,24 +272,24 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       /* truncate melt fraction */
       arr_phi[i] = get_melt_fraction_truncated( arr_phi[i] );
 
-      /* solid phase */
-      L = &P->solid_prop;
-      rho_sol = get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
-      dTdrs_sol = arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
-      cp_sol = get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
-      temp_sol = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
-      alpha_sol = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
-      cond_sol = P->cond_sol;
+      /* solid */
+      SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
+      rho_sol = E->eos_evals[1].rho;
+      dTdrs_sol = arr_dPdr_b[i] * E->eos_evals[1].dTdPs;
+      cp_sol = E->eos_evals[1].Cp;
+      temp_sol = E->eos_evals[1].T;
+      alpha_sol = E->eos_evals[1].alpha;
+      cond_sol = P->eos_parameters[1]->cond;
       log10visc_sol = get_log10_viscosity_solid( temp_sol, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
 
       /* melt phase */
-      L = &P->melt_prop;
-      rho_mel = get_val2d( &L->rho, arr_pres[i], arr_S_b[i] );
-      dTdrs_mel = arr_dPdr_b[i] * get_val2d( &L->dTdPs, arr_pres[i], arr_S_b[i] );
-      cp_mel = get_val2d( &L->cp, arr_pres[i], arr_S_b[i] );
-      temp_mel = get_val2d( &L->temp, arr_pres[i], arr_S_b[i] );
-      alpha_mel = get_val2d( &L->alpha, arr_pres[i], arr_S_b[i] );
-      cond_mel = P->cond_mel;
+      SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
+      rho_mel = E->eos_evals[0].rho;
+      dTdrs_mel = arr_dPdr_b[i] * E->eos_evals[0].dTdPs;
+      cp_mel = E->eos_evals[0].Cp;
+      temp_mel = E->eos_evals[0].T;
+      alpha_mel = E->eos_evals[0].alpha;
+      cond_mel = P->eos_parameters[0]->cond;
       log10visc_mel = get_log10_viscosity_melt( temp_mel, arr_pres[i], arr_layer_b[i], P );
 
       /* mixed phase */
@@ -348,7 +316,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       cp_mix = arr_cp_mix[i];
       temp_mix = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
       alpha_mix = -arr_fusion_rho[i] / arr_fusion_temp[i] / rho_mix;
-      cond_mix = combine_matprop( arr_phi[i], P->cond_mel, P->cond_sol );
+      cond_mix = combine_matprop( arr_phi[i], P->eos_parameters[0]->cond, P->eos_parameters[1]->cond );
       /* need to get viscosity of melt and solid phases at the liquidus and solidus temperature,
          since this is consistent with the notion of ignoring temperature effects in the mixed
          phase region (e.g., for density) */
@@ -498,7 +466,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar get_log10_viscosity_cutoff( PetscScalar in_visc, Parameters const *P )
+static PetscScalar get_log10_viscosity_cutoff( PetscScalar in_visc, Parameters const P )
 {
 
     PetscScalar out_visc;
@@ -520,7 +488,7 @@ static PetscScalar get_log10_viscosity_cutoff( PetscScalar in_visc, Parameters c
 
 }
 
-static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, PetscScalar radius, Parameters const *P )
+static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, PetscScalar radius, Parameters const P )
 {
 
     PetscScalar Ea = P->activation_energy_sol; // activation energy (non-dimensional)
@@ -535,13 +503,13 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
     
 
     /* reference viscosity */
-    lvisc = P->log10visc_sol; // i.e., log10(eta_0)
+    lvisc = P->eos_parameters[1]->log10visc; // i.e., log10(eta_0)
 
     /* temperature and pressure contribution
     A(T,P) = (E_a + V_a P) / RT
     eta = eta_0 * exp(A)
     log10(eta) = log10(eta0) + log10(exp(A))
-    log10(eta) = P->log10visc_sol + A/ln(10) */
+    log10(eta) = P->eos2_parameters.log10visc + A/ln(10) */
     A = 0.0;
     if(Ea>0.0)
         A += Ea;
@@ -597,7 +565,7 @@ static PetscScalar add_compositional_viscosity( PetscScalar lvisc, PetscScalar M
     return lvisc;
 }
 
-static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const *P )
+static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const P )
 {
 
     /* melt viscosity is currently a constant, but this retains symmetry with the function used
@@ -605,7 +573,7 @@ static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScala
 
     PetscScalar lvisc;
 
-    lvisc = P->log10visc_mel;
+    lvisc = P->eos_parameters[0]->log10visc;
 
     lvisc = get_log10_viscosity_cutoff( lvisc, P );
 
@@ -613,7 +581,7 @@ static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScala
 
 }
 
-static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10visc_mel, PetscScalar log10visc_sol, Parameters const *P )
+static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10visc_mel, PetscScalar log10visc_sol, Parameters const P )
 {
     PetscScalar fwt, lvisc;
 
@@ -627,7 +595,7 @@ static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10
     return lvisc;
 }
 
-static PetscScalar get_viscosity_mix_no_skew( PetscScalar meltf, Parameters const *P )
+static PetscScalar get_viscosity_mix_no_skew( PetscScalar meltf, Parameters const P )
 {
     /* viscosity in mixed phase region with no skew */
 

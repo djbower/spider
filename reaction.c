@@ -1,15 +1,15 @@
 #include "reaction.h"
 
-static PetscScalar get_psurf_exponent( const ReactionParameters * );
-static PetscScalar get_reaction_quotient( const ReactionParameters *, const Atmosphere *, PetscInt );
-static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters *, const Atmosphere *, const AtmosphereParameters *, PetscInt );
-static PetscScalar get_log10_equilibrium_constant( const ReactionParameters *, PetscScalar, const Constants * );
-static PetscScalar get_dlog10KdT( const ReactionParameters *, PetscScalar, const Constants * );
+static PetscScalar get_psurf_exponent( const ReactionParameters );
+static PetscScalar get_reaction_quotient( const ReactionParameters, const Atmosphere *, PetscInt );
+static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters, const Atmosphere *, const AtmosphereParameters, PetscInt );
+static PetscScalar get_log10_equilibrium_constant( const ReactionParameters, PetscScalar, const ScalingConstants );
+static PetscScalar get_dlog10KdT( const ReactionParameters, PetscScalar, const ScalingConstants );
 
 /* Note: this could logically be included in parameters.c, but that file was getting crowded */
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -33,11 +33,11 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_par
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"CO2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CH4",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"CH4",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[2] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -45,7 +45,7 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_par
 }
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -69,11 +69,11 @@ PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_par
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"N2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"N2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"NH3",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"NH3",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[2] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -84,7 +84,7 @@ PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_par
 /* This one is used for testing, since it assumes constant fO2 and K */
 /* K = pH2/pH2O = 10**2.0 = 100 */
 /* simplified version used in thesis work of Taylor Kutra (2019) */
-PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -107,9 +107,9 @@ PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters* reaction
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2O",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -119,7 +119,7 @@ PetscErrorCode ReactionParametersCreateSimpleWater1(ReactionParameters* reaction
 /* A named reaction */
 /* This one is used for testing, since it assumes constant fO2 and K */
 /* K = pH2/pH2O = 10**1.0 = 10 */
-PetscErrorCode ReactionParametersCreateSimpleWater2(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateSimpleWater2(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -142,9 +142,9 @@ PetscErrorCode ReactionParametersCreateSimpleWater2(ReactionParameters* reaction
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2O",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -154,7 +154,7 @@ PetscErrorCode ReactionParametersCreateSimpleWater2(ReactionParameters* reaction
 /* A named reaction */
 /* This one is used for testing, since it assumes constant fO2 and K */
 /* K = pH2/pH2O = 10**0.0 = 1 */
-PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -177,9 +177,9 @@ PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters* reaction
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2O",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -187,7 +187,7 @@ PetscErrorCode ReactionParametersCreateSimpleWater3(ReactionParameters* reaction
 }
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -210,9 +210,9 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2O",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"H2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -220,7 +220,7 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
 }
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters *Ap)
+PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -243,9 +243,9 @@ PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reacti
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO2",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"CO2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
-    ierr = PetscStrcmp(Ap->volatile_parameters[v].prefix,"CO",&flg);CHKERRQ(ierr);
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"CO",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
@@ -269,12 +269,11 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
    but rather time-dependent quantities */
 
 /* Compute equilibrium constant */
-static PetscScalar get_log10_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
+static PetscScalar get_log10_equilibrium_constant( const ReactionParameters reaction_parameters, PetscScalar temp, const ScalingConstants SC )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        log10Keq;
 
-    temp *= C->TEMP;
+    temp *= SC->TEMP;
 
     /* log10Keq = a/T + b is a standard form for computing an equilibrium constant */
     /* e.g., Schaefer and Fegley (2017) */
@@ -285,18 +284,17 @@ static PetscScalar get_log10_equilibrium_constant( const ReactionParameters * re
 }
 
 /* Derivative of log10 equilibrium constant with respect to temperature */
-PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C )
+PetscScalar get_dlog10KdT( const ReactionParameters reaction_parameters, PetscScalar temp, const ScalingConstants SC )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        dlog10KdT;
 
-    temp *= C->TEMP;
+    temp *= SC->TEMP;
 
     dlog10KdT = -reaction_parameters->Keq_coeffs[0] / PetscPowScalar( temp, 2.0 );
 
     /* TODO: check, must non-dimensionalise, since we used a scaled
        (dimensional) temperature */
-    dlog10KdT *= C->TEMP;
+    dlog10KdT *= SC->TEMP;
 
     return dlog10KdT;
 
@@ -304,12 +302,11 @@ PetscScalar get_dlog10KdT( const ReactionParameters * reaction_parameters_ptr, P
 
 /* Compute modified equilibrium constant */
 /* This includes fO2, which helps numerically since the total quantity is better scaled */
-PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C, const Atmosphere *A )
+PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters reaction_parameters, PetscScalar temp, const ScalingConstants SC, const Atmosphere *A )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        log10G, log10K; 
 
-    log10K = get_log10_equilibrium_constant( reaction_parameters_ptr, temp, C );
+    log10K = get_log10_equilibrium_constant( reaction_parameters, temp, SC );
 
     log10G = log10K - reaction_parameters->fO2_stoichiometry * A->log10fO2;
 
@@ -318,12 +315,11 @@ PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters * 
 }
 
 /* Derivative of log10 modified equilibrium constant with respect to temperature */
-PetscScalar get_dlog10GdT( const  ReactionParameters * reaction_parameters_ptr, PetscScalar temp, const Constants *C, const Atmosphere *A )
+PetscScalar get_dlog10GdT( const  ReactionParameters reaction_parameters, PetscScalar temp, const ScalingConstants SC, const Atmosphere *A )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscScalar        dlog10KdT, dlog10GdT;
 
-    dlog10KdT = get_dlog10KdT( reaction_parameters_ptr, A->tsurf, C );
+    dlog10KdT = get_dlog10KdT( reaction_parameters, A->tsurf, SC );
 
     dlog10GdT = dlog10KdT - reaction_parameters->fO2_stoichiometry * A->dlog10fO2dT;
 
@@ -332,9 +328,8 @@ PetscScalar get_dlog10GdT( const  ReactionParameters * reaction_parameters_ptr, 
 }
 
 /* Exponent of extra factor of psurf to ensure reaction quotient is non-dimensional */
-static PetscScalar get_psurf_exponent( const ReactionParameters * reaction_parameters_ptr )
+static PetscScalar get_psurf_exponent( const ReactionParameters reaction_parameters )
 {
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt    j;
     PetscScalar expon = 0;
 
@@ -348,27 +343,26 @@ static PetscScalar get_psurf_exponent( const ReactionParameters * reaction_param
 
 /* Compute reaction quotient (products, numerator) */
 
-PetscScalar get_reaction_quotient_products( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
+PetscScalar get_reaction_quotient_products( const ReactionParameters reaction_parameters, const Atmosphere *A )
 {
 
-    return get_reaction_quotient( reaction_parameters_ptr, A, 1 );
+    return get_reaction_quotient( reaction_parameters, A, 1 );
 
 }
 
-PetscScalar get_reaction_quotient_reactants( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A )
+PetscScalar get_reaction_quotient_reactants( const ReactionParameters reaction_parameters, const Atmosphere *A )
 {
 
-    return get_reaction_quotient( reaction_parameters_ptr, A, -1 );
+    return get_reaction_quotient( reaction_parameters, A, -1 );
 
 }
 
-static PetscScalar get_reaction_quotient( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, PetscInt SIGN )
+static PetscScalar get_reaction_quotient( const ReactionParameters reaction_parameters, const Atmosphere *A, PetscInt SIGN )
 {
     /* returns numerator for SIGN=1 (products) and denominator for SIGN=-1 (reactants) */
     /* note: excludes fO2 since this is badly scaled.  fO2 is dealt with at the same time
        as the equilibrium constant */
 
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt           j;
     PetscScalar        Q = 1;
     PetscScalar        expon;
@@ -389,7 +383,7 @@ static PetscScalar get_reaction_quotient( const ReactionParameters * reaction_pa
        we must account for the extra factors of A->psurf to ensure that
        Q=Qp/Qr is non-dimensional */
     /* TODO: keep here for the time being, but could maybe move this elsewhere */
-    expon = get_psurf_exponent( reaction_parameters_ptr );
+    expon = get_psurf_exponent( reaction_parameters );
     if( SIGN * expon > 0.0 ){
         Q *= PetscPowScalar( A->psurf, SIGN * expon );
     }
@@ -398,26 +392,25 @@ static PetscScalar get_reaction_quotient( const ReactionParameters * reaction_pa
 
 }
 
-PetscScalar get_reaction_quotient_products_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap )
+PetscScalar get_reaction_quotient_products_time_derivative( const ReactionParameters reaction_parameters, const Atmosphere *A, const AtmosphereParameters Ap )
 {
 
-    return get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, 1 );
+    return get_reaction_quotient_time_derivative( reaction_parameters, A, Ap, 1 );
 
 }
 
-PetscScalar get_reaction_quotient_reactants_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap )
+PetscScalar get_reaction_quotient_reactants_time_derivative( const ReactionParameters reaction_parameters, const Atmosphere *A, const AtmosphereParameters Ap )
 {
 
-    return  get_reaction_quotient_time_derivative( reaction_parameters_ptr, A, Ap, -1 );
+    return  get_reaction_quotient_time_derivative( reaction_parameters, A, Ap, -1 );
 
 }
 
 /* compute reaction quotient (products, numerator) derivative with respect to time t */
-static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters * reaction_parameters_ptr, const Atmosphere *A, const AtmosphereParameters *Ap, PetscInt SIGN )
+static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters reaction_parameters, const Atmosphere *A, const AtmosphereParameters Ap, PetscInt SIGN )
 {
     /* returns dQp/dt for SIGN=1 (products) and dQr/dt for SIGN=-1 (reactants) */
 
-    ReactionParameters reaction_parameters = *reaction_parameters_ptr;
     PetscInt           j,k;
     PetscScalar        dQdt=0, dvdt;
     PetscScalar        expon, prefactor;
@@ -425,7 +418,7 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
 
     /* this is a bit ugly, because I decide whether to include the scaling of surface pressure in the
        numerator if the stoichiometry is positive (otherwise it is included in the denominator */
-    expon = get_psurf_exponent( reaction_parameters_ptr );
+    expon = get_psurf_exponent( reaction_parameters );
     if( SIGN * expon > 0.0 ){
         INCLUDE_PSURF = PETSC_TRUE;
     }

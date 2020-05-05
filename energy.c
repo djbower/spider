@@ -11,9 +11,9 @@ static PetscErrorCode append_Jmix( Ctx * );
 static PetscErrorCode append_Jgrav( Ctx * );
 static PetscErrorCode append_Hradio( Ctx *, PetscReal );
 static PetscErrorCode append_Htidal( Ctx *, PetscReal );
-static PetscScalar get_radiogenic_heat_production( RadiogenicIsotopeParameters const *, PetscReal );
-static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters * );
-static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters * );
+static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const, PetscReal );
+static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
+static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
 
 ///////////////////////////
 /* internal heat sources */
@@ -22,7 +22,7 @@ static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, c
 PetscErrorCode set_Htot( Ctx *E, PetscReal time )
 {
     PetscErrorCode ierr;
-    Parameters     const *P = &E->parameters;
+    Parameters     const P = E->parameters;
     Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -32,12 +32,6 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal time )
     /* initialise to zero */
     ierr = VecSet( S->Hradio_s, 0.0 );CHKERRQ(ierr);
     ierr = VecSet( S->Htot_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hal26_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hk40_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hfe60_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hth232_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hu235_s, 0.0 );CHKERRQ(ierr);
-    ierr = VecSet( S->Hu238_s, 0.0 );CHKERRQ(ierr);
 
     /* total internal heat generation by summing terms */
     if (P->HRADIO){
@@ -55,42 +49,20 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal time )
 {
 
     PetscErrorCode ierr;
+    PetscInt i;
     PetscScalar H;
     Solution       *S = &E->solution;
-    Parameters const *P = &E->parameters;
-    RadiogenicIsotopeParameters const *al26 = &P->al26_parameters;
-    RadiogenicIsotopeParameters const *k40 = &P->k40_parameters;
-    RadiogenicIsotopeParameters const *fe60 = &P->fe60_parameters;
-    RadiogenicIsotopeParameters const *th232 = &P->th232_parameters;
-    RadiogenicIsotopeParameters const *u235 = &P->u235_parameters;
-    RadiogenicIsotopeParameters const *u238 = &P->u238_parameters;
+    Parameters const P = E->parameters;
+    RadionuclideParameters Rp;
 
     PetscFunctionBeginUser;
 
-    // al26
-    H = get_radiogenic_heat_production( al26, time );
-    ierr = VecSet(S->Hal26_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hal26_s ); CHKERRQ(ierr);
-    // k40
-    H = get_radiogenic_heat_production( k40, time );
-    ierr = VecSet(S->Hk40_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hk40_s ); CHKERRQ(ierr);
-    // fe60
-    H = get_radiogenic_heat_production( fe60, time );
-    ierr = VecSet(S->Hfe60_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hfe60_s ); CHKERRQ(ierr);
-    // th232
-    H = get_radiogenic_heat_production( th232, time );
-    ierr = VecSet(S->Hth232_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hth232_s ); CHKERRQ(ierr);
-    // u235
-    H = get_radiogenic_heat_production( u235, time );
-    ierr = VecSet(S->Hu235_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hu235_s ); CHKERRQ(ierr);
-    // u238
-    H = get_radiogenic_heat_production( u238, time );
-    ierr = VecSet(S->Hu238_s,H);CHKERRQ(ierr);
-    ierr = VecAXPY( S->Hradio_s, 1.0, S->Hu238_s ); CHKERRQ(ierr);
+    for (i=0;i<P->n_radionuclides; ++i){
+
+        Rp = P->radionuclide_parameters[i];
+        H = get_radiogenic_heat_production( Rp, time );
+        ierr = VecShift( S->Hradio_s, H ); CHKERRQ(ierr);
+    }
 
     // append total of radiogenic heating to total heating vector
     ierr = VecAXPY( S->Htot_s, 1.0, S->Hradio_s ); CHKERRQ(ierr);
@@ -118,14 +90,14 @@ static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar get_radiogenic_heat_production( RadiogenicIsotopeParameters const *Iso, PetscReal time )
+static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const Rp, PetscReal time )
 {
     PetscScalar H;
 
-    H = (Iso->t0-time) * PetscLogScalar(2.0);
-    H /= Iso->half_life;
+    H = (Rp->t0-time) * PetscLogScalar(2.0);
+    H /= Rp->half_life;
     H = PetscExpScalar(H);
-    H *= Iso->heat_production * Iso->abundance * Iso->concentration * 1.0E-6; // since ppm
+    H *= Rp->heat_production * Rp->abundance * Rp->concentration;
 
     return H;
 
@@ -155,7 +127,7 @@ PetscErrorCode set_Etot( Ctx *E )
 static PetscErrorCode set_Jtot( Ctx *E )
 {
     PetscErrorCode ierr;
-    Parameters     const *P = &E->parameters;
+    Parameters     const P = E->parameters;
     Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -291,15 +263,13 @@ static PetscErrorCode append_Jcond( Ctx *E )
 static PetscErrorCode append_Jgrav( Ctx *E )
 {
 
-    /* FIXME: this needs updating for composition! */
-
     PetscErrorCode ierr;
     Solution *S = &E->solution;
     Vec cond1, cond2, F;
     Vec rho = S->rho;
     Vec rhol = S->liquidus_rho;
     Vec rhos = S->solidus_rho;
-    Parameters *P = &E->parameters;
+    Parameters P = E->parameters;
 
 //rho, rhol, rhos, F;
     PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
@@ -389,7 +359,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     ierr = VecScale( S->Jgrav, P->gravity );CHKERRQ(ierr);
     ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, F );CHKERRQ(ierr);
     // arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
-    ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, P->log10visc_mel));CHKERRQ(ierr);
+    ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, P->eos_parameters[0]->log10visc));CHKERRQ(ierr);
 
     ierr = VecDestroy(&cond1);CHKERRQ(ierr);
     ierr = VecDestroy(&cond2);CHKERRQ(ierr);
@@ -414,10 +384,10 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
     PetscScalar          temp0;
     PetscInt             const ind0 = 0;
     Atmosphere           *A  = &E->atmosphere;
-    Parameters           const *P  = &E->parameters;
+    Parameters           const P  = E->parameters;
     Solution             const *S  = &E->solution;
-    Constants            const *C  = &P->constants;
-    AtmosphereParameters const *Ap = &P->atmosphere_parameters;
+    ScalingConstants     const SC  = P->scaling_constants;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
@@ -457,7 +427,7 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
 
     /* must be after A->tsurf is set for fO2 calculation */
     if( Ap->OXYGEN_FUGACITY ){
-        ierr = set_oxygen_fugacity( A, Ap, C );CHKERRQ(ierr);
+        ierr = set_oxygen_fugacity( A, Ap, SC );CHKERRQ(ierr);
     }
     else{
         /* TODO: maybe initialise these variables elsewhere? */
@@ -469,7 +439,7 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
 
 }
 
-static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters *Ap )
+static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters Ap )
 {
     PetscScalar Ts, c, fac, num, den;
     c = Ap->param_utbl_const;
@@ -487,7 +457,7 @@ static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar tem
     return Ts; 
 }
 
-static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters *Ap )
+static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters Ap )
 {
     PetscScalar dTsdT, c, fac1, fac2, fac3, num1, den1, num2, den2, part1, part2;
     c = Ap->param_utbl_const;

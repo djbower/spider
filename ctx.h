@@ -1,7 +1,7 @@
 #ifndef CTX_H_
 #define CTX_H_
 
-#include "petsc.h"
+#include <petsc.h>
 #include "parameters.h"
 #include "dimensionalisablefield.h"
 #include "rheologicalfront.h"
@@ -29,7 +29,7 @@ typedef struct Mesh_ {
 } Mesh;
 
 #define NUMSOLUTIONVECS_B 43
-#define NUMSOLUTIONVECS_S 30
+#define NUMSOLUTIONVECS_S 24
 typedef struct Solution_ {
 
     DimensionalisableField solutionFields_b[NUMSOLUTIONVECS_B];
@@ -39,7 +39,7 @@ typedef struct Solution_ {
     Vec alpha, alpha_mix, cond, cp, cp_mix, dfusdr, dfusdr_temp, dSdr, dSliqdr, dSsoldr, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, fwtl, fwts, gphi, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, Ra, regime, rho, S, solidus, solidus_rho, solidus_temp, temp, visc;
 
     // TODO: eventually get rid of these
-    Vec cp_s, cp_mix_s, dSdt_s, fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, fwtl_s, fwts_s, gphi_s, Hradio_s, Htidal_s, Htot_s, lhs_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s, Hal26_s, Hk40_s, Hfe60_s, Hth232_s, Hu235_s, Hu238_s;
+    Vec cp_s, cp_mix_s, dSdt_s, fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, fwtl_s, fwts_s, gphi_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
 
 } Solution;
 
@@ -57,6 +57,26 @@ typedef enum {
 static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr","S at surface","Volatile partial pressure","Reaction total mass"}; /* Order must match the enum! */
 static const char * const SpiderSolutionFieldUnits[]        = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "Pa", "kg"}; /* Order must match the enum! */
 
+/* A (temporary) struct that is used to set the eos properties at a
+   given V,T or P, S.  There should be as  */
+typedef struct EosEval_ {
+  PetscScalar P; /* pressure */
+  /* TODO: could eventually implement function pointers, as below? */
+  //PetscErrorCode (*fpAlpha)(const EosParameters, PetscScalar, PetscScalar, PetscScalar *);
+  PetscScalar S; /* entropy */
+  PetscScalar V; /* volume */
+  PetscScalar T; /* temperature */
+  PetscScalar Cp; /* heat capacity at constant pressure */
+  PetscScalar Cv; /* heat capacity at constant volume */
+  PetscScalar alpha; /* thermal expansion */
+  PetscScalar rho; /* density */
+  PetscScalar dTdPs; /* adiabatic temperature gradient */
+  /* TODO could consider adding the following, although these are
+     not usually derived from an EOS */
+  //PetscScalar cond;
+  //PetscScalar log10visc;
+} EosEval;
+
 /* A Context for the Solver */
 typedef struct Ctx_ {
   Mesh                   mesh;
@@ -72,6 +92,13 @@ typedef struct Ctx_ {
   DimensionalisableField solDF; /* The solution and attached scalings */
   RheologicalFront       rheological_front_phi;
   RheologicalFront       rheological_front_dynamic;
+
+  /* TODO: check with PS if this is the best way */
+  /* this is a struct to enable me to pass current P, S conditions and
+     update all material propoerties, according to a chosen EOS model.
+     Currently need one for solid and one for melt, but could extend to
+     multiple phases */
+  EosEval                eos_evals[2]; // FIXME: hard-coded for two phases
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

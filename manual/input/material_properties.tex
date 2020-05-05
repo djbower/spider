@@ -184,11 +184,7 @@ S_{\rm sol}(P) &= S_{\rm fus}(P) - \Delta S_{\rm fus}(P) / 2
 \end{split}
 \label{eqn:fusion_curve}
 \end{equation}
-where $S$ is entropy, $P$ pressure, and $S_{\rm fus}$ is the fusion curve.  Subscripts ``liq'' and ``sol'' denote that the quantity is determined at the liquidus and solidus, respectively.  The entropy of fusion, $\Delta S_{\rm fus}$ is computed to ensure the liquidus and solidus approximate those for a multi-component mantle.  [\textbf{Side note}: the melting curve used by \cite{ABE93} is from Ohtani (1983), although it may be slightly adjusted(?).  Ohtani appears to assume a constant entropy change on melting (fairly reasonable assumption) of 8.03 cal/mol/K for MgSiO3 melt.  The enthalpy change in \cite{ABE93} is likely calculated from this value, $\Delta h = T \Delta S$.]
-
-
-
-  To obtain the properties of the two phase aggregate, we represent the entropy of the system as a linear mixture of the solid and liquid values, thus providing a simple estimate of the melt fraction as a function of total entropy:
+where $S$ is entropy, $P$ pressure, and $S_{\rm fus}$ is the fusion curve.  Subscripts ``liq'' and ``sol'' denote that the quantity is determined at the liquidus and solidus, respectively.  The entropy of fusion, $\Delta S_{\rm fus}$ is computed to ensure the liquidus and solidus approximate those for a multi-component mantle.  [\textbf{Side note}: the melting curve used by \cite{ABE93} is from Ohtani (1983), although it may be slightly adjusted(?).  Ohtani appears to assume a constant entropy change on melting (fairly reasonable assumption) of 8.03 cal/mol/K for MgSiO3 melt.  The enthalpy change in \cite{ABE93} is likely calculated from this value, $\Delta h = T \Delta S$.]. To obtain the properties of the two phase aggregate, we represent the entropy of the system as a linear mixture of the solid and liquid values, thus providing a simple estimate of the melt fraction as a function of total entropy:
 \begin{equation}
 \phi=
 \begin{cases}
@@ -208,28 +204,38 @@ T=
   T_s & \text{for } S<S_{\rm sol}
 \end{cases}
 \end{equation}
-Herein subscripts ``m'' and ``s'' denote that the quantity is determined exclusively by the melt or solid equation of state, respectively.  Density, $\rho$ is:
+Herein subscripts ``m'' and ``s'' denote that the quantity is determined exclusively by the melt or solid equation of state, respectively.  Density $\rho$, following volume additivity, is
 
 \begin{equation}
 \label{eqn:density_agg}
 \dfrac{1}{\rho} = \dfrac{1-\phi}{\rho_{\rm sol}} + \frac{\phi}{\rho_{\rm liq}}% \quad \quad \text{for } S_{\rm sol}<S<S_{\rm liq}
+%%% Cp
 \end{equation}
-Heat capacity, $c_p$ \citep[e.g.,][]{SOLO07} is:
-
+Heat capacity, $c_p$ \citep[e.g.,][]{SOLO07,SS293} is
 \begin{equation}
 \label{eqn:heat_capacity_agg}
-c_p = T_{\rm fus} \dfrac{\Delta S_{\rm fus}}{\Delta T_{\rm fus}} \quad \quad \text{for } S_{\rm sol}<S<S_{\rm liq}
+c_p = \dfrac{ \Delta H_{\rm fus}}{\Delta T} = T_{\rm fus} \dfrac{\Delta S_{\rm fus}}{\Delta T_{\rm fus}} \quad \quad \text{for } S_{\rm sol}<S<S_{\rm liq}
 \end{equation}
-where $T_{\rm fus}$ is temperature of the fusion curve and $\Delta T_{\rm fus} = T_{\rm liq}-T_{\rm sol}$ is the temperature difference between the liquidus and solidus.  Thermal expansion coefficient, $\alpha$ is:
-
+where $T_{\rm fus}$ is temperature of the fusion curve and $\Delta T_{\rm fus} = T_{\rm liq}-T_{\rm sol}$ is the temperature difference between the liquidus and solidus.  Recall that $\Delta H _{\rm fus} = T_{\rm fus} \Delta S_{\rm fus}$ from application of $\Delta S = q_{\rm rev}/T$.  Thermal expansion coefficient $\alpha$ \citep[e.g.,][]{SOLO07,SS293} is
+%%% alpha
 \begin{equation}
 \label{eqn:thermal_exp_agg}
 \alpha = -\dfrac{\Delta \rho_{\rm fus}}{\rho \Delta T_{\rm fus}} \quad \quad \text{for } S_{\rm sol}<S<S_{\rm liq}
 \end{equation}
-where $\Delta \rho_{\rm fus} = \rho_{\rm liq} - \rho_{\rm sol}$.  Adiabatic temperature gradient, $dT/dP|_S$ is:
-
+where $\Delta \rho_{\rm fus} = \rho_{\rm liq} - \rho_{\rm sol}$.  \myemph{TODO: check this formulation for $\alpha$ is still OK for density cross-overs in the mantle driven by compositional effects.}. The adiabatic temperature gradient $dT/dP|_S$ is derived by noting that an upward parcel of fluid ``solidifies an amount sufficient to release heat of fusion equal to the heat required to make up the difference between the adiabatic gradient and the melting point gradient'' \citep[quoting from][]{HK71}:
+%%% dT/dP_s
+\begin{equation}
+\label{eqn:adiabatic_temp_grad_derivation}
+\left. c_p \left( \dfrac{dT_{\rm fus}}{dP} - \dfrac{dT}{dP} \right|_S \right) = \dfrac{\Delta H_{\rm fus}}{dP} = T_{\rm fus} \dfrac{d S_{\rm fus}}{dP} \quad \quad \text{for } S_{\rm sol}<S<S_{\rm liq}
+\end{equation}
+Rearranging and substituting in Eq.~\ref{eqn:heat_capacity_agg}:
 \begin{equation}
 \label{eqn:adiabatic_temp_grad}
 \left. \dfrac{dT}{dP} \right|_S = \dfrac{dT_{\rm fus}}{dP} - \dfrac{\Delta T_{\rm fus}}{\Delta S_{\rm fus}} \dfrac{d S_{\rm fus}}{dP} \quad \quad \text{for } S_{\rm sol}<S<S_{\rm liq}
 \end{equation}
+Alternatively:
+\begin{equation}
+\left. \dfrac{dT}{dP} \right|_S = \dfrac{\alpha T}{\rho c_p}
+\end{equation}
+
 Together, these expressions represent a thermodynamically consistent metastable combination of solid and melt phases, chosen to best mimic the behavior of the multicomponent mantle over the melting interval.  Outside of the mixed-phase region the quantities in Eqns.~\ref{eqn:density_agg}--\ref{eqn:adiabatic_temp_grad} are equal to their melt and solid values exclusively, as for temperature (Eqn.~\ref{eqn:temperature_agg}).  This model provides thermodynamic properties as a function of pressure and entropy for the melt, solid, and mixed phase that are input to the evolution model i.e., $\phi$, $T$, $\rho$, $c_p$, $\alpha$, and $dT/dP|_S$.

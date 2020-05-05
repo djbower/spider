@@ -11,8 +11,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
 {
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
-  Parameters const *P = &ctx->parameters;
-  Constants  const *C = &P->constants;
+  Parameters const P = ctx->parameters;
+  ScalingConstants  const SC = P->scaling_constants;
 
   PetscFunctionBeginUser;
 
@@ -86,7 +86,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       long long int time_years_int;
 
       // JSON output filename uses the current age in integer number of years
-      time_years_int = (long long) ( time * C->TIMEYRS );
+      time_years_int = (long long) ( time * SC->TIMEYRS );
 
       ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/%lld.json",P->outputDirectory,time_years_int);CHKERRQ(ierr);
 
@@ -99,9 +99,9 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       cJSON_AddItemToObject(json,"SPIDER patch version",cJSON_CreateString(SPIDER_PATCH_VERSION));
       cJSON_AddItemToObject(json,"step",cJSON_CreateNumber(step));
       cJSON_AddItemToObject(json,"dtmacro",cJSON_CreateNumber(dtmacro));
-      cJSON_AddItemToObject(json,"dtmacro_years",cJSON_CreateNumber(dtmacro*C->TIMEYRS));
+      cJSON_AddItemToObject(json,"dtmacro_years",cJSON_CreateNumber(dtmacro*SC->TIMEYRS));
       cJSON_AddItemToObject(json,"time",cJSON_CreateNumber(time));
-      cJSON_AddItemToObject(json,"time_years",cJSON_CreateNumber(time*C->TIMEYRS));
+      cJSON_AddItemToObject(json,"time_years",cJSON_CreateNumber(time*SC->TIMEYRS));
       // TODO : add other stuff we might like in the header
 
       /* Add solution to file */
@@ -161,13 +161,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       }
 
       /* rheological front phi */
-      ierr = JSON_add_rheological_front( ctx->da_point, &ctx->parameters.constants, &ctx->rheological_front_phi, "rheological_front_phi", json); CHKERRQ(ierr);
+      ierr = JSON_add_rheological_front( ctx->da_point, ctx->parameters->scaling_constants, &ctx->rheological_front_phi, "rheological_front_phi", json); CHKERRQ(ierr);
 
       /* rheological front dynamic */
-      ierr = JSON_add_rheological_front( ctx->da_point, &ctx->parameters.constants, &ctx->rheological_front_dynamic, "rheological_front_dynamic", json); CHKERRQ(ierr);
+      ierr = JSON_add_rheological_front( ctx->da_point, ctx->parameters->scaling_constants, &ctx->rheological_front_dynamic, "rheological_front_dynamic", json); CHKERRQ(ierr);
 
       /* atmosphere */
-      ierr = JSON_add_atmosphere( ctx->da_point, &ctx->parameters, &ctx->atmosphere, "atmosphere", json); CHKERRQ(ierr);
+      ierr = JSON_add_atmosphere( ctx->da_point, ctx->parameters, &ctx->atmosphere, "atmosphere", json); CHKERRQ(ierr);
 
       /* Print to a string */
       outputString = cJSON_Print(json);

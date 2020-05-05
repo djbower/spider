@@ -4,14 +4,14 @@ static PetscErrorCode regular_mesh( Ctx * );
 //static PetscErrorCode geometric_mesh( Ctx * );
 static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
-static PetscErrorCode mixing_length( DM, Vec, Vec, Parameters const * );
-static PetscScalar mixing_length_conventional( Parameters const *, PetscScalar );
-static PetscScalar mixing_length_average( Parameters const *, PetscScalar );
-static PetscScalar mixing_length_layer( Parameters const *, PetscScalar );
-static PetscScalar get_layer( DM, Vec, Vec, Parameters const * );
-static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const * );
-static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const * );
-static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const * );
+static PetscErrorCode mixing_length( DM, Vec, Vec, Parameters const );
+static PetscScalar mixing_length_conventional( Parameters const, PetscScalar );
+static PetscScalar mixing_length_average( Parameters const, PetscScalar );
+static PetscScalar mixing_length_layer( Parameters const, PetscScalar );
+static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
+static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const );
+static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
+static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_mass( Mesh * );
 
 PetscErrorCode set_mesh( Ctx *E)
@@ -19,7 +19,7 @@ PetscErrorCode set_mesh( Ctx *E)
 
     Mesh           *M = &E->mesh;
     DM             da_b=E->da_b, da_s=E->da_s;
-    Parameters     *P = &E->parameters;
+    Parameters     P = E->parameters;
 
     PetscFunctionBeginUser;
 
@@ -70,7 +70,7 @@ PetscErrorCode set_mesh( Ctx *E)
     aw_mass( M );
 
     /* mantle mass also needed for atmosphere calculations */
-    P->atmosphere_parameters.mantle_mass_ptr = &M->mantle_mass;
+    P->atmosphere_parameters->mantle_mass_ptr = &M->mantle_mass;
 
     PetscFunctionReturn(0);
 }
@@ -82,7 +82,7 @@ static PetscErrorCode regular_mesh( Ctx *E )
     PetscScalar    *arr;
     PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_b,w_s,numpts_b,numpts_s;
     Mesh           *M = &E->mesh;
-    Parameters     *P = &E->parameters;
+    Parameters     P = E->parameters;
     DM             da_b=E->da_b, da_s=E->da_s;
     PetscScalar    dx_b;
 
@@ -244,7 +244,7 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix, const Parameters *P )
+static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix, const Parameters P )
 {
     PetscErrorCode    ierr;
     PetscScalar       *arr_m;
@@ -276,7 +276,7 @@ static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix, const Parameter
 }
 
 
-static PetscScalar mixing_length_conventional( const Parameters *P, const PetscScalar rad_in )
+static PetscScalar mixing_length_conventional( const Parameters P, const PetscScalar rad_in )
 {
     /* distance to nearest top or bottom boundary */
 
@@ -290,7 +290,7 @@ static PetscScalar mixing_length_conventional( const Parameters *P, const PetscS
 }
 
 
-static PetscScalar mixing_length_average( const Parameters *P, const PetscScalar rad_in )
+static PetscScalar mixing_length_average( const Parameters P, const PetscScalar rad_in )
 {
     /* constant, based on average of distance to nearest top or bottom
        boundary */
@@ -302,7 +302,7 @@ static PetscScalar mixing_length_average( const Parameters *P, const PetscScalar
     return out;
 }
 
-static PetscScalar mixing_length_layer( const Parameters *P, const PetscScalar rad_in )
+static PetscScalar mixing_length_layer( const Parameters P, const PetscScalar rad_in )
 {
     /* account for an additional interface separating two convecting
        layers */
@@ -317,7 +317,7 @@ static PetscScalar mixing_length_layer( const Parameters *P, const PetscScalar r
     return out;
 }
 
-static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters *P )
+static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
 {
     PetscErrorCode ierr;
     PetscScalar *arr_layer;
@@ -348,7 +348,7 @@ static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters *P 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parameters *P )
+static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parameters P )
 {
     PetscErrorCode    ierr;
     PetscScalar       dep,*arr_p;
@@ -370,7 +370,7 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parame
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Parameters *P )
+static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Parameters P )
 {
     PetscErrorCode    ierr;
     PetscScalar       dep, *arr_density;
@@ -407,7 +407,7 @@ static PetscErrorCode aw_mass( Mesh *M )
 
 }
 
-static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad, Parameters const *P )
+static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad, Parameters const P )
 {
     PetscErrorCode    ierr;
     PetscScalar       dep,*arr_g;
