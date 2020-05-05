@@ -1508,6 +1508,8 @@ static PetscErrorCode GetTwoPhasedTdPs( const EosComposite eos_composite, PetscS
 {
     PetscFunctionBeginUser;
 
+    /* TODO: Ask ASW which approach is most valid */
+
     PetscFunctionReturn(0);
 }
 
@@ -1571,7 +1573,7 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     ierr = GetTwoPhasedTdPs( eos_composite, P, S, &eos_eval->dTdPs );CHKERRQ(ierr);
     ierr = GetTwoPhaseAlpha( eos_composite, P, S, &eos_eval->alpha );CHKERRQ(ierr);
     /* lookup does not know about these quantities, since they are not used by
-       SPIDER */
+       SPIDER, but for completeness zero them here */
     eos_eval->Cv = 0.0;
     eos_eval->V = 0.0;
 
