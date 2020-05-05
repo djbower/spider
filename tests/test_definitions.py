@@ -235,3 +235,26 @@ def reaction_zerosol_ic(rootDir, tol) :
   t.setWalltime(1) # minutes
   t.setUseSandbox()
   return(t)
+
+def socrates_p_restart(rootDir, tol) :
+  thisDir = os.path.split(os.path.abspath(__file__))[0]
+  testName = "socrates_p_restart"
+  ranks = 1
+  launch = [\
+          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','socrates_p_restart.opts')
+              + ' -ic_interior_filename ' + os.path.join(rootDir,'tests','opts','socrates_p_restart_63745.json'),\
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/90611.json'), # TODO: last timestep time may change?
+          ]
+
+  expectedFile = os.path.join(thisDir,'expected_output','expected_socrates_p_restart.txt')
+
+  def comparefunc(t) :
+      t.compareFloatingPointRelative(re.escape('scaling: '), tol)
+      t.compareFloatingPointRelative(re.escape('val: '),    tol)
+
+  t = pthtest.Test(testName,ranks,launch,expectedFile)
+  t.setComparisonFile('90611.txt')
+  t.setVerifyMethod(comparefunc)
+  t.setWalltime(1) # minutes
+  t.setUseSandbox()
+  return(t)

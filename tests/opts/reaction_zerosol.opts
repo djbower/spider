@@ -37,7 +37,6 @@
 -atmosic_ksp_atol 1e-10
 -atmosic_snes_linesearch_damping 0.01
 -atmosic_snes_max_it 10000
--snes_linesearch_max_it 100000
 
 # tolerances for volatile evolution
 -atmosts_snes_atol 1.0E-10
