@@ -255,7 +255,6 @@ typedef struct {
     PetscScalar surface_bc_value;
     // below are standard, also used for grey-body atmosphere
     PetscScalar emissivity0;
-    PetscScalar Avogadro;
     PetscScalar teqm;
     PetscReal   tsurf_poststep_change; // maxmimum absolute change in surface temperature before exiting loop
     PetscBool   PARAM_UTBL;

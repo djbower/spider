@@ -247,8 +247,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   /* Must set EOS after setting constants, but before boundary conditions
      since EOS might be required to map temperature to entropy
      and vice versa for boundary conditions */
-  /* TODO: if we have an option of analytical EOSs, we might not need to set the lookups
-     for every model run */
 
   /* For each entry in parameters, we set a default value and immediately scale it.
      Dimensional/unscaled quantities are not explicitly stored.

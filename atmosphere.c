@@ -15,7 +15,7 @@ static PetscErrorCode set_volatile_masses_reactions( Atmosphere *, const Atmosph
 static PetscErrorCode set_escape( Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters, PetscInt );
 static PetscErrorCode set_jeans( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscInt );
-static PetscErrorCode set_column_density_volatile( Atmosphere *, const AtmosphereParameters, PetscInt );
+static PetscErrorCode set_column_density_volatile( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscInt );
 static PetscErrorCode set_Knudsen_number( Atmosphere *, const AtmosphereParameters, PetscInt );
 static PetscErrorCode set_R_thermal_escape( Atmosphere *, const AtmosphereParameters, PetscInt );
 static PetscErrorCode set_f_thermal_escape( Atmosphere *, PetscInt );
@@ -226,7 +226,7 @@ static PetscErrorCode set_jeans( Atmosphere *A, const AtmosphereParameters Ap, c
     PetscFunctionBeginUser;
 
     if(Vp->jeans_value < 0.0){
-        V->jeans = -(*Ap->gravity_ptr) * (*Ap->radius_ptr) * (Vp->molar_mass/Ap->Avogadro); // note negative gravity
+        V->jeans = -(*Ap->gravity_ptr) * (*Ap->radius_ptr) * (Vp->molar_mass/FC->AVOGADRO); // note negative gravity
         V->jeans /= FC->BOLTZMANN * A->tsurf;
     }
     else{
@@ -237,7 +237,7 @@ static PetscErrorCode set_jeans( Atmosphere *A, const AtmosphereParameters Ap, c
 
 }
 
-static PetscErrorCode set_column_density_volatile( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i )
+static PetscErrorCode set_column_density_volatile( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC, PetscInt i )
 {
     /* see Johnson et al. (2015), Astrophys. J. */
 
@@ -247,7 +247,7 @@ static PetscErrorCode set_column_density_volatile( Atmosphere *A, const Atmosphe
     VolatileParameters const Vp = Ap->volatile_parameters[i];
 
     V->column_density = V->p;
-    V->column_density /= -(*Ap->gravity_ptr) * (Vp->molar_mass/Ap->Avogadro);
+    V->column_density /= -(*Ap->gravity_ptr) * (Vp->molar_mass/FC->AVOGADRO);
 
     PetscFunctionReturn(0);
 
@@ -536,7 +536,7 @@ static PetscErrorCode set_escape( Atmosphere *A, const AtmosphereParameters Ap, 
 
     for (i=0; i<Ap->n_volatiles; ++i) {
 
-        ierr = set_column_density_volatile( A, Ap, i );CHKERRQ(ierr);
+        ierr = set_column_density_volatile( A, Ap, FC, i );CHKERRQ(ierr);
 
         ierr = set_jeans( A, Ap, FC, i );CHKERRQ(ierr);
 
