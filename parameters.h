@@ -325,7 +325,6 @@ typedef struct {
     PetscBool CONVECTION;
     PetscBool MIXING;
     PetscBool SEPARATION;
-    PetscBool HRADIO;
     PetscBool HTIDAL;
     PetscBool SOLID_CONVECTION_ONLY; // solid convection only
     PetscBool LIQUID_CONVECTION_ONLY; // liquid convection only

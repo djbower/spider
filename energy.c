@@ -34,7 +34,7 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal time )
     ierr = VecSet( S->Htot_s, 0.0 );CHKERRQ(ierr);
 
     /* total internal heat generation by summing terms */
-    if (P->HRADIO){
+    if (P->n_radionuclides>0){
       ierr = append_Hradio( E, time ); CHKERRQ(ierr);
     }
     if (P->HTIDAL){

@@ -296,8 +296,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetBool(NULL,NULL,"-CONDUCTION",&P->CONDUCTION,NULL);CHKERRQ(ierr);
   P->CONVECTION = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-CONVECTION",&P->CONVECTION,NULL);CHKERRQ(ierr);
-  P->HRADIO = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-HRADIO",&P->HRADIO,NULL);CHKERRQ(ierr);
   P->HTIDAL = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-HTIDAL",&P->HTIDAL,NULL);CHKERRQ(ierr);
 
