@@ -664,14 +664,6 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
     Ap->CONSTANT_ESCAPE = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-CONSTANT_ESCAPE",&Ap->CONSTANT_ESCAPE,NULL);CHKERRQ(ierr);
 
-// REMOVE
-#if 1
-    /* Gravitational constant (m^3/kg/s^2) */
-    Ap->bigG = 6.67408E-11;
-    Ap->bigG *= SC->DENSITY;
-    Ap->bigG *= PetscPowScalar( SC->TIME, 2.0 );
-#endif
-
 #if 1
     /* Stefan-Boltzmann constant (W/m^2K^4) */
     Ap->sigma = 5.670367e-08;

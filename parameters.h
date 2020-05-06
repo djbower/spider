@@ -257,7 +257,6 @@ typedef struct {
     PetscScalar emissivity0;
     PetscScalar sigma;
     PetscScalar Avogadro;
-    PetscScalar bigG;
     PetscScalar teqm;
     PetscReal   tsurf_poststep_change; // maxmimum absolute change in surface temperature before exiting loop
     PetscBool   PARAM_UTBL;
