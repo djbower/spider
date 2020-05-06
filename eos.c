@@ -221,7 +221,7 @@ static PetscErrorCode Interp2dCreateAndSet( const char * filename, Interp2d *int
             /* make arrays based on the sizes in the header */
             ierr = PetscMalloc1( NX, &interp->xa ); CHKERRQ(ierr);
             ierr = PetscMalloc1( NY, &interp->ya ); CHKERRQ(ierr);
-            interp->za = Make2DPetscScalarArray( NX, NY );
+            ierr = Make2DPetscScalarArray( NX, NY, &interp->za ); CHKERRQ(ierr);
         }   
 
         /* get column scalings from last line of header */
@@ -498,9 +498,10 @@ static PetscErrorCode Interp2dDestroy( Interp2d *interp_ptr )
     PetscInt NX = interp->NX;
 
     for(i=0; i<NX; i++) {
-        free( interp->za[i] );
+        ierr = PetscFree(interp->za[i]);CHKERRQ(ierr);
     }
-    free( interp->za );
+    ierr = PetscFree( interp->za );CHKERRQ(ierr);
+
     PetscFree( interp->xa );
     PetscFree( interp->ya );
 

@@ -328,18 +328,21 @@ static PetscErrorCode set_d_dr_linear( Ctx *E )
 /* TODO: can this function be converted to PetscMalloc calls?  Also, the pointer
    should be read in as an argument, rather than returned, to be consistent with
    other functions */
-PetscScalar** Make2DPetscScalarArray( PetscInt arraySizeX, PetscInt arraySizeY)
+PetscErrorCode Make2DPetscScalarArray( PetscInt arraySizeX, PetscInt arraySizeY, PetscScalar ***theArray_ptr)
 {
-
-    PetscScalar** theArray;
+    PetscErrorCode ierr;
     PetscInt i;
+    PetscScalar **theArray;
 
-    theArray = (PetscScalar**) malloc(arraySizeX*sizeof(PetscScalar*));
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(arraySizeX, theArray_ptr);CHKERRQ(ierr);
+    theArray = *theArray_ptr;
     for( i=0; i<arraySizeX; i++){
-        theArray[i] = (PetscScalar *) malloc(arraySizeY*sizeof(PetscScalar));
+        ierr = PetscMalloc1(arraySizeY, &theArray[i]);CHKERRQ(ierr);
     }
 
-    return theArray;
+    PetscFunctionReturn(0);
 }
 
 PetscErrorCode make_vec_mask( DM dm, PetscInt index, Vec * mask_ptr )

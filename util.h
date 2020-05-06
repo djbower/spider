@@ -3,7 +3,7 @@
 
 #include "ctx.h"
 
-PetscScalar** Make2DPetscScalarArray( PetscInt, PetscInt );
+PetscErrorCode Make2DPetscScalarArray( PetscInt, PetscInt, PetscScalar *** );
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar );
 PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
 PetscErrorCode set_d_dr( Ctx * );

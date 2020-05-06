@@ -555,7 +555,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
 
   /* Look for command-line option to determine number of phases
-     and options prefix for each e.g. -phase_names melt, solid */
+     and options prefix for each e.g. -phase_names melt,solid */
   P->n_phases = 0;
   {
     char      *prefixes[SPIDER_MAX_PHASES];
