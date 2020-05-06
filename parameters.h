@@ -134,6 +134,10 @@ typedef struct {
 typedef data_RTpressParameters* RTpressParameters;
 
 /* EOS */
+/* TODO: an optional consolidation, is to combine the EosComposite structure
+   with the EosParameters structure.  This can be done if the EosParameters
+   structure contains an array of pointers to EosParameters (which I think
+   is legal with C) */
 #define SPIDER_MAX_PHASES 2
 typedef struct {
     char prefix[128];  /* Maximum prefix length */
@@ -265,7 +269,6 @@ typedef struct {
     VolatileParameters  volatile_parameters[SPIDER_MAX_VOLATILE_SPECIES];
     PetscInt            n_reactions;
     ReactionParameters  reaction_parameters[SPIDER_MAX_REACTIONS];
-    PetscScalar         Rgas; // gas constant
     PetscScalar const * gravity_ptr;
     PetscScalar const * radius_ptr;
     PetscScalar const * VOLATILE_ptr;

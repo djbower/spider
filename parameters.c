@@ -712,17 +712,9 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
 
 // REMOVE
 #if 1
-    /* FIXME the gas constant above is scaled differently for the viscosity laws added by Rob Spaargaren
-       this one below is for computing the 1-D atmosphere structure. Should merge together and make consistent */
-    Ap->Rgas = 8.3144598; // gas constant (J/K/mol)
-    Ap->Rgas *= SC->TEMP / SC->ENERGY;
-#endif
-
-// REMOVE
-#if 1
     /* Boltzmann constant (J/K) */
     Ap->Avogadro = 6.02214076E23; // 1/mol
-    Ap->kB = Ap->Rgas / Ap->Avogadro;
+    Ap->kB = (8.3144598 * SC->TEMP / SC->ENERGY) / Ap->Avogadro;
 #endif
 
     /* Look for command-line option to determine number of volatiles

@@ -20,12 +20,12 @@ static PetscErrorCode set_Knudsen_number( Atmosphere *, const AtmosphereParamete
 static PetscErrorCode set_R_thermal_escape( Atmosphere *, const AtmosphereParameters, PetscInt );
 static PetscErrorCode set_f_thermal_escape( Atmosphere *, PetscInt );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const, VolatileParameters const, Volatile const *, Atmosphere const *, char const *name, cJSON * );
-static PetscErrorCode JSON_add_atm_struct( Atmosphere *, const AtmosphereParameters, cJSON * );
+static PetscErrorCode JSON_add_atm_struct( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, cJSON * );
 static PetscErrorCode JSON_add_reaction_mass( DM , Parameters const, Atmosphere const *, cJSON * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
 static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmosphereParameters );
-static PetscErrorCode set_atm_struct_depth( Atmosphere *, const AtmosphereParameters );
+static PetscErrorCode set_atm_struct_depth( Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
 
 PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
@@ -626,7 +626,7 @@ PetscScalar get_emissivity_abe_matsui( Atmosphere *A, const AtmosphereParameters
 
 }
 
-static PetscErrorCode JSON_add_atm_struct( Atmosphere *A, const AtmosphereParameters Ap, cJSON *data )
+static PetscErrorCode JSON_add_atm_struct( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC, cJSON *data )
 {
     PetscErrorCode ierr;
     PetscInt       i;
@@ -639,7 +639,7 @@ static PetscErrorCode JSON_add_atm_struct( Atmosphere *A, const AtmosphereParame
     ierr = set_atm_struct_tau( A );CHKERRQ(ierr);
     ierr = set_atm_struct_temp( A, Ap );CHKERRQ(ierr);
     ierr = set_atm_struct_pressure( A, Ap );CHKERRQ(ierr);
-    ierr = set_atm_struct_depth( A, Ap ); CHKERRQ(ierr);
+    ierr = set_atm_struct_depth( A, Ap, FC ); CHKERRQ(ierr);
 
     /* write 1-D structure to JSON */
     for (i=0;i<NUMATMSTRUCTVECS;++i){
@@ -674,6 +674,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
     PetscErrorCode ierr;
     cJSON          *data;
     PetscScalar    scaling, val;
+    FundamentalConstants  const FC = P->fundamental_constants;
     ScalingConstants      const SC = P->scaling_constants;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
     PetscInt       v;
@@ -684,7 +685,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
 
     /* atmosphere structure relevant for case Abe and Matsui (1985) */
     if (Ap->SURFACE_BC==3){
-        ierr = JSON_add_atm_struct( A, Ap, data );CHKERRQ(ierr);
+        ierr = JSON_add_atm_struct( A, Ap, FC, data );CHKERRQ(ierr);
     }
 
     /* total liquid mass of mantle, kg */
@@ -977,7 +978,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
 
 }
 
-static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters Ap, const Atmosphere *A )
+static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters Ap, const Atmosphere *A, const FundamentalConstants FC )
 {
     PetscScalar dzdt;
 
@@ -986,28 +987,28 @@ static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters Ap, c
     dzdt += PetscPowScalar(Ap->teqm,4.0);
     dzdt = PetscPowScalar(dzdt,1.0/4.0);
     dzdt /= tau;
-    dzdt /= (*Ap->gravity_ptr) * A->molar_mass / Ap->Rgas;
+    dzdt /= (*Ap->gravity_ptr) * A->molar_mass / FC->GAS;
 
     return dzdt;
 
 }
 
-static PetscScalar get_z_from_simpson(PetscScalar x, PetscScalar dx, const AtmosphereParameters Ap, const Atmosphere *A)
+static PetscScalar get_z_from_simpson(PetscScalar x, PetscScalar dx, const AtmosphereParameters Ap, const Atmosphere *A, const FundamentalConstants FC)
 {
     PetscScalar fa, fb, fm;
 
     /* Because f=dz/dtau is only a function of tau (not also z),
        RK4 reduces to Simpson's method */
 
-    fa = get_dzdtau( x, Ap, A ); // start
-    fb = get_dzdtau( x + dx, Ap, A) ; // end
-    fm = get_dzdtau( x + 0.5*dx, Ap, A ); // midpoint
+    fa = get_dzdtau( x, Ap, A, FC ); // start
+    fb = get_dzdtau( x + dx, Ap, A, FC ) ; // end
+    fm = get_dzdtau( x + 0.5*dx, Ap, A, FC ); // midpoint
 
     return dx/6.0 * (fa + 4.0*fm + fb );
 
 }
 
-static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParameters Ap )
+static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
 {
     PetscErrorCode ierr;
     PetscScalar    *arr_tau, *arr_depth, tau, dtau, val;
@@ -1027,7 +1028,7 @@ static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParam
     for(i=numpts-1; i>0; --i){
         tau = arr_tau[i];
         dtau = arr_tau[i-1] - arr_tau[i]; // negative
-        val = get_z_from_simpson( tau, dtau, Ap, A );
+        val = get_z_from_simpson( tau, dtau, Ap, A, FC );
         arr_depth[i-1] = arr_depth[i] + val;
     }
 
