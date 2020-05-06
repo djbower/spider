@@ -149,8 +149,12 @@ typedef struct {
     Lookup lookup;
     RTpressParameters rtpress_parameters;
     /* include thermal and transport properties */
+    /* TODO: could be included in a connected/linked struct,
+       but simpler to include them directly here */
     PetscScalar cond; /* thermal conductivity, W/m/K */
     PetscScalar log10visc; /* log base 10 of viscosity */
+    PetscScalar activation_energy;
+    PetscScalar activation_volume;
     /* phase boundary which is evaluated using this EOS */
     PetscBool PHASE_BOUNDARY; /* is a phase boundary for this EOS defined? */
     char phase_boundary_filename[PETSC_MAX_PATH_LEN];

@@ -56,7 +56,9 @@
 -melt_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_melt.dat
 -melt_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_melt.dat
 -melt_log10visc 2.0
--melt_cond # conductivity of melt
+-melt_activation_energy 0.0
+-melt_activation_volume 0.0
+-melt_cond 4.0 # conductivity of melt
 -melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/liquidus_A11_H13.dat
 
 -solid_TYPE 1
@@ -66,6 +68,8 @@
 -solid_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_solid.dat
 -solid_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_solid.dat
 -solid_log10visc 21.0
+-solid_activation_energy 0.0
+-solid_activation_volume 0.0
 -solid_cond 4.0 # conductivity of solid
 -solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
 

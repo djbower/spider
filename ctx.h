@@ -74,7 +74,7 @@ typedef struct EosEval_ {
   /* TODO could consider adding the following, although these are
      not usually derived from an EOS */
   //PetscScalar cond;
-  //PetscScalar log10visc;
+  PetscScalar log10visc;
 } EosEval;
 
 /* A Context for the Solver */

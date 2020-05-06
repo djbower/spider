@@ -280,7 +280,9 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       temp_sol = E->eos_evals[1].T;
       alpha_sol = E->eos_evals[1].alpha;
       cond_sol = P->eos_parameters[1]->cond;
-      log10visc_sol = get_log10_viscosity_solid( temp_sol, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
+      // FIXME: func below still has some functionality the replacing function doesn't
+      //log10visc_sol = get_log10_viscosity_solid( temp_sol, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
+      log10visc_sol = E->eos_evals[1].log10visc;
 
       /* melt phase */
       SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
@@ -290,7 +292,9 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       temp_mel = E->eos_evals[0].T;
       alpha_mel = E->eos_evals[0].alpha;
       cond_mel = P->eos_parameters[0]->cond;
-      log10visc_mel = get_log10_viscosity_melt( temp_mel, arr_pres[i], arr_layer_b[i], P );
+      // FIXME: func below still has some functionality the replacing function doesn't
+      //log10visc_mel = get_log10_viscosity_melt( temp_mel, arr_pres[i], arr_layer_b[i], P );
+      log10visc_mel = E->eos_evals[0].log10visc;
 
       /* mixed phase */
       rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
@@ -472,11 +476,12 @@ static PetscScalar get_log10_viscosity_cutoff( PetscScalar in_visc, Parameters c
 
 }
 
+/* FIXME: below is steadily being replaced by SetEosEvalViscosity */
 static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, PetscScalar radius, Parameters const P )
 {
-
-    PetscScalar Ea = P->activation_energy_sol; // activation energy (non-dimensional)
-    PetscScalar Va = P->activation_volume_sol; // activation volume (non-dimensional)
+    /* DJB FIXME: moved these parameters to EosParameters struct */
+    PetscScalar Ea = 0.0; //P->activation_energy_sol; // activation energy (non-dimensional)
+    PetscScalar Va = 0.0; //P->activation_volume_sol; // activation volume (non-dimensional)
     PetscScalar Mg_Si0 = P->Mg_Si0; // layer 0 (default) Mg/Si ratio
     PetscScalar Mg_Si1 = P->Mg_Si1; // layer 1 (basal layer) Mg/Si ratio
     PetscInt    VISCOUS_LID = P->VISCOUS_LID;

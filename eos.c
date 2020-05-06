@@ -30,6 +30,9 @@ static PetscErrorCode GetRTpressdTdPs( const RTpressParameters, PetscScalar, Pet
 static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES, Vec, Vec, void * );
 static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
+/* evaluate viscosity */
+static PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
+
 /* two phase composite eos (for mixed phase region) */
 static PetscErrorCode GetTwoPhaseLiquidus( const EosComposite, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhaseSolidus( const EosComposite, PetscScalar, PetscScalar * );
@@ -1304,6 +1307,21 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->log10visc,NULL);CHKERRQ(ierr);
   Ep->log10visc -= SC->LOG10VISC;
 
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_activation_energy");CHKERRQ(ierr);
+  Ep->activation_energy = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->activation_energy,NULL);CHKERRQ(ierr);
+  // this is a new energy scale (i.e., not SC->ENERGY defined above)
+  Ep->activation_energy /= FC->GAS * SC->TEMP;
+
+  /* activation volume (m^3/mol) */
+  /* The numerical value in units of m^3/mol is the same as that in units of J/mol/Pa */
+  /* You can convince yourself of this by using the scalings for ENERGY and PRESSURE to
+     see that this is true */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_activation_volume");CHKERRQ(ierr);
+  Ep->activation_volume = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->activation_volume,NULL);CHKERRQ(ierr);
+  Ep->activation_volume *= SC->PRESSURE / (FC->GAS * SC->TEMP);
+
   /* phase boundary */
   ierr = LookupFilenameSet( "_phase_boundary", Ep->prefix, Ep->phase_boundary_filename, &Ep->PHASE_BOUNDARY );CHKERRQ(ierr);
   if( Ep->PHASE_BOUNDARY ){
@@ -1333,7 +1351,43 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
           break;
   }
 
+  ierr = SetEosEvalViscosity( Ep, eos_eval );CHKERRQ(ierr);
+
   PetscFunctionReturn(0);
+}
+
+static PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_eval )
+{
+    PetscScalar A;
+
+    PetscFunctionBeginUser;
+
+    /* reference viscosity */
+    eos_eval->log10visc = Ep->log10visc; // i.e., log10(eta_0)
+
+    /* temperature and pressure contribution
+       A(T,P) = (E_a + V_a P) / RT
+       eta = eta_0 * exp(A)
+       log10(eta) = log10(eta0) + log10(exp(A))
+       log10(eta) = P->eos2_parameters.log10visc + A/ln(10) */
+    A = 0.0;
+    if( Ep->activation_energy > 0.0){
+        A += Ep->activation_energy;
+    }
+    if( Ep->activation_volume > 0.0){
+        A += Ep->activation_volume * eos_eval->P;
+    }
+    A *= 1.0 / eos_eval->T;
+    eos_eval->log10visc += A / PetscLogReal(10.0);
+
+    /* TODO: add compositional contributions */
+
+    /* TODO: add viscous lid */
+
+    /* TODO: add viscosity cutoff */
+
+    PetscFunctionReturn(0);
+
 }
 
 /*
