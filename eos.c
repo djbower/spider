@@ -6,7 +6,6 @@
 /* lookup material properties (default) */
 static PetscErrorCode LookupCreate( Lookup * );
 static PetscErrorCode LookupDestroy( Lookup * );
-static PetscErrorCode MakeRelativeToSourcePathAbsolute( char * );
 static PetscErrorCode LookupFilenameSet( const char *, const char *, char *, PetscBool * );
 static PetscErrorCode Interp1dCreateAndSet( const char *, Interp1d *, PetscScalar, PetscScalar );
 static PetscErrorCode Interp1dDestroy( Interp1d * );
@@ -512,23 +511,6 @@ static PetscErrorCode Interp2dDestroy( Interp2d *interp_ptr )
 
 }
 
-/* Helper routine to prepend the root directory to a relative path */
-/* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
-#define STRINGIFY(x) STRINGIFY2(x)
-#define STRINGIFY2(x) #x
-#define SPIDER_ROOT_DIR_STR STRINGIFY(SPIDER_ROOT_DIR)
-static PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
-  PetscErrorCode ierr;
-  char tmp[PETSC_MAX_PATH_LEN];
-
-  PetscFunctionBeginUser;
-  ierr = PetscStrcpy(tmp,path);CHKERRQ(ierr);
-  ierr = PetscStrcpy(path,SPIDER_ROOT_DIR_STR);CHKERRQ(ierr);
-  ierr = PetscStrcat(path,"/");CHKERRQ(ierr); /* not portable */
-  ierr = PetscStrcat(path,tmp);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-#undef SPIDER_ROOT_DIR_STR
 
 
 static PetscErrorCode LookupFilenameSet( const char* property, const char* prefix, char* lookup_filename, PetscBool *IS_SET )

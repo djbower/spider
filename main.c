@@ -15,6 +15,7 @@ See example input files in examples/ for many more available options\n\
 #include "version.h"
 #include "rollback.h"
 #include "poststep.h"
+#include "util.h"
 
 static PetscErrorCode PrintSPIDERHeader();
 static PetscErrorCode PrintFields(Ctx*);
@@ -27,6 +28,18 @@ int main(int argc, char ** argv)
   Ctx              ctx;                /* Solver context */
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
+
+  /* If no options file is specified, use a default */
+  {
+    PetscBool options_file_provided = PETSC_FALSE;
+    char default_options_filename[PETSC_MAX_PATH_LEN] = "tests/opts/blackbody.opts";
+
+    ierr = PetscOptionsHasName(NULL,NULL,"-options_files",&options_file_provided);CHKERRQ(ierr);
+    if (!options_file_provided) {
+      ierr = MakeRelativeToSourcePathAbsolute(default_options_filename);CHKERRQ(ierr);
+      ierr = PetscOptionsInsertFile(PETSC_COMM_WORLD,NULL,default_options_filename,PETSC_TRUE);CHKERRQ(ierr);
+    }
+  }
 
   ierr = PrintSPIDERHeader();CHKERRQ(ierr);
 

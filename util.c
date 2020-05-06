@@ -1,5 +1,23 @@
 #include "util.h"
 
+/* Helper routine to prepend the root directory to a relative path */
+/* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
+#define STRINGIFY(x) STRINGIFY2(x)
+#define STRINGIFY2(x) #x
+#define SPIDER_ROOT_DIR_STR STRINGIFY(SPIDER_ROOT_DIR)
+PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
+  PetscErrorCode ierr;
+  char tmp[PETSC_MAX_PATH_LEN];
+
+  PetscFunctionBeginUser;
+  ierr = PetscStrcpy(tmp,path);CHKERRQ(ierr);
+  ierr = PetscStrcpy(path,SPIDER_ROOT_DIR_STR);CHKERRQ(ierr);
+  ierr = PetscStrcat(path,"/");CHKERRQ(ierr); /* not portable */
+  ierr = PetscStrcat(path,tmp);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+#undef SPIDER_ROOT_DIR_STR
+
 static PetscErrorCode set_d_dr_linear( Ctx * );
 //static PetscErrorCode set_d_dr_quadratic( Ctx * );
 
