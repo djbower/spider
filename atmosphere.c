@@ -12,9 +12,9 @@ static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const Atm
 static PetscErrorCode set_volatile_masses_in_liquid( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volatile_masses_in_solid( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volatile_masses_reactions( Atmosphere *, const AtmosphereParameters );
-static PetscErrorCode set_escape( Atmosphere *, const AtmosphereParameters );
+static PetscErrorCode set_escape( Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters, PetscInt );
-static PetscErrorCode set_jeans( Atmosphere *, const AtmosphereParameters, PetscInt );
+static PetscErrorCode set_jeans( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscInt );
 static PetscErrorCode set_column_density_volatile( Atmosphere *, const AtmosphereParameters, PetscInt );
 static PetscErrorCode set_Knudsen_number( Atmosphere *, const AtmosphereParameters, PetscInt );
 static PetscErrorCode set_R_thermal_escape( Atmosphere *, const AtmosphereParameters, PetscInt );
@@ -216,7 +216,7 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmospherePa
 
 }
 
-static PetscErrorCode set_jeans( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i )
+static PetscErrorCode set_jeans( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC, PetscInt i )
 {
     /* surface Jeans parameter */
 
@@ -227,7 +227,7 @@ static PetscErrorCode set_jeans( Atmosphere *A, const AtmosphereParameters Ap, P
 
     if(Vp->jeans_value < 0.0){
         V->jeans = -(*Ap->gravity_ptr) * (*Ap->radius_ptr) * (Vp->molar_mass/Ap->Avogadro); // note negative gravity
-        V->jeans /= Ap->kB * A->tsurf;
+        V->jeans /= FC->BOLTZMANN * A->tsurf;
     }
     else{
         V->jeans = Vp->jeans_value;
@@ -495,7 +495,7 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
 
 }
 
-PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmosphereParameters Ap  )
+PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
 {
     PetscErrorCode           ierr;
 
@@ -524,12 +524,12 @@ PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmospherePa
     /* escape is always set, since then we can easily see the
        variables, regardless of whether the feedback is actually
        included for the volatile evolution */
-    ierr = set_escape( A, Ap );CHKERRQ(ierr);
+    ierr = set_escape( A, Ap, FC );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_escape( Atmosphere *A, const AtmosphereParameters Ap )
+static PetscErrorCode set_escape( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
 {
     PetscErrorCode ierr;
     PetscInt       i;
@@ -538,7 +538,7 @@ PetscErrorCode set_escape( Atmosphere *A, const AtmosphereParameters Ap )
 
         ierr = set_column_density_volatile( A, Ap, i );CHKERRQ(ierr);
 
-        ierr = set_jeans( A, Ap, i );CHKERRQ(ierr);
+        ierr = set_jeans( A, Ap, FC, i );CHKERRQ(ierr);
 
         ierr = set_Knudsen_number( A, Ap, i ); CHKERRQ(ierr);
 

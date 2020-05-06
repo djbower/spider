@@ -389,6 +389,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     PetscErrorCode             ierr;
     Parameters const           P  = E->parameters;
+    FundamentalConstants const FC = P->fundamental_constants;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
     Atmosphere                 *A = &E->atmosphere;
 
@@ -426,7 +427,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
         /* ensure all atmosphere quantities are consistent with current
            solution */
-        ierr = set_reservoir_volatile_content( A, Ap );CHKERRQ(ierr);
+        ierr = set_reservoir_volatile_content( A, Ap, FC );CHKERRQ(ierr);
 
         /* again, note that mass reaction terms are not yet
            (necessarily) zero! */
@@ -826,6 +827,7 @@ static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Ve
     Ctx                        *E = (Ctx*) ptr;
     Atmosphere                 *A = &E->atmosphere;
     Parameters           const P = E->parameters;
+    FundamentalConstants const FC = P->fundamental_constants;
     ScalingConstants     const SC = P->scaling_constants;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
 
@@ -841,7 +843,7 @@ static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Ve
         A->mass_reaction[i] = xx[Ap->n_volatiles+i];
     }
 
-    ierr = set_reservoir_volatile_content( A, Ap ); CHKERRQ(ierr);
+    ierr = set_reservoir_volatile_content( A, Ap, FC ); CHKERRQ(ierr);
 
     /* mass conservation for each volatile */
     for (i=0; i<Ap->n_volatiles; ++i) {

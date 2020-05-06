@@ -710,13 +710,6 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
     Ap->radius_ptr = &P->radius;
     Ap->VOLATILE_ptr = &SC->VOLATILE;
 
-// REMOVE
-#if 1
-    /* Boltzmann constant (J/K) */
-    Ap->Avogadro = 6.02214076E23; // 1/mol
-    Ap->kB = (8.3144598 * SC->TEMP / SC->ENERGY) / Ap->Avogadro;
-#endif
-
     /* Look for command-line option to determine number of volatiles
        and options prefix for each, e.g -volatile_names CO2,H2O */
     Ap->n_volatiles = 0;

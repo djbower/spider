@@ -18,6 +18,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     Atmosphere           *A  = &E->atmosphere;
     Mesh                 const *M  = &E->mesh;
     Parameters           const P  = E->parameters;
+    FundamentalConstants const FC = P->fundamental_constants;
     ScalingConstants     const SC  = P->scaling_constants;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
     Solution             *S  = &E->solution;
@@ -31,7 +32,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       /* must be after A->tsurf is set for fO2 calculation */
       /* therefore set_surface_flux always called after set_interior_structure_from_solution */
-      ierr = set_reservoir_volatile_content( A, Ap ); CHKERRQ(ierr);
+      ierr = set_reservoir_volatile_content( A, Ap, FC ); CHKERRQ(ierr);
 
       /* determine surface flux */
       /* in all cases, compute flux and emissivity consistently */
