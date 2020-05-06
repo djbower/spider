@@ -296,22 +296,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
       rho_mix = 1.0 / rho_mix;
 
-      /* FIXME: run past Aaron */
-      /*if(P->COMPOSITION){
-          rho_mel *= Comp->mass_ratio_liquidus;
-          rho_mix = arr_liquidus_rho[i];
-          if(i <= Comp->rheological_front_index){
-              rho_mix *= Comp->mo_mass_ratio;
-          }
-          else{
-              rho_mix *= Comp->mass_ratio_liquidus;
-          }
-      }
-      else{
-          rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
-          rho_mix = 1.0 / rho_mix;
-      }*/
-
       dTdrs_mix = arr_dTdrs_mix[i];
       cp_mix = arr_cp_mix[i];
       temp_mix = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
