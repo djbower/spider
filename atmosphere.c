@@ -23,7 +23,7 @@ static PetscErrorCode JSON_add_volatile( DM, Parameters const, VolatileParameter
 static PetscErrorCode JSON_add_atm_struct( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, cJSON * );
 static PetscErrorCode JSON_add_reaction_mass( DM , Parameters const, Atmosphere const *, cJSON * );
 static PetscErrorCode set_atm_struct_tau( Atmosphere * );
-static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParameters );
+static PetscErrorCode set_atm_struct_temp( Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
 static PetscErrorCode set_atm_struct_pressure( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_atm_struct_depth( Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
 
@@ -168,14 +168,14 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
 
 }
 
-static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParameters Ap )
+static PetscErrorCode set_atm_struct_temp( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
 {
     PetscErrorCode ierr;
     PetscScalar    TO4, Teq4;
 
     PetscFunctionBeginUser;
 
-    TO4 = A->Fatm / Ap->sigma;
+    TO4 = A->Fatm / FC->STEFAN_BOLTZMANN;
     Teq4 = PetscPowScalar(Ap->teqm,4.0);
 
     ierr = VecCopy( A->atm_struct_tau, A->atm_struct_temp ); CHKERRQ(ierr);
@@ -550,12 +550,12 @@ static PetscErrorCode set_escape( Atmosphere *A, const AtmosphereParameters Ap, 
     PetscFunctionReturn(0);
 }
 
-PetscScalar get_grey_body_flux( const Atmosphere *A, const AtmosphereParameters Ap )
+PetscScalar get_grey_body_flux( const Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
 {
     PetscScalar Fsurf;
 
     Fsurf = PetscPowScalar(A->tsurf,4.0)-PetscPowScalar(Ap->teqm,4.0);
-    Fsurf *= Ap->sigma * A->emissivity; /* Note emissivity may vary */
+    Fsurf *= FC->STEFAN_BOLTZMANN * A->emissivity; /* Note emissivity may vary */
 
     return Fsurf;
 }
@@ -576,24 +576,24 @@ PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const Sc
 
 }
 
-PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParameters Ap, PetscScalar flux )
+PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC, PetscScalar flux )
 {
     PetscScalar emissivity;
 
-    emissivity = flux / Ap->sigma;
+    emissivity = flux / FC->STEFAN_BOLTZMANN;
     emissivity /= PetscPowScalar(A->tsurf,4.0)-PetscPowScalar(Ap->teqm,4.0);
 
     return emissivity;
 
 }
 
-PetscErrorCode set_surface_temperature_from_flux( Atmosphere *A, const AtmosphereParameters Ap )
+PetscErrorCode set_surface_temperature_from_flux( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
 {
     PetscScalar tsurf;
 
     PetscFunctionBeginUser;
 
-    tsurf = A->Fatm / ( Ap->sigma * A->emissivity );
+    tsurf = A->Fatm / ( FC->STEFAN_BOLTZMANN * A->emissivity );
     tsurf += PetscPowScalar( Ap->teqm, 4.0 );
     tsurf = PetscPowScalar( tsurf, 1.0/4.0 );
     A->tsurf = tsurf;
@@ -637,7 +637,7 @@ static PetscErrorCode JSON_add_atm_struct( Atmosphere *A, const AtmosphereParame
     /* TODO: if this feedsback into the equations, e.g. through
        atmospheric escape, it will need moving */
     ierr = set_atm_struct_tau( A );CHKERRQ(ierr);
-    ierr = set_atm_struct_temp( A, Ap );CHKERRQ(ierr);
+    ierr = set_atm_struct_temp( A, Ap, FC );CHKERRQ(ierr);
     ierr = set_atm_struct_pressure( A, Ap );CHKERRQ(ierr);
     ierr = set_atm_struct_depth( A, Ap, FC ); CHKERRQ(ierr);
 
@@ -982,7 +982,7 @@ static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters Ap, c
 {
     PetscScalar dzdt;
 
-    dzdt = A->Fatm / Ap->sigma; // T0**4
+    dzdt = A->Fatm / FC->STEFAN_BOLTZMANN; // T0**4
     dzdt *= (tau+1.0)/2.0;
     dzdt += PetscPowScalar(Ap->teqm,4.0);
     dzdt = PetscPowScalar(dzdt,1.0/4.0);

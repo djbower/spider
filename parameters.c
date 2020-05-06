@@ -664,12 +664,6 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
     Ap->CONSTANT_ESCAPE = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-CONSTANT_ESCAPE",&Ap->CONSTANT_ESCAPE,NULL);CHKERRQ(ierr);
 
-#if 1
-    /* Stefan-Boltzmann constant (W/m^2K^4) */
-    Ap->sigma = 5.670367e-08;
-    Ap->sigma /= SC->SIGMA;
-#endif
-
     /* equilibrium temperature of the planet (K) */
     Ap->teqm = 273.0;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-teqm",&Ap->teqm,NULL);CHKERRQ(ierr);

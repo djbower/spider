@@ -40,28 +40,28 @@ PetscErrorCode set_surface_flux( Ctx *E )
         case 1:
           // grey-body with constant emissivity
           A->emissivity = Ap->emissivity0;
-          Qout = get_grey_body_flux( A, Ap );
+          Qout = get_grey_body_flux( A, Ap, FC );
           break;
         case 2:
           // Zahnle steam atmosphere
           Qout = get_steam_atmosphere_zahnle_1988_flux( A, SC );
-          A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
+          A->emissivity = get_emissivity_from_flux( A, Ap, FC, Qout );
           break;
         case 3:
           // two stream approximation
           A->emissivity = get_emissivity_abe_matsui( A, Ap );
-          Qout = get_grey_body_flux( A, Ap );
+          Qout = get_grey_body_flux( A, Ap, FC );
           break;
         case 4:
           // heat flux
           Qout = Ap->surface_bc_value;
-          A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
+          A->emissivity = get_emissivity_from_flux( A, Ap, FC, Qout );
           break;
         case 5:
           // isothermal (constant entropy)
           // TODO: is this consistent with A->tsurf?
           Qout = get_isothermal_surface( E );
-          A->emissivity = get_emissivity_from_flux( A, Ap, Qout );
+          A->emissivity = get_emissivity_from_flux( A, Ap, FC, Qout );
           break;
         default:
           SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
@@ -84,7 +84,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
          the surface temperature for the other options, since the
          surface temperature is already consistent with the flux
          and emissivity */
-      ierr = set_surface_temperature_from_flux( A, Ap ); CHKERRQ(ierr);
+      ierr = set_surface_temperature_from_flux( A, Ap, FC ); CHKERRQ(ierr);
 
       /* FIXME: if we want atmospheric escape with VISCOUS_MANTLE_COOLING_RATE,
          we would need to now update the escape parameters since the surface
