@@ -3,6 +3,7 @@
 
 #include "ctx.h"
 
+PetscErrorCode MakeRelativeToSourcePathAbsolute(char*);
 PetscErrorCode Make2DPetscScalarArray( PetscInt, PetscInt, PetscScalar *** );
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar );
 PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
