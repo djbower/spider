@@ -29,6 +29,9 @@ int main(int argc, char ** argv)
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
+/* @psanan: this block has a problem.  I don't think that the HasName is correctly detecting
+   that an options_file has been specified */
+#if 0
   /* If no options file is specified, use a default */
   {
     PetscBool options_file_provided = PETSC_FALSE;
@@ -40,6 +43,7 @@ int main(int argc, char ** argv)
       ierr = PetscOptionsInsertFile(PETSC_COMM_WORLD,NULL,default_options_filename,PETSC_TRUE);CHKERRQ(ierr);
     }
   }
+#endif
 
   ierr = PrintSPIDERHeader();CHKERRQ(ierr);
 
