@@ -339,16 +339,21 @@ The conversion to mass units means that the Lagrangian derivative becomes the pa
 Currently, the standard Arrhenius law is implemented.  To pin the viscosity to a reference viscosity $\eta_0$ at pressure $P_0$ and temperature $T_0$, we use:
 \begin{equation}
 \log_{10} ( \eta (P,T)) = \log_{10} \eta_0 + \frac{E_a + V_aP}{RT} - \frac{E_a + V_a P_0}{R T_0},
+\label{eq:viscnopin}
 \end{equation}
-for activation energy $E_a$ and activation volume $V_a$. This can be rewritten as
+for activation energy $E_a$ and activation volume $V_a$.  This can be rewritten as
 \begin{equation*}
-\ln ( \eta (P,T)) = \ln \eta_0 + \frac{(E_a + V_a*(P_0 + \Delta P))*T_0 - (E_a + V_a*P_0)*(T_0 + \Delta T)}{R T_0 (\Delta T + T_0)}
+\log_{10} ( \eta (P,T)) = \log_{10} \eta_0 + \frac{(E_a + V_a(P_0 + \Delta P))T_0 - (E_a + V_aP_0)(T_0 + \Delta T)}{R T_0 (\Delta T + T_0)}
 \end{equation*}
 for $\Delta P = P - P_0$ and $\Delta T = T - T_0$. If we write $\Delta T' = \Delta T/T_0$, we get
 \begin{equation}
-\ln ( \eta (P,T)) = \ln \eta_0 + \frac{V_a \Delta P - (E_a + V_a P_0)\Delta T'}{R T_0 (1 + \Delta T')}.
+\log_{10} ( \eta (P,T)) = \log_{10} \eta_0 + \frac{V_a \Delta P - (E_a + V_a P_0)\Delta T'}{R T_0 (1 + \Delta T')}.
 \end{equation}
-Values can be specified in the input file, where $\eta_0$ should be specified in -log10visc\_sol, $P_0$ in -P0\_visc and $T_0$ in -T0\_visc. Currently, they are set to CMB values with $\eta0 = 10e22$, $T_0 = T_{CMB} \approx 4000$K and $P_0 = P_{CMB} \approx 138$ GPa. Can also mimic StagYY, where it is set to $P_0 = 0$, $T_0 = 1600$ and $\eta_0 = 10e19$.
+\begin{equation}
+\log_{10} ( \eta (P,T)) = \log_{10} \eta_0 + \frac{-E_a \Delta T' + V_a (\Delta P - P_0 \Delta T')}{R T}.
+\end{equation}
+Now the form is similar to Eq.~\ref{eq:viscnopin} if the last term was ignored (i.e., no assumed pinning).
+Values can be specified in the input file, where $\eta_0$ is the reference viscosity at P--T conditions given by $P_0$ and $T_0$.  Recommended CMB values are $\eta_0 = 10^{22}$, $T_0 = T_{CMB} \approx 4000$K and $P_0 = P_{CMB} \approx 138$ GPa.  Another option is to adopt the convention used in StagYY, where $P_0 = 0$, $T_0 = 1600$ and $\eta_0 = 10^{19}$.  In this later case, the viscosity structure is pinned to the top of the 1600 K adiabat.
 
 \subsection{Compositionally dependent viscosity}
 Viscosity is strongly dependent on the Si-abundance in the mantle. Very Si-rich mantles are much more viscous than very Mg-rich mantles. The compositional dependency is applied simply by adding a term to the viscosity, $\ln \eta_{new} = \ln \eta + \Delta \eta_c$. It depends on the Mg/Si-ratio, which is specified in the input file with -Mg\_Si, where you can enter 0.0 to switch it off. Usually, it is set to 1.08, the value for Earth. It is linearly dependent on Mg/Si in several steps:
