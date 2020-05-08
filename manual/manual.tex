@@ -336,9 +336,9 @@ The conversion to mass units means that the Lagrangian derivative becomes the pa
 %%%%%
 
 \section{Viscosity}
-Currently, the standard Arrhenius law is implemented. In order to pin the viscosity to a reference viscosity $\eta_0$ at a certain pressure $P_0$ and temperature $T_0$, it is used in the following form:
+Currently, the standard Arrhenius law is implemented.  To pin the viscosity to a reference viscosity $\eta_0$ at pressure $P_0$ and temperature $T_0$, we use:
 \begin{equation}
-\ln ( \eta (P,T)) = \ln \eta_0 + \frac{E_a + V_a*P}{RT} - \frac{E_a + V_a P_0}{R T_0},
+\log_{10} ( \eta (P,T)) = \log_{10} \eta_0 + \frac{E_a + V_aP}{RT} - \frac{E_a + V_a P_0}{R T_0},
 \end{equation}
 for activation energy $E_a$ and activation volume $V_a$. This can be rewritten as
 \begin{equation*}
