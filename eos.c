@@ -1568,8 +1568,7 @@ static PetscErrorCode GetTwoPhaseRho( const EosComposite eos_composite, PetscSca
     ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
 
     /* volume additivity (excludes temperature effect) */
-    *rho_ptr = phase_fraction / eos_eval_melt.rho;
-    *rho_ptr += (1-phase_fraction) / eos_eval_solid.rho;
+    *rho_ptr = phase_fraction * (1.0/eos_eval_melt.rho) + (1-phase_fraction) * (1.0/eos_eval_solid.rho);
     *rho_ptr = 1.0/(*rho_ptr);
 
     PetscFunctionReturn(0);
@@ -1588,7 +1587,7 @@ static PetscErrorCode GetTwoPhaseCp( const EosComposite eos_composite, PetscScal
 {
     PetscErrorCode ierr;
     EosEval eos_eval_melt, eos_eval_solid;
-    PetscScalar liquidus, solidus, temp_mid;
+    PetscScalar liquidus, solidus;
 
     PetscFunctionBeginUser;
 
@@ -1597,10 +1596,9 @@ static PetscErrorCode GetTwoPhaseCp( const EosComposite eos_composite, PetscScal
     ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
 
-    temp_mid = eos_eval_solid.T + 0.5 * (eos_eval_melt.T - eos_eval_solid.T);
-
-    *Cp_ptr = temp_mid * (eos_eval_melt.S - eos_eval_solid.S);
+    *Cp_ptr = eos_eval_melt.S - eos_eval_solid.S;
     *Cp_ptr /= eos_eval_melt.T - eos_eval_solid.T;
+    *Cp_ptr *= eos_eval_solid.T + 0.5 * (eos_eval_melt.T - eos_eval_solid.T);
 
     PetscFunctionReturn(0);
 }
@@ -1624,8 +1622,7 @@ static PetscErrorCode GetTwoPhaseAlpha( const EosComposite eos_composite, PetscS
 
     /* FIXME: positive for MgSiO3 since solid rho > melt rho.  But need to adjust for compositional
        effects */
-    *alpha_ptr = eos_eval_solid.rho - eos_eval_melt.rho;
-    *alpha_ptr /= rho * (eos_eval_melt.T - eos_eval_solid.T);
+    *alpha_ptr = (eos_eval_solid.rho - eos_eval_melt.rho) / (eos_eval_melt.T - eos_eval_solid.T) / rho;
 
     PetscFunctionReturn(0);
 }
