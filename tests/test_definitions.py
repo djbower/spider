@@ -311,7 +311,7 @@ def solid_convection_ic(rootDir, tol) :
   ranks = 1
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','solid_convection.opts') + ' -nstepsmacro 0',\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/0.json'), # TODO: last timestep time may change?
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/0.json'),
           ]
 
   expectedFile = os.path.join(thisDir,'expected_output','expected_solid_convection_ic.txt')
