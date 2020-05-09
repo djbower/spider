@@ -1611,8 +1611,11 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
 
     eos_eval->P = P;
     eos_eval->S = S;
+    /* T passes blackbody test */
     ierr = GetTwoPhaseTemperature( eos_composite, P, S, &eos_eval->T );CHKERRQ(ierr);
+    /* Cp passes blackbody test */
     ierr = GetTwoPhaseCp( eos_composite, P, S, &eos_eval->Cp );CHKERRQ(ierr);
+    /* Rho passes blackbody test */
     ierr = GetTwoPhaseRho( eos_composite, P, S, &eos_eval->rho );CHKERRQ(ierr);
     ierr = GetTwoPhasedTdPs( eos_composite, P, S, &eos_eval->dTdPs );CHKERRQ(ierr);
     ierr = GetTwoPhaseAlpha( eos_composite, P, S, &eos_eval->alpha );CHKERRQ(ierr);

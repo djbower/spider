@@ -98,7 +98,7 @@ typedef struct Ctx_ {
      update all material propoerties, according to a chosen EOS model.
      Currently need one for solid and one for melt, but could extend to
      multiple phases */
-  EosEval                eos_evals[2]; // FIXME: hard-coded for two phases
+  EosEval                eos_evals[3]; // FIXME: hard-coded for two phases + one composite phase (mixed)
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
