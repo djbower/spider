@@ -42,6 +42,7 @@ static PetscErrorCode GetTwoPhaseCp( const EosComposite, PetscScalar, PetscScala
 static PetscErrorCode GetTwoPhaseRho( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhasedTdPs( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhaseAlpha( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode GetTwoPhaseConductivity( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite, PetscScalar, PetscScalar, EosEval *);
 
 #if 0
@@ -1333,6 +1334,7 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
           break;
   }
 
+  eos_eval->cond = Ep->cond; // conductivity constant
   ierr = SetEosEvalViscosity( Ep, eos_eval );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
@@ -1603,6 +1605,24 @@ static PetscErrorCode GetTwoPhaseAlpha( const EosComposite eos_composite, PetscS
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode GetTwoPhaseConductivity( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *conductivity )
+{
+    PetscErrorCode ierr;
+    EosEval eos_eval_melt, eos_eval_solid;
+    PetscScalar phase_fraction;
+
+    PetscFunctionBeginUser;
+
+    ierr = GetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
+    
+    ierr = SetEosEval( eos_composite->eos_parameters[0], P, S, &eos_eval_melt ); CHKERRQ(ierr);
+    ierr = SetEosEval( eos_composite->eos_parameters[1], P, S, &eos_eval_solid ); CHKERRQ(ierr);
+
+    *conductivity = phase_fraction * eos_eval_melt.cond;
+    *conductivity += (1.0-phase_fraction) * eos_eval_solid.cond;
+
+    PetscFunctionReturn(0);
+}
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_composite, PetscScalar P, PetscScalar S, EosEval *eos_eval)
 {
     PetscErrorCode ierr;
@@ -1617,8 +1637,11 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     ierr = GetTwoPhaseCp( eos_composite, P, S, &eos_eval->Cp );CHKERRQ(ierr);
     /* Rho passes blackbody test */
     ierr = GetTwoPhaseRho( eos_composite, P, S, &eos_eval->rho );CHKERRQ(ierr);
-    ierr = GetTwoPhasedTdPs( eos_composite, P, S, &eos_eval->dTdPs );CHKERRQ(ierr);
+    /* Alpha passes blackbody test */
     ierr = GetTwoPhaseAlpha( eos_composite, P, S, &eos_eval->alpha );CHKERRQ(ierr);
+    ierr = GetTwoPhasedTdPs( eos_composite, P, S, &eos_eval->dTdPs );CHKERRQ(ierr);
+    /* Conductivity passes blackbody test */
+    ierr = GetTwoPhaseConductivity( eos_composite, P, S, &eos_eval->cond );CHKERRQ(ierr);
     /* lookup does not know about these quantities, since they are not used by
        SPIDER, but for completeness zero them here */
     eos_eval->Cv = 0.0;

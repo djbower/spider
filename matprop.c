@@ -263,7 +263,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       cp_sol = E->eos_evals[1].Cp;
       temp_sol = E->eos_evals[1].T;
       alpha_sol = E->eos_evals[1].alpha;
-      cond_sol = P->eos_parameters[1]->cond;
+      cond_sol = E->eos_evals[1].cond;
       // FIXME: func below still has some functionality the replacing function doesn't
       //log10visc_sol = get_log10_viscosity_solid( temp_sol, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
       log10visc_sol = E->eos_evals[1].log10visc;
@@ -275,20 +275,21 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       cp_mel = E->eos_evals[0].Cp;
       temp_mel = E->eos_evals[0].T;
       alpha_mel = E->eos_evals[0].alpha;
-      cond_mel = P->eos_parameters[0]->cond;
+      cond_mel = E->eos_evals[0].cond;
       // FIXME: func below still has some functionality the replacing function doesn't
       //log10visc_mel = get_log10_viscosity_melt( temp_mel, arr_pres[i], arr_layer_b[i], P );
       log10visc_mel = E->eos_evals[0].log10visc;
 
       /* mixed phase */
-      rho_mix = combine_matprop( arr_phi[i], 1.0/arr_liquidus_rho[i], 1.0/arr_solidus_rho[i] );
-      rho_mix = 1.0 / rho_mix;
-
+      SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &E->eos_evals[2] );
+      rho_mix = E->eos_evals[2].rho;
+      temp_mix = E->eos_evals[2].T;
+      cp_mix = E->eos_evals[2].Cp;
+      alpha_mix = E->eos_evals[2].alpha;
+      cond_mix = E->eos_evals[2].cond;
+      /* TODO: need to ask ASW about this formulation */
       dTdrs_mix = arr_dTdrs_mix[i];
-      cp_mix = arr_cp_mix[i];
-      temp_mix = combine_matprop( arr_phi[i], arr_liquidus_temp[i], arr_solidus_temp[i] );
-      alpha_mix = -arr_fusion_rho[i] / arr_fusion_temp[i] / rho_mix;
-      cond_mix = combine_matprop( arr_phi[i], P->eos_parameters[0]->cond, P->eos_parameters[1]->cond );
+
       /* need to get viscosity of melt and solid phases at the liquidus and solidus temperature,
          since this is consistent with the notion of ignoring temperature effects in the mixed
          phase region (e.g., for density) */

@@ -71,9 +71,7 @@ typedef struct EosEval_ {
   PetscScalar alpha; /* thermal expansion */
   PetscScalar rho; /* density */
   PetscScalar dTdPs; /* adiabatic temperature gradient */
-  /* TODO could consider adding the following, although these are
-     not usually derived from an EOS */
-  //PetscScalar cond;
+  PetscScalar cond;
   PetscScalar log10visc;
 } EosEval;
 
