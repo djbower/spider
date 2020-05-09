@@ -43,6 +43,7 @@ static PetscErrorCode GetTwoPhaseRho( const EosComposite, PetscScalar, PetscScal
 static PetscErrorCode GetTwoPhasedTdPs( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhaseAlpha( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhaseConductivity( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode GetTwoPhaseViscosity( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite, PetscScalar, PetscScalar, EosEval *);
 
 #if 0
@@ -1305,6 +1306,18 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->activation_volume,NULL);CHKERRQ(ierr);
   Ep->activation_volume *= SC->PRESSURE / (FC->GAS * SC->TEMP);
 
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_visc_ref_temp");CHKERRQ(ierr);
+  Ep->visc_ref_temp = -1.0; // negative is not set
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->visc_ref_temp,NULL);CHKERRQ(ierr);
+  Ep->visc_ref_temp /= SC->TEMP;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_visc_ref_pressure");CHKERRQ(ierr);
+  Ep->visc_ref_pressure = -1.0; // negative is not set
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->visc_ref_pressure,NULL);CHKERRQ(ierr);
+  Ep->visc_ref_pressure /= SC->PRESSURE;
+
+  /* FIXME: add parsing of compositional pinning */
+
   /* phase boundary */
   ierr = LookupFilenameSet( "_phase_boundary", Ep->prefix, Ep->phase_boundary_filename, &Ep->PHASE_BOUNDARY );CHKERRQ(ierr);
   if( Ep->PHASE_BOUNDARY ){
@@ -1342,7 +1355,7 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
 
 static PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_eval )
 {
-    PetscScalar A;
+    PetscScalar A, dP, dT;
 
     PetscFunctionBeginUser;
 
@@ -1350,16 +1363,28 @@ static PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_
     eos_eval->log10visc = Ep->log10visc; // i.e., log10(eta_0)
 
     /* temperature and pressure contribution
-       A(T,P) = (E_a + V_a P) / RT
+       A(T,P) = (E_a + V_a P) / RT - (E_a + V_a Pref)/ RTref
        eta = eta_0 * exp(A)
        log10(eta) = log10(eta0) + log10(exp(A))
        log10(eta) = P->eos2_parameters.log10visc + A/ln(10) */
     A = 0.0;
+
+    /* pin viscosity profile to reference values */
+    if( (Ep->visc_ref_pressure >= 0.0) || (Ep->visc_ref_temp >= 0.0) ){
+        dT = ( Ep->visc_ref_temp - eos_eval->T ) / Ep->visc_ref_temp;
+        dP = eos_eval->P + Ep->visc_ref_pressure * (dT - 1.0);
+    }
+    /* do not pin viscosity profile */
+    else{
+        dT = 1.0;
+        dP = eos_eval->P;
+    }
+
     if( Ep->activation_energy > 0.0){
-        A += Ep->activation_energy;
+        A += Ep->activation_energy * dT;
     }
     if( Ep->activation_volume > 0.0){
-        A += Ep->activation_volume * eos_eval->P;
+        A += Ep->activation_volume * dP;
     }
     A *= 1.0 / eos_eval->T;
     eos_eval->log10visc += A / PetscLogReal(10.0);
@@ -1623,6 +1648,42 @@ static PetscErrorCode GetTwoPhaseConductivity( const EosComposite eos_composite,
 
     PetscFunctionReturn(0);
 }
+
+static PetscErrorCode GetTwoPhaseViscosity( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *log10visc_ptr )
+{
+    PetscErrorCode ierr;
+    EosEval eos_eval_melt, eos_eval_solid;
+    PetscScalar phase_fraction, liquidus, solidus, log10visc_melt, log10visc_sol, fwt;
+    PetscScalar phi_critical, phi_width;
+
+    PetscFunctionBeginUser;
+
+    ierr = GetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
+
+    /* set temperature at liquidus */
+    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus );CHKERRQ(ierr);
+    ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
+    ierr = SetEosEvalViscosity( eos_composite->eos_parameters[0], &eos_eval_melt );CHKERRQ(ierr);
+    log10visc_melt = eos_eval_melt.log10visc;
+
+    /* set temperature at solidus */
+    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
+    ierr = SetEosEvalViscosity( eos_composite->eos_parameters[1], &eos_eval_solid );CHKERRQ(ierr);
+    log10visc_sol = eos_eval_solid.log10visc;
+
+    /* FIXME: these are stored in the parameters struct, but do we really need to read this in for just
+       two parameters? */
+    /* these lines replace get_log10_viscosity_mix and get_viscosity_mix_no_skew */
+    phi_critical = 0.4;
+    phi_width = 0.15;
+    fwt = tanh_weight( phase_fraction, phi_critical, phi_width );
+    *log10visc_ptr = fwt * log10visc_melt + (1.0-fwt) * log10visc_sol;
+
+    PetscFunctionReturn(0);
+}
+
+
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_composite, PetscScalar P, PetscScalar S, EosEval *eos_eval)
 {
     PetscErrorCode ierr;
@@ -1642,6 +1703,7 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     ierr = GetTwoPhasedTdPs( eos_composite, P, S, &eos_eval->dTdPs );CHKERRQ(ierr);
     /* Conductivity passes blackbody test */
     ierr = GetTwoPhaseConductivity( eos_composite, P, S, &eos_eval->cond );CHKERRQ(ierr);
+    ierr = GetTwoPhaseViscosity( eos_composite, P, S, &eos_eval->log10visc );CHKERRQ(ierr);
     /* lookup does not know about these quantities, since they are not used by
        SPIDER, but for completeness zero them here */
     eos_eval->Cv = 0.0;

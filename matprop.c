@@ -6,12 +6,12 @@
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );
-static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const);
 static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
-static PetscScalar get_log10_viscosity_melt( PetscScalar, PetscScalar, PetscInt, Parameters const );
-static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, PetscScalar, Parameters const );
-static PetscScalar get_log10_viscosity_cutoff( PetscScalar, Parameters const );
-static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const );
+//static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const);
+//static PetscScalar get_log10_viscosity_melt( PetscScalar, PetscScalar, PetscInt, Parameters const );
+//static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, PetscScalar, Parameters const );
+static PetscErrorCode apply_log10visc_cutoff( Parameters const, PetscScalar * );
+//static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -287,15 +287,17 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       cp_mix = E->eos_evals[2].Cp;
       alpha_mix = E->eos_evals[2].alpha;
       cond_mix = E->eos_evals[2].cond;
-      /* TODO: need to ask ASW about this formulation */
+      /* TODO: need to ask ASW about the formulation for dTdrs */
       dTdrs_mix = arr_dTdrs_mix[i];
 
       /* need to get viscosity of melt and solid phases at the liquidus and solidus temperature,
          since this is consistent with the notion of ignoring temperature effects in the mixed
          phase region (e.g., for density) */
-      log10visc_mel_mix = get_log10_viscosity_melt( arr_liquidus_temp[i], arr_pres[i], arr_layer_b[i], P );
-      log10visc_sol_mix = get_log10_viscosity_solid( arr_solidus_temp[i], arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
-      log10visc_mix = get_log10_viscosity_mix( arr_phi[i], log10visc_mel_mix, log10visc_sol_mix, P );
+      //log10visc_mel_mix = get_log10_viscosity_melt( arr_liquidus_temp[i], arr_pres[i], arr_layer_b[i], P );
+      //log10visc_sol_mix = get_log10_viscosity_solid( arr_solidus_temp[i], arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
+      //log10visc_mix = get_log10_viscosity_mix( arr_phi[i], log10visc_mel_mix, log10visc_sol_mix, P );
+      log10visc_mix = E->eos_evals[2].log10visc;
+
 
       if(P->SOLID_CONVECTION_ONLY){
           arr_phi[i] = 0.0; // by definition
@@ -341,6 +343,10 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       }
  
       /* compute viscosity */
+      /* note that prior versions of the code applied a cutoff to each individual
+         phase, rather than to the aggregate.  But I think it makes the most sense to
+         apply the cutoff once */
+      ierr = apply_log10visc_cutoff( P, &arr_visc[i] );
       arr_visc[i] = PetscPowScalar( 10.0, arr_visc[i] );
 
       /* other useful material properties */
@@ -439,32 +445,29 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar get_log10_viscosity_cutoff( PetscScalar in_visc, Parameters const P )
+static PetscErrorCode apply_log10visc_cutoff( Parameters const P, PetscScalar *viscosity )
 {
-
-    PetscScalar out_visc;
-
-    out_visc = in_visc;
+    PetscFunctionBeginUser;
 
     if(P->log10visc_min > 0.0){
-        if(in_visc < P->log10visc_min){
-            out_visc = P->log10visc_min;
+        if(*viscosity < P->log10visc_min){
+            *viscosity = P->log10visc_min;
         }
     }
     if(P->log10visc_max > 0.0){
-        if(in_visc > P->log10visc_max){
-            out_visc = P->log10visc_max;
+        if(*viscosity > P->log10visc_max){
+            *viscosity = P->log10visc_max;
         }
     }
 
-    return out_visc;
-
+    PetscFunctionReturn(0);
 }
 
+#if 0
 /* FIXME: below is steadily being replaced by SetEosEvalViscosity */
 static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, PetscScalar radius, Parameters const P )
 {
-    /* DJB FIXME: moved these parameters to EosParameters struct */
+    /* DJB FIXME: move these parameters to EosParameters struct */
     PetscScalar Ea = 0.0; //P->activation_energy_sol; // activation energy (non-dimensional)
     PetscScalar Va = 0.0; //P->activation_volume_sol; // activation volume (non-dimensional)
     PetscScalar Mg_Si0 = P->Mg_Si0; // layer 0 (default) Mg/Si ratio
@@ -517,6 +520,7 @@ static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScal
     return lvisc;
 
 }
+#endif
 
 static PetscScalar add_compositional_viscosity( PetscScalar lvisc, PetscScalar Mg_Si ){
 
@@ -539,6 +543,7 @@ static PetscScalar add_compositional_viscosity( PetscScalar lvisc, PetscScalar M
     return lvisc;
 }
 
+#if 0
 static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const P )
 {
 
@@ -554,7 +559,9 @@ static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScala
     return lvisc;
 
 }
+#endif
 
+#if 0
 static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10visc_mel, PetscScalar log10visc_sol, Parameters const P )
 {
     PetscScalar fwt, lvisc;
@@ -580,6 +587,7 @@ static PetscScalar get_viscosity_mix_no_skew( PetscScalar meltf, Parameters cons
     return fwt;
 
 }
+#endif
 
 /* below is for the skewed viscosity formulation worked out by ASW */
 

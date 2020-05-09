@@ -155,6 +155,9 @@ typedef struct {
     PetscScalar log10visc; /* log base 10 of viscosity */
     PetscScalar activation_energy;
     PetscScalar activation_volume;
+    PetscScalar visc_ref_temp;
+    PetscScalar visc_ref_pressure;
+    PetscScalar visc_ref_comp;
     /* phase boundary which is evaluated using this EOS */
     PetscBool PHASE_BOUNDARY; /* is a phase boundary for this EOS defined? */
     char phase_boundary_filename[PETSC_MAX_PATH_LEN];
