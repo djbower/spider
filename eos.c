@@ -1490,7 +1490,14 @@ static PetscErrorCode GetTwoPhasePhaseFraction( const EosComposite eos_composite
 
     *phase_fraction = ( S - solidus ) / fusion;
 
-    /* FIXME: need to truncate value?  Perhaps not if this is dealt with later in the code */
+    /* I think I need to truncate value?  Perhaps not if this is dealt with later in the code */
+
+    if( *phase_fraction > 1.0 ){
+        *phase_fraction = 1.0;
+    }
+    if( *phase_fraction < 0.0 ){
+        *phase_fraction = 0.0;
+    } 
 
     PetscFunctionReturn(0);
 }
@@ -1511,7 +1518,7 @@ static PetscErrorCode GetTwoPhaseTemperature( const EosComposite eos_composite, 
 
     /* linear temperature between liquidus and solidus */
     *T_ptr = phase_fraction * eos_eval_melt.T;
-    *T_ptr *= (1-phase_fraction) * eos_eval_solid.T;
+    *T_ptr += (1-phase_fraction) * eos_eval_solid.T;
 
     PetscFunctionReturn(0);
 }
@@ -1535,7 +1542,7 @@ static PetscErrorCode GetTwoPhaseRho( const EosComposite eos_composite, PetscSca
 
     /* volume additivity (excludes temperature effect) */
     *rho_ptr = phase_fraction / eos_eval_melt.rho;
-    *rho_ptr *= (1-phase_fraction) / eos_eval_solid.rho;
+    *rho_ptr += (1-phase_fraction) / eos_eval_solid.rho;
     *rho_ptr = 1.0/(*rho_ptr);
 
     PetscFunctionReturn(0);
@@ -1563,7 +1570,7 @@ static PetscErrorCode GetTwoPhaseCp( const EosComposite eos_composite, PetscScal
     ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
 
-    temp_mid = eos_eval_solid.T + 0.5 * (eos_eval_melt.T = eos_eval_solid.T);
+    temp_mid = eos_eval_solid.T + 0.5 * (eos_eval_melt.T - eos_eval_solid.T);
 
     *Cp_ptr = temp_mid * (eos_eval_melt.S - eos_eval_solid.S);
     *Cp_ptr /= eos_eval_melt.T - eos_eval_solid.T;

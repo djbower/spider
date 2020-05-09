@@ -494,6 +494,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
 
     /* re-solve to get volatile partial pressures (A->volatiles[i].p) */
     /* TODO: is this required?  I think so for Ap->IC_ATMOSPHERE==1 above */
+    /* FIXME: if no atmosphere is chosen, this is not a necessary step */
     ierr = solve_for_initial_partial_pressure( E ); CHKERRQ(ierr);
 
     /* Ap_>IC_ATMOSPHERE==1 will also set mass reactions close to (but not exactly)
