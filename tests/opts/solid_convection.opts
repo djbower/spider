@@ -1,7 +1,7 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 1000
+-nstepsmacro 100
 
 # macro step size in years
 -dtmacro 10000000
