@@ -1294,12 +1294,10 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_activation_energy");CHKERRQ(ierr);
   Ep->activation_energy = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->activation_energy,NULL);CHKERRQ(ierr);
-
-  /* FIXME: should use FC->GAS instead */
-  Ep->activation_energy /= SC->ENERGY * FC->GAS; // * SC->TEMP;
-  /* this next scaling is taken from robsidian/viscosity branch, and
-     is identical to that above */
-  //Ep->activation_energy /= 8.314 * SC->TEMP;
+  /* scalings for Ea and Va include the gas constant that appears in the
+     denominator of the Arrhenius viscosity law, so we then do not have
+     to pass FC->GAS to the viscosity functions */
+  Ep->activation_energy /= SC->ENERGY * FC->GAS;
 
   /* activation volume (m^3/mol) */
   /* The numerical value in units of m^3/mol is the same as that in units of J/mol/Pa */
@@ -1308,10 +1306,8 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_activation_volume");CHKERRQ(ierr);
   Ep->activation_volume = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->activation_volume,NULL);CHKERRQ(ierr);
+  /* as with activation energy, include gas constant in denominator */
   Ep->activation_volume *= SC->PRESSURE / (SC->ENERGY * FC->GAS);
-  /* this next scaling is taken from robsidian/viscosity branch , and
-     is identical to that above */
-  //Ep->activation_volume *= SC->PRESSURE / (8.314 * SC->TEMP);
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_visc_ref_temp");CHKERRQ(ierr);
   Ep->visc_ref_temp = -1.0; // negative is not set
