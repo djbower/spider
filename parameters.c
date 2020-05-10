@@ -74,9 +74,10 @@ static PetscErrorCode FundamentalConstantsSet( FundamentalConstants FC, ScalingC
     FC->AVOGADRO = 6.02214076E23; /* 1/mol */
 
     FC->GAS = 8.3144598; /* J/K/mol */
-    FC->GAS *= SC->TEMP / SC->ENERGY;
+    FC->GAS *= SC->TEMP / SC->ENERGY; /* 1/mol */
 
     /* BOLTZMANN is 1.380649E-23 J/K */
+    /* note that BOLTZMANN is also GAS constant per particle */
     FC->BOLTZMANN = FC->GAS / FC->AVOGADRO;
 
     FC->GRAVITATIONAL = 6.67408E-11; /* m^3/kg/s^2 */
@@ -202,11 +203,14 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
   vp->constant_escape_value = 0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->constant_escape_value,&set);CHKERRQ(ierr);
   vp->constant_escape_value *= SC->TIME / (SC->VOLATILE * SC->MASS);
+  /* recall that the code ignores the 4.0*pi prefactor, and it is reintroduced for output only */
   vp->constant_escape_value /= 4.0 * PETSC_PI;
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,&set);CHKERRQ(ierr);
   if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
+  /* in principle, we could fully non-dimensionalise using Avogadro's constant, but then
+     the per-particle value would be 23 orders of magnitude less than this value */
   vp->molar_mass /= SC->MASS;
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_cross_section");CHKERRQ(ierr);
