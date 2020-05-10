@@ -1296,10 +1296,10 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->activation_energy,NULL);CHKERRQ(ierr);
 
   /* FIXME: should use FC->GAS instead */
-  /* this next scaling is taken from robsidian/viscosity branch */
-  Ep->activation_energy /= 8.314 * SC->TEMP;
-  // this is a new energy scale (i.e., not SC->ENERGY defined above)
-  //Ep->activation_energy /= FC->GAS * SC->TEMP;
+  Ep->activation_energy /= SC->ENERGY * FC->GAS; // * SC->TEMP;
+  /* this next scaling is taken from robsidian/viscosity branch, and
+     is identical to that above */
+  //Ep->activation_energy /= 8.314 * SC->TEMP;
 
   /* activation volume (m^3/mol) */
   /* The numerical value in units of m^3/mol is the same as that in units of J/mol/Pa */
@@ -1308,10 +1308,10 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_activation_volume");CHKERRQ(ierr);
   Ep->activation_volume = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->activation_volume,NULL);CHKERRQ(ierr);
-  /* FIXME: should use FC->GAS instead */
-  /* this next scaling is taken from robsidian/viscosity branch */
-  Ep->activation_volume *= SC->PRESSURE / (8.314 * SC->TEMP);
-  //Ep->activation_volume *= SC->PRESSURE / (FC->GAS * SC->TEMP);
+  Ep->activation_volume *= SC->PRESSURE / (SC->ENERGY * FC->GAS);
+  /* this next scaling is taken from robsidian/viscosity branch , and
+     is identical to that above */
+  //Ep->activation_volume *= SC->PRESSURE / (8.314 * SC->TEMP);
 
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_visc_ref_temp");CHKERRQ(ierr);
   Ep->visc_ref_temp = -1.0; // negative is not set
