@@ -1375,7 +1375,7 @@ static PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_
     /* pin viscosity profile to reference values */
     if( (Ep->visc_ref_pressure >= 0.0) || (Ep->visc_ref_temp >= 0.0) ){
         dT = ( Ep->visc_ref_temp - eos_eval->T ) / Ep->visc_ref_temp;
-        dP = eos_eval->P + Ep->visc_ref_pressure * (dT - 1.0);
+        dP = eos_eval->P - Ep->visc_ref_pressure * (eos_eval->T / Ep->visc_ref_temp );
     }
     /* do not pin viscosity profile */
     else{
