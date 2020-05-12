@@ -4,10 +4,6 @@ static PetscErrorCode regular_mesh( Ctx * );
 //static PetscErrorCode geometric_mesh( Ctx * );
 static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
-static PetscErrorCode mixing_length( DM, Vec, Vec, Parameters const );
-static PetscScalar mixing_length_conventional( Parameters const, PetscScalar );
-static PetscScalar mixing_length_average( Parameters const, PetscScalar );
-static PetscScalar mixing_length_layer( Parameters const, PetscScalar );
 static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
@@ -54,9 +50,6 @@ PetscErrorCode set_mesh( Ctx *E)
 
     /* volume of spherical cells, without 4*pi term */
     spherical_volume( E, M->radius_b, M->volume_s);
-
-    /* mixing length is minimum distance from boundary */
-    mixing_length( da_b, M->radius_b, M->mix_b, P);
 
     /* layer id.  0 everywhere for single layer (as determined by
        P->mixing_length), and 0 for upper and 1 for lower layer
@@ -244,79 +237,7 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode mixing_length( DM da, Vec radius, Vec mix, const Parameters P )
-{
-    PetscErrorCode    ierr;
-    PetscScalar       *arr_m;
-    const PetscScalar *arr_r;
-    PetscInt          i,ilo,ihi,w;
-
-    PetscFunctionBeginUser;
-    ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
-    ihi = ilo + w;
-    ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da,mix,&arr_m);CHKERRQ(ierr);
-    for(i=ilo; i<ihi; ++i){
-      // conventional mixing length
-      if(P->mixing_length == 1){
-        arr_m[i] = mixing_length_conventional( P, arr_r[i] );
-      }
-      // avg mixing length from conventional theory, i.e. 1/4*depth */
-      else if(P->mixing_length == 2){
-        arr_m[i] = mixing_length_average( P, arr_r[i] );
-      }
-      // two layers
-      else if(P->mixing_length == 3){
-        arr_m[i] = mixing_length_layer( P, arr_r[i] );
-      }
-    }
-    ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da,mix,&arr_m);CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
-
-
-static PetscScalar mixing_length_conventional( const Parameters P, const PetscScalar rad_in )
-{
-    /* distance to nearest top or bottom boundary */
-
-    PetscScalar rad1, rad2, out;
-
-    rad1 = rad_in - P->radius * P->coresize;
-    rad2 = P->radius - rad_in;
-    out = PetscMin( rad1, rad2 );
-
-    return out;   
-}
-
-
-static PetscScalar mixing_length_average( const Parameters P, const PetscScalar rad_in )
-{
-    /* constant, based on average of distance to nearest top or bottom
-       boundary */
-
-    PetscScalar out;
-
-    out = 0.25 * P->radius * (1.0-P->coresize);
-
-    return out;
-}
-
-static PetscScalar mixing_length_layer( const Parameters P, const PetscScalar rad_in )
-{
-    /* account for an additional interface separating two convecting
-       layers */
-
-    PetscScalar out, dist3;
-
-    out = mixing_length_conventional( P, rad_in );
-    dist3 = rad_in - P->mixing_length_layer_radius;
-    dist3 = PetscAbsReal( dist3 );
-    out = PetscMin( out, dist3 );
-
-    return out;
-}
-
+/* TODO: need to have some notion of a layer ID, but should it be within mesh.c? */
 static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
 {
     PetscErrorCode ierr;

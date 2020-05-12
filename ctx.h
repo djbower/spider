@@ -9,7 +9,7 @@
 
 /* common structures */
 
-#define NUMMESHVECS_B 6
+#define NUMMESHVECS_B 5
 #define NUMMESHVECS_S 7
 typedef struct Mesh_ {
 

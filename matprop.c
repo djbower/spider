@@ -7,6 +7,10 @@
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );
 static PetscErrorCode apply_log10visc_cutoff( Parameters const, PetscScalar * );
+static PetscScalar GetModifiedMixingLength( PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar GetConstantMixingLength( PetscScalar outer_radius, PetscScalar inner_radius );
+static PetscScalar GetMixingLength( const Parameters, PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar );
+
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -179,11 +183,11 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     // material properties that are updated here
     PetscScalar       *arr_Ra, *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
     // material properties used to update above
-    const PetscScalar *arr_dSdr, *arr_S_b, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_cp_mix, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_mix_b, *arr_radius_b;
+    const PetscScalar *arr_dSdr, *arr_S_b, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_liquidus_rho, *arr_solidus_rho, *arr_dTdrs_mix, *arr_liquidus_temp, *arr_solidus_temp, *arr_fusion_rho, *arr_fusion_temp, *arr_radius_b;
     const PetscInt *arr_layer_b;
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_fwtl, *arr_fwts;
-    PetscScalar       fwtl, fwts;
+    PetscScalar       fwtl, fwts, mix;
     PetscScalar       rho_sol, dTdrs_sol, cp_sol, temp_sol, alpha_sol, cond_sol, log10visc_sol;
     PetscScalar       rho_mel, dTdrs_mel, cp_mel, temp_mel, alpha_mel, cond_mel, log10visc_mel;
     PetscScalar       rho_mix, dTdrs_mix, cp_mix, temp_mix, alpha_mix, cond_mix, log10visc_mix;
@@ -212,7 +216,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->S,&arr_S_b); CHKERRQ(ierr);
     /* mesh quantities */
     ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->mix_b,&arr_mix_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b); CHKERRQ(ierr);
@@ -350,18 +353,23 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       /* gravity * super-adiabatic temperature gradient */
       arr_gsuper[i] = P->gravity * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
 
+      /* FIXME: below */
+#if 0
       /* Rayleigh number */
       /* FIXME: should use domain size not mixing length */
       arr_Ra[i] = arr_gsuper[i];
       arr_Ra[i] *= arr_alpha[i] * PetscPowScalar(arr_mix_b[i],4) * arr_rho[i] * arr_cp[i];
       arr_Ra[i] /= arr_nu[i] * arr_cond[i];
+#endif
+      arr_Ra[i] = 0.0; // HACK FOR RA TO AVOID UNINITIALISED VALUES
 
       /* eddy diffusivity */
       {
         /* always compute based on force balance and then select below */
         PetscScalar kh, crit;
         crit = 81.0 * PetscPowScalar(arr_nu[i],2);
-        crit /= 4.0 * arr_alpha[i] * PetscPowScalar(arr_mix_b[i],4);
+        mix = GetMixingLength( P, 0.5, 0.5, P->radius, P->radius*P->coresize, arr_radius_b[i]);
+        crit /= 4.0 * arr_alpha[i] * PetscPowScalar(mix,4);
 
         if( arr_gsuper[i] <= 0.0 ){
           /* no convection, subadiabatic */
@@ -369,11 +377,11 @@ PetscErrorCode set_matprop_basic( Ctx *E )
           arr_regime[i] = 0.0;
         } else if( arr_gsuper[i] > crit ){
           /* inviscid scaling from Vitense (1953) */
-          kh = 0.25 * PetscPowScalar(arr_mix_b[i],2) * PetscSqrtScalar(arr_alpha[i]*arr_gsuper[i]);
+          kh = 0.25 * PetscPowScalar(mix,2) * PetscSqrtScalar(arr_alpha[i]*arr_gsuper[i]);
           arr_regime[i] = 2.0;
         } else{
           /* viscous scaling */
-          kh = arr_alpha[i] * arr_gsuper[i] * PetscPowScalar(arr_mix_b[i],4) / (18.0*arr_nu[i]);
+          kh = arr_alpha[i] * arr_gsuper[i] * PetscPowScalar(mix,4) / (18.0*arr_nu[i]);
           arr_regime[i] = 1.0;
         }
 
@@ -403,7 +411,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,S->S,&arr_S_b); CHKERRQ(ierr);
     /* mesh quantities */
     ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->mix_b,&arr_mix_b); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
     /* material properties */
@@ -454,4 +461,47 @@ static PetscErrorCode apply_log10visc_cutoff( Parameters const P, PetscScalar *v
     }
 
     PetscFunctionReturn(0);
+}
+
+static PetscScalar GetModifiedMixingLength( PetscScalar a, PetscScalar b, PetscScalar outer_radius, PetscScalar inner_radius, PetscScalar radius )
+{
+    /* See Kamata, 2018, JGR */
+    /* conventional mixing length theory has a = b = 0.5 */
+    /* a is location of peak in deptn/radius space,
+       b is size of the peak */
+
+    PetscScalar mix_length1, mix_length2, mix_length;
+
+    mix_length1 = (radius - inner_radius) * b / (1.0 - a);
+    mix_length2 = (outer_radius - radius) * b / a;
+
+    mix_length = PetscMin( mix_length1, mix_length2 );
+
+    return mix_length;
+}
+
+static PetscScalar GetConstantMixingLength( PetscScalar outer_radius, PetscScalar inner_radius )
+{
+    PetscScalar mix_length;
+
+    mix_length = 0.25 * (outer_radius - inner_radius );
+
+    return mix_length;
+}
+
+static PetscScalar GetMixingLength( const Parameters P, PetscScalar a, PetscScalar b, PetscScalar outer_radius, PetscScalar inner_radius, PetscScalar radius )
+{
+    PetscScalar mix_length = 0.0;
+
+    if( P->mixing_length == 1){
+        mix_length = GetModifiedMixingLength( 0.5, 0.5, outer_radius, inner_radius, radius );
+    }
+    else if( P->mixing_length == 2){
+        mix_length = GetConstantMixingLength( outer_radius, inner_radius );
+    }
+
+    /* FIXME: mix_length will return zero if P->mixing_length is not 1 or 2! */
+
+    return mix_length;
+
 }
