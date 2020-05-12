@@ -494,8 +494,10 @@ static PetscScalar GetMixingLength( const Parameters P, PetscScalar a, PetscScal
     PetscScalar outer_radius, inner_radius;
     PetscScalar mix_length = 0.0;
 
+    /* for two layers, find upper and lower radius */
     if( P->layer_interface_radius > 0.0 ){
         if( radius > P->layer_interface_radius ){
+            /* TODO: should check in parameters.c that P->radius > P->layer_interface_radius > P->radius * P->coresize */
             outer_radius = P->radius;
             inner_radius = P->layer_interface_radius;
         }
@@ -504,6 +506,7 @@ static PetscScalar GetMixingLength( const Parameters P, PetscScalar a, PetscScal
             inner_radius = P->radius * P->coresize;
         }
     }
+    /* else for single layer */
     else{
         outer_radius = P->radius;
         inner_radius = P->radius * P->coresize;
@@ -517,6 +520,7 @@ static PetscScalar GetMixingLength( const Parameters P, PetscScalar a, PetscScal
     }
 
     /* FIXME: mix_length will return zero if P->mixing_length is not 1 or 2! */
+    /* FIXME: add else and raise error (or deal with this scenario in parameters.c */
 
     return mix_length;
 
