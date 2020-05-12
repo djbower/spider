@@ -443,29 +443,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->matprop_smooth_width = 1.0E-2;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-matprop_smooth_width",&P->matprop_smooth_width,NULL);CHKERRQ(ierr);
 
-  /* TODO: primary viscosity is stored with the EOS parameters, and may these should be too.  Or setup
-     a viscosity struct to contain viscosity-related parameters */
-
-/* FIXME: currently migrating this into EosParameters struct */
-#if 0
-  /* solid activation energy (J/mol) */
-  PetscScalar Rgas = 8.314; // gas constant (J/K/mol)
-  P->activation_energy_sol = 0.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-activation_energy_sol",&P->activation_energy_sol,NULL);CHKERRQ(ierr);
-  P->activation_energy_sol /= Rgas * SC->TEMP; // this is a new energy scale (i.e., not SC->ENERGY defined above)
-#endif
-
-#if 0
-  /* solid activation volume (m^3/mol) */
-  /* The numerical value in units of m^3/mol is the same as that in units of J/mol/Pa */
-  /* You can convince yourself of this by using the scalings for ENERGY and PRESSURE to
-     see that this is true */
-  P->activation_volume_sol = 0.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-activation_volume_sol",&P->activation_volume_sol,NULL);CHKERRQ(ierr);
-  P->activation_volume_sol *= SC->PRESSURE;
-  P->activation_volume_sol /= Rgas * SC->TEMP;
-#endif
-
   /* viscosity cut-offs */
   P->log10visc_min = -1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_min",&P->log10visc_min,NULL);CHKERRQ(ierr);
