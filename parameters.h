@@ -155,6 +155,7 @@ typedef struct {
     PetscScalar log10visc; /* log base 10 of viscosity */
     PetscScalar activation_energy;
     PetscScalar activation_volume;
+    PetscScalar activation_volume_pressure_scale;
     PetscScalar visc_ref_temp;
     PetscScalar visc_ref_pressure;
     PetscScalar visc_ref_comp;

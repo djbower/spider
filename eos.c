@@ -1309,6 +1309,11 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   /* as with activation energy, include gas constant in denominator */
   Ep->activation_volume *= SC->PRESSURE / (SC->ENERGY * FC->GAS);
 
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_activation_volume_pressure_scale");CHKERRQ(ierr);
+  Ep->activation_volume_pressure_scale = -1.0; /* negative is not set */
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->activation_volume_pressure_scale,NULL);CHKERRQ(ierr);
+  Ep->activation_volume_pressure_scale /= SC->PRESSURE;
+
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_visc_ref_temp");CHKERRQ(ierr);
   Ep->visc_ref_temp = -1.0; // negative is not set
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->visc_ref_temp,NULL);CHKERRQ(ierr);
@@ -1359,6 +1364,7 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
 static PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_eval )
 {
     PetscScalar A, dP, dT;
+    PetscScalar fac1 = 1.0, fac2 = 1.0;
 
     PetscFunctionBeginUser;
 
@@ -1370,17 +1376,29 @@ static PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_
        eta = eta_0 * exp(A)
        log10(eta) = log10(eta0) + log10(exp(A))
        log10(eta) = P->eos2_parameters.log10visc + A/ln(10) */
+
+    /* with Ps = activation_volume_pressure_scale:
+           V_a(P) = V_a exp (-P/Ps) */
+
     A = 0.0;
 
     /* pin viscosity profile to reference values */
     if( (Ep->visc_ref_pressure >= 0.0) || (Ep->visc_ref_temp >= 0.0) ){
         dT = ( Ep->visc_ref_temp - eos_eval->T ) / Ep->visc_ref_temp;
-        dP = eos_eval->P - Ep->visc_ref_pressure * (eos_eval->T / Ep->visc_ref_temp );
+        if( Ep->activation_volume_pressure_scale > 0.0 ){
+            fac1 = PetscExpReal( -eos_eval->P / Ep->activation_volume_pressure_scale );
+            fac2 = PetscExpReal( -Ep->visc_ref_pressure / Ep->activation_volume_pressure_scale );
+        }
+        /* else fac1 and fac2 retain unity scalings according to initialisation above */
+        dP = fac1 * eos_eval->P - fac2 * Ep->visc_ref_pressure * (eos_eval->T / Ep->visc_ref_temp );
     }
     /* do not pin viscosity profile */
     else{
         dT = 1.0;
         dP = eos_eval->P;
+        if( Ep->activation_volume_pressure_scale > 0.0 ){
+            dP *= PetscExpReal( -eos_eval->P / Ep->activation_volume_pressure_scale );
+        }
     }
 
     if( Ep->activation_energy > 0.0){
@@ -1389,6 +1407,8 @@ static PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_
     if( Ep->activation_volume > 0.0){
         A += Ep->activation_volume * dP;
     }
+
+    /* division by R (gas constant) was already done during the scaling of parameters */
     A *= 1.0 / eos_eval->T;
     eos_eval->log10visc += A / PetscLogReal(10.0);
 

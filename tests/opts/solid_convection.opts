@@ -92,6 +92,7 @@
 -solid_log10visc 20.5
 -solid_activation_energy 175000.0 # J/mol
 -solid_activation_volume 4.0E-6 # J/mol/Pa or m^3/mol
+-solid_activation_volume_pressure_scale 200E9 # Exponential scaling for pressure dependency of Va (Pa) (negative is OFF)
 -solid_visc_ref_temp 3500
 -solid_visc_ref_pressure 140E9
 -solid_visc_ref_comp 1.08
