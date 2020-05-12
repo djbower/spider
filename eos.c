@@ -30,6 +30,7 @@ static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES, Vec, Vec,
 static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
 /* evaluate viscosity */
+static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar );
 static PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
 
 /* two phase composite eos (for mixed phase region) */
@@ -1314,6 +1315,11 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->activation_volume_pressure_scale,NULL);CHKERRQ(ierr);
   Ep->activation_volume_pressure_scale /= SC->PRESSURE;
 
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_visc_comp");CHKERRQ(ierr);
+  Ep->visc_comp = -1.0; // negative is not set
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->visc_comp,NULL);CHKERRQ(ierr);
+  /* no scaling necessary since this is a ratio */
+
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_visc_ref_temp");CHKERRQ(ierr);
   Ep->visc_ref_temp = -1.0; // negative is not set
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->visc_ref_temp,NULL);CHKERRQ(ierr);
@@ -1324,7 +1330,10 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalC
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->visc_ref_pressure,NULL);CHKERRQ(ierr);
   Ep->visc_ref_pressure /= SC->PRESSURE;
 
-  /* FIXME: add parsing of compositional pinning */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_visc_ref_comp");CHKERRQ(ierr);
+  Ep->visc_ref_comp = -1.0; // negative is not set
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Ep->visc_ref_comp,NULL);CHKERRQ(ierr);
+  /* no scaling necessary since this is a ratio */
 
   /* phase boundary */
   ierr = LookupFilenameSet( "_phase_boundary", Ep->prefix, Ep->phase_boundary_filename, &Ep->PHASE_BOUNDARY );CHKERRQ(ierr);
@@ -1361,9 +1370,32 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
   PetscFunctionReturn(0);
 }
 
+static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar Mg_Si ){
+
+    /* These expressions were worked out by Rob Spaargaren as part
+       of his MSc thesis (2018) */
+
+    PetscScalar fac;
+
+    if(Mg_Si <= 0.5)
+        fac = 2;
+    else if (Mg_Si <= 0.7)
+        fac = 2 - 1.4815 * (Mg_Si - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
+    else if (Mg_Si <= 1.0)
+        fac = 0.5185 * (1 - Mg_Si)/0.3; // 0.5185 = log10(3.3)
+    else if (Mg_Si <= 1.25)
+        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
+    else if (Mg_Si <= 1.5)
+        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
+    else
+        fac = -2;
+
+    return fac;
+}
+
 static PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_eval )
 {
-    PetscScalar A, dP, dT;
+    PetscScalar A, log10C, dP, dT;
     PetscScalar fac1 = 1.0, fac2 = 1.0;
 
     PetscFunctionBeginUser;
@@ -1412,7 +1444,12 @@ static PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_
     A *= 1.0 / eos_eval->T;
     eos_eval->log10visc += A / PetscLogReal(10.0);
 
-    /* TODO: add compositional contributions */
+    /* compositional (Mg/Si) contribution */
+    if( Ep->visc_comp > 0.0 ){
+        log10C = GetCompositionalViscosityPrefactor( Ep->visc_comp );
+        log10C -= GetCompositionalViscosityPrefactor( Ep->visc_ref_comp );
+        eos_eval->log10visc += log10C;
+    }
 
     /* TODO: add viscous lid */
 

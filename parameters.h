@@ -158,6 +158,7 @@ typedef struct {
     PetscScalar activation_volume_pressure_scale;
     PetscScalar visc_ref_temp;
     PetscScalar visc_ref_pressure;
+    PetscScalar visc_comp;
     PetscScalar visc_ref_comp;
     /* phase boundary which is evaluated using this EOS */
     PetscBool PHASE_BOUNDARY; /* is a phase boundary for this EOS defined? */

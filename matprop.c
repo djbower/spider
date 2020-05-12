@@ -6,12 +6,7 @@
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscScalar get_melt_fraction_truncated( PetscScalar );
-static PetscScalar add_compositional_viscosity( PetscScalar, PetscScalar );
-//static PetscScalar get_log10_viscosity_solid( PetscScalar, PetscScalar, PetscInt, PetscScalar, Parameters const);
-//static PetscScalar get_log10_viscosity_melt( PetscScalar, PetscScalar, PetscInt, Parameters const );
-//static PetscScalar get_log10_viscosity_mix( PetscScalar, PetscScalar, PetscScalar, Parameters const );
 static PetscErrorCode apply_log10visc_cutoff( Parameters const, PetscScalar * );
-//static PetscScalar get_viscosity_mix_no_skew( PetscScalar, Parameters const );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -191,7 +186,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscScalar       fwtl, fwts;
     PetscScalar       rho_sol, dTdrs_sol, cp_sol, temp_sol, alpha_sol, cond_sol, log10visc_sol;
     PetscScalar       rho_mel, dTdrs_mel, cp_mel, temp_mel, alpha_mel, cond_mel, log10visc_mel;
-    PetscScalar       rho_mix, dTdrs_mix, cp_mix, temp_mix, alpha_mix, cond_mix, log10visc_mel_mix, log10visc_sol_mix, log10visc_mix;
+    PetscScalar       rho_mix, dTdrs_mix, cp_mix, temp_mix, alpha_mix, cond_mix, log10visc_mix;
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
@@ -462,173 +457,3 @@ static PetscErrorCode apply_log10visc_cutoff( Parameters const P, PetscScalar *v
 
     PetscFunctionReturn(0);
 }
-
-#if 0
-/* FIXME: below is steadily being replaced by SetEosEvalViscosity */
-static PetscScalar get_log10_viscosity_solid( PetscScalar temperature, PetscScalar pressure, PetscInt layer, PetscScalar radius, Parameters const P )
-{
-    /* DJB FIXME: move these parameters to EosParameters struct */
-    PetscScalar Ea = 0.0; //P->activation_energy_sol; // activation energy (non-dimensional)
-    PetscScalar Va = 0.0; //P->activation_volume_sol; // activation volume (non-dimensional)
-    PetscScalar Mg_Si0 = P->Mg_Si0; // layer 0 (default) Mg/Si ratio
-    PetscScalar Mg_Si1 = P->Mg_Si1; // layer 1 (basal layer) Mg/Si ratio
-    PetscInt    VISCOUS_LID = P->VISCOUS_LID;
-    PetscScalar lid_log10visc = P->lid_log10visc;
-    PetscScalar lid_thickness = P->lid_thickness;
-
-    PetscScalar A, lvisc;
-    
-
-    /* reference viscosity */
-    lvisc = P->eos_parameters[1]->log10visc; // i.e., log10(eta_0)
-
-    /* temperature and pressure contribution
-    A(T,P) = (E_a + V_a P) / RT
-    eta = eta_0 * exp(A)
-    log10(eta) = log10(eta0) + log10(exp(A))
-    log10(eta) = P->eos2_parameters.log10visc + A/ln(10) */
-    A = 0.0;
-    if(Ea>0.0)
-        A += Ea;
-    if(Va>0.0)
-        A += Va*pressure;
-    A *= 1.0 / temperature;
-    lvisc += A / PetscLogReal(10);
-
-    /* compositional contribution (based on Mg/Si ratio) */
-    /* regular (default) layer */
-    if(layer == 0){
-        if(Mg_Si0 > 0.0)
-            lvisc = add_compositional_viscosity( lvisc, Mg_Si0 );
-    }
-    /* optional, compositionally distinct layer */
-    if(layer == 1){
-        if(Mg_Si1 > 0.0)
-            lvisc = add_compositional_viscosity( lvisc, Mg_Si1 );
-    }
-
-    /* viscous lid added by Rob Spaargaren */
-    if(VISCOUS_LID){
-        /* TODO: make this tanh to be smoother? */
-        if(radius > P->radius - lid_thickness){
-            lvisc += lid_log10visc;
-        }
-     }
-    
-    lvisc = get_log10_viscosity_cutoff( lvisc, P );
-
-    return lvisc;
-
-}
-#endif
-
-static PetscScalar add_compositional_viscosity( PetscScalar lvisc, PetscScalar Mg_Si ){
-
-    /* These expressions were worked out by Rob Spaargaren as part
-       of his MSc thesis (2018) */
-
-    if(Mg_Si <= 0.5)
-        lvisc += 2;
-    else if (Mg_Si <= 0.7)
-        lvisc += 2 - 1.4815 * (Mg_Si - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
-    else if (Mg_Si <= 1.0)
-        lvisc += 0.5185 * (1 - Mg_Si)/0.3; // 0.5185 = log10(3.3)
-    else if (Mg_Si <= 1.25)
-        lvisc += -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
-    else if (Mg_Si <= 1.5)
-        lvisc += -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
-    else
-        lvisc += -2;
-
-    return lvisc;
-}
-
-#if 0
-static PetscScalar get_log10_viscosity_melt( PetscScalar temperature, PetscScalar pressure, PetscInt layer, Parameters const P )
-{
-
-    /* melt viscosity is currently a constant, but this retains symmetry with the function used
-       to compute solid viscosity */
-
-    PetscScalar lvisc;
-
-    lvisc = P->eos_parameters[0]->log10visc;
-
-    lvisc = get_log10_viscosity_cutoff( lvisc, P );
-
-    return lvisc;
-
-}
-#endif
-
-#if 0
-static PetscScalar get_log10_viscosity_mix( PetscScalar meltf, PetscScalar log10visc_mel, PetscScalar log10visc_sol, Parameters const P )
-{
-    PetscScalar fwt, lvisc;
-
-    /* below needs revising to use critical melt fraction and not
-       critical solid fraction */
-    //fwt = viscosity_mix_skew( meltf );
-
-    fwt = get_viscosity_mix_no_skew( meltf, P );
-    lvisc = fwt * log10visc_mel + (1.0 - fwt) * log10visc_sol;
-
-    return lvisc;
-}
-
-static PetscScalar get_viscosity_mix_no_skew( PetscScalar meltf, Parameters const P )
-{
-    /* viscosity in mixed phase region with no skew */
-
-    PetscScalar fwt;
-
-    fwt = tanh_weight( meltf, P->phi_critical, P->phi_width );
-
-    return fwt;
-
-}
-#endif
-
-/* below is for the skewed viscosity formulation worked out by ASW */
-
-#if 0
-static PetscScalar viscosity_mix_skew( PetscScalar meltf )
-{
-    /* skewed viscosity in mixed phase region */
-
-    PetscScalar fsol, fwt, fwt2, fwt3, z;
-
-    fsol = 1.0 - meltf;
-    z = (fsol-F_THRESHOLD) / DF_TRANSITION;
-    fwt = zmap( z );
-
-    z = (1.0-F_THRESHOLD) / DF_TRANSITION;
-    fwt2 = zmap( z );
-
-    z = -F_THRESHOLD / DF_TRANSITION;
-    fwt3 = zmap( z );
-
-    fwt = -(fwt-fwt3)/(fwt3-fwt2);
-
-    return fwt;
-}
-
-static PetscScalar zmap( PetscScalar z )
-{
-    /* for skewed viscosity profile */
-
-    PetscScalar fac, fwt, zmap, shp;
-
-    shp = PHI_SKEW;
-
-    fac = PetscSqrtScalar(PetscSqr(shp*z)+1.0);
-
-    zmap = shp*PetscSqr(z)+z*fac+1.0/shp \
-        *PetscLogScalar(shp*z+fac);
-    zmap *= 0.5;
-
-    fwt = tanh_weight( zmap, 0.0, 1.0 );
-
-    return fwt;
-}
-#endif
