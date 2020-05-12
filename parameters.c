@@ -313,9 +313,12 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
   P->mixing_length = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-mixing_length",&P->mixing_length,NULL);CHKERRQ(ierr);
-  P->mixing_length_layer_radius = 0.0;
-  if ( P->mixing_length==3 ){
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_layer_radius",&P->mixing_length_layer_radius,NULL);CHKERRQ(ierr);
+
+  /* option to include a mid-mantle layer */
+  P->layer_interface_radius = -1.0; /* negative is not set */
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-layer_interface_radius",&P->layer_interface_radius,NULL);CHKERRQ(ierr);
+  if( P->layer_interface_radius > 0.0 ){
+    P->layer_interface_radius /= SC->RADIUS;
   }
 
   P->Mg_Si0 = 0.0;

@@ -4,7 +4,8 @@ static PetscErrorCode regular_mesh( Ctx * );
 //static PetscErrorCode geometric_mesh( Ctx * );
 static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
-static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
+// FIXME: TODO: REMOVE
+//static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
@@ -51,10 +52,11 @@ PetscErrorCode set_mesh( Ctx *E)
     /* volume of spherical cells, without 4*pi term */
     spherical_volume( E, M->radius_b, M->volume_s);
 
+    /* REMOVE */
     /* layer id.  0 everywhere for single layer (as determined by
        P->mixing_length), and 0 for upper and 1 for lower layer
        when P->mixing_length==3 */
-    get_layer( da_b, M->radius_b, M->layer_b, P );
+    //get_layer( da_b, M->radius_b, M->layer_b, P );
 
     /* density at staggered nodes */
     aw_density( da_s, M->radius_s, M->rho_s, P );
@@ -237,6 +239,8 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
     PetscFunctionReturn(0);
 }
 
+/* FIXME: TODO: REMOVE EVENTUALLY */
+#if 0
 /* TODO: need to have some notion of a layer ID, but should it be within mesh.c? */
 static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
 {
@@ -268,6 +272,7 @@ static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
     ierr = DMDAVecRestoreArray(da,layer,&arr_layer);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
+#endif
 
 static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parameters P )
 {

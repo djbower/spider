@@ -308,7 +308,6 @@ typedef data_RadionuclideParameters* RadionuclideParameters;
 */
 
 #define SPIDER_MAX_RADIONUCLIDES 8
-
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct {
 
@@ -337,7 +336,7 @@ typedef struct {
     PetscBool SOLID_CONVECTION_ONLY; // solid convection only
     PetscBool LIQUID_CONVECTION_ONLY; // liquid convection only
     PetscInt mixing_length;
-    PetscScalar mixing_length_layer_radius;
+    PetscScalar layer_interface_radius;
     PetscInt IC_INTERIOR;
     char ic_interior_filename[PETSC_MAX_PATH_LEN];
     PetscScalar ic_melt_pressure;

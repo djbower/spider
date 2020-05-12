@@ -9,7 +9,7 @@ static PetscScalar get_melt_fraction_truncated( PetscScalar );
 static PetscErrorCode apply_log10visc_cutoff( Parameters const, PetscScalar * );
 static PetscScalar GetModifiedMixingLength( PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar GetConstantMixingLength( PetscScalar outer_radius, PetscScalar inner_radius );
-static PetscScalar GetMixingLength( const Parameters, PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar );
+static PetscScalar GetMixingLength( const Parameters, PetscScalar, PetscScalar, PetscScalar );
 
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
@@ -368,7 +368,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
         /* always compute based on force balance and then select below */
         PetscScalar kh, crit;
         crit = 81.0 * PetscPowScalar(arr_nu[i],2);
-        mix = GetMixingLength( P, 0.5, 0.5, P->radius, P->radius*P->coresize, arr_radius_b[i]);
+        mix = GetMixingLength( P, 0.5, 0.5, arr_radius_b[i]);
         crit /= 4.0 * arr_alpha[i] * PetscPowScalar(mix,4);
 
         if( arr_gsuper[i] <= 0.0 ){
@@ -489,9 +489,25 @@ static PetscScalar GetConstantMixingLength( PetscScalar outer_radius, PetscScala
     return mix_length;
 }
 
-static PetscScalar GetMixingLength( const Parameters P, PetscScalar a, PetscScalar b, PetscScalar outer_radius, PetscScalar inner_radius, PetscScalar radius )
+static PetscScalar GetMixingLength( const Parameters P, PetscScalar a, PetscScalar b, PetscScalar radius )
 {
+    PetscScalar outer_radius, inner_radius;
     PetscScalar mix_length = 0.0;
+
+    if( P->layer_interface_radius > 0.0 ){
+        if( radius > P->layer_interface_radius ){
+            outer_radius = P->radius;
+            inner_radius = P->layer_interface_radius;
+        }
+        else{
+            outer_radius = P->layer_interface_radius;
+            inner_radius = P->radius * P->coresize;
+        }
+    }
+    else{
+        outer_radius = P->radius;
+        inner_radius = P->radius * P->coresize;
+    }
 
     if( P->mixing_length == 1){
         mix_length = GetModifiedMixingLength( 0.5, 0.5, outer_radius, inner_radius, radius );
