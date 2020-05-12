@@ -306,15 +306,6 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
     ierr = VecScale( S->dTdrs_mix, -1.0 );
     ierr = VecAXPY(S->dTdrs_mix,1.0,S->dfusdr_temp);CHKERRQ(ierr);
 
-    /* cp_mix */
-    /* basic nodes */
-    ierr = VecPointwiseDivide(S->cp_mix,S->fusion,S->fusion_temp);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->cp_mix,S->cp_mix,S->fusion_curve_temp);CHKERRQ(ierr);
-
-    /* staggered nodes */
-    ierr = VecPointwiseDivide(S->cp_mix_s,S->fusion_s,S->fusion_temp_s);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->cp_mix_s,S->cp_mix_s,S->fusion_curve_temp_s);CHKERRQ(ierr);
-
     PetscFunctionReturn(0);
 }
 
