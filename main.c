@@ -29,23 +29,28 @@ int main(int argc, char ** argv)
 
   ierr = PetscInitialize(&argc,&argv,NULL,help);CHKERRQ(ierr);
 
-/* @psanan: this block has a problem.  I don't think that the HasName is correctly detecting
-   that an options_file has been specified */
-#if 0
-  /* If no options file is specified, use a default */
+  ierr = PrintSPIDERHeader();CHKERRQ(ierr);
+
+  /* Print options file(s) being used. If no options file is specified, use a default */
   {
     PetscBool options_file_provided = PETSC_FALSE;
-    char default_options_filename[PETSC_MAX_PATH_LEN] = "tests/opts/blackbody.opts";
+    char      default_options_filename[PETSC_MAX_PATH_LEN] = "tests/opts/blackbody.opts";
 
-    ierr = PetscOptionsHasName(NULL,NULL,"-options_files",&options_file_provided);CHKERRQ(ierr);
+    for (int i=0; i<argc; ++i) {
+      PetscBool detected;
+
+      ierr = PetscStrcmp(argv[i],"-options_file",&detected);CHKERRQ(ierr);
+      if (detected && i < argc-1) {
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"Using options file: %s\n",argv[i+1]);CHKERRQ(ierr);
+      }
+      options_file_provided = options_file_provided || detected;
+    }
     if (!options_file_provided) {
       ierr = MakeRelativeToSourcePathAbsolute(default_options_filename);CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Using default options file: %s\n",default_options_filename);CHKERRQ(ierr);
       ierr = PetscOptionsInsertFile(PETSC_COMM_WORLD,NULL,default_options_filename,PETSC_TRUE);CHKERRQ(ierr);
     }
   }
-#endif
-
-  ierr = PrintSPIDERHeader();CHKERRQ(ierr);
 
   /* We don't want to take the time to debug things in MPI (though the
      problems are likely minor), so don't allow multi-rank runs */
