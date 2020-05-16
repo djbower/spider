@@ -100,8 +100,6 @@
 # [2] is constant, i.e. 1/4 x mantle depth, which is the mean
 #     of conventional theory.  This can help to prevent a rigid
 #     lid from forming at the surface
-# [3] is conventional as [1] above, but additionally allows you to
-#      specify a mid-mantle interface
 
 -mixing_length 1
 #-mixing_length_layer_radius 0.0 # non-dimensional radius

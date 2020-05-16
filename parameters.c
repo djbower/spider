@@ -274,6 +274,10 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   /* Grid parameters */
   P->numpts_b = 200;
   ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_b,NULL);CHKERRQ(ierr);
+  if( P->numpts_b<2 ){
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"numpts_b must >= 2 (currently %d)",P->numpts_b);
+  }
+
   P->numpts_s = P->numpts_b - 1;
 
   /* RollBack and PostStep options */
@@ -311,8 +315,20 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetBool(NULL,NULL,"-MIXING",&P->MIXING,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsGetBool(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
 
+  /* radius of planet (m) */
+  P->radius = 6371000.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-radius",&P->radius,NULL);CHKERRQ(ierr);
+  P->radius /= SC->RADIUS;
+
+  /* core size (non-dimensional) according to physical radius */
+  P->coresize = 0.55;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-coresize",&P->coresize,NULL);CHKERRQ(ierr);
+
   P->mixing_length = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-mixing_length",&P->mixing_length,NULL);CHKERRQ(ierr);
+  if( (P->mixing_length<0 || P->mixing_length>2) ){
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"mixing_length must be 1 or 2, (not %d)",P->mixing_length);
+  }
 
   /* See fig. 2 in Kamata (2018), JGR */
   P->mixing_length_a = 0.5; /* conventional mixing length theory */
@@ -322,8 +338,11 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
   /* option to include a mid-mantle layer */
   /* this is non-dimensional fractional radius, as with coresize */
-  P->layer_interface_radius = -1.0; /* negative is not set */
+  P->layer_interface_radius = P->coresize; /* if set to P->coresize, then a single layer is assumed (default) */
   ierr = PetscOptionsGetScalar(NULL,NULL,"-layer_interface_radius",&P->layer_interface_radius,NULL);CHKERRQ(ierr);
+  if( (P->layer_interface_radius < P->coresize || P->layer_interface_radius > 1.0) ){
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"layer_interface_radius %f must be greater than coresize and less than 1.0",P->layer_interface_radius);
+  }
 
   P->Mg_Si0 = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si0",&P->Mg_Si0,NULL);CHKERRQ(ierr);
@@ -383,15 +402,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   if( P->ic_core_entropy > 0.0 ){
     P->ic_core_entropy /= SC->ENTROPY;
   }
-
-  /* radius of planet (m) */
-  P->radius = 6371000.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-radius",&P->radius,NULL);CHKERRQ(ierr);
-  P->radius /= SC->RADIUS;
-
-  /* core size (non-dimensional) */
-  P->coresize = 0.55;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-coresize",&P->coresize,NULL);CHKERRQ(ierr);
 
   /* surface density (kg/m^3) for Adams-Williamson EOS for pressure */
   P->rhos = 4078.95095544;

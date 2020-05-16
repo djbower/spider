@@ -494,21 +494,16 @@ static PetscScalar GetMixingLength( const Parameters P, PetscScalar radius )
     PetscScalar outer_radius, inner_radius;
     PetscScalar mix_length = 0.0;
 
-    /* for two layers, find upper and lower radius */
-    if( P->layer_interface_radius > 0.0 ){
-        if( radius > P->radius * P->layer_interface_radius ){
-            /* TODO: should check in parameters.c that P->radius > P->layer_interface_radius > P->radius * P->coresize */
-            outer_radius = P->radius;
-            inner_radius = P->radius * P->layer_interface_radius;
-        }
-        else{
-            outer_radius = P->radius * P->layer_interface_radius;
-            inner_radius = P->radius * P->coresize;
-        }
-    }
-    /* else for single layer */
-    else{
+    /* for a single layer, P->layer_interface_radius = P->coresize (parameters.c),
+       enabling this single expression to work for both a single and double
+       layered mantle */
+
+    if( radius > P->radius * P->layer_interface_radius ){
         outer_radius = P->radius;
+        inner_radius = P->radius * P->layer_interface_radius;
+    }
+    else{
+        outer_radius = P->radius * P->layer_interface_radius;
         inner_radius = P->radius * P->coresize;
     }
 
