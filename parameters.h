@@ -336,6 +336,8 @@ typedef struct {
     PetscBool SOLID_CONVECTION_ONLY; // solid convection only
     PetscBool LIQUID_CONVECTION_ONLY; // liquid convection only
     PetscInt mixing_length;
+    PetscScalar mixing_length_a;
+    PetscScalar mixing_length_b;
     PetscScalar layer_interface_radius;
     PetscInt IC_INTERIOR;
     char ic_interior_filename[PETSC_MAX_PATH_LEN];

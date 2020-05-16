@@ -314,12 +314,16 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->mixing_length = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-mixing_length",&P->mixing_length,NULL);CHKERRQ(ierr);
 
+  /* See fig. 2 in Kamata (2018), JGR */
+  P->mixing_length_a = 0.5; /* conventional mixing length theory */
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_peak_location",&P->mixing_length_a,NULL);CHKERRQ(ierr);
+  P->mixing_length_b = 0.5; /* conventional mixing length theory */
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_peak_amplitude",&P->mixing_length_b,NULL);CHKERRQ(ierr);
+
   /* option to include a mid-mantle layer */
+  /* this is non-dimensional fractional radius, as with coresize */
   P->layer_interface_radius = -1.0; /* negative is not set */
   ierr = PetscOptionsGetScalar(NULL,NULL,"-layer_interface_radius",&P->layer_interface_radius,NULL);CHKERRQ(ierr);
-  if( P->layer_interface_radius > 0.0 ){
-    P->layer_interface_radius /= SC->RADIUS;
-  }
 
   P->Mg_Si0 = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si0",&P->Mg_Si0,NULL);CHKERRQ(ierr);

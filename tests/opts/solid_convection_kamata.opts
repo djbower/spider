@@ -116,8 +116,13 @@
 #      specify a mid-mantle interface
 
 -mixing_length 1
-#-mixing_length_peak_location 0.5
-#-mixing_length_peak_amplitude 0.5
+-mixing_length_peak_location 0.75;
+-mixing_length_peak_amplitude 0.45;
+#-mixing_length_layer_radius 0.7 # non-dimensional radius
+
+# below is non-dimensional fractional radius
+# so non-dimensional radius = layer_interface_radius * P->radius
+#-layer_interface_radius 0.7
 
 # physical parameters
 
