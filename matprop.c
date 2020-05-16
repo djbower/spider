@@ -496,7 +496,7 @@ static PetscScalar GetMixingLength( const Parameters P, PetscScalar radius )
 
     /* for two layers, find upper and lower radius */
     if( P->layer_interface_radius > 0.0 ){
-        if( radius > P->layer_interface_radius ){
+        if( radius > P->radius * P->layer_interface_radius ){
             /* TODO: should check in parameters.c that P->radius > P->layer_interface_radius > P->radius * P->coresize */
             outer_radius = P->radius;
             inner_radius = P->radius * P->layer_interface_radius;
