@@ -326,3 +326,25 @@ def solid_convection_ic(rootDir, tol) :
   t.setWalltime(1) # minutes
   t.setUseSandbox()
   return(t)
+
+def solid_convection_two_layer(rootDir, tol) :
+  thisDir = os.path.split(os.path.abspath(__file__))[0]
+  testName = "solid_convection_two_layer"
+  ranks = 1
+  launch = [\
+          os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','solid_convection_two_layer.opts') + ' -nstepsmacro 10',\
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/100025126.json'), # TODO: last timestep time may change?
+          ]
+
+  expectedFile = os.path.join(thisDir,'expected_output','expected_solid_convection_two_layer.txt')
+
+  def comparefunc(t) :
+      t.compareFloatingPointRelative(re.escape('scaling: '), tol)
+      t.compareFloatingPointRelative(re.escape('val: '),    tol)
+
+  t = pthtest.Test(testName,ranks,launch,expectedFile)
+  t.setComparisonFile('100025126.txt')
+  t.setVerifyMethod(comparefunc)
+  t.setWalltime(1) # minutes
+  t.setUseSandbox()
+  return(t)

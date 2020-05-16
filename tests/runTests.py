@@ -65,8 +65,9 @@ def main() :
         reaction_zerosol(rootDir, tol),    \
         socrates_p_restart(rootDir, tol),    \
         atmosphere_radionuclides(rootDir, tol),   \
-        solid_convection_ic(rootDir, tol),
-        solid_convection(rootDir, tol)
+        solid_convection_ic(rootDir, tol),    \
+        solid_convection(rootDir, tol),    \
+        solid_convection_two_layer(rootDir, tol)
     ]
 
     # Run tests
