@@ -351,32 +351,31 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetBool(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
 
   /* radius of planet (m) */
-  P->radius = 6371000.0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-radius",&P->radius,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetPositiveScalar("-radius",&P->radius,6371000.0,NULL);CHKERRQ(ierr); // m
   P->radius /= SC->RADIUS;
 
-  /* core size (non-dimensional) according to physical radius */
-  P->coresize = 0.55;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-coresize",&P->coresize,NULL);CHKERRQ(ierr);
+  /* core radius relative to physical radius i.e. radius */
+  /* therefore, scaled (code) core radius is P->coresize * P->radius
+     and actual physical core radius is P->coresize * P->radius * SC->RADIUS */
+  ierr = PetscOptionsGetPositiveScalar("-coresize",&P->coresize,0.55,NULL);CHKERRQ(ierr); // Earth core radius
 
-  P->mixing_length = 1;
-  ierr = PetscOptionsGetInt(NULL,NULL,"-mixing_length",&P->mixing_length,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetPositiveInt("-mixing_length",&P->mixing_length,1,NULL);CHKERRQ(ierr);
   if( (P->mixing_length<0 || P->mixing_length>2) ){
-      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"mixing_length must be 1 or 2, (not %d)",P->mixing_length);
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-mixing_length must be 1 or 2, (not %d)",P->mixing_length);
   }
+  /* See fig. 2 in Kamata (2018), JGR
+     default values are for conventional mixing length theory
+     values are only used when -mixing_length 1 */
+  ierr = PetscOptionsGetPositiveScalar("-mixing_length_peak_location",&P->mixing_length_a,0.5,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetPositiveScalar("-mixing_length_peak_amplitude",&P->mixing_length_b,0.5,NULL);CHKERRQ(ierr);
 
-  /* See fig. 2 in Kamata (2018), JGR */
-  P->mixing_length_a = 0.5; /* conventional mixing length theory */
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_peak_location",&P->mixing_length_a,NULL);CHKERRQ(ierr);
-  P->mixing_length_b = 0.5; /* conventional mixing length theory */
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-mixing_length_peak_amplitude",&P->mixing_length_b,NULL);CHKERRQ(ierr);
-
-  /* option to include a mid-mantle layer */
-  /* this is non-dimensional fractional radius, as with coresize */
-  P->layer_interface_radius = P->coresize; /* if set to P->coresize, then a single layer is assumed (default) */
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-layer_interface_radius",&P->layer_interface_radius,NULL);CHKERRQ(ierr);
+  /* option to include a mid-mantle layer
+     this is non-dimensional fractional radius, as with coresize
+     if set to P->coresize, then a single layer is recovered (default)
+     note this only influences the radial mixing length (not viscosity etc.) */
+  ierr = PetscOptionsGetPositiveScalar("-layer_interface_radius",&P->layer_interface_radius,P->coresize,NULL);CHKERRQ(ierr);
   if( (P->layer_interface_radius < P->coresize || P->layer_interface_radius > 1.0) ){
-      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"layer_interface_radius %f must be greater than coresize and less than 1.0",P->layer_interface_radius);
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-layer_interface_radius %f must be greater than -coresize and less than 1.0",P->layer_interface_radius);
   }
 
   P->Mg_Si0 = 0.0;
