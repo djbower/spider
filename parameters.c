@@ -17,8 +17,8 @@ static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
 static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, ScalingConstants );
 static PetscErrorCode PetscScalarCheckPositive( PetscScalar, const char * );
 static PetscErrorCode PetscIntCheckPositive( PetscInt, const char * );
-static PetscErrorCode PetscOptionsGetPositiveScalar( const char *, PetscScalar *, PetscScalar );
-static PetscErrorCode PetscOptionsGetPositiveInt( const char *, PetscInt *, PetscInt );
+static PetscErrorCode PetscOptionsGetPositiveScalar( const char *, PetscScalar *, PetscScalar, PetscBool * );
+static PetscErrorCode PetscOptionsGetPositiveInt( const char *, PetscInt *, PetscInt, PetscBool * );
 
 /* helper functions for parsing parameters */
 
@@ -40,20 +40,20 @@ static PetscErrorCode PetscIntCheckPositive( PetscInt value, const char * value_
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode PetscOptionsGetPositiveScalar( const char *value_string, PetscScalar *value_ptr, PetscScalar value_default )
+static PetscErrorCode PetscOptionsGetPositiveScalar( const char *value_string, PetscScalar *value_ptr, PetscScalar value_default, PetscBool *set )
 {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
 
     *value_ptr = value_default;
-    ierr = PetscOptionsGetScalar(NULL,NULL,value_string,value_ptr,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetScalar(NULL,NULL,value_string,value_ptr,set);CHKERRQ(ierr);
     ierr = PetscScalarCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode PetscOptionsGetPositiveInt( const char *value_string, PetscInt *value_ptr, PetscInt value_default )
+static PetscErrorCode PetscOptionsGetPositiveInt( const char *value_string, PetscInt *value_ptr, PetscInt value_default, PetscBool *set )
 {
     PetscErrorCode ierr;
 
@@ -147,11 +147,11 @@ static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
 
     PetscFunctionBeginUser;
 
-    ierr = PetscOptionsGetPositiveScalar("-radius0",&RADIUS0,6371000.0);CHKERRQ(ierr); // m
-    ierr = PetscOptionsGetPositiveScalar("-entropy0",&ENTROPY0,2993.025100070677);CHKERRQ(ierr); // J/kg/K
-    ierr = PetscOptionsGetPositiveScalar("-temperature0",&TEMPERATURE0,4033.6070755893948);CHKERRQ(ierr); // K
-    ierr = PetscOptionsGetPositiveScalar("-density0",&DENSITY0,4613.109568155063);CHKERRQ(ierr); // kg/m^3
-    ierr = PetscOptionsGetPositiveScalar("-volatile0",&VOLATILE0,1.0);CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar("-radius0",&RADIUS0,6371000.0,NULL);CHKERRQ(ierr); // m
+    ierr = PetscOptionsGetPositiveScalar("-entropy0",&ENTROPY0,2993.025100070677,NULL);CHKERRQ(ierr); // J/kg/K
+    ierr = PetscOptionsGetPositiveScalar("-temperature0",&TEMPERATURE0,4033.6070755893948,NULL);CHKERRQ(ierr); // K
+    ierr = PetscOptionsGetPositiveScalar("-density0",&DENSITY0,4613.109568155063,NULL);CHKERRQ(ierr); // kg/m^3
+    ierr = PetscOptionsGetPositiveScalar("-volatile0",&VOLATILE0,1.0,NULL);CHKERRQ(ierr);
     ierr = ScalingConstantsSet(SC,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -161,29 +161,28 @@ static PetscErrorCode RadionuclideParametersSetFromOptions(RadionuclideParameter
 {
     PetscErrorCode ierr;
     char           buf[1024]; /* max size */
-    PetscBool      set;
 
     PetscFunctionBeginUser;
 
     /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
        if they are missing. Note that this code has a lot of duplication */
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_t0");CHKERRQ(ierr);
-    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->t0,0.0);CHKERRQ(ierr); // years
+    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->t0,0.0,NULL);CHKERRQ(ierr); // years
     Rp->t0 /= SC->TIMEYRS;
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_abundance");CHKERRQ(ierr);
-    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->abundance,0.0);CHKERRQ(ierr); // fractional
+    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->abundance,0.0,NULL);CHKERRQ(ierr); // fractional
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_concentration");CHKERRQ(ierr);
-    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->concentration,0.0);CHKERRQ(ierr); // ppmw
+    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->concentration,0.0,NULL);CHKERRQ(ierr); // ppmw
     Rp->concentration *= 1.0E-6; // to mass fraction
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_heat_production");CHKERRQ(ierr);
-    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->heat_production,0.0);CHKERRQ(ierr); // W/kg
+    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->heat_production,0.0,NULL);CHKERRQ(ierr); // W/kg
     Rp->heat_production /= SC->HEATGEN;
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_half_life");CHKERRQ(ierr);
-    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->half_life,0.0);CHKERRQ(ierr); // years /* TODO: undefined problem with zero? */
+    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->half_life,0.0,NULL);CHKERRQ(ierr); // years /* TODO: undefined problem with zero? */
     Rp->half_life /= SC->TIMEYRS;
 
     PetscFunctionReturn(0);
@@ -199,85 +198,65 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
        if they are missing. Note that this code has a lot of duplication */
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_total_abundance");CHKERRQ(ierr);
-    vp->initial_total_abundance = 0.0;
-    ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_total_abundance,&set);CHKERRQ(ierr);
-    if( vp->initial_total_abundance < 0.0 ){
-        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",buf,vp->initial_total_abundance);
-    }
-
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->initial_total_abundance,0.0,NULL);CHKERRQ(ierr);
     vp->initial_total_abundance /= 1.0E6 * SC->VOLATILE;
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_atmos_pressure");CHKERRQ(ierr);
-    vp->initial_atmos_pressure = 0.0;
-    ierr = PetscOptionsGetScalar(NULL,NULL,buf, &vp->initial_atmos_pressure,&set);CHKERRQ(ierr);
-    if( vp->initial_atmos_pressure < 0.0 ){
-        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",buf,vp->initial_atmos_pressure);
-    }
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->initial_atmos_pressure,0.0,NULL);CHKERRQ(ierr);
     vp->initial_atmos_pressure /= SC->PRESSURE;
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_kdist");CHKERRQ(ierr);
-    vp->kdist = 0.0;
-    ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kdist,&set);CHKERRQ(ierr);
-    if( vp->kdist < 0.0 ){
-        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",buf,vp->kdist);
-    }
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->kdist,0.0,NULL);CHKERRQ(ierr);
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_kabs");CHKERRQ(ierr);
-    vp->kabs = 0.0;
-    ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->kabs,&set);CHKERRQ(ierr);
-    if( vp->kabs < 0.0 ){
-        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",buf,vp->kabs);
-    }
-
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->kabs,0.0,NULL);CHKERRQ(ierr);
     vp->kabs *= SC->DENSITY * SC->RADIUS;
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_SOLUBILITY");CHKERRQ(ierr);
-  vp->SOLUBILITY = 1; // Modified Henry's law
-  ierr = PetscOptionsGetInt(NULL,NULL,buf,&vp->SOLUBILITY,&set);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_SOLUBILITY");CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveInt(buf,&vp->SOLUBILITY,1,NULL);CHKERRQ(ierr); // Modified Henry's law
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry_pow");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry_pow,&set);CHKERRQ(ierr);
-  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->henry,&set);CHKERRQ(ierr);
-  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
-  /* ensure that V->dxdp calculation does not return NaN when vp->henry is zero */
-  if(vp->henry == 0){
-    vp->henry_pow = 1.0;
-  }
-  vp->henry /= 1.0E6 * SC->VOLATILE * PetscPowScalar(SC->PRESSURE, -1.0/vp->henry_pow);
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry_pow");CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->henry_pow,1.0,NULL);CHKERRQ(ierr);
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
-  vp->jeans_value = 0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,&set);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry");CHKERRQ(ierr);
+    /* default is no dissolved volatile content */
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->henry,0.0,NULL);CHKERRQ(ierr);
+    /* ensure that V->dxdp calculation does not return NaN when vp->henry is zero */
+    if(vp->henry == 0){
+      vp->henry_pow = 1.0;
+    }
+    vp->henry /= 1.0E6 * SC->VOLATILE * PetscPowScalar(SC->PRESSURE, -1.0/vp->henry_pow);
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_R_thermal_escape_value");CHKERRQ(ierr);
-  vp->R_thermal_escape_value = 0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->R_thermal_escape_value,&set);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->jeans_value,0.0,NULL);CHKERRQ(ierr); // TODO: check units and scaling
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_constant_escape_value");CHKERRQ(ierr);
-  vp->constant_escape_value = 0;
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->constant_escape_value,&set);CHKERRQ(ierr);
-  vp->constant_escape_value *= SC->TIME / (SC->VOLATILE * SC->MASS);
-  /* recall that the code ignores the 4.0*pi prefactor, and it is reintroduced for output only */
-  vp->constant_escape_value /= 4.0 * PETSC_PI;
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_R_thermal_escape_value");CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->R_thermal_escape_value,0.0,NULL);CHKERRQ(ierr); // TODO: check units and scaling
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->molar_mass,&set);CHKERRQ(ierr);
-  if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",buf);
-  /* in principle, we could fully non-dimensionalise using Avogadro's constant, but then
-     the per-particle value would be 23 orders of magnitude less than this value */
-  vp->molar_mass /= SC->MASS;
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_constant_escape_value");CHKERRQ(ierr);
+    /* TODO: in principle, could have negative escape to add atmospheric material (e.g. from an external source) */
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->constant_escape_value,0.0,NULL);CHKERRQ(ierr); // TODO: check units and sclaing
+    vp->constant_escape_value *= SC->TIME / (SC->VOLATILE * SC->MASS);
+    /* recall that the code ignores the 4.0*pi prefactor, and it is reintroduced for output only */
+    vp->constant_escape_value /= 4.0 * PETSC_PI;
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_cross_section");CHKERRQ(ierr);
-  vp->cross_section = 1.0E-18; // m^2, Johnson et al. (2015), N2+N2 collisions
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->cross_section,NULL);CHKERRQ(ierr);
-  vp->cross_section /= SC->AREA;
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->molar_mass,0.0,&set);CHKERRQ(ierr);
+    /* there is no way to pick a suitable default, so force the user to specify */
+    if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument: %s",buf);
+    /* in principle, we could fully non-dimensionalise using Avogadro's constant, but then
+       the per-particle value would be 23 orders of magnitude less than this value */
+    vp->molar_mass /= SC->MASS;
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_poststep_change");CHKERRQ(ierr);
-  vp->poststep_change = -1; // fractional (negative value is OFF)
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->poststep_change,&set);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_cross_section");CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->cross_section,1.0E-18,NULL);CHKERRQ(ierr); // m^2, Johnson et al. (2015), N2+N2 collisions
+    vp->cross_section /= SC->AREA;
+
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_poststep_change");CHKERRQ(ierr);
+    vp->poststep_change = -1; // fractional (negative value is OFF)
+    ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->poststep_change,&set);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
 }
 
 /*
