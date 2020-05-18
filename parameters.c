@@ -129,38 +129,54 @@ static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
 
 static PetscErrorCode RadionuclideParametersSetFromOptions(RadionuclideParameters Rp, const ScalingConstants SC)
 {
-  PetscErrorCode ierr;
-  char           buf[1024]; /* max size */
-  PetscBool      set;
+    PetscErrorCode ierr;
+    char           buf[1024]; /* max size */
+    PetscBool      set;
 
-  PetscFunctionBeginUser;
-  /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
-     if they are missing. Note that this code has a lot of duplication */
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_t0");CHKERRQ(ierr);
-  Rp->t0 = 0.0; // years
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &Rp->t0,&set);CHKERRQ(ierr);
-  Rp->t0 /= SC->TIMEYRS;
+    PetscFunctionBeginUser;
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_abundance");CHKERRQ(ierr);
-  Rp->abundance = 0.0; // fractional
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf, &Rp->abundance,&set);CHKERRQ(ierr);
+    /* Accept -prefix_YYY to populate vp->YYY. Most are required and an error is thrown
+       if they are missing. Note that this code has a lot of duplication */
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_t0");CHKERRQ(ierr);
+    Rp->t0 = 0.0; // years
+    ierr = PetscOptionsGetScalar(NULL,NULL,buf, &Rp->t0,&set);CHKERRQ(ierr);
+    if( Rp->t0 < 0.0 ){
+        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",buf,Rp->t0);
+    }
+    Rp->t0 /= SC->TIMEYRS;
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_concentration");CHKERRQ(ierr);
-  Rp->concentration = 0.0; // ppmw
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Rp->concentration,&set);CHKERRQ(ierr);
-  Rp->concentration *= 1.0E-6; // to mass fraction
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_abundance");CHKERRQ(ierr);
+    Rp->abundance = 0.0; // fractional
+    ierr = PetscOptionsGetScalar(NULL,NULL,buf, &Rp->abundance,&set);CHKERRQ(ierr);
+    if( Rp->abundance < 0.0 ){
+        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",buf,Rp->abundance);
+    }
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_heat_production");CHKERRQ(ierr);
-  Rp->heat_production = 0.0; // W/kg
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Rp->heat_production,&set);CHKERRQ(ierr);
-  Rp->heat_production /= SC->HEATGEN;
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_concentration");CHKERRQ(ierr);
+    Rp->concentration = 0.0; // ppmw
+    ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Rp->concentration,&set);CHKERRQ(ierr);
+    if( Rp->concentration < 0.0 ){
+        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",buf,Rp->concentration);
+    }
+    Rp->concentration *= 1.0E-6; // to mass fraction
 
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_half_life");CHKERRQ(ierr);
-  Rp->half_life = 0.0; // years /* TODO: undefined problem with zero? */
-  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Rp->half_life,&set);CHKERRQ(ierr);
-  Rp->half_life /= SC->TIMEYRS;
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_heat_production");CHKERRQ(ierr);
+    Rp->heat_production = 0.0; // W/kg
+    ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Rp->heat_production,&set);CHKERRQ(ierr);
+    if( Rp->heat_production < 0.0 ){
+        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",buf,Rp->heat_production);
+    }
+    Rp->heat_production /= SC->HEATGEN;
 
-  PetscFunctionReturn(0);
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_half_life");CHKERRQ(ierr);
+    Rp->half_life = 0.0; // years /* TODO: undefined problem with zero? */
+    ierr = PetscOptionsGetScalar(NULL,NULL,buf,&Rp->half_life,&set);CHKERRQ(ierr);
+    if( Rp->half_life < 0.0 ){
+        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",buf,Rp->half_life);
+    }
+    Rp->half_life /= SC->TIMEYRS;
+
+    PetscFunctionReturn(0);
 }
 
 static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, const ScalingConstants SC)
