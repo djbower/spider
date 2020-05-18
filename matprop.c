@@ -514,9 +514,8 @@ static PetscScalar GetMixingLength( const Parameters P, PetscScalar radius )
         mix_length = GetConstantMixingLength( outer_radius, inner_radius );
     }
 
-    /* FIXME: mix_length will return zero if P->mixing_length is not 1 or 2! */
-    /* FIXME: add else and raise error (or deal with this scenario in parameters.c */
+    /* parameters.c ensures that P->mixing_length must be 1 or 2, so we cannot
+       fall outside this if statement */
 
     return mix_length;
-
 }

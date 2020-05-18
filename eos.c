@@ -1755,16 +1755,11 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
 
     eos_eval->P = P;
     eos_eval->S = S;
-    /* T passes blackbody test */
     ierr = GetTwoPhaseTemperature( eos_composite, P, S, &eos_eval->T );CHKERRQ(ierr);
-    /* Cp passes blackbody test */
     ierr = GetTwoPhaseCp( eos_composite, P, S, &eos_eval->Cp );CHKERRQ(ierr);
-    /* Rho passes blackbody test */
     ierr = GetTwoPhaseRho( eos_composite, P, S, &eos_eval->rho );CHKERRQ(ierr);
-    /* Alpha passes blackbody test */
     ierr = GetTwoPhaseAlpha( eos_composite, P, S, &eos_eval->alpha );CHKERRQ(ierr);
     ierr = GetTwoPhasedTdPs( eos_composite, P, S, &eos_eval->dTdPs );CHKERRQ(ierr);
-    /* Conductivity passes blackbody test */
     ierr = GetTwoPhaseConductivity( eos_composite, P, S, &eos_eval->cond );CHKERRQ(ierr);
     ierr = GetTwoPhaseViscosity( eos_composite, P, S, &eos_eval->log10visc );CHKERRQ(ierr);
     /* lookup does not know about these quantities, since they are not used by
