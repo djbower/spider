@@ -98,14 +98,30 @@ static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
 
     PetscScalar RADIUS0 = 6371000.0; // m
     ierr = PetscOptionsGetScalar(NULL,NULL,"-radius0",&RADIUS0,NULL);CHKERRQ(ierr);
+    if( RADIUS0 < 0.0 ){
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-radius0 must be positive (currently %f)",RADIUS0);
+    }
     PetscScalar ENTROPY0 = 2993.025100070677; // J/kg/K
     ierr = PetscOptionsGetScalar(NULL,NULL,"-entropy0",&ENTROPY0,NULL);CHKERRQ(ierr);
+    if( ENTROPY0 < 0.0 ){
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-entropy0 must be positive (currently %f)",ENTROPY0);
+    }
     PetscScalar TEMPERATURE0 = 4033.6070755893948; // K
     ierr = PetscOptionsGetScalar(NULL,NULL,"-temperature0",&TEMPERATURE0,NULL);CHKERRQ(ierr);
+    if( TEMPERATURE0 < 0.0 ){
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-temperature0 must be positive (currently %f)",TEMPERATURE0);
+    }
     PetscScalar DENSITY0 = 4613.109568155063; // kg/m^3
     ierr = PetscOptionsGetScalar(NULL,NULL,"-density0",&DENSITY0,NULL);CHKERRQ(ierr);
+    if( DENSITY0 < 0.0 ){
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-density0 must be positive (currently %f)",DENSITY0);
+    }
     PetscScalar VOLATILE0 = 1.0;
     ierr = PetscOptionsGetScalar(NULL,NULL,"-volatile0",&VOLATILE0,NULL);CHKERRQ(ierr);
+    if( VOLATILE0 < 0.0 ){
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-volatile0 must be positive (currently %f)",VOLATILE0);
+    }
+
     ierr = ScalingConstantsSet(SC,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
