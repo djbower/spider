@@ -1645,6 +1645,7 @@ static PetscErrorCode GetTwoPhasedTdPs( const EosComposite eos_composite, PetscS
     PetscFunctionBeginUser;
 
     /* TODO: Ask ASW which approach is most valid */
+    //SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"GetTwoPhasedTdPs() is not set up");
 
     PetscFunctionReturn(0);
 }

@@ -248,7 +248,10 @@ PetscErrorCode set_matprop_basic( Ctx *E )
               SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
               fwtl = arr_fwtl[i]; // for smoothing
               arr_rho[i] = combine_matprop( fwtl, E->eos_evals[0].rho, E->eos_evals[2].rho );
-              arr_dTdrs[i] = combine_matprop( fwtl, E->eos_evals[0].dTdPs * arr_dPdr_b[i], E->eos_evals[2].dTdPs * arr_dPdr_b[i] );
+              /* TODO: below is needed because dTdPs is not yet computed in composite structure (to ask ASW) */
+              arr_dTdrs[i] = combine_matprop( fwtl, E->eos_evals[0].dTdPs * arr_dPdr_b[i], arr_dTdrs_mix[i] );
+              /* above will eventually be replaced with the below */
+              //arr_dTdrs[i] = combine_matprop( fwtl, E->eos_evals[0].dTdPs * arr_dPdr_b[i], E->eos_evals[2].dTdPs * arr_dPdr_b[i] );
               arr_cp[i] = combine_matprop( fwtl, E->eos_evals[0].Cp, E->eos_evals[2].Cp );
               arr_temp[i] = combine_matprop( fwtl, E->eos_evals[0].T, E->eos_evals[2].T );
               arr_alpha[i] = combine_matprop( fwtl, E->eos_evals[0].alpha, E->eos_evals[2].alpha );
@@ -260,7 +263,9 @@ PetscErrorCode set_matprop_basic( Ctx *E )
               SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
               fwts = arr_fwts[i]; // for smoothing
               arr_rho[i] = combine_matprop( fwts, E->eos_evals[2].rho, E->eos_evals[1].rho );
-              arr_dTdrs[i] = combine_matprop( fwts, E->eos_evals[2].dTdPs * arr_dPdr_b[i], E->eos_evals[1].dTdPs * arr_dPdr_b[i] );
+              arr_dTdrs[i] = combine_matprop( fwts, arr_dTdrs_mix[i], E->eos_evals[1].dTdPs * arr_dPdr_b[i] );
+              /* above will eventually be replaced with the below */
+              //arr_dTdrs[i] = combine_matprop( fwts, E->eos_evals[2].dTdPs * arr_dPdr_b[i], E->eos_evals[1].dTdPs * arr_dPdr_b[i] );
               arr_cp[i] = combine_matprop( fwts, E->eos_evals[2].Cp, E->eos_evals[1].Cp );
               arr_temp[i] = combine_matprop( fwts, E->eos_evals[2].T, E->eos_evals[1].T );
               arr_alpha[i] = combine_matprop( fwts, E->eos_evals[2].alpha, E->eos_evals[1].alpha );
