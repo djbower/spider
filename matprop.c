@@ -94,9 +94,6 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_pres_s, *arr_S_s, *arr_phi_s, *arr_fwtl_s, *arr_fwts_s;
     PetscScalar       fwtl, fwts;
-    PetscScalar       rho_sol, temp_sol, cp_sol;
-    PetscScalar       rho_mel, temp_mel, cp_mel;
-    PetscScalar       rho_mix, temp_mix, cp_mix;
 
     PetscFunctionBeginUser;
 
@@ -172,9 +169,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_fwtl, *arr_fwts;
     PetscScalar       fwtl, fwts, mix;
-    PetscScalar       rho_sol, dTdrs_sol, cp_sol, temp_sol, alpha_sol, cond_sol, log10visc_sol;
-    PetscScalar       rho_mel, dTdrs_mel, cp_mel, temp_mel, alpha_mel, cond_mel, log10visc_mel;
-    PetscScalar       rho_mix, dTdrs_mix, cp_mix, temp_mix, alpha_mix, cond_mix, log10visc_mix;
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
