@@ -114,53 +114,37 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 
     for(i=ilo_s; i<ihi_s; ++i){
 
-        /* solid phase */
-        SetEosEval( P->eos_parameters[1], arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );
-        rho_sol = E->eos_evals[1].rho;
-        temp_sol = E->eos_evals[1].T;
-        cp_sol = E->eos_evals[1].Cp;
+        /* single phase */
+        /* TODO: remove SOLID_CONVECTION_ONLY flag and make this work when only one
+           phase is included */
+        if( P->n_phases==1 || P->SOLID_CONVECTION_ONLY ){
+            /* FIXME: indices of 1 (presumably) only work when 2 phases are active */
+            SetEosEval( P->eos_parameters[1], arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );
+            arr_rho_s[i] = E->eos_evals[1].rho;
+            arr_temp_s[i] = E->eos_evals[1].T;
+            arr_cp_s[i] = E->eos_evals[1].Cp;
+        }   
 
-        /* melt phase */
-        SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );
-        rho_mel = E->eos_evals[0].rho;
-        temp_mel = E->eos_evals[0].T;
-        cp_mel = E->eos_evals[0].Cp;
-
-        /* mixed phase */
-        SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[2] );
-        rho_mix = E->eos_evals[2].rho;
-        temp_mix = E->eos_evals[2].T;
-        cp_mix = E->eos_evals[2].Cp;
-
-        /* FIXME: _ONLY flags below can eventually be replaced, since the number
-           of phases are now known from the user input */
-
-        if(P->SOLID_CONVECTION_ONLY){
-            arr_rho_s[i] = rho_sol;
-            arr_temp_s[i] = temp_sol;
-            arr_cp_s[i] = cp_sol;
-        }
-        else if(P->LIQUID_CONVECTION_ONLY){
-            arr_rho_s[i] = rho_mel;
-            arr_temp_s[i] = temp_mel;
-            arr_cp_s[i] = cp_mel;
-        }
         else{
-            /* FIXME: smoothing choices should be more elegant */
+            /* mixed phase */
+            SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[2] );
             if (arr_phi_s[i] > 0.5){
+                /* blend melt (typically) and mixed */
+                SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );
                 fwtl = arr_fwtl_s[i]; // for smoothing
-                arr_rho_s[i]   = combine_matprop( fwtl, rho_mel, rho_mix );
-                arr_temp_s[i]  = combine_matprop( fwtl, temp_mel, temp_mix );
-                arr_cp_s[i]    = combine_matprop( fwtl, cp_mel, cp_mix );
+                arr_rho_s[i] = combine_matprop( fwtl, E->eos_evals[0].rho, E->eos_evals[2].rho );
+                arr_temp_s[i] = combine_matprop( fwtl, E->eos_evals[0].T, E->eos_evals[2].T );
+                arr_cp_s[i] = combine_matprop( fwtl, E->eos_evals[0].Cp, E->eos_evals[2].Cp );     
             }
             else{ 
+                /* blend solid (typically) and mixed */
+                SetEosEval( P->eos_parameters[1], arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );
                 fwts = arr_fwts_s[i]; // for smoothing
-                arr_rho_s[i]   = combine_matprop( fwts, rho_mix, rho_sol );
-                arr_temp_s[i]  = combine_matprop( fwts, temp_mix, temp_sol );
-                arr_cp_s[i]    = combine_matprop( fwts, cp_mix, cp_sol );
+                arr_rho_s[i] = combine_matprop( fwts, E->eos_evals[2].rho, E->eos_evals[1].rho );
+                arr_temp_s[i] = combine_matprop( fwts, E->eos_evals[2].T, E->eos_evals[1].T );
+                arr_cp_s[i] = combine_matprop( fwts, E->eos_evals[2].Cp, E->eos_evals[1].Cp );
             }
         }
-
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
@@ -250,92 +234,50 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 
     for(i=ilo; i<ihi; ++i){
 
-      /* truncate melt fraction */
-      arr_phi[i] = get_melt_fraction_truncated( arr_phi[i] );
-
-      /* solid */
-      SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
-      rho_sol = E->eos_evals[1].rho;
-      dTdrs_sol = arr_dPdr_b[i] * E->eos_evals[1].dTdPs;
-      cp_sol = E->eos_evals[1].Cp;
-      temp_sol = E->eos_evals[1].T;
-      alpha_sol = E->eos_evals[1].alpha;
-      cond_sol = E->eos_evals[1].cond;
-      // FIXME: func below still has some functionality the replacing function doesn't
-      //log10visc_sol = get_log10_viscosity_solid( temp_sol, arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
-      log10visc_sol = E->eos_evals[1].log10visc;
-
-      /* melt phase */
-      SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
-      rho_mel = E->eos_evals[0].rho;
-      dTdrs_mel = arr_dPdr_b[i] * E->eos_evals[0].dTdPs;
-      cp_mel = E->eos_evals[0].Cp;
-      temp_mel = E->eos_evals[0].T;
-      alpha_mel = E->eos_evals[0].alpha;
-      cond_mel = E->eos_evals[0].cond;
-      // FIXME: func below still has some functionality the replacing function doesn't
-      //log10visc_mel = get_log10_viscosity_melt( temp_mel, arr_pres[i], arr_layer_b[i], P );
-      log10visc_mel = E->eos_evals[0].log10visc;
-
-      /* mixed phase */
-      SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &E->eos_evals[2] );
-      rho_mix = E->eos_evals[2].rho;
-      temp_mix = E->eos_evals[2].T;
-      cp_mix = E->eos_evals[2].Cp;
-      alpha_mix = E->eos_evals[2].alpha;
-      cond_mix = E->eos_evals[2].cond;
-      /* TODO: need to ask ASW about the formulation for dTdrs */
-      dTdrs_mix = arr_dTdrs_mix[i];
-
-      /* need to get viscosity of melt and solid phases at the liquidus and solidus temperature,
-         since this is consistent with the notion of ignoring temperature effects in the mixed
-         phase region (e.g., for density) */
-      //log10visc_mel_mix = get_log10_viscosity_melt( arr_liquidus_temp[i], arr_pres[i], arr_layer_b[i], P );
-      //log10visc_sol_mix = get_log10_viscosity_solid( arr_solidus_temp[i], arr_pres[i], arr_layer_b[i], arr_radius_b[i], P );
-      //log10visc_mix = get_log10_viscosity_mix( arr_phi[i], log10visc_mel_mix, log10visc_sol_mix, P );
-      log10visc_mix = E->eos_evals[2].log10visc;
-
-
-      if(P->SOLID_CONVECTION_ONLY){
+      /* single phase */
+      /* TODO: remove SOLID_CONVECTION_ONLY flag and make this work when only one
+         phase is included */
+      if( P->n_phases==1 || P->SOLID_CONVECTION_ONLY ){
+          SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
           arr_phi[i] = 0.0; // by definition
-          arr_rho[i] = rho_sol;
-          arr_dTdrs[i] = dTdrs_sol;
-          arr_cp[i] = cp_sol;
-          arr_temp[i] = temp_sol;
-          arr_alpha[i] = alpha_sol;
-          arr_cond[i] = cond_sol;
-          arr_visc[i] = log10visc_sol;
+          arr_rho[i] = E->eos_evals[1].rho;
+          arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_evals[1].dTdPs;
+          arr_cp[i] = E->eos_evals[1].Cp;
+          arr_temp[i] = E->eos_evals[1].T;
+          arr_alpha[i] = E->eos_evals[1].alpha;
+          arr_cond[i] = E->eos_evals[1].cond;
+          arr_visc[i] = E->eos_evals[1].log10visc;
       }
-      else if(P->LIQUID_CONVECTION_ONLY){
-          arr_phi[i] = 1.0; // by definition
-          arr_rho[i] = rho_mel;
-          arr_dTdrs[i] = dTdrs_mel;
-          arr_cp[i] = cp_mel;
-          arr_temp[i] = temp_mel;
-          arr_alpha[i] = alpha_mel;
-          arr_cond[i] = cond_mel;
-          arr_visc[i] = log10visc_mel;
-      }
+
       else{
+          /* truncate melt fraction */
+          arr_phi[i] = get_melt_fraction_truncated( arr_phi[i] );
+          /* mixed phase */
+          SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &E->eos_evals[2] );
+    
           if(arr_phi[i] > 0.5){
+              /* blend melt (typically) and mixed */
+              SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
               fwtl = arr_fwtl[i]; // for smoothing
-              arr_rho[i] = combine_matprop( fwtl, rho_mel, rho_mix );
-              arr_dTdrs[i] = combine_matprop( fwtl, dTdrs_mel, dTdrs_mix );
-              arr_cp[i] = combine_matprop( fwtl, cp_mel, cp_mix );
-              arr_temp[i] = combine_matprop( fwtl, temp_mel, temp_mix );
-              arr_alpha[i] = combine_matprop( fwtl, alpha_mel, alpha_mix );
-              arr_cond[i] = combine_matprop( fwtl, cond_mel, cond_mix );
-              arr_visc[i] = combine_matprop( fwtl, log10visc_mel, log10visc_mix );
+              arr_rho[i] = combine_matprop( fwtl, E->eos_evals[0].rho, E->eos_evals[2].rho );
+              arr_dTdrs[i] = combine_matprop( fwtl, E->eos_evals[0].dTdPs * arr_dPdr_b[i], E->eos_evals[2].dTdPs * arr_dPdr_b[i] );
+              arr_cp[i] = combine_matprop( fwtl, E->eos_evals[0].Cp, E->eos_evals[2].Cp );
+              arr_temp[i] = combine_matprop( fwtl, E->eos_evals[0].T, E->eos_evals[2].T );
+              arr_alpha[i] = combine_matprop( fwtl, E->eos_evals[0].alpha, E->eos_evals[2].alpha );
+              arr_cond[i] = combine_matprop( fwtl, E->eos_evals[0].cond, E->eos_evals[2].cond );
+              arr_visc[i] = combine_matprop( fwtl, E->eos_evals[0].log10visc, E->eos_evals[2].log10visc );
           }
           else{
+              /* blend solid (typically) and mixed */
+              SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
               fwts = arr_fwts[i]; // for smoothing
-              arr_rho[i] = combine_matprop( fwts, rho_mix, rho_sol );
-              arr_dTdrs[i] = combine_matprop( fwts, dTdrs_mix, dTdrs_sol );
-              arr_cp[i] = combine_matprop( fwts, cp_mix, cp_sol );
-              arr_temp[i] = combine_matprop( fwts, temp_mix, temp_sol );
-              arr_alpha[i] = combine_matprop( fwts, alpha_mix, alpha_sol );
-              arr_cond[i] = combine_matprop( fwts, cond_mix, cond_sol );
-              arr_visc[i] = combine_matprop( fwts, log10visc_mix, log10visc_sol );
+              arr_rho[i] = combine_matprop( fwts, E->eos_evals[2].rho, E->eos_evals[1].rho );
+              arr_dTdrs[i] = combine_matprop( fwts, E->eos_evals[2].dTdPs * arr_dPdr_b[i], E->eos_evals[1].dTdPs * arr_dPdr_b[i] );
+              arr_cp[i] = combine_matprop( fwts, E->eos_evals[2].Cp, E->eos_evals[1].Cp );
+              arr_temp[i] = combine_matprop( fwts, E->eos_evals[2].T, E->eos_evals[1].T );
+              arr_alpha[i] = combine_matprop( fwts, E->eos_evals[2].alpha, E->eos_evals[1].alpha );
+              arr_cond[i] = combine_matprop( fwts, E->eos_evals[2].cond, E->eos_evals[1].cond );
+              arr_visc[i] = combine_matprop( fwts, E->eos_evals[2].log10visc, E->eos_evals[1].log10visc );
           }
       }
  
