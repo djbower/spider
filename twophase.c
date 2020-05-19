@@ -5,8 +5,8 @@
 #include "eos.h"
 #include "rheologicalfront.h"
 
-static PetscErrorCode set_liquidus( Ctx * );
-static PetscErrorCode set_solidus( Ctx * );
+static PetscErrorCode set_liquidus( Ctx *, PetscInt index );
+static PetscErrorCode set_solidus( Ctx *, PetscInt index );
 static PetscErrorCode set_fusion( Ctx * );
 static PetscErrorCode set_fusion_curve( Ctx * );
 static PetscErrorCode set_mixed_phase( Ctx * );
@@ -17,8 +17,18 @@ PetscErrorCode set_twophase( Ctx *E )
 {
     PetscFunctionBeginUser;
 
-    set_liquidus( E );
-    set_solidus( E );
+    Parameters const P = E->parameters;
+
+    /* FIXME: below a bit hacky, but basically the slot number for the melt and solid EOSs changes
+       depending on the number of phases in the system */
+    if( P->n_phases==1 ){
+        set_liquidus( E, 0 );
+        set_solidus( E, 0 );
+    }
+    else{
+        set_liquidus( E, 0);
+        set_solidus( E, 1 );
+    }
 
     /* these all need the liquidus and solidus to be set */
     set_fusion( E );
@@ -35,7 +45,7 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
 
     PetscErrorCode ierr;
     DM             da_s=E->da_s, da_b=E->da_b;
-    Parameters     P = E->parameters;
+    Parameters const P = E->parameters;
     Solution       *S = &E->solution;
     PetscInt       i, ilo_s, ihi_s, w_s, ilo, ihi, w;
     PetscScalar    *arr_gphi_s, *arr_fwtl_s, *arr_fwts_s, *arr_gphi, *arr_fwtl, *arr_fwts;
@@ -108,7 +118,7 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_liquidus( Ctx *E )
+static PetscErrorCode set_liquidus( Ctx *E, PetscInt index )
 {
     /* liquidus */
 
@@ -126,9 +136,9 @@ static PetscErrorCode set_liquidus( Ctx *E )
     PetscFunctionBeginUser;
 
     S = &E->solution;
-    interp = P->eos_parameters[0]->phase_boundary;
-    interpR = P->eos_parameters[0]->lookup->rho;
-    interpT = P->eos_parameters[0]->lookup->temp;
+    interp = P->eos_parameters[index]->phase_boundary;
+    interpR = P->eos_parameters[index]->lookup->rho;
+    interpT = P->eos_parameters[index]->lookup->temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
@@ -176,7 +186,7 @@ static PetscErrorCode set_liquidus( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_solidus( Ctx *E )
+static PetscErrorCode set_solidus( Ctx *E, PetscInt index )
 {
     /* solidus */
 
@@ -193,9 +203,9 @@ static PetscErrorCode set_solidus( Ctx *E )
 
     PetscFunctionBeginUser;
     S = &E->solution;
-    interp = P->eos_parameters[1]->phase_boundary;
-    interpR = P->eos_parameters[1]->lookup->rho;
-    interpT = P->eos_parameters[1]->lookup->temp;
+    interp = P->eos_parameters[index]->phase_boundary;
+    interpR = P->eos_parameters[index]->lookup->rho;
+    interpT = P->eos_parameters[index]->lookup->temp;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;

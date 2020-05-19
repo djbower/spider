@@ -40,9 +40,6 @@
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
 -volatile0 1.0E2
 
-# only consider solid-state convection
--SOLID_CONVECTION_ONLY 1
-
 # energy fluxes and sources to include
 # [0] is off
 # [1] is on
@@ -56,26 +53,26 @@
 -outputDirectory output
 
 # TODO: for this example, can just use one phase (once code is updated to accommodate this)
--phase_names melt,solid
+-phase_names solid
 
--melt_TYPE 1
--melt_alpha_filename_rel_to_src lookup_data/RTmelt/thermal_exp_melt.dat
--melt_cp_filename_rel_to_src lookup_data/RTmelt/heat_capacity_melt.dat
--melt_dTdPs_filename_rel_to_src lookup_data/RTmelt/adiabat_temp_grad_melt.dat
--melt_rho_filename_rel_to_src lookup_data/RTmelt/density_melt.dat
--melt_temp_filename_rel_to_src lookup_data/RTmelt/temperature_melt.dat
+#-melt_TYPE 1
+#-melt_alpha_filename_rel_to_src lookup_data/RTmelt/thermal_exp_melt.dat
+#-melt_cp_filename_rel_to_src lookup_data/RTmelt/heat_capacity_melt.dat
+#-melt_dTdPs_filename_rel_to_src lookup_data/RTmelt/adiabat_temp_grad_melt.dat
+#-melt_rho_filename_rel_to_src lookup_data/RTmelt/density_melt.dat
+#-melt_temp_filename_rel_to_src lookup_data/RTmelt/temperature_melt.dat
 # use these once initial tests are working
 #-melt_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
 #-melt_cp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_melt.dat
 #-melt_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_melt.dat
 #-melt_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_melt.dat
 #-melt_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_melt.dat
--melt_log10visc 2.0 
--melt_activation_energy 0.0 
--melt_activation_volume 0.0 
--melt_cond 4.0 # conductivity of melt
+#-melt_log10visc 2.0 
+#-melt_activation_energy 0.0 
+#-melt_activation_volume 0.0 
+#-melt_cond 4.0 # conductivity of melt
 #-melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/liquidus_A11_H13.dat
--melt_phase_boundary_filename_rel_to_src lookup_data/RTmelt/liquidus_andrault2011.dat
+#-melt_phase_boundary_filename_rel_to_src lookup_data/RTmelt/liquidus_andrault2011.dat
 
 -solid_TYPE 1
 -solid_alpha_filename_rel_to_src lookup_data/RTmelt/thermal_exp_solid.dat
@@ -102,9 +99,9 @@
 -solid_phase_boundary_filename_rel_to_src lookup_data/RTmelt/solidus_andrault2011.dat
 
 # new format for mixed phase region(s)
--eos_composite_two_phase
+#-eos_composite_two_phase
 # liquidus phase (melt) must be first in list, followed by solidus phase (solid) */
--eos_composite_two_phase_names melt,solid
+#-eos_composite_two_phase_names melt,solid
 
 # mixing length
 # [1] is conventional, i.e. distance from the nearest boundary

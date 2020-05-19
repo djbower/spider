@@ -58,11 +58,10 @@ PetscErrorCode set_melt_fraction_staggered( Ctx *E )
     ihi_s = ilo_s + w_s;
 
     // compute melt fraction
-    if(P->SOLID_CONVECTION_ONLY){
+    /* FIXME: implicitly assumes solid state convection, but actually the melt
+       fraction shouldn't do or mean anything for single phase systems */
+    if(P->n_phases == 1){
         ierr = VecSet( S->phi_s, 0.0 );CHKERRQ(ierr); // by definition
-    }
-    else if(P->LIQUID_CONVECTION_ONLY){
-        ierr = VecSet( S->phi_s, 1.0 );CHKERRQ(ierr); // by definition
     }
     else{
         ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
@@ -112,14 +111,11 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     for(i=ilo_s; i<ihi_s; ++i){
 
         /* single phase */
-        /* TODO: remove SOLID_CONVECTION_ONLY flag and make this work when only one
-           phase is included */
-        if( P->n_phases==1 || P->SOLID_CONVECTION_ONLY ){
-            /* FIXME: indices of 1 (presumably) only work when 2 phases are active */
-            SetEosEval( P->eos_parameters[1], arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );
-            arr_rho_s[i] = E->eos_evals[1].rho;
-            arr_temp_s[i] = E->eos_evals[1].T;
-            arr_cp_s[i] = E->eos_evals[1].Cp;
+        if( P->n_phases==1 ){
+            SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );
+            arr_rho_s[i] = E->eos_evals[0].rho;
+            arr_temp_s[i] = E->eos_evals[0].T;
+            arr_cp_s[i] = E->eos_evals[0].Cp;
         }   
 
         else{
@@ -229,18 +225,16 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     for(i=ilo; i<ihi; ++i){
 
       /* single phase */
-      /* TODO: remove SOLID_CONVECTION_ONLY flag and make this work when only one
-         phase is included */
-      if( P->n_phases==1 || P->SOLID_CONVECTION_ONLY ){
-          SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
+      if( P->n_phases==1 ){
+          SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
           arr_phi[i] = 0.0; // by definition
-          arr_rho[i] = E->eos_evals[1].rho;
-          arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_evals[1].dTdPs;
-          arr_cp[i] = E->eos_evals[1].Cp;
-          arr_temp[i] = E->eos_evals[1].T;
-          arr_alpha[i] = E->eos_evals[1].alpha;
-          arr_cond[i] = E->eos_evals[1].cond;
-          arr_visc[i] = E->eos_evals[1].log10visc;
+          arr_rho[i] = E->eos_evals[0].rho;
+          arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_evals[0].dTdPs;
+          arr_cp[i] = E->eos_evals[0].Cp;
+          arr_temp[i] = E->eos_evals[0].T;
+          arr_alpha[i] = E->eos_evals[0].alpha;
+          arr_cond[i] = E->eos_evals[0].cond;
+          arr_visc[i] = E->eos_evals[0].log10visc;
       }
 
       else{

@@ -333,8 +333,6 @@ typedef struct {
     PetscBool MIXING;
     PetscBool SEPARATION;
     PetscBool HTIDAL;
-    PetscBool SOLID_CONVECTION_ONLY; // solid convection only
-    PetscBool LIQUID_CONVECTION_ONLY; // liquid convection only
     PetscInt mixing_length;
     PetscScalar mixing_length_a;
     PetscScalar mixing_length_b;

@@ -326,30 +326,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscStrcpy(P->outputDirectory,"output");CHKERRQ(ierr);
   ierr = PetscOptionsGetString(NULL,NULL,"-outputDirectory",P->outputDirectory,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
 
-  P->SOLID_CONVECTION_ONLY = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-SOLID_CONVECTION_ONLY",&P->SOLID_CONVECTION_ONLY,NULL);CHKERRQ(ierr);
-
-  P->LIQUID_CONVECTION_ONLY = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-LIQUID_CONVECTION_ONLY",&P->LIQUID_CONVECTION_ONLY,NULL);CHKERRQ(ierr);
-
-  /* Energy terms to include */
-  P->CONDUCTION = PETSC_TRUE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-CONDUCTION",&P->CONDUCTION,NULL);CHKERRQ(ierr);
-  P->CONVECTION = PETSC_TRUE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-CONVECTION",&P->CONVECTION,NULL);CHKERRQ(ierr);
-  P->HTIDAL = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-HTIDAL",&P->HTIDAL,NULL);CHKERRQ(ierr);
-
-  P->MIXING = PETSC_TRUE;
-  P->SEPARATION = PETSC_TRUE;
-  /* mixed phase energy terms */
-  if( P->SOLID_CONVECTION_ONLY || P->LIQUID_CONVECTION_ONLY ){
-      P->MIXING = PETSC_FALSE;
-      P->SEPARATION = PETSC_FALSE;
-  }
-  ierr = PetscOptionsGetBool(NULL,NULL,"-MIXING",&P->MIXING,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsGetBool(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
-
   /* radius of planet (m) */
   ierr = PetscOptionsGetPositiveScalar("-radius",&P->radius,6371000.0,NULL);CHKERRQ(ierr); // m
   P->radius /= SC->RADIUS;
@@ -607,6 +583,23 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
         ierr = EosParametersSetFromOptions(P->eos_parameters[r], FC, SC );CHKERRQ(ierr);
       }
     }
+  }
+
+  /* Energy terms to include */
+  P->CONDUCTION = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-CONDUCTION",&P->CONDUCTION,NULL);CHKERRQ(ierr);
+  P->CONVECTION = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-CONVECTION",&P->CONVECTION,NULL);CHKERRQ(ierr);
+  P->HTIDAL = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-HTIDAL",&P->HTIDAL,NULL);CHKERRQ(ierr);
+  P->MIXING = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-MIXING",&P->MIXING,NULL);CHKERRQ(ierr);
+  P->SEPARATION = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
+  /* separation and mixing only relevant for multiphase systems */
+  if( P->n_phases == 1){
+      P->MIXING = PETSC_FALSE;
+      P->SEPARATION = PETSC_FALSE;
   }
 
   /* Look for composite phases */
