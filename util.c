@@ -158,10 +158,14 @@ PetscErrorCode set_solution_from_partial_pressures( Ctx *E, Vec sol )
         ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]],i,A->mass_reaction[i],INSERT_VALUES);CHKERRQ(ierr);
     }
 
-    ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]]);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]]);CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]]);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]]);CHKERRQ(ierr);
+    if (Ap->n_volatiles > 0) {
+      ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]]);CHKERRQ(ierr);
+      ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]]);CHKERRQ(ierr);
+    }
+    if (Ap->n_reactions > 0) {
+      ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]]);CHKERRQ(ierr);
+      ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_REACTIONS]]);CHKERRQ(ierr);
+    }
 
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     PetscFree(subVecs);

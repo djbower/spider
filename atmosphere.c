@@ -39,6 +39,7 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     const PetscInt dof = 1;
     const PetscInt numpts = 500; // FIXME hard-coded for atmosphere structure output
     ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,numpts,dof,stencilWidth,NULL,&A->da_atm);CHKERRQ(ierr);
+    ierr = DMSetUp(A->da_atm);CHKERRQ(ierr);
 
     /* create dimensionalisable fields for outputting atmosphere structure */
     /* TODO: this does not really need to be a DimensionalisableField, and PS

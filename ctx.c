@@ -41,11 +41,26 @@ PetscErrorCode SetupCtx(Ctx* ctx)
 
   const PetscInt stencilWidth = 1;
   const PetscInt dof = 1;
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,    dof,stencilWidth,NULL,&ctx->da_b        );CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,    dof,stencilWidth,NULL,&ctx->da_s        );CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1,              dof,0,           NULL,&ctx->da_point    );CHKERRQ(ierr);
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,Ap->n_volatiles,dof,0           ,NULL,&ctx->da_volatiles);CHKERRQ(ierr); /* A collection of 0-dimensional bulk quantities */
-  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,Ap->n_reactions,dof,0           ,NULL,&ctx->da_reactions);CHKERRQ(ierr); /* A collection of 0-dimensional bulk quantities */
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_b,      dof,stencilWidth,NULL,&ctx->da_b        );CHKERRQ(ierr);
+  ierr = DMSetUp(ctx->da_b);CHKERRQ(ierr);
+
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,P->numpts_s,      dof,stencilWidth,NULL,&ctx->da_s        );CHKERRQ(ierr);
+  ierr = DMSetUp(ctx->da_s);CHKERRQ(ierr);
+
+  ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,1,                dof,0,           NULL,&ctx->da_point    );CHKERRQ(ierr);
+  ierr = DMSetUp(ctx->da_point);CHKERRQ(ierr);
+  if (Ap->n_volatiles > 0) {
+    ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,Ap->n_volatiles,dof,0           ,NULL,&ctx->da_volatiles);CHKERRQ(ierr); /* A collection of 0-dimensional bulk quantities */
+    ierr = DMSetUp(ctx->da_volatiles);CHKERRQ(ierr);
+  } else {
+    ctx->da_volatiles = NULL;
+  }
+  if (Ap->n_reactions > 0) {
+    ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,Ap->n_reactions,dof,0           ,NULL,&ctx->da_reactions);CHKERRQ(ierr); /* A collection of 0-dimensional bulk quantities */
+    ierr = DMSetUp(ctx->da_reactions);CHKERRQ(ierr);
+  } else {
+    ctx->da_reactions = NULL;
+  }
 
   /* Create a composite DM of the basic nodes plus additional quantities.
     This allows us to create a vector to solve for all of these quantities.  */
@@ -85,17 +100,21 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     sol_scalings[f] = SC->ENTROPY;
     ++f;
 
-    ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_volatiles);CHKERRQ(ierr);
-    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_VOLATILES;
-    ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
-    sol_scalings[f] = SC->PRESSURE;
-    ++f;
+    if (ctx->da_volatiles) {
+      ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_volatiles);CHKERRQ(ierr);
+      ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_VOLATILES;
+      ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
+      sol_scalings[f] = SC->PRESSURE;
+      ++f;
+    }
 
-    ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_reactions);CHKERRQ(ierr);
-    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_REACTIONS;
-    ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
-    sol_scalings[f] = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS; // physical volatile reservoir mass scaling
-    ++f;
+    if (ctx->da_reactions) {
+      ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_reactions);CHKERRQ(ierr);
+      ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_REACTIONS;
+      ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
+      sol_scalings[f] = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS; // physical volatile reservoir mass scaling
+      ++f;
+    }
 
     ierr = DMCompositeGetNumberDM(ctx->dm_sol,&ctx->numFields);CHKERRQ(ierr); /* For convenience */
 
