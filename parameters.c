@@ -307,12 +307,10 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->dtmacro /= SC->TIMEYRS; // non-dimensional for time stepping
 
   /* Grid parameters */
-  P->numpts_b = 200;
-  ierr = PetscOptionsGetInt(NULL,NULL,"-n",&P->numpts_b,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetPositiveInt("-n",&P->numpts_b,200,NULL);CHKERRQ(ierr);
   if( P->numpts_b<2 ){
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"numpts_b must >= 2 (currently %d)",P->numpts_b);
   }
-
   P->numpts_s = P->numpts_b - 1;
 
   /* RollBack and PostStep options */
@@ -336,14 +334,20 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetPositiveScalar("-coresize",&P->coresize,0.55,NULL);CHKERRQ(ierr); // Earth core radius
 
   ierr = PetscOptionsGetPositiveInt("-mixing_length",&P->mixing_length,1,NULL);CHKERRQ(ierr);
-  if( (P->mixing_length<0 || P->mixing_length>2) ){
-      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-mixing_length must be 1 or 2, (not %d)",P->mixing_length);
+  if( P->mixing_length==1 ){
+      /* See fig. 2 in Kamata (2018), JGR */
+      /* defaults below are for conventional mixing length (distance to nearest boundary) */
+      ierr = PetscOptionsGetPositiveScalar("-mixing_length_peak_location",&P->mixing_length_a,0.5,NULL);CHKERRQ(ierr);
+      ierr = PetscOptionsGetPositiveScalar("-mixing_length_peak_amplitude",&P->mixing_length_b,0.5,NULL);CHKERRQ(ierr);
   }
-  /* See fig. 2 in Kamata (2018), JGR
-     default values are for conventional mixing length theory
-     values are only used when -mixing_length 1 */
-  ierr = PetscOptionsGetPositiveScalar("-mixing_length_peak_location",&P->mixing_length_a,0.5,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsGetPositiveScalar("-mixing_length_peak_amplitude",&P->mixing_length_b,0.5,NULL);CHKERRQ(ierr);
+  else if( P->mixing_length==2 ){
+      /* if P->mixing_length==2 then mixing length is constant, and these values are not required */
+      P->mixing_length_a = 0.0;
+      P->mixing_length_b = 0.0;
+  }
+  else{
+      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-mixing_length must be 1 or 2 (not %d)",P->mixing_length);
+  }
 
   /* option to include a mid-mantle layer
      this is non-dimensional fractional radius, as with coresize
@@ -357,16 +361,13 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->Mg_Si0 = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si0",&P->Mg_Si0,NULL);CHKERRQ(ierr);
   P->Mg_Si1 = 0.0;
-  if ( P->mixing_length == 3){
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si1",&P->Mg_Si1,NULL);CHKERRQ(ierr);
-  }
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si1",&P->Mg_Si1,NULL);CHKERRQ(ierr);
 
   /* start time (years) */
   P->t0 = 0.0;
 
   /* initial condition for interior */
-  P->IC_INTERIOR = 1;
-  ierr = PetscOptionsGetInt(NULL,NULL,"-IC_INTERIOR",&P->IC_INTERIOR,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetPositiveInt("-IC_INTERIOR",&P->IC_INTERIOR,1,NULL);CHKERRQ(ierr);
 
   ierr = PetscStrcpy(P->ic_interior_filename,"restart.json"); CHKERRQ(ierr);
   if ( P->IC_INTERIOR==2 ){
@@ -443,10 +444,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
      across nodes matters. */
   P->phi_width = 0.15; // non dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_width",&P->phi_width,NULL);CHKERRQ(ierr);
-
-  /* melt fraction shape transition for skew */
-  // FIXME: I think this is broken at present
-  P->phi_skew = 0.0; // non dimensional
 
   /* core density (kg/m^3) */
   P->rho_core = 10738.332568062382;

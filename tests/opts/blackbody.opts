@@ -1,4 +1,13 @@
+###########################################################################
+# This serves as a template file to describe all available input parameters
+# even though this example is actually very basic and does not demonstrate
+# many of the features of SPIDER
+###########################################################################
+
 # time stepping
+
+# maximum number of macro steps
+-maxsteps 100000000
 
 # number of macro steps
 -nstepsmacro 10
@@ -6,18 +15,14 @@
 # macro step size in years
 -dtmacro 100
 
-# for the PETSc interface to SUNDIALS, matchstep is not
-# allowed, and in testing it doesn't appear that interpolate
-# or stepover result in different behaviour
-#-ts_exact_final_time stepover
--ts_exact_final_time interpolate
-#-ts_exact_final_time matchstep
+# for coupling to other codes
+-activate_rollback 1
+-activate_poststep 1
 
 # tolerances
 -ts_sundials_atol 1.0e-6
 -ts_sundials_rtol 1.0e-6
 
-# mesh
 # number of basic nodes
 -n 100
 

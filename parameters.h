@@ -353,7 +353,6 @@ typedef struct {
     PetscScalar gravity;
     PetscScalar phi_critical;
     PetscScalar phi_width;
-    PetscScalar phi_skew;
     PetscScalar rho_core;
     PetscScalar cp_core;
     PetscScalar tfac_core_avg;
