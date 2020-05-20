@@ -308,10 +308,15 @@ def spiderplot_fig3( times ):
         yy = myjson_o.get_dict_values_internal(['data','cp_b'])
         ax4.plot( xx_pres, yy, '--', color=color )
         ax4.plot( xx_pres*MIX, yy*MIX, '-', color=color )
-        # dTdrs
+        # dTdPs / dTdrs
         yy = myjson_o.get_dict_values_internal(['data','dTdrs_b'])
-        ax5.plot( xx_pres, yy, '--', color=color )
-        ax5.plot( xx_pres*MIX, yy*MIX, '-', color=color )
+        yy2 = myjson_o.get_dict_values_internal(['data','dPdr_b'])
+        yy3 = (yy / yy2) * 1E9 # to K/GPa
+        ax5.plot( xx_pres, yy3, '--', color=color )
+        ax5.plot( xx_pres*MIX, yy3*MIX, '-', color=color )
+        # below plots dPdr
+        #ax5.plot( xx_pres, yy, '--', color=color )
+        #ax5.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # entropy gradient
         yy = myjson_o.get_dict_values_internal(['data','dSdr_b'], dSdr_fmt )
         yy *= -1.0
@@ -361,12 +366,14 @@ def spiderplot_fig3( times ):
     ax4.yaxis.set_label_coords(-0.1,0.475)
 
     units = myjson_o.get_dict_units(['data','dTdrs_b'])
-    title = '(f) Adiabatic grad, {}'.format(units)
-    yticks = [-3E-3, -2E-3, -1E-3, 0]
+    #title = '(f) Adiabatic grad, {}'.format(units)
+    title = '(f) Adiabat grad, K/GPa'
+    yticks = [0,20,40,60,80,100]
+    #yticks = [-3E-3, -2E-3, -1E-3, 0]
     fig_o.set_myaxes( ax5, title=title, xlabel='$P$ (GPa)',
-        yticks=yticks, xticks=xticks, xmax=xmax,
-        ylabel='$\\left(\\frac{\partial T}{\partial r}\\right)_S$')
-    ax5.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.0e'))
+        yticks=yticks,xticks=xticks, xmax=xmax,
+        ylabel='$\\left(\\frac{\partial T}{\partial P}\\right)_S$')
+    #ax5.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.0e'))
     ax5.yaxis.set_label_coords(-0.15,0.43)
 
     fig_o.savefig(3)
