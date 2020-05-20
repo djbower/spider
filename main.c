@@ -135,7 +135,6 @@ int main(int argc, char ** argv)
        won't work properly for the SUNDIALS implementation if called after TSSetUp()) */
     ierr = TSSetUp(ts);CHKERRQ(ierr);
 
-    /* TODO: check with PS that this is OK here */
     /* output first time step (initial condition) */
     /* need this here to update quantities to make poststep data */
     if (P->monitor) {
@@ -151,13 +150,6 @@ int main(int argc, char ** argv)
       ierr = PostStepDataInitialize(&ctx);CHKERRQ(ierr); /* use initial condition here */
       ierr = TSSetPostStep(ts,PostStep);CHKERRQ(ierr);
     }
-
-    /* TODO: remove this block if the block above is OK */
-    /* previously was here */
-    /* output first time step (initial condition) */
-    //if (P->monitor) {
-    //  ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
-    //}
 
     for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
       ierr = TSSolve(ts,sol);CHKERRQ(ierr);
