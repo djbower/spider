@@ -85,9 +85,6 @@ int main(int argc, char ** argv)
   /* must use direct solver, so requires Patrick's hacks */
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
   ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
-  /* for the PETSc interface to SUNDIALS, matchstep is not allowed */
-  /* for the blackbody tests, the output data filenames contain the same times, although the data
-     is slightly different, for interpolate versus stepover.  */
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_INTERPOLATE);CHKERRQ(ierr);
 
   /* can tighten tolerances for quad */

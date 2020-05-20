@@ -6,13 +6,6 @@
 # macro step size in years
 -dtmacro 10000000
 
-# for the PETSc interface to SUNDIALS, matchstep is not
-# allowed, and in testing it doesn't appear that interpolate
-# or stepover result in different behaviour
-#-ts_exact_final_time stepover
--ts_exact_final_time interpolate
-#-ts_exact_final_time matchstep
-
 # tolerances
 -ts_sundials_atol 1.0e-11
 -ts_sundials_rtol 1.0e-11
