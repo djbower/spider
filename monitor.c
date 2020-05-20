@@ -19,7 +19,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
   /* Info for stdout */
   {
     double        walltime;
-    long long int elapsedSeconds;
+    long long int elapsedSeconds, time_years_actual, time_years_desired;
     int           days,hours,minutes,seconds;
     Vec           *subVecs;
     PetscBool     *fieldActive;
@@ -49,8 +49,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     hours = ((elapsedSeconds - 60*minutes - seconds)/(60*60)) % 24;
     days = (elapsedSeconds - 24*60*hours - 60*minutes - seconds)/(24*60*60);
 
+    /* actual and desired time in integer number of years */
+    time_years_actual = (long long) ( time * SC->TIMEYRS );
+    time_years_desired = (long long) ( step * dtmacro * SC->TIMEYRS );
+
     /* Print */
     ierr = PetscPrintf(PETSC_COMM_WORLD,"***  Writing output at macro Step %D, t=%f. [%lld:%02d:%02d:%02d]\n",step,(double)time,days,hours,minutes,seconds);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"     Actual time: %lld years, Desired time: %lld years\n",time_years_actual,time_years_desired);CHKERRQ(ierr);
     for (i=0; i<ctx->numFields; ++i) {
       if (fieldActive[i]) {
         ierr = PetscPrintf(PETSC_COMM_WORLD,"  Field %D Min/Max %f/%f\n",i,(double)minVals[i],(double)maxVals[i]);CHKERRQ(ierr);
@@ -82,13 +87,13 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       cJSON         *json,*data;
       char          *outputString;
       char          filename[PETSC_MAX_PATH_LEN];
+      long long int time_years_actual;
       PetscInt      i;
-      long long int time_years_int;
 
-      // JSON output filename uses the current age in integer number of years
-      time_years_int = (long long) ( time * SC->TIMEYRS );
+      /* current age in integer number of years */
+      time_years_actual = (long long) ( time * SC->TIMEYRS );
 
-      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/%lld.json",P->outputDirectory,time_years_int);CHKERRQ(ierr);
+      ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/%lld.json",P->outputDirectory,time_years_actual);CHKERRQ(ierr);
 
       /* Create a new JSON object */
       json = cJSON_CreateObject();
