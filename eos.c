@@ -1642,10 +1642,17 @@ static PetscErrorCode GetTwoPhaseRho( const EosComposite eos_composite, PetscSca
 
 static PetscErrorCode GetTwoPhasedTdPs( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *dTdPs_ptr )
 {
+    PetscErrorCode ierr;
+    PetscScalar alpha, temp, rho, cp;
+
     PetscFunctionBeginUser;
 
-    /* TODO: Ask ASW which approach is most valid */
-    //SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"GetTwoPhasedTdPs() is not set up");
+    ierr = GetTwoPhaseAlpha( eos_composite, P, S, &alpha );CHKERRQ(ierr);
+    ierr = GetTwoPhaseCp( eos_composite, P, S, &cp );CHKERRQ(ierr);
+    ierr = GetTwoPhaseRho( eos_composite, P, S, &rho );CHKERRQ(ierr);
+    ierr = GetTwoPhaseTemperature( eos_composite, P, S, &temp );CHKERRQ(ierr);
+
+    *dTdPs_ptr = alpha * temp / ( rho * cp );
 
     PetscFunctionReturn(0);
 }

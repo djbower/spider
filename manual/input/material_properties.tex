@@ -235,7 +235,9 @@ Rearranging and substituting in Eq.~\ref{eqn:heat_capacity_agg}:
 \end{equation}
 Alternatively:
 \begin{equation}
+\label{eqn:adiabatic_temp_grad2}
 \left. \dfrac{dT}{dP} \right|_S = \dfrac{\alpha T}{\rho c_p}
 \end{equation}
+\myemph{TODO: Eq.~\ref{eqn:adiabatic_temp_grad} is currently used by SPIDER to compute the adiabatic gradient in the mixed phase region, but this involves calculating the gradient of the fusion curve (both in temperature and entropy space).  This is not as convenient as using Eq.~\ref{eqn:adiabatic_temp_grad2} since this relies solely on properties that are already known.  However, both (or one) must be an order magnitude approximation, since it's not obvious how to show they are (near) equivalent.  Therefore, the preference would be to switch to a formulation akin to Eq.~\ref{eqn:adiabatic_temp_grad2}.  Tests with SPIDER indeed show that  Eq.~\ref{eqn:adiabatic_temp_grad} and  Eq.~\ref{eqn:adiabatic_temp_grad2} return different results.}
 
 Together, these expressions represent a thermodynamically consistent metastable combination of solid and melt phases, chosen to best mimic the behavior of the multicomponent mantle over the melting interval.  Outside of the mixed-phase region the quantities in Eqns.~\ref{eqn:density_agg}--\ref{eqn:adiabatic_temp_grad} are equal to their melt and solid values exclusively, as for temperature (Eqn.~\ref{eqn:temperature_agg}).  This model provides thermodynamic properties as a function of pressure and entropy for the melt, solid, and mixed phase that are input to the evolution model i.e., $\phi$, $T$, $\rho$, $c_p$, $\alpha$, and $dT/dP|_S$.
