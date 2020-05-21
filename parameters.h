@@ -109,7 +109,7 @@ typedef struct {
 } data_Lookup;
 typedef data_Lookup* Lookup;
 
-/* RTpress (Wolf and Bower, 2018) */
+/* RTpress parameters (Wolf and Bower, 2018) */
 typedef struct {
     PetscScalar V0;
     PetscScalar T0;
@@ -146,8 +146,8 @@ typedef struct {
        2. Rtpress
     */
     PetscInt TYPE;
-    Lookup lookup;
-    RTpressParameters rtpress_parameters;
+    Lookup lookup; // only required if TYPE = 1
+    RTpressParameters rtpress_parameters; // only required if TYPE = 2
     /* include thermal and transport properties */
     /* TODO: could be included in a connected/linked struct,
        but simpler to include them directly here */
@@ -160,13 +160,35 @@ typedef struct {
     PetscScalar visc_ref_pressure;
     PetscScalar visc_comp;
     PetscScalar visc_ref_comp;
+
     /* phase boundary which is evaluated using this EOS */
     PetscBool PHASE_BOUNDARY; /* is a phase boundary for this EOS defined? */
-    char phase_boundary_filename[PETSC_MAX_PATH_LEN];
+    char phase_boundary_filename[PETSC_MAX_PATH_LEN]; // filename of phase boundary
+    /* in generality, the phase boundary should be a function pointer as well.  Currently,
+       it is always a 1D lookup, but could be any function */
     Interp1d phase_boundary; /* pressure-entropy space, J/kg/K */
+
+    /* TODO: add a pointer array to other EosParameters, to avoid creating the
+       EosComposite object? */
+
+    /* TODO: at this level, could also add function pointers to evaluate the
+       EOS and return the relevant material properties (rather than using a
+       switch statement).  Some material props to evaluate are given below.
+       See SetEosEval.c in eos.c.  Currently, all eos functions are evaluated
+       and stored in an EosEval struct which lives in ctx.h.  It's not
+       obvious to me if this is the best way.  It ensures data is not stale, but
+       then the evaluation of the functions are stored elsewhere */
+
+    // func_ptr_log10visc = 
+    // func_ptr_alpha = 
+    // func_ptr_cp = 
+    // func_ptr_phase_boundary = 
+
+
 } data_EosParameters;
 typedef data_EosParameters* EosParameters;
 
+/* TODO: can be consolidated into EosParameters */
 #define SPIDER_MAX_COMPOSITE_PHASES 1 
 typedef struct {
     const char *prefix;  /* Maximum prefix length */

@@ -298,6 +298,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, 
     PetscFunctionReturn(0);
 }
 
+/* TODO: generalise to set_ic_interior_from_phase_boundary */
 static PetscErrorCode set_ic_interior_from_solidus( Ctx *E, Vec sol )
 {
 
@@ -317,6 +318,7 @@ static PetscErrorCode set_ic_interior_from_solidus( Ctx *E, Vec sol )
 
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
+    /* FIXME: instead, use phase boundary evaluation to determine the initial condition */
     ierr = VecCopy( S->solidus_s, S->S_s ); CHKERRQ(ierr);
 
     for(i=1; i<numpts_s-1;++i) {
