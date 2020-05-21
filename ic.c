@@ -11,7 +11,7 @@ static PetscErrorCode set_ic_interior( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_default( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
-static PetscErrorCode set_ic_interior_from_solidus( Ctx *, Vec );
+static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *, Vec );
 /* atmosphere ic */
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
@@ -70,7 +70,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
            P->t0 from the interior file */
     }
     else if (IC==3){
-        ierr = set_ic_interior_from_solidus( E, sol ); CHKERRQ(ierr);
+        ierr = set_ic_interior_from_phase_boundary( E, sol ); CHKERRQ(ierr);
     }
     else{
         SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported IC_INTERIOR value %d provided",P->IC_INTERIOR);
@@ -299,7 +299,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, 
 }
 
 /* TODO: generalise to set_ic_interior_from_phase_boundary */
-static PetscErrorCode set_ic_interior_from_solidus( Ctx *E, Vec sol )
+static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
 {
 
     /* entropy tracks the solidus below a cutoff value, and is
@@ -314,7 +314,7 @@ static PetscErrorCode set_ic_interior_from_solidus( Ctx *E, Vec sol )
     Solution         *S = &E->solution;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_solidus()\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_phase_boundary()\n");CHKERRQ(ierr);
 
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 

@@ -3,6 +3,9 @@
 #include "parameters.h"
 #include "util.h"
 
+/* TODO: many of these Getters should actually be Setters, since they
+   set the final argument rather than returning a value */
+
 /* lookup material properties (default) */
 static PetscErrorCode LookupCreate( Lookup * );
 static PetscErrorCode LookupDestroy( Lookup * );
@@ -29,11 +32,14 @@ static PetscErrorCode GetRTpressdTdPs( const RTpressParameters, PetscScalar, Pet
 static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES, Vec, Vec, void * );
 static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
+static PetscErrorCode GetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar * );
+
 /* evaluate viscosity */
 static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar );
 static PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
 
 /* two phase composite eos (for mixed phase region) */
+/* TODO: you'll see that the convention is for the melt phase to be listed first */
 static PetscErrorCode GetTwoPhaseLiquidus( const EosComposite, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhaseSolidus( const EosComposite, PetscScalar, PetscScalar * );
 static PetscErrorCode GetTwoPhaseFusion( const EosComposite, PetscScalar, PetscScalar * );
@@ -595,6 +601,10 @@ static PetscErrorCode SetEosEvalFromLookup( const Lookup lookup, PetscScalar P, 
  ******************************************************************************
 */
 
+/* TODO: this analytical model should be plugged into the general EosParameters
+   workflow, although the RTpress model is currently not returning the correct
+   values (need to debug units) */
+
 static PetscErrorCode RTpressParametersCreate( RTpressParameters* rtpress_parameters_ptr )
 {
     PetscErrorCode ierr;
@@ -1099,6 +1109,16 @@ static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters rtp, PetscS
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode GetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+    *boundary = GetInterp1dValue( Ep->phase_boundary, P ); /* solidus entropy */
+    PetscFunctionReturn(0);
+}
+
+
 #if 0
 static PetscErrorCode set_rtpress_struct_SI( PetscScalar P, PetscScalar S, Ctx *E )
 {
@@ -1451,6 +1471,7 @@ static PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_
     eos_eval->log10visc += A / PetscLogReal(10.0);
 
     /* compositional (Mg/Si) contribution */
+    /* always pinned to some reference given by Ep->visc_ref_comp */
     if( Ep->visc_comp > 0.0 ){
         log10C = GetCompositionalViscosityPrefactor( Ep->visc_comp );
         log10C -= GetCompositionalViscosityPrefactor( Ep->visc_ref_comp );
@@ -1521,14 +1542,14 @@ PetscErrorCode EosCompositeDestroy( EosComposite *eos_composite_ptr )
 static PetscErrorCode GetTwoPhaseLiquidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *liquidus )
 {
     PetscFunctionBeginUser;
-    *liquidus = GetInterp1dValue( eos_composite->eos_parameters[0]->phase_boundary, P ); /* solidus entropy */
+    GetPhaseBoundary( eos_composite->eos_parameters[0], P, liquidus ); /* liquidus entropy */
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode GetTwoPhaseSolidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *solidus )
 {
     PetscFunctionBeginUser;
-    *solidus = GetInterp1dValue( eos_composite->eos_parameters[1]->phase_boundary, P ); /* solidus entropy */
+    GetPhaseBoundary( eos_composite->eos_parameters[1], P, solidus ); /* solidus entropy */
     PetscFunctionReturn(0);
 }
 
@@ -1745,7 +1766,6 @@ static PetscErrorCode GetTwoPhaseViscosity( const EosComposite eos_composite, Pe
 
     /* FIXME: these are stored in the parameters struct, but do we really need to read this in for just
        two parameters? */
-    /* these lines replace get_log10_viscosity_mix and get_viscosity_mix_no_skew */
     phi_critical = 0.4;
     phi_width = 0.15;
     fwt = tanh_weight( phase_fraction, phi_critical, phi_width );
