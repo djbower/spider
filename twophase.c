@@ -155,7 +155,7 @@ static PetscErrorCode set_liquidus( Ctx *E, PetscInt index )
     ierr = DMDAVecGetArray(da_b,S->liquidus_rho,&arr_liquidus_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->liquidus_temp,&arr_liquidus_temp);CHKERRQ(ierr);
     for(i=ilo_b;i<ihi_b;++i){
-        z = GetInterp1dValue( interp, arr_pres_b[i] );
+        ierr = SetInterp1dValue( interp, arr_pres_b[i], &z, NULL );CHKERRQ(ierr);
         arr_liquidus[i] = z;
         arr_liquidus_rho[i] = GetInterp2dValue( interpR, arr_pres_b[i], z );
         arr_liquidus_temp[i] = GetInterp2dValue( interpT, arr_pres_b[i], z );
@@ -173,7 +173,7 @@ static PetscErrorCode set_liquidus( Ctx *E, PetscInt index )
     ierr = DMDAVecGetArray(da_s,S->liquidus_rho_s,&arr_liquidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->liquidus_temp_s,&arr_liquidus_temp_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
-        z = GetInterp1dValue( interp, arr_pres_s[i] );
+        ierr = SetInterp1dValue( interp, arr_pres_s[i], &z, NULL );CHKERRQ(ierr);
         arr_liquidus_s[i] = z;
         arr_liquidus_rho_s[i] = GetInterp2dValue( interpR, arr_pres_s[i], z );
         arr_liquidus_temp_s[i] = GetInterp2dValue( interpT, arr_pres_s[i], z );
@@ -221,7 +221,7 @@ static PetscErrorCode set_solidus( Ctx *E, PetscInt index )
     ierr = DMDAVecGetArray(da_b,S->solidus_rho,&arr_solidus_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->solidus_temp,&arr_solidus_temp);CHKERRQ(ierr);
     for(i=ilo_b;i<ihi_b;++i){
-        z = GetInterp1dValue( interp, arr_pres_b[i] );
+        ierr = SetInterp1dValue( interp, arr_pres_b[i], &z, NULL );CHKERRQ(ierr);
         arr_solidus[i] = z;
         arr_solidus_rho[i] = GetInterp2dValue( interpR, arr_pres_b[i], z );
         arr_solidus_temp[i] = GetInterp2dValue( interpT, arr_pres_b[i], z );
@@ -238,7 +238,7 @@ static PetscErrorCode set_solidus( Ctx *E, PetscInt index )
     ierr = DMDAVecGetArray(da_s,S->solidus_rho_s,&arr_solidus_rho_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->solidus_temp_s,&arr_solidus_temp_s);CHKERRQ(ierr);
     for(i=ilo_s; i<ihi_s; ++i){
-        z = GetInterp1dValue( interp, arr_pres_s[i] );
+        ierr = SetInterp1dValue( interp, arr_pres_s[i], &z, NULL );CHKERRQ(ierr);
         arr_solidus_s[i] = z;
         arr_solidus_rho_s[i] = GetInterp2dValue( interpR, arr_pres_s[i], z );
         arr_solidus_temp_s[i] = GetInterp2dValue( interpT, arr_pres_s[i], z );

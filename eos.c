@@ -339,18 +339,18 @@ static PetscErrorCode Interp2dCreateAndSet( const char * filename, Interp2d *int
     PetscFunctionReturn(0);
 }
 
-PetscScalar GetInterp1dValue( const Interp1d interp, PetscScalar x )
+PetscErrorCode SetInterp1dValue( const Interp1d interp, PetscScalar x, PetscScalar *val, PetscScalar *dval )
 {   
     /* wrapper for evaluating a 1-D lookup
        linear interpolation with truncation for values
        that fall outside the data lookup range */
     
-    //PetscErrorCode    ierr;
-    PetscScalar       w1, result;
     PetscScalar const *xa, *ya;
-    PetscScalar       xmin, xmax;
+    PetscScalar       w1, xmin, xmax;
     PetscInt          ind, NX;
-    
+
+    PetscFunctionBeginUser;
+
     NX = interp->NX;
     xa = interp->xa;
     xmin = interp->xmin;
@@ -384,13 +384,21 @@ PetscScalar GetInterp1dValue( const Interp1d interp, PetscScalar x )
          is the minimum index */
       ind -= 1;
     }
-    
-    // w1 is 0 at leftmost (minimum) x, 1 at rightmost (maximum) x
-    w1 = (x-xa[ind]) / (xa[ind+1]-xa[ind]); // weighting
-    
-    result = ya[ind] * (1.0-w1) + ya[ind+1] * w1;
-    
-    return result;
+   
+    /* interpolated value */ 
+    if( val != NULL ){
+        // w1 is 0 at leftmost (minimum) x, 1 at rightmost (maximum) x
+        w1 = (x-xa[ind]) / (xa[ind+1]-xa[ind]); // weighting
+        *val = ya[ind] * (1.0-w1) + ya[ind+1] * w1;
+    }
+
+    /* first-order derivative estimate */
+    if( dval != NULL ){
+        *dval = ( ya[ind+1] - ya[ind] ) / ( xa[ind+1] - xa[ind] );
+    }
+
+    PetscFunctionReturn(0);
+
 }
 
 PetscScalar GetInterp2dValue( const Interp2d interp, PetscScalar x, PetscScalar y )
@@ -1164,7 +1172,7 @@ static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters rtp, PetscS
 static PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary )
 {
     PetscFunctionBeginUser;
-    *boundary = GetInterp1dValue( Ep->phase_boundary, P ); /* solidus entropy */
+    SetInterp1dValue( Ep->phase_boundary, P, boundary, NULL ); /* solidus entropy */
     PetscFunctionReturn(0);
 }
 
