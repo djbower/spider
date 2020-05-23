@@ -76,7 +76,7 @@
 -solid_activation_energy 0.0
 -solid_activation_volume 0.0
 -solid_visc_ref_temp -1
--solid_visc_ref_pres -1
+-solid_visc_ref_pressure -1
 -solid_visc_ref_comp -1
 -solid_cond 4.0 # conductivity of solid
 -solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat

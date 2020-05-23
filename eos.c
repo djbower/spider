@@ -6,6 +6,7 @@
 /* TODO: many of these Getters should actually be Setters, since they
    set the final argument rather than returning a value */
 
+/* First material model option is via lookup tables */
 /* lookup material properties (default) */
 static PetscErrorCode LookupCreate( Lookup * );
 static PetscErrorCode LookupDestroy( Lookup * );
@@ -14,25 +15,41 @@ static PetscErrorCode Interp1dCreateAndSet( const char *, Interp1d *, PetscScala
 static PetscErrorCode Interp1dDestroy( Interp1d * );
 static PetscErrorCode Interp2dCreateAndSet( const char *, Interp2d *, PetscScalar, PetscScalar, PetscScalar );
 static PetscErrorCode Interp2dDestroy( Interp2d * );
+/* TODO: these next set of functions can be redone as function pointers in the EosParameters struct
+   when a lookup is used */
+static PetscErrorCode SetLookupRho( const Lookup, PetscScalar, PetscScalar, PetscScalar *);
+static PetscErrorCode SetLookupAlpha( const Lookup, PetscScalar, PetscScalar, PetscScalar *);
+static PetscErrorCode SetLookupCp( const Lookup, PetscScalar, PetscScalar, PetscScalar *);
+static PetscErrorCode SetLookupdTdPs( const Lookup, PetscScalar, PetscScalar, PetscScalar *);
+static PetscErrorCode SetLookupTemperature( const Lookup, PetscScalar, PetscScalar, PetscScalar *);
+/* we use all the above to set all applicable values in an EosEval struct */
 static PetscErrorCode SetEosEvalFromLookup( const Lookup, PetscScalar, PetscScalar, EosEval * );
 
+/* Second material model option is an analytical model, which for here is rtpress (but
+   in principle, others could be added) */
 /* rtpress material properties (Wolf and Bower, 2018) */
 static PetscErrorCode RTpressParametersCreate( RTpressParameters * );
 static PetscErrorCode RTpressParametersCreateAndSet( RTpressParameters *, const FundamentalConstants );
 static PetscErrorCode RTpressParametersDestroy( RTpressParameters * );
-static PetscScalar GetRTpressPressure( const RTpressParameters, PetscScalar, PetscScalar );
-static PetscScalar GetRTpressEntropy( const RTpressParameters, PetscScalar, PetscScalar );
-static PetscErrorCode GetRTpressVolumeTemperature( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar *, PetscScalar * );
-static PetscErrorCode GetRTpressRho( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetRTpressAlpha( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetRTpressCv( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetRTpressCp( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetRTpressdTdPs( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
+/* compared to the lookup approach above, rtpress is derived in terms of temperature and volume, which
+   means we must take the current pressure and entropy and jointly solve for T and V.  Then we can use this T
+   and V to solve for the other material properties.  This partly motivates the idea of updating material properties
+   once in an EosEval struct, since otherwise we have to keep resolving for V and T from P and S, which will add
+   a lot of additional solves when evaluating EOS */
+static PetscErrorCode SetRTpressPressure( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetRTpressEntropy( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetRTpressVolumeTemperature( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar *, PetscScalar * );
+/* arguments to these functions are V and T and not the primary solution variables of P and S */
+static PetscErrorCode SetRTpressRho( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetRTpressAlpha( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetRTpressCv( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetRTpressCp( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetRTpressdTdPs( const RTpressParameters, PetscScalar, PetscScalar, PetscScalar * );
 /* solve for volume and temperature from pressure and entropy */
 static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES, Vec, Vec, void * );
 static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
-static PetscErrorCode GetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar * );
+static PetscErrorCode SetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar * );
 
 /* evaluate viscosity */
 static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar );
@@ -40,17 +57,17 @@ static PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
 
 /* two phase composite eos (for mixed phase region) */
 /* TODO: you'll see that the convention is for the melt phase to be listed first */
-static PetscErrorCode GetTwoPhaseLiquidus( const EosComposite, PetscScalar, PetscScalar * );
-static PetscErrorCode GetTwoPhaseSolidus( const EosComposite, PetscScalar, PetscScalar * );
-static PetscErrorCode GetTwoPhaseFusion( const EosComposite, PetscScalar, PetscScalar * );
-static PetscErrorCode GetTwoPhasePhaseFraction( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetTwoPhaseTemperature( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetTwoPhaseCp( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetTwoPhaseRho( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetTwoPhasedTdPs( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetTwoPhaseAlpha( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetTwoPhaseConductivity( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode GetTwoPhaseViscosity( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhaseLiquidus( const EosComposite, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhaseSolidus( const EosComposite, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhaseFusion( const EosComposite, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhaseTemperature( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhaseCp( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhaseRho( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhasedTdPs( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhaseAlpha( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhaseConductivity( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhaseViscosity( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite, PetscScalar, PetscScalar, EosEval *);
 
 #if 0
@@ -575,17 +592,52 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode SetLookupTemperature( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *T)
+{
+    PetscFunctionBeginUser;
+    *T = GetInterp2dValue( lookup->temp, P, S );
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode SetLookupRho( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *rho)
+{
+    PetscFunctionBeginUser;
+    *rho = GetInterp2dValue( lookup->rho, P, S );
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode SetLookupAlpha( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *alpha)
+{
+    PetscFunctionBeginUser;
+    *alpha = GetInterp2dValue( lookup->alpha, P, S );
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode SetLookupCp( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *Cp)
+{
+    PetscFunctionBeginUser;
+    *Cp = GetInterp2dValue( lookup->cp, P, S );
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode SetLookupdTdPs( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *dTdPs)
+{
+    PetscFunctionBeginUser;
+    *dTdPs = GetInterp2dValue( lookup->dTdPs, P, S );
+    PetscFunctionReturn(0);
+}
+
 static PetscErrorCode SetEosEvalFromLookup( const Lookup lookup, PetscScalar P, PetscScalar S, EosEval *eos_eval )
 {
     PetscFunctionBeginUser;
 
     eos_eval->P = P;
     eos_eval->S = S;
-    eos_eval->T = GetInterp2dValue( lookup->temp, P, S );
-    eos_eval->Cp = GetInterp2dValue( lookup->cp, P, S );
-    eos_eval->rho = GetInterp2dValue( lookup->rho, P, S );
-    eos_eval->dTdPs = GetInterp2dValue( lookup->dTdPs, P, S );
-    eos_eval->alpha = GetInterp2dValue( lookup->alpha, P, S );
+    SetLookupTemperature( lookup, P, S, &eos_eval->T );
+    SetLookupCp( lookup, P, S, &eos_eval->Cp );
+    SetLookupRho( lookup, P, S, &eos_eval->rho );
+    SetLookupdTdPs( lookup, P, S, &eos_eval->dTdPs );
+    SetLookupAlpha( lookup, P, S, &eos_eval->alpha );
     /* lookup does not know about these quantities, since they are not used by
        SPIDER */
     eos_eval->Cv = 0.0;
@@ -702,11 +754,10 @@ static PetscScalar eV_to_joule( PetscScalar eV )
     return eV * 1.60218E-19;
 }
 
-static PetscScalar GetRTpressPressure( const RTpressParameters rtp, PetscScalar V, PetscScalar T )
+static PetscErrorCode SetRTpressPressure( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *P )
 {
     /* pressure = function( volume, temperature ) */
 
-    PetscScalar P;
     PetscScalar const K0 = rtp->K0;
     PetscScalar const V0 = rtp->V0;
     PetscScalar const KP0 = rtp->KP0;
@@ -720,20 +771,21 @@ static PetscScalar GetRTpressPressure( const RTpressParameters rtp, PetscScalar 
     PetscScalar const b3 = rtp->b3;
     PetscScalar const b4 = rtp->b4;
 
+    PetscFunctionBeginUser;
+
     /* FIXME: if I try using PetscCbrtReal then I get the following warning at compilation:
            warning: implicit declaration of function 'cbrt' is invalid in C99 [-Wimplicit-function-declaration] */
     /* TODO: should I use Real or PetscScalar functions?  i.e. PetscPowReal or PetscPowScalar? */
 
-    P =  -9*K0*V0*(-1.0/3.0*cbrt(V/V0)*((3.0/2.0)*KP0 - 3.0/2.0)*((1 - cbrt(V/V0))*((3.0/2.0)*KP0 - 3.0/2.0) - 1)*PetscExpReal((1 - cbrt(V/V0))*((3.0/2.0)*KP0 - 3.0/2.0))/V - 1.0/3.0*cbrt(V/V0)*((3.0/2.0)*KP0 - 3.0/2.0)*PetscExpReal((1 - cbrt(V/V0))*((3.0/2.0)*KP0 - 3.0/2.0))/V)/PetscPowScalar((3.0/2.0)*KP0 - 3.0/2.0, 2) + T*(0.027612979772501833*PetscPowScalar(T, m)*T0*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/(2*T*m - 2*T) - 0.027612979772501833*T0*m*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/((2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(-2*T0*m*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) + 2*T0*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/PetscPowScalar(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), 2) - 0.041419469658752747*m*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/((2*m - 2)*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) + 0.041419469658752747*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/((2*m - 2)*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))) - 0.013806489886250916*PetscPowScalar(T, m)*T0*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/m + 0.013806489886250916*T0*PetscPowScalar(T0, m)*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/m - T0*(0.027612979772501833*T0*PetscPowScalar(T0, m)*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/(2*T0*m - 2*T0) - 0.027612979772501833*T0*m*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/((2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(-2*T0*m*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) + 2*T0*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/PetscPowScalar(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), 2) - 0.041419469658752747*m*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/((2*m - 2)*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) + 0.041419469658752747*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/((2*m - 2)*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)));
+    *P =  -9*K0*V0*(-1.0/3.0*cbrt(V/V0)*((3.0/2.0)*KP0 - 3.0/2.0)*((1 - cbrt(V/V0))*((3.0/2.0)*KP0 - 3.0/2.0) - 1)*PetscExpReal((1 - cbrt(V/V0))*((3.0/2.0)*KP0 - 3.0/2.0))/V - 1.0/3.0*cbrt(V/V0)*((3.0/2.0)*KP0 - 3.0/2.0)*PetscExpReal((1 - cbrt(V/V0))*((3.0/2.0)*KP0 - 3.0/2.0))/V)/PetscPowScalar((3.0/2.0)*KP0 - 3.0/2.0, 2) + T*(0.027612979772501833*PetscPowScalar(T, m)*T0*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/(2*T*m - 2*T) - 0.027612979772501833*T0*m*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/((2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(-2*T0*m*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) + 2*T0*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/PetscPowScalar(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), 2) - 0.041419469658752747*m*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/((2*m - 2)*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) + 0.041419469658752747*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/((2*m - 2)*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))) - 0.013806489886250916*PetscPowScalar(T, m)*T0*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/m + 0.013806489886250916*T0*PetscPowScalar(T0, m)*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/m - T0*(0.027612979772501833*T0*PetscPowScalar(T0, m)*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/(2*T0*m - 2*T0) - 0.027612979772501833*T0*m*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/((2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(b1/V0 + 2*b2*(V/V0 - 1)/V0 + 3*b3*PetscPowScalar(V/V0 - 1, 2)/V0 + 4*b4*PetscPowScalar(V/V0 - 1, 3)/V0)*PetscPowScalar(1.0/T0, m)/(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(-2*T0*m*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) + 2*T0*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/PetscPowScalar(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), 2) - 0.041419469658752747*m*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/((2*m - 2)*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) + 0.041419469658752747*(-gamma0*PetscPowScalar(V0/V, 2.0/3.0)/V - 1.0/6.0*PetscPowScalar(V0/V, 2.0/3.0)*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0)/V)/((2*m - 2)*(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)));
 
-    return P;
+    PetscFunctionReturn(0);
 }
 
-static PetscScalar GetRTpressEntropy( const RTpressParameters rtp, PetscScalar V, PetscScalar T )
+static PetscErrorCode SetRTpressEntropy( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *S )
 {
     /* entropy = function( volume, temperature ) */
 
-    PetscScalar S;
     PetscScalar const gamma0 = rtp->gamma0;
     PetscScalar const gammaP0 = rtp->gammaP0;
     PetscScalar const V0 = rtp->V0;
@@ -746,9 +798,9 @@ static PetscScalar GetRTpressEntropy( const RTpressParameters rtp, PetscScalar V
     PetscScalar const b3 = rtp->b3;
     PetscScalar const b4 = rtp->b4;
 
-    S = S0 + T*(0.027612979772501833*PetscPowScalar(T, m)*T0*(2 - 2*m)*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/PetscPowScalar(2*T*m - 2*T, 2) + 0.027612979772501833*PetscPowScalar(T, m)*T0*m*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/(T*(2*T*m - 2*T)) + 0.041419469658752747*m/(T*(2*m - 2)) - 0.041419469658752747/(T*(2*m - 2))) + 0.027612979772501833*PetscPowScalar(T, m)*T0*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/(2*T*m - 2*T) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) + 0.041419469658752747*m*PetscLogScalar(T)/(2*m - 2) - 0.041419469658752747*m*PetscLogScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))/(2*m - 2) - 0.020709734829376374 - 0.041419469658752747*PetscLogScalar(T)/(2*m - 2) + 0.041419469658752747*PetscLogScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))/(2*m - 2) - 0.013806489886250916*PetscPowScalar(T, m)*T0*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/T;
+    *S = S0 + T*(0.027612979772501833*PetscPowScalar(T, m)*T0*(2 - 2*m)*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/PetscPowScalar(2*T*m - 2*T, 2) + 0.027612979772501833*PetscPowScalar(T, m)*T0*m*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/(T*(2*T*m - 2*T)) + 0.041419469658752747*m/(T*(2*m - 2)) - 0.041419469658752747/(T*(2*m - 2))) + 0.027612979772501833*PetscPowScalar(T, m)*T0*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/(2*T*m - 2*T) - 0.027612979772501833*T0*PetscPowScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1), m)*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/(2*T0*m*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1) - 2*T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1)) + 0.041419469658752747*m*PetscLogScalar(T)/(2*m - 2) - 0.041419469658752747*m*PetscLogScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))/(2*m - 2) - 0.020709734829376374 - 0.041419469658752747*PetscLogScalar(T)/(2*m - 2) + 0.041419469658752747*PetscLogScalar(T0*PetscSqrtReal(6*gamma0*((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0) + (1.0/2.0)*PetscPowScalar((1.0/2.0)*PetscPowScalar(V0/V, 2.0/3.0) - 1.0/2.0, 2)*(36*PetscPowScalar(gamma0, 2) - 12*gamma0 - 18*gammaP0) + 1))/(2*m - 2) - 0.013806489886250916*PetscPowScalar(T, m)*T0*(b0 + b1*(V/V0 - 1) + b2*PetscPowScalar(V/V0 - 1, 2) + b3*PetscPowScalar(V/V0 - 1, 3) + b4*PetscPowScalar(V/V0 - 1, 4))*PetscPowScalar(1.0/T0, m)/T;
 
-    return S;
+    PetscFunctionReturn(0);
 }
 
 #if 0
@@ -803,7 +855,7 @@ PetscScalar GetRTpressEntropy_test( Ctx *E )
 }
 #endif
 
-static PetscErrorCode GetRTpressRho( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *rho_ptr )
+static PetscErrorCode SetRTpressRho( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *rho_ptr )
 {
 
     /* returns density in SI units, kg/m^3 */
@@ -822,7 +874,7 @@ static PetscErrorCode GetRTpressRho( const RTpressParameters rtp, PetscScalar V,
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetRTpressAlpha( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *alpha_ptr )
+static PetscErrorCode SetRTpressAlpha( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *alpha_ptr )
 {
     /* thermal expansion = function( volume, temperature ) */
     /* returns thermal expansion coefficient in SI units, 1/K */
@@ -848,7 +900,7 @@ static PetscErrorCode GetRTpressAlpha( const RTpressParameters rtp, PetscScalar 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetRTpressCv( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *Cv_ptr )
+static PetscErrorCode SetRTpressCv( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *Cv_ptr )
 {
     /* thermal heat capacity at constant volume = function( volume, temperature ) */
 
@@ -874,7 +926,7 @@ static PetscErrorCode GetRTpressCv( const RTpressParameters rtp, PetscScalar V, 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetRTpressCp( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *Cp_ptr )
+static PetscErrorCode SetRTpressCp( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *Cp_ptr )
 {
     /* thermal heat capacity at constant pressure = function( volume, temperature ) */
 
@@ -904,7 +956,7 @@ static PetscErrorCode GetRTpressCp( const RTpressParameters rtp, PetscScalar V, 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetRTpressdTdPs( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *dTdPs_ptr )
+static PetscErrorCode SetRTpressdTdPs( const RTpressParameters rtp, PetscScalar V, PetscScalar T, PetscScalar *dTdPs_ptr )
 {
 
     PetscScalar dTdPs = *dTdPs_ptr;
@@ -993,8 +1045,8 @@ static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES snes, Vec 
     V = xx[0];
     T = xx[1];
 
-    P = GetRTpressPressure( rtpress_eval->rtp, V, T );
-    S = GetRTpressEntropy( rtpress_eval->rtp, V, T );
+    SetRTpressPressure( rtpress_eval->rtp, V, T, &P );
+    SetRTpressEntropy( rtpress_eval->rtp, V, T, &S );
 
     /* compute residual */
     ff[0] = P - rtpress_eval->P;
@@ -1006,7 +1058,7 @@ static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES snes, Vec 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetRTpressVolumeTemperature( const RTpressParameters rtp, PetscScalar P, PetscScalar S, PetscScalar *V, PetscScalar *T )
+static PetscErrorCode SetRTpressVolumeTemperature( const RTpressParameters rtp, PetscScalar P, PetscScalar S, PetscScalar *V, PetscScalar *T )
 {
     PetscErrorCode ierr;
     SNES           snes;
@@ -1099,20 +1151,18 @@ static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters rtp, PetscS
 
     eos_eval->P = P;
     eos_eval->S = S;
-    ierr = GetRTpressVolumeTemperature( rtp, P, S, &eos_eval->V, &eos_eval->T );CHKERRQ(ierr);
-    ierr = GetRTpressdTdPs( rtp, eos_eval->V, eos_eval->T, &eos_eval->dTdPs );
-    ierr = GetRTpressCp( rtp, eos_eval->V, eos_eval->T, &eos_eval->Cp );
-    ierr = GetRTpressCv( rtp, eos_eval->V, eos_eval->T, &eos_eval->Cv );
-    ierr = GetRTpressRho( rtp, eos_eval->V, eos_eval->T, &eos_eval->rho );
-    ierr = GetRTpressAlpha( rtp, eos_eval->V, eos_eval->T, &eos_eval->alpha );
+    ierr = SetRTpressVolumeTemperature( rtp, P, S, &eos_eval->V, &eos_eval->T );CHKERRQ(ierr);
+    ierr = SetRTpressdTdPs( rtp, eos_eval->V, eos_eval->T, &eos_eval->dTdPs );
+    ierr = SetRTpressCp( rtp, eos_eval->V, eos_eval->T, &eos_eval->Cp );
+    ierr = SetRTpressCv( rtp, eos_eval->V, eos_eval->T, &eos_eval->Cv );
+    ierr = SetRTpressRho( rtp, eos_eval->V, eos_eval->T, &eos_eval->rho );
+    ierr = SetRTpressAlpha( rtp, eos_eval->V, eos_eval->T, &eos_eval->alpha );
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary )
+static PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary )
 {
-    PetscErrorCode ierr;
-
     PetscFunctionBeginUser;
     *boundary = GetInterp1dValue( Ep->phase_boundary, P ); /* solidus entropy */
     PetscFunctionReturn(0);
@@ -1539,29 +1589,29 @@ PetscErrorCode EosCompositeDestroy( EosComposite *eos_composite_ptr )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseLiquidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *liquidus )
+static PetscErrorCode SetTwoPhaseLiquidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *liquidus )
 {
     PetscFunctionBeginUser;
-    GetPhaseBoundary( eos_composite->eos_parameters[0], P, liquidus ); /* liquidus entropy */
+    SetPhaseBoundary( eos_composite->eos_parameters[0], P, liquidus ); /* liquidus entropy */
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseSolidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *solidus )
+static PetscErrorCode SetTwoPhaseSolidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *solidus )
 {
     PetscFunctionBeginUser;
-    GetPhaseBoundary( eos_composite->eos_parameters[1], P, solidus ); /* solidus entropy */
+    SetPhaseBoundary( eos_composite->eos_parameters[1], P, solidus ); /* solidus entropy */
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseFusion( const EosComposite eos_composite, PetscScalar P, PetscScalar *fusion )
+static PetscErrorCode SetTwoPhaseFusion( const EosComposite eos_composite, PetscScalar P, PetscScalar *fusion )
 {
     PetscErrorCode ierr;
     PetscScalar liquidus, solidus;
 
     PetscFunctionBeginUser;
 
-    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
-    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
     *fusion = liquidus - solidus;
 
     PetscFunctionReturn(0);
@@ -1569,7 +1619,7 @@ static PetscErrorCode GetTwoPhaseFusion( const EosComposite eos_composite, Petsc
 
 /* not used */
 #if 0
-static PetscErrorCode GetTwoPhaseFusionTemp( const EosComposite eos_composite, PetscScalar P, PetscScalar *fusion_temp )
+static PetscErrorCode SetTwoPhaseFusionTemp( const EosComposite eos_composite, PetscScalar P, PetscScalar *fusion_temp )
 {
     PetscErrorCode ierr;
     EosEval eos_eval_melt, eos_eval_solid;
@@ -1577,8 +1627,8 @@ static PetscErrorCode GetTwoPhaseFusionTemp( const EosComposite eos_composite, P
 
     PetscFunctionBeginUser;
 
-    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus );
-    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus );
+    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus );
+    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus );
 
     /* TODO?: it is not necessary to evaluate all eos properties, but this function
        is robust against stale data.  Unless this is really a bottleneck in the computational
@@ -1592,15 +1642,15 @@ static PetscErrorCode GetTwoPhaseFusionTemp( const EosComposite eos_composite, P
 }
 #endif
 
-static PetscErrorCode GetTwoPhasePhaseFraction( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
+static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
 {
     PetscErrorCode ierr;
     PetscScalar solidus, fusion;
 
     PetscFunctionBeginUser;
 
-    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
-    ierr = GetTwoPhaseFusion( eos_composite, P, &fusion ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseFusion( eos_composite, P, &fusion ); CHKERRQ(ierr);
 
     *phase_fraction = ( S - solidus ) / fusion;
 
@@ -1616,7 +1666,7 @@ static PetscErrorCode GetTwoPhasePhaseFraction( const EosComposite eos_composite
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseTemperature( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *T_ptr )
+static PetscErrorCode SetTwoPhaseTemperature( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *T_ptr )
 {
     PetscErrorCode ierr;
     EosEval eos_eval_melt, eos_eval_solid;
@@ -1624,10 +1674,10 @@ static PetscErrorCode GetTwoPhaseTemperature( const EosComposite eos_composite, 
 
     PetscFunctionBeginUser;
 
-    ierr = GetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
-    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
-    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
 
     /* linear temperature between liquidus and solidus */
@@ -1637,7 +1687,7 @@ static PetscErrorCode GetTwoPhaseTemperature( const EosComposite eos_composite, 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseRho( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *rho_ptr )
+static PetscErrorCode SetTwoPhaseRho( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *rho_ptr )
 {
     /* TODO(?) much of this overlaps with the calculation of the mixed phase temperature.  Could
        combine to avoid recalculating the EosEval structs */
@@ -1648,10 +1698,10 @@ static PetscErrorCode GetTwoPhaseRho( const EosComposite eos_composite, PetscSca
 
     PetscFunctionBeginUser;
 
-    ierr = GetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
-    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
-    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
 
     /* volume additivity (excludes temperature effect) */
@@ -1661,24 +1711,24 @@ static PetscErrorCode GetTwoPhaseRho( const EosComposite eos_composite, PetscSca
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhasedTdPs( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *dTdPs_ptr )
+static PetscErrorCode SetTwoPhasedTdPs( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *dTdPs_ptr )
 {
     PetscErrorCode ierr;
     PetscScalar alpha, temp, rho, cp;
 
     PetscFunctionBeginUser;
 
-    ierr = GetTwoPhaseAlpha( eos_composite, P, S, &alpha );CHKERRQ(ierr);
-    ierr = GetTwoPhaseCp( eos_composite, P, S, &cp );CHKERRQ(ierr);
-    ierr = GetTwoPhaseRho( eos_composite, P, S, &rho );CHKERRQ(ierr);
-    ierr = GetTwoPhaseTemperature( eos_composite, P, S, &temp );CHKERRQ(ierr);
+    ierr = SetTwoPhaseAlpha( eos_composite, P, S, &alpha );CHKERRQ(ierr);
+    ierr = SetTwoPhaseCp( eos_composite, P, S, &cp );CHKERRQ(ierr);
+    ierr = SetTwoPhaseRho( eos_composite, P, S, &rho );CHKERRQ(ierr);
+    ierr = SetTwoPhaseTemperature( eos_composite, P, S, &temp );CHKERRQ(ierr);
 
     *dTdPs_ptr = alpha * temp / ( rho * cp );
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseCp( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *Cp_ptr )
+static PetscErrorCode SetTwoPhaseCp( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *Cp_ptr )
 {
     PetscErrorCode ierr;
     EosEval eos_eval_melt, eos_eval_solid;
@@ -1686,9 +1736,9 @@ static PetscErrorCode GetTwoPhaseCp( const EosComposite eos_composite, PetscScal
 
     PetscFunctionBeginUser;
 
-    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
-    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
 
     *Cp_ptr = eos_eval_melt.S - eos_eval_solid.S;
@@ -1698,7 +1748,7 @@ static PetscErrorCode GetTwoPhaseCp( const EosComposite eos_composite, PetscScal
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseAlpha( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *alpha_ptr )
+static PetscErrorCode SetTwoPhaseAlpha( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *alpha_ptr )
 {
     PetscErrorCode ierr;
     EosEval eos_eval_melt, eos_eval_solid;
@@ -1709,10 +1759,10 @@ static PetscErrorCode GetTwoPhaseAlpha( const EosComposite eos_composite, PetscS
     /* TODO?: it is not necessary to evaluate all eos properties, but this function
        is robust against stale data.  Unless this is really a bottleneck in the computational
        time, it's probably OK */
-    ierr = GetTwoPhaseRho( eos_composite, P, S, &rho );
-    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseRho( eos_composite, P, S, &rho );
+    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
-    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);    
 
     /* FIXME: positive for MgSiO3 since solid rho > melt rho.  But need to adjust for compositional
@@ -1722,7 +1772,7 @@ static PetscErrorCode GetTwoPhaseAlpha( const EosComposite eos_composite, PetscS
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseConductivity( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *conductivity )
+static PetscErrorCode SetTwoPhaseConductivity( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *conductivity )
 {
     PetscErrorCode ierr;
     EosEval eos_eval_melt, eos_eval_solid;
@@ -1730,7 +1780,7 @@ static PetscErrorCode GetTwoPhaseConductivity( const EosComposite eos_composite,
 
     PetscFunctionBeginUser;
 
-    ierr = GetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
+    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
     
     ierr = SetEosEval( eos_composite->eos_parameters[0], P, S, &eos_eval_melt ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[1], P, S, &eos_eval_solid ); CHKERRQ(ierr);
@@ -1741,7 +1791,7 @@ static PetscErrorCode GetTwoPhaseConductivity( const EosComposite eos_composite,
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetTwoPhaseViscosity( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *log10visc_ptr )
+static PetscErrorCode SetTwoPhaseViscosity( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *log10visc_ptr )
 {
     PetscErrorCode ierr;
     EosEval eos_eval_melt, eos_eval_solid;
@@ -1750,16 +1800,16 @@ static PetscErrorCode GetTwoPhaseViscosity( const EosComposite eos_composite, Pe
 
     PetscFunctionBeginUser;
 
-    ierr = GetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
+    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
 
     /* set temperature at liquidus */
-    ierr = GetTwoPhaseLiquidus( eos_composite, P, &liquidus );CHKERRQ(ierr);
+    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus );CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
     ierr = SetEosEvalViscosity( eos_composite->eos_parameters[0], &eos_eval_melt );CHKERRQ(ierr);
     log10visc_melt = eos_eval_melt.log10visc;
 
     /* set temperature at solidus */
-    ierr = GetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
     ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
     ierr = SetEosEvalViscosity( eos_composite->eos_parameters[1], &eos_eval_solid );CHKERRQ(ierr);
     log10visc_sol = eos_eval_solid.log10visc;
@@ -1783,13 +1833,13 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
 
     eos_eval->P = P;
     eos_eval->S = S;
-    ierr = GetTwoPhaseTemperature( eos_composite, P, S, &eos_eval->T );CHKERRQ(ierr);
-    ierr = GetTwoPhaseCp( eos_composite, P, S, &eos_eval->Cp );CHKERRQ(ierr);
-    ierr = GetTwoPhaseRho( eos_composite, P, S, &eos_eval->rho );CHKERRQ(ierr);
-    ierr = GetTwoPhaseAlpha( eos_composite, P, S, &eos_eval->alpha );CHKERRQ(ierr);
-    ierr = GetTwoPhasedTdPs( eos_composite, P, S, &eos_eval->dTdPs );CHKERRQ(ierr);
-    ierr = GetTwoPhaseConductivity( eos_composite, P, S, &eos_eval->cond );CHKERRQ(ierr);
-    ierr = GetTwoPhaseViscosity( eos_composite, P, S, &eos_eval->log10visc );CHKERRQ(ierr);
+    ierr = SetTwoPhaseTemperature( eos_composite, P, S, &eos_eval->T );CHKERRQ(ierr);
+    ierr = SetTwoPhaseCp( eos_composite, P, S, &eos_eval->Cp );CHKERRQ(ierr);
+    ierr = SetTwoPhaseRho( eos_composite, P, S, &eos_eval->rho );CHKERRQ(ierr);
+    ierr = SetTwoPhaseAlpha( eos_composite, P, S, &eos_eval->alpha );CHKERRQ(ierr);
+    ierr = SetTwoPhasedTdPs( eos_composite, P, S, &eos_eval->dTdPs );CHKERRQ(ierr);
+    ierr = SetTwoPhaseConductivity( eos_composite, P, S, &eos_eval->cond );CHKERRQ(ierr);
+    ierr = SetTwoPhaseViscosity( eos_composite, P, S, &eos_eval->log10visc );CHKERRQ(ierr);
     /* lookup does not know about these quantities, since they are not used by
        SPIDER, but for completeness zero them here */
     eos_eval->Cv = 0.0;

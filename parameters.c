@@ -599,6 +599,14 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
       P->SEPARATION = PETSC_FALSE;
   }
 
+
+  /* TODO: this is a bit tricky.  Basically, if you define two phases, you will most likely need a mixed
+     phase region to compute the mixed phase region between them.  But, another option is to define
+     two phases (e.g., solid), and use one for an upper layer and one for a lower layer.  So defining
+     two phases in the system does not necessarily mean you need a mixed phase in between them */
+
+  /* currently this is user-specified, but it can probably be determined based on other set parameters */
+
   /* Look for composite phases */
   P->n_composite_phases = 0;
   {

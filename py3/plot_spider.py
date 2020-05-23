@@ -368,7 +368,7 @@ def spiderplot_fig3( times ):
     units = myjson_o.get_dict_units(['data','dTdrs_b'])
     #title = '(f) Adiabatic grad, {}'.format(units)
     title = '(f) Adiabat grad, K/GPa'
-    yticks = [0,20,40,60,80,100]
+    yticks = [0,20,40,60,80,100,120,140,160,180]
     #yticks = [-3E-3, -2E-3, -1E-3, 0]
     fig_o.set_myaxes( ax5, title=title, xlabel='$P$ (GPa)',
         yticks=yticks,xticks=xticks, xmax=xmax,
