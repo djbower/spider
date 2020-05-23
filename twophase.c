@@ -8,8 +8,8 @@
 static PetscErrorCode set_liquidus( Ctx *, PetscInt index );
 static PetscErrorCode set_solidus( Ctx *, PetscInt index );
 static PetscErrorCode set_fusion( Ctx * );
-static PetscErrorCode set_fusion_curve( Ctx * );
-static PetscErrorCode set_mixed_phase( Ctx * );
+//static PetscErrorCode set_fusion_curve( Ctx * );
+//static PetscErrorCode set_mixed_phase( Ctx * );
 
 static PetscErrorCode set_rheological_front_mantle_properties( Ctx *, RheologicalFront *, PetscInt, Vec * );
 
@@ -32,8 +32,8 @@ PetscErrorCode set_twophase( Ctx *E )
 
     /* these all need the liquidus and solidus to be set */
     set_fusion( E );
-    set_fusion_curve( E );
-    set_mixed_phase( E );
+ //   set_fusion_curve( E );
+  //  set_mixed_phase( E );
 
     PetscFunctionReturn(0);
 }
@@ -263,15 +263,20 @@ static PetscErrorCode set_fusion( Ctx *E )
     /* fusion = liquidus - solidus */
     /* basic nodes */
     ierr = VecWAXPY(S->fusion,-1.0,S->solidus,S->liquidus);CHKERRQ(ierr);
-    ierr = VecWAXPY(S->fusion_rho,-1.0,S->solidus_rho,S->liquidus_rho);CHKERRQ(ierr);
-    ierr = VecWAXPY(S->fusion_temp,-1.0,S->solidus_temp,S->liquidus_temp);CHKERRQ(ierr);
+
+    // FIXME: REMOVE
+    //ierr = VecWAXPY(S->fusion_rho,-1.0,S->solidus_rho,S->liquidus_rho);CHKERRQ(ierr);
+    //ierr = VecWAXPY(S->fusion_temp,-1.0,S->solidus_temp,S->liquidus_temp);CHKERRQ(ierr);
 
     /* staggered nodes */
+
     ierr = VecWAXPY(S->fusion_s,-1.0,S->solidus_s,S->liquidus_s);CHKERRQ(ierr);
-    ierr = VecWAXPY(S->fusion_temp_s,-1.0,S->solidus_temp_s,S->liquidus_temp_s);CHKERRQ(ierr);
+    //ierr = VecWAXPY(S->fusion_temp_s,-1.0,S->solidus_temp_s,S->liquidus_temp_s);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
+#if 0
 static PetscErrorCode set_fusion_curve( Ctx *E )
 {
     /* fusion curve is defined by the 50% melt fraction contour */
@@ -298,7 +303,9 @@ static PetscErrorCode set_fusion_curve( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+#endif
 
+#if 0
 static PetscErrorCode set_mixed_phase( Ctx *E )
 {
     /* dTdrs and heat capacity can be precomputed for the mixed phase
@@ -318,6 +325,7 @@ static PetscErrorCode set_mixed_phase( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+#endif
 
 PetscErrorCode set_Mliq( Ctx *E )
 {
