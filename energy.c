@@ -182,34 +182,35 @@ static PetscErrorCode append_Jmix( Ctx *E )
     DM             da_b = E->da_b;
     Solution       *S = &E->solution;
     PetscInt       i, ilo, ihi, w;
-    PetscScalar    *arr_gphi, *arr_fwtl, *arr_fwts, *arr_Jmix;
+    PetscScalar    *arr_Jmix;
+    const PetscScalar *arr_dSliqdr, *arr_dSsoldr, *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_gphi;
+    // TODO: below currently not used
+    //*arr_fwtl, *arr_fwts, *arr_Jmix;
 
     PetscFunctionBeginUser;
-
-    /* convective mixing */
-    // arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
-    // arr_Jmix[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
-    ierr = VecWAXPY(S->Jmix,-1.0,S->dSliqdr,S->dSsoldr);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->phi);CHKERRQ(ierr);
-    ierr = VecAYPX(S->Jmix,1.0,S->dSdr);CHKERRQ(ierr);
-    ierr = VecAXPY(S->Jmix,-1.0,S->dSsoldr);CHKERRQ(ierr);
-    // arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
-    ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->kappac);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->rho);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->temp);CHKERRQ(ierr);
-    ierr = VecScale(S->Jmix,-1.0);CHKERRQ(ierr);
 
     ierr = DMDAGetCorners(da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w;
 
-    ierr = DMDAVecGetArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
+    /* TODO: currently not used.  Prob intended to standardise smoothing */
+    //ierr = DMDAVecGetArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
+    //ierr = DMDAVecGetArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSliqdr,&arr_dSliqdr);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSsoldr,&arr_dSsoldr);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
-    /* to smoothly blend in convective mixing across the liquidus
-       and solidus */
     for(i=ilo; i<ihi; ++i){
+        arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
+        arr_Jmix[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
+        arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
+
+        /* to smoothly blend in convective mixing across the phase boundaries */
         if(arr_gphi[i] > 0.5){
             // FIXME: smoothing width is hard-coded
             arr_Jmix[i] *= 1.0 - tanh_weight( arr_gphi[i], 1.0, 1.0E-2 );
@@ -220,8 +221,15 @@ static PetscErrorCode append_Jmix( Ctx *E )
         }   
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
+    //ierr = DMDAVecRestoreArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
+    //ierr = DMDAVecRestoreArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSliqdr,&arr_dSliqdr);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSsoldr,&arr_dSsoldr);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
