@@ -1,5 +1,6 @@
 #include "atmosphere.h"
 #include "energy.h"
+#include "eos.h"
 #include "matprop.h"
 #include "twophase.h"
 #include "util.h"
@@ -180,10 +181,17 @@ static PetscErrorCode append_Jmix( Ctx *E )
 {
     PetscErrorCode ierr;
     DM             da_b = E->da_b;
+    Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
     PetscInt       i, ilo, ihi, w;
     PetscScalar    *arr_Jmix;
-    const PetscScalar *arr_dSliqdr, *arr_dSsoldr, *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_gphi;
+    PetscScalar    dSliqdP, dSsoldP;
+    const PetscScalar *arr_dSliqdr, *arr_dSsoldr, *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_gphi, *arr_pres, *arr_S, *arr_dPdr;
+    /* FIXME: not general: assumes that first entry in eos_parameters relates to melt */
+    const EosParameters Ep0 = E->parameters->eos_parameters[0];
+    /* FIXME: not generalL assumes that second entry in eos_parameters relates to solid */
+    const EosParameters Ep1 = E->parameters->eos_parameters[1];
+
     // TODO: below currently not used
     //*arr_fwtl, *arr_fwts, *arr_Jmix;
 
@@ -203,11 +211,18 @@ static PetscErrorCode append_Jmix( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->S,&arr_S);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){
-        arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
-        arr_Jmix[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
+        //arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
+        ierr = SetInterp1dValue( Ep0->phase_boundary, arr_pres[i], NULL, &dSliqdP );CHKERRQ(ierr);
+        ierr = SetInterp1dValue( Ep1->phase_boundary, arr_pres[i], NULL, &dSsoldP );CHKERRQ(ierr);
+        arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * dSliqdP * arr_dPdr[i];
+        //arr_Jmix[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
+        arr_Jmix[i] += (arr_phi[i]-1.0) * dSsoldP * arr_dPdr[i];
         arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
 
         /* to smoothly blend in convective mixing across the phase boundaries */
@@ -231,6 +246,9 @@ static PetscErrorCode append_Jmix( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->S,&arr_S);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
     ierr = VecAXPY( S->Jtot, 1.0, S->Jmix ); CHKERRQ(ierr);
