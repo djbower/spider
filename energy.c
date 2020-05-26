@@ -186,7 +186,7 @@ static PetscErrorCode append_Jmix( Ctx *E )
     PetscInt       i, ilo, ihi, w;
     PetscScalar    *arr_Jmix;
     PetscScalar    dSliqdP, dSsoldP;
-    const PetscScalar *arr_dSliqdr, *arr_dSsoldr, *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_gphi, *arr_pres, *arr_S, *arr_dPdr;
+    const PetscScalar *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_gphi, *arr_pres, *arr_S, *arr_dPdr;
     /* FIXME: not general: assumes that first entry in eos_parameters relates to melt */
     const EosParameters Ep0 = E->parameters->eos_parameters[0];
     /* FIXME: not generalL assumes that second entry in eos_parameters relates to solid */
