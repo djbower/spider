@@ -155,7 +155,7 @@ static PetscErrorCode set_liquidus( Ctx *E, PetscInt index )
     for(i=ilo_b;i<ihi_b;++i){
         ierr = SetInterp1dValue( interp, arr_pres_b[i], &z, NULL );CHKERRQ(ierr);
         arr_liquidus[i] = z;
-        arr_liquidus_rho[i] = GetInterp2dValue( interpR, arr_pres_b[i], z );
+        ierr = SetInterp2dValue( interpR, arr_pres_b[i], z, &arr_liquidus_rho[i] );CHKERRQ(ierr);
     }
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->liquidus,&arr_liquidus);CHKERRQ(ierr);
@@ -169,7 +169,7 @@ static PetscErrorCode set_liquidus( Ctx *E, PetscInt index )
     for(i=ilo_s; i<ihi_s; ++i){
         ierr = SetInterp1dValue( interp, arr_pres_s[i], &z, NULL );CHKERRQ(ierr);
         arr_liquidus_s[i] = z;
-        arr_liquidus_rho_s[i] = GetInterp2dValue( interpR, arr_pres_s[i], z );
+        ierr = SetInterp2dValue( interpR, arr_pres_s[i], z, &arr_liquidus_rho_s[i] );CHKERRQ(ierr);
     }
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->liquidus_s,&arr_liquidus_s);CHKERRQ(ierr);
@@ -213,7 +213,7 @@ static PetscErrorCode set_solidus( Ctx *E, PetscInt index )
     for(i=ilo_b;i<ihi_b;++i){
         ierr = SetInterp1dValue( interp, arr_pres_b[i], &z, NULL );CHKERRQ(ierr);
         arr_solidus[i] = z;
-        arr_solidus_rho[i] = GetInterp2dValue( interpR, arr_pres_b[i], z );
+        ierr = SetInterp2dValue( interpR, arr_pres_b[i], z, &arr_solidus_rho[i] );CHKERRQ(ierr);
     }
     ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->solidus,&arr_solidus);CHKERRQ(ierr);
@@ -226,7 +226,7 @@ static PetscErrorCode set_solidus( Ctx *E, PetscInt index )
     for(i=ilo_s; i<ihi_s; ++i){
         ierr = SetInterp1dValue( interp, arr_pres_s[i], &z, NULL );CHKERRQ(ierr);
         arr_solidus_s[i] = z;
-        arr_solidus_rho_s[i] = GetInterp2dValue( interpR, arr_pres_s[i], z );
+        ierr = SetInterp2dValue( interpR, arr_pres_s[i], z, &arr_solidus_rho_s[i] );CHKERRQ(ierr);
     }
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->solidus_s,&arr_solidus_s);CHKERRQ(ierr);

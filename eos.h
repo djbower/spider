@@ -31,6 +31,6 @@ PetscScalar get_rtpress_entropy_test( Ctx * );
 #endif
 
 PetscErrorCode SetInterp1dValue( Interp1d const, PetscScalar, PetscScalar *, PetscScalar * );
-PetscScalar GetInterp2dValue( Interp2d const, PetscScalar, PetscScalar );
+PetscErrorCode SetInterp2dValue( Interp2d const, PetscScalar, PetscScalar, PetscScalar * );
 
 #endif

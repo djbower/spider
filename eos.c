@@ -401,7 +401,7 @@ PetscErrorCode SetInterp1dValue( const Interp1d interp, PetscScalar x, PetscScal
 
 }
 
-PetscScalar GetInterp2dValue( const Interp2d interp, PetscScalar x, PetscScalar y )
+PetscErrorCode SetInterp2dValue( const Interp2d interp, PetscScalar x, PetscScalar y, PetscScalar *val )
 {
     /* wrapper for evaluating a 2-D lookup using bilinear
        interpolation.
@@ -410,17 +410,16 @@ PetscScalar GetInterp2dValue( const Interp2d interp, PetscScalar x, PetscScalar 
        spaced so we use a faster lookup approach by computing
        indices directly rather than looping through data */
 
-    //PetscErrorCode ierr;
     PetscScalar z1, z2, z3, z4;
     PetscScalar w1, w2, w3, w4; // weights
-    PetscScalar result;
     PetscScalar const *xa, *ya;
     PetscInt NX, NY;
-    PetscScalar dx;
-    PetscScalar xmin, xmax, ymin, ymax;
+    PetscScalar dx, xmin, xmax, ymin, ymax;
     // below only if y data is evenly spaced
     //PetscScalar dy;
     PetscInt indx, indy;
+
+    PetscFunctionBeginUser;
 
     NX = interp->NX;
     xa = interp->xa;
@@ -495,14 +494,14 @@ PetscScalar GetInterp2dValue( const Interp2d interp, PetscScalar x, PetscScalar 
     z4 = interp->za[indx+1][indy+1];
 
     // bilinear interpolation
-    result = z1 * w2 * w4;
-    result += z2 * w1 * w4;
-    result += z3 * w2 * w3;
-    result += z4 * w1 * w3;
-    result /= dx; // dx
-    result /= ya[indy+1]-ya[indy]; // dy
+    *val = z1 * w2 * w4;
+    *val += z2 * w1 * w4;
+    *val += z3 * w2 * w3;
+    *val += z4 * w1 * w3;
+    *val /= dx; // dx
+    *val /= ya[indy+1]-ya[indy]; // dy
 
-    return result;
+    PetscFunctionReturn(0);
 }
 
 static PetscErrorCode Interp1dDestroy( Interp1d *interp_ptr )
@@ -602,36 +601,46 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
 
 static PetscErrorCode SetLookupTemperature( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *T)
 {
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    *T = GetInterp2dValue( lookup->temp, P, S );
+    ierr = SetInterp2dValue( lookup->temp, P, S, T );CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode SetLookupRho( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *rho)
 {
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    *rho = GetInterp2dValue( lookup->rho, P, S );
+    ierr = SetInterp2dValue( lookup->rho, P, S, rho );CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode SetLookupAlpha( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *alpha)
 {
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    *alpha = GetInterp2dValue( lookup->alpha, P, S );
+    ierr = SetInterp2dValue( lookup->alpha, P, S, alpha );CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode SetLookupCp( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *Cp)
 {
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    *Cp = GetInterp2dValue( lookup->cp, P, S );
+    ierr = SetInterp2dValue( lookup->cp, P, S, Cp );CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode SetLookupdTdPs( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *dTdPs)
 {
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    *dTdPs = GetInterp2dValue( lookup->dTdPs, P, S );
+    ierr = SetInterp2dValue( lookup->dTdPs, P, S, dTdPs );CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
