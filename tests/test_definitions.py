@@ -140,7 +140,7 @@ def blackbody(rootDir, tol) :
   ranks = 1
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','blackbody.opts'),\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/1000.json'), # TODO: last timestep time may change?
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/10000.json'), # TODO: last timestep time may change?
           ]
 
   expectedFile = os.path.join(thisDir,'expected_output','expected_blackbody.txt')
@@ -150,7 +150,7 @@ def blackbody(rootDir, tol) :
       t.compareFloatingPointRelative(re.escape('val: '),    tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
-  t.setComparisonFile('1000.txt')
+  t.setComparisonFile('10000.txt')
   t.setVerifyMethod(comparefunc)
   t.setWalltime(1) # minutes
   t.setUseSandbox()

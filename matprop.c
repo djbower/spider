@@ -248,11 +248,11 @@ PetscErrorCode set_matprop_basic( Ctx *E )
               SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
               fwtl = arr_fwtl[i]; // for smoothing
               arr_rho[i] = combine_matprop( fwtl, E->eos_evals[0].rho, E->eos_evals[2].rho );
-#if 1
+#if 0
               /* this is the original formulation */
               arr_dTdrs[i] = combine_matprop( fwtl, E->eos_evals[0].dTdPs * arr_dPdr_b[i], arr_dTdrs_mix[i] );
 #endif
-#if 0
+#if 1
               /* this uses a different formulation for computing the mixed phase alpha */
               arr_dTdrs[i] = combine_matprop( fwtl, E->eos_evals[0].dTdPs * arr_dPdr_b[i], E->eos_evals[2].dTdPs * arr_dPdr_b[i] );
 #endif
@@ -267,11 +267,11 @@ PetscErrorCode set_matprop_basic( Ctx *E )
               SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
               fwts = arr_fwts[i]; // for smoothing
               arr_rho[i] = combine_matprop( fwts, E->eos_evals[2].rho, E->eos_evals[1].rho );
-#if 1
+#if 0
               /* this is the original formulation */
               arr_dTdrs[i] = combine_matprop( fwts, arr_dTdrs_mix[i], E->eos_evals[1].dTdPs * arr_dPdr_b[i] );
 #endif
-#if 0
+#if 1
               /* this uses a different formulation for computing the mixed phase alpha */
               arr_dTdrs[i] = combine_matprop( fwts, E->eos_evals[2].dTdPs * arr_dPdr_b[i], E->eos_evals[1].dTdPs * arr_dPdr_b[i] );
 #endif

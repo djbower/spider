@@ -10,7 +10,7 @@
 -maxsteps 100000000
 
 # number of macro steps
--nstepsmacro 10
+-nstepsmacro 100
 
 # macro step size in years
 -dtmacro 100
