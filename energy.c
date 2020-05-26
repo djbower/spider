@@ -203,8 +203,6 @@ static PetscErrorCode append_Jmix( Ctx *E )
     /* TODO: currently not used.  Prob intended to standardise smoothing */
     //ierr = DMDAVecGetArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
     //ierr = DMDAVecGetArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSliqdr,&arr_dSliqdr);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSsoldr,&arr_dSsoldr);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
@@ -238,8 +236,6 @@ static PetscErrorCode append_Jmix( Ctx *E )
 
     //ierr = DMDAVecRestoreArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
     //ierr = DMDAVecRestoreArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSliqdr,&arr_dSliqdr);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSsoldr,&arr_dSsoldr);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
