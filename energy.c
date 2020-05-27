@@ -294,7 +294,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     PetscScalar *arr_Jgrav, F, cond1, cond2, phi, rhol, rhos, Sliq, Ssol;
     PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
     DM da_b = E->da_b;
-    const PetscScalar *arr_phi, *arr_pres, *arr_rho, *arr_fusion, *arr_temp;
+    const PetscScalar *arr_phi, *arr_pres, *arr_rho, *arr_temp;
 
     PetscFunctionBeginUser;
 
@@ -308,7 +308,6 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->fusion,&arr_fusion);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
 
     for(i=ilo_b; i<ihi_b; ++i){
@@ -341,7 +340,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
         arr_Jgrav[i] = rhol - rhos;
         arr_Jgrav[i] *= arr_rho[i];
         // arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
-        arr_Jgrav[i] *= arr_fusion[i];
+        arr_Jgrav[i] *= Sliq - Ssol; // entropy of fusion
         arr_Jgrav[i] *= arr_temp[i];
         arr_Jgrav[i] *= PetscPowScalar(P->grain,2);
         arr_Jgrav[i] *= P->gravity;
@@ -355,7 +354,6 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b, M->pressure_b, &arr_pres);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b, S->Jgrav, &arr_Jgrav);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b, S->rho, &arr_rho);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, S->fusion, &arr_fusion);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b, S->temp, &arr_temp);CHKERRQ(ierr);
 
     ierr = VecAXPY( S->Jtot, 1.0, S->Jgrav ); CHKERRQ(ierr);
