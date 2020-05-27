@@ -138,7 +138,6 @@ static PetscErrorCode set_liquidus( Ctx *E, PetscInt index )
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
 
-
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
