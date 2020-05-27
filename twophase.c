@@ -8,8 +8,6 @@
 static PetscErrorCode set_liquidus( Ctx *, PetscInt index );
 static PetscErrorCode set_solidus( Ctx *, PetscInt index );
 static PetscErrorCode set_fusion( Ctx * );
-//static PetscErrorCode set_fusion_curve( Ctx * );
-//static PetscErrorCode set_mixed_phase( Ctx * );
 
 static PetscErrorCode set_rheological_front_mantle_properties( Ctx *, RheologicalFront *, PetscInt, Vec * );
 
@@ -32,8 +30,6 @@ PetscErrorCode set_twophase( Ctx *E )
 
     /* these all need the liquidus and solidus to be set */
     set_fusion( E );
- //   set_fusion_curve( E );
-  //  set_mixed_phase( E );
 
     PetscFunctionReturn(0);
 }
@@ -245,71 +241,11 @@ static PetscErrorCode set_fusion( Ctx *E )
     S = &E->solution;
 
     /* fusion = liquidus - solidus */
-    /* basic nodes */
     ierr = VecWAXPY(S->fusion,-1.0,S->solidus,S->liquidus);CHKERRQ(ierr);
-
-    // FIXME: REMOVE
-    //ierr = VecWAXPY(S->fusion_rho,-1.0,S->solidus_rho,S->liquidus_rho);CHKERRQ(ierr);
-    //ierr = VecWAXPY(S->fusion_temp,-1.0,S->solidus_temp,S->liquidus_temp);CHKERRQ(ierr);
-
-    /* staggered nodes */
-
     ierr = VecWAXPY(S->fusion_s,-1.0,S->solidus_s,S->liquidus_s);CHKERRQ(ierr);
-    //ierr = VecWAXPY(S->fusion_temp_s,-1.0,S->solidus_temp_s,S->liquidus_temp_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
-
-#if 0
-static PetscErrorCode set_fusion_curve( Ctx *E )
-{
-    /* fusion curve is defined by the 50% melt fraction contour */
-
-    PetscErrorCode ierr;
-    Solution *S;
-
-    PetscFunctionBeginUser;
-    S = &E->solution;
-
-    /* basic nodes fusion_curve = solidus + 0.5*fusion*/
-    ierr = VecWAXPY(S->fusion_curve,0.5,S->fusion,S->solidus);CHKERRQ(ierr);
-    ierr = VecWAXPY(S->fusion_curve_temp,0.5,S->fusion_temp,S->solidus_temp);CHKERRQ(ierr);
-
-    /* staggered nodes */
-    ierr = VecWAXPY(S->fusion_curve_s,0.5,S->fusion_s,S->solidus_s);CHKERRQ(ierr);
-    ierr = VecWAXPY(S->fusion_curve_temp_s,0.5,S->fusion_temp_s,S->solidus_temp_s);CHKERRQ(ierr);
-
-    /* basic nodes */
-    MatMult( E->ddr_at_b, S->fusion_curve_s, S->dfusdr ); CHKERRQ(ierr);
-    MatMult( E->ddr_at_b, S->fusion_curve_temp_s, S->dfusdr_temp ); CHKERRQ(ierr);
-    MatMult( E->ddr_at_b, S->liquidus_s, S->dSliqdr ); CHKERRQ(ierr);
-    MatMult( E->ddr_at_b, S->solidus_s, S->dSsoldr ); CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-#endif
-
-#if 0
-static PetscErrorCode set_mixed_phase( Ctx *E )
-{
-    /* dTdrs and heat capacity can be precomputed for the mixed phase
-       because they are only pressure-dependent */
-
-    PetscErrorCode ierr;
-    Solution *S;
-
-    PetscFunctionBeginUser;
-    S = &E->solution;
-
-    /* dTdrs_mix = -dfusdr * (fusion_temp/fusion) + dfusdr_temp */
-    ierr = VecPointwiseDivide(S->dTdrs_mix,S->fusion_temp,S->fusion);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->dTdrs_mix,S->dTdrs_mix,S->dfusdr);CHKERRQ(ierr);
-    ierr = VecScale( S->dTdrs_mix, -1.0 );
-    ierr = VecAXPY(S->dTdrs_mix,1.0,S->dfusdr_temp);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-#endif
 
 PetscErrorCode set_Mliq( Ctx *E )
 {
