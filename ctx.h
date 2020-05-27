@@ -28,7 +28,7 @@ typedef struct Mesh_ {
 
 } Mesh;
 
-#define NUMSOLUTIONVECS_B 30
+#define NUMSOLUTIONVECS_B 28
 #define NUMSOLUTIONVECS_S 16
 typedef struct Solution_ {
 
@@ -36,7 +36,7 @@ typedef struct Solution_ {
     DimensionalisableField solutionFields_s[NUMSOLUTIONVECS_S];
 
     // TODO: eventually get rid of these
-    Vec alpha, cond, cp, dSdr, dTdrs, Etot, fusion, fwtl, fwts, gphi, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, liquidus, liquidus_rho, nu, phi, Ra, regime, rho, S, solidus, solidus_rho, temp, visc;
+    Vec alpha, cond, cp, dSdr, dTdrs, Etot, fusion, fwtl, fwts, gphi, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, liquidus, nu, phi, Ra, regime, rho, S, solidus, temp, visc;
 
     // TODO: eventually get rid of these
     Vec cp_s, dSdt_s, fusion_s, fwtl_s, fwts_s, gphi_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, liquidus_s, phi_s, rho_s, S_s, solidus_s, temp_s;
