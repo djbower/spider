@@ -285,27 +285,116 @@ static PetscErrorCode append_Jcond( Ctx *E )
 static PetscErrorCode append_Jgrav( Ctx *E )
 {
 
+/* new formulation here */
+#if 0
     PetscErrorCode ierr;
+    Mesh *M = &E->mesh;
     Solution *S = &E->solution;
-    Vec cond1, cond2, F;
-    Vec rho = S->rho;
-    Vec rhol = S->liquidus_rho;
-    Vec rhos = S->solidus_rho;
-    Parameters P = E->parameters;
-
-//rho, rhol, rhos, F;
+    const Parameters P = E->parameters;
+    const EosParameters Ep0 = P->eos_parameters[0];
+    const EosParameters Ep1 = P->eos_parameters[1];
+    PetscScalar cond1, cond2, F, phi, rhol, rhos, Sliq, Ssol;
     PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
-    DM da_b=E->da_b;
-    const PetscScalar *arr_cond1, *arr_cond2, *arr_liquidus_rho, *arr_phi, *arr_solidus_rho;
-    PetscScalar icond1, icond2, irhos, irhol, iphi;
-    PetscScalar *arr_F;
+    DM da_b = E->da_b;
+    const PetscScalar *arr_phi, *arr_rho, *arr_temp, *arr_fusion, *arr_pres;
+    PetscScalar *arr_Jgrav;
 
     PetscFunctionBeginUser;
 
-    //S = &E->solution;
-    //rho = S->rho;
-    //rhol = S->liquidus_rho;
-    //rhos = S->solidus_rho;
+    ierr = DMDAGetInfo(da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    /* loop over all basic internal nodes */
+    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+
+    ierr = DMDAVecGetArray(da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->fusion,&arr_fusion);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
+
+    for(i=ilo_b; i<ihi_b; ++i){
+        /* FIXME: recovers previous behaviour, but intrinisically assumes that lookup is
+           used.  Instead, evaluate directly from chosen EOS */
+        ierr = SetInterp1dValue( Ep0->phase_boundary, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
+        ierr = SetInterp2dValue( Ep0->lookup->rho, arr_pres[i], Sliq, &rhol );CHKERRQ(ierr);
+        ierr = SetInterp1dValue( Ep1->phase_boundary, arr_pres[i], &Ssol, NULL );CHKERRQ(ierr);
+        ierr = SetInterp2dValue( Ep1->lookup->rho, arr_pres[i], Ssol, &rhos );CHKERRQ(ierr);
+
+        cond1 = rhol / (11.993 * rhos + rhol);
+        cond2 = rhol / (0.29624 * rhos + rhol);
+        phi = arr_phi[i];
+
+        if(phi < cond1){
+            F = 0.001*PetscPowScalar(rhos,2)*PetscPowScalar(phi,3);
+            F /= PetscPowScalar(rhol,2)*(1.0-phi);
+        } else if(phi > cond2){
+            F = 2.0/9.0 * phi * (1.0-phi);
+        } else{
+            F = 5.0/7.0*PetscPowScalar(rhos,4.5)*PetscPowScalar(phi,5.5)*(1.0-phi);
+            F /= PetscPowScalar( rhol+(rhos-rhol)*phi, 4.5 );
+        }
+
+        arr_Jgrav[i] = (rhol-rhos) * arr_rho[i];
+        arr_Jgrav[i] *= arr_fusion[i] * arr_temp[i] * PetscPowScalar(P->grain,2) * P->gravity * F;
+        arr_Jgrav[i] /= PetscPowScalar(10.0, P->eos_parameters[0]->log10visc);
+
+    }
+
+    ierr = DMDAVecRestoreArray(da_b, S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->fusion, &arr_fusion);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->phi, &arr_phi);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->rho, &arr_rho);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->temp, &arr_temp);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
+
+    // DONE ABOVE
+    // arr_Jgrav[i] = (rhol-rhos) * rho;
+    //ierr = VecWAXPY( S->Jgrav, -1.0, rhos, rhol );
+    //ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, rho );
+
+    // DONE ABOVE
+    // arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
+    //ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, S->fusion );CHKERRQ(ierr);
+    //ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, S->temp );CHKERRQ(ierr);
+    //ierr = VecScale( S->Jgrav, PetscPowScalar(P->grain,2) );CHKERRQ(ierr);
+    //ierr = VecScale( S->Jgrav, P->gravity );CHKERRQ(ierr);
+    //ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, F );CHKERRQ(ierr);
+    // arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
+    //ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, P->eos_parameters[0]->log10visc));CHKERRQ(ierr);
+
+    ierr = VecAXPY( S->Jtot, 1.0, S->Jgrav ); CHKERRQ(ierr);
+
+//    ierr = DMDAVecRestoreArrayRead(da_b, S->fusion, &arr_fusion);CHKERRQ(ierr);
+ //   ierr = DMDAVecRestoreArrayRead(da_b, S->phi, &arr_phi);CHKERRQ(ierr);
+ //   ierr = DMDAVecRestoreArrayRead(da_b, S->temp, &arr_temp);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+#endif
+
+/* original formulation here */
+#if 1
+
+    PetscErrorCode ierr;
+    Mesh *M = &E->mesh;
+    Solution *S = &E->solution;
+    Vec F;
+    Vec rho = S->rho;
+    Parameters P = E->parameters;
+    const EosParameters Ep0 = P->eos_parameters[0]; // NEW
+    const EosParameters Ep1 = P->eos_parameters[1]; // NEW
+    PetscScalar ncond1, ncond2, nF, nphi, nrhol, nrhos, nSliq, nSsol; // NEW
+//rho, rhol, rhos, F;
+    PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
+    DM da_b=E->da_b;
+    const PetscScalar *arr_liquidus_rho, *arr_phi, *arr_solidus_rho, *arr_pres;
+    PetscScalar icond1, icond2, irhos, irhol, iphi;
+    PetscScalar *arr_F;
+    PetscScalar *arr_Jgrav;
+
+    PetscFunctionBeginUser;
 
     ierr = DMDAGetInfo(da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
@@ -314,65 +403,56 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     ierr = VecSetFromOptions( F );CHKERRQ(ierr);
     ierr = VecSetUp( F );CHKERRQ(ierr);
 
-    /* these are actually time-independent, so could be precomputed
-       outside of the time loop */
-    ierr = VecCreate( PETSC_COMM_WORLD, &cond1 );CHKERRQ(ierr);
-    ierr = VecSetSizes( cond1, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
-    ierr = VecSetFromOptions( cond1 );CHKERRQ(ierr);
-    ierr = VecSetUp( cond1 );CHKERRQ(ierr);
-
-    ierr = VecCreate( PETSC_COMM_WORLD, &cond2 );CHKERRQ(ierr);
-    ierr = VecSetSizes( cond2, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
-    ierr = VecSetFromOptions( cond2 );CHKERRQ(ierr);
-    ierr = VecSetUp( cond2 );CHKERRQ(ierr);
-
-    //PetscScalar cond1 = rhol / (11.993*rhos + rhol);
-    VecWAXPY(cond1, 11.993, rhos, rhol);
-    VecPointwiseDivide( cond1, rhol, cond1 );
-    //PetscScalar cond2 = rhol / (0.29624*rhos + rhol);
-    VecWAXPY(cond2, 0.29624, rhos, rhol);
-    VecPointwiseDivide( cond2, rhol, cond2 );
-
     /* loop over all basic internal nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
 
-    ierr = DMDAVecGetArrayRead(da_b, cond1, &arr_cond1);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b, cond2, &arr_cond2);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b, F, &arr_F);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->liquidus_rho,&arr_liquidus_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->solidus_rho,&arr_solidus_rho);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
 
     /* (I think) unavoidably have to loop over array to build F, since
        Petsc Vecs do not support logic operations? */
     for(i=ilo_b; i<ihi_b; ++i){
-        icond1 = arr_cond1[i];
-        icond2 = arr_cond2[i];
+        /* FIXME: recovers previous behaviour, but intrinisically assumes that lookup is
+           used.  Instead, evaluate directly from chosen EOS */
+        ierr = SetInterp1dValue( Ep0->phase_boundary, arr_pres[i], &nSliq, NULL );CHKERRQ(ierr);
+        ierr = SetInterp2dValue( Ep0->lookup->rho, arr_pres[i], nSliq, &nrhol );CHKERRQ(ierr);
+        ierr = SetInterp1dValue( Ep1->phase_boundary, arr_pres[i], &nSsol, NULL );CHKERRQ(ierr);
+        ierr = SetInterp2dValue( Ep1->lookup->rho, arr_pres[i], nSsol, &nrhos );CHKERRQ(ierr);
+
+        icond1 = nrhol / (11.993 * nrhos + nrhol);
+        icond2 = nrhol / (0.29624 * nrhos + nrhol);
+
         iphi = arr_phi[i];
-        irhol = arr_liquidus_rho[i];
-        irhos = arr_solidus_rho[i];
 
         if(iphi < icond1){
-            arr_F[i] = 0.001*PetscPowScalar(irhos,2)*PetscPowScalar(iphi,3);
-            arr_F[i] /= PetscPowScalar(irhol,2)*(1.0-iphi);
+            arr_F[i] = 0.001*PetscPowScalar(nrhos,2)*PetscPowScalar(iphi,3);
+            arr_F[i] /= PetscPowScalar(nrhol,2)*(1.0-iphi);
         } else if(iphi > icond2){
             arr_F[i] = 2.0/9.0 * iphi * (1.0-iphi);
         } else{
-            arr_F[i] = 5.0/7.0*PetscPowScalar(irhos,4.5)*PetscPowScalar(iphi,5.5)*(1.0-iphi);
-            arr_F[i] /= PetscPowScalar( irhol+(irhos-irhol)*iphi, 4.5 );
+            arr_F[i] = 5.0/7.0*PetscPowScalar(nrhos,4.5)*PetscPowScalar(iphi,5.5)*(1.0-iphi);
+            arr_F[i] /= PetscPowScalar( nrhol+(nrhos-nrhol)*iphi, 4.5 );
         }
+
+        arr_Jgrav[i] = nrhol - nrhos;
+
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_b, cond1, &arr_cond1);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, cond2, &arr_cond2);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b, F, &arr_F);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b, S->liquidus_rho, &arr_liquidus_rho);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b, S->phi, &arr_phi);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b, S->solidus_rho, &arr_solidus_rho);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b, M->pressure_b, &arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->Jgrav, &arr_Jgrav);CHKERRQ(ierr);
 
     // arr_Jgrav[i] = (rhol-rhos) * rho;
-    ierr = VecWAXPY( S->Jgrav, -1.0, rhos, rhol );
+    //ierr = VecWAXPY( S->Jgrav, -1.0, rhos, rhol );
+
     ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, rho );
     // arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
     ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, S->fusion );CHKERRQ(ierr);
@@ -383,13 +463,13 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     // arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
     ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, P->eos_parameters[0]->log10visc));CHKERRQ(ierr);
 
-    ierr = VecDestroy(&cond1);CHKERRQ(ierr);
-    ierr = VecDestroy(&cond2);CHKERRQ(ierr);
     ierr = VecDestroy(&F);CHKERRQ(ierr);
 
     ierr = VecAXPY( S->Jtot, 1.0, S->Jgrav ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
+
+#endif
 
 }
 
