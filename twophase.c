@@ -288,9 +288,11 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     Atmosphere        *A = &E->atmosphere;
     Solution          *S = &E->solution;
     Mesh              *M = &E->mesh;
+    Parameters        P = E->parameters;
     Vec               result_s;
     PetscScalar       *arr_result_s;
-    const PetscScalar *arr_dSdt_s, *arr_fusion_s, *arr_fwtl_s, *arr_fwts_s, *arr_phi_s, *arr_mass_s;
+    const PetscScalar *arr_dSdt_s, *arr_fwtl_s, *arr_fwts_s, *arr_phi_s, *arr_mass_s, *arr_pres, *arr_S;
+    EosEval           eos_eval;
 
     PetscFunctionBeginUser;
 
@@ -300,17 +302,19 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     ierr = VecDuplicate( S->dSdt_s, &result_s); CHKERRQ(ierr);
     ierr = VecCopy( S->dSdt_s, result_s ); CHKERRQ(ierr);
 
-    ierr = DMDAVecGetArrayRead(da_s,M->mass_s,&arr_mass_s); CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s,S->dSdt_s,&arr_dSdt_s); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->fusion_s,&arr_fusion_s); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->fwtl_s,&arr_fwtl_s); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->fwts_s,&arr_fwts_s); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s); CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s,result_s,&arr_result_s); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,M->mass_s,&arr_mass_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,M->pressure_s,&arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,result_s,&arr_result_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
+        ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S[i], &eos_eval );CHKERRQ(ierr);
         arr_result_s[i] = arr_dSdt_s[i] * arr_mass_s[i];
-        arr_result_s[i] /= arr_fusion_s[i];
+        arr_result_s[i] /= eos_eval.fusion;
 
         /* with smoothing */
 #if 0
@@ -338,7 +342,6 @@ PetscErrorCode set_dMliqdt( Ctx *E )
 
     ierr = DMDAVecRestoreArrayRead(da_s,M->mass_s,&arr_mass_s); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->dSdt_s, &arr_dSdt_s); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->fusion_s,&arr_fusion_s); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->fwtl_s,&arr_fwtl_s); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->fwts_s,&arr_fwts_s); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s); CHKERRQ(ierr);

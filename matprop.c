@@ -5,7 +5,6 @@
 #include "eos.h"
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
-static PetscScalar get_melt_fraction_truncated( PetscScalar );
 static PetscErrorCode apply_log10visc_cutoff( Parameters const, PetscScalar * );
 static PetscScalar GetModifiedMixingLength( PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar GetConstantMixingLength( PetscScalar outer_radius, PetscScalar inner_radius );
@@ -26,21 +25,6 @@ PetscErrorCode set_capacitance_staggered( Ctx *E )
 
     PetscFunctionReturn(0);
 
-}
-
-static PetscScalar get_melt_fraction_truncated( PetscScalar phi )
-{
-    /* truncate [0,1] */
-    if (phi > 1.0){
-      /* superliquidus */
-      return 1.0;
-    }
-    else if (phi < 0.0){
-      /* subsolidus */
-      return 0.0;
-    }
-    else
-      return phi;
 }
 
 PetscErrorCode set_phase_fraction_staggered( Ctx *E )
@@ -114,7 +98,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 
         /* single phase */
         if( P->n_phases==1 ){
-            SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );
+            ierr = SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );CHKERRQ(ierr);
             arr_rho_s[i] = E->eos_evals[0].rho;
             arr_temp_s[i] = E->eos_evals[0].T;
             arr_cp_s[i] = E->eos_evals[0].Cp;
@@ -122,10 +106,10 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 
         else{
             /* mixed phase */
-            SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[2] );
+            ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[2] );CHKERRQ(ierr);
             if (arr_phi_s[i] > 0.5){
                 /* blend melt (typically) and mixed */
-                SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );
+                ierr = SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );CHKERRQ(ierr);
                 fwtl = arr_fwtl_s[i]; // for smoothing
                 arr_rho_s[i] = combine_matprop( fwtl, E->eos_evals[0].rho, E->eos_evals[2].rho );
                 arr_temp_s[i] = combine_matprop( fwtl, E->eos_evals[0].T, E->eos_evals[2].T );
@@ -133,7 +117,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
             }
             else{ 
                 /* blend solid (typically) and mixed */
-                SetEosEval( P->eos_parameters[1], arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );
+                ierr = SetEosEval( P->eos_parameters[1], arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );CHKERRQ(ierr);
                 fwts = arr_fwts_s[i]; // for smoothing
                 arr_rho_s[i] = combine_matprop( fwts, E->eos_evals[2].rho, E->eos_evals[1].rho );
                 arr_temp_s[i] = combine_matprop( fwts, E->eos_evals[2].T, E->eos_evals[1].T );
@@ -162,7 +146,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     // material properties that are updated here
     PetscScalar       *arr_Ra, *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
     // material properties used to update above
-    const PetscScalar *arr_dSdr, *arr_S_b, *arr_solidus, *arr_fusion, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_radius_b;
+    const PetscScalar *arr_dSdr, *arr_S_b, *arr_solidus, *arr_pres, *arr_dPdr_b, *arr_liquidus, *arr_radius_b;
     const PetscInt *arr_layer_b;
     // for smoothing properties across liquidus and solidus
     const PetscScalar *arr_fwtl, *arr_fwts;
@@ -172,10 +156,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
-
-    /* melt fraction, not truncated (this happens below) */
-    ierr = VecWAXPY(S->phi,-1.0,S->solidus,S->S);CHKERRQ(ierr);
-    ierr = VecPointwiseDivide(S->phi,S->phi,S->fusion);CHKERRQ(ierr);
 
     /* loop over all basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
@@ -200,7 +180,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->cp,&arr_cp); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->dTdrs,&arr_dTdrs); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->fusion,&arr_fusion); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->fwtl,&arr_fwtl); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->fwts,&arr_fwts); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr);
@@ -221,8 +200,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 
       /* single phase */
       if( P->n_phases==1 ){
-          SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
-          arr_phi[i] = 0.0; // by definition
+          ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );CHKERRQ(ierr);
+          arr_phi[i] = E->eos_evals[0].phase_fraction; // by definition
           arr_rho[i] = E->eos_evals[0].rho;
           arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_evals[0].dTdPs;
           arr_cp[i] = E->eos_evals[0].Cp;
@@ -233,24 +212,17 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       }
 
       else{
-          /* truncate melt fraction */
-          arr_phi[i] = get_melt_fraction_truncated( arr_phi[i] );
           /* mixed phase */
-          SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &E->eos_evals[2] );
-    
+          ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &E->eos_evals[2] );CHKERRQ(ierr);
+          arr_phi[i] = E->eos_evals[2].phase_fraction;   
+ 
           if(arr_phi[i] > 0.5){
               /* blend melt (typically) and mixed */
-              SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );
+              ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );CHKERRQ(ierr);
               fwtl = arr_fwtl[i]; // for smoothing
               arr_rho[i] = combine_matprop( fwtl, E->eos_evals[0].rho, E->eos_evals[2].rho );
-#if 0
-              /* this is the original formulation */
-              arr_dTdrs[i] = combine_matprop( fwtl, E->eos_evals[0].dTdPs * arr_dPdr_b[i], arr_dTdrs_mix[i] );
-#endif
-#if 1
               /* this uses a different formulation for computing the mixed phase alpha */
               arr_dTdrs[i] = combine_matprop( fwtl, E->eos_evals[0].dTdPs * arr_dPdr_b[i], E->eos_evals[2].dTdPs * arr_dPdr_b[i] );
-#endif
               arr_cp[i] = combine_matprop( fwtl, E->eos_evals[0].Cp, E->eos_evals[2].Cp );
               arr_temp[i] = combine_matprop( fwtl, E->eos_evals[0].T, E->eos_evals[2].T );
               arr_alpha[i] = combine_matprop( fwtl, E->eos_evals[0].alpha, E->eos_evals[2].alpha );
@@ -259,17 +231,10 @@ PetscErrorCode set_matprop_basic( Ctx *E )
           }
           else{
               /* blend solid (typically) and mixed */
-              SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );
+              ierr = SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );CHKERRQ(ierr);
               fwts = arr_fwts[i]; // for smoothing
               arr_rho[i] = combine_matprop( fwts, E->eos_evals[2].rho, E->eos_evals[1].rho );
-#if 0
-              /* this is the original formulation */
-              arr_dTdrs[i] = combine_matprop( fwts, arr_dTdrs_mix[i], E->eos_evals[1].dTdPs * arr_dPdr_b[i] );
-#endif
-#if 1
-              /* this uses a different formulation for computing the mixed phase alpha */
               arr_dTdrs[i] = combine_matprop( fwts, E->eos_evals[2].dTdPs * arr_dPdr_b[i], E->eos_evals[1].dTdPs * arr_dPdr_b[i] );
-#endif
               arr_cp[i] = combine_matprop( fwts, E->eos_evals[2].Cp, E->eos_evals[1].Cp );
               arr_temp[i] = combine_matprop( fwts, E->eos_evals[2].T, E->eos_evals[1].T );
               arr_alpha[i] = combine_matprop( fwts, E->eos_evals[2].alpha, E->eos_evals[1].alpha );
@@ -357,7 +322,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecRestoreArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->cp,&arr_cp); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->dTdrs,&arr_dTdrs); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->fusion,&arr_fusion); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->fwtl,&arr_fwtl); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->fwts,&arr_fwts); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr);
