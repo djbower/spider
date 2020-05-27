@@ -334,6 +334,9 @@ static PetscErrorCode append_Jgrav( Ctx *E )
             F /= PetscPowScalar( rhol+(rhos-rhol)*phi, 4.5 );
         }
 
+        /* changing the order of these operations, or even consolidating the lines
+           actually changes the behaviour of the timestepper, and makes direct
+           comparison with current test data more tricky */
         // arr_Jgrav[i] = (rhol-rhos) * rho;
         arr_Jgrav[i] = rhol - rhos;
         arr_Jgrav[i] *= arr_rho[i];
