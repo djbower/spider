@@ -43,39 +43,39 @@ static PetscScalar get_melt_fraction_truncated( PetscScalar phi )
       return phi;
 }
 
-PetscErrorCode set_melt_fraction_staggered( Ctx *E )
+PetscErrorCode set_phase_fraction_staggered( Ctx *E )
 {
     PetscErrorCode    ierr;
     PetscInt          i,ilo_s,ihi_s,w_s;
     DM                da_s=E->da_s;
+    Mesh              *M = &E->mesh;
     Parameters        P = E->parameters;
     Solution          *S = &E->solution;
-    PetscScalar       *arr_phi_s;
+    PetscScalar       *arr_phi, *arr_S, *arr_pres, PP, SS;
+    EosEval eos_eval;
 
     PetscFunctionBeginUser;
 
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
 
-    /* FIXME: update this with EOS two phase */
+    ierr = DMDAVecGetArrayRead(da_s,M->pressure_s,&arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi);CHKERRQ(ierr);
 
-    // compute melt fraction
-    /* FIXME: implicitly assumes solid state convection, but actually the melt
-       fraction shouldn't do or mean anything for single phase systems */
-    if(P->n_phases == 1){
-        ierr = VecSet( S->phi_s, 0.0 );CHKERRQ(ierr); // by definition
-    }
-    else{
-        ierr = VecWAXPY(S->phi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
-        ierr = VecPointwiseDivide(S->phi_s,S->phi_s,S->fusion_s);CHKERRQ(ierr);
-        ierr = DMDAVecGetArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
-        /* TODO: can we remove this loop and truncate using Petsc Vec
-           operations instead? */
-        for(i=ilo_s; i<ihi_s; ++i){
-            /* truncate melt fraction */
-            arr_phi_s[i] = get_melt_fraction_truncated( arr_phi_s[i] );
+    for(i=ilo_s; i<ihi_s; ++i){
+        PP = arr_pres[i];
+        SS = arr_S[i];
+        /* TODO: this is an obvious switch statement to standardise by consolidating the EOS
+           Structures */
+        if( P->n_phases == 1){
+            ierr = SetEosEval( P->eos_parameters[0], PP, SS, &eos_eval );CHKERRQ(ierr);
         }
-        ierr = DMDAVecRestoreArray(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
+        else if (P->n_phases == 2){
+            ierr = SetEosCompositeEval( P->eos_composites[0], PP, SS, &eos_eval );CHKERRQ(ierr);
+        }
+
+        arr_phi[i] = eos_eval.phase_fraction;
     }
 
     PetscFunctionReturn(0);

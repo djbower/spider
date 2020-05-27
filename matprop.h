@@ -3,7 +3,7 @@
 
 #include "ctx.h"
 
-PetscErrorCode set_melt_fraction_staggered( Ctx * );
+PetscErrorCode set_phase_fraction_staggered( Ctx * );
 PetscErrorCode set_capacitance_staggered( Ctx * );
 PetscErrorCode set_matprop_basic( Ctx * );
 
