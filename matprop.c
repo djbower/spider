@@ -57,6 +57,8 @@ PetscErrorCode set_melt_fraction_staggered( Ctx *E )
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
 
+    /* FIXME: update this with EOS two phase */
+
     // compute melt fraction
     /* FIXME: implicitly assumes solid state convection, but actually the melt
        fraction shouldn't do or mean anything for single phase systems */

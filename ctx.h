@@ -73,6 +73,7 @@ typedef struct EosEval_ {
   PetscScalar dTdPs; /* adiabatic temperature gradient */
   PetscScalar cond;
   PetscScalar log10visc;
+  PetscScalar phase_fraction; // by definition unity for single species, but can be 0<x<1 for the EosComposite (with two phases) */
 } EosEval;
 
 /* A Context for the Solver */

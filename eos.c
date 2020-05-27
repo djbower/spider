@@ -1453,6 +1453,7 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
 
   eos_eval->cond = Ep->cond; // conductivity constant
   ierr = SetEosEvalViscosity( Ep, eos_eval );CHKERRQ(ierr);
+  eos_eval->phase_fraction = 1.0; // by definition, since only one phase
 
   PetscFunctionReturn(0);
 }
@@ -1850,6 +1851,7 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
 
     eos_eval->P = P;
     eos_eval->S = S;
+    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &eos_eval->phase_fraction);CHKERRQ(ierr);
     ierr = SetTwoPhaseTemperature( eos_composite, P, S, &eos_eval->T );CHKERRQ(ierr);
     ierr = SetTwoPhaseCp( eos_composite, P, S, &eos_eval->Cp );CHKERRQ(ierr);
     ierr = SetTwoPhaseRho( eos_composite, P, S, &eos_eval->rho );CHKERRQ(ierr);
