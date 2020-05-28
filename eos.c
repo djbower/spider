@@ -60,6 +60,7 @@ static PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
 static PetscErrorCode SetTwoPhaseLiquidus( const EosComposite, PetscScalar, PetscScalar * );
 static PetscErrorCode SetTwoPhaseSolidus( const EosComposite, PetscScalar, PetscScalar * );
 static PetscErrorCode SetTwoPhaseFusion( const EosComposite, PetscScalar, PetscScalar * );
+static PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode SetTwoPhaseTemperature( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode SetTwoPhaseCp( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
@@ -1661,7 +1662,7 @@ static PetscErrorCode SetTwoPhaseFusionTemp( const EosComposite eos_composite, P
 }
 #endif
 
-static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
+static PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
 {
     PetscErrorCode ierr;
     PetscScalar solidus, fusion;
@@ -1672,6 +1673,18 @@ static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite eos_composite
     ierr = SetTwoPhaseFusion( eos_composite, P, &fusion ); CHKERRQ(ierr);
 
     *phase_fraction = ( S - solidus ) / fusion;
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
+{
+    PetscErrorCode ierr;
+    PetscScalar solidus, fusion;
+
+    PetscFunctionBeginUser;
+
+    ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, P, S, phase_fraction ); CHKERRQ(ierr);
 
     /* truncation */
     if( *phase_fraction > 1.0 ){
@@ -1846,11 +1859,23 @@ static PetscErrorCode SetTwoPhaseViscosity( const EosComposite eos_composite, Pe
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_composite, PetscScalar P, PetscScalar S, EosEval *eos_eval)
 {
     PetscErrorCode ierr;
+    EosEval eos_eval1, eos_eval2;
+    PetscScalar gphi, smth1, smth2, matprop_smooth_width;
 
     PetscFunctionBeginUser;
 
+    /* TODO: the functions below are clean, in the sense that each updates one material property.  This might
+       be an advantage for setting up function pointers or the like.  However, a consequence of this approach
+       is that the code is not optimised for speed, since many of these functions call the same functions
+       to evaluate properties.  So an obvious speed enhancement is to perhaps scrap these individual functions
+       and just update everything together in this function (still populating the eos_eval struct, so the end
+       result is the same). */
+
     eos_eval->P = P;
     eos_eval->S = S;
+
+    /* these are strictly only valid for the mixed phase region, and not for general P and S
+       conditions */
     ierr = SetTwoPhaseFusion( eos_composite, P, &eos_eval->fusion);CHKERRQ(ierr);
     ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &eos_eval->phase_fraction);CHKERRQ(ierr);
     ierr = SetTwoPhaseTemperature( eos_composite, P, S, &eos_eval->T );CHKERRQ(ierr);
@@ -1864,6 +1889,56 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
        SPIDER, but for completeness zero them here */
     eos_eval->Cv = 0.0;
     eos_eval->V = 0.0;
+
+    /* ----------------------------------------------------- */
+    /* TODO: move smoothing calculation to separate function */
+    ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, P, S, &gphi );CHKERRQ(ierr);
+
+    matprop_smooth_width = 1.0E-2;
+
+    /* FIXME: if P->matprop_smooth_width = 0.0; */
+    if( matprop_smooth_width == 0.0 ){
+        smth1 = 0.0;
+        smth2 = 1.0;
+        if( gphi > 1.0 ){
+            smth1 = 1.0;
+            // smth2 = 0.0; // not used
+        }
+        if( gphi < 0.0 ){
+            // smth1 = 0.0; // not used
+            smth2 = 0.0;
+        }
+    }
+
+    /* tanh smoothing */
+    else{
+        smth1 = tanh_weight( gphi, 1.0, matprop_smooth_width ); // was arr_fwtl_s
+        smth2 = tanh_weight( gphi, 0.0, matprop_smooth_width ); // was arr_fwts_s
+    }
+
+    /* now blend all material properties */
+    if( gphi > 0.5 ){
+        /* melt properties */
+        ierr = SetEosEval( eos_composite->eos_parameters[0], P, S, &eos_eval1 );CHKERRQ(ierr);
+        /* blend */
+        eos_eval->alpha = combine_matprop( smth1, eos_eval1.alpha, eos_eval->alpha );
+        eos_eval->rho = combine_matprop( smth1, eos_eval1.rho, eos_eval->rho );
+        eos_eval->T = combine_matprop( smth1, eos_eval1.T, eos_eval->T );
+        eos_eval->Cp = combine_matprop( smth1, eos_eval1.Cp, eos_eval->Cp );
+        eos_eval->cond = combine_matprop( smth1, eos_eval1.cond, eos_eval->cond );
+        eos_eval->log10visc = combine_matprop( smth1, eos_eval1.log10visc, eos_eval->log10visc );
+    }
+    else{
+        /* solid properties */
+        ierr = SetEosEval( eos_composite->eos_parameters[1], P, S, &eos_eval2 );CHKERRQ(ierr);
+        /* blend */
+        eos_eval->alpha = combine_matprop( 1.0-smth2, eos_eval2.alpha, eos_eval->alpha );
+        eos_eval->rho = combine_matprop( 1.0-smth2, eos_eval2.rho, eos_eval->rho );
+        eos_eval->T = combine_matprop( 1.0-smth2, eos_eval2.T, eos_eval->T );
+        eos_eval->Cp = combine_matprop( 1.0-smth2, eos_eval2.Cp, eos_eval->Cp );
+        eos_eval->cond = combine_matprop( 1.0-smth2, eos_eval2.cond, eos_eval->cond );
+        eos_eval->log10visc = combine_matprop( 1.0-smth2, eos_eval2.log10visc, eos_eval->log10visc );
+    }
 
     PetscFunctionReturn(0);
 

@@ -74,20 +74,14 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
     Vec               pres_s = M->pressure_s;
-    // material properties that are updated here
     PetscScalar       *arr_rho_s, *arr_temp_s, *arr_cp_s;
-    // for smoothing properties across liquidus and solidus
-    const PetscScalar *arr_pres_s, *arr_S_s, *arr_phi_s, *arr_fwtl_s, *arr_fwts_s;
-    PetscScalar       fwtl, fwts;
+    const PetscScalar *arr_pres_s, *arr_S_s;
 
     PetscFunctionBeginUser;
 
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
 
-    ierr = DMDAVecGetArrayRead(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
@@ -95,6 +89,9 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     ierr = DMDAVecGetArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
+
+        /* there is now obvious symmetry here, and this can be further collapsed when EosComposite and
+           EosParameters are consolidated */
 
         /* single phase */
         if( P->n_phases==1 ){
@@ -104,31 +101,15 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
             arr_cp_s[i] = E->eos_evals[0].Cp;
         }   
 
-        else{
+        else{ /* if P->n_phases==2 */
             /* mixed phase */
             ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[2] );CHKERRQ(ierr);
-            if (arr_phi_s[i] > 0.5){
-                /* blend melt (typically) and mixed */
-                ierr = SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );CHKERRQ(ierr);
-                fwtl = arr_fwtl_s[i]; // for smoothing
-                arr_rho_s[i] = combine_matprop( fwtl, E->eos_evals[0].rho, E->eos_evals[2].rho );
-                arr_temp_s[i] = combine_matprop( fwtl, E->eos_evals[0].T, E->eos_evals[2].T );
-                arr_cp_s[i] = combine_matprop( fwtl, E->eos_evals[0].Cp, E->eos_evals[2].Cp );     
-            }
-            else{ 
-                /* blend solid (typically) and mixed */
-                ierr = SetEosEval( P->eos_parameters[1], arr_pres_s[i], arr_S_s[i], &E->eos_evals[1] );CHKERRQ(ierr);
-                fwts = arr_fwts_s[i]; // for smoothing
-                arr_rho_s[i] = combine_matprop( fwts, E->eos_evals[2].rho, E->eos_evals[1].rho );
-                arr_temp_s[i] = combine_matprop( fwts, E->eos_evals[2].T, E->eos_evals[1].T );
-                arr_cp_s[i] = combine_matprop( fwts, E->eos_evals[2].Cp, E->eos_evals[1].Cp );
-            }
+            arr_rho_s[i] = E->eos_evals[2].rho;
+            arr_temp_s[i] = E->eos_evals[2].T;
+            arr_cp_s[i] = E->eos_evals[2].Cp;
         }
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
@@ -220,26 +201,26 @@ PetscErrorCode set_matprop_basic( Ctx *E )
               /* blend melt (typically) and mixed */
               ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );CHKERRQ(ierr);
               fwtl = arr_fwtl[i]; // for smoothing
-              arr_rho[i] = combine_matprop( fwtl, E->eos_evals[0].rho, E->eos_evals[2].rho );
+              arr_rho[i] = E->eos_evals[2].rho;
               /* this uses a different formulation for computing the mixed phase alpha */
               arr_dTdrs[i] = combine_matprop( fwtl, E->eos_evals[0].dTdPs * arr_dPdr_b[i], E->eos_evals[2].dTdPs * arr_dPdr_b[i] );
-              arr_cp[i] = combine_matprop( fwtl, E->eos_evals[0].Cp, E->eos_evals[2].Cp );
-              arr_temp[i] = combine_matprop( fwtl, E->eos_evals[0].T, E->eos_evals[2].T );
-              arr_alpha[i] = combine_matprop( fwtl, E->eos_evals[0].alpha, E->eos_evals[2].alpha );
-              arr_cond[i] = combine_matprop( fwtl, E->eos_evals[0].cond, E->eos_evals[2].cond );
-              arr_visc[i] = combine_matprop( fwtl, E->eos_evals[0].log10visc, E->eos_evals[2].log10visc );
+              arr_cp[i] = E->eos_evals[2].Cp;
+              arr_temp[i] = E->eos_evals[2].T;
+              arr_alpha[i] = E->eos_evals[2].alpha;
+              arr_cond[i] = E->eos_evals[2].cond;
+              arr_visc[i] = E->eos_evals[2].log10visc;
           }
           else{
               /* blend solid (typically) and mixed */
               ierr = SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );CHKERRQ(ierr);
               fwts = arr_fwts[i]; // for smoothing
-              arr_rho[i] = combine_matprop( fwts, E->eos_evals[2].rho, E->eos_evals[1].rho );
+              arr_rho[i] = E->eos_evals[2].rho;
               arr_dTdrs[i] = combine_matprop( fwts, E->eos_evals[2].dTdPs * arr_dPdr_b[i], E->eos_evals[1].dTdPs * arr_dPdr_b[i] );
-              arr_cp[i] = combine_matprop( fwts, E->eos_evals[2].Cp, E->eos_evals[1].Cp );
-              arr_temp[i] = combine_matprop( fwts, E->eos_evals[2].T, E->eos_evals[1].T );
-              arr_alpha[i] = combine_matprop( fwts, E->eos_evals[2].alpha, E->eos_evals[1].alpha );
-              arr_cond[i] = combine_matprop( fwts, E->eos_evals[2].cond, E->eos_evals[1].cond );
-              arr_visc[i] = combine_matprop( fwts, E->eos_evals[2].log10visc, E->eos_evals[1].log10visc );
+              arr_cp[i] = E->eos_evals[2].Cp;
+              arr_temp[i] = E->eos_evals[2].T;
+              arr_alpha[i] = E->eos_evals[2].alpha;
+              arr_cond[i] = E->eos_evals[2].cond;
+              arr_visc[i] = E->eos_evals[2].log10visc;
           }
       }
  
