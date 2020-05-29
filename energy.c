@@ -192,17 +192,12 @@ static PetscErrorCode append_Jmix( Ctx *E )
     /* FIXME: not generalL assumes that second entry in eos_parameters relates to solid */
     const EosParameters Ep1 = E->parameters->eos_parameters[1];
 
-    // TODO: below currently not used
-    //*arr_fwtl, *arr_fwts, *arr_Jmix;
-
     PetscFunctionBeginUser;
 
     ierr = DMDAGetCorners(da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w;
 
     /* TODO: currently not used.  Prob intended to standardise smoothing */
-    //ierr = DMDAVecGetArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
-    //ierr = DMDAVecGetArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
@@ -234,8 +229,6 @@ static PetscErrorCode append_Jmix( Ctx *E )
         }   
     }
 
-    //ierr = DMDAVecRestoreArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
-    //ierr = DMDAVecRestoreArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);

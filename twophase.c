@@ -44,72 +44,17 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
     Parameters const P = E->parameters;
     Solution       *S = &E->solution;
     PetscInt       i, ilo_s, ihi_s, w_s, ilo, ihi, w;
-    PetscScalar    *arr_gphi_s, *arr_fwtl_s, *arr_fwts_s, *arr_gphi, *arr_fwtl, *arr_fwts;
+    PetscScalar    *arr_gphi_s, *arr_gphi;
 
     PetscFunctionBeginUser;
 
     /* basic nodes */
     ierr = VecWAXPY(S->gphi,-1.0,S->solidus,S->S);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->gphi,S->gphi,S->fusion);CHKERRQ(ierr);
-    ierr = DMDAGetCorners(da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
-    ihi = ilo + w;
-
-    ierr = DMDAVecGetArray(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
-
-    for(i=ilo; i<ihi; ++i){
-
-        /* no smoothing */
-        if( P->matprop_smooth_width == 0.0 ){
-            /* by default, mixed properties only */
-            arr_fwtl[i] = 0.0;
-            arr_fwts[i] = 1.0;
-            // liquid properties only
-            if( arr_gphi[i] > 1.0 ){
-                arr_fwtl[i] = 1.0;
-                //arr_fwts[i] = 0.0; // not used
-            }
-            // solid properties only
-            if( arr_gphi[i] < 0.0 ){
-                //arr_fwtl[i] = 0.0; // not used
-                arr_fwts[i] = 0.0;
-            }
-        }
-
-        /* tanh smoothing */
-        else{
-            /* fwtl -> 1.0 for gphi > 1.0 */
-            /* fwtl -> 0.0 for gphi < 1.0 */
-            arr_fwtl[i] = tanh_weight( arr_gphi[i], 1.0, P->matprop_smooth_width );
-            /* fwts -> 1.0 for gphi > 0.0 */
-            /* fwts -> 0.0 for gphi < 0.0 */
-            arr_fwts[i] = tanh_weight( arr_gphi[i], 0.0, P->matprop_smooth_width );
-        }
-    }
-
-    ierr = DMDAVecRestoreArray(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
 
     /* staggered nodes */
     ierr = VecWAXPY(S->gphi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
     ierr = VecPointwiseDivide(S->gphi_s,S->gphi_s,S->fusion_s);CHKERRQ(ierr);
-    ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
-    ihi_s = ilo_s + w_s;
-
-    ierr = DMDAVecGetArray(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->gphi_s,&arr_gphi_s);CHKERRQ(ierr);
-
-    for(i=ilo_s; i<ihi_s; ++i){
-        arr_fwtl_s[i] = tanh_weight( arr_gphi_s[i], 1.0, P->matprop_smooth_width );
-        arr_fwts_s[i] = tanh_weight( arr_gphi_s[i], 0.0, P->matprop_smooth_width );
-    }
-
-    ierr = DMDAVecRestoreArray(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->gphi_s,&arr_gphi_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -290,7 +235,7 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     Parameters        P = E->parameters;
     Vec               result_s;
     PetscScalar       *arr_result_s;
-    const PetscScalar *arr_dSdt_s, *arr_fwtl_s, *arr_fwts_s, *arr_phi_s, *arr_mass_s, *arr_pres, *arr_S;
+    const PetscScalar *arr_dSdt_s, *arr_phi_s, *arr_mass_s, *arr_pres, *arr_S;
     EosEval           eos_eval;
 
     PetscFunctionBeginUser;
@@ -304,8 +249,6 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_s,M->mass_s,&arr_mass_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,M->pressure_s,&arr_pres);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->fwtl_s,&arr_fwtl_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->fwts_s,&arr_fwts_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,result_s,&arr_result_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S);CHKERRQ(ierr);
@@ -341,8 +284,6 @@ PetscErrorCode set_dMliqdt( Ctx *E )
 
     ierr = DMDAVecRestoreArrayRead(da_s,M->mass_s,&arr_mass_s); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->dSdt_s, &arr_dSdt_s); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->fwtl_s,&arr_fwtl_s); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->fwts_s,&arr_fwts_s); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->phi_s,&arr_phi_s); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,result_s, &arr_result_s); CHKERRQ(ierr);
 

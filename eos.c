@@ -1912,8 +1912,8 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
 
     /* tanh smoothing */
     else{
-        smth1 = tanh_weight( gphi, 1.0, matprop_smooth_width ); // was arr_fwtl_s
-        smth2 = tanh_weight( gphi, 0.0, matprop_smooth_width ); // was arr_fwts_s
+        smth1 = tanh_weight( gphi, 1.0, matprop_smooth_width );
+        smth2 = tanh_weight( gphi, 0.0, matprop_smooth_width );
     }
 
     /* now blend all material properties */
