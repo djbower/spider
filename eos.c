@@ -1680,7 +1680,6 @@ static PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite e
 static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
 {
     PetscErrorCode ierr;
-    PetscScalar solidus, fusion;
 
     PetscFunctionBeginUser;
 

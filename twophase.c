@@ -40,11 +40,7 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
        of generalised melt fraction */
 
     PetscErrorCode ierr;
-    DM             da_s=E->da_s, da_b=E->da_b;
-    Parameters const P = E->parameters;
     Solution       *S = &E->solution;
-    PetscInt       i, ilo_s, ihi_s, w_s, ilo, ihi, w;
-    PetscScalar    *arr_gphi_s, *arr_gphi;
 
     PetscFunctionBeginUser;
 
