@@ -617,7 +617,15 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
       if (P->n_composite_phases >= SPIDER_MAX_COMPOSITE_PHASES) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many composite phases. Increase SPIDER_MAX_COMPOSITE_PHASES (currently %d) in the source",SPIDER_MAX_COMPOSITE_PHASES);
         ierr = EosCompositeCreateTwoPhase(&P->eos_composites[P->n_composite_phases],P->eos_parameters,P->n_phases);CHKERRQ(ierr);
         P->eos_composites[P->n_composite_phases]->n_eos = 2; /* useful for looping over constituent eos for this composite */
-        ++P->n_composite_phases;
+        /* smoothing across phase boundary */
+        P->eos_composites[P->n_composite_phases]->matprop_smooth_width = 0.0;
+        ierr = PetscOptionsGetScalar(NULL,NULL,"-matprop_smooth_width",&P->eos_composites[P->n_composite_phases]->matprop_smooth_width,NULL);CHKERRQ(ierr);
+        /* parameters for composite viscosity */
+        P->eos_composites[P->n_composite_phases]->phi_critical = 0.4; // transition melt fraction
+        ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_critical",&P->eos_composites[P->n_composite_phases]->phi_critical,NULL);CHKERRQ(ierr);
+        P->eos_composites[P->n_composite_phases]->phi_width = 0.15; // transition width (melt fraction)
+        ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_width",&P->eos_composites[P->n_composite_phases]->phi_width,NULL);CHKERRQ(ierr);
+        ++P->n_composite_phases; // must always be at end of this block
     }
   }
 

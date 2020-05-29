@@ -1826,7 +1826,6 @@ static PetscErrorCode SetTwoPhaseViscosity( const EosComposite eos_composite, Pe
     PetscErrorCode ierr;
     EosEval eos_eval_melt, eos_eval_solid;
     PetscScalar phase_fraction, liquidus, solidus, log10visc_melt, log10visc_sol, fwt;
-    PetscScalar phi_critical, phi_width;
 
     PetscFunctionBeginUser;
 
@@ -1844,11 +1843,7 @@ static PetscErrorCode SetTwoPhaseViscosity( const EosComposite eos_composite, Pe
     ierr = SetEosEvalViscosity( eos_composite->eos_parameters[1], &eos_eval_solid );CHKERRQ(ierr);
     log10visc_sol = eos_eval_solid.log10visc;
 
-    /* FIXME: these are stored in the parameters struct, but do we really need to read this in for just
-       two parameters? */
-    phi_critical = 0.4;
-    phi_width = 0.15;
-    fwt = tanh_weight( phase_fraction, phi_critical, phi_width );
+    fwt = tanh_weight( phase_fraction, eos_composite->phi_critical, eos_composite->phi_width );
     *log10visc_ptr = fwt * log10visc_melt + (1.0-fwt) * log10visc_sol;
 
     PetscFunctionReturn(0);
@@ -1859,7 +1854,7 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
 {
     PetscErrorCode ierr;
     EosEval eos_eval1, eos_eval2;
-    PetscScalar gphi, smth1, smth2, matprop_smooth_width;
+    PetscScalar gphi, smth1, smth2;
 
     PetscFunctionBeginUser;
 
@@ -1893,10 +1888,8 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     /* TODO: move smoothing calculation to separate function */
     ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, P, S, &gphi );CHKERRQ(ierr);
 
-    matprop_smooth_width = 1.0E-2;
-
     /* FIXME: if P->matprop_smooth_width = 0.0; */
-    if( matprop_smooth_width == 0.0 ){
+    if( eos_composite->matprop_smooth_width == 0.0 ){
         smth1 = 0.0;
         smth2 = 1.0;
         if( gphi > 1.0 ){
@@ -1911,8 +1904,8 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
 
     /* tanh smoothing */
     else{
-        smth1 = tanh_weight( gphi, 1.0, matprop_smooth_width );
-        smth2 = tanh_weight( gphi, 0.0, matprop_smooth_width );
+        smth1 = tanh_weight( gphi, 1.0, eos_composite->matprop_smooth_width );
+        smth2 = tanh_weight( gphi, 0.0, eos_composite->matprop_smooth_width );
     }
 
     /* now blend all material properties */
