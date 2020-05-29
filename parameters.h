@@ -198,7 +198,8 @@ typedef struct {
        if/how to blend together the material parameters across
        phase boundaries.  Most are blended using a simple linear
        weighting and a tanh functon, but the viscosity smoothing
-       is a bit more complicated. */
+       is a bit more complicated.  To reiterate, these quantities
+       are not relevant for single phases (EosParameters) */
     /* these are all smoothing-related */
     PetscScalar matprop_smooth_width; // numerical reasons only
     PetscScalar phi_critical; // physical transition between melt and solid for viscosity
