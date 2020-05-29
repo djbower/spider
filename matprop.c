@@ -182,7 +182,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       /* single phase */
       if( P->n_phases==1 ){
           ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );CHKERRQ(ierr);
-          arr_phi[i] = E->eos_evals[0].phase_fraction; // by definition
+          arr_phi[i] = E->eos_evals[0].phase_fraction;
           arr_rho[i] = E->eos_evals[0].rho;
           arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_evals[0].dTdPs;
           arr_cp[i] = E->eos_evals[0].Cp;
@@ -193,37 +193,17 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       }
 
       else{
-          /* mixed phase */
           ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &E->eos_evals[2] );CHKERRQ(ierr);
-          arr_phi[i] = E->eos_evals[2].phase_fraction;   
- 
-          if(arr_phi[i] > 0.5){
-              /* blend melt (typically) and mixed */
-              ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );CHKERRQ(ierr);
-              fwtl = arr_fwtl[i]; // for smoothing
-              arr_rho[i] = E->eos_evals[2].rho;
-              /* this uses a different formulation for computing the mixed phase alpha */
-              arr_dTdrs[i] = combine_matprop( fwtl, E->eos_evals[0].dTdPs * arr_dPdr_b[i], E->eos_evals[2].dTdPs * arr_dPdr_b[i] );
-              arr_cp[i] = E->eos_evals[2].Cp;
-              arr_temp[i] = E->eos_evals[2].T;
-              arr_alpha[i] = E->eos_evals[2].alpha;
-              arr_cond[i] = E->eos_evals[2].cond;
-              arr_visc[i] = E->eos_evals[2].log10visc;
-          }
-          else{
-              /* blend solid (typically) and mixed */
-              ierr = SetEosEval( P->eos_parameters[1], arr_pres[i], arr_S_b[i], &E->eos_evals[1] );CHKERRQ(ierr);
-              fwts = arr_fwts[i]; // for smoothing
-              arr_rho[i] = E->eos_evals[2].rho;
-              arr_dTdrs[i] = combine_matprop( fwts, E->eos_evals[2].dTdPs * arr_dPdr_b[i], E->eos_evals[1].dTdPs * arr_dPdr_b[i] );
-              arr_cp[i] = E->eos_evals[2].Cp;
-              arr_temp[i] = E->eos_evals[2].T;
-              arr_alpha[i] = E->eos_evals[2].alpha;
-              arr_cond[i] = E->eos_evals[2].cond;
-              arr_visc[i] = E->eos_evals[2].log10visc;
-          }
+          arr_phi[i] = E->eos_evals[2].phase_fraction;
+          arr_rho[i] = E->eos_evals[2].rho;
+          arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_evals[2].dTdPs;
+          arr_cp[i] = E->eos_evals[2].Cp;
+          arr_temp[i] = E->eos_evals[2].T;
+          arr_alpha[i] = E->eos_evals[2].alpha;
+          arr_cond[i] = E->eos_evals[2].cond;
+          arr_visc[i] = E->eos_evals[2].log10visc;
       }
- 
+
       /* compute viscosity */
       /* note that prior versions of the code applied a cutoff to each individual
          phase, rather than to the aggregate.  But I think it makes the most sense to

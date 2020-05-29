@@ -1925,6 +1925,7 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
         eos_eval->rho = combine_matprop( smth1, eos_eval1.rho, eos_eval->rho );
         eos_eval->T = combine_matprop( smth1, eos_eval1.T, eos_eval->T );
         eos_eval->Cp = combine_matprop( smth1, eos_eval1.Cp, eos_eval->Cp );
+        eos_eval->dTdPs = combine_matprop( smth1, eos_eval1.dTdPs, eos_eval->dTdPs );
         eos_eval->cond = combine_matprop( smth1, eos_eval1.cond, eos_eval->cond );
         eos_eval->log10visc = combine_matprop( smth1, eos_eval1.log10visc, eos_eval->log10visc );
     }
@@ -1936,6 +1937,7 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
         eos_eval->rho = combine_matprop( 1.0-smth2, eos_eval2.rho, eos_eval->rho );
         eos_eval->T = combine_matprop( 1.0-smth2, eos_eval2.T, eos_eval->T );
         eos_eval->Cp = combine_matprop( 1.0-smth2, eos_eval2.Cp, eos_eval->Cp );
+        eos_eval->dTdPs = combine_matprop( 1.0-smth2, eos_eval2.dTdPs, eos_eval->dTdPs );
         eos_eval->cond = combine_matprop( 1.0-smth2, eos_eval2.cond, eos_eval->cond );
         eos_eval->log10visc = combine_matprop( 1.0-smth2, eos_eval2.log10visc, eos_eval->log10visc );
     }
