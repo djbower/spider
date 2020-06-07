@@ -12,18 +12,18 @@
 # 1.0e-11
 
 # tolerances for master timestepper
--ts_sundials_atol 1.0e-10
--ts_sundials_rtol 1.0e-10
+-ts_sundials_atol 1.0e-11
+-ts_sundials_rtol 1.0e-11
 
 # tolerances for volatile evolution
 # these are used to solve for dp/dt for each volatile species during the
 # timestepping
 # rule of thumb: should be around same magnitude as master timestepper
 # TODO: check with PS
--atmosts_snes_atol 1.0E-10
--atmosts_snes_rtol 1.0E-10
--atmosts_ksp_atol 1.0E-10
--atmosts_ksp_rtol 1.0E-10
+-atmosts_snes_atol 1.0E-11
+-atmosts_snes_rtol 1.0E-11
+-atmosts_ksp_atol 1.0E-11
+-atmosts_ksp_rtol 1.0E-11
 
 # suggested by PS
 # solver for initial volatile contents
@@ -35,8 +35,8 @@
 # TODO: ask PS - what is the default snes type?
 #-atmosic_snes_type newtontr
 # FIXME: newtontr does not seem to adhere to these tolerances.  Why?
--atmosic_ksp_rtol 1e-10
--atmosic_ksp_atol 1e-10
+-atmosic_ksp_rtol 1e-11
+-atmosic_ksp_atol 1e-11
 
 # FIXME: if the line below is uncommented, the solver fails
 # TODO: ask PS how to set these parameters
