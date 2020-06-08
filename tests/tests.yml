@@ -97,9 +97,9 @@
   name: blackbody
   commands:
     - HERE/../spider -options_file HERE/opts/blackbody.opts
-    - HERE/json_timestep_to_txt.py output/1000.json
+    - HERE/json_timestep_to_txt.py output/10000.json
   expected: expected_output/expected_blackbody.txt
-  comparison: 1000.txt
+  comparison: 10000.txt
   type: float_lines
   rules:
     -
@@ -176,10 +176,10 @@
 -
   name: "socrates_p_restart"
   commands:
-    - HERE/../spider -options_file HERE/opts/socrates_p_restart.opts -ic_interior_filename HERE/opts/socrates_p_restart_63745.json
-    - HERE/json_timestep_to_txt.py output/90611.json
+    - HERE/../spider -options_file HERE/opts/socrates_p_restart.opts -ic_interior_filename HERE/opts/socrates_p_restart_18113.json
+    - HERE/json_timestep_to_txt.py output/34716.json
   expected: expected_output/expected_socrates_p_restart.txt
-  comparison: 90611.txt
+  comparison: 34716.txt
   type: float_lines
   rules:
     -
