@@ -210,19 +210,14 @@ static PetscErrorCode append_Jmix( Ctx *E )
     ierr = DMDAVecGetArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){
-        //arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
         ierr = SetPhaseBoundary( Ep0, arr_pres[i], NULL, &dSliqdP );CHKERRQ(ierr);
         ierr = SetPhaseBoundary( Ep1, arr_pres[i], NULL, &dSsoldP );CHKERRQ(ierr);
         arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * dSliqdP * arr_dPdr[i];
-        //arr_Jmix[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
         arr_Jmix[i] += (arr_phi[i]-1.0) * dSsoldP * arr_dPdr[i];
         arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
 
-        /* FIXME: if no smooth width is set, then this function will always return a value,
-           even outside the mixed phase boundaries! */
-        /* TODO: might be able to move this to a separate smoothing function */
+        ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, arr_pres[i], arr_S[i], &gphi );CHKERRQ(ierr);
         if( eos_composite->matprop_smooth_width != 0.0 ){
-            ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, arr_pres[i], arr_S[i], &gphi );CHKERRQ(ierr);
             /* to smoothly blend in convective mixing across the phase boundaries */
             if(gphi > 0.5){
                 arr_Jmix[i] *= 1.0 - tanh_weight( gphi, 1.0, eos_composite->matprop_smooth_width );
@@ -231,7 +226,11 @@ static PetscErrorCode append_Jmix( Ctx *E )
                 arr_Jmix[i] *= tanh_weight( gphi, 0.0, eos_composite->matprop_smooth_width );
             }   
         }
-
+        else{
+            if( (gphi > 1.0) || (gphi < 0.0) ){
+                arr_Jmix[i] = 0.0; /* no mixing outside mixed phase region */
+            }
+        }
     }
 
     ierr = DMDAVecRestoreArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
@@ -311,11 +310,13 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
 
     for(i=ilo_b; i<ihi_b; ++i){
+        ierr = SetPhaseBoundary( Ep0, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
         /* FIXME: recovers previous behaviour, but intrinisically assumes that lookup is
            used.  Instead, evaluate directly from chosen EOS */
-        ierr = SetPhaseBoundary( Ep0, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
         ierr = SetInterp2dValue( Ep0->lookup->rho, arr_pres[i], Sliq, &rhol );CHKERRQ(ierr);
         ierr = SetPhaseBoundary( Ep1, arr_pres[i], &Ssol, NULL );CHKERRQ(ierr);
+        /* FIXME: recovers previous behaviour, but intrinisically assumes that lookup is
+           used.  Instead, evaluate directly from chosen EOS */
         ierr = SetInterp2dValue( Ep1->lookup->rho, arr_pres[i], Ssol, &rhos );CHKERRQ(ierr);
 
         cond1 = rhol / (11.993 * rhos + rhol);
@@ -323,6 +324,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 
         phi = arr_phi[i];
 
+        /* TODO: check that F=0 for phi=0 and phi=1 */
         if(phi < cond1){
             F = 0.001*PetscPowScalar(rhos,2)*PetscPowScalar(phi,3);
             F /= PetscPowScalar(rhol,2)*(1.0-phi);
