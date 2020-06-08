@@ -63,8 +63,7 @@ def main() :
         atmosphere_escape_zerosol(rootDir, tol),  \
         reaction_zerosol_ic(rootDir, tol),    \
         reaction_zerosol(rootDir, tol),    \
-        # TODO: next fails, to investigate further
-        #socrates_p_restart(rootDir, tol),    \
+        socrates_p_restart(rootDir, tol),    \
         atmosphere_radionuclides(rootDir, tol),   \
         solid_convection_ic(rootDir, tol),    \
         solid_convection(rootDir, tol),    \

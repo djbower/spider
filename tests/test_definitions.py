@@ -250,8 +250,8 @@ def socrates_p_restart(rootDir, tol) :
   ranks = 1
   launch = [\
           os.path.join(rootDir,'spider')  + ' -options_file ' + os.path.join(rootDir,'tests','opts','socrates_p_restart.opts')
-              + ' -ic_interior_filename ' + os.path.join(rootDir,'tests','opts','socrates_p_restart_63745.json'),\
-          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/90611.json'), # TODO: last timestep time may change?
+              + ' -ic_interior_filename ' + os.path.join(rootDir,'tests','opts','socrates_p_restart_18113.json'),\
+          os.path.join(rootDir,'tests','json_timestep_to_txt.py output/34716.json'), # TODO: last timestep time may change?
           ]
 
   expectedFile = os.path.join(thisDir,'expected_output','expected_socrates_p_restart.txt')
@@ -261,7 +261,7 @@ def socrates_p_restart(rootDir, tol) :
       t.compareFloatingPointRelative(re.escape('val: '),    tol)
 
   t = pthtest.Test(testName,ranks,launch,expectedFile)
-  t.setComparisonFile('90611.txt')
+  t.setComparisonFile('34716.txt')
   t.setVerifyMethod(comparefunc)
   t.setWalltime(1) # minutes
   t.setUseSandbox()

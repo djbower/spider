@@ -12,18 +12,18 @@
 # 1.0e-11
 
 # tolerances for master timestepper
--ts_sundials_atol 1.0e-11
--ts_sundials_rtol 1.0e-11
+-ts_sundials_atol 1.0e-10
+-ts_sundials_rtol 1.0e-10
 
 # tolerances for volatile evolution
 # these are used to solve for dp/dt for each volatile species during the
 # timestepping
 # rule of thumb: should be around same magnitude as master timestepper
 # TODO: check with PS
--atmosts_snes_atol 1.0E-11
--atmosts_snes_rtol 1.0E-11
--atmosts_ksp_atol 1.0E-11
--atmosts_ksp_rtol 1.0E-11
+-atmosts_snes_atol 1.0E-10
+-atmosts_snes_rtol 1.0E-10
+-atmosts_ksp_atol 1.0E-10
+-atmosts_ksp_rtol 1.0E-10
 
 # suggested by PS
 # solver for initial volatile contents
@@ -35,8 +35,8 @@
 # TODO: ask PS - what is the default snes type?
 #-atmosic_snes_type newtontr
 # FIXME: newtontr does not seem to adhere to these tolerances.  Why?
--atmosic_ksp_rtol 1e-11
--atmosic_ksp_atol 1e-11
+-atmosic_ksp_rtol 1e-10
+-atmosic_ksp_atol 1e-10
 
 # FIXME: if the line below is uncommented, the solver fails
 # TODO: ask PS how to set these parameters
@@ -51,10 +51,13 @@
 # initial condition
 # [1] is set dS/dr to constant everywhere
 # [2] is restart from file
+# use below to 
 -IC_INTERIOR 2
+# use below to generate the file to restart from
+#-IC_INTERIOR 1
 # filename is defined in testdefinitions.py to ensure the
 # path name is transferred correctly to the test sandbox
--ic_interior_filename socrates_p_restart_63745.json
+-ic_interior_filename socrates_p_restart_18113.json
 
 # all units are SI unless indicated otherwise
 
@@ -245,42 +248,42 @@
 
 # internal heat sources
 # Al26 (extinct at present day)
--al26_t0 0.0 # time in years (post-formation) when the isotopic abundance and elemental concentration is defined
--al26_abundance 0.0 # fractional isotopic abundance at t0 (Al26/Al)
--al26_concentration 0.0 # ppm, concentration of Al at t0
--al26_heat_production 0.3583 # W/kg (Ruedas, 2017)
--al26_half_life 0.717E6 # years (Ruedas, 2017)
+#-al26_t0 0.0 # time in years (post-formation) when the isotopic abundance and elemental concentration is defined
+#-al26_abundance 0.0 # fractional isotopic abundance at t0 (Al26/Al)
+#-al26_concentration 0.0 # ppm, concentration of Al at t0
+#-al26_heat_production 0.3583 # W/kg (Ruedas, 2017)
+#-al26_half_life 0.717E6 # years (Ruedas, 2017)
 
 # K40
--k40_t0 4.55E9 # years
--k40_abundance 1.1668E-4 # (40K/K) Ruedas (2017)
--k40_concentration 310 # ppm (Turcotte & Schubert, 2014, p. 170)
--k40_heat_production 2.8761E-5 # W/kg (Ruedas, 2017)
--k40_half_life 1248E6 # years (Ruedas, 2017)
+#-k40_t0 4.55E9 # years
+#-k40_abundance 1.1668E-4 # (40K/K) Ruedas (2017)
+#-k40_concentration 310 # ppm (Turcotte & Schubert, 2014, p. 170)
+#-k40_heat_production 2.8761E-5 # W/kg (Ruedas, 2017)
+#-k40_half_life 1248E6 # years (Ruedas, 2017)
 
 # Fe60 (extinct at present day)
--fe60_t0 0.0 # years
--fe60_abundance 0.0 
--fe60_concentration 0.0 # ppm
--fe60_heat_production 3.6579E-2 # W/kg (Ruedas, 2017)
--fe60_half_life 2.62E6 # years (Ruedas, 2017)
+#-fe60_t0 0.0 # years
+#-fe60_abundance 0.0 
+#-fe60_concentration 0.0 # ppm
+#-fe60_heat_production 3.6579E-2 # W/kg (Ruedas, 2017)
+#-fe60_half_life 2.62E6 # years (Ruedas, 2017)
 
 # Th232
--th232_t0 4.55E9 # years
--th232_abundance 1.0 # (232Th/Th) Ruedas (2017)
--th232_concentration 0.124 # ppm (Turcotte & Schubert, 2014, p. 170)
--th232_heat_production 2.6368E-5 # W/kg (Ruedas, 2017)
--th232_half_life 14000E6 # years (Ruedas, 2017)
+#-th232_t0 4.55E9 # years
+#-th232_abundance 1.0 # (232Th/Th) Ruedas (2017)
+#-th232_concentration 0.124 # ppm (Turcotte & Schubert, 2014, p. 170)
+#-th232_heat_production 2.6368E-5 # W/kg (Ruedas, 2017)
+#-th232_half_life 14000E6 # years (Ruedas, 2017)
 
 # U235
--u235_t0 4.55E9 # years
--u235_abundance 0.0072045 # (235U/U) Ruedas (2017)
--u235_concentration 0.031 # ppm (Turcotte & Schubert, 2014, p. 170)
--u235_heat_production 5.68402E-4 # W/kg (Ruedas, 2017)
--u235_half_life 704E6 # years (Ruedas, 2017)
+#-u235_t0 4.55E9 # years
+#-u235_abundance 0.0072045 # (235U/U) Ruedas (2017)
+#-u235_concentration 0.031 # ppm (Turcotte & Schubert, 2014, p. 170)
+#-u235_heat_production 5.68402E-4 # W/kg (Ruedas, 2017)
+#-u235_half_life 704E6 # years (Ruedas, 2017)
 # U238
--u238_t0 4.55E9 # years
--u238_abundance 0.9927955 # (238U/U) Ruedas (2017)
--u238_concentration 0.031;
--u238_heat_production 9.4946E-5 # W/kg (Ruedas, 2017)
--u238_half_life 4468E6 # years (Ruedas, 2017)
+#-u238_t0 4.55E9 # years
+#-u238_abundance 0.9927955 # (238U/U) Ruedas (2017)
+#-u238_concentration 0.031;
+#-u238_heat_production 9.4946E-5 # W/kg (Ruedas, 2017)
+#-u238_half_life 4468E6 # years (Ruedas, 2017)
