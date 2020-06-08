@@ -1854,6 +1854,9 @@ static PetscErrorCode SetTwoPhaseViscosity( const EosComposite eos_composite, Pe
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_composite, PetscScalar P, PetscScalar S, EosEval *eos_eval)
 {
     PetscErrorCode ierr;
+    /* this function is called alot, if we have two phases.  Is it therefore better to store all 
+       the EosEval in Ctx?  Or isn't this really a speed issue? (prob not in comparison to the
+       re-evaluation of functions as described below */
     EosEval eos_eval1, eos_eval2;
     PetscScalar gphi, smth1, smth2;
 
