@@ -1176,14 +1176,14 @@ static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters rtp, PetscS
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary )
+PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary, PetscScalar *dboundary )
 {
 
     /* TODO: this function could contain a switch, to determine phase boundary by
        a means other than lookup (currently not required) */
 
     PetscFunctionBeginUser;
-    SetInterp1dValue( Ep->phase_boundary, P, boundary, NULL ); /* solidus entropy */
+    SetInterp1dValue( Ep->phase_boundary, P, boundary, dboundary ); /* entropy S and derivative dS/dP */
     PetscFunctionReturn(0);
 }
 
@@ -1613,14 +1613,14 @@ PetscErrorCode EosCompositeDestroy( EosComposite *eos_composite_ptr )
 static PetscErrorCode SetTwoPhaseLiquidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *liquidus )
 {
     PetscFunctionBeginUser;
-    SetPhaseBoundary( eos_composite->eos_parameters[0], P, liquidus ); /* liquidus entropy */
+    SetPhaseBoundary( eos_composite->eos_parameters[0], P, liquidus, NULL ); /* liquidus entropy */
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode SetTwoPhaseSolidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *solidus )
 {
     PetscFunctionBeginUser;
-    SetPhaseBoundary( eos_composite->eos_parameters[1], P, solidus ); /* solidus entropy */
+    SetPhaseBoundary( eos_composite->eos_parameters[1], P, solidus, NULL ); /* solidus entropy */
     PetscFunctionReturn(0);
 }
 

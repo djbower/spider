@@ -211,8 +211,8 @@ static PetscErrorCode append_Jmix( Ctx *E )
 
     for(i=ilo; i<ihi; ++i){
         //arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
-        ierr = SetInterp1dValue( Ep0->phase_boundary, arr_pres[i], NULL, &dSliqdP );CHKERRQ(ierr);
-        ierr = SetInterp1dValue( Ep1->phase_boundary, arr_pres[i], NULL, &dSsoldP );CHKERRQ(ierr);
+        ierr = SetPhaseBoundary( Ep0, arr_pres[i], NULL, &dSliqdP );CHKERRQ(ierr);
+        ierr = SetPhaseBoundary( Ep1, arr_pres[i], NULL, &dSsoldP );CHKERRQ(ierr);
         arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * dSliqdP * arr_dPdr[i];
         //arr_Jmix[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
         arr_Jmix[i] += (arr_phi[i]-1.0) * dSsoldP * arr_dPdr[i];
@@ -313,9 +313,9 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     for(i=ilo_b; i<ihi_b; ++i){
         /* FIXME: recovers previous behaviour, but intrinisically assumes that lookup is
            used.  Instead, evaluate directly from chosen EOS */
-        ierr = SetPhaseBoundary( Ep0, arr_pres[i], &Sliq );CHKERRQ(ierr);
+        ierr = SetPhaseBoundary( Ep0, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
         ierr = SetInterp2dValue( Ep0->lookup->rho, arr_pres[i], Sliq, &rhol );CHKERRQ(ierr);
-        ierr = SetPhaseBoundary( Ep1, arr_pres[i], &Ssol );CHKERRQ(ierr);
+        ierr = SetPhaseBoundary( Ep1, arr_pres[i], &Ssol, NULL );CHKERRQ(ierr);
         ierr = SetInterp2dValue( Ep1->lookup->rho, arr_pres[i], Ssol, &rhos );CHKERRQ(ierr);
 
         cond1 = rhol / (11.993 * rhos + rhol);
