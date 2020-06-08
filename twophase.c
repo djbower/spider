@@ -7,7 +7,8 @@
 
 static PetscErrorCode set_liquidus( Ctx *, PetscInt index );
 static PetscErrorCode set_solidus( Ctx *, PetscInt index );
-static PetscErrorCode set_fusion( Ctx * );
+
+//static PetscErrorCode set_fusion( Ctx * );
 
 static PetscErrorCode set_rheological_front_mantle_properties( Ctx *, RheologicalFront *, PetscInt, Vec * );
 
@@ -29,11 +30,12 @@ PetscErrorCode set_twophase( Ctx *E )
     }
 
     /* these all need the liquidus and solidus to be set */
-    set_fusion( E );
+    //set_fusion( E );
 
     PetscFunctionReturn(0);
 }
 
+#if 0
 PetscErrorCode set_gphi_smooth( Ctx *E )
 {
     /* smoothing at each radial coordinate as a function
@@ -54,6 +56,7 @@ PetscErrorCode set_gphi_smooth( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+#endif
 
 static PetscErrorCode set_liquidus( Ctx *E, PetscInt index )
 {
@@ -159,6 +162,7 @@ static PetscErrorCode set_solidus( Ctx *E, PetscInt index )
     PetscFunctionReturn(0);
 }
 
+#if 0
 static PetscErrorCode set_fusion( Ctx *E )
 {
     /* entropy of fusion */
@@ -174,6 +178,7 @@ static PetscErrorCode set_fusion( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+#endif
 
 PetscErrorCode set_Mliq( Ctx *E )
 {

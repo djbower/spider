@@ -386,7 +386,8 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
     ierr = set_entropy_from_solution( E, sol_in );CHKERRQ(ierr);
 
     /* set material properties and energy fluxes and sources */
-    ierr = set_gphi_smooth( E );CHKERRQ(ierr);
+    // TODO: remove below
+    //ierr = set_gphi_smooth( E );CHKERRQ(ierr);
     ierr = set_phase_fraction_staggered( E ); CHKERRQ(ierr);
     ierr = set_capacitance_staggered( E );CHKERRQ(ierr);
     ierr = set_matprop_basic( E );CHKERRQ(ierr);
