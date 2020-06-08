@@ -93,21 +93,20 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
         /* there is now obvious symmetry here, and this can be further collapsed when EosComposite and
            EosParameters are consolidated */
 
+        /* Note for PS: you can see below how if the EosEval and EosCompositeEval are consolidated, the 
+           if statement can probably be removed */
         /* single phase */
         if( P->n_phases==1 ){
-            ierr = SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[0] );CHKERRQ(ierr);
-            arr_rho_s[i] = E->eos_evals[0].rho;
-            arr_temp_s[i] = E->eos_evals[0].T;
-            arr_cp_s[i] = E->eos_evals[0].Cp;
-        }   
-
-        else{ /* if P->n_phases==2 */
-            /* mixed phase */
-            ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &E->eos_evals[2] );CHKERRQ(ierr);
-            arr_rho_s[i] = E->eos_evals[2].rho;
-            arr_temp_s[i] = E->eos_evals[2].T;
-            arr_cp_s[i] = E->eos_evals[2].Cp;
+            ierr = SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_eval );CHKERRQ(ierr);
         }
+        else{ /* if P->n_phases==2 */
+            ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &E->eos_eval );CHKERRQ(ierr);
+        }
+
+        arr_rho_s[i] = E->eos_eval.rho;
+        arr_temp_s[i] = E->eos_eval.T;
+        arr_cp_s[i] = E->eos_eval.Cp;
+
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
@@ -177,28 +176,20 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 
       /* single phase */
       if( P->n_phases==1 ){
-          ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_evals[0] );CHKERRQ(ierr);
-          arr_phi[i] = E->eos_evals[0].phase_fraction;
-          arr_rho[i] = E->eos_evals[0].rho;
-          arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_evals[0].dTdPs;
-          arr_cp[i] = E->eos_evals[0].Cp;
-          arr_temp[i] = E->eos_evals[0].T;
-          arr_alpha[i] = E->eos_evals[0].alpha;
-          arr_cond[i] = E->eos_evals[0].cond;
-          arr_visc[i] = E->eos_evals[0].log10visc;
+          ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_eval );CHKERRQ(ierr);
+      }
+      else{
+          ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &E->eos_eval );CHKERRQ(ierr);
       }
 
-      else{
-          ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &E->eos_evals[2] );CHKERRQ(ierr);
-          arr_phi[i] = E->eos_evals[2].phase_fraction;
-          arr_rho[i] = E->eos_evals[2].rho;
-          arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_evals[2].dTdPs;
-          arr_cp[i] = E->eos_evals[2].Cp;
-          arr_temp[i] = E->eos_evals[2].T;
-          arr_alpha[i] = E->eos_evals[2].alpha;
-          arr_cond[i] = E->eos_evals[2].cond;
-          arr_visc[i] = E->eos_evals[2].log10visc;
-      }
+      arr_phi[i] = E->eos_eval.phase_fraction;
+      arr_rho[i] = E->eos_eval.rho;
+      arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_eval.dTdPs;
+      arr_cp[i] = E->eos_eval.Cp;
+      arr_temp[i] = E->eos_eval.T;
+      arr_alpha[i] = E->eos_eval.alpha;
+      arr_cond[i] = E->eos_eval.cond;
+      arr_visc[i] = E->eos_eval.log10visc;
 
       /* compute viscosity */
       /* note that prior versions of the code applied a cutoff to each individual

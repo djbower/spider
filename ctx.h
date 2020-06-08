@@ -94,14 +94,9 @@ typedef struct Ctx_ {
   RheologicalFront       rheological_front_dynamic;
 
   /* TODO: check with PS if this is the best way */
-  /* this is a struct to enable me to pass current P, S conditions and
-     update all material propoerties, according to a chosen EOS model.
-     Currently need one for solid and one for melt, but could extend to
-     multiple phases */
-  /* TODO: it's not obvious we even need three of these structs, since increasingly
-     I create them as required in the various functions.  Could just get away with one
-     struct, that is filled by data using the aggregate (final) Eos. */
- EosEval                eos_evals[3]; // FIXME: hard-coded for two phases + one composite phase (mixed)
+  /* since all aggregation is done at the EOS level, we only need one struct
+     here that contains the evaluations at the given P and S conditions */
+  EosEval                eos_eval;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
