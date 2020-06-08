@@ -41,7 +41,6 @@ static PetscErrorCode set_liquidus( Ctx *E, PetscInt index )
     PetscScalar       z,*arr_liquidus,*arr_liquidus_s;
     const PetscScalar *arr_pres_b,*arr_pres_s;
     Interp1d          interp;
-    Interp2d          interpR;
     Solution          *S;
     Parameters const  P = E->parameters;
 
@@ -49,7 +48,6 @@ static PetscErrorCode set_liquidus( Ctx *E, PetscInt index )
 
     S = &E->solution;
     interp = P->eos_parameters[index]->phase_boundary;
-    interpR = P->eos_parameters[index]->lookup->rho;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
@@ -94,14 +92,12 @@ static PetscErrorCode set_solidus( Ctx *E, PetscInt index )
     PetscScalar       z,*arr_solidus,*arr_solidus_s;
     const PetscScalar *arr_pres_b,*arr_pres_s;
     Interp1d          interp;
-    Interp2d          interpR;
     Solution          *S;
     Parameters const  P = E->parameters;
 
     PetscFunctionBeginUser;
     S = &E->solution;
     interp = P->eos_parameters[index]->phase_boundary;
-    interpR = P->eos_parameters[index]->lookup->rho;
 
     pres_b = E->mesh.pressure_b;
     pres_s = E->mesh.pressure_s;
