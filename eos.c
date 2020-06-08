@@ -1888,7 +1888,6 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     /* TODO: move smoothing calculation to separate function */
     ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, P, S, &gphi );CHKERRQ(ierr);
 
-    /* FIXME: if P->matprop_smooth_width = 0.0; */
     if( eos_composite->matprop_smooth_width == 0.0 ){
         smth1 = 0.0;
         smth2 = 1.0;
