@@ -183,14 +183,16 @@ static PetscErrorCode append_Jmix( Ctx *E )
     DM             da_b = E->da_b;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
+    Parameters const P = E->parameters;
     PetscInt       i, ilo, ihi, w;
     PetscScalar    *arr_Jmix;
     PetscScalar    dSliqdP, dSsoldP;
     const PetscScalar *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_gphi, *arr_pres, *arr_S, *arr_dPdr;
-    /* FIXME: not general: assumes that first entry in eos_parameters relates to melt */
-    const EosParameters Ep0 = E->parameters->eos_parameters[0];
-    /* FIXME: not general: assumes that second entry in eos_parameters relates to solid */
-    const EosParameters Ep1 = E->parameters->eos_parameters[1];
+
+    /* Jmix requires two phases */
+    const EosComposite eos_composite = P->eos_composites[0];
+    const EosParameters Ep0 = eos_composite->eos_parameters[0];
+    const EosParameters Ep1 = eos_composite->eos_parameters[1];
 
     PetscFunctionBeginUser;
 
@@ -217,15 +219,19 @@ static PetscErrorCode append_Jmix( Ctx *E )
         arr_Jmix[i] += (arr_phi[i]-1.0) * dSsoldP * arr_dPdr[i];
         arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
 
-        /* to smoothly blend in convective mixing across the phase boundaries */
-        if(arr_gphi[i] > 0.5){
-            // FIXME: smoothing width is hard-coded
-            arr_Jmix[i] *= 1.0 - tanh_weight( arr_gphi[i], 1.0, 1.0E-2 );
+        /* FIXME: if no smooth width is set, then this function will always return a value,
+           even outside the mixed phase boundaries! */
+        /* TODO: might be able to move this to a separate smoothing function */
+        if( eos_composite->matprop_smooth_width != 0.0 ){
+            /* to smoothly blend in convective mixing across the phase boundaries */
+            if(arr_gphi[i] > 0.5){
+                arr_Jmix[i] *= 1.0 - tanh_weight( arr_gphi[i], 1.0, eos_composite->matprop_smooth_width );
+            }
+            else if (arr_gphi[i] <= 0.5){
+                arr_Jmix[i] *= tanh_weight( arr_gphi[i], 0.0, eos_composite->matprop_smooth_width );
+            }   
         }
-        else if (arr_gphi[i] <= 0.5){
-            // FIXME: smoothing width is hard-coded
-            arr_Jmix[i] *= tanh_weight( arr_gphi[i], 0.0, 1.0E-2 );
-        }   
+
     }
 
     ierr = DMDAVecRestoreArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);

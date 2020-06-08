@@ -388,7 +388,6 @@ typedef struct {
     PetscScalar rho_core;
     PetscScalar cp_core;
     PetscScalar tfac_core_avg;
-    PetscScalar matprop_smooth_width;
     PetscScalar activation_energy_sol;
     PetscScalar activation_volume_sol;
     PetscScalar log10visc_min;

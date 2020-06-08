@@ -463,10 +463,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   /* of CMB temperature (non-dimensional) */
   P->tfac_core_avg = 1.147;
 
-  /* smoothing width */
-  P->matprop_smooth_width = 1.0E-2;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-matprop_smooth_width",&P->matprop_smooth_width,NULL);CHKERRQ(ierr);
-
   /* viscosity cut-offs */
   P->log10visc_min = -1.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-log10visc_min",&P->log10visc_min,NULL);CHKERRQ(ierr);
