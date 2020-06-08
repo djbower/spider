@@ -9,10 +9,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: atmosphere_radionuclides
@@ -25,10 +25,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: "atmosphere_ic"
@@ -41,10 +41,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 -
   name: atmosphere_escape
   commands:
@@ -56,10 +56,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: "atmosphere_escape_ic"
@@ -72,10 +72,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: atmosphere_escape_zerosol
@@ -88,10 +88,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: blackbody
@@ -104,10 +104,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: reaction
@@ -120,10 +120,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: "reaction_ic"
@@ -136,10 +136,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: reaction_zerosol
@@ -152,10 +152,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: "reaction_zerosol_ic"
@@ -168,10 +168,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: "socrates_p_restart"
@@ -184,10 +184,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: "solid_convection"
@@ -200,10 +200,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: "solid_convection_ic"
@@ -216,10 +216,10 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
 
 -
   name: "solid_convection_two_layer"
@@ -232,7 +232,7 @@
   rules:
     -
       key: "val:"
-      rtol: 1e-4
+      rtol: 1e-11
     -
       key: "scaling:"
-      rtol: 1e-4
+      rtol: 1e-11
