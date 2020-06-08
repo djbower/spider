@@ -1871,6 +1871,11 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
 
     /* these are strictly only valid for the mixed phase region, and not for general P and S
        conditions */
+    /* FIXME: unsure what the best approach is here.  The following functions are highly modular,
+       but I think it slows the code down a lot since many of the functions repeat the same lookups
+       It would reduce the modularity, but for speed the better option would be to have an
+       aggregate function that only evaluates things once.  This would be trivial to implement,
+       but leaving as is for the time being until PS formalises the EosParameters and EosComposite structs */
     ierr = SetTwoPhaseFusion( eos_composite, P, &eos_eval->fusion);CHKERRQ(ierr);
     ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &eos_eval->phase_fraction);CHKERRQ(ierr);
     ierr = SetTwoPhaseTemperature( eos_composite, P, S, &eos_eval->T );CHKERRQ(ierr);
