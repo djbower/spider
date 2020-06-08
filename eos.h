@@ -16,6 +16,7 @@ PetscErrorCode EosParametersSetFromOptions( EosParameters, const FundamentalCons
 
 PetscErrorCode SetEosEval( const EosParameters, PetscScalar, PetscScalar, EosEval * );
 PetscErrorCode SetEosCompositeEval( const EosComposite, PetscScalar, PetscScalar, EosEval * );
+PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar, PetscScalar, PetscScalar * );
 
 PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *, const EosParameters[], PetscInt );
 PetscErrorCode EosCompositeDestroy( EosComposite * );

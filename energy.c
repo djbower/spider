@@ -186,7 +186,7 @@ static PetscErrorCode append_Jmix( Ctx *E )
     Parameters const P = E->parameters;
     PetscInt       i, ilo, ihi, w;
     PetscScalar    *arr_Jmix;
-    PetscScalar    dSliqdP, dSsoldP;
+    PetscScalar    dSliqdP, dSsoldP, gphi;
     const PetscScalar *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_gphi, *arr_pres, *arr_S, *arr_dPdr;
 
     /* Jmix requires two phases */
@@ -223,12 +223,13 @@ static PetscErrorCode append_Jmix( Ctx *E )
            even outside the mixed phase boundaries! */
         /* TODO: might be able to move this to a separate smoothing function */
         if( eos_composite->matprop_smooth_width != 0.0 ){
+            ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, arr_pres[i], arr_S[i], &gphi );CHKERRQ(ierr);
             /* to smoothly blend in convective mixing across the phase boundaries */
-            if(arr_gphi[i] > 0.5){
-                arr_Jmix[i] *= 1.0 - tanh_weight( arr_gphi[i], 1.0, eos_composite->matprop_smooth_width );
+            if(gphi > 0.5){
+                arr_Jmix[i] *= 1.0 - tanh_weight( gphi, 1.0, eos_composite->matprop_smooth_width );
             }
-            else if (arr_gphi[i] <= 0.5){
-                arr_Jmix[i] *= tanh_weight( arr_gphi[i], 0.0, eos_composite->matprop_smooth_width );
+            else if (gphi <= 0.5){
+                arr_Jmix[i] *= tanh_weight( gphi, 0.0, eos_composite->matprop_smooth_width );
             }   
         }
 
