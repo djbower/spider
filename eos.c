@@ -49,8 +49,6 @@ static PetscErrorCode SetRTpressdTdPs( const RTpressParameters, PetscScalar, Pet
 static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES, Vec, Vec, void * );
 static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
-static PetscErrorCode SetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar * );
-
 /* evaluate viscosity */
 static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar );
 static PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
@@ -60,8 +58,6 @@ static PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
 static PetscErrorCode SetTwoPhaseLiquidus( const EosComposite, PetscScalar, PetscScalar * );
 static PetscErrorCode SetTwoPhaseSolidus( const EosComposite, PetscScalar, PetscScalar * );
 static PetscErrorCode SetTwoPhaseFusion( const EosComposite, PetscScalar, PetscScalar * );
-// below is required for Jmix smoothing, and therefore is now a global function
-//static PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode SetTwoPhaseTemperature( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode SetTwoPhaseCp( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
@@ -1180,7 +1176,7 @@ static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters rtp, PetscS
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary )
+PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary )
 {
 
     /* TODO: this function could contain a switch, to determine phase boundary by

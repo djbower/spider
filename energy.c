@@ -286,12 +286,15 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     Mesh *M = &E->mesh;
     Solution *S = &E->solution;
     Parameters P = E->parameters;
-    const EosParameters Ep0 = P->eos_parameters[0];
-    const EosParameters Ep1 = P->eos_parameters[1];
     PetscScalar *arr_Jgrav, F, cond1, cond2, phi, rhol, rhos, Sliq, Ssol;
     PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
     DM da_b = E->da_b;
     const PetscScalar *arr_phi, *arr_pres, *arr_rho, *arr_temp;
+
+    /* Jgrav requires two phases */
+    const EosComposite eos_composite = P->eos_composites[0];
+    const EosParameters Ep0 = eos_composite->eos_parameters[0];
+    const EosParameters Ep1 = eos_composite->eos_parameters[1];
 
     PetscFunctionBeginUser;
 
@@ -310,9 +313,9 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     for(i=ilo_b; i<ihi_b; ++i){
         /* FIXME: recovers previous behaviour, but intrinisically assumes that lookup is
            used.  Instead, evaluate directly from chosen EOS */
-        ierr = SetInterp1dValue( Ep0->phase_boundary, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
+        ierr = SetPhaseBoundary( Ep0, arr_pres[i], &Sliq );CHKERRQ(ierr);
         ierr = SetInterp2dValue( Ep0->lookup->rho, arr_pres[i], Sliq, &rhol );CHKERRQ(ierr);
-        ierr = SetInterp1dValue( Ep1->phase_boundary, arr_pres[i], &Ssol, NULL );CHKERRQ(ierr);
+        ierr = SetPhaseBoundary( Ep1, arr_pres[i], &Ssol );CHKERRQ(ierr);
         ierr = SetInterp2dValue( Ep1->lookup->rho, arr_pres[i], Ssol, &rhos );CHKERRQ(ierr);
 
         cond1 = rhol / (11.993 * rhos + rhol);
