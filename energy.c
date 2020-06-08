@@ -187,7 +187,7 @@ static PetscErrorCode append_Jmix( Ctx *E )
     PetscInt       i, ilo, ihi, w;
     PetscScalar    *arr_Jmix;
     PetscScalar    dSliqdP, dSsoldP, gphi;
-    const PetscScalar *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_gphi, *arr_pres, *arr_S, *arr_dPdr;
+    const PetscScalar *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_pres, *arr_S, *arr_dPdr;
 
     /* Jmix requires two phases */
     const EosComposite eos_composite = P->eos_composites[0];
@@ -204,7 +204,6 @@ static PetscErrorCode append_Jmix( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->S,&arr_S);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr);CHKERRQ(ierr);
@@ -240,7 +239,6 @@ static PetscErrorCode append_Jmix( Ctx *E )
     ierr = DMDAVecRestoreArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->S,&arr_S);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr);CHKERRQ(ierr);

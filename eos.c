@@ -1182,6 +1182,10 @@ static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters rtp, PetscS
 
 static PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary )
 {
+
+    /* TODO: this function could contain a switch, to determine phase boundary by
+       a means other than lookup (currently not required) */
+
     PetscFunctionBeginUser;
     SetInterp1dValue( Ep->phase_boundary, P, boundary, NULL ); /* solidus entropy */
     PetscFunctionReturn(0);

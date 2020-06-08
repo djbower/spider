@@ -8,8 +8,6 @@
 static PetscErrorCode set_liquidus( Ctx *, PetscInt index );
 static PetscErrorCode set_solidus( Ctx *, PetscInt index );
 
-//static PetscErrorCode set_fusion( Ctx * );
-
 static PetscErrorCode set_rheological_front_mantle_properties( Ctx *, RheologicalFront *, PetscInt, Vec * );
 
 PetscErrorCode set_twophase( Ctx *E )
@@ -29,34 +27,8 @@ PetscErrorCode set_twophase( Ctx *E )
         set_solidus( E, 1 );
     }
 
-    /* these all need the liquidus and solidus to be set */
-    //set_fusion( E );
-
     PetscFunctionReturn(0);
 }
-
-#if 0
-PetscErrorCode set_gphi_smooth( Ctx *E )
-{
-    /* smoothing at each radial coordinate as a function
-       of generalised melt fraction */
-
-    PetscErrorCode ierr;
-    Solution       *S = &E->solution;
-
-    PetscFunctionBeginUser;
-
-    /* basic nodes */
-    ierr = VecWAXPY(S->gphi,-1.0,S->solidus,S->S);CHKERRQ(ierr);
-    ierr = VecPointwiseDivide(S->gphi,S->gphi,S->fusion);CHKERRQ(ierr);
-
-    /* staggered nodes */
-    ierr = VecWAXPY(S->gphi_s,-1.0,S->solidus_s,S->S_s);CHKERRQ(ierr);
-    ierr = VecPointwiseDivide(S->gphi_s,S->gphi_s,S->fusion_s);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-#endif
 
 static PetscErrorCode set_liquidus( Ctx *E, PetscInt index )
 {
@@ -161,24 +133,6 @@ static PetscErrorCode set_solidus( Ctx *E, PetscInt index )
 
     PetscFunctionReturn(0);
 }
-
-#if 0
-static PetscErrorCode set_fusion( Ctx *E )
-{
-    /* entropy of fusion */
-    PetscErrorCode ierr;
-    Solution *S;
-
-    PetscFunctionBeginUser;
-    S = &E->solution;
-
-    /* fusion = liquidus - solidus */
-    ierr = VecWAXPY(S->fusion,-1.0,S->solidus,S->liquidus);CHKERRQ(ierr);
-    ierr = VecWAXPY(S->fusion_s,-1.0,S->solidus_s,S->liquidus_s);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-#endif
 
 PetscErrorCode set_Mliq( Ctx *E )
 {
