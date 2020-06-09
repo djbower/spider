@@ -1857,8 +1857,8 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     /* this function is called alot, if we have two phases.  Is it therefore better to store all 
        the EosEval in Ctx?  Or isn't this really a speed issue? (prob not in comparison to the
        re-evaluation of functions as described below */
-    EosEval eos_eval1, eos_eval2;
-    PetscScalar gphi, smth1, smth2;
+    EosEval eos_eval2; // pure phase for blending across phase boundary
+    PetscScalar gphi, smth;
 
     PetscFunctionBeginUser;
 
@@ -1897,50 +1897,43 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     /* TODO: move smoothing calculation to separate function */
     ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, P, S, &gphi );CHKERRQ(ierr);
 
+    /* no smoothing */
     if( eos_composite->matprop_smooth_width == 0.0 ){
-        smth1 = 0.0;
-        smth2 = 1.0;
-        if( gphi > 1.0 ){
-            smth1 = 1.0;
-            // smth2 = 0.0; // not used
-        }
-        if( gphi < 0.0 ){
-            // smth1 = 0.0; // not used
-            smth2 = 0.0;
+        smth = 0.0; // mixed phase only
+        if( (gphi < 0.0) || (gphi > 1.0) ){
+            smth = 1.0; // single phase only
         }
     }
 
     /* tanh smoothing */
     else{
-        smth1 = tanh_weight( gphi, 1.0, eos_composite->matprop_smooth_width );
-        smth2 = tanh_weight( gphi, 0.0, eos_composite->matprop_smooth_width );
+        if( gphi > 0.5 ){
+            smth = tanh_weight( gphi, 1.0, eos_composite->matprop_smooth_width );
+        }
+        else{
+            smth = 1.0 - tanh_weight( gphi, 0.0, eos_composite->matprop_smooth_width );
+        }
     }
+    /* ----------------------------------------------------- */
 
-    /* now blend all material properties */
+    /* now blend mixed phase EOS with single phase EOS across the phase boundary */
     if( gphi > 0.5 ){
-        /* melt properties */
-        ierr = SetEosEval( eos_composite->eos_parameters[0], P, S, &eos_eval1 );CHKERRQ(ierr);
-        /* blend */
-        eos_eval->alpha = combine_matprop( smth1, eos_eval1.alpha, eos_eval->alpha );
-        eos_eval->rho = combine_matprop( smth1, eos_eval1.rho, eos_eval->rho );
-        eos_eval->T = combine_matprop( smth1, eos_eval1.T, eos_eval->T );
-        eos_eval->Cp = combine_matprop( smth1, eos_eval1.Cp, eos_eval->Cp );
-        eos_eval->dTdPs = combine_matprop( smth1, eos_eval1.dTdPs, eos_eval->dTdPs );
-        eos_eval->cond = combine_matprop( smth1, eos_eval1.cond, eos_eval->cond );
-        eos_eval->log10visc = combine_matprop( smth1, eos_eval1.log10visc, eos_eval->log10visc );
+        /* melt only properties */
+        ierr = SetEosEval( eos_composite->eos_parameters[0], P, S, &eos_eval2 );CHKERRQ(ierr);
     }
     else{
-        /* solid properties */
+        /* solid only properties */
         ierr = SetEosEval( eos_composite->eos_parameters[1], P, S, &eos_eval2 );CHKERRQ(ierr);
-        /* blend */
-        eos_eval->alpha = combine_matprop( 1.0-smth2, eos_eval2.alpha, eos_eval->alpha );
-        eos_eval->rho = combine_matprop( 1.0-smth2, eos_eval2.rho, eos_eval->rho );
-        eos_eval->T = combine_matprop( 1.0-smth2, eos_eval2.T, eos_eval->T );
-        eos_eval->Cp = combine_matprop( 1.0-smth2, eos_eval2.Cp, eos_eval->Cp );
-        eos_eval->dTdPs = combine_matprop( 1.0-smth2, eos_eval2.dTdPs, eos_eval->dTdPs );
-        eos_eval->cond = combine_matprop( 1.0-smth2, eos_eval2.cond, eos_eval->cond );
-        eos_eval->log10visc = combine_matprop( 1.0-smth2, eos_eval2.log10visc, eos_eval->log10visc );
     }
+
+    /* blend mixed phase with single phase, across phase boundary */
+    eos_eval->alpha = combine_matprop( smth, eos_eval2.alpha, eos_eval->alpha );
+    eos_eval->rho = combine_matprop( smth, eos_eval2.rho, eos_eval->rho );
+    eos_eval->T = combine_matprop( smth, eos_eval2.T, eos_eval->T );
+    eos_eval->Cp = combine_matprop( smth, eos_eval2.Cp, eos_eval->Cp );
+    eos_eval->dTdPs = combine_matprop( smth, eos_eval2.dTdPs, eos_eval->dTdPs );
+    eos_eval->cond = combine_matprop( smth, eos_eval2.cond, eos_eval->cond );
+    eos_eval->log10visc = combine_matprop( smth, eos_eval2.log10visc, eos_eval->log10visc );
 
     PetscFunctionReturn(0);
 
