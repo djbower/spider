@@ -7,6 +7,7 @@ PetscErrorCode MakeRelativeToSourcePathAbsolute(char*);
 PetscErrorCode Make2DPetscScalarArray( PetscInt, PetscInt, PetscScalar *** );
 PetscScalar combine_matprop( PetscScalar, PetscScalar, PetscScalar );
 PetscScalar tanh_weight( PetscScalar, PetscScalar, PetscScalar );
+PetscScalar get_smoothing( PetscScalar, PetscScalar );
 PetscErrorCode set_d_dr( Ctx * );
 PetscErrorCode set_entropy_from_solution( Ctx *, Vec );
 PetscErrorCode set_solution_from_entropy_at_staggered_nodes( Ctx *, Vec );
