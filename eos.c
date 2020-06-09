@@ -1897,30 +1897,7 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     /* TODO: move smoothing calculation to separate function */
     ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, P, S, &gphi );CHKERRQ(ierr);
 
-#if 1
     smth = get_smoothing( eos_composite->matprop_smooth_width, gphi);
-#endif
-
-#if 0
-    /* no smoothing */
-    if( eos_composite->matprop_smooth_width == 0.0 ){
-        smth = 1.0; // mixed phase only
-        if( (gphi < 0.0) || (gphi > 1.0) ){
-            smth = 0.0; // single phase only
-        }
-    }
-
-    /* tanh smoothing */
-    else{
-        if( gphi > 0.5 ){
-            smth = 1.0 - tanh_weight( gphi, 1.0, eos_composite->matprop_smooth_width );
-        }
-        else{
-            smth = tanh_weight( gphi, 0.0, eos_composite->matprop_smooth_width );
-        }
-    }
-    /* ----------------------------------------------------- */
-#endif
 
     /* now blend mixed phase EOS with single phase EOS across the phase boundary */
     if( gphi > 0.5 ){
