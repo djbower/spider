@@ -1899,19 +1899,19 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
 
     /* no smoothing */
     if( eos_composite->matprop_smooth_width == 0.0 ){
-        smth = 0.0; // mixed phase only
+        smth = 1.0; // mixed phase only
         if( (gphi < 0.0) || (gphi > 1.0) ){
-            smth = 1.0; // single phase only
+            smth = 0.0; // single phase only
         }
     }
 
     /* tanh smoothing */
     else{
         if( gphi > 0.5 ){
-            smth = tanh_weight( gphi, 1.0, eos_composite->matprop_smooth_width );
+            smth = 1.0 - tanh_weight( gphi, 1.0, eos_composite->matprop_smooth_width );
         }
         else{
-            smth = 1.0 - tanh_weight( gphi, 0.0, eos_composite->matprop_smooth_width );
+            smth = tanh_weight( gphi, 0.0, eos_composite->matprop_smooth_width );
         }
     }
     /* ----------------------------------------------------- */
@@ -1927,13 +1927,13 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     }
 
     /* blend mixed phase with single phase, across phase boundary */
-    eos_eval->alpha = combine_matprop( smth, eos_eval2.alpha, eos_eval->alpha );
-    eos_eval->rho = combine_matprop( smth, eos_eval2.rho, eos_eval->rho );
-    eos_eval->T = combine_matprop( smth, eos_eval2.T, eos_eval->T );
-    eos_eval->Cp = combine_matprop( smth, eos_eval2.Cp, eos_eval->Cp );
-    eos_eval->dTdPs = combine_matprop( smth, eos_eval2.dTdPs, eos_eval->dTdPs );
-    eos_eval->cond = combine_matprop( smth, eos_eval2.cond, eos_eval->cond );
-    eos_eval->log10visc = combine_matprop( smth, eos_eval2.log10visc, eos_eval->log10visc );
+    eos_eval->alpha = combine_matprop( smth, eos_eval->alpha, eos_eval2.alpha );
+    eos_eval->rho = combine_matprop( smth, eos_eval->rho, eos_eval2.rho );
+    eos_eval->T = combine_matprop( smth, eos_eval->T, eos_eval2.T );
+    eos_eval->Cp = combine_matprop( smth, eos_eval->Cp, eos_eval2.Cp );
+    eos_eval->dTdPs = combine_matprop( smth, eos_eval->dTdPs, eos_eval2.dTdPs );
+    eos_eval->cond = combine_matprop( smth, eos_eval->cond, eos_eval2.cond );
+    eos_eval->log10visc = combine_matprop( smth, eos_eval->log10visc, eos_eval2.log10visc );
 
     PetscFunctionReturn(0);
 
