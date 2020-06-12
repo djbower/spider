@@ -154,8 +154,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
            in the solution container */
         if( ctx->parameters->n_phases > 1 ){
             /* phase boundary */
-            ierr = JSON_add_phase_boundary( ctx, ctx->parameters->eos_composites[0]->eos_parameters[0], "liquidus_b", data ); CHKERRQ(ierr);
-            ierr = JSON_add_phase_boundary( ctx, ctx->parameters->eos_composites[0]->eos_parameters[1], "solidus_b", data ); CHKERRQ(ierr);
+            ierr = JSON_add_phase_boundary( ctx, ctx->parameters->eos_composites[0]->eos_parameters[0], "liquidus", data ); CHKERRQ(ierr);
+            ierr = JSON_add_phase_boundary( ctx, ctx->parameters->eos_composites[0]->eos_parameters[1], "solidus", data ); CHKERRQ(ierr);
         }
 
         for (i=0; i<NUMSOLUTIONVECS_S; ++i) {
