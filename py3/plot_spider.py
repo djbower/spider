@@ -54,9 +54,9 @@ def spiderplot_fig1( times ):
     yy_liq = myjson_o.get_dict_values_internal(['data','liquidus_b'])
     yy_sol = myjson_o.get_dict_values_internal(['data','solidus_b'])
     ax0.fill_between( xx_pres, yy_liq, yy_sol, facecolor='grey', alpha=0.35, linewidth=0 )
-    #yy_liqt = myjson_o.get_dict_values_internal(['data','liquidus_temp_b'])
-    #yy_solt = myjson_o.get_dict_values_internal(['data','solidus_temp_b'])
-    #ax1.fill_between( xx_pres, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
+    yy_liqt = myjson_o.get_dict_values_internal(['data','liquidus_temp_b'])
+    yy_solt = myjson_o.get_dict_values_internal(['data','solidus_temp_b'])
+    ax1.fill_between( xx_pres, yy_liqt, yy_solt, facecolor='grey', alpha=0.35, linewidth=0 )
     # hack to compute some average properties for Bower et al. (2018)
     #print xx_sol
     #print np.mean(yy_liq[20:]-yy_sol[20:])

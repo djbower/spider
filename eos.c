@@ -1959,8 +1959,8 @@ PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EosParameters Ep, co
     ihi_b = ilo_b + w_b;
 
     /* TODO: not sure on portability of strcat?  Petsc equivalent? */
-    strcat(strcpy(namestr1,name),"_b2");
-    strcat(strcpy(namestr2,name),"_temp_b2");
+    strcat(strcpy(namestr1,name),"_b");
+    strcat(strcpy(namestr2,name),"_temp_b");
 
     /* create output Vec */
     scaling = SC->ENTROPY;

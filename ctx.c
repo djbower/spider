@@ -139,7 +139,6 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   /* Populate vectors (initial condition is set in main.c) */
   set_mesh(ctx);
   set_d_dr( ctx );
-  set_twophase(ctx);
 
   ierr = initialise_atmosphere( &ctx->atmosphere, ctx->parameters->atmosphere_parameters, ctx->parameters->scaling_constants );CHKERRQ(ierr);
 
@@ -307,60 +306,46 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[15],"m$^2$ s$^{-1}$");CHKERRQ(ierr);
   }
   {
-    PetscScalar scaling = SC->ENTROPY;
-    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[16],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[16],&ctx->solution.liquidus); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[16],"liquidus_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[16],"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
-  }
-  {
     PetscScalar scaling = SC->KAPPA;
-    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[17],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[17],&ctx->solution.nu); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[17],"nu_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[17],"m s$^{-2}$");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[16],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[16],&ctx->solution.nu); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[16],"nu_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[16],"m s$^{-2}$");CHKERRQ(ierr);
   }
   {
     PetscScalar scaling = 1.0; // melt fraction is non-dimensional
-    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[18],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[18],&ctx->solution.phi); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[18],"phi_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[18],"None");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[17],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[17],&ctx->solution.phi); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[17],"phi_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[17],"None");CHKERRQ(ierr);
   }
   {
     PetscScalar scaling = 1.0;
-    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[19],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[19],&ctx->solution.Ra); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[19],"Ra_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[19],"None");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[18],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[18],&ctx->solution.Ra); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[18],"Ra_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[18],"None");CHKERRQ(ierr);
   }
   {
     PetscScalar scaling = 1.0; // dynamic regime (subadiabatic,inviscid,viscous)
-    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[20],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[20],&ctx->solution.regime); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[20],"regime_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[20],"None");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[19],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[19],&ctx->solution.regime); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[19],"regime_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[19],"None");CHKERRQ(ierr);
   }
   {
     PetscScalar scaling = SC->DENSITY;
+    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[20],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[20],&ctx->solution.rho); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[20],"rho_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[20],"kg m$^{-3}$");CHKERRQ(ierr);
+  }
+  {
+    PetscScalar scaling = SC->ENTROPY;
     ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[21],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[21],&ctx->solution.rho); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[21],"rho_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[21],"kg m$^{-3}$");CHKERRQ(ierr);
-  }
-  {
-    PetscScalar scaling = SC->ENTROPY;
-    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[22],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[22],&ctx->solution.S); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[22],"S_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[22],"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
-  }
-  {
-    PetscScalar scaling = SC->ENTROPY;
-    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[23],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[23],&ctx->solution.solidus); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[23],"solidus_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[23],"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[21],&ctx->solution.S); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[21],"S_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[21],"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
   }
   {
     PetscScalar scaling = SC->TEMP;
@@ -420,13 +405,6 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[7],"kg K");CHKERRQ(ierr);
   }
   {
-    PetscScalar scaling = SC->ENTROPY;
-    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_s[8],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[8],&ctx->solution.liquidus_s); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_s[8],"liquidus_s");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[8],"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
-  }
-  {
     PetscScalar scaling = 1.0; // melt fraction is non-dimensional
     ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_s[9],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[9],&ctx->solution.phi_s); // Just for convenience - can always get this vector out when you need it
@@ -435,24 +413,17 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
   }
   {
     PetscScalar scaling = SC->DENSITY;
-    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_s[10],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[10],&ctx->solution.rho_s); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_s[10],"rho_s");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[10],"kg m$^{-3}$");CHKERRQ(ierr);
-  }
-  {
-    PetscScalar scaling = SC->ENTROPY;
-    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_s[11],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[11],&ctx->solution.S_s); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_s[11],"S_s");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[11],"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
-  }
-  {
-    PetscScalar scaling = SC->ENTROPY;
     ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_s[2],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[2],&ctx->solution.solidus_s); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_s[2],"solidus_s");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[2],"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[2],&ctx->solution.rho_s); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_s[2],"rho_s");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[2],"kg m$^{-3}$");CHKERRQ(ierr);
+  }
+  {
+    PetscScalar scaling = SC->ENTROPY;
+    ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_s[8],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[8],&ctx->solution.S_s); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_s[8],"S_s");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[8],"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
   }
   {
     PetscScalar scaling = SC->TEMP;
