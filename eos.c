@@ -1935,6 +1935,9 @@ PetscErrorCode SetEosCompositeEval( const EosComposite eos_composite, PetscScala
 
 PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EosParameters Ep, const char *name, cJSON *json )
 {
+    /* add a phase boundary evaluated in entropy and temperature space
+       at the basic nodes points */
+
     PetscErrorCode         ierr;
     ScalingConstants       SC = E->parameters->scaling_constants;
     cJSON                  *data;
@@ -1947,8 +1950,6 @@ PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EosParameters Ep, co
     EosEval                eos_eval;
     char                   namestr1[80], namestr2[80];
 
-    data = cJSON_CreateObject();
-
     PetscFunctionBeginUser;
 
     pres_b = E->mesh.pressure_b;
@@ -1956,16 +1957,17 @@ PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EosParameters Ep, co
     ihi_b = ilo_b + w_b;
 
     /* TODO: not sure on portability of strcat?  Petsc equivalent? */
-    strcat(strcpy(namestr1,name),"_b");
-    strcat(strcpy(namestr2,name),"_temp_b");
 
-    /* create output Vec */
+    /* phase boundary defined by entropy */
+    strcat(strcpy(namestr1,name),"_b"); // phase boundary defined by entropy
     scaling = SC->ENTROPY;
     ierr = DimensionalisableFieldCreate(&DF_phase_b,da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(DF_phase_b,&phase_b);CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetName(DF_phase_b,namestr1);CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(DF_phase_b,"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
 
+    /* phase boundary defined by temperature */
+    strcat(strcpy(namestr2,name),"_temp_b"); // phase boundary defined by temperature
     scaling = SC->TEMP;
     ierr = DimensionalisableFieldCreate(&DF_phase_temp_b,da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(DF_phase_temp_b,&phase_temp_b);CHKERRQ(ierr);
