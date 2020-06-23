@@ -249,8 +249,7 @@ def plot_publication():
     #dir_l = ['S1_2500','S2_2500','S3_2500','L1_2500','L2_2500','L3_2500']
 
     # revised directories here
-    dir_l = ['S1_2500','S2_2500','S3_2500','L1_2500','L2_2500','L3R_2500']
-
+    dir_l = ['S1_2500','S2_2500','S3_2500','L1_2500','L2_2500','L3_2500']
 
     title = 'Surface temperature of magma ocean'
     xlabel = 'Time (years)'
@@ -293,8 +292,8 @@ def plot_publication():
 #====================================================================
 def main():
 
-    plot_atmosphere()
-    #plot_publication()
+    #plot_atmosphere()
+    plot_publication()
     plt.show()
 
 #====================================================================
