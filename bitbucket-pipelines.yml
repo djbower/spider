@@ -7,9 +7,9 @@ pipelines:
             - petsc-double-direct
           script:
             # Packages
-            - sudo apt-get update
-            - sudo apt-get --fix-missing -yq --no-install-suggests --no-install-recommends --force-yes install libblas-dev liblapack-dev python-numpy
-            - sudo apt-get --fix-missing -yq --no-install-suggests --no-install-recommends --force-yes install valgrind
+            - apt-get update
+            - apt-get --fix-missing -yq --no-install-suggests --no-install-recommends --force-yes install libblas-dev liblapack-dev python-numpy
+            - apt-get --fix-missing -yq --no-install-suggests --no-install-recommends --force-yes install valgrind
 
             # PETSc with SUNDIALS quad/direct hacks
             # Bitbucket may have restored the build from cache, so check before rebuilding
