@@ -1,4 +1,5 @@
 #include "dimensionalisablefield.h"
+#include "eos.h"
 #include "monitor.h"
 #include "rhs.h"
 #include "cJSON.h"
@@ -148,6 +149,15 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
           ierr = DimensionalisableFieldToJSON(curr,&item);CHKERRQ(ierr);
           cJSON_AddItemToObject(data,curr->name,item);
         }
+
+        /* we compute the phase boundaries here for the basic nodes, but still store them
+           in the solution container */
+        if( ctx->parameters->n_phases > 1 ){
+            /* phase boundary */
+            ierr = JSON_add_phase_boundary( ctx, ctx->parameters->eos_composites[0]->eos_parameters[0], "liquidus", data ); CHKERRQ(ierr);
+            ierr = JSON_add_phase_boundary( ctx, ctx->parameters->eos_composites[0]->eos_parameters[1], "solidus", data ); CHKERRQ(ierr);
+        }
+
         for (i=0; i<NUMSOLUTIONVECS_S; ++i) {
           cJSON *item;
           DimensionalisableField curr = ctx->solution.solutionFields_s[i];

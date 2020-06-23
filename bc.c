@@ -3,7 +3,7 @@
 #include "monitor.h"
 #include "util.h"
 
-static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
+//static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
 static PetscScalar get_isothermal_surface( const Ctx * );
 static PetscScalar isothermal_or_cooling_cmb( const Ctx *, PetscScalar );
 static PetscScalar get_core_cooling_factor( const Ctx * );
@@ -68,11 +68,13 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
       }
 
+#if 0
       /* smoothly transition the cooling rate to the viscous mantle
          cooling rate below the rheological transition */
       if( Ap->VISCOUS_MANTLE_COOLING_RATE ){
           Qout = get_viscous_mantle_cooling_rate( E, Qout );
       }
+#endif
 
       /* to ensure conservation of energy at the interface of the
          interior and atmosphere, the fluxes must be equal */
@@ -105,6 +107,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+#if 0
 static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qin )
 {
     PetscErrorCode ierr;
@@ -143,6 +146,7 @@ static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qi
 
     return Qout;
 }
+#endif
 
 PetscErrorCode set_core_mantle_flux( Ctx *E )
 {

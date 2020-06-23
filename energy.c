@@ -1,5 +1,6 @@
 #include "atmosphere.h"
 #include "energy.h"
+#include "eos.h"
 #include "matprop.h"
 #include "twophase.h"
 #include "util.h"
@@ -180,49 +181,56 @@ static PetscErrorCode append_Jmix( Ctx *E )
 {
     PetscErrorCode ierr;
     DM             da_b = E->da_b;
+    Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
+    Parameters const P = E->parameters;
     PetscInt       i, ilo, ihi, w;
-    PetscScalar    *arr_gphi, *arr_fwtl, *arr_fwts, *arr_Jmix;
+    PetscScalar    *arr_Jmix;
+    PetscScalar    dSliqdP, dSsoldP, smth, gphi;
+    const PetscScalar *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_pres, *arr_S, *arr_dPdr;
+
+    /* Jmix requires two phases */
+    const EosComposite eos_composite = P->eos_composites[0];
+    const EosParameters Ep0 = eos_composite->eos_parameters[0];
+    const EosParameters Ep1 = eos_composite->eos_parameters[1];
 
     PetscFunctionBeginUser;
-
-    /* convective mixing */
-    // arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * arr_dSliqdr[i];
-    // arr_Jmix[i] += (arr_phi[i]-1.0) * arr_dSsoldr[i];
-    ierr = VecWAXPY(S->Jmix,-1.0,S->dSliqdr,S->dSsoldr);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->phi);CHKERRQ(ierr);
-    ierr = VecAYPX(S->Jmix,1.0,S->dSdr);CHKERRQ(ierr);
-    ierr = VecAXPY(S->Jmix,-1.0,S->dSsoldr);CHKERRQ(ierr);
-    // arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
-    ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->kappac);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->rho);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jmix,S->Jmix,S->temp);CHKERRQ(ierr);
-    ierr = VecScale(S->Jmix,-1.0);CHKERRQ(ierr);
 
     ierr = DMDAGetCorners(da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w;
 
-    ierr = DMDAVecGetArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->S,&arr_S);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
-    /* to smoothly blend in convective mixing across the liquidus
-       and solidus */
     for(i=ilo; i<ihi; ++i){
-        if(arr_gphi[i] > 0.5){
-            // FIXME: smoothing width is hard-coded
-            arr_Jmix[i] *= 1.0 - tanh_weight( arr_gphi[i], 1.0, 1.0E-2 );
-        }
-        else if (arr_gphi[i] <= 0.5){
-            // FIXME: smoothing width is hard-coded
-            arr_Jmix[i] *= tanh_weight( arr_gphi[i], 0.0, 1.0E-2 );
-        }   
+        ierr = SetPhaseBoundary( Ep0, arr_pres[i], NULL, &dSliqdP );CHKERRQ(ierr);
+        ierr = SetPhaseBoundary( Ep1, arr_pres[i], NULL, &dSsoldP );CHKERRQ(ierr);
+        arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * dSliqdP * arr_dPdr[i];
+        arr_Jmix[i] += (arr_phi[i]-1.0) * dSsoldP * arr_dPdr[i];
+        arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
+
+        /* (optional) smoothing across phase boundaries for two phase composite */
+        ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, arr_pres[i], arr_S[i], &gphi );CHKERRQ(ierr);
+        smth = get_smoothing(  eos_composite->matprop_smooth_width, gphi );
+        arr_Jmix[i] *= smth;
+
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_b,S->fwtl,&arr_fwtl);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->fwts,&arr_fwts);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->gphi,&arr_gphi);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->S,&arr_S);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
     ierr = VecAXPY( S->Jtot, 1.0, S->Jmix ); CHKERRQ(ierr);
@@ -264,106 +272,81 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 {
 
     PetscErrorCode ierr;
+    Mesh *M = &E->mesh;
     Solution *S = &E->solution;
-    Vec cond1, cond2, F;
-    Vec rho = S->rho;
-    Vec rhol = S->liquidus_rho;
-    Vec rhos = S->solidus_rho;
     Parameters P = E->parameters;
-
-//rho, rhol, rhos, F;
+    PetscScalar *arr_Jgrav, F, cond1, cond2, phi, rhol, rhos, Sliq, Ssol;
     PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
-    DM da_b=E->da_b;
-    const PetscScalar *arr_cond1, *arr_cond2, *arr_liquidus_rho, *arr_phi, *arr_solidus_rho;
-    PetscScalar icond1, icond2, irhos, irhol, iphi;
-    PetscScalar *arr_F;
+    DM da_b = E->da_b;
+    const PetscScalar *arr_phi, *arr_pres, *arr_rho, *arr_temp;
+
+    /* Jgrav requires two phases */
+    const EosComposite eos_composite = P->eos_composites[0];
+    const EosParameters Ep0 = eos_composite->eos_parameters[0];
+    const EosParameters Ep1 = eos_composite->eos_parameters[1];
 
     PetscFunctionBeginUser;
 
-    //S = &E->solution;
-    //rho = S->rho;
-    //rhol = S->liquidus_rho;
-    //rhos = S->solidus_rho;
-
     ierr = DMDAGetInfo(da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-
-    ierr = VecCreate( PETSC_COMM_WORLD, &F );CHKERRQ(ierr);
-    ierr = VecSetSizes( F, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
-    ierr = VecSetFromOptions( F );CHKERRQ(ierr);
-    ierr = VecSetUp( F );CHKERRQ(ierr);
-
-    /* these are actually time-independent, so could be precomputed
-       outside of the time loop */
-    ierr = VecCreate( PETSC_COMM_WORLD, &cond1 );CHKERRQ(ierr);
-    ierr = VecSetSizes( cond1, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
-    ierr = VecSetFromOptions( cond1 );CHKERRQ(ierr);
-    ierr = VecSetUp( cond1 );CHKERRQ(ierr);
-
-    ierr = VecCreate( PETSC_COMM_WORLD, &cond2 );CHKERRQ(ierr);
-    ierr = VecSetSizes( cond2, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
-    ierr = VecSetFromOptions( cond2 );CHKERRQ(ierr);
-    ierr = VecSetUp( cond2 );CHKERRQ(ierr);
-
-    //PetscScalar cond1 = rhol / (11.993*rhos + rhol);
-    VecWAXPY(cond1, 11.993, rhos, rhol);
-    VecPointwiseDivide( cond1, rhol, cond1 );
-    //PetscScalar cond2 = rhol / (0.29624*rhos + rhol);
-    VecWAXPY(cond2, 0.29624, rhos, rhol);
-    VecPointwiseDivide( cond2, rhol, cond2 );
 
     /* loop over all basic internal nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
 
-    ierr = DMDAVecGetArrayRead(da_b, cond1, &arr_cond1);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b, cond2, &arr_cond2);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_b, F, &arr_F);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->liquidus_rho,&arr_liquidus_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->solidus_rho,&arr_solidus_rho);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
 
-    /* (I think) unavoidably have to loop over array to build F, since
-       Petsc Vecs do not support logic operations? */
     for(i=ilo_b; i<ihi_b; ++i){
-        icond1 = arr_cond1[i];
-        icond2 = arr_cond2[i];
-        iphi = arr_phi[i];
-        irhol = arr_liquidus_rho[i];
-        irhos = arr_solidus_rho[i];
+        ierr = SetPhaseBoundary( Ep0, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
+        /* FIXME: recovers previous behaviour, but intrinisically assumes that lookup is
+           used.  Instead, evaluate directly from chosen EOS */
+        ierr = SetInterp2dValue( Ep0->lookup->rho, arr_pres[i], Sliq, &rhol );CHKERRQ(ierr);
+        ierr = SetPhaseBoundary( Ep1, arr_pres[i], &Ssol, NULL );CHKERRQ(ierr);
+        /* FIXME: recovers previous behaviour, but intrinisically assumes that lookup is
+           used.  Instead, evaluate directly from chosen EOS */
+        ierr = SetInterp2dValue( Ep1->lookup->rho, arr_pres[i], Ssol, &rhos );CHKERRQ(ierr);
 
-        if(iphi < icond1){
-            arr_F[i] = 0.001*PetscPowScalar(irhos,2)*PetscPowScalar(iphi,3);
-            arr_F[i] /= PetscPowScalar(irhol,2)*(1.0-iphi);
-        } else if(iphi > icond2){
-            arr_F[i] = 2.0/9.0 * iphi * (1.0-iphi);
+        cond1 = rhol / (11.993 * rhos + rhol);
+        cond2 = rhol / (0.29624 * rhos + rhol);
+
+        phi = arr_phi[i];
+
+        /* TODO: check that F=0 for phi=0 and phi=1 */
+        if(phi < cond1){
+            F = 0.001*PetscPowScalar(rhos,2)*PetscPowScalar(phi,3);
+            F /= PetscPowScalar(rhol,2)*(1.0-phi);
+        } else if(phi > cond2){
+            F = 2.0/9.0 * phi * (1.0-phi);
         } else{
-            arr_F[i] = 5.0/7.0*PetscPowScalar(irhos,4.5)*PetscPowScalar(iphi,5.5)*(1.0-iphi);
-            arr_F[i] /= PetscPowScalar( irhol+(irhos-irhol)*iphi, 4.5 );
+            F = 5.0/7.0*PetscPowScalar(rhos,4.5)*PetscPowScalar(phi,5.5)*(1.0-phi);
+            F /= PetscPowScalar( rhol+(rhos-rhol)*phi, 4.5 );
         }
+
+        /* changing the order of these operations, or even consolidating the lines
+           actually changes the behaviour of the timestepper, and makes direct
+           comparison with current test data more tricky */
+        // arr_Jgrav[i] = (rhol-rhos) * rho;
+        arr_Jgrav[i] = rhol - rhos;
+        arr_Jgrav[i] *= arr_rho[i];
+        // arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
+        arr_Jgrav[i] *= Sliq - Ssol; // entropy of fusion
+        arr_Jgrav[i] *= arr_temp[i];
+        arr_Jgrav[i] *= PetscPowScalar(P->grain,2);
+        arr_Jgrav[i] *= P->gravity;
+        arr_Jgrav[i] *= F;
+        /* FIXME: should be evaluated from the EOS.  Here is assumed constant! */
+        arr_Jgrav[i] /= PetscPowScalar(10.0, P->eos_parameters[0]->log10visc);
+
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_b, cond1, &arr_cond1);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, cond2, &arr_cond2);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_b, F, &arr_F);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, S->liquidus_rho, &arr_liquidus_rho);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b, S->phi, &arr_phi);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, S->solidus_rho, &arr_solidus_rho);CHKERRQ(ierr);
-
-    // arr_Jgrav[i] = (rhol-rhos) * rho;
-    ierr = VecWAXPY( S->Jgrav, -1.0, rhos, rhol );
-    ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, rho );
-    // arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
-    ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, S->fusion );CHKERRQ(ierr);
-    ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, S->temp );CHKERRQ(ierr);
-    ierr = VecScale( S->Jgrav, PetscPowScalar(P->grain,2) );CHKERRQ(ierr);
-    ierr = VecScale( S->Jgrav, P->gravity );CHKERRQ(ierr);
-    ierr = VecPointwiseMult( S->Jgrav, S->Jgrav, F );CHKERRQ(ierr);
-    // arr_Jgrav[i] /= PetscPowScalar(10.0, LOG10VISC_MEL);
-    ierr = VecScale( S->Jgrav, 1.0/PetscPowScalar(10.0, P->eos_parameters[0]->log10visc));CHKERRQ(ierr);
-
-    ierr = VecDestroy(&cond1);CHKERRQ(ierr);
-    ierr = VecDestroy(&cond2);CHKERRQ(ierr);
-    ierr = VecDestroy(&F);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b, M->pressure_b, &arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->Jgrav, &arr_Jgrav);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->rho, &arr_rho);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->temp, &arr_temp);CHKERRQ(ierr);
 
     ierr = VecAXPY( S->Jtot, 1.0, S->Jgrav ); CHKERRQ(ierr);
 
@@ -396,8 +379,9 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
     ierr = set_entropy_from_solution( E, sol_in );CHKERRQ(ierr);
 
     /* set material properties and energy fluxes and sources */
-    ierr = set_gphi_smooth( E );CHKERRQ(ierr);
-    ierr = set_melt_fraction_staggered( E ); CHKERRQ(ierr);
+    // TODO: remove below
+    //ierr = set_gphi_smooth( E );CHKERRQ(ierr);
+    ierr = set_phase_fraction_staggered( E ); CHKERRQ(ierr);
     ierr = set_capacitance_staggered( E );CHKERRQ(ierr);
     ierr = set_matprop_basic( E );CHKERRQ(ierr);
     ierr = set_Etot( E );CHKERRQ(ierr);

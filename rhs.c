@@ -100,7 +100,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecRestoreArrayRead(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
 
   /* must be here since must be after dS/dt computation */
-  ierr = set_dMliqdt( E );CHKERRQ(ierr);
+
+  /* TODO: only relevant for 2 phases.  Perhaps need to tidy up similar
+     functionality, like output of rheological front, etc. */
+  if( P->n_phases == 2 ){
+      ierr = set_dMliqdt( E );CHKERRQ(ierr);
+  }
 
   /* transfer d/dt to solution */
   /* dS/dr at basic nodes */

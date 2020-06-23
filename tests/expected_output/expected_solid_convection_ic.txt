@@ -1,4 +1,4 @@
-description: dS/dr (basic nodes)
+description: dS/dr
 scaling: 0.04697889028520918
 val:                0
 val: -1.822131072043148

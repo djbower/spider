@@ -194,6 +194,16 @@ typedef struct {
     const char *prefix;  /* Maximum prefix length */
     EosParameters eos_parameters[SPIDER_MAX_PHASES];
     PetscInt n_eos;
+    /* it's only for composite structures that we need to know
+       if/how to blend together the material parameters across
+       phase boundaries.  Most are blended using a simple linear
+       weighting and a tanh functon, but the viscosity smoothing
+       is a bit more complicated.  To reiterate, these quantities
+       are not relevant for single phases (EosParameters) */
+    /* these are all smoothing-related */
+    PetscScalar matprop_smooth_width; // numerical reasons only
+    PetscScalar phi_critical; // physical transition between melt and solid for viscosity
+    PetscScalar phi_width; // physical transition between melt and solid for viscosity
 } data_EosComposite;
 typedef data_EosComposite* EosComposite;
 
@@ -378,7 +388,6 @@ typedef struct {
     PetscScalar rho_core;
     PetscScalar cp_core;
     PetscScalar tfac_core_avg;
-    PetscScalar matprop_smooth_width;
     PetscScalar activation_energy_sol;
     PetscScalar activation_volume_sol;
     PetscScalar log10visc_min;

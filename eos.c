@@ -49,8 +49,6 @@ static PetscErrorCode SetRTpressdTdPs( const RTpressParameters, PetscScalar, Pet
 static PetscErrorCode RTpressObjectiveFunctionVolumeTemperature( SNES, Vec, Vec, void * );
 static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
-static PetscErrorCode SetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar * );
-
 /* evaluate viscosity */
 static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar );
 static PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
@@ -339,18 +337,18 @@ static PetscErrorCode Interp2dCreateAndSet( const char * filename, Interp2d *int
     PetscFunctionReturn(0);
 }
 
-PetscScalar GetInterp1dValue( const Interp1d interp, PetscScalar x )
+PetscErrorCode SetInterp1dValue( const Interp1d interp, PetscScalar x, PetscScalar *val, PetscScalar *dval )
 {   
     /* wrapper for evaluating a 1-D lookup
        linear interpolation with truncation for values
        that fall outside the data lookup range */
     
-    //PetscErrorCode    ierr;
-    PetscScalar       w1, result;
     PetscScalar const *xa, *ya;
-    PetscScalar       xmin, xmax;
+    PetscScalar       w1, xmin, xmax;
     PetscInt          ind, NX;
-    
+
+    PetscFunctionBeginUser;
+
     NX = interp->NX;
     xa = interp->xa;
     xmin = interp->xmin;
@@ -384,16 +382,24 @@ PetscScalar GetInterp1dValue( const Interp1d interp, PetscScalar x )
          is the minimum index */
       ind -= 1;
     }
-    
-    // w1 is 0 at leftmost (minimum) x, 1 at rightmost (maximum) x
-    w1 = (x-xa[ind]) / (xa[ind+1]-xa[ind]); // weighting
-    
-    result = ya[ind] * (1.0-w1) + ya[ind+1] * w1;
-    
-    return result;
+   
+    /* interpolated value */ 
+    if( val != NULL ){
+        // w1 is 0 at leftmost (minimum) x, 1 at rightmost (maximum) x
+        w1 = (x-xa[ind]) / (xa[ind+1]-xa[ind]); // weighting
+        *val = ya[ind] * (1.0-w1) + ya[ind+1] * w1;
+    }
+
+    /* first-order derivative estimate */
+    if( dval != NULL ){
+        *dval = ( ya[ind+1] - ya[ind] ) / ( xa[ind+1] - xa[ind] );
+    }
+
+    PetscFunctionReturn(0);
+
 }
 
-PetscScalar GetInterp2dValue( const Interp2d interp, PetscScalar x, PetscScalar y )
+PetscErrorCode SetInterp2dValue( const Interp2d interp, PetscScalar x, PetscScalar y, PetscScalar *val )
 {
     /* wrapper for evaluating a 2-D lookup using bilinear
        interpolation.
@@ -402,17 +408,16 @@ PetscScalar GetInterp2dValue( const Interp2d interp, PetscScalar x, PetscScalar 
        spaced so we use a faster lookup approach by computing
        indices directly rather than looping through data */
 
-    //PetscErrorCode ierr;
     PetscScalar z1, z2, z3, z4;
     PetscScalar w1, w2, w3, w4; // weights
-    PetscScalar result;
     PetscScalar const *xa, *ya;
     PetscInt NX, NY;
-    PetscScalar dx;
-    PetscScalar xmin, xmax, ymin, ymax;
+    PetscScalar dx, xmin, xmax, ymin, ymax;
     // below only if y data is evenly spaced
     //PetscScalar dy;
     PetscInt indx, indy;
+
+    PetscFunctionBeginUser;
 
     NX = interp->NX;
     xa = interp->xa;
@@ -487,14 +492,14 @@ PetscScalar GetInterp2dValue( const Interp2d interp, PetscScalar x, PetscScalar 
     z4 = interp->za[indx+1][indy+1];
 
     // bilinear interpolation
-    result = z1 * w2 * w4;
-    result += z2 * w1 * w4;
-    result += z3 * w2 * w3;
-    result += z4 * w1 * w3;
-    result /= dx; // dx
-    result /= ya[indy+1]-ya[indy]; // dy
+    *val = z1 * w2 * w4;
+    *val += z2 * w1 * w4;
+    *val += z3 * w2 * w3;
+    *val += z4 * w1 * w3;
+    *val /= dx; // dx
+    *val /= ya[indy+1]-ya[indy]; // dy
 
-    return result;
+    PetscFunctionReturn(0);
 }
 
 static PetscErrorCode Interp1dDestroy( Interp1d *interp_ptr )
@@ -594,36 +599,46 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
 
 static PetscErrorCode SetLookupTemperature( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *T)
 {
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    *T = GetInterp2dValue( lookup->temp, P, S );
+    ierr = SetInterp2dValue( lookup->temp, P, S, T );CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode SetLookupRho( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *rho)
 {
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    *rho = GetInterp2dValue( lookup->rho, P, S );
+    ierr = SetInterp2dValue( lookup->rho, P, S, rho );CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode SetLookupAlpha( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *alpha)
 {
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    *alpha = GetInterp2dValue( lookup->alpha, P, S );
+    ierr = SetInterp2dValue( lookup->alpha, P, S, alpha );CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode SetLookupCp( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *Cp)
 {
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    *Cp = GetInterp2dValue( lookup->cp, P, S );
+    ierr = SetInterp2dValue( lookup->cp, P, S, Cp );CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode SetLookupdTdPs( const Lookup lookup, PetscScalar P, PetscScalar S, PetscScalar *dTdPs)
 {
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    *dTdPs = GetInterp2dValue( lookup->dTdPs, P, S );
+    ierr = SetInterp2dValue( lookup->dTdPs, P, S, dTdPs );CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -1161,10 +1176,14 @@ static PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters rtp, PetscS
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary )
+PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary, PetscScalar *dboundary )
 {
+
+    /* TODO: this function could contain a switch, to determine phase boundary by
+       a means other than lookup (currently not required) */
+
     PetscFunctionBeginUser;
-    *boundary = GetInterp1dValue( Ep->phase_boundary, P ); /* solidus entropy */
+    SetInterp1dValue( Ep->phase_boundary, P, boundary, dboundary ); /* entropy S and derivative dS/dP */
     PetscFunctionReturn(0);
 }
 
@@ -1436,6 +1455,8 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
 
   eos_eval->cond = Ep->cond; // conductivity constant
   ierr = SetEosEvalViscosity( Ep, eos_eval );CHKERRQ(ierr);
+  eos_eval->phase_fraction = 1.0; // by definition, since only one phase
+  eos_eval->fusion = 0.0; // meaningless for a single phase
 
   PetscFunctionReturn(0);
 }
@@ -1592,14 +1613,14 @@ PetscErrorCode EosCompositeDestroy( EosComposite *eos_composite_ptr )
 static PetscErrorCode SetTwoPhaseLiquidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *liquidus )
 {
     PetscFunctionBeginUser;
-    SetPhaseBoundary( eos_composite->eos_parameters[0], P, liquidus ); /* liquidus entropy */
+    SetPhaseBoundary( eos_composite->eos_parameters[0], P, liquidus, NULL ); /* liquidus entropy */
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode SetTwoPhaseSolidus( const EosComposite eos_composite, PetscScalar P, PetscScalar *solidus )
 {
     PetscFunctionBeginUser;
-    SetPhaseBoundary( eos_composite->eos_parameters[1], P, solidus ); /* solidus entropy */
+    SetPhaseBoundary( eos_composite->eos_parameters[1], P, solidus, NULL ); /* solidus entropy */
     PetscFunctionReturn(0);
 }
 
@@ -1642,7 +1663,7 @@ static PetscErrorCode SetTwoPhaseFusionTemp( const EosComposite eos_composite, P
 }
 #endif
 
-static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
+PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
 {
     PetscErrorCode ierr;
     PetscScalar solidus, fusion;
@@ -1654,8 +1675,18 @@ static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite eos_composite
 
     *phase_fraction = ( S - solidus ) / fusion;
 
-    /* I think I need to truncate value?  Perhaps not if this is dealt with later in the code */
+    PetscFunctionReturn(0);
+}
 
+static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, P, S, phase_fraction ); CHKERRQ(ierr);
+
+    /* truncation */
     if( *phase_fraction > 1.0 ){
         *phase_fraction = 1.0;
     }
@@ -1796,7 +1827,6 @@ static PetscErrorCode SetTwoPhaseViscosity( const EosComposite eos_composite, Pe
     PetscErrorCode ierr;
     EosEval eos_eval_melt, eos_eval_solid;
     PetscScalar phase_fraction, liquidus, solidus, log10visc_melt, log10visc_sol, fwt;
-    PetscScalar phi_critical, phi_width;
 
     PetscFunctionBeginUser;
 
@@ -1814,11 +1844,7 @@ static PetscErrorCode SetTwoPhaseViscosity( const EosComposite eos_composite, Pe
     ierr = SetEosEvalViscosity( eos_composite->eos_parameters[1], &eos_eval_solid );CHKERRQ(ierr);
     log10visc_sol = eos_eval_solid.log10visc;
 
-    /* FIXME: these are stored in the parameters struct, but do we really need to read this in for just
-       two parameters? */
-    phi_critical = 0.4;
-    phi_width = 0.15;
-    fwt = tanh_weight( phase_fraction, phi_critical, phi_width );
+    fwt = tanh_weight( phase_fraction, eos_composite->phi_critical, eos_composite->phi_width );
     *log10visc_ptr = fwt * log10visc_melt + (1.0-fwt) * log10visc_sol;
 
     PetscFunctionReturn(0);
@@ -1828,11 +1854,33 @@ static PetscErrorCode SetTwoPhaseViscosity( const EosComposite eos_composite, Pe
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_composite, PetscScalar P, PetscScalar S, EosEval *eos_eval)
 {
     PetscErrorCode ierr;
+    /* this function is called alot, if we have two phases.  Is it therefore better to store all 
+       the EosEval in Ctx?  Or isn't this really a speed issue? (prob not in comparison to the
+       re-evaluation of functions as described below */
+    EosEval eos_eval2; // pure phase for blending across phase boundary
+    PetscScalar gphi, smth;
 
     PetscFunctionBeginUser;
 
+    /* TODO: the functions below are clean, in the sense that each updates one material property.  This might
+       be an advantage for setting up function pointers or the like.  However, a consequence of this approach
+       is that the code is not optimised for speed, since many of these functions call the same functions
+       to evaluate properties.  So an obvious speed enhancement is to perhaps scrap these individual functions
+       and just update everything together in this function (still populating the eos_eval struct, so the end
+       result is the same). */
+
     eos_eval->P = P;
     eos_eval->S = S;
+
+    /* these are strictly only valid for the mixed phase region, and not for general P and S
+       conditions */
+    /* FIXME: unsure what the best approach is here.  The following functions are highly modular,
+       but I think it slows the code down a lot since many of the functions repeat the same lookups
+       It would reduce the modularity, but for speed the better option would be to have an
+       aggregate function that only evaluates things once.  This would be trivial to implement,
+       but leaving as is for the time being until PS formalises the EosParameters and EosComposite structs */
+    ierr = SetTwoPhaseFusion( eos_composite, P, &eos_eval->fusion);CHKERRQ(ierr);
+    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &eos_eval->phase_fraction);CHKERRQ(ierr);
     ierr = SetTwoPhaseTemperature( eos_composite, P, S, &eos_eval->T );CHKERRQ(ierr);
     ierr = SetTwoPhaseCp( eos_composite, P, S, &eos_eval->Cp );CHKERRQ(ierr);
     ierr = SetTwoPhaseRho( eos_composite, P, S, &eos_eval->rho );CHKERRQ(ierr);
@@ -1844,6 +1892,28 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
        SPIDER, but for completeness zero them here */
     eos_eval->Cv = 0.0;
     eos_eval->V = 0.0;
+
+    ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, P, S, &gphi );CHKERRQ(ierr);
+    smth = get_smoothing( eos_composite->matprop_smooth_width, gphi);
+
+    /* now blend mixed phase EOS with single phase EOS across the phase boundary */
+    if( gphi > 0.5 ){
+        /* melt only properties */
+        ierr = SetEosEval( eos_composite->eos_parameters[0], P, S, &eos_eval2 );CHKERRQ(ierr);
+    }
+    else{
+        /* solid only properties */
+        ierr = SetEosEval( eos_composite->eos_parameters[1], P, S, &eos_eval2 );CHKERRQ(ierr);
+    }
+
+    /* blend mixed phase with single phase, across phase boundary */
+    eos_eval->alpha = combine_matprop( smth, eos_eval->alpha, eos_eval2.alpha );
+    eos_eval->rho = combine_matprop( smth, eos_eval->rho, eos_eval2.rho );
+    eos_eval->T = combine_matprop( smth, eos_eval->T, eos_eval2.T );
+    eos_eval->Cp = combine_matprop( smth, eos_eval->Cp, eos_eval2.Cp );
+    eos_eval->dTdPs = combine_matprop( smth, eos_eval->dTdPs, eos_eval2.dTdPs );
+    eos_eval->cond = combine_matprop( smth, eos_eval->cond, eos_eval2.cond );
+    eos_eval->log10visc = combine_matprop( smth, eos_eval->log10visc, eos_eval2.log10visc );
 
     PetscFunctionReturn(0);
 
@@ -1861,4 +1931,73 @@ PetscErrorCode SetEosCompositeEval( const EosComposite eos_composite, PetscScala
 
   PetscFunctionReturn(0);
 
+}
+
+PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EosParameters Ep, const char *name, cJSON *json )
+{
+    /* add a phase boundary evaluated in entropy and temperature space
+       at the basic nodes points */
+
+    PetscErrorCode         ierr;
+    ScalingConstants       SC = E->parameters->scaling_constants;
+    cJSON                  *data;
+    PetscInt               i,ilo_b,ihi_b,w_b;
+    DM                     da_b=E->da_b;
+    Vec                    pres_b, phase_b, phase_temp_b;
+    DimensionalisableField DF_phase_b, DF_phase_temp_b;
+    PetscScalar            Sbound, scaling, *arr_phase_b, *arr_phase_temp_b;
+    const PetscScalar      *arr_pres_b;
+    EosEval                eos_eval;
+    char                   namestr1[80], namestr2[80];
+
+    PetscFunctionBeginUser;
+
+    pres_b = E->mesh.pressure_b;
+    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+
+    /* TODO: not sure on portability of strcat?  Petsc equivalent? */
+
+    /* phase boundary defined by entropy */
+    strcat(strcpy(namestr1,name),"_b"); // phase boundary defined by entropy
+    scaling = SC->ENTROPY;
+    ierr = DimensionalisableFieldCreate(&DF_phase_b,da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(DF_phase_b,&phase_b);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetName(DF_phase_b,namestr1);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(DF_phase_b,"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
+
+    /* phase boundary defined by temperature */
+    strcat(strcpy(namestr2,name),"_temp_b"); // phase boundary defined by temperature
+    scaling = SC->TEMP;
+    ierr = DimensionalisableFieldCreate(&DF_phase_temp_b,da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(DF_phase_temp_b,&phase_temp_b);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetName(DF_phase_temp_b,namestr2);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(DF_phase_temp_b,"K");CHKERRQ(ierr);
+
+    /* basic nodes */
+    ierr = DMDAVecGetArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,phase_b,&arr_phase_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,phase_temp_b,&arr_phase_temp_b);CHKERRQ(ierr);
+
+    for(i=ilo_b;i<ihi_b;++i){
+        ierr = SetPhaseBoundary( Ep, arr_pres_b[i], &Sbound, NULL );CHKERRQ(ierr);
+        arr_phase_b[i] = Sbound;
+        ierr = SetEosEval( Ep, arr_pres_b[i], Sbound, &eos_eval );CHKERRQ(ierr);
+        arr_phase_temp_b[i] = eos_eval.T;
+    }
+
+    ierr = DMDAVecRestoreArrayRead(da_b,pres_b,&arr_pres_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,phase_b,&arr_phase_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,phase_temp_b,&arr_phase_temp_b);CHKERRQ(ierr);
+
+    ierr = DimensionalisableFieldToJSON(DF_phase_b,&data);CHKERRQ(ierr);
+    cJSON_AddItemToObject(json,namestr1,data);
+
+    ierr = DimensionalisableFieldToJSON(DF_phase_temp_b,&data);CHKERRQ(ierr);
+    cJSON_AddItemToObject(json,namestr2,data);
+
+    ierr = DimensionalisableFieldDestroy(&DF_phase_b);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldDestroy(&DF_phase_temp_b);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
 }

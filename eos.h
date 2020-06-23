@@ -13,9 +13,11 @@ typedef struct RTpressEval_ {
 PetscErrorCode EosParametersCreate( EosParameters * );
 PetscErrorCode EosParametersDestroy( EosParameters * );
 PetscErrorCode EosParametersSetFromOptions( EosParameters, const FundamentalConstants, const ScalingConstants );
+PetscErrorCode SetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar *, PetscScalar * );
 
 PetscErrorCode SetEosEval( const EosParameters, PetscScalar, PetscScalar, EosEval * );
 PetscErrorCode SetEosCompositeEval( const EosComposite, PetscScalar, PetscScalar, EosEval * );
+PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar, PetscScalar, PetscScalar * );
 
 PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *, const EosParameters[], PetscInt );
 PetscErrorCode EosCompositeDestroy( EosComposite * );
@@ -30,7 +32,9 @@ PetscScalar get_rtpress_pressure_test( Ctx * );
 PetscScalar get_rtpress_entropy_test( Ctx * );
 #endif
 
-PetscScalar GetInterp1dValue( Interp1d const, PetscScalar );
-PetscScalar GetInterp2dValue( Interp2d const, PetscScalar, PetscScalar );
+PetscErrorCode JSON_add_phase_boundary( const Ctx *, const EosParameters, const char *, cJSON * );
+
+PetscErrorCode SetInterp1dValue( Interp1d const, PetscScalar, PetscScalar *, PetscScalar * );
+PetscErrorCode SetInterp2dValue( Interp2d const, PetscScalar, PetscScalar, PetscScalar * );
 
 #endif

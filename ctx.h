@@ -28,18 +28,18 @@ typedef struct Mesh_ {
 
 } Mesh;
 
-#define NUMSOLUTIONVECS_B 41
-#define NUMSOLUTIONVECS_S 23
+#define NUMSOLUTIONVECS_B 22
+#define NUMSOLUTIONVECS_S 10
 typedef struct Solution_ {
 
     DimensionalisableField solutionFields_b[NUMSOLUTIONVECS_B];
     DimensionalisableField solutionFields_s[NUMSOLUTIONVECS_S];
 
     // TODO: eventually get rid of these
-    Vec alpha, cond, cp, dfusdr, dfusdr_temp, dSdr, dSliqdr, dSsoldr, dTdrs, dTdrs_mix, Etot, fusion, fusion_curve, fusion_curve_temp, fusion_rho, fusion_temp, fwtl, fwts, gphi, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, liquidus, liquidus_rho, liquidus_temp, nu, phi, Ra, regime, rho, S, solidus, solidus_rho, solidus_temp, temp, visc;
+    Vec alpha, cond, cp, dSdr, dTdrs, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, Ra, regime, rho, S, temp, visc;
 
     // TODO: eventually get rid of these
-    Vec cp_s, dSdt_s, fusion_s, fusion_curve_s, fusion_curve_temp_s, fusion_temp_s, fwtl_s, fwts_s, gphi_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, liquidus_rho_s, liquidus_s, liquidus_temp_s, phi_s, rho_s, S_s, solidus_s, solidus_rho_s, solidus_temp_s, temp_s;
+    Vec cp_s, dSdt_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, phi_s, rho_s, S_s, temp_s;
 
 } Solution;
 
@@ -73,6 +73,8 @@ typedef struct EosEval_ {
   PetscScalar dTdPs; /* adiabatic temperature gradient */
   PetscScalar cond;
   PetscScalar log10visc;
+  PetscScalar phase_fraction; // by definition unity for single species, but can be 0<x<1 for the EosComposite (with two phases) */
+  PetscScalar fusion; // only relevant for EosComposite (with two phases)
 } EosEval;
 
 /* A Context for the Solver */
@@ -92,11 +94,9 @@ typedef struct Ctx_ {
   RheologicalFront       rheological_front_dynamic;
 
   /* TODO: check with PS if this is the best way */
-  /* this is a struct to enable me to pass current P, S conditions and
-     update all material propoerties, according to a chosen EOS model.
-     Currently need one for solid and one for melt, but could extend to
-     multiple phases */
-  EosEval                eos_evals[3]; // FIXME: hard-coded for two phases + one composite phase (mixed)
+  /* since all aggregation is done at the EOS level, we only need one struct
+     here that contains the evaluations at the given P and S conditions */
+  EosEval                eos_eval;
 
   /* "local" work vectors */
   Vec work_local_s,work_local_b;

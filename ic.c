@@ -1,5 +1,6 @@
 #include "atmosphere.h"
 #include "energy.h"
+#include "eos.h"
 #include "ic.h"
 #include "monitor.h"
 #include "parameters.h"
@@ -307,26 +308,33 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
        the ic using S->S_s, and then map the values to the
        solution Vec */
 
-    PetscErrorCode   ierr;
-    Parameters const P = E->parameters;
-    PetscInt         i, numpts_s;
-    PetscScalar      S_i;
-    Solution         *S = &E->solution;
+    PetscErrorCode    ierr;
+    Parameters const  P = E->parameters;
+    PetscInt          i, numpts_s;
+    PetscScalar       S_i,Ssol;
+    const PetscScalar *arr_pres_s;
+    Solution          *S = &E->solution;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_phase_boundary()\n");CHKERRQ(ierr);
 
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
-    /* FIXME: instead, use phase boundary evaluation to determine the initial condition */
-    ierr = VecCopy( S->solidus_s, S->S_s ); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(E->da_s,E->mesh.pressure_s,&arr_pres_s);CHKERRQ(ierr);
 
     for(i=1; i<numpts_s-1;++i) {
-        ierr = VecGetValues(S->S_s,1,&i,&S_i);CHKERRQ(ierr);
-        if(P->ic_adiabat_entropy < S_i){
+        /* TODO: assumes the relevant phase boundary is in slot 0, which it will be for a single
+           phase system (although still potential for a bug here) */
+        ierr = SetPhaseBoundary( E->parameters->eos_parameters[0], arr_pres_s[i], &Ssol, NULL);CHKERRQ(ierr);
+        if(P->ic_adiabat_entropy < Ssol){
             ierr = VecSetValues(S->S_s,1,&i,&P->ic_adiabat_entropy,INSERT_VALUES);CHKERRQ(ierr);
         }
+        else{
+            ierr = VecSetValues(S->S_s,1,&i,&Ssol,INSERT_VALUES);CHKERRQ(ierr);
+        }
     }
+
+    ierr = DMDAVecRestoreArrayRead(E->da_s,E->mesh.pressure_s,&arr_pres_s);CHKERRQ(ierr);
 
     VecAssemblyBegin( S->S_s );
     VecAssemblyEnd( S->S_s );

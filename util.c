@@ -251,6 +251,34 @@ PetscScalar tanh_weight( PetscScalar qty, PetscScalar threshold, PetscScalar wid
     return fwt;
 }
 
+PetscScalar get_smoothing( PetscScalar smooth_width, PetscScalar gphi )
+{
+    /* get smoothing across phase boundaries for a two phase composite */
+
+    PetscScalar smth;
+
+    /* no smoothing */
+    if( smooth_width == 0.0 ){
+        smth = 1.0; // mixed phase only
+        if( (gphi < 0.0) || (gphi > 1.0) ){
+            smth = 0.0; // single phase only
+        }
+    }
+
+    /* tanh smoothing */
+    else{
+        if( gphi > 0.5 ){
+            smth = 1.0 - tanh_weight( gphi, 1.0, smooth_width );
+        }
+        else{
+            smth = tanh_weight( gphi, 0.0, smooth_width );
+        }
+    }
+
+    return smth;
+}
+
+
 PetscErrorCode set_d_dr( Ctx *E )
 {
 
