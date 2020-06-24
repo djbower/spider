@@ -27,15 +27,20 @@ pipelines:
             - make -j
 
             # Run valgrind (examine manually!)
-            - valgrind ./spider -- -options_file tests/opts/blackbody.opts -nstepsmacro 1 -dtmacro 0.01
+            # No need anymore.  Dan can run valgrind on Bern cluster
+            #- valgrind ./spider -- -options_file tests/opts/blackbody.opts -nstepsmacro 1 -dtmacro 0.01
 
             # Set up for Tests
-            - cd tests
-            - git clone https://bitbucket.org/dmay/pythontestharness
-            - ./runTests.py -d # create default config
+            #- cd tests
+            #- git clone https://bitbucket.org/dmay/pythontestharness
+            #- ./runTests.py -d # create default config
+
+            # new test format
+            # python -m sciath -i tests.yml -t blackbody
 
             # Run all the tests (-f returns an error code)
-            - ./runTests.py -t blackbody -f
+            # OLD DO NOT USE - ./runTests.py -t blackbody -f
+
   branches:
     master: *default-step
 definitions:
