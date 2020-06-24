@@ -232,68 +232,9 @@ def plot_atmosphere():
     fig_o.savefig(6)
 
 #====================================================================
-def plot_publication():
-
-    logger.info( 'building atmosphere' )
-
-    # dummy list for correct color selection
-    time_l = '0,0,0,0,0,0'
-
-    width = 4.7747 / 2.0
-    height = 4.7747 / 2.0
-    fig_o = su.FigureData( 1, 1, width, height, 'mo_cooling', times=time_l, units='yr' )
-    fig_o.fig.subplots_adjust(wspace=0.4,hspace=0.5)
-
-    ax0 = fig_o.ax
-    # original directories here
-    #dir_l = ['S1_2500','S2_2500','S3_2500','L1_2500','L2_2500','L3_2500']
-
-    # revised directories here
-    dir_l = ['S1_2500','S2_2500','S3_2500','L1_2500','L2_2500','L3_2500']
-
-    title = 'Surface temperature of magma ocean'
-    xlabel = 'Time (years)'
-    ylabel = 'Temperature (K)'
-    yticks = [1500,1750,2000,2250,2500]
-
-    handle_l = []
-    FLAG = False # for plotting mantle temperature
-
-    for nn, direct in enumerate(dir_l):
-
-        if nn < 3:
-            color = fig_o.get_color(nn)
-        else:
-            color = fig_o.get_color(8-nn)
-
-        infilename = direct.split('_')[0]
-        infile = direct + '/' + infilename + '.dat'
-        try:
-            time, Ts, Tm, emiss = np.loadtxt( infile, unpack=True, usecols=(0,1,2,3) )
-            label = direct.split('_')[0]
-            h1, = ax0.semilogx( time, Ts, label=label, color=color )
-            handle_l.append( h1 )
-            if nn == 0 and FLAG is True:
-                label = 'S1 mantle'
-                h1, = ax0.semilogx( time, Tm, '--', label=label, color=color)
-        except:
-            print('here')
-
-
-    fig_o.set_myaxes( ax0, title=title, xlabel=xlabel, ylabel=ylabel, yticks=yticks, yrotation=90 )
-    ax0.xaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=20) )
-    ax0.xaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=(0.2,0.4,0.6,0.8), numticks=20))
-    fig_o.set_mylegend( ax0, handle_l, loc='lower left', ncol=1, title='Case' )
-    ax0.set_ylim( 1400, 2600 )
-    ax0.set_xlim( 10, 2E5 )
-
-    fig_o.savefig(7)
-
-#====================================================================
 def main():
 
     #plot_atmosphere()
-    plot_publication()
     plt.show()
 
 #====================================================================
