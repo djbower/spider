@@ -29,7 +29,7 @@ pipelines:
             - git clone https://github.com/sciath/sciath tests/sciath --depth=1
             - export PYTHONPATH=$PYTHONPATH:$PWD/tests/sciath
             - python -m sciath -d # create default config
-            - python -m sciath -i tests/tests.yml -t blackbody -f
+            - python -m sciath -i tests/tests.yml -t blackbody_short -f
 
   branches:
     master: *default-step
