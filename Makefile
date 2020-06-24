@@ -54,46 +54,42 @@ ${EXNAME} : ${SRC_O}
 
 ### Tests ######################################################################
 SPIDER_TEST_DIR=${SPIDER_ROOT_DIR}/test_dir
-SPIDER_TEST_SCRIPT=${SPIDER_ROOT_DIR}/tests/runTests.py
+SPIDER_TEST_SCRIPT=python -m sciath ${SPIDER_ROOT_DIR}/tests/tests.yml
 SPIDER_TEST_CONF=${SPIDER_TEST_DIR}/pth.conf
 
 test_create_output_dir :
 	mkdir -p ${SPIDER_TEST_DIR}
 
 # Basic Tests
-SPIDER_BASIC_TESTS=blackbody
-
 test : test_create_output_dir
-	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t ${SPIDER_BASIC_TESTS} && cd -
+	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -g basic  && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "To run more tests\n"
-	@printf "  make testall\n"
+	@printf "  make test_all\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
-	@printf "  make testcheck\n"
+	@printf "  make test_check\n"
 
 test_check : test_create_output_dir
-	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -t ${SPIDER_BASIC_TESTS} && cd -
+	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -g basic && cd -
 
 # Atmosphere tests
-SPIDER_ATMOS_TESTS=atmosphere_ic,atmosphere
-
 test_atmos : test_create_output_dir
-	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -t ${SPIDER_ATMOS_TESTS} && cd -
+	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -g atmos && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "To run more tests\n"
-	@printf "  make testall\n"
+	@printf "  make test_all\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testatmoscheck\n"
 
 test_atmos_check : test_create_output_dir
-	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -t ${SPIDER_ATMOS_TESTS} && cd -
+	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -g atmos && cd -
 
 # All Tests
 test_all : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
-	@printf "  make testallcheck\n"
+	@printf "  make test_all_check\n"
 
 test_all_check : test_create_output_dir
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v && cd -
