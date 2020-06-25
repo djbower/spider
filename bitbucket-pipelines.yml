@@ -8,8 +8,7 @@ pipelines:
           script:
             # Packages
             - apt-get update
-            - apt-get --fix-missing -yq --no-install-suggests --no-install-recommends --force-yes install libblas-dev liblapack-dev python-numpy
-            - apt-get --fix-missing -yq --no-install-suggests --no-install-recommends --force-yes install valgrind
+            - apt-get --fix-missing -yq --no-install-suggests --no-install-recommends --force-yes install libblas-dev liblapack-dev
 
             # PETSc with SUNDIALS quad/direct hacks
             # Bitbucket may have restored the build from cache, so check before rebuilding
@@ -26,20 +25,11 @@ pipelines:
             # Build SPIDER
             - make -j
 
-            # Run valgrind (examine manually!)
-            # No need anymore.  Dan can run valgrind on Bern cluster
-            #- valgrind ./spider -- -options_file tests/opts/blackbody.opts -nstepsmacro 1 -dtmacro 0.01
-
-            # Set up for Tests
-            #- cd tests
-            #- git clone https://bitbucket.org/dmay/pythontestharness
-            #- ./runTests.py -d # create default config
-
-            # new test format
-            # python -m sciath -i tests.yml -t blackbody
-
-            # Run all the tests (-f returns an error code)
-            # OLD DO NOT USE - ./runTests.py -t blackbody -f
+            # Run test with SciATH
+            - git clone https://github.com/sciath/sciath tests/sciath --depth=1
+            - export PYTHONPATH=$PYTHONPATH:$PWD/tests/sciath
+            - python -m sciath -d # create default config
+            - python -m sciath -i tests/tests.yml -t blackbody_short -f
 
   branches:
     master: *default-step
