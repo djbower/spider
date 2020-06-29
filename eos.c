@@ -55,17 +55,6 @@ static PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
 
 /* two phase composite eos (for mixed phase region) */
 /* TODO: you'll see that the convention is for the melt phase to be listed first */
-static PetscErrorCode SetTwoPhaseLiquidus( const EosComposite, PetscScalar, PetscScalar * );
-static PetscErrorCode SetTwoPhaseSolidus( const EosComposite, PetscScalar, PetscScalar * );
-static PetscErrorCode SetTwoPhaseFusion( const EosComposite, PetscScalar, PetscScalar * );
-static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode SetTwoPhaseTemperature( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode SetTwoPhaseCp( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode SetTwoPhaseRho( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode SetTwoPhasedTdPs( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode SetTwoPhaseAlpha( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode SetTwoPhaseConductivity( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
-static PetscErrorCode SetTwoPhaseViscosity( const EosComposite, PetscScalar, PetscScalar, PetscScalar * );
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite, PetscScalar, PetscScalar, EosEval *);
 
 #if 0
@@ -1624,232 +1613,20 @@ static PetscErrorCode SetTwoPhaseSolidus( const EosComposite eos_composite, Pets
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode SetTwoPhaseFusion( const EosComposite eos_composite, PetscScalar P, PetscScalar *fusion )
+PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
 {
     PetscErrorCode ierr;
-    PetscScalar liquidus, solidus;
-
-    PetscFunctionBeginUser;
-
-    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
-    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
-    *fusion = liquidus - solidus;
-
-    PetscFunctionReturn(0);
-}
-
-/* not used */
-#if 0
-static PetscErrorCode SetTwoPhaseFusionTemp( const EosComposite eos_composite, PetscScalar P, PetscScalar *fusion_temp )
-{
-    PetscErrorCode ierr;
-    EosEval eos_eval_melt, eos_eval_solid;
     PetscScalar solidus, liquidus;
 
     PetscFunctionBeginUser;
 
-    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus );
-    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus );
-
-    /* TODO?: it is not necessary to evaluate all eos properties, but this function
-       is robust against stale data.  Unless this is really a bottleneck in the computational
-       time, it's probably OK */
-    ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
-
-    *fusion_temp = eos_eval_melt.T - eos_eval_solid.T;
-
-    PetscFunctionReturn(0);
-}
-#endif
-
-PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
-{
-    PetscErrorCode ierr;
-    PetscScalar solidus, fusion;
-
-    PetscFunctionBeginUser;
-
     ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
-    ierr = SetTwoPhaseFusion( eos_composite, P, &fusion ); CHKERRQ(ierr);
-
-    *phase_fraction = ( S - solidus ) / fusion;
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode SetTwoPhasePhaseFraction( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, P, S, phase_fraction ); CHKERRQ(ierr);
-
-    /* truncation */
-    if( *phase_fraction > 1.0 ){
-        *phase_fraction = 1.0;
-    }
-    if( *phase_fraction < 0.0 ){
-        *phase_fraction = 0.0;
-    } 
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode SetTwoPhaseTemperature( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *T_ptr )
-{
-    PetscErrorCode ierr;
-    EosEval eos_eval_melt, eos_eval_solid;
-    PetscScalar solidus, liquidus, phase_fraction;
-
-    PetscFunctionBeginUser;
-
-    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
     ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
-    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
 
-    /* linear temperature between liquidus and solidus */
-    *T_ptr = phase_fraction * eos_eval_melt.T;
-    *T_ptr += (1-phase_fraction) * eos_eval_solid.T;
+    *phase_fraction = ( S - solidus ) / (liquidus-solidus);
 
     PetscFunctionReturn(0);
 }
-
-static PetscErrorCode SetTwoPhaseRho( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *rho_ptr )
-{
-    /* TODO(?) much of this overlaps with the calculation of the mixed phase temperature.  Could
-       combine to avoid recalculating the EosEval structs */
-
-    PetscErrorCode ierr;
-    EosEval eos_eval_melt, eos_eval_solid;
-    PetscScalar solidus, liquidus, phase_fraction;
-
-    PetscFunctionBeginUser;
-
-    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
-    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
-    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
-
-    /* volume additivity (excludes temperature effect) */
-    *rho_ptr = phase_fraction * (1.0/eos_eval_melt.rho) + (1-phase_fraction) * (1.0/eos_eval_solid.rho);
-    *rho_ptr = 1.0/(*rho_ptr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode SetTwoPhasedTdPs( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *dTdPs_ptr )
-{
-    PetscErrorCode ierr;
-    PetscScalar alpha, temp, rho, cp;
-
-    PetscFunctionBeginUser;
-
-    ierr = SetTwoPhaseAlpha( eos_composite, P, S, &alpha );CHKERRQ(ierr);
-    ierr = SetTwoPhaseCp( eos_composite, P, S, &cp );CHKERRQ(ierr);
-    ierr = SetTwoPhaseRho( eos_composite, P, S, &rho );CHKERRQ(ierr);
-    ierr = SetTwoPhaseTemperature( eos_composite, P, S, &temp );CHKERRQ(ierr);
-
-    *dTdPs_ptr = alpha * temp / ( rho * cp );
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode SetTwoPhaseCp( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *Cp_ptr )
-{
-    PetscErrorCode ierr;
-    EosEval eos_eval_melt, eos_eval_solid;
-    PetscScalar liquidus, solidus;
-
-    PetscFunctionBeginUser;
-
-    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
-    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
-
-    *Cp_ptr = eos_eval_melt.S - eos_eval_solid.S;
-    *Cp_ptr /= eos_eval_melt.T - eos_eval_solid.T;
-    *Cp_ptr *= eos_eval_solid.T + 0.5 * (eos_eval_melt.T - eos_eval_solid.T);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode SetTwoPhaseAlpha( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *alpha_ptr )
-{
-    PetscErrorCode ierr;
-    EosEval eos_eval_melt, eos_eval_solid;
-    PetscScalar rho, liquidus, solidus;
-
-    PetscFunctionBeginUser;
-
-    /* TODO?: it is not necessary to evaluate all eos properties, but this function
-       is robust against stale data.  Unless this is really a bottleneck in the computational
-       time, it's probably OK */
-    ierr = SetTwoPhaseRho( eos_composite, P, S, &rho );
-    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
-    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);    
-
-    /* FIXME: positive for MgSiO3 since solid rho > melt rho.  But need to adjust for compositional
-       effects */
-    *alpha_ptr = (eos_eval_solid.rho - eos_eval_melt.rho) / (eos_eval_melt.T - eos_eval_solid.T) / rho;
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode SetTwoPhaseConductivity( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *conductivity )
-{
-    PetscErrorCode ierr;
-    EosEval eos_eval_melt, eos_eval_solid;
-    PetscScalar phase_fraction;
-
-    PetscFunctionBeginUser;
-
-    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
-    
-    ierr = SetEosEval( eos_composite->eos_parameters[0], P, S, &eos_eval_melt ); CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[1], P, S, &eos_eval_solid ); CHKERRQ(ierr);
-
-    *conductivity = phase_fraction * eos_eval_melt.cond;
-    *conductivity += (1.0-phase_fraction) * eos_eval_solid.cond;
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode SetTwoPhaseViscosity( const EosComposite eos_composite, PetscScalar P, PetscScalar S, PetscScalar *log10visc_ptr )
-{
-    PetscErrorCode ierr;
-    EosEval eos_eval_melt, eos_eval_solid;
-    PetscScalar phase_fraction, liquidus, solidus, log10visc_melt, log10visc_sol, fwt;
-
-    PetscFunctionBeginUser;
-
-    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &phase_fraction ); CHKERRQ(ierr);
-
-    /* set temperature at liquidus */
-    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus );CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
-    ierr = SetEosEvalViscosity( eos_composite->eos_parameters[0], &eos_eval_melt );CHKERRQ(ierr);
-    log10visc_melt = eos_eval_melt.log10visc;
-
-    /* set temperature at solidus */
-    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
-    ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
-    ierr = SetEosEvalViscosity( eos_composite->eos_parameters[1], &eos_eval_solid );CHKERRQ(ierr);
-    log10visc_sol = eos_eval_solid.log10visc;
-
-    fwt = tanh_weight( phase_fraction, eos_composite->phi_critical, eos_composite->phi_width );
-    *log10visc_ptr = fwt * log10visc_melt + (1.0-fwt) * log10visc_sol;
-
-    PetscFunctionReturn(0);
-}
-
 
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_composite, PetscScalar P, PetscScalar S, EosEval *eos_eval)
 {
@@ -1858,7 +1635,8 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
        the EosEval in Ctx?  Or isn't this really a speed issue? (prob not in comparison to the
        re-evaluation of functions as described below */
     EosEval eos_eval2; // pure phase for blending across phase boundary
-    PetscScalar gphi, smth;
+    PetscScalar gphi, smth, liquidus, solidus, fwt;
+    EosEval eos_eval_melt, eos_eval_solid;
 
     PetscFunctionBeginUser;
 
@@ -1879,15 +1657,55 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
        It would reduce the modularity, but for speed the better option would be to have an
        aggregate function that only evaluates things once.  This would be trivial to implement,
        but leaving as is for the time being until PS formalises the EosParameters and EosComposite structs */
-    ierr = SetTwoPhaseFusion( eos_composite, P, &eos_eval->fusion);CHKERRQ(ierr);
-    ierr = SetTwoPhasePhaseFraction( eos_composite, P, S, &eos_eval->phase_fraction);CHKERRQ(ierr);
-    ierr = SetTwoPhaseTemperature( eos_composite, P, S, &eos_eval->T );CHKERRQ(ierr);
-    ierr = SetTwoPhaseCp( eos_composite, P, S, &eos_eval->Cp );CHKERRQ(ierr);
-    ierr = SetTwoPhaseRho( eos_composite, P, S, &eos_eval->rho );CHKERRQ(ierr);
-    ierr = SetTwoPhaseAlpha( eos_composite, P, S, &eos_eval->alpha );CHKERRQ(ierr);
-    ierr = SetTwoPhasedTdPs( eos_composite, P, S, &eos_eval->dTdPs );CHKERRQ(ierr);
-    ierr = SetTwoPhaseConductivity( eos_composite, P, S, &eos_eval->cond );CHKERRQ(ierr);
-    ierr = SetTwoPhaseViscosity( eos_composite, P, S, &eos_eval->log10visc );CHKERRQ(ierr);
+
+    ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
+    ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
+    eos_eval->fusion = liquidus - solidus;
+    eos_eval->phase_fraction = ( S - solidus ) / eos_eval->fusion;
+
+    /* truncation */
+    if( eos_eval->phase_fraction > 1.0 ){
+        eos_eval->phase_fraction = 1.0;
+    }
+    if( eos_eval->phase_fraction < 0.0 ){
+        eos_eval->phase_fraction = 0.0;
+    }
+
+    /* properties along melting curves */
+    ierr = SetEosEval( eos_composite->eos_parameters[0], P, liquidus, &eos_eval_melt );CHKERRQ(ierr);
+    ierr = SetEosEval( eos_composite->eos_parameters[1], P, solidus, &eos_eval_solid );CHKERRQ(ierr);
+
+    /* linear temperature between liquidus and solidus */
+    eos_eval->T = eos_eval->phase_fraction * eos_eval_melt.T;
+    eos_eval->T += (1-eos_eval->phase_fraction) * eos_eval_solid.T;
+
+    /* Cp */
+    eos_eval->Cp = eos_eval_melt.S - eos_eval_solid.S;
+    eos_eval->Cp /= eos_eval_melt.T - eos_eval_solid.T;
+    eos_eval->Cp *= eos_eval_solid.T + 0.5 * (eos_eval_melt.T - eos_eval_solid.T);
+
+    /* Rho */
+    eos_eval->rho = eos_eval->phase_fraction * (1.0/eos_eval_melt.rho) + (1-eos_eval->phase_fraction) * (1.0/eos_eval_solid.rho);
+    eos_eval->rho = 1.0/(eos_eval->rho);
+
+    /* Alpha */
+    /* FIXME: positive for MgSiO3 since solid rho > melt rho.  But need to adjust for compositional
+       effects */
+    eos_eval->alpha = (eos_eval_solid.rho - eos_eval_melt.rho) / (eos_eval_melt.T - eos_eval_solid.T) / eos_eval->rho;
+
+    /* dTdPs */
+    eos_eval->dTdPs = eos_eval->alpha * eos_eval->T / ( eos_eval->rho * eos_eval->Cp );
+
+    /* Conductivity */
+    eos_eval->cond = eos_eval->phase_fraction * eos_eval_melt.cond;
+    eos_eval->cond += (1.0-eos_eval->phase_fraction) * eos_eval_solid.cond;
+
+    /* Viscosity */
+    ierr = SetEosEvalViscosity( eos_composite->eos_parameters[0], &eos_eval_melt );CHKERRQ(ierr);
+    ierr = SetEosEvalViscosity( eos_composite->eos_parameters[1], &eos_eval_solid );CHKERRQ(ierr);
+    fwt = tanh_weight( eos_eval->phase_fraction, eos_composite->phi_critical, eos_composite->phi_width );
+    eos_eval->log10visc = fwt * eos_eval_melt.log10visc + (1.0-fwt) * eos_eval_solid.log10visc;
+
     /* lookup does not know about these quantities, since they are not used by
        SPIDER, but for completeness zero them here */
     eos_eval->Cv = 0.0;
