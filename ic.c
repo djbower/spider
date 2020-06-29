@@ -299,7 +299,6 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, 
     PetscFunctionReturn(0);
 }
 
-/* TODO: generalise to set_ic_interior_from_phase_boundary */
 static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
 {
 
@@ -311,7 +310,7 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
     PetscErrorCode    ierr;
     Parameters const  P = E->parameters;
     PetscInt          i, numpts_s;
-    PetscScalar       S_i,Ssol;
+    PetscScalar       Ssol;
     const PetscScalar *arr_pres_s;
     Solution          *S = &E->solution;
 
