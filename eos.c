@@ -1661,7 +1661,8 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     ierr = SetTwoPhaseLiquidus( eos_composite, P, &liquidus ); CHKERRQ(ierr);
     ierr = SetTwoPhaseSolidus( eos_composite, P, &solidus ); CHKERRQ(ierr);
     eos_eval->fusion = liquidus - solidus;
-    eos_eval->phase_fraction = ( S - solidus ) / eos_eval->fusion;
+    gphi = ( S - solidus ) / eos_eval->fusion;
+    eos_eval->phase_fraction = gphi;
 
     /* truncation */
     if( eos_eval->phase_fraction > 1.0 ){
@@ -1711,7 +1712,6 @@ static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite eos_co
     eos_eval->Cv = 0.0;
     eos_eval->V = 0.0;
 
-    ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, P, S, &gphi );CHKERRQ(ierr);
     smth = get_smoothing( eos_composite->matprop_smooth_width, gphi);
 
     /* now blend mixed phase EOS with single phase EOS across the phase boundary */
