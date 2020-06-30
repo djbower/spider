@@ -1,4 +1,7 @@
 #include "eos.h"
+#include "eos_composite.h"
+#include "eos_lookup.h"
+#include "eos_rtpress.h"
 #include "monitor.h"
 #include "parameters.h"
 #include "util.h"
@@ -1395,5 +1398,50 @@ PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EosParameters Ep, co
 
 ////////////// WIP
 
-const char * eos_lookup_pure = "lookup";
-const char * eos_rtpress_pure = "rtpress";
+/* Base Class */
+
+PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
+{
+  PetscErrorCode ierr;
+  PetscBool      flg;
+  EOS            eos;
+
+  PetscFunctionBeginUser;
+  ierr = PetscMalloc1(1, p_eos);CHKERRQ(ierr);
+  eos = *p_eos;
+
+  ierr = PetscStrcmp(type, SPIDER_EOS_LOOKUP_PURE, &flg);CHKERRQ(ierr);
+  if (flg) {
+    ierr = EOSLookupPureCreate((EOSLookupPure*) eos->impl_data);CHKERRQ(ierr);
+  }
+  ierr = PetscStrcmp(type, SPIDER_EOS_RTPRESS_PURE, &flg);CHKERRQ(ierr);
+  if (flg) {
+    ierr = EOSRTpressPureCreate((EOSRTpressPure*) eos->impl_data);CHKERRQ(ierr);
+  }
+  ierr = PetscStrcmp(type, SPIDER_EOS_COMPOSITE, &flg);CHKERRQ(ierr);
+  if (flg) {
+    ierr = EOSCompositeCreate((EOSComposite*) eos->impl_data);CHKERRQ(ierr);
+  }
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EosEval* eval)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+  // TODO boilerplate eval from EosSetEval
+  // TODO  call impl eval function (from EosSetEval*)
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSDestroy(EOS *p_eos)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+  ierr = PetscFree(p_eos);CHKERRQ(ierr);
+  // TODO call impl destroy function
+  *p_eos = NULL;
+  PetscFunctionReturn(0);
+}

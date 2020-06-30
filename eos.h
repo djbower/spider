@@ -22,17 +22,39 @@ PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_comp
 PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *, const EosParameters[], PetscInt );
 PetscErrorCode EosCompositeDestroy( EosComposite * );
 
-/* TODO: below probably moves elsewhere eventually (becomes static?) */
-//PetscErrorCode set_rtpress_struct( PetscScalar, PetscScalar, Ctx * );
-
-#if 0
-/* TODO: need to refresh with new eos evaluation structs */
-/* for function testing */
-PetscScalar get_rtpress_pressure_test( Ctx * );
-PetscScalar get_rtpress_entropy_test( Ctx * );
-#endif
-
 PetscErrorCode JSON_add_phase_boundary( const Ctx *, const EosParameters, const char *, cJSON * );
 
+/////////////////// WIP TODO
+
+typedef const char* EOSType;
+
+typedef struct data_EOS_ {
+  EOSType type;  /* Implementation type */
+
+  char prefix[128];  /* Maximum prefix length */
+
+  PetscScalar cond; /* thermal conductivity, W/m/K */
+  PetscScalar log10visc; /* log base 10 of viscosity */
+  PetscScalar activation_energy;
+  PetscScalar activation_volume;
+  PetscScalar activation_volume_pressure_scale;
+  PetscScalar visc_ref_temp;
+  PetscScalar visc_ref_pressure;
+  PetscScalar visc_comp;
+  PetscScalar visc_ref_comp;
+
+  /* Pointer to implementation-specific data */
+  void * impl_data;
+
+  /* Pointers to implementation-specific functions */
+  PetscErrorCode (*eval)(const struct data_EOS_, PetscScalar, PetscScalar, EosEval*);
+  PetscErrorCode (*destroy)(struct data_EOS_*);
+
+} data_EOS;
+typedef data_EOS *EOS;
+
+PetscErrorCode EOSCreate(EOS*, const char*);
+PetscErrorCode EOSEval(const EOS, PetscScalar, PetscScalar, EosEval*);
+PetscErrorCode EOSDestroy(EOS*);
 
 #endif
