@@ -6,7 +6,7 @@
 EXNAME = spider
 
 # Source files, each corresponding to a .o object file and .d dependency file
-SRC_C = main.c ctx.c rhs.c ic.c mesh.c bc.c util.c twophase.c \
+SRC_C = main.c ctx.c rhs.c ic.c interp.c mesh.c bc.c util.c twophase.c \
         monitor.c energy.c matprop.c dimensionalisablefield.c rheologicalfront.c \
         cJSON.c rollback.c poststep.c parameters.c atmosphere.c \
         reaction.c eos.c \

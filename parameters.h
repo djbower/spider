@@ -2,6 +2,7 @@
 #define PARAMETERS_H_
 
 #include <petsc.h>
+#include "interp.h"
 
 /*
  ******************************************************************************
@@ -61,34 +62,6 @@ typedef data_FundamentalConstants* FundamentalConstants;
  * Equation of state parameters
  ******************************************************************************
  */
-
-/* 1-D lookup */
-typedef struct {
-    PetscInt    NX; 
-    PetscScalar *xa;
-    PetscScalar xmin;
-    PetscScalar xmax;
-    PetscScalar *ya;
-    PetscScalar ymin;
-    PetscScalar ymax;
-} data_Interp1d;
-typedef data_Interp1d* Interp1d;
-
-/* 2-D lookup */
-typedef struct {
-    PetscInt    NX; 
-    PetscScalar *xa;
-    PetscScalar xmin;
-    PetscScalar xmax;
-    PetscScalar dx; 
-    PetscInt    NY; 
-    PetscScalar *ya;
-    PetscScalar ymin;
-    PetscScalar ymax;
-    PetscScalar dy; 
-    PetscScalar **za;
-} data_Interp2d;
-typedef data_Interp2d* Interp2d;
 
 /* lookup */
 typedef struct {
