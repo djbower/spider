@@ -1460,13 +1460,15 @@ static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar Mg_Si ){
     PetscScalar fac;
 
     if (Mg_Si <= 1.0)
-        lvisc += 0.5185 * (1 - Mg_Si)/0.3; //
+        fac = 0.5185 * (1 - Mg_Si)/0.3; //
     else if (Mg_Si <= 1.25)
-        lvisc += -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
+        /* Earth has Mg/Si = 1.08 */
+        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
     else if (Mg_Si <= 1.5)
-        lvisc += -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
+        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
     else
-        lvisc += -2;
+        /* Fp-rich composition (Ballmer et al. 2017) */
+        fac = -2;
 
 /* this is the original formulation used for the draft version of Rob's paper
    during the review stage, the formulation was changed to that above */
