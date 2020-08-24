@@ -381,7 +381,8 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 break;
 
             case 2:
-                /* Paolo Sossi join solubility for H2 and H2O */
+                /* Paolo Sossi joint solubility for H2 and H2O */
+                /* assumes zero solubility of H2 */
 
                 /* TODO: need modified equilibrium constant, and we can easily get this assuming
                    the H2-H2O reaction is in the first slot (but in general it might not be) */
@@ -926,7 +927,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
 
     PetscScalar               out, out2, massv, f_thermal_escape, f_constant_escape;
     PetscInt                  j,k;
-    VolatileParameters   const Vp = Ap->volatile_parameters[i];
+    VolatileParameters  const Vp = Ap->volatile_parameters[i];
     Volatile                  *V = &A->volatiles[i];
     PetscScalar               log10G, G, dGdt, dlog10GdT;
 
@@ -997,11 +998,11 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
 
     /* TODO: for consistency and simplicity, should probably evaluate all dp/dx for any solubility law here, not just
        those that require knowledge of dp/dt */
-    /* need to use dp/dt for Paolo Sossi solubility */
+    /* need to use dp/dt for Paolo Sossi solubility so this must be now included here */
     if(Ap->volatile_parameters[i]->SOLUBILITY==2) {
         /* TODO: need modified equilibrium constant, and we can easily get this assuming
            the H2-H2O reaction is in the first slot (but in general it might not be) */
-        /* (Modified) equilibrium constant that accommodates fO2 */
+        /* Recall that (modified) equilibrium constant accommodates fO2 */
         log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, SC, A );
         dlog10GdT = get_dlog10GdT( Ap->reaction_parameters[0], A->tsurf, SC, A );
         G = PetscPowScalar( 10.0, log10G );
@@ -1010,7 +1011,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
         V->dxdp = ( Vp->henry / Vp->henry_pow ) * PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow); /* A term contribution */
         V->dxdp += G *  ( Vp->henry2 / Vp->henry_pow2 ) * PetscPowScalar( V->x / Vp->henry2, 1.0-Vp->henry_pow2); /* 1st B term contribution */
         /* FIXME: line below is problematic for solver.  Debug */
-        //V->dxdp += Vp->henry2 * PetscPowScalar( V->p, 1.0/Ap->volatile_parameters[i]->henry_pow2) * dGdt / V->dpdt; /* 2nd B term contribution */
+        V->dxdp += Vp->henry2 * PetscPowScalar( V->p, 1.0/Ap->volatile_parameters[i]->henry_pow2) * dGdt / V->dpdt; /* 2nd B term contribution */
     }
 
     out2 += A->volatiles[i].dpdt * A->volatiles[i].dxdp * ( Ap->volatile_parameters[i]->kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i]->kdist) * A->Mliq);

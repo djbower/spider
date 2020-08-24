@@ -324,7 +324,9 @@ PetscErrorCode solve_dpdts( Ctx *E )
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        xx[i] = 0.0;
+        /* initial guess of dp/dt, which we solve for.  TODO: currently must be non-zero
+           otherwise the time stepper results in NaN for Paolo Sossi solubility */
+        xx[i] = 1.0;
     }
     for (i=0; i<Ap->n_reactions; ++i) {
         xx[Ap->n_volatiles + i] = 0.0;
