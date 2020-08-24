@@ -1,10 +1,10 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 20
+-nstepsmacro 2000
 
 # macro step size in years
--dtmacro 50000
+-dtmacro 50
 
 # tolerances
 -ts_sundials_atol 1.0e-10
@@ -47,7 +47,7 @@
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 1.0E-2 #4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
--volatile0 1.0E-6
+-volatile0 1.0E-5
 
 # energy fluxes and sources to include
 # [0] is off
