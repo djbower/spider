@@ -347,7 +347,7 @@ static PetscErrorCode set_total_surface_pressure( Atmosphere *A, const Atmospher
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, const AtmosphereParameters Ap )
+PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
 
     /* This function contains the solubility laws.  For each solubility law, you must give the relationship
@@ -356,6 +356,8 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
     PetscInt i;
     Volatile                 *V;
     VolatileParameters       Vp;
+    PetscScalar              log10G;
+    PetscScalar              G;
 
     PetscFunctionBeginUser;
 
@@ -381,10 +383,15 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
             case 2:
                 /* Paolo Sossi join solubility for H2 and H2O */
 
+                /* TODO: need modified equilibrium constant, and we can easily get this assuming
+                   the H2-H2O reaction is in the first slot (but in general it might not be) */
+                /* (Modified) equilibrium constant that accommodates fO2 */
+                log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, SC, A );
+                G = PetscPowScalar( 10.0, log10G );
+
                 /* abundance in melt */
                 V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow ) * Ap->volatile_parameters[i]->henry;
-                /* FIXME: need G in below scaling */
-                V->x += PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow2 ) * Ap->volatile_parameters[i]->henry2;
+                V->x += G * PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow2 ) * Ap->volatile_parameters[i]->henry2;
 
                 /* FIXME: below is totally wrong, just placeholder from above */
                 V->dxdp = Vp->henry / Vp->henry_pow;
@@ -510,7 +517,7 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
 
 }
 
-PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
+PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC, const ScalingConstants SC )
 {
     PetscErrorCode           ierr;
 
@@ -524,7 +531,7 @@ PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmospherePa
     /* order of these functions is very important! */
     ierr = set_total_surface_pressure( A, Ap );CHKERRQ(ierr);
 
-    ierr = set_volatile_abundances_from_partial_pressure( A, Ap );CHKERRQ(ierr);
+    ierr = set_volatile_abundances_from_partial_pressure( A, Ap, SC );CHKERRQ(ierr);
 
     ierr = set_volume_mixing_ratios( A, Ap );CHKERRQ(ierr);
 
