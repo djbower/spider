@@ -189,13 +189,17 @@
 #-CO2_henry_pow 1.0
 #-CO2_molar_mass 0.04401 # kg/mol
 
+-H2_SOLUBILITY 2
 -H2_initial_total_abundance 10.0
 -H2_kdist 0.0
 -H2_kabs 0.00
 -H2_henry 0.0
 -H2_henry_pow 1.0
+-H2_henry2 0.0
+-H2_henry_pow2 1.0
 -H2_molar_mass 0.00201588 # kg/mol
 
+-H2O_SOLUBILITY 2
 -H2O_initial_total_abundance 300.0
 -H2O_kdist 1.0E-4
 -H2O_kabs 0.01

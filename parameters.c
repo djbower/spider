@@ -233,6 +233,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     ierr = PetscOptionsGetPositiveScalar(buf,&vp->henry_pow2,1.0,NULL);CHKERRQ(ierr);
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry2");CHKERRQ(ierr);
     /* default is no dissolved volatile content */
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->henry2,0.0,NULL);CHKERRQ(ierr);
     if(vp->henry2 == 0){
       vp->henry_pow2 = 1.0;
     }

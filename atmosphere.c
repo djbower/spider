@@ -382,11 +382,15 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 /* Paolo Sossi join solubility for H2 and H2O */
 
                 /* abundance in melt */
-                V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow );
-                V->x *= Ap->volatile_parameters[i]->henry;
+                V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow ) * Ap->volatile_parameters[i]->henry;
+                /* FIXME: need G in below scaling */
+                V->x += PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow2 ) * Ap->volatile_parameters[i]->henry2;
 
+                /* FIXME: below is totally wrong, just placeholder from above */
                 V->dxdp = Vp->henry / Vp->henry_pow;
                 V->dxdp *= PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow);
+
+                break;
 
             /* TODO: include more solubility laws */
 
