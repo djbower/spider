@@ -388,14 +388,13 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 /* (Modified) equilibrium constant that accommodates fO2 */
                 log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, SC, A );
                 G = PetscPowScalar( 10.0, log10G );
-
                 /* abundance in melt */
                 V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow ) * Ap->volatile_parameters[i]->henry;
                 V->x += G * PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow2 ) * Ap->volatile_parameters[i]->henry2;
 
-                /* FIXME: below is totally wrong, just placeholder from above */
-                V->dxdp = Vp->henry / Vp->henry_pow;
-                V->dxdp *= PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow);
+                V->dxdp = ( Vp->henry / Vp->henry_pow ) * PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow); /* A term contribution */
+                V->dxdp += G *  ( Vp->henry2 / Vp->henry_pow2 ) * PetscPowScalar( V->x / Vp->henry2, 1.0-Vp->henry_pow2); /* 1st B term contribution */
+                /* FIXME: add third term with derivative of G */
 
                 break;
 
