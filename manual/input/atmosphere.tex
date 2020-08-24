@@ -104,7 +104,7 @@ Collect terms:
 \end{equation}
 Note that the $X_v$ within $p_v$ has \textbf{not} yet been non-dimensionalised (see below).
 %%%%
-\subsubsection{Partial Pressure}
+\subsubsection{Power Law Solubility}
 A solubility relation defines the relationship between the dissolved volatile content and the partial pressure.  Here, we derive the scalings for the modified Henry's law.
 Convert the partial pressure expression to non-dimensional form.  First, introduce $\hat{X_v}$ and a non-dimensional pressure scale $P_0$:
 \begin{equation}
@@ -121,12 +121,93 @@ Now we can define a non-dimensional Henry's constant:
 \end{equation}
 $P_0$ is a pressure scale that relates to the primary non-dimensional quantities.  In the code, we input $\alpha_v$ in units of ppm/Pa$^{1/\beta}$.  So to \myemph{non-dimensionalise the Henry constant we must also account for the conversion from ppm to mass fraction}:
 \begin{equation}
-\hat{\alpha}_v = \frac{\alpha_v^{\rm ppm}}{10^6} \frac{P_0^\frac{1}{\beta_v}}{V_0}
+\hat{\alpha}_v = \frac{\alpha_v^{{\rm ppm/Pa}^{1/\beta}}}{10^6} \frac{P_0^\frac{1}{\beta_v}}{V_0}
+\label{eq:henryconstnd}
 \end{equation}
 Therefore, the non-dimensional partial pressure and its derivative are:
 \begin{equation}
 \hat{p}_v ( \hat{X}_v ) = \left( \frac{\hat{X}_v}{\hat{\alpha}_v} \right) ^ {\beta_v}, \qquad \frac{d \hat{p}_v}{d \hat{X}_v} = \frac{\beta_v}{\hat{\alpha}_v} \left( \frac{\hat{X}_v}{\hat{\alpha}_v} \right)^{\beta_v-1}
 \end{equation}
+In the latest version of SPIDER, we actually use the inverse functions to enable zero solubilities to be used without introducing numerical problems (since now, the Henry coefficient is in the numerator and will result in zero volatile content in the melt for zero solubility):
+\begin{equation}
+\hat{X}_v = \hat{\alpha}_v {\hat{p}_v} ^{1/\beta}, \qquad \frac{d \hat{X}_v}{d \hat{p}_v} = \frac{\hat{\alpha}_v}{\beta_v} \left(\frac{\hat{X}_v}{\hat{\alpha}_v}\right)^{1-\beta_v}
+\end{equation}
+%%%%
+%%%%
+%%%%
+\subsubsection{Sossi Solubility}
+% from Paulo Sossi's e-mail 20th August 2020
+% H2O (ppm)=534(fH2O)^0.5+723(fH2) (fugacities in bar)
+%%%
+For H$_2$O:
+\begin{equation}
+X_v = A{f_{H_2O}}^\frac{1}{2}+B f_{H_2}
+\end{equation}
+where $A=534$ and $B=723$ when $X_v$ is ppmw, and \textbf{fugacities in bar}.  Using Eq.~\ref{eq:SFequil}, where the ratio of H$_2$ and H$_2$O is constrained by an oxygen fugacity buffer, we can eliminate $f_{H_2}$ using $f_{O_2}$:
+\begin{equation}
+X_v = A{f_{H_2O}}^\frac{1}{2}+B K \frac{f_{H_2O}}{f_{O_2}^{1/2}}
+\end{equation}
+Note that $f_{O_2}$ is already non-dimensional according to the total surface pressure (by convention).  In SPIDER, we numerically compute a so-called modified equilibrium constant $G=K/f_{O_2}^{1/2}$ since this avoids introducing numerical noise.  Therefore:
+\begin{equation}
+X_v = A{f_{H_2O}}^\frac{1}{2}+B G f_{H_2O}
+\end{equation}
+Comparison with the power law solubility in the previous section reveals that the above is just a linear combination of two power laws with different $\beta$ ($\beta=2$ for the $A$ term and $\beta=1$ for the $B$ term).  Therefore, we should use the same scalings for $A$ and $B$ as determined previously for the Henry constant (Eq.~\ref{eq:henryconstnd}):
+\begin{equation}
+\hat{A} = \frac{A^{{\rm ppm/Pa}^{1/\beta}}}{10^6} \frac{P_0^\frac{1}{\beta}}{V_0}, \qquad \hat{B} = \frac{B^{{\rm ppm/Pa}^{1/\beta}}}{10^6} \frac{P_0^\frac{1}{\beta}}{V_0}
+\end{equation}
+Where the non-dimensional solubility law is:
+\begin{equation}
+\hat{X}_v = \hat{A} {\hat{p}_v}^\frac{1}{2}+ \hat{B} G \hat{p}_v
+\end{equation}
+Paolo provided $B$ = 723 ppm / bar (of H2) where for the $B$ coefficient $\beta=1$.  Hence, we must convert the pressure scale to Pa:
+\begin{equation}
+B^{\rm ppm/Pa} = B^{\rm ppm/bar} \times 10^{-5} 
+\end{equation}
+For $A$ we must account for the fact that $\beta \neq 1$:
+\begin{equation}
+A^{{\rm ppm/Pa}^{1/\beta}} = A^{{\rm ppm/bar}^{1/\beta}} \times (10^{-5})^{1/\beta}
+\end{equation}
+So clearly in general:
+\begin{equation}
+\zeta^{{\rm ppm/Pa}^{1/\beta}} = \zeta^{{\rm ppm/bar}^{1/\beta}} \times (10^{-5})^{1/\beta}
+\end{equation}
+As before, we also need the derivative for the time stepper.  The $A$ term is trivial, since as before:
+\begin{equation}
+\frac{d \hat{X}_v}{d \hat{p}_v} = \frac{\hat{A}_v}{\beta_v} \left(\frac{\hat{X}_v}{\hat{A}_v}\right)^{1-\beta_v}
+\end{equation}
+For the $B$ term:
+\begin{equation}
+\frac{d \hat{X}_v}{d \hat{p}_v} = G \frac{\hat{B}_v}{\beta_v} \left(\frac{\hat{X}_v}{\hat{B}_v}\right)^{1-\beta_v} + \frac{dG}{d \hat{p}_v} \hat{B} \hat{p}_v
+\end{equation}
+
+
+%%% can remove below once above confirmed to work
+\begin{comment}
+Introduce dimensional scalings and associate fugacities with partial pressure (ideal gas approximation):
+\begin{equation}
+V_0 \hat{X}_v = AP_0^{1/2} {p_{H_2O}}^\frac{1}{2}+B G P_0 p_{H_2O}
+\end{equation}
+Rearranging:
+\begin{equation}
+\hat{X}_v = \frac{A P_0^{1/2}}{V_0} {p_{H_2O}}^\frac{1}{2}+ \frac{B P_0}{V_0} G p_{H_2O}
+\end{equation}
+Therefore:
+\begin{equation}
+\hat{A} = \frac{A P_0^{1/2}}{V_0}, \qquad \hat{B} = \frac{B P_0}{V_0}
+\end{equation}
+We can generalise the scaling if we introduce some arbitrary pressure exponent, so we can account for both the $A$ and $B$ coefficients:
+\begin{equation}
+\hat{\zeta} = \frac{\zeta P_0^\beta}{V_0}
+\end{equation}
+This is comparable to the scaling for the non-dimensional Henry constant $\alpha$ calculated above.  Rearranging:
+\begin{equation}
+\zeta = \frac{\hat{\zeta} V_0}{P_0^\beta}
+\end{equation}
+In the code, we input $\zeta$ in units of ppm/Pa$^\beta$ to keep with convention.  
+\end{comment}
+
+
+\subsubsection{TODO: move elsewhere}
 Now the mass balance becomes, noting that a factor of $P_0$ appears in the numerator on the penultimate term on the LHS because we introduce the non-dimensional pressure:
 \begin{equation}
 \hat{X}_v (k_v \hat{M}^s + \hat{M}^l) + \frac{R_p^2 P_0}{V_0 M_0 g} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right) \hat{p}_v + \frac{1}{V_0 M_0} \left( m_v^e + m_v^o + m_v^r \right) = \hat{X}_v^{\rm init} \hat{M}^m
@@ -134,6 +215,8 @@ Now the mass balance becomes, noting that a factor of $P_0$ appears in the numer
 %%%%
 Note that the as yet unspecified mass reservoirs ($m_v^e$, $m_v^o$, and $m_v^r$) in the last term on the LHS all exclude a factor of $4\pi$ since we are only considering scaled masses now.
 %%%%
+
+
 \subsubsection{Gravity and Radius}
 Gravity is non-dimensionalised in SPIDER as:
 \begin{equation}
@@ -203,6 +286,7 @@ For simplicity, again consider a single chemical reaction that transfers mass be
 Eq.~\ref{eq:reaction} is balanced in terms of molar concentration (square brackets), and the equilibrium constant is defined as \cite[e.g.][]{SF17}:
 \begin{equation}
 K=\frac{p_{\rm H_2} f_{\rm O_2}^{1/2}}{p_{\rm H_2\rm O}}
+\label{eq:SFequil}
 \end{equation}
 Although chemical reactions are naturally expressed in terms of moles (or molecules), we need a formulation that considers mass, since ultimately we are tracking mass addition to, and removal from, interior and exterior reservoirs.  Mass is conserved:
 \begin{equation}
