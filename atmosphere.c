@@ -1010,7 +1010,6 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
         dGdt = G * PetscLogReal( 10.0 ) * dlog10GdT * A->dtsurfdt;
         V->dxdp = ( Vp->henry / Vp->henry_pow ) * PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow); /* A term contribution */
         V->dxdp += G *  ( Vp->henry2 / Vp->henry_pow2 ) * PetscPowScalar( V->x / Vp->henry2, 1.0-Vp->henry_pow2); /* 1st B term contribution */
-        /* FIXME: line below is problematic for solver.  Debug */
         V->dxdp += Vp->henry2 * PetscPowScalar( V->p, 1.0/Ap->volatile_parameters[i]->henry_pow2) * dGdt / V->dpdt; /* 2nd B term contribution */
     }
 
