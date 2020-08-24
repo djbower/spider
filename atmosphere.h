@@ -74,7 +74,7 @@ PetscErrorCode set_reservoir_volatile_content( Atmosphere *, const AtmospherePar
 PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters, Atmosphere *, const char *, cJSON *);
 PetscErrorCode objective_function_volatile_evolution( SNES, Vec, Vec, void * );
-PetscScalar get_dpdt( Atmosphere *, const AtmosphereParameters, PetscInt, const PetscScalar * );
+PetscScalar get_dpdt( Atmosphere *, const AtmosphereParameters, PetscInt, const PetscScalar *, const ScalingConstants );
 PetscErrorCode set_oxygen_fugacity( Atmosphere *, const AtmosphereParameters, const ScalingConstants );
 
 #endif
