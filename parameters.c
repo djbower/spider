@@ -227,6 +227,18 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     }
     vp->henry /= 1.0E6 * SC->VOLATILE * PetscPowScalar(SC->PRESSURE, -1.0/vp->henry_pow);
 
+    /* TODO: could have a loop for solubility input parameters, rather than manually incrementing
+       them as done here.  This is prototyping for Paolo Sossi's H2-H2O solubility law */
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry_pow2");CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->henry_pow2,1.0,NULL);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry2");CHKERRQ(ierr);
+    /* default is no dissolved volatile content */
+    if(vp->henry2 == 0){
+      vp->henry_pow2 = 1.0;
+    }
+    vp->henry2 /= 1.0E6 * SC->VOLATILE * PetscPowScalar(SC->PRESSURE, -1.0/vp->henry_pow2);
+    /* end of Paolo Sossi prototype */
+
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
     ierr = PetscOptionsGetPositiveScalar(buf,&vp->jeans_value,0.0,NULL);CHKERRQ(ierr); // TODO: check units and scaling
 
