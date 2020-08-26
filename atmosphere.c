@@ -19,6 +19,7 @@ static PetscErrorCode set_column_density_volatile( Atmosphere *, const Atmospher
 static PetscErrorCode set_Knudsen_number( Atmosphere *, const AtmosphereParameters, PetscInt );
 static PetscErrorCode set_R_thermal_escape( Atmosphere *, const AtmosphereParameters, PetscInt );
 static PetscErrorCode set_f_thermal_escape( Atmosphere *, PetscInt );
+static PetscScalar get_x_from_solubility_power_law( PetscScalar partialp, PetscScalar henry, PetscScalar henry_pow );
 static PetscErrorCode JSON_add_volatile( DM, Parameters const, VolatileParameters const, Volatile const *, Atmosphere const *, char const *name, cJSON * );
 static PetscErrorCode JSON_add_atm_struct( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, cJSON * );
 static PetscErrorCode JSON_add_reaction_mass( DM , Parameters const, Atmosphere const *, cJSON * );
@@ -347,6 +348,22 @@ static PetscErrorCode set_total_surface_pressure( Atmosphere *A, const Atmospher
     PetscFunctionReturn(0);
 }
 
+static PetscScalar get_x_from_solubility_power_law( PetscScalar partialp, PetscScalar henry, PetscScalar henry_pow )
+{
+    /* Solubility power law (Henry-like with exponent) */
+
+    return henry * PetscPowScalar( partialp, 1.0/henry_pow );
+
+}
+
+static PetscScalar get_dxdp_from_solubility_power_law( PetscScalar partialp, PetscScalar henry, PetscScalar henry_pow )
+{
+    /* dxdp from solubility power law (Henry-like with exponent) */
+
+    return (henry / henry_pow ) * PetscPowScalar( partialp, 1.0/henry_pow - 1.0 );
+
+}
+
 PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
 
@@ -370,13 +387,9 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
         switch( Vp->SOLUBILITY ){
             case 1:
                 /* Modified Henry's law (default) */
-
                 /* abundance in melt */
-                V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow );
-                V->x *= Ap->volatile_parameters[i]->henry;
-
-                V->dxdp = Vp->henry / Vp->henry_pow;
-                V->dxdp *= PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow);
+                V->x = get_x_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry, Ap->volatile_parameters[i]->henry_pow );
+                V->dxdp = get_dxdp_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry, Ap->volatile_parameters[i]->henry_pow );
 
                 break;
 
@@ -385,13 +398,13 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 /* assumes zero solubility of H2 */
 
                 /* TODO: need modified equilibrium constant, and we can easily get this assuming
-                   the H2-H2O reaction is in the first slot (but in general it might not be) */
+                   FIXME: the H2-H2O reaction is in the first slot (but in general it might not be) */
                 /* (Modified) equilibrium constant that accommodates fO2 */
                 log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, SC, A );
                 G = PetscPowScalar( 10.0, log10G );
                 /* abundance in melt */
-                V->x = PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow ) * Ap->volatile_parameters[i]->henry;
-                V->x += G * PetscPowScalar( A->volatiles[i].p, 1.0/Ap->volatile_parameters[i]->henry_pow2 ) * Ap->volatile_parameters[i]->henry2;
+                V->x = get_x_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry, Ap->volatile_parameters[i]->henry_pow );
+                V->x += G * get_x_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry2, Ap->volatile_parameters[i]->henry_pow2 );
 
                 /* TODO: dangerous to initialise to zero */
                 /* this solubility formulation requires dp/dt, which is a solution quantity.  So the code must be within get_dpdt instead */
@@ -399,9 +412,9 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
 
                 break;
 
-            /* TODO: include more solubility laws */
+            /* add more cases to include more solubility laws */
 
-            /* TODO: interface with self-consistent solubility calculation (PERPLEX) */
+            /* could also interface with self-consistent solubility calculation (PERPLEX) */
 
             default:
                 SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLUBILITY value %d provided",Vp->SOLUBILITY);
