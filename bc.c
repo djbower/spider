@@ -326,7 +326,10 @@ PetscErrorCode solve_dpdts( Ctx *E )
     for (i=0; i<Ap->n_volatiles; ++i) {
         /* initial guess of dp/dt, which we solve for.  TODO: currently must be non-zero
            otherwise the time stepper results in NaN for Paolo Sossi solubility */
-        xx[i] = 1.0;
+        /* FIXME: for "standard" power law this value works well as zero (not 0.1) */
+        /* FIXME: but for Sossi solubility, this cannot be zero otherwise it gives
+           NaNs in the time-stepper */
+        xx[i] = 0.0;
     }
     for (i=0; i<Ap->n_reactions; ++i) {
         xx[Ap->n_volatiles + i] = 0.0;
