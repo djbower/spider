@@ -389,8 +389,6 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 /* Modified Henry's law (default) */
                 /* abundance in melt */
                 V->x = get_x_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry, Ap->volatile_parameters[i]->henry_pow );
-                V->dxdp = get_dxdp_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry, Ap->volatile_parameters[i]->henry_pow );
-
                 break;
 
             case 2:
@@ -405,11 +403,6 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 /* abundance in melt */
                 V->x = get_x_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry, Ap->volatile_parameters[i]->henry_pow );
                 V->x += G * get_x_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry2, Ap->volatile_parameters[i]->henry_pow2 );
-
-                /* TODO: dangerous to initialise to zero */
-                /* this solubility formulation requires dp/dt, which is a solution quantity.  So the code must be within get_dpdt instead */
-                V->dxdp = 0;
-
                 break;
 
             /* add more cases to include more solubility laws */
@@ -942,12 +935,12 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
     PetscInt                  j,k;
     VolatileParameters  const Vp = Ap->volatile_parameters[i];
     Volatile                  *V = &A->volatiles[i];
-    PetscScalar               log10G, G, dGdt, dlog10GdT;
+    PetscScalar               log10G, G, dGdt, dlog10GdT, dxdt;
 
     /* remember that to this point, V->f_thermal_escape is always
        computed but not necessarily used in the calculation */
     if(Ap->THERMAL_ESCAPE){
-        f_thermal_escape = A->volatiles[i].f_thermal_escape;
+        f_thermal_escape = V->f_thermal_escape;
     }
     else{
         f_thermal_escape = 1.0;
@@ -955,7 +948,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
 
     /* constant escape, non-thermal (Jean's) contribution */
     if(Ap->CONSTANT_ESCAPE){
-        f_constant_escape = Ap->volatile_parameters[i]->constant_escape_value;
+        f_constant_escape = Vp->constant_escape_value;
     }
     else{
         f_constant_escape = 0.0;
@@ -977,13 +970,13 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
         out2 += out;
     }
 
-    out2 *= -A->volatiles[i].p / (A->psurf * PetscSqr(A->molar_mass));
+    out2 *= -V->p / (A->psurf * PetscSqr(A->molar_mass));
 
     /* second part of atmosphere derivative */
-    out2 += ( 1.0 / A->molar_mass ) * A->volatiles[i].dpdt;
+    out2 += ( 1.0 / A->molar_mass ) * V->dpdt;
 
     /* multiply by prefactors */
-    out2 *= (1.0 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Ap->volatile_parameters[i]->molar_mass / -(*Ap->gravity_ptr); // note negative gravity
+    out2 *= (1.0 / (*Ap->VOLATILE_ptr)) * PetscSqr(*Ap->radius_ptr) * Vp->molar_mass / -(*Ap->gravity_ptr); // note negative gravity
 
     /* thermal (Jean's) escape correction */
     out2 *= f_thermal_escape;
@@ -1009,26 +1002,28 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
       }
     }
 
-    /* TODO: for consistency and simplicity, should probably evaluate all dp/dx for any solubility law here, not just
-       those that require knowledge of dp/dt */
-    /* need to use dp/dt for Paolo Sossi solubility so this must be now included here */
-    if(Ap->volatile_parameters[i]->SOLUBILITY==2) {
-        /* TODO: need modified equilibrium constant, and we can easily get this assuming
-           the H2-H2O reaction is in the first slot (but in general it might not be) */
-        /* Recall that (modified) equilibrium constant accommodates fO2 */
-        log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, SC, A );
-        dlog10GdT = get_dlog10GdT( Ap->reaction_parameters[0], A->tsurf, SC, A );
-        G = PetscPowScalar( 10.0, log10G );
-        /* dG/dlog10G * dlog10G/dT * dT/dt */
-        dGdt = G * PetscLogReal( 10.0 ) * dlog10GdT * A->dtsurfdt;
-        V->dxdp = ( Vp->henry / Vp->henry_pow ) * PetscPowScalar( V->x / Vp->henry, 1.0-Vp->henry_pow); /* A term contribution */
-        V->dxdp += G *  ( Vp->henry2 / Vp->henry_pow2 ) * PetscPowScalar( V->x / Vp->henry2, 1.0-Vp->henry_pow2); /* 1st B term contribution */
-        /* TODO: probably not ideal to have V->dpdt in the denominator here, since this could be zero.  But if
-           we are tied to an oxygen buffer then this should change even for H2 */
-        V->dxdp += Vp->henry2 * PetscPowScalar( V->p, 1.0/Ap->volatile_parameters[i]->henry_pow2) * dGdt / V->dpdt; /* 2nd B term contribution */
+    switch( Vp->SOLUBILITY ){
+        case 1:
+            /* Modified Henry's law (default) */
+            V->dxdp = get_dxdp_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
+            dxdt = V->dxdp * V->dpdt;
+            break;
+        case 2:
+            /* TODO: need modified equilibrium constant, and we can easily get this assuming
+               the H2-H2O reaction is in the first slot (but in general it might not be) */
+            /* Recall that (modified) equilibrium constant accommodates fO2 */
+            log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, SC, A );
+            dlog10GdT = get_dlog10GdT( Ap->reaction_parameters[0], A->tsurf, SC, A );
+            G = PetscPowScalar( 10.0, log10G );
+            /* dG/dlog10G * dlog10G/dT * dT/dt */
+            dGdt = G * PetscLogReal( 10.0 ) * dlog10GdT * A->dtsurfdt;
+            V->dxdp = get_dxdp_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
+            V->dxdp += G * get_dxdp_from_solubility_power_law( V->p, Vp->henry2, Vp->henry_pow2 );
+            dxdt = V->dxdp * V->dpdt;
+            dxdt += dGdt *  Vp->henry2 * PetscPowScalar( V->p, 1.0/Vp->henry_pow2);
     }
 
-    out2 += A->volatiles[i].dpdt * A->volatiles[i].dxdp * ( Ap->volatile_parameters[i]->kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i]->kdist) * A->Mliq);
+    out2 += dxdt * ( Ap->volatile_parameters[i]->kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i]->kdist) * A->Mliq);
     out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i]->kdist) * A->dMliqdt;
 
     return out2;
