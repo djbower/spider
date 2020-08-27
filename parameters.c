@@ -241,7 +241,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     /* end of Paolo Sossi prototype */
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
-    ierr = PetscOptionsGetPositiveScalar(buf,&vp->jeans_value,0.0,NULL);CHKERRQ(ierr); // TODO: check units and scaling
+    ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,NULL);CHKERRQ(ierr); // TODO: check units and scaling
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_R_thermal_escape_value");CHKERRQ(ierr);
     ierr = PetscOptionsGetPositiveScalar(buf,&vp->R_thermal_escape_value,0.0,NULL);CHKERRQ(ierr); // TODO: check units and scaling
