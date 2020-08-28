@@ -105,6 +105,7 @@ static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParam
         A->volatiles[i].p = 0.0;
         A->volatiles[i].dpdt = 0.0;
         A->volatiles[i].dxdp = 0.0;
+        A->volatiles[i].dxdt = 0.0;
         A->volatiles[i].mass_atmos = 0.0;
         A->volatiles[i].mass_liquid = 0.0;
         A->volatiles[i].mass_solid = 0.0;
@@ -860,7 +861,11 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const P, VolatilePara
     ierr = JSON_add_single_value_to_object(dm, scaling, "f_thermal_escape", "None", V->f_thermal_escape, data);CHKERRQ(ierr);
 
     /* other */
+    scaling = SC->VOLATILE / SC->TIME;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dt", "mass fraction/s", V->dxdt, data);CHKERRQ(ierr);
+
     /* below is only relevant for the simplest solubility power law */
+
     //scaling = SC->VOLATILE / SC->PRESSURE;
     //ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dp", "mass fraction/Pa", V->dxdp, data);CHKERRQ(ierr);
 
@@ -932,7 +937,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
     PetscInt                  j,k;
     VolatileParameters  const Vp = Ap->volatile_parameters[i];
     Volatile                  *V = &A->volatiles[i];
-    PetscScalar               log10G, G, dGdt, dlog10GdT, dxdt;
+    PetscScalar               log10G, G, dGdt, dlog10GdT;
 
     /* remember that to this point, V->f_thermal_escape is always
        computed but not necessarily used in the calculation */
@@ -1003,7 +1008,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
         case 1:
             /* Solubility power law (default) */
             V->dxdp = get_dxdp_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
-            dxdt = V->dxdp * V->dpdt;
+            V->dxdt = V->dxdp * V->dpdt;
             break;
         case 2:
             /* FIXME: need modified equilibrium constant, and we can easily get this assuming
@@ -1016,11 +1021,11 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
             dGdt = G * PetscLogReal( 10.0 ) * dlog10GdT * A->dtsurfdt;
             V->dxdp = get_dxdp_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
             V->dxdp += G * get_dxdp_from_solubility_power_law( V->p, Vp->henry2, Vp->henry_pow2 );
-            dxdt = V->dxdp * V->dpdt;
-            dxdt += dGdt *  Vp->henry2 * PetscPowScalar( V->p, 1.0/Vp->henry_pow2);
+            V->dxdt = V->dxdp * V->dpdt;
+            V->dxdt += dGdt *  Vp->henry2 * PetscPowScalar( V->p, 1.0/Vp->henry_pow2);
     }
 
-    out2 += dxdt * ( Ap->volatile_parameters[i]->kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i]->kdist) * A->Mliq);
+    out2 += V->dxdt * ( Ap->volatile_parameters[i]->kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i]->kdist) * A->Mliq);
     out2 += A->volatiles[i].x * (1.0-Ap->volatile_parameters[i]->kdist) * A->dMliqdt;
 
     return out2;
