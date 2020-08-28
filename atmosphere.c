@@ -368,7 +368,7 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
 {
 
     /* This function contains the solubility laws.  For each solubility law, you must give the relationship
-       between x and p, and the derivative */
+       between x and p */
 
     PetscInt i;
     Volatile                 *V;
@@ -380,29 +380,25 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
 
     for (i=0; i<Ap->n_volatiles; ++i) {
 
-        /* partial pressure of volatile */
         V = &A->volatiles[i];
         Vp = Ap->volatile_parameters[i];
 
         switch( Vp->SOLUBILITY ){
             case 1:
                 /* Modified Henry's law (default) */
-                /* abundance in melt */
-                V->x = get_x_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry, Ap->volatile_parameters[i]->henry_pow );
+                /* x = henry * partialp ** (1/beta) */
+                V->x = get_x_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
                 break;
 
             case 2:
-                /* Paolo Sossi joint solubility for H2 and H2O */
-                /* assumes zero solubility of H2 */
-
-                /* TODO: need modified equilibrium constant, and we can easily get this assuming
-                   FIXME: the H2-H2O reaction is in the first slot (but in general it might not be) */
-                /* (Modified) equilibrium constant that accommodates fO2 */
+                /* Linear combination of power laws (Paolo Sossi)
+                   FIXME: the H2-H2O reaction might not always be in the first slot
+                   (Modified) equilibrium constant that accommodates fO2 is G */
+                /* x = henry * partialp ** (1/beta) + G * henry2 * partialp ** (1/beta2) */
                 log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, SC, A );
                 G = PetscPowScalar( 10.0, log10G );
-                /* abundance in melt */
-                V->x = get_x_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry, Ap->volatile_parameters[i]->henry_pow );
-                V->x += G * get_x_from_solubility_power_law( A->volatiles[i].p, Ap->volatile_parameters[i]->henry2, Ap->volatile_parameters[i]->henry_pow2 );
+                V->x = get_x_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
+                V->x += G * get_x_from_solubility_power_law( V->p, Vp->henry2, Vp->henry_pow2 );
                 break;
 
             /* add more cases to include more solubility laws */
@@ -864,8 +860,9 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const P, VolatilePara
     ierr = JSON_add_single_value_to_object(dm, scaling, "f_thermal_escape", "None", V->f_thermal_escape, data);CHKERRQ(ierr);
 
     /* other */
-    scaling = SC->VOLATILE / SC->PRESSURE;
-    ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dp", "mass fraction/Pa", V->dxdp, data);CHKERRQ(ierr);
+    /* below is only relevant for the simplest solubility power law */
+    //scaling = SC->VOLATILE / SC->PRESSURE;
+    //ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dp", "mass fraction/Pa", V->dxdp, data);CHKERRQ(ierr);
 
     cJSON_AddItemToObject(json,name,data);
 
@@ -1004,12 +1001,12 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
 
     switch( Vp->SOLUBILITY ){
         case 1:
-            /* Modified Henry's law (default) */
+            /* Solubility power law (default) */
             V->dxdp = get_dxdp_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
             dxdt = V->dxdp * V->dpdt;
             break;
         case 2:
-            /* TODO: need modified equilibrium constant, and we can easily get this assuming
+            /* FIXME: need modified equilibrium constant, and we can easily get this assuming
                the H2-H2O reaction is in the first slot (but in general it might not be) */
             /* Recall that (modified) equilibrium constant accommodates fO2 */
             log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, SC, A );
