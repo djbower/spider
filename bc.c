@@ -76,6 +76,10 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       /* to ensure conservation of energy at the interface of the
          interior and atmosphere, the fluxes must be equal */
+      /* for the MO stage, this gives the radiative flux
+         for the solid stage, if VISCOUS_MANTLE_COOLING_RATE,
+         this is really the tiny fraction of interior heat that
+         the atmosphere also shifts */
       A->Fatm = Qout;
 
       /* always honour the emissivity, so ensure consistency by
