@@ -12,6 +12,17 @@ PetscErrorCode EOSCompositeCreate(EOSComposite* p) {
 
 // TODO below are existing EosParameters-based functions to properly refactor
 
+PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary, PetscScalar *dboundary )
+{
+
+    /* TODO: this function could contain a switch, to determine phase boundary by
+       a means other than lookup (currently not required) */
+
+    PetscFunctionBeginUser;
+    SetInterp1dValue( Ep->phase_boundary, P, boundary, dboundary ); /* entropy S and derivative dS/dP */
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *eos_composite_ptr, const EosParameters eos_parameters[], PetscInt n_phases )
 {
     PetscErrorCode ierr;

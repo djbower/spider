@@ -29,6 +29,8 @@ PetscErrorCode EOSCompositeCreate(EOSComposite*);
 
 // TODO existing EosParameters-based functions, to refactor into proper class hierarchy
 
+PetscErrorCode SetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar *, PetscScalar * );
+
 PetscErrorCode SetEosCompositeEval( const EosComposite, PetscScalar, PetscScalar, EosEval * );
 PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar, PetscScalar, PetscScalar * );
 

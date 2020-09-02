@@ -34,7 +34,6 @@ PetscErrorCode SetEosEval( const EosParameters, PetscScalar, PetscScalar, EosEva
 
 // TODO where should these live?
 PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
-PetscErrorCode SetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar *, PetscScalar * );
 
 /////////////////// WIP TODO
 

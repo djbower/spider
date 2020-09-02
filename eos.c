@@ -31,19 +31,6 @@ static PetscScalar specific_to_per_atom( PetscScalar, PetscScalar, PetscScalar )
 static PetscScalar joule_to_eV( PetscScalar );
 static PetscScalar eV_to_joule( PetscScalar );
 
-PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary, PetscScalar *dboundary )
-{
-
-    /* TODO: this function could contain a switch, to determine phase boundary by
-       a means other than lookup (currently not required) */
-
-    PetscFunctionBeginUser;
-    SetInterp1dValue( Ep->phase_boundary, P, boundary, dboundary ); /* entropy S and derivative dS/dP */
-    PetscFunctionReturn(0);
-}
-
-
-
 
 PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
 {

@@ -1,4 +1,5 @@
 #include "eos_output.h"
+#include "eos_composite.h" // TODO need this?
 
 PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EosParameters Ep, const char *name, cJSON *json )
 {
