@@ -4,6 +4,26 @@
 #include "ctx.h"
 #include "parameters.h"
 
+/* A (temporary) struct that is used to set the eos properties at a
+   given V,T or P, S.  There should be as  */
+typedef struct EosEval_ {
+  PetscScalar P; /* pressure */
+  /* TODO: could eventually implement function pointers, as below? */
+  //PetscErrorCode (*fpAlpha)(const EosParameters, PetscScalar, PetscScalar, PetscScalar *);
+  PetscScalar S; /* entropy */
+  PetscScalar V; /* volume */
+  PetscScalar T; /* temperature */
+  PetscScalar Cp; /* heat capacity at constant pressure */
+  PetscScalar Cv; /* heat capacity at constant volume */
+  PetscScalar alpha; /* thermal expansion */
+  PetscScalar rho; /* density */
+  PetscScalar dTdPs; /* adiabatic temperature gradient */
+  PetscScalar cond;
+  PetscScalar log10visc;
+  PetscScalar phase_fraction; // by definition unity for single species, but can be 0<x<1 for the EosComposite (with two phases) */
+  PetscScalar fusion; // only relevant for EosComposite (with two phases)
+} EosEval;
+
 typedef struct RTpressEval_ {
   PetscScalar P; /* pressure */
   PetscScalar S; /* entropy */

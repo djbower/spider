@@ -57,26 +57,6 @@ typedef enum {
 static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr","S at surface","Volatile partial pressure","Reaction total mass"}; /* Order must match the enum! */
 static const char * const SpiderSolutionFieldUnits[]        = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "Pa", "kg"}; /* Order must match the enum! */
 
-/* A (temporary) struct that is used to set the eos properties at a
-   given V,T or P, S.  There should be as  */
-typedef struct EosEval_ {
-  PetscScalar P; /* pressure */
-  /* TODO: could eventually implement function pointers, as below? */
-  //PetscErrorCode (*fpAlpha)(const EosParameters, PetscScalar, PetscScalar, PetscScalar *);
-  PetscScalar S; /* entropy */
-  PetscScalar V; /* volume */
-  PetscScalar T; /* temperature */
-  PetscScalar Cp; /* heat capacity at constant pressure */
-  PetscScalar Cv; /* heat capacity at constant volume */
-  PetscScalar alpha; /* thermal expansion */
-  PetscScalar rho; /* density */
-  PetscScalar dTdPs; /* adiabatic temperature gradient */
-  PetscScalar cond;
-  PetscScalar log10visc;
-  PetscScalar phase_fraction; // by definition unity for single species, but can be 0<x<1 for the EosComposite (with two phases) */
-  PetscScalar fusion; // only relevant for EosComposite (with two phases)
-} EosEval;
-
 /* A Context for the Solver */
 typedef struct Ctx_ {
   Mesh                   mesh;
