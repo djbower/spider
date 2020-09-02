@@ -3,7 +3,7 @@
 #include "monitor.h"
 #include "util.h"
 
-//static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
+static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
 static PetscScalar get_isothermal_surface( const Ctx * );
 static PetscScalar isothermal_or_cooling_cmb( const Ctx *, PetscScalar );
 static PetscScalar get_core_cooling_factor( const Ctx * );
@@ -68,13 +68,11 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
       }
 
-#if 0
       /* smoothly transition the cooling rate to the viscous mantle
          cooling rate below the rheological transition */
       if( Ap->VISCOUS_MANTLE_COOLING_RATE ){
           Qout = get_viscous_mantle_cooling_rate( E, Qout );
       }
-#endif
 
       /* to ensure conservation of energy at the interface of the
          interior and atmosphere, the fluxes must be equal */
@@ -107,7 +105,6 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-#if 0
 static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qin )
 {
     PetscErrorCode ierr;
@@ -118,15 +115,29 @@ static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qi
     Parameters     const P = E->parameters;
     Solution       const *S = &E->solution;
 
-    /* enable the ability for the magma ocean to cool at a rate dictated
-       by the upper mantle cooling rate.  This helps to prevent a viscous
-       lid from forming at the top */
+    /* below the rheological transition, the mantle cooling rate is
+       not dictated by the atmosphere, since
+           interior flux (100 mW) << stellar flux (1000 W)
+       instead, the cooling rate of the mantle is restricted by the
+       ability of the near surface lid to conduct heat to the surface,
+       where it is then ``instantaneously'' radiated away. */
+
+    /* this function helps to account for this, by only allowing the mantle
+       to cool at a rate dictated by the near-surface lid.  But in doing so,
+       the surface temperature is clearly wrong, because it assumes that the
+       surface temperature is only "cooled" by the mantle, when in reality
+       it is the atmosphere that determines the surface temperature.  And
+       this should tend very quickly to the equilibrium temperature */
+
+    /* So the surface temperature output by the model during this stage of
+       evolution is not representative of the true surface temperature */
 
     /* for weight of different fluxes */
     ind = 0;
     ierr = VecGetValues(S->phi,1,&ind,&phi0); CHKERRQ(ierr);
     /* TODO: SWIDTH or PHI_WIDTH most appropriate choice here? */
-    fwt = tanh_weight( phi0, P->phi_critical, P->matprop_smooth_width );
+    /* FIXME width of 1.0E-2 is hard-coded here */
+    fwt = tanh_weight( phi0, P->phi_critical, 1.0E-2 );
 
     // energy flux from energy gradient
     ierr = VecGetValues(M->area_b,1,&ind,&G0); CHKERRQ(ierr);
@@ -146,7 +157,6 @@ static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qi
 
     return Qout;
 }
-#endif
 
 PetscErrorCode set_core_mantle_flux( Ctx *E )
 {
