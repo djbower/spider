@@ -787,6 +787,9 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     /* Turn off convergence based on step size */
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_stol","0");CHKERRQ(ierr);
 
+    /* Turn off convergenced based on trust region tolerance */
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_trtol","0");CHKERRQ(ierr);
+
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
     {
       PetscBool flg = PETSC_FALSE;
