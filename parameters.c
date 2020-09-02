@@ -10,6 +10,7 @@ Custom PETSc command line options should only ever be parsed here.
 #include "ctx.h"
 #include "ic.h"
 #include "eos.h"
+#include "eos_composite.h" // TODO not ideal that we need this?
 
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );

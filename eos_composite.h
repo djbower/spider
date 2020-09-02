@@ -27,4 +27,12 @@ typedef data_EOSComposite* EOSComposite;
 
 PetscErrorCode EOSCompositeCreate(EOSComposite*);
 
+// TODO existing EosParameters-based functions, to refactor into proper class hierarchy
+
+PetscErrorCode SetEosCompositeEval( const EosComposite, PetscScalar, PetscScalar, EosEval * );
+PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar, PetscScalar, PetscScalar * );
+
+PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *, const EosParameters[], PetscInt );
+PetscErrorCode EosCompositeDestroy( EosComposite * );
+
 #endif

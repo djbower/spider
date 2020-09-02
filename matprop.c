@@ -3,6 +3,7 @@
 #include "util.h"
 #include "twophase.h"
 #include "eos.h"
+#include "eos_composite.h" // TODO not ideal to have this?
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscErrorCode apply_log10visc_cutoff( Parameters const, PetscScalar * );

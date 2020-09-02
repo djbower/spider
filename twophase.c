@@ -3,6 +3,7 @@
 #include "twophase.h"
 #include "util.h"
 #include "eos.h"
+#include "eos_composite.h" // TODO not ideal tohave this?
 #include "rheologicalfront.h"
 
 static PetscErrorCode set_rheological_front_mantle_properties( Ctx *, RheologicalFront *, PetscInt, Vec * );
