@@ -1,12 +1,13 @@
 #include "eos_lookup.h"
 #include "util.h"
 
-PetscErrorCode EOSLookupPureCreate(EOSLookupPure* p) {
-  PetscErrorCode ierr;
+PetscErrorCode EOSCreate_Lookup(EOS eos) {
+  //PetscErrorCode ierr;
 
   PetscFunctionBeginUser;
-  ierr = PetscMalloc1(1, p);CHKERRQ(ierr);
-  // TODO other stuff to init? (to zero?)
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  (void) eos;
+  // TODO
   PetscFunctionReturn(0);
 }
 

@@ -39,6 +39,7 @@ PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
 
 typedef const char* EOSType;
 
+
 typedef struct data_EOS_ {
   EOSType type;  /* Implementation type */
 
@@ -72,5 +73,16 @@ PetscErrorCode EOSCreate(EOS*, EOSType);
 PetscErrorCode EOSDestroy(EOS*);
 PetscErrorCode EOSEval(const EOS, PetscScalar, PetscScalar, EosEval*);
 PetscErrorCode EOSSetUpFromOptions(EOS, const char*);
+
+/* Note that this is the only place in this header that anything
+   related to types is mentioned. These must correspond to all available
+   types */
+#define SPIDER_EOS_LOOKUP "lookup"
+#define SPIDER_EOS_RTPRESS "rtpress"
+#define SPIDER_EOS_COMPOSITE "composite"
+
+PetscErrorCode EOSCreate_Lookup(EOS);
+PetscErrorCode EOSCreate_RTpress(EOS);
+PetscErrorCode EOSCreate_Composite(EOS);
 
 #endif

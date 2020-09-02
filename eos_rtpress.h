@@ -1,8 +1,6 @@
 #if !defined(EOS_RTPRESS_H_)
 #define EOS_RTPRESS_H_
 
-#define SPIDER_EOS_RTPRESS_PURE "rtpress"
-
 #include "petsc.h"
 #include "eos.h"
 
@@ -26,10 +24,9 @@ typedef struct {
     PetscScalar KBOLTZ;
     PetscScalar bscale;
     PetscScalar const * AVOGADRO_ptr;
-} data_EOSRTpressPure;
-typedef data_EOSRTpressPure* EOSRTpressPure;
+} data_EOSRTpress;
+typedef data_EOSRTpress* EOSRTpress;
 
-PetscErrorCode EOSRTpressPureCreate(EOSRTpressPure*);
 
 // TODO not clear if these ultimately need to be in this header, or can just be static functions in eos_rtpress.c
 PetscErrorCode RTpressParametersCreate( RTpressParameters * );

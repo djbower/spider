@@ -326,17 +326,17 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
   ierr = PetscMalloc1(1, p_eos);CHKERRQ(ierr);
   eos = *p_eos;
 
-  ierr = PetscStrcmp(type, SPIDER_EOS_LOOKUP_PURE, &flg);CHKERRQ(ierr);
+  ierr = PetscStrcmp(type, SPIDER_EOS_LOOKUP, &flg);CHKERRQ(ierr);
   if (flg) {
-    ierr = EOSLookupPureCreate((EOSLookupPure*) eos->impl_data);CHKERRQ(ierr);
+    ierr = EOSCreate_Lookup(eos);CHKERRQ(ierr);
   }
-  ierr = PetscStrcmp(type, SPIDER_EOS_RTPRESS_PURE, &flg);CHKERRQ(ierr);
+  ierr = PetscStrcmp(type, SPIDER_EOS_RTPRESS, &flg);CHKERRQ(ierr);
   if (flg) {
-    ierr = EOSRTpressPureCreate((EOSRTpressPure*) eos->impl_data);CHKERRQ(ierr);
+    ierr = EOSCreate_RTpress(eos);CHKERRQ(ierr);
   }
   ierr = PetscStrcmp(type, SPIDER_EOS_COMPOSITE, &flg);CHKERRQ(ierr);
   if (flg) {
-    ierr = EOSCompositeCreate((EOSComposite*) eos->impl_data);CHKERRQ(ierr);
+    ierr = EOSCreate_Composite(eos);CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
 }
@@ -372,10 +372,12 @@ PetscErrorCode EOSDestroy(EOS *p_eos)
 
 PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix)
 {
-  PetscErrorCode ierr;
+  //PetscErrorCode ierr;
 
   PetscFunctionBegin;
   // TODO
+  (void) eos;
+  (void) prefix;
   SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
   PetscFunctionReturn(0);
 }

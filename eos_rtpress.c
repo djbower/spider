@@ -15,12 +15,13 @@ static PetscScalar specific_to_per_atom( PetscScalar, PetscScalar, PetscScalar )
 static PetscScalar joule_to_eV( PetscScalar );
 static PetscScalar eV_to_joule( PetscScalar );
 
-PetscErrorCode EOSRTpressPureCreate(EOSRTpressPure* p) {
+PetscErrorCode EOSCreate_RTpress(EOS eos) {
   PetscErrorCode ierr;
 
   PetscFunctionBeginUser;
-  ierr = PetscMalloc1(1, p);CHKERRQ(ierr);
-  // TODO other stuff to init? (to zero?)
+  ierr = PetscMalloc1(1, &(eos->impl_data));CHKERRQ(ierr);
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  // TODO set function pointers and initialize data
   PetscFunctionReturn(0);
 }
 

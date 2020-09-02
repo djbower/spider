@@ -3,7 +3,6 @@
 
 #include "eos.h"
 
-#define SPIDER_EOS_COMPOSITE "composite"
 typedef struct {
     EOS *eos_parameters;
     PetscInt n_eos;
@@ -24,8 +23,6 @@ typedef struct {
     Interp1d phase_boundary; /* pressure-entropy space, J/kg/K */
 } data_EOSComposite;
 typedef data_EOSComposite* EOSComposite;
-
-PetscErrorCode EOSCompositeCreate(EOSComposite*);
 
 // TODO existing EosParameters-based functions, to refactor into proper class hierarchy
 
