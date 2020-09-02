@@ -10,6 +10,7 @@ SRC_C = main.c ctx.c rhs.c ic.c interp.c mesh.c bc.c util.c twophase.c \
         monitor.c energy.c matprop.c dimensionalisablefield.c rheologicalfront.c \
         cJSON.c rollback.c poststep.c parameters.c atmosphere.c \
         reaction.c eos.c eos_composite.c eos_lookup.c eos_rtpress.c \
+        eos_output.c
 
 # Main Target
 all :: ${EXNAME}

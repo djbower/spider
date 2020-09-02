@@ -1,5 +1,5 @@
 #include "dimensionalisablefield.h"
-#include "eos.h"
+#include "eos_output.h"
 #include "monitor.h"
 #include "rhs.h"
 #include "cJSON.h"

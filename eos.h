@@ -1,7 +1,6 @@
 #ifndef EOS_H_
 #define EOS_H_
 
-#include "ctx.h"
 #include "parameters.h"
 
 /* A (temporary) struct that is used to set the eos properties at a
@@ -39,8 +38,6 @@ PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_comp
 
 PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *, const EosParameters[], PetscInt );
 PetscErrorCode EosCompositeDestroy( EosComposite * );
-
-PetscErrorCode JSON_add_phase_boundary( const Ctx *, const EosParameters, const char *, cJSON * );
 
 /////////////////// WIP TODO
 
