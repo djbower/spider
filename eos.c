@@ -370,10 +370,14 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
 
 PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EosEval* eval)
 {
-  PetscErrorCode ierr;
+  //PetscErrorCode ierr;
 
   PetscFunctionBeginUser;
   // TODO boilerplate eval from EosSetEval
+  (void) eos; // TODO temp
+  (void) P; // TODO temp
+  (void) S; // TODO temp
+  (void) eval; // TODO temp
   // TODO  call impl eval function (from EosSetEval*)
   PetscFunctionReturn(0);
 }
