@@ -326,7 +326,6 @@ PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_eval )
 
 }
 
-////////////// WIP
 
 /* Base Class */
 
@@ -357,15 +356,19 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
 
 PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EosEval* eval)
 {
-  //PetscErrorCode ierr;
+  PetscErrorCode ierr;
 
   PetscFunctionBeginUser;
-  // TODO boilerplate eval from EosSetEval
-  (void) eos; // TODO temp
-  (void) P; // TODO temp
-  (void) S; // TODO temp
-  (void) eval; // TODO temp
-  // TODO  call impl eval function (from EosSetEval*)
+  /* Implementation-specific logic */
+  ierr = (*(eos->eval))(eos,P,S,eval);CHKERRQ(ierr);
+
+  /* Common Logic */
+  eval->cond = eos->cond; // conductivity constant
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  // TODO duplicate this function
+  //ierr = SetEosEvalViscosity( Ep, eval );CHKERRQ(ierr);
+  eval->phase_fraction = 1.0; // by definition, since only one phase
+  eval->fusion = 0.0; // meaningless for a single phase
   PetscFunctionReturn(0);
 }
 
@@ -375,7 +378,19 @@ PetscErrorCode EOSDestroy(EOS *p_eos)
 
   PetscFunctionBeginUser;
   ierr = PetscFree(p_eos);CHKERRQ(ierr);
-  // TODO call impl destroy function
+  ierr = (*(*p_eos)->destroy)(*p_eos);CHKERRQ(ierr);
   *p_eos = NULL;
   PetscFunctionReturn(0);
 }
+
+PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  // TODO
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  PetscFunctionReturn(0);
+}
+
+

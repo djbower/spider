@@ -60,7 +60,7 @@ typedef struct data_EOS_ {
 
   /* Pointers to implementation-specific functions */
   // Note: no "create" pointer here, since we have a factory method (EOSCreate())
-  PetscErrorCode (*eval)(const struct data_EOS_, PetscScalar, PetscScalar, EosEval*);
+  PetscErrorCode (*eval)(const struct data_EOS_*, PetscScalar, PetscScalar, EosEval*);
   PetscErrorCode (*destroy)(struct data_EOS_*);
   PetscErrorCode (*setupfromoptions)(struct data_EOS_*, const char*);
   // TODO setup from options function
