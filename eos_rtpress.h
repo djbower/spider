@@ -4,6 +4,7 @@
 #define SPIDER_EOS_RTPRESS_PURE "rtpress"
 
 #include "petsc.h"
+#include "eos.h"
 
 typedef struct {
     PetscScalar V0;
@@ -29,5 +30,11 @@ typedef struct {
 typedef data_EOSRTpressPure* EOSRTpressPure;
 
 PetscErrorCode EOSRTpressPureCreate(EOSRTpressPure*);
+
+// TODO not clear if these ultimately need to be in this header, or can just be static functions in eos_rtpress.c
+PetscErrorCode RTpressParametersCreate( RTpressParameters * );
+PetscErrorCode RTpressParametersCreateAndSet( RTpressParameters *, const FundamentalConstants );
+PetscErrorCode RTpressParametersDestroy( RTpressParameters * );
+PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
 
 #endif
