@@ -230,6 +230,8 @@ typedef struct {
     PetscInt    SOLUBILITY;
     PetscScalar henry;
     PetscScalar henry_pow;
+    PetscScalar henry2;
+    PetscScalar henry_pow2;
     PetscScalar jeans_value; // for thermal escape
     PetscScalar R_thermal_escape_value; // for thermal (Jean's) escape
     PetscScalar constant_escape_value; // for constant escape

@@ -171,19 +171,15 @@ So clearly in general:
 \begin{equation}
 \zeta^{{\rm ppm/Pa}^{1/\beta}} = \zeta^{{\rm ppm/bar}^{1/\beta}} \times (10^{-5})^{1/\beta}
 \end{equation}
-As before, we also need the derivative for the time stepper.  The $A$ term is trivial, since as before:
+As before, we also need the derivative for the time stepper:
 \begin{equation}
-\frac{d \hat{X}_v}{d \hat{p}_v} = \frac{\hat{A}_v}{\beta_v} \left(\frac{\hat{X}_v}{\hat{A}_v}\right)^{1-\beta_v}
+\frac{d \hat{X}_v}{d \hat{p}_v} = \frac{\hat{A}_v}{\beta_v} \left(\frac{\hat{X}_v}{\hat{A}_v}\right)^{1-\beta_v} + G \frac{\hat{B}_v}{\beta_v} \left(\frac{\hat{X}_v}{\hat{B}_v}\right)^{1-\beta_v} + \frac{dG}{d \hat{p}_v} \hat{B} \hat{p}_v
 \end{equation}
-For the $B$ term we have to account for $G$, the modified equilibrium constant:
+But in fact, the time-stepper wants the time derivative of abundance change in the melt:
 \begin{equation}
-\frac{d \hat{X}_v}{d \hat{p}_v} = G \frac{\hat{B}_v}{\beta_v} \left(\frac{\hat{X}_v}{\hat{B}_v}\right)^{1-\beta_v} + \frac{dG}{d \hat{p}_v} \hat{B} \hat{p}_v
+\frac{d \hat{X}_v}{d t} = \frac{d \hat{p}_v}{d t} \frac{\hat{A}_v}{\beta_v} \left(\frac{\hat{X}_v}{\hat{A}_v}\right)^{1-\beta_v} + \frac{d \hat{p}_v}{d t} G \frac{\hat{B}_v}{\beta_v} \left(\frac{\hat{X}_v}{\hat{B}_v}\right)^{1-\beta_v} + \frac{dG}{d\hat{T}} \frac{d\hat{T}}{dt} \hat{B} \hat{p}_v
 \end{equation}
-Now let's take a look at the derivative of $G$.  In our formulation $G(T)$ (since $f_{O_2}$ is a function of $T$ and so is the equilibrium constant).  Therefore we can compute the derivative with respect to $T$ quite easily:
-\begin{equation}
-\frac{dG}{d \hat{p}_v} = \frac{dG}{d \hat{T}} \frac{d \hat{T}}{d \hat{p}_v} = \frac{dG}{d \hat{T}} \frac{d \hat{T}}{dt} \frac{dt}{d\hat{p}_v}
-\end{equation}
-The expansion for the derivative with respect to $\hat{p}_v$ is done in terms of $t$, since both of those derivatives can be computed using the code.
+
 %%% can remove below once above confirmed to work
 \begin{comment}
 Introduce dimensional scalings and associate fugacities with partial pressure (ideal gas approximation):

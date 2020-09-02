@@ -15,6 +15,7 @@ typedef struct Volatile_ {
     PetscScalar p; // partial pressure at surface (Pa)
     PetscScalar dpdt;
     PetscScalar dxdp; // dx/dp (mass fraction/Pa)
+    PetscScalar dxdt;
     PetscScalar mass_atmos; // mass in atmosphere (kg)
     PetscScalar mass_liquid; // mass in liquid (kg)
     PetscScalar mass_solid; // mass in solid (kg)
@@ -70,11 +71,11 @@ PetscScalar get_emissivity_abe_matsui( Atmosphere *, const AtmosphereParameters)
 PetscScalar get_residual_volatile_mass( Atmosphere *, const AtmosphereParameters, const VolatileParameters, const Volatile *);
 PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscScalar );
 PetscErrorCode set_surface_temperature_from_flux( Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
-PetscErrorCode set_reservoir_volatile_content( Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
-PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *, const AtmosphereParameters );
+PetscErrorCode set_reservoir_volatile_content( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, const ScalingConstants );
+PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode JSON_add_atmosphere( DM dm, const Parameters, Atmosphere *, const char *, cJSON *);
 PetscErrorCode objective_function_volatile_evolution( SNES, Vec, Vec, void * );
-PetscScalar get_dpdt( Atmosphere *, const AtmosphereParameters, PetscInt, const PetscScalar * );
+PetscScalar get_dpdt( Atmosphere *, const AtmosphereParameters, PetscInt, const PetscScalar *, const ScalingConstants );
 PetscErrorCode set_oxygen_fugacity( Atmosphere *, const AtmosphereParameters, const ScalingConstants );
 
 #endif

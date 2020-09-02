@@ -32,7 +32,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
       /* must be after A->tsurf is set for fO2 calculation */
       /* therefore set_surface_flux always called after set_interior_structure_from_solution */
-      ierr = set_reservoir_volatile_content( A, Ap, FC ); CHKERRQ(ierr);
+      ierr = set_reservoir_volatile_content( A, Ap, FC, SC ); CHKERRQ(ierr);
 
       /* determine surface flux */
       /* in all cases, compute flux and emissivity consistently */
@@ -324,6 +324,11 @@ PetscErrorCode solve_dpdts( Ctx *E )
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
+        /* initial guess of dp/dt, which we solve for.  TODO: currently must be non-zero
+           otherwise the time stepper results in NaN for Paolo Sossi solubility */
+        /* FIXME: for "standard" power law this value works well as zero (not 0.1) */
+        /* FIXME: but for Sossi solubility, this cannot be zero otherwise it gives
+           NaNs in the time-stepper */
         xx[i] = 0.0;
     }
     for (i=0; i<Ap->n_reactions; ++i) {
