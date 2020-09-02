@@ -19,19 +19,6 @@ static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar );
 /* TODO: you'll see that the convention is for the melt phase to be listed first */
 static PetscErrorCode SetEosCompositeEvalFromTwoPhase( const EosComposite, PetscScalar, PetscScalar, EosEval *);
 
-#if 0
-/* TODO: update these to general framework for evaluating Eos */
-static PetscErrorCode set_rtpress_struct_SI( PetscScalar, PetscScalar, Ctx * );
-static PetscErrorCode set_rtpress_struct_non_dimensional( Ctx * );
-#endif
-
-/* helper functions */
-static PetscScalar per_atom_to_specific( PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar specific_to_per_atom( PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar joule_to_eV( PetscScalar );
-static PetscScalar eV_to_joule( PetscScalar );
-
-
 PetscErrorCode EosParametersCreate( EosParameters* eos_parameters_ptr )
 {
     PetscErrorCode ierr;
