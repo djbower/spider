@@ -225,9 +225,9 @@ tests:
       name: socrates_p_restart
       commands:
         - HERE/../spider -options_file HERE/opts/socrates_p_restart.opts -ic_interior_filename HERE/opts/socrates_p_restart_18113.json
-        - HERE/json_timestep_to_txt.py output/34716.json
+        - HERE/json_timestep_to_txt.py output/34710.json
       expected: expected_output/expected_socrates_p_restart.txt
-      comparison: 34716.txt
+      comparison: 34710.txt
       type: float_lines
       rules:
         -
