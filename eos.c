@@ -1,11 +1,11 @@
 #include "eos.h"
-#include "eos_composite.h"
-#include "eos_lookup.h"
-#include "eos_rtpress.h"
+#include "eos_composite.h" // TODO ultimately don't want this here
+#include "eos_lookup.h" // TODO ultimately don't want this here
+#include "eos_rtpress.h" // TODO ultimately don't want this here
 #include "monitor.h"
 #include "parameters.h"
 #include "util.h"
-#include "interp.h"
+#include "interp.h" // TODO ultimately don't want this here
 
 /* TODO: many of these Getters should actually be Setters, since they
    set the final argument rather than returning a value */
