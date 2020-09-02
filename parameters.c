@@ -60,7 +60,7 @@ static PetscErrorCode PetscOptionsGetPositiveInt( const char *value_string, Pets
     PetscFunctionBeginUser;
 
     *value_ptr = value_default;
-    ierr = PetscOptionsGetInt(NULL,NULL,value_string,value_ptr,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetInt(NULL,NULL,value_string,value_ptr,set);CHKERRQ(ierr);
     ierr = PetscIntCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
