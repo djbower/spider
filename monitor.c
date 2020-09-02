@@ -221,6 +221,8 @@ PetscErrorCode TSMonitorWalltimed(TS ts,PetscInt steps,PetscReal time,Vec x,void
   PetscReal      dt;
 
   PetscFunctionBeginUser;
+  (void) x; // mark explicitly as unused
+  (void) mctx; // mark explicitly as unused
   walltime = MPI_Wtime();
   if (walltime - ctx->walltimeprev > split){
     ctx->walltimeprev = walltime;
@@ -244,6 +246,7 @@ PetscErrorCode SNESMonitorVerbose(SNES snes, PetscInt its, PetscReal norm, void 
   void           *ctx;
 
   PetscFunctionBeginUser;
+  (void) mctx; // mark explicitly as unused
   ierr = SNESGetSolution(snes,&x);CHKERRQ(ierr);
   ierr = SNESGetFunction(snes,&r,&func,&ctx);CHKERRQ(ierr); /* ctx should be the same as mctx */
   ierr = func(snes,x,r,ctx);CHKERRQ(ierr);
