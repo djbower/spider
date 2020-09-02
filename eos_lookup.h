@@ -1,7 +1,9 @@
 #if !defined(EOS_LOOKUP_H_)
 #define EOS_LOOKUP_H_
 
+#include "eos.h"
 #include "interp.h"
+#include "parameters.h" // TODO bad (for Lookup, which should not be there)
 
 #define SPIDER_EOS_LOOKUP_PURE "lookup"
 typedef struct {
@@ -23,5 +25,11 @@ typedef struct {
 typedef data_EOSLookupPure* EOSLookupPure;
 
 PetscErrorCode EOSLookupPureCreate(EOSLookupPure*);
+
+// TODO these may ultimately not need to be in this header, just used in eos_lookup.c, if at all
+PetscErrorCode LookupCreate( Lookup * );
+PetscErrorCode LookupDestroy( Lookup * );
+PetscErrorCode LookupFilenameSet( const char *, const char *, char *, PetscBool * );
+PetscErrorCode SetEosEvalFromLookup( const Lookup, PetscScalar, PetscScalar, EosEval * );
 
 #endif
