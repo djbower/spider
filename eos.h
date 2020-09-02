@@ -67,13 +67,15 @@ typedef struct data_EOS_ {
   void * impl_data;
 
   /* Pointers to implementation-specific functions */
+  // Note: no "create" pointer here, since we have a factory method (EOSCreate())
   PetscErrorCode (*eval)(const struct data_EOS_, PetscScalar, PetscScalar, EosEval*);
   PetscErrorCode (*destroy)(struct data_EOS_*);
+  // TODO setup from options function
 
 } data_EOS;
 typedef data_EOS *EOS;
 
-PetscErrorCode EOSCreate(EOS*, const char*);
+PetscErrorCode EOSCreate(EOS*, EOSType);
 PetscErrorCode EOSEval(const EOS, PetscScalar, PetscScalar, EosEval*);
 PetscErrorCode EOSDestroy(EOS*);
 
