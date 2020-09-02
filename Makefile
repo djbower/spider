@@ -6,11 +6,32 @@
 EXNAME = spider
 
 # Source files, each corresponding to a .o object file and .d dependency file
-SRC_C = main.c ctx.c rhs.c ic.c interp.c mesh.c bc.c util.c twophase.c \
-        monitor.c energy.c matprop.c dimensionalisablefield.c rheologicalfront.c \
-        cJSON.c rollback.c poststep.c parameters.c atmosphere.c \
-        reaction.c eos.c eos_composite.c eos_lookup.c eos_rtpress.c \
-        eos_output.c
+SRC_C = \
+        atmosphere.c \
+        bc.c \
+        cJSON.c \
+        ctx.c \
+        dimensionalisablefield.c \
+        energy.c \
+        eos.c \
+        eos_composite.c \
+        eos_lookup.c \
+        eos_output.c \
+        eos_rtpress.c \
+        ic.c \
+        interp.c \
+        main.c \
+        matprop.c \
+        mesh.c \
+        monitor.c \
+        parameters.c \
+        poststep.c \
+        reaction.c \
+        rheologicalfront.c \
+        rhs.c \
+        rollback.c \
+        twophase.c \
+        util.c \
 
 # Main Target
 all :: ${EXNAME}
