@@ -133,6 +133,11 @@
 
 # physical parameters
 
+# this option prevents runaway cooling of the surface by restricting
+# the surface cooling rate to that of the lid (top surface).  But a
+# consequence is that the surface temperature then becomes meaningless
+#-VISCOUS_MANTLE_COOLING_RATE
+
 # radius of the planet
 -radius 6371000.0 # Earth radius
 
