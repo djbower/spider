@@ -52,6 +52,7 @@ typedef struct data_EOS_ {
   EOSType type;  /* Implementation type */
 
   char prefix[128];  /* Maximum prefix length */
+  // TODO do we even need this? It's only used once
 
   PetscScalar cond; /* thermal conductivity, W/m/K */
   PetscScalar log10visc; /* log base 10 of viscosity */
@@ -70,13 +71,15 @@ typedef struct data_EOS_ {
   // Note: no "create" pointer here, since we have a factory method (EOSCreate())
   PetscErrorCode (*eval)(const struct data_EOS_, PetscScalar, PetscScalar, EosEval*);
   PetscErrorCode (*destroy)(struct data_EOS_*);
+  PetscErrorCode (*setupfromoptions)(struct data_EOS_*, const char*);
   // TODO setup from options function
 
 } data_EOS;
 typedef data_EOS *EOS;
 
 PetscErrorCode EOSCreate(EOS*, EOSType);
-PetscErrorCode EOSEval(const EOS, PetscScalar, PetscScalar, EosEval*);
 PetscErrorCode EOSDestroy(EOS*);
+PetscErrorCode EOSEval(const EOS, PetscScalar, PetscScalar, EosEval*);
+PetscErrorCode EOSSetUpFromOptions(EOS, const char*);
 
 #endif
