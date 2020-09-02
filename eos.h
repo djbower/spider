@@ -8,8 +8,6 @@
    given V,T or P, S.  There should be as  */
 typedef struct EosEval_ {
   PetscScalar P; /* pressure */
-  /* TODO: could eventually implement function pointers, as below? */
-  //PetscErrorCode (*fpAlpha)(const EosParameters, PetscScalar, PetscScalar, PetscScalar *);
   PetscScalar S; /* entropy */
   PetscScalar V; /* volume */
   PetscScalar T; /* temperature */
