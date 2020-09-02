@@ -76,6 +76,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     Vec               pres_s = M->pressure_s;
     PetscScalar       *arr_rho_s, *arr_temp_s, *arr_cp_s;
     const PetscScalar *arr_pres_s, *arr_S_s;
+    EosEval eos_eval;
 
     PetscFunctionBeginUser;
 
@@ -97,15 +98,15 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
            if statement can probably be removed */
         /* single phase */
         if( P->n_phases==1 ){
-            ierr = SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_eval );CHKERRQ(ierr);
+            ierr = SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &eos_eval );CHKERRQ(ierr);
         }
         else{ /* if P->n_phases==2 */
-            ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &E->eos_eval );CHKERRQ(ierr);
+            ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &eos_eval );CHKERRQ(ierr);
         }
 
-        arr_rho_s[i] = E->eos_eval.rho;
-        arr_temp_s[i] = E->eos_eval.T;
-        arr_cp_s[i] = E->eos_eval.Cp;
+        arr_rho_s[i] = eos_eval.rho;
+        arr_temp_s[i] = eos_eval.T;
+        arr_cp_s[i] = eos_eval.Cp;
 
     }
 
@@ -132,6 +133,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
+
+    EosEval eos_eval;
 
     PetscFunctionBeginUser;
 
@@ -174,20 +177,20 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 
       /* single phase */
       if( P->n_phases==1 ){
-          ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_eval );CHKERRQ(ierr);
+          ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
       }
       else{
-          ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &E->eos_eval );CHKERRQ(ierr);
+          ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
       }
 
-      arr_phi[i] = E->eos_eval.phase_fraction;
-      arr_rho[i] = E->eos_eval.rho;
-      arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_eval.dTdPs;
-      arr_cp[i] = E->eos_eval.Cp;
-      arr_temp[i] = E->eos_eval.T;
-      arr_alpha[i] = E->eos_eval.alpha;
-      arr_cond[i] = E->eos_eval.cond;
-      arr_visc[i] = E->eos_eval.log10visc;
+      arr_phi[i] = eos_eval.phase_fraction;
+      arr_rho[i] = eos_eval.rho;
+      arr_dTdrs[i] = arr_dPdr_b[i] * eos_eval.dTdPs;
+      arr_cp[i] = eos_eval.Cp;
+      arr_temp[i] = eos_eval.T;
+      arr_alpha[i] = eos_eval.alpha;
+      arr_cond[i] = eos_eval.cond;
+      arr_visc[i] = eos_eval.log10visc;
 
       /* compute viscosity */
       /* note that prior versions of the code applied a cutoff to each individual

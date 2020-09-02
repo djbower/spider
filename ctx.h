@@ -93,11 +93,6 @@ typedef struct Ctx_ {
   RheologicalFront       rheological_front_phi;
   RheologicalFront       rheological_front_dynamic;
 
-  /* TODO: check with PS if this is the best way */
-  /* since all aggregation is done at the EOS level, we only need one struct
-     here that contains the evaluations at the given P and S conditions */
-  EosEval                eos_eval;
-
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
 
