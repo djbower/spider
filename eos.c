@@ -7,8 +7,8 @@
 #include "util.h"
 #include "interp.h" // TODO ultimately don't want this here
 
-/* Protypes for helpers for EOS interface functions */
-static PetscErrorCode EOSEval_SetViscosity(EOS,EosEval*);
+/* Prototypes for helper functions used in interface functions */
+static PetscScalar GetCompositionalViscosityPrefactor(PetscScalar);
 
 /* EOS interface functions (public API) */
 PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
@@ -44,6 +44,7 @@ PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EosEval* ev
   if (!eos->is_setup) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"You must cannot evaluate the EOS before setting it up");
 
   /* Implementation-specific logic */
+  if (!eos->eval) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Incomplete EOS object: no implementation for EOSEval has been provided");
   ierr = (*(eos->eval))(eos,P,S,eval);CHKERRQ(ierr);
 
   /* Common Logic */
@@ -158,52 +159,7 @@ PetscErrorCode EOSGetPhaseBoundary(EOS eos, PetscScalar P, PetscScalar *boundary
   PetscFunctionReturn(0);
 }
 
-/* Helper Functions */
-static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar Mg_Si ){
-
-    /* These expressions were worked out by Rob Spaargaren as part
-       of his MSc thesis (2018) are are explained in Spaargaren et al. (2020) */
-
-    /* Mg_Si is molar mantle Mg/Si */
-
-    PetscScalar fac;
-
-    if (Mg_Si <= 1.0)
-        fac = 0.5185 * (1 - Mg_Si)/0.3; //
-    else if (Mg_Si <= 1.25)
-        /* Earth has Mg/Si = 1.08 */
-        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
-    else if (Mg_Si <= 1.5)
-        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
-    else
-        /* Fp-rich composition (Ballmer et al. 2017) */
-        fac = -2;
-
-/* this is the original formulation used for the draft version of Rob's paper
-   during the review stage, the formulation was changed to that above */
-#if 0
-    if(Mg_Si <= 0.5)
-        /* St-rich composition (Xu et al., 2017) */
-        fac = 2;
-    else if (Mg_Si <= 0.7)
-        fac = 2 - 1.4815 * (Mg_Si - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
-    else if (Mg_Si <= 1.0)
-        /* fac is zero for Mg_Si = 1.0 */
-        fac = 0.5185 * (1 - Mg_Si)/0.3; // 0.5185 = log10(3.3)
-    else if (Mg_Si <= 1.25)
-        /* Earth has Mg/Si = 1.08 */
-        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
-    else if (Mg_Si <= 1.5)
-        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
-    else
-        /* Fp-rich composition (Ballmer et al. 2017) */
-        fac = -2;
-#endif
-
-    return fac;
-}
-
-static PetscErrorCode EOSEval_SetViscosity(EOS eos, EosEval *eval)
+PetscErrorCode EOSEval_SetViscosity(EOS eos, EosEval *eval)
 {
     PetscScalar A, log10C, dP, dT;
     PetscScalar fac1 = 1.0, fac2 = 1.0;
@@ -267,7 +223,51 @@ static PetscErrorCode EOSEval_SetViscosity(EOS eos, EosEval *eval)
     /* TODO: add viscosity cutoff */
 
     PetscFunctionReturn(0);
+}
 
+/* Helper Functions */
+static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar Mg_Si ){
+
+    /* These expressions were worked out by Rob Spaargaren as part
+       of his MSc thesis (2018) are are explained in Spaargaren et al. (2020) */
+
+    /* Mg_Si is molar mantle Mg/Si */
+
+    PetscScalar fac;
+
+    if (Mg_Si <= 1.0)
+        fac = 0.5185 * (1 - Mg_Si)/0.3; //
+    else if (Mg_Si <= 1.25)
+        /* Earth has Mg/Si = 1.08 */
+        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
+    else if (Mg_Si <= 1.5)
+        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
+    else
+        /* Fp-rich composition (Ballmer et al. 2017) */
+        fac = -2;
+
+/* this is the original formulation used for the draft version of Rob's paper
+   during the review stage, the formulation was changed to that above */
+#if 0
+    if(Mg_Si <= 0.5)
+        /* St-rich composition (Xu et al., 2017) */
+        fac = 2;
+    else if (Mg_Si <= 0.7)
+        fac = 2 - 1.4815 * (Mg_Si - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
+    else if (Mg_Si <= 1.0)
+        /* fac is zero for Mg_Si = 1.0 */
+        fac = 0.5185 * (1 - Mg_Si)/0.3; // 0.5185 = log10(3.3)
+    else if (Mg_Si <= 1.25)
+        /* Earth has Mg/Si = 1.08 */
+        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
+    else if (Mg_Si <= 1.5)
+        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
+    else
+        /* Fp-rich composition (Ballmer et al. 2017) */
+        fac = -2;
+#endif
+
+    return fac;
 }
 
 

@@ -62,6 +62,7 @@ PetscErrorCode EOSDestroy(EOS*);
 PetscErrorCode EOSEval(EOS, PetscScalar, PetscScalar, EosEval*);
 PetscErrorCode EOSSetUpFromOptions(EOS, const char*, const FundamentalConstants, const ScalingConstants);
 PetscErrorCode EOSGetPhaseBoundary(EOS,PetscScalar, PetscScalar*, PetscScalar*);
+PetscErrorCode EOSEval_SetViscosity(EOS,EosEval*);
 
 /* Note that this is the only place in this header that anything
    related to types is mentioned. These must correspond to all available
