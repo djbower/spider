@@ -61,7 +61,7 @@ typedef struct data_EOS_ {
 
   /* Pointers to implementation-specific functions */
   // Note: no "create" pointer here, since we have a factory method (EOSCreate())
-  PetscErrorCode (*eval)(const struct data_EOS_*, PetscScalar, PetscScalar, EosEval*);
+  PetscErrorCode (*eval)(struct data_EOS_*, PetscScalar, PetscScalar, EosEval*); // TODO would be nice if this marked EOS as constant, but compiler issues
   PetscErrorCode (*destroy)(struct data_EOS_*);
   PetscErrorCode (*setupfromoptions)(struct data_EOS_*, const char*);
   // TODO setup from options function
@@ -71,7 +71,7 @@ typedef data_EOS *EOS;
 
 PetscErrorCode EOSCreate(EOS*, EOSType);
 PetscErrorCode EOSDestroy(EOS*);
-PetscErrorCode EOSEval(const EOS, PetscScalar, PetscScalar, EosEval*);
+PetscErrorCode EOSEval(EOS, PetscScalar, PetscScalar, EosEval*);
 PetscErrorCode EOSSetUpFromOptions(EOS, const char*);
 
 /* Note that this is the only place in this header that anything

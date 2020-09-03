@@ -1,5 +1,4 @@
 #include "eos_rtpress.h"
-
 #include "parameters.h" // TODO bad
 #include "monitor.h"
 
@@ -15,13 +14,46 @@ static PetscScalar specific_to_per_atom( PetscScalar, PetscScalar, PetscScalar )
 static PetscScalar joule_to_eV( PetscScalar );
 static PetscScalar eV_to_joule( PetscScalar );
 
+static PetscErrorCode EOSEval_RTpress(EOS eos, PetscScalar P, PetscScalar S, EosEval *eval)
+{
+  //PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  // TODO
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode EOSDestroy_RTpress(EOS eos)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  // TODOb
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSSetUpFromOptions_RTpress(EOS eos, const char * prefix)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  // TODO
+  PetscFunctionReturn(0);
+}
+
 PetscErrorCode EOSCreate_RTpress(EOS eos) {
   PetscErrorCode ierr;
 
   PetscFunctionBeginUser;
-  ierr = PetscMalloc1(1, &(eos->impl_data));CHKERRQ(ierr);
   SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
-  // TODO set function pointers and initialize data
+  ierr = PetscMalloc1(1, (data_EOSRTpress**) (&eos->impl_data));CHKERRQ(ierr);
+  eos->eval = EOSEval_RTpress;
+  eos->destroy = EOSDestroy_RTpress;
+  eos->setupfromoptions = EOSSetUpFromOptions_RTpress;
+  // TODO allocate data, set function pointers and initialize data
   PetscFunctionReturn(0);
 }
 

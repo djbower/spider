@@ -1,6 +1,36 @@
 #include "eos_lookup.h"
 #include "util.h"
 
+static PetscErrorCode EOSEval_Lookup(EOS eos, PetscScalar P, PetscScalar S, EosEval *eval)
+{
+  //PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  // TODO
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode EOSDestroy_Lookup(EOS eos)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  // TODOb
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSSetUpFromOptions_Lookup()
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  // TODO
+  PetscFunctionReturn(0);
+}
+
 PetscErrorCode EOSCreate_Lookup(EOS eos) {
   //PetscErrorCode ierr;
 
@@ -8,6 +38,9 @@ PetscErrorCode EOSCreate_Lookup(EOS eos) {
   SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
   (void) eos;
   // TODO
+  eos->eval = EOSEval_Lookup;
+  eos->destroy = EOSDestroy_Lookup;
+  eos->setupfromoptions = EOSSetUpFromOptions_Lookup;
   PetscFunctionReturn(0);
 }
 

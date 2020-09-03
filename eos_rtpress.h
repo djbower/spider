@@ -25,7 +25,6 @@ typedef struct {
     PetscScalar bscale;
     PetscScalar const * AVOGADRO_ptr;
 } data_EOSRTpress;
-typedef data_EOSRTpress* EOSRTpress;
 
 
 // TODO not clear if these ultimately need to be in this header, or can just be static functions in eos_rtpress.c

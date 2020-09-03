@@ -22,7 +22,6 @@ typedef struct {
        it is always a 1D lookup, but could be any function */
     Interp1d phase_boundary; /* pressure-entropy space, J/kg/K */
 } data_EOSComposite;
-typedef data_EOSComposite* EOSComposite;
 
 // TODO existing EosParameters-based functions, to refactor into proper class hierarchy
 
