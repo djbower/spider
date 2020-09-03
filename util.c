@@ -82,6 +82,8 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
        use gradients to give estimates of entropy at the top
        and bottom surfaces by extrapolation.  Remember that S0 has already
        been included by the loop above over the basic internal nodes */
+    /* FIXME: in fact, dS/dr at the surface should be constrained by the bc.  For the time
+       being, leave this here and process the near-surface gradient elsewhere */
     arr_S_b[0] = -arr_dSdr_b[1] * 0.5 * (arr_radius_b[1] - arr_radius_b[0]);
     arr_S_b[0] += arr_S_s[0];
     arr_S_b[ihi_b-1] = arr_dSdr_b[ihi_b-2] * 0.5 * (arr_radius_b[ihi_b-1]-arr_radius_b[ihi_b-2]);

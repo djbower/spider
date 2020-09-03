@@ -4,6 +4,7 @@
 #include "matprop.h"
 #include "twophase.h"
 #include "util.h"
+#include "monitor.h"
 
 static PetscErrorCode set_Jtot( Ctx * );
 static PetscErrorCode append_Jcond( Ctx * );
@@ -15,6 +16,8 @@ static PetscErrorCode append_Htidal( Ctx *, PetscReal );
 static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const, PetscReal );
 static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
 static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
+static PetscErrorCode objective_function_surfacebc( SNES, Vec , Vec , void *ptr);
+static PetscErrorCode solve_surface_entropy( Ctx * );
 
 ///////////////////////////
 /* internal heat sources */
@@ -354,6 +357,163 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 
 }
 
+PetscErrorCode solve_surface_entropy( Ctx *E )
+{
+    PetscErrorCode             ierr;
+    SNES                       snes;
+    Vec                        x,r;
+    PetscScalar                *xx, *arr_radius_b, *arr_S_b, *arr_S_s, *arr_dSdr_b;
+    DM                         da_b=E->da_b,da_s=E->da_s;
+    Mesh                       *M = &E->mesh;
+    Solution                   *S = &E->solution;
+
+    PetscFunctionBeginUser;
+
+    ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
+
+    /* Use this to address this specific SNES (nonlinear solver) from the command
+       line or options file, e.g. -atmosic_snes_view */
+    ierr = SNESSetOptionsPrefix(snes,"surfacebc_");CHKERRQ(ierr);
+
+    ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, 1 );CHKERRQ(ierr);
+    ierr = VecSetFromOptions(x);CHKERRQ(ierr);
+    ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
+
+    ierr = SNESSetFunction(snes,r,objective_function_surfacebc,E);CHKERRQ(ierr);
+
+    /* maybe guess entropy at staggered node? */
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    xx[0] = 0.0;
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+
+    /* Inform the nonlinear solver to generate a finite-difference approximation
+       to the Jacobian */
+    ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_mf",NULL);CHKERRQ(ierr);
+
+    /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
+    {
+      PetscBool flg = PETSC_FALSE;
+
+      ierr = PetscOptionsGetBool(NULL,NULL,"-surfacebc_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      if (flg) {
+        ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
+      }
+    }
+
+    /* Solve */
+    ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
+    ierr = SNESSolve(snes,NULL,x);CHKERRQ(ierr);
+    {
+      SNESConvergedReason reason;
+      ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
+      if (reason < 0) SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+          "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
+    }
+
+    /* double check solution */
+    //objective_function_surfacebc( NULL, x, r, &Ctx );
+
+    ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    arr_dSdr_b[0] = xx[0];
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+
+    /* over-rides value calculated in set_entropy_from_solution */
+    arr_S_b[0] = -arr_dSdr_b[0] * 0.5 * (arr_radius_b[1] - arr_radius_b[0]);
+    arr_S_b[0] += arr_S_s[0];
+ 
+    ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+
+    ierr = VecDestroy(&x);CHKERRQ(ierr);
+    ierr = VecDestroy(&r);CHKERRQ(ierr);
+    ierr = SNESDestroy(&snes);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode objective_function_surfacebc( SNES snes, Vec x, Vec f, void *ptr)
+{   
+    PetscErrorCode             ierr;
+    const PetscScalar          *xx;
+    PetscScalar                *ff; 
+    PetscScalar                Ss0, Sb0, res, dSdr0;
+    PetscScalar                *arr_radius_b;
+    const PetscScalar          *arr_dPdr_b;
+    Ctx                        *E = (Ctx*) ptr;
+    //Atmosphere                 *A = &E->atmosphere;
+    Parameters           const P = E->parameters;
+    FundamentalConstants const FC = P->fundamental_constants;
+    Mesh                 const *M = &E->mesh;
+    Solution                   *S = &E->solution;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
+    DM                         da_b=E->da_b;
+    EosEval                    eos_eval;
+    
+    const PetscInt ind0 = 0;
+    
+    PetscFunctionBeginUser;
+    
+    ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
+    
+    ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
+    ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
+    
+    dSdr0 = xx[ind0];
+    
+    /* given a guess of dSdr0, compute S0 (surface value) by extrapolation
+       from first staggered node */
+    
+    /* get first staggered node value (store as Ss0) */
+    ierr = VecGetValues(S->S_s,1,&ind0,&Ss0);CHKERRQ(ierr);
+    
+    /* based on surface gradient (which we are solving for), compute surface
+       entropy (uppermost basic node) */
+    Sb0 = -dSdr0 * 0.5 * (arr_radius_b[1] - arr_radius_b[0]) + Ss0;
+    
+    /* now process dSdr0 and other arguments to get the residual of the surface boundary
+       condition */
+    
+    /* now need material properties at this entropy and surface pressure (0 GPa) */
+    
+    if( P->n_phases==1 ){
+        ierr = SetEosEval( P->eos_parameters[0], 0.0, Sb0, &eos_eval );CHKERRQ(ierr);
+    }
+    else{
+        ierr = SetEosCompositeEval( P->eos_composites[0], 0.0, Sb0, &eos_eval );CHKERRQ(ierr);
+    }
+    
+    /* test only */
+    const PetscScalar emissivity = 1.0;
+    
+    /* radiative flux */
+    res = emissivity * FC->STEFAN_BOLTZMANN * ( PetscPowScalar( eos_eval.T, 4.0 ) - PetscPowScalar( Ap->teqm, 4.0 ) );
+    
+    /* conductive flux */
+    /* FIXME: does arr_dPdr_b[i] have a valid value at i=0? */ 
+    res += eos_eval.cond * (eos_eval.T / eos_eval.Cp * dSdr0 + arr_dPdr_b[ind0] * E->eos_eval.dTdPs);
+    
+    /* convective flux, probably only works when mixing length constant */
+    /* FIXME TODO */
+    ff[ind0] = res;
+    
+    ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
+    ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
+    
+    ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+    
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec sol_in )
 {
 
@@ -377,6 +537,11 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
 
     /* set solution in the relevant structs */
     ierr = set_entropy_from_solution( E, sol_in );CHKERRQ(ierr);
+
+#if 1
+    /* TODO: testing, solve for surface entropy based on boundary condition */
+    ierr = solve_surface_entropy( E );CHKERRQ(ierr);
+#endif
 
     /* set material properties and energy fluxes and sources */
     ierr = set_phase_fraction_staggered( E ); CHKERRQ(ierr);
