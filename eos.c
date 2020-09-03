@@ -7,7 +7,10 @@
 #include "util.h"
 #include "interp.h" // TODO ultimately don't want this here
 
+/* Protypes for helpers for EOS interface functions */
+static PetscErrorCode EOSEval_SetViscosity(EOS,EosEval*);
 
+/* EOS interface functions (public API) */
 PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
 {
   PetscErrorCode ierr;
@@ -139,6 +142,118 @@ PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix, const Fundamenta
     ierr = Interp1dCreateAndSet( eos->phase_boundary_filename, &eos->phase_boundary, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
+}
+
+/* Helper Functions */
+static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar Mg_Si ){
+
+    /* These expressions were worked out by Rob Spaargaren as part
+       of his MSc thesis (2018) are are explained in Spaargaren et al. (2020) */
+
+    /* Mg_Si is molar mantle Mg/Si */
+
+    PetscScalar fac;
+
+    if (Mg_Si <= 1.0)
+        fac = 0.5185 * (1 - Mg_Si)/0.3; //
+    else if (Mg_Si <= 1.25)
+        /* Earth has Mg/Si = 1.08 */
+        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
+    else if (Mg_Si <= 1.5)
+        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
+    else
+        /* Fp-rich composition (Ballmer et al. 2017) */
+        fac = -2;
+
+/* this is the original formulation used for the draft version of Rob's paper
+   during the review stage, the formulation was changed to that above */
+#if 0
+    if(Mg_Si <= 0.5)
+        /* St-rich composition (Xu et al., 2017) */
+        fac = 2;
+    else if (Mg_Si <= 0.7)
+        fac = 2 - 1.4815 * (Mg_Si - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
+    else if (Mg_Si <= 1.0)
+        /* fac is zero for Mg_Si = 1.0 */
+        fac = 0.5185 * (1 - Mg_Si)/0.3; // 0.5185 = log10(3.3)
+    else if (Mg_Si <= 1.25)
+        /* Earth has Mg/Si = 1.08 */
+        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
+    else if (Mg_Si <= 1.5)
+        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
+    else
+        /* Fp-rich composition (Ballmer et al. 2017) */
+        fac = -2;
+#endif
+
+    return fac;
+}
+
+static PetscErrorCode EOSEval_SetViscosity(EOS eos, EosEval *eval)
+{
+    PetscScalar A, log10C, dP, dT;
+    PetscScalar fac1 = 1.0, fac2 = 1.0;
+
+    PetscFunctionBeginUser;
+
+    /* reference viscosity */
+    eval->log10visc = eos->log10visc; // i.e., log10(eta_0)
+
+    /* temperature and pressure contribution
+       A(T,P) = (E_a + V_a P) / RT - (E_a + V_a Pref)/ RTref
+       eta = eta_0 * exp(A)
+       log10(eta) = log10(eta0) + log10(exp(A))
+       log10(eta) = P->eos2_parameters.log10visc + A/ln(10) */
+
+    /* with Ps = activation_volume_pressure_scale:
+           V_a(P) = V_a exp (-P/Ps) */
+
+    A = 0.0;
+
+    /* pin viscosity profile to reference values */
+    if( (eos->visc_ref_pressure >= 0.0) || (eos->visc_ref_temp >= 0.0) ){
+        dT = ( eos->visc_ref_temp - eval->T ) / eos->visc_ref_temp;
+        if( eos->activation_volume_pressure_scale > 0.0 ){
+            fac1 = PetscExpReal( -eval->P / eos->activation_volume_pressure_scale );
+            fac2 = PetscExpReal( -eos->visc_ref_pressure / eos->activation_volume_pressure_scale );
+        }
+        /* else fac1 and fac2 retain unity scalings according to initialisation above */
+        dP = fac1 * eval->P - fac2 * eos->visc_ref_pressure * (eval->T / eos->visc_ref_temp );
+    }
+    /* do not pin viscosity profile */
+    else{
+        dT = 1.0;
+        dP = eval->P;
+        if( eos->activation_volume_pressure_scale > 0.0 ){
+            dP *= PetscExpReal( -eval->P / eos->activation_volume_pressure_scale );
+        }
+    }
+
+    if( eos->activation_energy > 0.0){
+        A += eos->activation_energy * dT;
+    }
+    if( eos->activation_volume > 0.0){
+        A += eos->activation_volume * dP;
+    }
+
+    /* division by R (gas constant) was already done during the scaling of parameters */
+    A *= 1.0 / eval->T;
+    eval->log10visc += A / PetscLogReal(10.0);
+
+    /* compositional (Mg/Si) contribution */
+    /* always pinned to some reference given by eos->visc_ref_comp */
+    if( eos->visc_comp > 0.0 ){
+        log10C = GetCompositionalViscosityPrefactor( eos->visc_comp );
+        log10C -= GetCompositionalViscosityPrefactor( eos->visc_ref_comp );
+        eval->log10visc += log10C;
+    }
+
+    /* TODO: add viscous lid */
+
+    /* TODO: add viscosity cutoff */
+
+    PetscFunctionReturn(0);
+
 }
 
 
@@ -339,49 +454,6 @@ PetscErrorCode SetEosEval( const EosParameters Ep, PetscScalar P, PetscScalar S,
   PetscFunctionReturn(0);
 }
 
-static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar Mg_Si ){
-
-    /* These expressions were worked out by Rob Spaargaren as part
-       of his MSc thesis (2018) are are explained in Spaargaren et al. (2020) */
-
-    /* Mg_Si is molar mantle Mg/Si */
-
-    PetscScalar fac;
-
-    if (Mg_Si <= 1.0)
-        fac = 0.5185 * (1 - Mg_Si)/0.3; //
-    else if (Mg_Si <= 1.25)
-        /* Earth has Mg/Si = 1.08 */
-        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
-    else if (Mg_Si <= 1.5)
-        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
-    else
-        /* Fp-rich composition (Ballmer et al. 2017) */
-        fac = -2;
-
-/* this is the original formulation used for the draft version of Rob's paper
-   during the review stage, the formulation was changed to that above */
-#if 0
-    if(Mg_Si <= 0.5)
-        /* St-rich composition (Xu et al., 2017) */
-        fac = 2;
-    else if (Mg_Si <= 0.7)
-        fac = 2 - 1.4815 * (Mg_Si - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
-    else if (Mg_Si <= 1.0)
-        /* fac is zero for Mg_Si = 1.0 */
-        fac = 0.5185 * (1 - Mg_Si)/0.3; // 0.5185 = log10(3.3)
-    else if (Mg_Si <= 1.25)
-        /* Earth has Mg/Si = 1.08 */
-        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
-    else if (Mg_Si <= 1.5)
-        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
-    else
-        /* Fp-rich composition (Ballmer et al. 2017) */
-        fac = -2;
-#endif
-
-    return fac;
-}
 
 PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_eval )
 {
