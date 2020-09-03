@@ -3,59 +3,8 @@
 
 #include <petsc.h>
 #include "interp.h"
+#include "constants.h"
 
-/*
- ******************************************************************************
- * Dimensional constants
- ******************************************************************************
- */
-
-/* constants to scale the physical problem, largely chosen based on numerical
-   considerations */
-typedef struct {
-    /* primary */
-    PetscScalar RADIUS;
-    PetscScalar TEMP;
-    PetscScalar ENTROPY; /* note: specific entropy */
-    PetscScalar DENSITY;
-    PetscScalar VOLATILE;
-    /* derived from primary */
-    PetscScalar AREA;
-    PetscScalar VOLUME;
-    PetscScalar MASS;
-    PetscScalar TIME;
-    PetscScalar TIMEYRS;
-    PetscScalar SENERGY; /* specific energy */
-    PetscScalar ENERGY;
-    PetscScalar PRESSURE;
-    PetscScalar POWER;
-    PetscScalar FLUX;
-    PetscScalar DPDR;
-    PetscScalar GRAVITY;
-    PetscScalar KAPPA;
-    PetscScalar DSDP;
-    PetscScalar DSDR;
-    PetscScalar DTDP;
-    PetscScalar DTDR;
-    PetscScalar GSUPER;
-    PetscScalar VISC;
-    PetscScalar LOG10VISC;
-    PetscScalar COND;
-    PetscScalar SIGMA;
-    PetscScalar RHS;
-    PetscScalar HEATGEN;
-} data_ScalingConstants;
-typedef data_ScalingConstants* ScalingConstants;
-
-/* fundamental constants */
-typedef struct {
-    PetscScalar AVOGADRO;
-    PetscScalar BOLTZMANN;
-    PetscScalar GAS;
-    PetscScalar GRAVITATIONAL;
-    PetscScalar STEFAN_BOLTZMANN;
-} data_FundamentalConstants;
-typedef data_FundamentalConstants* FundamentalConstants;
 
 
 // TODO ---- most of this EOS stuff can go, once the EOS class is in ----

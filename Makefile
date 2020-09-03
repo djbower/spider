@@ -10,6 +10,7 @@ SRC_C = \
         atmosphere.c \
         bc.c \
         cJSON.c \
+				constants.c \
         ctx.c \
         dimensionalisablefield.c \
         energy.c \
