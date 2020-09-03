@@ -151,6 +151,13 @@ PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix, const Fundamenta
   PetscFunctionReturn(0);
 }
 
+PetscErrorCode EOSGetPhaseBoundary(EOS eos, PetscScalar P, PetscScalar *boundary, PetscScalar *dboundary)
+{
+  PetscFunctionBeginUser;
+  SetInterp1dValue(eos->phase_boundary, P, boundary, dboundary); /* entropy S and derivative dS/dP */
+  PetscFunctionReturn(0);
+}
+
 /* Helper Functions */
 static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar Mg_Si ){
 
