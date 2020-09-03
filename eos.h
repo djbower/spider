@@ -25,9 +25,6 @@ typedef const char* EOSType;
 typedef struct data_EOS_ {
   EOSType type;  /* Implementation type */
 
-  char prefix[128];  /* Maximum prefix length */
-  // TODO try to remove this - just provide it when setting up from options
-
   PetscScalar cond; /* thermal conductivity, W/m/K */
   PetscScalar log10visc; /* log base 10 of viscosity */
   PetscScalar activation_energy;
@@ -46,20 +43,20 @@ typedef struct data_EOS_ {
   Interp1d phase_boundary; /* pressure-entropy space, J/kg/K */
 
   /* Pointer to implementation-specific data */
-  void * impl_data;
+  void *impl_data;
 
   /* Pointers to implementation-specific functions */
   // Note: no "create" pointer here, since we have a factory method (EOSCreate())
   PetscErrorCode (*eval)(struct data_EOS_*, PetscScalar, PetscScalar, EosEval*);
   PetscErrorCode (*destroy)(struct data_EOS_*);
-  PetscErrorCode (*setupfromoptions)(struct data_EOS_*, const char*);
+  PetscErrorCode (*setupfromoptions)(struct data_EOS_*, const char*, const FundamentalConstants, const ScalingConstants);
 } data_EOS;
 typedef data_EOS *EOS;
 
 PetscErrorCode EOSCreate(EOS*, EOSType);
 PetscErrorCode EOSDestroy(EOS*);
 PetscErrorCode EOSEval(EOS, PetscScalar, PetscScalar, EosEval*);
-PetscErrorCode EOSSetUpFromOptions(EOS, const char*);
+PetscErrorCode EOSSetUpFromOptions(EOS, const char*, const FundamentalConstants, const ScalingConstants);
 
 /* Note that this is the only place in this header that anything
    related to types is mentioned. These must correspond to all available

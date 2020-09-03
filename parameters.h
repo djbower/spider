@@ -57,6 +57,8 @@ typedef struct {
 } data_FundamentalConstants;
 typedef data_FundamentalConstants* FundamentalConstants;
 
+
+// TODO ---- most of this EOS stuff can go, once the EOS class is in ----
 /*
  ******************************************************************************
  * Equation of state parameters

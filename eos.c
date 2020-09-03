@@ -17,7 +17,6 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
   PetscFunctionBeginUser;
   ierr = PetscMalloc1(1, p_eos);CHKERRQ(ierr);
   eos = *p_eos;
-
   ierr = PetscStrcmp(type, SPIDER_EOS_LOOKUP, &flg);CHKERRQ(ierr);
   if (flg) {
     ierr = EOSCreate_Lookup(eos);CHKERRQ(ierr);
@@ -69,15 +68,76 @@ PetscErrorCode EOSDestroy(EOS *p_eos)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix)
+PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix, const FundamentalConstants FC, const ScalingConstants SC)
 {
-  //PetscErrorCode ierr;
+  PetscErrorCode ierr;
+  char           buf[1024]; /* max size */
 
   PetscFunctionBegin;
-  // TODO (make sure to check if the pointer exists, because it might not!)
-  (void) eos;
-  (void) prefix;
-  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  if (eos->setupfromoptions) {
+    ierr = (*eos->setupfromoptions)(eos, prefix, FC, SC);CHKERRQ(ierr);
+  }
+
+  /* conductivity (w/m/K) */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_cond");CHKERRQ(ierr);
+  eos->cond = 4.0; 
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->cond,NULL);CHKERRQ(ierr);
+  eos->cond /= SC->COND;
+
+  /* viscosity-related, may eventually move into their own struct */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_log10visc");CHKERRQ(ierr);
+  eos->log10visc = 21.0; // FIXME: default is for solid only
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->log10visc,NULL);CHKERRQ(ierr);
+  eos->log10visc -= SC->LOG10VISC;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_activation_energy");CHKERRQ(ierr);
+  eos->activation_energy = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->activation_energy,NULL);CHKERRQ(ierr);
+  /* scalings for Ea and Va include the gas constant that appears in the
+     denominator of the Arrhenius viscosity law, so we then do not have
+     to pass FC->GAS to the viscosity functions */
+  eos->activation_energy /= SC->ENERGY * FC->GAS;
+
+  /* activation volume (m^3/mol) */
+  /* The numerical value in units of m^3/mol is the same as that in units of J/mol/Pa */
+  /* You can convince yourself of this by using the scalings for ENERGY and PRESSURE to
+     see that this is true */
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_activation_volume");CHKERRQ(ierr);
+  eos->activation_volume = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->activation_volume,NULL);CHKERRQ(ierr);
+  /* as with activation energy, include gas constant in denominator */
+  eos->activation_volume *= SC->PRESSURE / (SC->ENERGY * FC->GAS);
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_activation_volume_pressure_scale");CHKERRQ(ierr);
+  eos->activation_volume_pressure_scale = -1.0; /* negative is not set */
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->activation_volume_pressure_scale,NULL);CHKERRQ(ierr);
+  eos->activation_volume_pressure_scale /= SC->PRESSURE;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_visc_comp");CHKERRQ(ierr);
+  eos->visc_comp = -1.0; // negative is not set
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->visc_comp,NULL);CHKERRQ(ierr);
+  /* no scaling necessary since this is a ratio */
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_visc_ref_temp");CHKERRQ(ierr);
+  eos->visc_ref_temp = -1.0; // negative is not set
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->visc_ref_temp,NULL);CHKERRQ(ierr);
+  eos->visc_ref_temp /= SC->TEMP;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_visc_ref_pressure");CHKERRQ(ierr);
+  eos->visc_ref_pressure = -1.0; // negative is not set
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->visc_ref_pressure,NULL);CHKERRQ(ierr);
+  eos->visc_ref_pressure /= SC->PRESSURE;
+
+  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_visc_ref_comp");CHKERRQ(ierr);
+  eos->visc_ref_comp = -1.0; // negative is not set
+  ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->visc_ref_comp,NULL);CHKERRQ(ierr);
+  /* no scaling necessary since this is a ratio */
+
+  /* phase boundary */
+  ierr = LookupFilenameSet( "_phase_boundary", prefix, eos->phase_boundary_filename, &eos->PHASE_BOUNDARY );CHKERRQ(ierr);
+  if( eos->PHASE_BOUNDARY ){
+    ierr = Interp1dCreateAndSet( eos->phase_boundary_filename, &eos->phase_boundary, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
+  }
   PetscFunctionReturn(0);
 }
 
