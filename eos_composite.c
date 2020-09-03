@@ -1,17 +1,62 @@
 #include "eos_composite.h"
 #include "util.h"
 
-PetscErrorCode EOSCreate_Composite(EOS eos) {
-  //PetscErrorCode ierr;
+/* EOS Interface functions */
+static PetscErrorCode EOSEval_Composite(EOS eos, PetscScalar P, PetscScalar S, EosEval *eval)
+{
+  //PetscErrorCode  ierr;
+  //data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
 
-  PetscFunctionBeginUser;
+  PetscFunctionBegin;
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  (void) eos;
+  (void) P;
+  (void) S;
+  (void) eval;
+  // TODO
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode EOSDestroy_Composite(EOS eos)
+{
+  //PetscErrorCode ierr;
+  //data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
+
+  PetscFunctionBegin;
   SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
   (void) eos;
   // TODO
   PetscFunctionReturn(0);
 }
 
-// TODO below are existing EosParameters-based functions to properly refactor
+
+static PetscErrorCode EOSSetUpFromOptions_Composite(EOS eos, const char *prefix, const FundamentalConstants FC, const ScalingConstants SC)
+{
+  //PetscErrorCode  ierr;
+  //data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
+
+  PetscFunctionBegin;
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  (void) eos;
+  // TODO
+  PetscFunctionReturn(0);
+}
+
+/* Creation */
+PetscErrorCode EOSCreate_Composite(EOS eos) {
+  //PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  // TODO other creation stuff
+  eos->eval = EOSEval_Composite;
+  eos->destroy = EOSDestroy_Composite;
+  eos->setupfromoptions = EOSSetUpFromOptions_Composite;
+  PetscFunctionReturn(0);
+}
+
+
+// TODO ---- remove the old functions below, once new EOS class is ready ----------
 
 PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary, PetscScalar *dboundary )
 {
