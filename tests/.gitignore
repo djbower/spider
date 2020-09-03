@@ -1,2 +1,3 @@
 pythontestharness
 *.pyc
+*.conf
