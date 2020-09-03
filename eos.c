@@ -7,6 +7,76 @@
 #include "util.h"
 #include "interp.h" // TODO ultimately don't want this here
 
+
+PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
+{
+  PetscErrorCode ierr;
+  PetscBool      flg;
+  EOS            eos;
+
+  PetscFunctionBeginUser;
+  ierr = PetscMalloc1(1, p_eos);CHKERRQ(ierr);
+  eos = *p_eos;
+
+  ierr = PetscStrcmp(type, SPIDER_EOS_LOOKUP, &flg);CHKERRQ(ierr);
+  if (flg) {
+    ierr = EOSCreate_Lookup(eos);CHKERRQ(ierr);
+  }
+  ierr = PetscStrcmp(type, SPIDER_EOS_RTPRESS, &flg);CHKERRQ(ierr);
+  if (flg) {
+    ierr = EOSCreate_RTpress(eos);CHKERRQ(ierr);
+  }
+  ierr = PetscStrcmp(type, SPIDER_EOS_COMPOSITE, &flg);CHKERRQ(ierr);
+  if (flg) {
+    ierr = EOSCreate_Composite(eos);CHKERRQ(ierr);
+  }
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EosEval* eval)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+  /* Implementation-specific logic */
+  ierr = (*(eos->eval))(eos,P,S,eval);CHKERRQ(ierr);
+
+  /* Common Logic */
+  eval->cond = eos->cond; // conductivity constant
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  // TODO duplicate this function
+  //ierr = SetEosEvalViscosity( Ep, eval );CHKERRQ(ierr);
+  eval->phase_fraction = 1.0; // by definition, since only one phase
+  eval->fusion = 0.0; // meaningless for a single phase
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSDestroy(EOS *p_eos)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+  ierr = PetscFree(p_eos);CHKERRQ(ierr);
+  ierr = (*(*p_eos)->destroy)(*p_eos);CHKERRQ(ierr);
+  *p_eos = NULL;
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix)
+{
+  //PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  // TODO (make sure to check if the pointer exists, because it might not!)
+  (void) eos;
+  (void) prefix;
+  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
+  PetscFunctionReturn(0);
+}
+
+
+// TODO --- below here, eventually remove, once the new EOS class is complete ---------------
+
 /* TODO: many of these Getters should actually be Setters, since they
    set the final argument rather than returning a value */
 
@@ -314,72 +384,5 @@ PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_eval )
 }
 
 
-/* Base Class */
-
-PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
-{
-  PetscErrorCode ierr;
-  PetscBool      flg;
-  EOS            eos;
-
-  PetscFunctionBeginUser;
-  ierr = PetscMalloc1(1, p_eos);CHKERRQ(ierr);
-  eos = *p_eos;
-
-  ierr = PetscStrcmp(type, SPIDER_EOS_LOOKUP, &flg);CHKERRQ(ierr);
-  if (flg) {
-    ierr = EOSCreate_Lookup(eos);CHKERRQ(ierr);
-  }
-  ierr = PetscStrcmp(type, SPIDER_EOS_RTPRESS, &flg);CHKERRQ(ierr);
-  if (flg) {
-    ierr = EOSCreate_RTpress(eos);CHKERRQ(ierr);
-  }
-  ierr = PetscStrcmp(type, SPIDER_EOS_COMPOSITE, &flg);CHKERRQ(ierr);
-  if (flg) {
-    ierr = EOSCreate_Composite(eos);CHKERRQ(ierr);
-  }
-  PetscFunctionReturn(0);
-}
-
-PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EosEval* eval)
-{
-  PetscErrorCode ierr;
-
-  PetscFunctionBeginUser;
-  /* Implementation-specific logic */
-  ierr = (*(eos->eval))(eos,P,S,eval);CHKERRQ(ierr);
-
-  /* Common Logic */
-  eval->cond = eos->cond; // conductivity constant
-  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
-  // TODO duplicate this function
-  //ierr = SetEosEvalViscosity( Ep, eval );CHKERRQ(ierr);
-  eval->phase_fraction = 1.0; // by definition, since only one phase
-  eval->fusion = 0.0; // meaningless for a single phase
-  PetscFunctionReturn(0);
-}
-
-PetscErrorCode EOSDestroy(EOS *p_eos)
-{
-  PetscErrorCode ierr;
-
-  PetscFunctionBeginUser;
-  ierr = PetscFree(p_eos);CHKERRQ(ierr);
-  ierr = (*(*p_eos)->destroy)(*p_eos);CHKERRQ(ierr);
-  *p_eos = NULL;
-  PetscFunctionReturn(0);
-}
-
-PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix)
-{
-  //PetscErrorCode ierr;
-
-  PetscFunctionBegin;
-  // TODO (make sure to check if the pointer exists, because it might not!)
-  (void) eos;
-  (void) prefix;
-  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
-  PetscFunctionReturn(0);
-}
 
 
