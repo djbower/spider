@@ -21,15 +21,10 @@ static PetscErrorCode EOSEval_Composite(EOS eos, PetscScalar P, PetscScalar S, E
 static PetscErrorCode EOSDestroy_Composite(EOS eos)
 {
   PetscErrorCode  ierr;
-  data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
 
   PetscFunctionBegin;
-  if (composite->eos) {
-    for (PetscInt i=0; i<composite->n_eos; ++i) {
-      ierr = EOSDestroy(&composite->eos[i]);CHKERRQ(ierr);
-    }
-    ierr = PetscFree(composite->eos);
-  }
+  /* Note that we do NOT destroy the sub-EOSs. That must be done 
+     by whoever supplied them */
   ierr = PetscFree(eos->impl_data);CHKERRQ(ierr);
   eos->impl_data = NULL;
   PetscFunctionReturn(0);
@@ -203,8 +198,6 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   PetscFunctionReturn(0);
 }
 
-/* Transfer ownership of a set of EOSs to the composite. This means
-   that the composite will destroy them, when it is destroyed */
 PetscErrorCode EOSCompositeSetSubEOS(EOS eos, EOS *sub_eos, PetscInt n_sub_eos)
 {
   data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;

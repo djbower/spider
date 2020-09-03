@@ -392,9 +392,11 @@ typedef struct {
 
     /* Phases (EOS) */
     PetscInt    n_phases;
-    EosParameters eos_parameters[SPIDER_MAX_PHASES];
+    EosParameters eos_parameters[SPIDER_MAX_PHASES]; // TODO remove once new EOS class is in place
+    //EOS eos_phases[SPIDER_MAX_PHASES];
     PetscInt    n_composite_phases;
-    EosComposite eos_composites[SPIDER_MAX_COMPOSITE_PHASES];
+    EosComposite eos_composites[SPIDER_MAX_COMPOSITE_PHASES]; // TODO remove once new EOS class is in place
+    //EOS eos_composites[SPIDER_MAX_COMPOSITE_PHASES];
 
 } data_Parameters;
 typedef data_Parameters* Parameters;
