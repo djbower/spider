@@ -68,19 +68,16 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
       }
 
-      /* smoothly transition the cooling rate to the viscous mantle
-         cooling rate below the rheological transition */
+      /* this is always the radiative flux of the atmosphere, by definition, but not
+         necessarily the cooling rate of the mantle, which might be influenced by
+         a near-surface lid which restricts the cooling rate */
+      A->Fatm = Qout;
+
+      /* smoothly transition the atmospheric radiation limit to the 
+         viscous mantle cooling rate below the rheological transition */
       if( Ap->VISCOUS_MANTLE_COOLING_RATE ){
           Qout = get_viscous_mantle_cooling_rate( E, Qout );
       }
-
-      /* to ensure conservation of energy at the interface of the
-         interior and atmosphere, the fluxes must be equal */
-      /* for the MO stage, this gives the radiative flux
-         for the solid stage, if VISCOUS_MANTLE_COOLING_RATE,
-         this is really the tiny fraction of interior heat that
-         the atmosphere also shifts */
-      A->Fatm = Qout;
 
       /* always honour the emissivity, so ensure consistency by
          adjusting the surface temperature.  This is only relevant
