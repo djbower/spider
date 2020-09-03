@@ -63,5 +63,4 @@ PetscErrorCode FundamentalConstantsCreate(FundamentalConstants*);
 PetscErrorCode FundamentalConstantsDestroy(FundamentalConstants*);
 PetscErrorCode FundamentalConstantsSet(FundamentalConstants, ScalingConstants const);
 
-
 #endif

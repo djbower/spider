@@ -1,6 +1,7 @@
 #ifndef EOS_H_
 #define EOS_H_
 
+#include "parameters.h" // TODO remove once new EOS class in place
 #include "constants.h"
 #include "interp.h"
 
