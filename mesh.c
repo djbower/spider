@@ -1,7 +1,7 @@
 #include "mesh.h"
 
 static PetscErrorCode regular_mesh( Ctx * );
-//static PetscErrorCode geometric_mesh( Ctx * );
+static PetscErrorCode geometric_mesh( Ctx * );
 static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
 // FIXME: TODO: REMOVE
@@ -23,11 +23,11 @@ PetscErrorCode set_mesh( Ctx *E)
     /* for regular mesh, although without resolving the ultra-thin
        thermal boundary layer at the base of the mantle this likely
        gives wrong results */
-    regular_mesh( E );
+    //regular_mesh( E );
 
     /* need to use geometric mesh to resolve ultra-thin thermal
        boundary layer at the base of the mantle */
-    //geometric_mesh( E );
+    geometric_mesh( E );
 
     /* Adams-Williamson EOS */
 
@@ -111,7 +111,7 @@ static PetscErrorCode regular_mesh( Ctx *E )
 
 }
 
-#if 0
+#if 1
 static PetscErrorCode geometric_mesh( Ctx *E )
 {
 
@@ -120,8 +120,10 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     PetscInt       i,ilo_b,ihi_b,ilo_s,ihi_s,w_b,w_s,numpts_b,numpts_s;
     Mesh           *M;
     DM             da_b=E->da_b, da_s=E->da_s;
+    Parameters     P = E->parameters;
+    ScalingConstants SC = E->parameters->scaling_constants;
     // TODO: should not be hard-coded
-    PetscScalar    dr_min = 1.5696123057604772e-10; // 1 mm
+    PetscScalar    dr_min = 0.001 / SC->RADIUS; // 1 mm, dimensional
     // 45928 basic nodes
     //PetscScalar dr_max = 9.810076911002982e-06; // 62.5 m
     // 22996 basic nodes
@@ -137,7 +139,7 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     // 372 basic nodes
     //PetscScalar    dr_max = 0.001569612305760477; // 10 km
     // 278 basic nodes
-    PetscScalar    dr_max = 0.0023544184586407153; // 15 km
+    PetscScalar    dr_max = 15E3 / SC->RADIUS; // 15 km, dimensional
     PetscScalar    geom_fac = 1.2;
     PetscScalar    dr, dr_prev;
 
@@ -158,7 +160,7 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
     ierr = DMDAVecGetArray(da_b,M->radius_b,&arr_b);CHKERRQ(ierr);
-    arr_b[numpts_b-1] = RADIN;
+    arr_b[numpts_b-1] =  P->radius * P->coresize;
     dr_prev = dr_min / geom_fac;
     for (i=ilo_b; i<ihi_b-1; ++i){ /* Note upper bound */
         dr = dr_prev * geom_fac;
@@ -169,7 +171,7 @@ static PetscErrorCode geometric_mesh( Ctx *E )
         arr_b[numpts_b-i-2] = arr_b[numpts_b-i-1] + dr;
     }
     // TODO: below is hacky.
-    arr_b[0] = 1.0;
+    arr_b[0] = P->radius;
 
     ierr = DMDAVecRestoreArray(da_b,M->radius_b,&arr_b);CHKERRQ(ierr);
 
