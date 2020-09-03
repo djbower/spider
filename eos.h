@@ -86,7 +86,7 @@ PetscErrorCode EosParametersDestroy( EosParameters * );
 PetscErrorCode EosParametersSetFromOptions( EosParameters, const FundamentalConstants, const ScalingConstants );
 PetscErrorCode SetEosEval( const EosParameters, PetscScalar, PetscScalar, EosEval * );
 
-// TODO where should this live?
+PetscErrorCode SetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar *, PetscScalar * );
 PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
 
 #endif

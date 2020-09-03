@@ -16,11 +16,6 @@ typedef struct {
     PetscScalar matprop_smooth_width; // numerical reasons only
     PetscScalar phi_critical; // physical transition between melt and solid for viscosity
     PetscScalar phi_width; // physical transition between melt and solid for viscosity
-
-    char phase_boundary_filename[PETSC_MAX_PATH_LEN]; // filename of phase boundary
-    /* in generality, the phase boundary should be a function pointer as well.  Currently,
-       it is always a 1D lookup, but could be any function */
-    Interp1d phase_boundary; /* pressure-entropy space, J/kg/K */
 } data_EOSComposite;
 
 // TODO  --- remove below once EOS class is finished -----

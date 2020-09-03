@@ -537,5 +537,16 @@ PetscErrorCode SetEosEvalViscosity( const EosParameters Ep, EosEval *eos_eval )
 }
 
 
+PetscErrorCode SetPhaseBoundary( const EosParameters Ep, PetscScalar P, PetscScalar *boundary, PetscScalar *dboundary )
+{
+
+    /* TODO: this function could contain a switch, to determine phase boundary by
+       a means other than lookup (currently not required) */
+
+    PetscFunctionBeginUser;
+    SetInterp1dValue( Ep->phase_boundary, P, boundary, dboundary ); /* entropy S and derivative dS/dP */
+    PetscFunctionReturn(0);
+}
+
 
 
