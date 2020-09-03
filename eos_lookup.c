@@ -36,6 +36,8 @@ static PetscErrorCode EOSDestroy_Lookup(EOS eos)
   ierr = Interp2dDestroy(&lookup->dTdPs); CHKERRQ(ierr);
   ierr = Interp2dDestroy(&lookup->rho); CHKERRQ(ierr);
   ierr = Interp2dDestroy(&lookup->temp); CHKERRQ(ierr);
+  ierr = PetscFree(eos->impl_data);CHKERRQ(ierr);
+  eos->impl_data = NULL;
   PetscFunctionReturn(0);
 }
 

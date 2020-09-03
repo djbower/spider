@@ -19,13 +19,11 @@ static PetscErrorCode EOSEval_Composite(EOS eos, PetscScalar P, PetscScalar S, E
 
 static PetscErrorCode EOSDestroy_Composite(EOS eos)
 {
-  //PetscErrorCode ierr;
-  //data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
+  PetscErrorCode ierr;
 
   PetscFunctionBegin;
-  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
-  (void) eos;
-  // TODO
+  ierr = PetscFree(eos->impl_data);CHKERRQ(ierr);
+  eos->impl_data = NULL;
   PetscFunctionReturn(0);
 }
 
@@ -44,8 +42,6 @@ static PetscErrorCode EOSSetUpFromOptions_Composite(EOS eos, const char *prefix,
 
 /* Creation */
 PetscErrorCode EOSCreate_Composite(EOS eos) {
-  //PetscErrorCode ierr;
-
   PetscFunctionBeginUser;
   eos->eval = EOSEval_Composite;
   eos->destroy = EOSDestroy_Composite;
@@ -53,6 +49,7 @@ PetscErrorCode EOSCreate_Composite(EOS eos) {
   PetscFunctionReturn(0);
 }
 
+// TODO here, be especially careful that all code below, and relevant code in parameters.c relating to setting from options, actually made it into the new class
 
 // TODO ---- remove the old functions below, once new EOS class is ready ----------
 
