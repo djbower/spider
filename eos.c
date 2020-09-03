@@ -375,7 +375,7 @@ PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix)
   //PetscErrorCode ierr;
 
   PetscFunctionBegin;
-  // TODO
+  // TODO (make sure to check if the pointer exists, because it might not!)
   (void) eos;
   (void) prefix;
   SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");

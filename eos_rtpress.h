@@ -23,7 +23,7 @@ typedef struct {
     PetscScalar PV_UNIT;
     PetscScalar KBOLTZ;
     PetscScalar bscale;
-    PetscScalar const * AVOGADRO_ptr;
+    PetscScalar AVOGADRO;
 } data_EOSRTpress;
 
 
