@@ -23,11 +23,15 @@ PetscErrorCode set_mesh( Ctx *E)
     /* for regular mesh, although without resolving the ultra-thin
        thermal boundary layer at the base of the mantle this likely
        gives wrong results */
-    //regular_mesh( E );
+#if 0
+    regular_mesh( E );
+#endif
 
     /* need to use geometric mesh to resolve ultra-thin thermal
        boundary layer at the base of the mantle */
+#if 1
     geometric_mesh( E );
+#endif
 
     /* Adams-Williamson EOS */
 
@@ -122,8 +126,18 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     DM             da_b=E->da_b, da_s=E->da_s;
     Parameters     P = E->parameters;
     ScalingConstants SC = E->parameters->scaling_constants;
-    // TODO: should not be hard-coded
-    PetscScalar    dr_min = 0.001 / SC->RADIUS; // 1 mm, dimensional
+    PetscScalar    dr, dr_prev, dr_min, dr_max, geom_fac;
+
+    /* TODO: you must set the number of nodes manually in the opts file
+       according to the values below (and they vary depending on the choice
+       of dr_max */
+    dr_min = 1.0E-3; // 1 mm
+    dr_max = 15E3; // 15 km
+    geom_fac = 1.2;
+
+    dr_min /= SC->RADIUS;
+    dr_max /= SC->RADIUS;
+
     // 45928 basic nodes
     //PetscScalar dr_max = 9.810076911002982e-06; // 62.5 m
     // 22996 basic nodes
@@ -139,9 +153,7 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     // 372 basic nodes
     //PetscScalar    dr_max = 0.001569612305760477; // 10 km
     // 278 basic nodes
-    PetscScalar    dr_max = 15E3 / SC->RADIUS; // 15 km, dimensional
-    PetscScalar    geom_fac = 1.2;
-    PetscScalar    dr, dr_prev;
+    // PetscScalar    dr_max = 15E3 / SC->RADIUS; // 15 km, dimensional
 
     PetscFunctionBeginUser;
 
@@ -153,8 +165,6 @@ static PetscErrorCode geometric_mesh( Ctx *E )
     /* TODO: dynamically determine number of mesh points, and
        automatically ensure that arr[0] = 1.0 and
        arr[numpts_b-1] = RADIN */
-
-    /* FIXME: update to work in parallel */
 
     /* radius at basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
