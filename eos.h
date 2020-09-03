@@ -2,6 +2,7 @@
 #define EOS_H_
 
 #include "parameters.h"
+#include "interp.h"
 
 /* A (temporary) struct that is used to hold  EOS properties at a given V,T or P, S.  */
 typedef struct EosEval_ {
@@ -44,6 +45,9 @@ typedef struct data_EOS_ {
 
   /* Pointer to implementation-specific data */
   void *impl_data;
+
+  /* Flag to signify that set up has been completed and the object can be used */
+  PetscBool is_setup;
 
   /* Pointers to implementation-specific functions */
   // Note: no "create" pointer here, since we have a factory method (EOSCreate())

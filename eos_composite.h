@@ -4,7 +4,7 @@
 #include "eos.h"
 
 typedef struct {
-    EOS *eos_parameters;
+    EOS *eos;
     PetscInt n_eos;
     /* it's only for composite structures that we need to know
        if/how to blend together the material parameters across
@@ -23,7 +23,7 @@ typedef struct {
     Interp1d phase_boundary; /* pressure-entropy space, J/kg/K */
 } data_EOSComposite;
 
-// TODO existing EosParameters-based functions, to refactor into proper class hierarchy
+// TODO  --- remove below once EOS class is finished -----
 
 PetscErrorCode SetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar *, PetscScalar * );
 

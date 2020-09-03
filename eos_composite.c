@@ -47,8 +47,6 @@ PetscErrorCode EOSCreate_Composite(EOS eos) {
   //PetscErrorCode ierr;
 
   PetscFunctionBeginUser;
-  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
-  // TODO other creation stuff
   eos->eval = EOSEval_Composite;
   eos->destroy = EOSDestroy_Composite;
   eos->setupfromoptions = EOSSetUpFromOptions_Composite;

@@ -20,6 +20,7 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
   PetscFunctionBeginUser;
   ierr = PetscMalloc1(1, p_eos);CHKERRQ(ierr);
   eos = *p_eos;
+  eos->is_setup = PETSC_FALSE;
   ierr = PetscStrcmp(type, SPIDER_EOS_LOOKUP, &flg);CHKERRQ(ierr);
   if (flg) {
     ierr = EOSCreate_Lookup(eos);CHKERRQ(ierr);
@@ -40,6 +41,8 @@ PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EosEval* ev
   PetscErrorCode ierr;
 
   PetscFunctionBeginUser;
+  if (!eos->is_setup) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"You must cannot evaluate the EOS before setting it up");
+
   /* Implementation-specific logic */
   ierr = (*(eos->eval))(eos,P,S,eval);CHKERRQ(ierr);
 
@@ -141,6 +144,10 @@ PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix, const Fundamenta
   if( eos->PHASE_BOUNDARY ){
     ierr = Interp1dCreateAndSet( eos->phase_boundary_filename, &eos->phase_boundary, SC->PRESSURE, SC->ENTROPY );CHKERRQ(ierr);
   }
+
+  /* Mark as set up */
+  eos->is_setup = PETSC_TRUE;
+
   PetscFunctionReturn(0);
 }
 
