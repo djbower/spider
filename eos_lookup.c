@@ -14,10 +14,14 @@ static PetscErrorCode EOSEval_Lookup(EOS eos, PetscScalar P, PetscScalar S, EosE
 static PetscErrorCode EOSDestroy_Lookup(EOS eos)
 {
   PetscErrorCode ierr;
+  data_EOSLookup *lookup = (data_EOSLookup*) eos->impl_data;
 
   PetscFunctionBegin;
-  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
-  // TODOb
+  ierr = Interp2dDestroy(&lookup->alpha); CHKERRQ(ierr);
+  ierr = Interp2dDestroy(&lookup->cp); CHKERRQ(ierr);
+  ierr = Interp2dDestroy(&lookup->dTdPs); CHKERRQ(ierr);
+  ierr = Interp2dDestroy(&lookup->rho); CHKERRQ(ierr);
+  ierr = Interp2dDestroy(&lookup->temp); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -44,7 +48,7 @@ PetscErrorCode EOSCreate_Lookup(EOS eos) {
   PetscFunctionReturn(0);
 }
 
-// TODO refactor this stuff moved here for now, into the class impl
+// TODO ---- below here, remove once new EOS class is finished ---------
 
 /* First material model option is via lookup tables */
 /* lookup material properties (default) */

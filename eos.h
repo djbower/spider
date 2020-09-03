@@ -38,6 +38,13 @@ typedef struct data_EOS_ {
   PetscScalar visc_comp;
   PetscScalar visc_ref_comp;
 
+  /* phase boundary which is evaluated using this EOS */
+  PetscBool PHASE_BOUNDARY; /* is a phase boundary for this EOS defined? */
+  char phase_boundary_filename[PETSC_MAX_PATH_LEN]; // filename of phase boundary
+  /* in generality, the phase boundary should be a function pointer as well.  Currently,
+     it is always a 1D lookup, but could be any function */
+  Interp1d phase_boundary; /* pressure-entropy space, J/kg/K */
+
   /* Pointer to implementation-specific data */
   void * impl_data;
 

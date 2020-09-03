@@ -56,8 +56,15 @@ PetscErrorCode EOSDestroy(EOS *p_eos)
   PetscErrorCode ierr;
 
   PetscFunctionBeginUser;
+  {
+    EOS eos = *p_eos;
+
+    ierr = (*eos->destroy)(eos);CHKERRQ(ierr);
+    if (eos->PHASE_BOUNDARY) {
+      ierr = Interp1dDestroy(&eos->phase_boundary);CHKERRQ(ierr);
+    }
+  }
   ierr = PetscFree(p_eos);CHKERRQ(ierr);
-  ierr = (*(*p_eos)->destroy)(*p_eos);CHKERRQ(ierr);
   *p_eos = NULL;
   PetscFunctionReturn(0);
 }

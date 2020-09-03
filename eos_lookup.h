@@ -23,7 +23,7 @@ typedef struct {
     Interp2d alpha; /* thermal expansion, 1/K */
 } data_EOSLookup;
 
-// TODO these may ultimately not need to be in this header, just used in eos_lookup.c, if at all
+// TODO --- remove below here once new EOS class finished ----
 PetscErrorCode LookupCreate( Lookup * );
 PetscErrorCode LookupDestroy( Lookup * );
 PetscErrorCode LookupFilenameSet( const char *, const char *, char *, PetscBool * );
