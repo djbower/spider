@@ -7,11 +7,21 @@ static PetscErrorCode EOSLookup_FilenameSet(const char*,const char*,char*,PetscB
 /* EOS interface functions */
 static PetscErrorCode EOSEval_Lookup(EOS eos, PetscScalar P, PetscScalar S, EosEval *eval)
 {
-  //PetscErrorCode ierr;
+  PetscErrorCode  ierr;
+  data_EOSLookup *lookup = (data_EOSLookup*) eos->impl_data;
 
   PetscFunctionBegin;
-  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
-  // TODO
+  eval->P = P;
+  eval->S = S;
+  ierr = SetInterp2dValue( lookup->temp, P, S, &eval->T );CHKERRQ(ierr);
+  ierr = SetInterp2dValue( lookup->rho, P, S, &eval->rho );CHKERRQ(ierr);
+  ierr = SetInterp2dValue( lookup->cp, P, S, &eval->Cp );CHKERRQ(ierr);
+  ierr = SetInterp2dValue( lookup->dTdPs, P, S, &eval->dTdPs );CHKERRQ(ierr);
+  ierr = SetInterp2dValue( lookup->alpha, P, S, &eval->alpha );CHKERRQ(ierr);
+  /* lookup does not know about these quantities, since they are not used by
+     SPIDER */
+  eval->Cv = 0.0;
+  eval->V = 0.0;
   PetscFunctionReturn(0);
 }
 
