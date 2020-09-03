@@ -30,25 +30,33 @@ static PetscErrorCode EOSDestroy_Composite(EOS eos)
 
 static PetscErrorCode EOSSetUpFromOptions_Composite(EOS eos, const char *prefix, const FundamentalConstants FC, const ScalingConstants SC)
 {
-  //PetscErrorCode  ierr;
-  //data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
+  PetscErrorCode  ierr;
+  data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
 
   PetscFunctionBegin;
-  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
-  (void) eos;
-  (void) prefix;
-  (void) FC;
-  (void) SC;
-  // TODO
+  (void) prefix; // unused
+  (void) FC; // unused
+  (void) SC; // unused
+  if (!composite->eos) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Sub-EOSs must be added to composite before setting up");
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-matprop_smooth_width",&composite->matprop_smooth_width,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_critical",&composite->phi_critical,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_width",&composite->phi_width,NULL);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
 /* Creation */
 PetscErrorCode EOSCreate_Composite(EOS eos) {
+  data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
+
   PetscFunctionBeginUser;
   eos->eval = EOSEval_Composite;
   eos->destroy = EOSDestroy_Composite;
   eos->setupfromoptions = EOSSetUpFromOptions_Composite;
+  composite->matprop_smooth_width = 0.0;
+  composite->phi_critical = 0.4;
+  composite->phi_width = 0.15;
+  composite->eos = NULL;
+  composite->n_eos = 0;
   PetscFunctionReturn(0);
 }
 
@@ -185,6 +193,18 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   eval->cond = combine_matprop( smth, eval->cond, eval2.cond );
   eval->log10visc = combine_matprop( smth, eval->log10visc, eval2.log10visc );
 
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSCompositeSetSubEOS(EOS eos, EOS *sub_eos, PetscInt n_sub_eos)
+{
+  data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
+
+  PetscFunctionBeginUser;
+  if (eos->is_setup) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Can only set sub-EOSs before setup");
+  if (composite->eos) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Can only set sub-EOSs once");
+  composite->eos = sub_eos;
+  composite->n_eos = n_sub_eos;
   PetscFunctionReturn(0);
 }
 

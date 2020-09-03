@@ -16,7 +16,10 @@ typedef struct {
     PetscScalar matprop_smooth_width; // numerical reasons only
     PetscScalar phi_critical; // physical transition between melt and solid for viscosity
     PetscScalar phi_width; // physical transition between melt and solid for viscosity
+
 } data_EOSComposite;
+
+PetscErrorCode EOSCompositeSetSubEOS(EOS,EOS*,PetscInt);
 
 // TODO  --- remove below once EOS class is finished -----
 
