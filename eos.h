@@ -66,7 +66,7 @@ PetscErrorCode EOSGetPhaseBoundary(EOS,PetscScalar, PetscScalar*, PetscScalar*);
 PetscErrorCode EOSEvalSetViscosity(EOS,EosEval*);
 
 /* Note that this is the only place in this header that anything
-   related to types is mentioned. These must correspond to all available
+   related to specific types is mentioned. These must correspond to all available
    values for EOSType, giving a string and a Creation function. */
 #define SPIDER_EOS_LOOKUP "lookup"
 #define SPIDER_EOS_RTPRESS "rtpress"
