@@ -1,5 +1,4 @@
 #include "eos_rtpress.h"
-#include "parameters.h" // TODO bad
 #include "monitor.h"
 
 /* compared to the lookup approach, rtpress is derived in terms of temperature and volume, which

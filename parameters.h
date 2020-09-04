@@ -2,7 +2,6 @@
 #define PARAMETERS_H_
 
 #include <petsc.h>
-#include "interp.h"
 #include "constants.h"
 #include "eos.h"
 

@@ -1,8 +1,8 @@
 #if !defined(EOS_RTPRESS_H_)
 #define EOS_RTPRESS_H_
 
-#include "petsc.h"
 #include "eos.h"
+#include "petsc.h"
 
 typedef struct {
     PetscScalar V0;

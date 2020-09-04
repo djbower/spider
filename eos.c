@@ -1,6 +1,4 @@
 #include "eos.h"
-#include "monitor.h"
-#include "parameters.h"
 #include "util.h"
 
 /* Prototypes for helper functions used in interface functions */
