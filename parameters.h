@@ -4,132 +4,7 @@
 #include <petsc.h>
 #include "interp.h"
 #include "constants.h"
-
-
-
-// TODO ---- most of this EOS stuff can go, once the EOS class is in ----
-/*
- ******************************************************************************
- * Equation of state parameters
- ******************************************************************************
- */
-
-/* lookup */
-typedef struct {
-    /* lookup data filenames */
-    char        rho_filename[PETSC_MAX_PATH_LEN];
-    char        dTdPs_filename[PETSC_MAX_PATH_LEN];
-    char        cp_filename[PETSC_MAX_PATH_LEN];
-    char        temp_filename[PETSC_MAX_PATH_LEN];
-    char        alpha_filename[PETSC_MAX_PATH_LEN];
-    /* lookup objects to evaluate */
-    /* memory is not necessarily allocated to these lookup
-       objects if they are not required */
-    Interp2d rho; /* density, kg/m^3 */
-    Interp2d dTdPs; /* adiabatic temperature gradient, K/Pa */
-    Interp2d cp; /* heat capacity, J/kg/K */
-    Interp2d temp; /* temperature, K */
-    Interp2d alpha; /* thermal expansion, 1/K */
-} data_Lookup;
-typedef data_Lookup* Lookup;
-
-/* RTpress parameters (Wolf and Bower, 2018) */
-typedef struct {
-    PetscScalar V0;
-    PetscScalar T0;
-    PetscScalar S0;
-    PetscScalar K0;
-    PetscScalar KP0;
-    PetscScalar E0;
-    PetscScalar gamma0;
-    PetscScalar gammaP0;
-    PetscScalar m;
-    PetscScalar b0;
-    PetscScalar b1;
-    PetscScalar b2;
-    PetscScalar b3;
-    PetscScalar b4;
-    PetscScalar mavg;
-    PetscScalar PV_UNIT;
-    PetscScalar KBOLTZ;
-    PetscScalar bscale;
-    PetscScalar const * AVOGADRO_ptr;
-} data_RTpressParameters;
-typedef data_RTpressParameters* RTpressParameters;
-
-/* EOS */
-/* TODO: an optional consolidation, is to combine the EosComposite structure
-   with the EosParameters structure.  This can be done if the EosParameters
-   structure contains an array of pointers to EosParameters (which I think
-   is legal with C) */
-#define SPIDER_MAX_PHASES 2
-typedef struct {
-    char prefix[128];  /* Maximum prefix length */
-    /* Eos TYPE
-       1. Lookup
-       2. Rtpress
-    */
-    PetscInt TYPE;
-    Lookup lookup; // only required if TYPE = 1
-    RTpressParameters rtpress_parameters; // only required if TYPE = 2
-    /* include thermal and transport properties */
-    /* TODO: could be included in a connected/linked struct,
-       but simpler to include them directly here */
-    PetscScalar cond; /* thermal conductivity, W/m/K */
-    PetscScalar log10visc; /* log base 10 of viscosity */
-    PetscScalar activation_energy;
-    PetscScalar activation_volume;
-    PetscScalar activation_volume_pressure_scale;
-    PetscScalar visc_ref_temp;
-    PetscScalar visc_ref_pressure;
-    PetscScalar visc_comp;
-    PetscScalar visc_ref_comp;
-
-    /* phase boundary which is evaluated using this EOS */
-    PetscBool PHASE_BOUNDARY; /* is a phase boundary for this EOS defined? */
-    char phase_boundary_filename[PETSC_MAX_PATH_LEN]; // filename of phase boundary
-    /* in generality, the phase boundary should be a function pointer as well.  Currently,
-       it is always a 1D lookup, but could be any function */
-    Interp1d phase_boundary; /* pressure-entropy space, J/kg/K */
-
-    /* TODO: add a pointer array to other EosParameters, to avoid creating the
-       EosComposite object? */
-
-    /* TODO: at this level, could also add function pointers to evaluate the
-       EOS and return the relevant material properties (rather than using a
-       switch statement).  Some material props to evaluate are given below.
-       See SetEosEval.c in eos.c.  Currently, all eos functions are evaluated
-       and stored in an EosEval struct which lives in ctx.h.  It's not
-       obvious to me if this is the best way.  It ensures data is not stale, but
-       then the evaluation of the functions are stored elsewhere */
-
-    // func_ptr_log10visc = 
-    // func_ptr_alpha = 
-    // func_ptr_cp = 
-    // func_ptr_phase_boundary = 
-
-
-} data_EosParameters;
-typedef data_EosParameters* EosParameters;
-
-/* TODO: can be consolidated into EosParameters */
-#define SPIDER_MAX_COMPOSITE_PHASES 1 
-typedef struct {
-    const char *prefix;  /* Maximum prefix length */
-    EosParameters eos_parameters[SPIDER_MAX_PHASES];
-    PetscInt n_eos;
-    /* it's only for composite structures that we need to know
-       if/how to blend together the material parameters across
-       phase boundaries.  Most are blended using a simple linear
-       weighting and a tanh functon, but the viscosity smoothing
-       is a bit more complicated.  To reiterate, these quantities
-       are not relevant for single phases (EosParameters) */
-    /* these are all smoothing-related */
-    PetscScalar matprop_smooth_width; // numerical reasons only
-    PetscScalar phi_critical; // physical transition between melt and solid for viscosity
-    PetscScalar phi_width; // physical transition between melt and solid for viscosity
-} data_EosComposite;
-typedef data_EosComposite* EosComposite;
+#include "eos.h"
 
 /*
  ******************************************************************************
@@ -266,6 +141,8 @@ typedef data_RadionuclideParameters* RadionuclideParameters;
 */
 
 #define SPIDER_MAX_RADIONUCLIDES 8
+#define SPIDER_MAX_PHASES 2
+#define SPIDER_MAX_COMPOSITE_PHASES 1
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct {
 
@@ -341,11 +218,9 @@ typedef struct {
 
     /* Phases (EOS) */
     PetscInt    n_phases;
-    EosParameters eos_parameters[SPIDER_MAX_PHASES]; // TODO remove once new EOS class is in place
-    //EOS eos_phases[SPIDER_MAX_PHASES];
+    EOS eos_phases[SPIDER_MAX_PHASES];
     PetscInt    n_composite_phases;
-    EosComposite eos_composites[SPIDER_MAX_COMPOSITE_PHASES]; // TODO remove once new EOS class is in place
-    //EOS eos_composites[SPIDER_MAX_COMPOSITE_PHASES];
+    EOS eos_composites[SPIDER_MAX_COMPOSITE_PHASES];
 
 } data_Parameters;
 typedef data_Parameters* Parameters;

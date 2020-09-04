@@ -19,17 +19,9 @@ typedef struct {
 
 } data_EOSComposite;
 
+PetscErrorCode EOSCompositeGetMatpropSmoothWidth(EOS,PetscScalar*);
 PetscErrorCode EOSCompositeGetSubEOS(EOS,EOS**,PetscInt*);
 PetscErrorCode EOSCompositeGetTwoPhasePhaseFractionNoTruncation(EOS,PetscScalar,PetscScalar,PetscScalar*);
 PetscErrorCode EOSCompositeSetSubEOS(EOS,EOS*,PetscInt);
-
-// TODO  --- remove below once EOS class is finished -----
-
-
-PetscErrorCode SetEosCompositeEval( const EosComposite, PetscScalar, PetscScalar, EosEval * );
-PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar, PetscScalar, PetscScalar * );
-
-PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *, const EosParameters[], PetscInt );
-PetscErrorCode EosCompositeDestroy( EosComposite * );
 
 #endif

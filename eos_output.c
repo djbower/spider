@@ -1,7 +1,7 @@
 #include "eos_output.h"
 #include "eos_composite.h" // TODO need this?
 
-PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EosParameters Ep, const char *name, cJSON *json )
+PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EOS Ep, const char *name, cJSON *json )
 {
     /* add a phase boundary evaluated in entropy and temperature space
        at the basic nodes points */
@@ -48,9 +48,9 @@ PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EosParameters Ep, co
     ierr = DMDAVecGetArray(da_b,phase_temp_b,&arr_phase_temp_b);CHKERRQ(ierr);
 
     for(i=ilo_b;i<ihi_b;++i){
-        ierr = SetPhaseBoundary( Ep, arr_pres_b[i], &Sbound, NULL );CHKERRQ(ierr);
+        ierr = EOSGetPhaseBoundary( Ep, arr_pres_b[i], &Sbound, NULL );CHKERRQ(ierr);
         arr_phase_b[i] = Sbound;
-        ierr = SetEosEval( Ep, arr_pres_b[i], Sbound, &eos_eval );CHKERRQ(ierr);
+        ierr = EOSEval( Ep, arr_pres_b[i], Sbound, &eos_eval );CHKERRQ(ierr);
         arr_phase_temp_b[i] = eos_eval.T;
     }
 

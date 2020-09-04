@@ -555,23 +555,23 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
     ierr = PetscOptionsGetStringArray(NULL,NULL,"-phase_names",prefixes,&n_phases,&set);CHKERRQ(ierr);
     if (set) { 
-      PetscInt r;
-
       P->n_phases = n_phases;
-      for (r=0; r<P->n_phases; ++r) {
-        ierr = EosParametersCreate(&P->eos_parameters[r]);CHKERRQ(ierr);
-        ierr = PetscStrncpy(P->eos_parameters[r]->prefix,prefixes[r],sizeof(P->eos_parameters[r]->prefix));CHKERRQ(ierr);
+      for (PetscInt r=0; r<P->n_phases; ++r) {
+        char buf[1024]; /* max size */
+        PetscInt type = 1;
 
-        {
-          char           buf[1024]; /* max size */
-          PetscInt type = 1; // default lookup
-          PetscBool set;
-          ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefixes[r],"_TYPE");CHKERRQ(ierr);
-          ierr = PetscOptionsGetInt(NULL,NULL,buf, &type,&set);CHKERRQ(ierr);
-          //if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",bur);
-          P->eos_parameters[r]->TYPE = type;
-          ierr = EosParametersSetFromOptions(P->eos_parameters[r], FC, SC, type );CHKERRQ(ierr);
+        ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefixes[r],"_TYPE");CHKERRQ(ierr);
+        ierr = PetscOptionsGetInt(NULL,NULL,buf,&type,NULL);CHKERRQ(ierr);
+        switch (type) {
+          case 1:
+            ierr = EOSCreate(&P->eos_phases[r], SPIDER_EOS_LOOKUP);CHKERRQ(ierr);
+            break;
+          case 2:
+            ierr = EOSCreate(&P->eos_phases[r], SPIDER_EOS_RTPRESS);CHKERRQ(ierr);
+            break;
+          default: SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unrecognized type code %D", type);
         }
+        ierr = EOSSetUpFromOptions(P->eos_phases[r], prefixes[r], FC, SC);CHKERRQ(ierr);
         ierr = PetscFree(prefixes[r]);CHKERRQ(ierr);
       }
     }
@@ -595,7 +595,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   }
 
 
-  /* TODO: this is a bit tricky.  Basically, if you define two phases, you will most likely need a mixed
+  /* This is a bit tricky.  Basically, if you define two phases, you will most likely need a mixed
      phase region to compute the mixed phase region between them.  But, another option is to define
      two phases (e.g., solid), and use one for an upper layer and one for a lower layer.  So defining
      two phases in the system does not necessarily mean you need a mixed phase in between them */
@@ -609,18 +609,12 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
     ierr = PetscOptionsGetBool(NULL,NULL,"-eos_composite_two_phase",NULL,&flg);CHKERRQ(ierr);
     if (flg) {
-      if (P->n_composite_phases >= SPIDER_MAX_COMPOSITE_PHASES) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many composite phases. Increase SPIDER_MAX_COMPOSITE_PHASES (currently %d) in the source",SPIDER_MAX_COMPOSITE_PHASES);
-        ierr = EosCompositeCreateTwoPhase(&P->eos_composites[P->n_composite_phases],P->eos_parameters,P->n_phases);CHKERRQ(ierr);
-        P->eos_composites[P->n_composite_phases]->n_eos = 2; /* useful for looping over constituent eos for this composite */
-        /* smoothing across phase boundary */
-        P->eos_composites[P->n_composite_phases]->matprop_smooth_width = 0.0;
-        ierr = PetscOptionsGetScalar(NULL,NULL,"-matprop_smooth_width",&P->eos_composites[P->n_composite_phases]->matprop_smooth_width,NULL);CHKERRQ(ierr);
-        /* parameters for composite viscosity */
-        P->eos_composites[P->n_composite_phases]->phi_critical = 0.4; // transition melt fraction
-        ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_critical",&P->eos_composites[P->n_composite_phases]->phi_critical,NULL);CHKERRQ(ierr);
-        P->eos_composites[P->n_composite_phases]->phi_width = 0.15; // transition width (melt fraction)
-        ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_width",&P->eos_composites[P->n_composite_phases]->phi_width,NULL);CHKERRQ(ierr);
-        ++P->n_composite_phases; // must always be at end of this block
+      const char *prefix = "composite";
+
+      if (P->n_phases != 2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Exactly two phases must be specified");
+      ierr = EOSCreate(&P->eos_composites[0], SPIDER_EOS_COMPOSITE);CHKERRQ(ierr);
+      ierr = EOSCompositeSetSubEOS(P->eos_composites[0], P->eos_phases, P->n_phases);CHKERRQ(ierr);
+      ierr = EOSSetUpFromOptions(P->eos_composites[0], prefix, FC, SC);CHKERRQ(ierr);
     }
   }
 
@@ -1053,13 +1047,13 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
 
     /* phases */
     for (i=0; i<P->n_phases; ++i) {
-        ierr = EosParametersDestroy(&P->eos_parameters[i]);CHKERRQ(ierr);
+        ierr = EOSDestroy(&P->eos_phases[i]);CHKERRQ(ierr);
     }
     P->n_phases = 0;
 
     /* composite phases */
     for (i=0; i<P->n_composite_phases; ++i) {
-        ierr = EosCompositeDestroy(&P->eos_composites[i]);CHKERRQ(ierr);
+        ierr = EOSDestroy(&P->eos_composites[i]);CHKERRQ(ierr);
     }
     P->n_composite_phases = 0;
 

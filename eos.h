@@ -1,7 +1,6 @@
 #ifndef EOS_H_
 #define EOS_H_
 
-#include "parameters.h" // TODO remove once new EOS class in place
 #include "constants.h"
 #include "interp.h"
 
@@ -19,7 +18,7 @@ typedef struct EosEval_ {
   PetscScalar cond;
   PetscScalar log10visc;
   PetscScalar phase_fraction; // by definition unity for single species, but can be 0<x<1 for a composite EOS (with two phases) */
-  PetscScalar fusion; // only relevant for EosComposite (with two phases)
+  PetscScalar fusion; // only relevant for EOSComposite (with two phases)
 } EosEval; // TODO capitalize to EOSEval
 
 typedef const char* EOSType;
@@ -75,20 +74,5 @@ PetscErrorCode EOSEvalSetViscosity(EOS,EosEval*);
 PetscErrorCode EOSCreate_Lookup(EOS);
 PetscErrorCode EOSCreate_RTpress(EOS);
 PetscErrorCode EOSCreate_Composite(EOS);
-
-// TODO below here, remove once new classes are tested ---------------------------------
-typedef struct RTpressEval_ {
-  PetscScalar P; /* pressure */
-  PetscScalar S; /* entropy */
-  RTpressParameters rtp;
-} RTpressEval;
-
-PetscErrorCode EosParametersCreate( EosParameters * );
-PetscErrorCode EosParametersDestroy( EosParameters * );
-PetscErrorCode EosParametersSetFromOptions( EosParameters, const FundamentalConstants, const ScalingConstants, PetscInt );
-PetscErrorCode SetEosEval( const EosParameters, PetscScalar, PetscScalar, EosEval * );
-
-PetscErrorCode SetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar *, PetscScalar * );
-PetscErrorCode SetEosEvalViscosity( const EosParameters, EosEval * );
 
 #endif

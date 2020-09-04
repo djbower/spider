@@ -54,10 +54,10 @@ PetscErrorCode set_phase_fraction_staggered( Ctx *E )
         /* TODO: this is an obvious switch statement to standardise by consolidating the EOS
            Structures */
         if( P->n_phases == 1){
-            ierr = SetEosEval( P->eos_parameters[0], PP, SS, &eos_eval );CHKERRQ(ierr);
+            ierr = EOSEval( P->eos_phases[0], PP, SS, &eos_eval );CHKERRQ(ierr);
         }
         else if (P->n_phases == 2){
-            ierr = SetEosCompositeEval( P->eos_composites[0], PP, SS, &eos_eval );CHKERRQ(ierr);
+            ierr = EOSEval( P->eos_composites[0], PP, SS, &eos_eval );CHKERRQ(ierr);
         }
 
         arr_phi[i] = eos_eval.phase_fraction;
@@ -99,10 +99,10 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
            if statement can probably be removed */
         /* single phase */
         if( P->n_phases==1 ){
-            ierr = SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &eos_eval );CHKERRQ(ierr);
+            ierr = EOSEval( P->eos_phases[0], arr_pres_s[i], arr_S_s[i], &eos_eval );CHKERRQ(ierr);
         }
         else{ /* if P->n_phases==2 */
-            ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &eos_eval );CHKERRQ(ierr);
+            ierr = EOSEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &eos_eval );CHKERRQ(ierr);
         }
 
         arr_rho_s[i] = eos_eval.rho;
@@ -178,10 +178,10 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 
       /* single phase */
       if( P->n_phases==1 ){
-          ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
+          ierr = EOSEval( P->eos_phases[0], arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
       }
       else{
-          ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
+          ierr = EOSEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
       }
 
       arr_phi[i] = eos_eval.phase_fraction;

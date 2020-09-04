@@ -6,6 +6,6 @@
 #include "ctx.h"
 #include "eos.h"
 
-PetscErrorCode JSON_add_phase_boundary(const Ctx*,const EosParameters,const char*,cJSON*);
+PetscErrorCode JSON_add_phase_boundary(const Ctx*,const EOS,const char*,cJSON*);
 
 #endif

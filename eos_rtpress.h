@@ -26,11 +26,4 @@ typedef struct {
     PetscScalar AVOGADRO;
 } data_EOSRTpress;
 
-
-// TODO not clear if these ultimately need to be in this header, or can just be static functions in eos_rtpress.c
-PetscErrorCode RTpressParametersCreate( RTpressParameters * );
-PetscErrorCode RTpressParametersCreateAndSet( RTpressParameters *, const FundamentalConstants );
-PetscErrorCode RTpressParametersDestroy( RTpressParameters * );
-PetscErrorCode SetEosEvalFromRTpress( const RTpressParameters, PetscScalar, PetscScalar, EosEval * );
-
 #endif

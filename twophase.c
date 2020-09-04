@@ -83,7 +83,7 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
-        ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S[i], &eos_eval );CHKERRQ(ierr);
+        ierr = EOSEval( P->eos_composites[0], arr_pres[i], arr_S[i], &eos_eval );CHKERRQ(ierr);
         arr_result_s[i] = arr_dSdt_s[i] * arr_mass_s[i];
         arr_result_s[i] /= eos_eval.fusion;
 

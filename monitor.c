@@ -1,5 +1,6 @@
 #include "dimensionalisablefield.h"
 #include "eos_output.h"
+#include "eos_composite.h"
 #include "monitor.h"
 #include "rhs.h"
 #include "cJSON.h"
@@ -153,9 +154,14 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
         /* we compute the phase boundaries here for the basic nodes, but still store them
            in the solution container */
         if( ctx->parameters->n_phases > 1 ){
-            /* phase boundary */
-            ierr = JSON_add_phase_boundary( ctx, ctx->parameters->eos_composites[0]->eos_parameters[0], "liquidus", data ); CHKERRQ(ierr);
-            ierr = JSON_add_phase_boundary( ctx, ctx->parameters->eos_composites[0]->eos_parameters[1], "solidus", data ); CHKERRQ(ierr);
+          /* phase boundary */
+          EOS      *sub_eos;
+          PetscInt should_be_two;
+
+          ierr = EOSCompositeGetSubEOS(ctx->parameters->eos_composites[0], &sub_eos, &should_be_two);CHKERRQ(ierr);
+          if (should_be_two!=2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Expecting two sub-EOSs");
+          ierr = JSON_add_phase_boundary( ctx, sub_eos[0], "liquidus", data ); CHKERRQ(ierr);
+          ierr = JSON_add_phase_boundary( ctx, sub_eos[1], "solidus", data ); CHKERRQ(ierr);
         }
 
         for (i=0; i<NUMSOLUTIONVECS_S; ++i) {
