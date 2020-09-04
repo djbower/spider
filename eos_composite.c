@@ -88,7 +88,7 @@ PetscErrorCode EOSCompositeGetSubEOS(EOS eos, EOS **sub_eos, PetscInt *n_sub_eos
   data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
 
   PetscFunctionBeginUser;
-  if (composite->eos) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"No sub-EOS to get");
+  if (!composite->eos) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"No sub-EOS to get");
   *sub_eos = composite->eos;
   *n_sub_eos = composite->n_eos;
   PetscFunctionReturn(0);
