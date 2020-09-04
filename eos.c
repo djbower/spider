@@ -50,9 +50,7 @@ PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EosEval* ev
 
   /* Common Logic */
   eval->cond = eos->cond; // conductivity constant
-  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
-  // TODO duplicate this function
-  //ierr = SetEosEvalViscosity( Ep, eval );CHKERRQ(ierr);
+  ierr = EOSEvalSetViscosity(eos, eval);CHKERRQ(ierr);
   eval->phase_fraction = 1.0; // by definition, since only one phase
   eval->fusion = 0.0; // meaningless for a single phase
   PetscFunctionReturn(0);
@@ -160,7 +158,7 @@ PetscErrorCode EOSGetPhaseBoundary(EOS eos, PetscScalar P, PetscScalar *boundary
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode EOSEval_SetViscosity(EOS eos, EosEval *eval)
+PetscErrorCode EOSEvalSetViscosity(EOS eos, EosEval *eval)
 {
     PetscScalar A, log10C, dP, dT;
     PetscScalar fac1 = 1.0, fac2 = 1.0;

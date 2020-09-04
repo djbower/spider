@@ -201,8 +201,8 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
 
   /* Viscosity */
   // TODO bad - hard-coded slots
-  ierr = EOSEval_SetViscosity(composite->eos[0], &eval_melt);CHKERRQ(ierr);
-  ierr = EOSEval_SetViscosity(composite->eos[1], &eval_solid);CHKERRQ(ierr);
+  ierr = EOSEvalSetViscosity(composite->eos[0], &eval_melt);CHKERRQ(ierr);
+  ierr = EOSEvalSetViscosity(composite->eos[1], &eval_solid);CHKERRQ(ierr);
   fwt = tanh_weight( eval->phase_fraction, composite->phi_critical, composite->phi_width );
   eval->log10visc = fwt * eval_melt.log10visc + (1.0-fwt) * eval_solid.log10visc;
 
