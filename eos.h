@@ -5,7 +5,7 @@
 #include "interp.h"
 
 /* A (temporary) struct that is used to hold  EOS properties at a given V,T or P, S.  */
-typedef struct EosEval_ {
+typedef struct EOSEvalData_ {
   PetscScalar P; /* pressure */
   PetscScalar S; /* entropy */
   PetscScalar V; /* volume */
@@ -19,7 +19,7 @@ typedef struct EosEval_ {
   PetscScalar log10visc;
   PetscScalar phase_fraction; // by definition unity for single species, but can be 0<x<1 for a composite EOS (with two phases) */
   PetscScalar fusion; // only relevant for EOSComposite (with two phases)
-} EosEval; // TODO capitalize to EOSEval
+} EOSEvalData;
 
 typedef const char* EOSType;
 
@@ -51,7 +51,7 @@ typedef struct data_EOS_ {
 
   /* Pointers to implementation-specific functions */
   // Note: no "create" pointer here, since we have a factory method (EOSCreate())
-  PetscErrorCode (*eval)(struct data_EOS_*, PetscScalar, PetscScalar, EosEval*);
+  PetscErrorCode (*eval)(struct data_EOS_*, PetscScalar, PetscScalar, EOSEvalData*);
   PetscErrorCode (*destroy)(struct data_EOS_*);
   PetscErrorCode (*setupfromoptions)(struct data_EOS_*, const char*, const FundamentalConstants, const ScalingConstants);
 } data_EOS;
@@ -59,10 +59,10 @@ typedef data_EOS *EOS;
 
 PetscErrorCode EOSCreate(EOS*, EOSType);
 PetscErrorCode EOSDestroy(EOS*);
-PetscErrorCode EOSEval(EOS, PetscScalar, PetscScalar, EosEval*);
+PetscErrorCode EOSEval(EOS, PetscScalar, PetscScalar, EOSEvalData*);
 PetscErrorCode EOSSetUpFromOptions(EOS, const char*, const FundamentalConstants, const ScalingConstants);
 PetscErrorCode EOSGetPhaseBoundary(EOS,PetscScalar, PetscScalar*, PetscScalar*);
-PetscErrorCode EOSEvalSetViscosity(EOS,EosEval*);
+PetscErrorCode EOSEvalSetViscosity(EOS,EOSEvalData*);
 
 /* Note that this is the only place in this header that anything
    related to specific types is mentioned. These must correspond to all available

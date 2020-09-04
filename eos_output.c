@@ -15,7 +15,7 @@ PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EOS Ep, const char *
     DimensionalisableField DF_phase_b, DF_phase_temp_b;
     PetscScalar            Sbound, scaling, *arr_phase_b, *arr_phase_temp_b;
     const PetscScalar      *arr_pres_b;
-    EosEval                eos_eval;
+    EOSEvalData            eos_eval;
     char                   namestr1[80], namestr2[80];
 
     PetscFunctionBeginUser;

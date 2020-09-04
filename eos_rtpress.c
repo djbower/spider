@@ -5,7 +5,7 @@
 /* compared to the lookup approach, rtpress is derived in terms of temperature and volume, which
    means we must take the current pressure and entropy and jointly solve for T and V.  Then we can use this T
    and V to solve for the other material properties.  This partly motivates the idea of updating material properties
-   once in an EosEval struct, since otherwise we have to keep resolving for V and T from P and S, which will add
+   once in an EOSEvalData struct, since otherwise we have to keep resolving for V and T from P and S, which will add
    a lot of additional solves when evaluating EOS */
 
 /* Prototypes for local functions used in EOS interface functions */
@@ -29,7 +29,7 @@ static PetscErrorCode EOSDestroy_RTpress(EOS eos)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode EOSEval_RTpress(EOS eos, PetscScalar P, PetscScalar S, EosEval *eval)
+static PetscErrorCode EOSEval_RTpress(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
 {
   PetscErrorCode   ierr;
   data_EOSRTpress *rtp = (data_EOSRTpress*) eos->impl_data;

@@ -315,7 +315,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
 
     for(i=ilo_b; i<ihi_b; ++i){
-        EosEval eval_liq, eval_sol;
+        EOSEvalData eval_liq, eval_sol;
 
         ierr = EOSGetPhaseBoundary( Ep0, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
         ierr = EOSGetPhaseBoundary( Ep1, arr_pres[i], &Ssol, NULL );CHKERRQ(ierr);

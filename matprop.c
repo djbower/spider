@@ -37,7 +37,7 @@ PetscErrorCode set_phase_fraction_staggered( Ctx *E )
     Parameters        P = E->parameters;
     Solution          *S = &E->solution;
     PetscScalar       *arr_phi, *arr_S, *arr_pres, PP, SS;
-    EosEval eos_eval;
+    EOSEvalData       eos_eval;
 
     PetscFunctionBeginUser;
 
@@ -77,7 +77,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     Vec               pres_s = M->pressure_s;
     PetscScalar       *arr_rho_s, *arr_temp_s, *arr_cp_s;
     const PetscScalar *arr_pres_s, *arr_S_s;
-    EosEval eos_eval;
+    EOSEvalData       eos_eval;
 
     PetscFunctionBeginUser;
 
@@ -95,7 +95,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
         /* there is now obvious symmetry here, and this can be further collapsed when EosComposite and
            EosParameters are consolidated */
 
-        /* Note for PS: you can see below how if the EosEval and EosCompositeEval are consolidated, the 
+        /* Note for PS: you can see below how if the EOSEvalData and EosCompositeEval are consolidated, the 
            if statement can probably be removed */
         /* single phase */
         if( P->n_phases==1 ){
@@ -134,8 +134,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
-
-    EosEval eos_eval;
+    EOSEvalData       eos_eval;
 
     PetscFunctionBeginUser;
 

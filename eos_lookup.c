@@ -5,7 +5,7 @@
 static PetscErrorCode EOSLookup_FilenameSet(const char*,const char*,char*,PetscBool*);
 
 /* EOS interface functions */
-static PetscErrorCode EOSEval_Lookup(EOS eos, PetscScalar P, PetscScalar S, EosEval *eval)
+static PetscErrorCode EOSEval_Lookup(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
 {
   PetscErrorCode  ierr;
   data_EOSLookup *lookup = (data_EOSLookup*) eos->impl_data;

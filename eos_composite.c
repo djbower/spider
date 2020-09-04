@@ -2,12 +2,12 @@
 #include "util.h"
 
 /* Prototypes for helpers called from interface functions */
-static PetscErrorCode EOSEval_Composite_TwoPhase(EOS,PetscScalar,PetscScalar,EosEval*);
+static PetscErrorCode EOSEval_Composite_TwoPhase(EOS,PetscScalar,PetscScalar,EOSEvalData*);
 static PetscErrorCode EOSCompositeGetTwoPhaseLiquidus(EOS,PetscScalar,PetscScalar*);
 static PetscErrorCode EOSCompositeGetTwoPhaseSolidus(EOS,PetscScalar,PetscScalar*);
 
 /* EOS Interface functions */
-static PetscErrorCode EOSEval_Composite(EOS eos, PetscScalar P, PetscScalar S, EosEval *eval)
+static PetscErrorCode EOSEval_Composite(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
 {
   PetscErrorCode ierr;
 
@@ -138,16 +138,16 @@ static PetscErrorCode EOSCompositeGetTwoPhaseSolidus(EOS eos, PetscScalar P, Pet
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscScalar S, EosEval *eval) 
+static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval) 
 {
   PetscErrorCode     ierr;
   data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
-  EosEval            eval2; // pure phase for blending across phase boundary
-  EosEval            eval_melt, eval_solid;
+  EOSEvalData            eval2; // pure phase for blending across phase boundary
+  EOSEvalData            eval_melt, eval_solid;
   PetscScalar        gphi, smth, liquidus, solidus, fwt;
 
   /* this function is called alot, if we have two phases.  Is it therefore better to store all 
-     the EosEval in Ctx?  Or isn't this really a speed issue? (prob not in comparison to the
+     the EOSEvalData in Ctx?  Or isn't this really a speed issue? (prob not in comparison to the
      re-evaluation of functions as described below */
 
   PetscFunctionBeginUser;

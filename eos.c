@@ -33,7 +33,7 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EosEval* eval)
+PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EOSEvalData* eval)
 {
   PetscErrorCode ierr;
 
@@ -154,7 +154,7 @@ PetscErrorCode EOSGetPhaseBoundary(EOS eos, PetscScalar P, PetscScalar *boundary
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode EOSEvalSetViscosity(EOS eos, EosEval *eval)
+PetscErrorCode EOSEvalSetViscosity(EOS eos, EOSEvalData *eval)
 {
     PetscScalar A, log10C, dP, dT;
     PetscScalar fac1 = 1.0, fac2 = 1.0;

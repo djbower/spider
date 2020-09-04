@@ -65,7 +65,7 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     Vec               result_s;
     PetscScalar       *arr_result_s;
     const PetscScalar *arr_dSdt_s, *arr_phi_s, *arr_mass_s, *arr_pres, *arr_S;
-    EosEval           eos_eval;
+    EOSEvalData        eos_eval;
 
     PetscFunctionBeginUser;
 
