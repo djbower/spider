@@ -83,6 +83,8 @@ static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
     //Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
+    (void) E; // unused for now
+    (void) tyrs; // unused for now
 
     /* do stuff here */
     //ierr = VecSet( S->Htidal_s, 0.0 ); CHKERRQ(ierr);
