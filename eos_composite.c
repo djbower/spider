@@ -66,6 +66,11 @@ PetscErrorCode EOSCreate_Composite(EOS eos) {
     composite->phi_width = 0.15;
     composite->eos = NULL;
     composite->n_eos = 0;
+
+    composite->melt_slot = 0;
+    composite->liquidus_slot = 0;
+    composite->solid_slot= 1;
+    composite->solidus_slot = 1;
   }
   PetscFunctionReturn(0);
 }
@@ -122,8 +127,7 @@ static PetscErrorCode EOSCompositeGetTwoPhaseLiquidus(EOS eos, PetscScalar P, Pe
   data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
 
   PetscFunctionBeginUser;
-  // TODO bad - hard-coded slot
-  ierr = EOSGetPhaseBoundary(composite->eos[0], P, liquidus, NULL );CHKERRQ(ierr); /* liquidus entropy */
+  ierr = EOSGetPhaseBoundary(composite->eos[composite->liquidus_slot], P, liquidus, NULL );CHKERRQ(ierr); /* liquidus entropy */
   PetscFunctionReturn(0);
 }
 
@@ -133,8 +137,7 @@ static PetscErrorCode EOSCompositeGetTwoPhaseSolidus(EOS eos, PetscScalar P, Pet
   data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
 
   PetscFunctionBeginUser;
-  // TODO bad - hard-coded slot
-  ierr = EOSGetPhaseBoundary(composite->eos[1], P, solidus, NULL );CHKERRQ(ierr); /* solidus entropy */
+  ierr = EOSGetPhaseBoundary(composite->eos[composite->solidus_slot], P, solidus, NULL );CHKERRQ(ierr); /* solidus entropy */
   PetscFunctionReturn(0);
 }
 
@@ -185,9 +188,8 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   }
 
   /* properties along melting curves */
-  // TODO bad - hard-coded slots
-  ierr = EOSEval( composite->eos[0], P, liquidus, &eval_melt );CHKERRQ(ierr);
-  ierr = EOSEval( composite->eos[1], P, solidus, &eval_solid );CHKERRQ(ierr);
+  ierr = EOSEval( composite->eos[composite->liquidus_slot], P, liquidus, &eval_melt );CHKERRQ(ierr);
+  ierr = EOSEval( composite->eos[composite->solidus_slot], P, solidus, &eval_solid );CHKERRQ(ierr);
 
   /* linear temperature between liquidus and solidus */
   eval->T = eval->phase_fraction * eval_melt.T;
@@ -215,9 +217,8 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   eval->cond += (1.0-eval->phase_fraction) * eval_solid.cond;
 
   /* Viscosity */
-  // TODO bad - hard-coded slots
-  ierr = EOSEvalSetViscosity(composite->eos[0], &eval_melt);CHKERRQ(ierr);
-  ierr = EOSEvalSetViscosity(composite->eos[1], &eval_solid);CHKERRQ(ierr);
+  ierr = EOSEvalSetViscosity(composite->eos[composite->liquidus_slot], &eval_melt);CHKERRQ(ierr);
+  ierr = EOSEvalSetViscosity(composite->eos[composite->solidus_slot], &eval_solid);CHKERRQ(ierr);
   fwt = tanh_weight( eval->phase_fraction, composite->phi_critical, composite->phi_width );
   eval->log10visc = fwt * eval_melt.log10visc + (1.0-fwt) * eval_solid.log10visc;
 
@@ -229,14 +230,13 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   smth = get_smoothing( composite->matprop_smooth_width, gphi);
 
   /* now blend mixed phase EOS with single phase EOS across the phase boundary */
-  // TODO bad - hard-coded slots
   if( gphi > 0.5 ){
     /* melt only properties */
-    ierr = EOSEval( composite->eos[0], P, S, &eval2 );CHKERRQ(ierr);
+    ierr = EOSEval( composite->eos[composite->melt_slot], P, S, &eval2 );CHKERRQ(ierr);
   }
   else{
     /* solid only properties */
-    ierr = EOSEval( composite->eos[1], P, S, &eval2 );CHKERRQ(ierr);
+    ierr = EOSEval( composite->eos[composite->solid_slot], P, S, &eval2 );CHKERRQ(ierr);
   }
 
   /* blend mixed phase with single phase, across phase boundary */

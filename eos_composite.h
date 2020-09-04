@@ -17,6 +17,9 @@ typedef struct {
     PetscScalar phi_critical; // physical transition between melt and solid for viscosity
     PetscScalar phi_width; // physical transition between melt and solid for viscosity
 
+    /* For brittle logic which specifies which slots to look in for special
+       purposes */
+    PetscInt melt_slot, solid_slot, liquidus_slot, solidus_slot;
 } data_EOSComposite;
 
 PetscErrorCode EOSCompositeGetMatpropSmoothWidth(EOS,PetscScalar*);
