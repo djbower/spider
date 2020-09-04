@@ -67,7 +67,10 @@ PetscErrorCode EOSSetUpFromOptions_Lookup(EOS eos, const char *prefix, const Fun
 
 /* Creation Function */
 PetscErrorCode EOSCreate_Lookup(EOS eos) {
+  PetscErrorCode ierr;
+
   PetscFunctionBeginUser;
+  ierr = PetscMalloc1(1, (data_EOSLookup**) (&eos->impl_data));CHKERRQ(ierr);
   eos->eval = EOSEval_Lookup;
   eos->destroy = EOSDestroy_Lookup;
   eos->setupfromoptions = EOSSetUpFromOptions_Lookup;
@@ -78,8 +81,8 @@ PetscErrorCode EOSCreate_Lookup(EOS eos) {
 static PetscErrorCode EOSLookup_FilenameSet( const char* property, const char* prefix, char* lookup_filename, PetscBool *IS_SET )
 {
     PetscErrorCode ierr;
-    char           buf1[1024]; /* max size */
-    char           buf2[1024]; /* max size */
+    char           buf1[PETSC_MAX_PATH_LEN]; /* max size */
+    char           buf2[PETSC_MAX_PATH_LEN]; /* max size */
     PetscBool      set_rel_to_src,set;
 
     PetscFunctionBeginUser;

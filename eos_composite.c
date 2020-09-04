@@ -50,17 +50,23 @@ static PetscErrorCode EOSSetUpFromOptions_Composite(EOS eos, const char *prefix,
 
 /* Creation */
 PetscErrorCode EOSCreate_Composite(EOS eos) {
-  data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
+  PetscErrorCode    ierr;
 
   PetscFunctionBeginUser;
   eos->eval = EOSEval_Composite;
   eos->destroy = EOSDestroy_Composite;
   eos->setupfromoptions = EOSSetUpFromOptions_Composite;
-  composite->matprop_smooth_width = 0.0;
-  composite->phi_critical = 0.4;
-  composite->phi_width = 0.15;
-  composite->eos = NULL;
-  composite->n_eos = 0;
+
+  ierr = PetscMalloc1(1, (data_EOSComposite**) (&eos->impl_data));CHKERRQ(ierr);
+  {
+    data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
+
+    composite->matprop_smooth_width = 0.0;
+    composite->phi_critical = 0.4;
+    composite->phi_width = 0.15;
+    composite->eos = NULL;
+    composite->n_eos = 0;
+  }
   PetscFunctionReturn(0);
 }
 

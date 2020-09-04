@@ -48,15 +48,17 @@ static PetscErrorCode EOSEval_RTpress(EOS eos, PetscScalar P, PetscScalar S, Eos
 
 /* Creation Function */
 PetscErrorCode EOSCreate_RTpress(EOS eos) {
-  PetscErrorCode ierr;
-  data_EOSRTpress *rtp = (data_EOSRTpress*) eos->impl_data;
+  PetscErrorCode    ierr;
+  data_EOSRTpress  *rtp;
 
   PetscFunctionBeginUser;
   SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Not Implemented!");
-  ierr = PetscMalloc1(1, (data_EOSRTpress**) (&eos->impl_data));CHKERRQ(ierr);
   eos->eval = EOSEval_RTpress;
   eos->destroy = EOSDestroy_RTpress;
   eos->setupfromoptions = NULL;
+
+  ierr = PetscMalloc1(1, (data_EOSRTpress**) (&eos->impl_data));CHKERRQ(ierr);
+  rtp = (data_EOSRTpress*) eos->impl_data;
 
   /* for unit conversion */
   rtp->PV_UNIT = 160.21766208; /* GPa*Ang^3/eV */
