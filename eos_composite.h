@@ -19,6 +19,8 @@ typedef struct {
 
 } data_EOSComposite;
 
+PetscErrorCode EOSCompositeGetSubEOS(EOS,EOS**,PetscInt*);
+PetscErrorCode EOSCompositeGetTwoPhasePhaseFractionNoTruncation(EOS,PetscScalar,PetscScalar,PetscScalar*);
 PetscErrorCode EOSCompositeSetSubEOS(EOS,EOS*,PetscInt);
 
 // TODO  --- remove below once EOS class is finished -----

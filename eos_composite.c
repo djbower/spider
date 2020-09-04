@@ -3,6 +3,8 @@
 
 /* Prototypes for helpers called from interface functions */
 static PetscErrorCode EOSEval_Composite_TwoPhase(EOS,PetscScalar,PetscScalar,EosEval*);
+static PetscErrorCode EOSCompositeGetTwoPhaseLiquidus(EOS,PetscScalar,PetscScalar*);
+static PetscErrorCode EOSCompositeGetTwoPhaseSolidus(EOS,PetscScalar,PetscScalar*);
 
 /* EOS Interface functions */
 static PetscErrorCode EOSEval_Composite(EOS eos, PetscScalar P, PetscScalar S, EosEval *eval)
@@ -62,8 +64,44 @@ PetscErrorCode EOSCreate_Composite(EOS eos) {
   PetscFunctionReturn(0);
 }
 
+/* EOSComposite interface functions */
+PetscErrorCode EOSCompositeGetTwoPhasePhaseFractionNoTruncation(EOS eos, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction)
+{
+  PetscErrorCode     ierr;
+  PetscScalar        solidus, liquidus;
+
+  PetscFunctionBeginUser;
+  ierr = EOSCompositeGetTwoPhaseSolidus(eos, P, &solidus ); CHKERRQ(ierr);
+  ierr = EOSCompositeGetTwoPhaseLiquidus(eos, P, &liquidus ); CHKERRQ(ierr);
+  *phase_fraction = ( S - solidus ) / (liquidus-solidus);
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSCompositeGetSubEOS(EOS eos, EOS **sub_eos, PetscInt *n_sub_eos)
+{
+  data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
+
+  PetscFunctionBeginUser;
+  if (composite->eos) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"No sub-EOS to get");
+  *sub_eos = composite->eos;
+  *n_sub_eos = composite->n_eos;
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSCompositeSetSubEOS(EOS eos, EOS *sub_eos, PetscInt n_sub_eos)
+{
+  data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
+
+  PetscFunctionBeginUser;
+  if (eos->is_setup) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Can only set sub-EOSs before setup");
+  if (composite->eos) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Can only set sub-EOSs once");
+  composite->eos = sub_eos;
+  composite->n_eos = n_sub_eos;
+  PetscFunctionReturn(0);
+}
+
 /* Helper Functions */
-static PetscErrorCode EOSComposite_SetTwoPhaseLiquidus(EOS eos, PetscScalar P, PetscScalar *liquidus )
+static PetscErrorCode EOSCompositeGetTwoPhaseLiquidus(EOS eos, PetscScalar P, PetscScalar *liquidus )
 {
   PetscErrorCode     ierr;
   data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
@@ -74,7 +112,7 @@ static PetscErrorCode EOSComposite_SetTwoPhaseLiquidus(EOS eos, PetscScalar P, P
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode EOSComposite_SetTwoPhaseSolidus(EOS eos, PetscScalar P, PetscScalar *solidus )
+static PetscErrorCode EOSCompositeGetTwoPhaseSolidus(EOS eos, PetscScalar P, PetscScalar *solidus )
 {
   PetscErrorCode     ierr;
   data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
@@ -117,8 +155,8 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
      aggregate function that only evaluates things once.  This would be trivial to implement,
      but leaving as is for the time being until PS formalises the EosParameters and EosComposite structs */
 
-  ierr = EOSComposite_SetTwoPhaseLiquidus(eos, P, &liquidus ); CHKERRQ(ierr);
-  ierr = EOSComposite_SetTwoPhaseSolidus(eos, P, &solidus ); CHKERRQ(ierr);
+  ierr = EOSCompositeGetTwoPhaseLiquidus(eos, P, &liquidus ); CHKERRQ(ierr);
+  ierr = EOSCompositeGetTwoPhaseSolidus(eos, P, &solidus ); CHKERRQ(ierr);
   eval->fusion = liquidus - solidus;
   gphi = ( S - solidus ) / eval->fusion;
   eval->phase_fraction = gphi;
@@ -198,17 +236,6 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode EOSCompositeSetSubEOS(EOS eos, EOS *sub_eos, PetscInt n_sub_eos)
-{
-  data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
-
-  PetscFunctionBeginUser;
-  if (eos->is_setup) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Can only set sub-EOSs before setup");
-  if (composite->eos) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Can only set sub-EOSs once");
-  composite->eos = sub_eos;
-  composite->n_eos = n_sub_eos;
-  PetscFunctionReturn(0);
-}
 
 // TODO here, be especially careful that all code below, and relevant code in parameters.c relating to setting from options, actually made it into the new class
 
