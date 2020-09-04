@@ -382,26 +382,20 @@ PetscErrorCode EosParametersDestroy( EosParameters* eos_parameters_ptr )
 }
 
 
-PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalConstants FC, const ScalingConstants SC )
+PetscErrorCode EosParametersSetFromOptions( EosParameters Ep, const FundamentalConstants FC, const ScalingConstants SC, PetscInt type )
 {
   /* creates and sets the structs that are nested within EosParameters */
 
   PetscErrorCode ierr;
   char           buf[1024]; /* max size */
-  PetscBool      set; 
 
   PetscFunctionBeginUser;
-
-  ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Ep->prefix,"_TYPE");CHKERRQ(ierr);
-  Ep->TYPE = 1; /* default is lookup */
-  ierr = PetscOptionsGetInt(NULL,NULL,buf, &Ep->TYPE,&set);CHKERRQ(ierr);
-  //if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",bur);
 
   /* probably a good idea to initialise pointers to NULL */
   Ep->rtpress_parameters = NULL;
   Ep->lookup = NULL;
 
-  switch( Ep->TYPE ){
+  switch( type ){
       case 1:
           /* lookup, set filenames (does not allocate memory for Interp structs) */
           /* leading underscore is clunky, but to enable the same function to

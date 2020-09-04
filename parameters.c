@@ -561,8 +561,18 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
       for (r=0; r<P->n_phases; ++r) {
         ierr = EosParametersCreate(&P->eos_parameters[r]);CHKERRQ(ierr);
         ierr = PetscStrncpy(P->eos_parameters[r]->prefix,prefixes[r],sizeof(P->eos_parameters[r]->prefix));CHKERRQ(ierr);
+
+        {
+          char           buf[1024]; /* max size */
+          PetscInt type = 1; // default lookup
+          PetscBool set;
+          ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefixes[r],"_TYPE");CHKERRQ(ierr);
+          ierr = PetscOptionsGetInt(NULL,NULL,buf, &type,&set);CHKERRQ(ierr);
+          //if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument %s",bur);
+          P->eos_parameters[r]->TYPE = type;
+          ierr = EosParametersSetFromOptions(P->eos_parameters[r], FC, SC, type );CHKERRQ(ierr);
+        }
         ierr = PetscFree(prefixes[r]);CHKERRQ(ierr);
-        ierr = EosParametersSetFromOptions(P->eos_parameters[r], FC, SC );CHKERRQ(ierr);
       }
     }
   }
