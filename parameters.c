@@ -3,14 +3,14 @@ Parameter Management
 
 Parameters should only ever be set by the functions in this file. That is, everywhere else they should be considered read-only.
 
-Custom PETSc command line options should only ever be parsed here.
+Custom PETSc command line options should only ever be parsed during the populate of the Parameters struct here.
 */
 
 #include "parameters.h"
 #include "ctx.h"
 #include "ic.h"
 #include "eos.h"
-#include "eos_composite.h" // TODO not ideal that we need this?
+#include "eos_composite.h"
 
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
