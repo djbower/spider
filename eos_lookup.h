@@ -26,7 +26,6 @@ typedef struct {
 // TODO --- remove below here once new EOS class finished ----
 PetscErrorCode LookupCreate( Lookup * );
 PetscErrorCode LookupDestroy( Lookup * );
-PetscErrorCode LookupFilenameSet( const char *, const char *, char *, PetscBool * );
 PetscErrorCode SetEosEvalFromLookup( const Lookup, PetscScalar, PetscScalar, EosEval * );
 
 #endif
