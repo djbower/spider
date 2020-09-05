@@ -13,7 +13,7 @@
 -nstepsmacro 100
 
 # macro step size in years
--dtmacro 100
+-dtmacro 1
 
 # for coupling to other codes
 -activate_rollback 0
@@ -24,7 +24,19 @@
 -ts_sundials_rtol 1.0e-9
 
 # number of basic nodes
--n 655
+-n 603
+
+# testing
+-surfacebc_snes_type newtontr
+-surfacebc_snes_rtol 1e-10
+-surfacebc_snes_atol 1e-10
+-surfacebc_ksp_rtol 1e-10
+-surfacebc_ksp_atol 1e-10
+-surfacebc_snes_linesearch_damping 0.01
+-surfacebc_snes_max_it 10000
+-surfacebc_snes_verbose_monitor
+-surfacebc_snes_converged_reason
+-surfacebc_snes_max_funcs 1000000000000
 
 # all units are SI unless indicated otherwise
 
@@ -32,7 +44,7 @@
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
--radius0 63710000.0 # Earth radius
+-radius0 6371000.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)

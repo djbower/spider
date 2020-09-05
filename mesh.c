@@ -137,7 +137,9 @@ static PetscErrorCode geometric_mesh_refine_upper( Ctx *E )
     /* TODO: you must set the number of nodes manually in the opts file
        according to the values below (and they vary depending on the choice
        of dr_max */
-    dr_min = 1.0E-3; // 1 mm
+    //dr_min = 1.0E-3; // 1 mm
+    // n=603 for 10 m to 5E3
+    dr_min = 10.0; // 10 m
     //dr_max = 15E3; // 15 km
     dr_max = 5E3; // 1 km
     geom_fac = 1.2;

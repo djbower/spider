@@ -384,12 +384,18 @@ PetscErrorCode solve_surface_entropy( Ctx *E )
 
     /* maybe guess entropy at staggered node? */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    xx[0] = 0.0;
+    xx[0] = -10;
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
     ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_mf",NULL);CHKERRQ(ierr);
+
+    /* Turn off convergence based on step size */
+    //ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_stol","0");CHKERRQ(ierr);
+
+    /* Turn off convergenced based on trust region tolerance */
+    //ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_trtol","0");CHKERRQ(ierr);
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
     {
@@ -500,7 +506,12 @@ static PetscErrorCode objective_function_surfacebc( SNES snes, Vec x, Vec f, voi
     /* conductive flux */
     /* FIXME: does arr_dPdr_b[i] have a valid value at i=0? */ 
     res += eos_eval.cond * (eos_eval.T / eos_eval.Cp * dSdr0 + arr_dPdr_b[ind0] * E->eos_eval.dTdPs);
-    
+  
+    /* for normalising residual? */ 
+    res /= emissivity * FC->STEFAN_BOLTZMANN * ( PetscPowScalar( eos_eval.T, 4.0 ) - PetscPowScalar( Ap->teqm, 4.0 ) ); 
+    //res *= 1.0E8;
+    //res = res - 1.0;
+
     /* convective flux, probably only works when mixing length constant */
     /* FIXME TODO */
     ff[ind0] = res;
