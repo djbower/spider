@@ -153,9 +153,9 @@ tests:
       name: reaction
       commands:
         - HERE/../spider -options_file HERE/opts/reaction.opts -nstepsmacro 1
-        - HERE/json_timestep_to_txt.py output/10000.json
+        - HERE/json_timestep_to_txt.py output/1000.json
       expected: expected_output/expected_reaction.txt
-      comparison: 10000.txt
+      comparison: 1000.txt
       type: float_lines
       rules:
         -
