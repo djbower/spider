@@ -1,8 +1,7 @@
 #include "atmosphere.h"
 #include "energy.h"
 #include "eos.h"
-#include "eos_rtpress.h" // TODO need this?
-#include "eos_composite.h" // TODO need this?
+#include "eos_composite.h"
 #include "matprop.h"
 #include "twophase.h"
 #include "util.h"
