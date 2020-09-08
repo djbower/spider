@@ -22,6 +22,7 @@ static PetscErrorCode EOSEval_Lookup(EOS eos, PetscScalar P, PetscScalar S, EOSE
      SPIDER */
   eval->Cv = 0.0;
   eval->V = 0.0;
+  ierr = EOSEvalSetViscosity(eos, eval);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 

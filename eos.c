@@ -44,7 +44,6 @@ PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EOSEvalData
 
   /* Common Logic */
   eval->cond = eos->cond; // conductivity constant
-  ierr = EOSEvalSetViscosity(eos, eval);CHKERRQ(ierr);
   eval->phase_fraction = 1.0; // by definition, since only one phase
   eval->fusion = 0.0; // meaningless for a single phase
   PetscFunctionReturn(0);

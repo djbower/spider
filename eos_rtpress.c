@@ -42,6 +42,7 @@ static PetscErrorCode EOSEval_RTpress(EOS eos, PetscScalar P, PetscScalar S, EOS
   ierr = EOSRTpress_GetCv( rtp, eval->V, eval->T, &eval->Cv );
   ierr = EOSRTpress_GetRho( rtp, eval->V, eval->T, &eval->rho );
   ierr = EOSRTpress_GetAlpha( rtp, eval->V, eval->T, &eval->alpha );
+  ierr = EOSEvalSetViscosity(eos, eval);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
