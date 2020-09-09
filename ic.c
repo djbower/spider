@@ -1,7 +1,6 @@
 #include "atmosphere.h"
 #include "energy.h"
 #include "eos.h"
-#include "eos_composite.h" // TODO need this?
 #include "ic.h"
 #include "monitor.h"
 #include "parameters.h"
