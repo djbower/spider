@@ -115,11 +115,6 @@
 -solid_cond 4.0 # conductivity of solid
 -solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
 
-# new format for mixed phase region(s)
--eos_composite_two_phase
-# liquidus phase (melt) must be first in list, followed by solidus phase (solid) */
--eos_composite_two_phase_names melt,solid
-
 # mixing length
 # [1] is conventional, i.e. distance from the nearest boundary
 #     which is either the surface or core-mantle boundary
