@@ -6,13 +6,11 @@
 typedef struct {
     EOS *eos;
     PetscInt n_eos;
-    /* it's only for composite structures that we need to know
+    /* For composite structures that we need to know
        if/how to blend together the material parameters across
        phase boundaries.  Most are blended using a simple linear
-       weighting and a tanh functon, but the viscosity smoothing
-       is a bit more complicated.  To reiterate, these quantities
-       are not relevant for single-phase EOS implementations */
-    /* these are all smoothing-related */
+       weighting and a tanh function, but the viscosity smoothing
+       is a bit more complicated. */
     PetscScalar matprop_smooth_width; // numerical reasons only
     PetscScalar phi_critical; // physical transition between melt and solid for viscosity
     PetscScalar phi_width; // physical transition between melt and solid for viscosity
