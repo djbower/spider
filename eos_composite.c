@@ -145,8 +145,8 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
 {
   PetscErrorCode     ierr;
   data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
-  EOSEvalData            eval2; // pure phase for blending across phase boundary
-  EOSEvalData            eval_melt, eval_solid;
+  EOSEvalData        eval2; // pure phase for blending across phase boundary
+  EOSEvalData        eval_melt, eval_solid;
   PetscScalar        gphi, smth, liquidus, solidus, fwt;
 
   /* this function is called alot, if we have two phases.  Is it therefore better to store all 
