@@ -42,10 +42,6 @@ PetscErrorCode EOSEval(const EOS eos, PetscScalar P , PetscScalar S, EOSEvalData
   if (!eos->eval) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Incomplete EOS object: no implementation for EOSEval has been provided");
   ierr = (*(eos->eval))(eos,P,S,eval);CHKERRQ(ierr);
 
-  /* Common Logic */
-  eval->cond = eos->cond; // conductivity constant
-  eval->phase_fraction = 1.0; // by definition, since only one phase
-  eval->fusion = 0.0; // meaningless for a single phase
   PetscFunctionReturn(0);
 }
 

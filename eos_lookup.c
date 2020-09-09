@@ -23,6 +23,8 @@ static PetscErrorCode EOSEval_Lookup(EOS eos, PetscScalar P, PetscScalar S, EOSE
   eval->Cv = 0.0;
   eval->V = 0.0;
   ierr = EOSEvalSetViscosity(eos, eval);CHKERRQ(ierr);
+  eval->cond = eos->cond; // conductivity constant
+  eval->phase_fraction = 1.0; // by definition, since only one phase
   PetscFunctionReturn(0);
 }
 
