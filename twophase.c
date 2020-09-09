@@ -81,8 +81,15 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     ierr = DMDAVecGetArray(da_s,result_s,&arr_result_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S);CHKERRQ(ierr);
 
+    {
+      EOSType type;
+
+      ierr = EOSGetType(P->eos,&type);CHKERRQ(ierr);
+      if (type != SPIDER_EOS_COMPOSITE) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Only defined for Composite EOS");
+    }
+
     for(i=ilo_s; i<ihi_s; ++i){
-        ierr = EOSEval( P->eos_composites[0], arr_pres[i], arr_S[i], &eos_eval );CHKERRQ(ierr);
+        ierr = EOSEval( P->eos, arr_pres[i], arr_S[i], &eos_eval );CHKERRQ(ierr);
         arr_result_s[i] = arr_dSdt_s[i] * arr_mass_s[i];
         arr_result_s[i] /= eos_eval.fusion;
 

@@ -194,8 +194,7 @@ static PetscErrorCode append_Jmix( Ctx *E )
     EOS *sub_eos;
 
     /* Jmix requires two phases */
-    const EOS eos_composite = P->eos_composites[0];
-    ierr = EOSCompositeGetSubEOS(eos_composite, &sub_eos, &should_be_two);CHKERRQ(ierr);
+    ierr = EOSCompositeGetSubEOS(P->eos, &sub_eos, &should_be_two);CHKERRQ(ierr);
     if (should_be_two!=2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Expecting two sub-EOSs");
     const EOS Ep0 = sub_eos[0];
     const EOS Ep1 = sub_eos[1];
@@ -223,11 +222,11 @@ static PetscErrorCode append_Jmix( Ctx *E )
         arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
 
         /* (optional) smoothing across phase boundaries for two phase composite */
-        ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(eos_composite, arr_pres[i], arr_S[i], &gphi);CHKERRQ(ierr);
+        ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, arr_pres[i], arr_S[i], &gphi);CHKERRQ(ierr);
         {
           PetscScalar matprop_smooth_width;
 
-          ierr = EOSCompositeGetMatpropSmoothWidth(eos_composite, &matprop_smooth_width);CHKERRQ(ierr);
+          ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
           smth = get_smoothing(matprop_smooth_width, gphi );
         }
         arr_Jmix[i] *= smth;
@@ -293,8 +292,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     EOS *sub_eos;
 
     /* Jgrav requires two phases */
-    const EOS eos_composite = P->eos_composites[0];
-    ierr = EOSCompositeGetSubEOS(eos_composite, &sub_eos, &should_be_two);CHKERRQ(ierr);
+    ierr = EOSCompositeGetSubEOS(P->eos, &sub_eos, &should_be_two);CHKERRQ(ierr);
     if (should_be_two!=2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Expecting two sub-EOSs");
     const EOS Ep0 = sub_eos[0];
     const EOS Ep1 = sub_eos[1];

@@ -158,7 +158,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
           EOS      *sub_eos;
           PetscInt should_be_two;
 
-          ierr = EOSCompositeGetSubEOS(ctx->parameters->eos_composites[0], &sub_eos, &should_be_two);CHKERRQ(ierr);
+          ierr = EOSCompositeGetSubEOS(ctx->parameters->eos, &sub_eos, &should_be_two);CHKERRQ(ierr);
           if (should_be_two!=2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Expecting two sub-EOSs");
           ierr = JSON_add_phase_boundary( ctx, sub_eos[0], "liquidus", data ); CHKERRQ(ierr);
           ierr = JSON_add_phase_boundary( ctx, sub_eos[1], "solidus", data ); CHKERRQ(ierr);
