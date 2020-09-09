@@ -170,8 +170,7 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   /* FIXME: unsure what the best approach is here.  The following functions are highly modular,
      but I think it slows the code down a lot since many of the functions repeat the same lookups
      It would reduce the modularity, but for speed the better option would be to have an
-     aggregate function that only evaluates things once.  This would be trivial to implement,
-     but leaving as is for the time being until PS formalises the EosParameters and EosComposite structs */
+     aggregate function that only evaluates things once.  This would be trivial to implement. */
 
   ierr = EOSCompositeGetTwoPhaseLiquidus(eos, P, &liquidus ); CHKERRQ(ierr);
   ierr = EOSCompositeGetTwoPhaseSolidus(eos, P, &solidus ); CHKERRQ(ierr);
