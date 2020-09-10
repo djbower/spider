@@ -129,6 +129,7 @@ tests:
           key: scaling:
           rtol: 1e-11
           atol: 1e-10
+
     -
       name: blackbody_short
       groups:
@@ -142,11 +143,31 @@ tests:
       rules:
         -
           key: val:
-          rtol: 1e-3
+          rtol: 1e-11
           atol: 1e-10
         -
           key: scaling:
-          rtol: 1e-3
+          rtol: 1e-11
+          atol: 1e-10
+
+    -
+      name: blackbody_mixed
+      groups:
+        - basic
+      commands:
+        - HERE/../spider -options_file HERE/opts/blackbody_short.opts -nstepsmacro 0 -ic_adiabat_entropy 2100
+        - HERE/json_timestep_to_txt.py output/0.json
+      expected: expected_output/expected_blackbody_mixed.txt
+      comparison: 0.txt
+      type: float_lines
+      rules:
+        -
+          key: val:
+          rtol: 1e-11
+          atol: 1e-10
+        -
+          key: scaling:
+          rtol: 1e-11
           atol: 1e-10
 
     -
