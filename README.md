@@ -210,6 +210,9 @@ There is a manual located in ```manual/```, and you are strongly encouraged to u
 1. Use valgrind to confirm that your code is free of memory leaks (or alternatively, we will do this before merging your branch with master)
 1. Most importantly, comment comment comment!  And try to predict potential bugs as you code and add a commment about those as well!
 
+   - Comments are no substitute for well-structured and clear code (code can't lie).
+   - Do not include any (new) "TODO", "FIXME", or other personal comments in master. Fix problems or leave a clear comment or error message.
+
 ## Running the code
 
 Add the installation directory to your `$PATH` so you can call the `spider` binary without requiring the absolute path.  Typically, you will set up a project folder elsewhere to store your models, i.e., outside the installation directory where the SPIDER source code resides.  You can run `spider` without an argument and standard parameters will be used for a simple magma ocean cooling model.  But in general, you will add an argument, i.e. `spider -options_file input.opts` to use the parameters specified in `input.opts` (this input filename is an example).  There are example input files in the `examples/` directory.
