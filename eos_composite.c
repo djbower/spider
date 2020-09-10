@@ -78,32 +78,36 @@ PetscErrorCode EOSCreate_Composite(EOS eos) {
 /* EOSComposite interface functions */
 PetscErrorCode EOSCompositeGetMatpropSmoothWidth(EOS eos, PetscScalar *matprop_smooth_width)
 {
-  PetscErrorCode     ierr;
   data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
 
   PetscFunctionBeginUser;
+#if defined(PETSC_USE_DEBUG)
   {
-    EOSType type;
+    PetscErrorCode     ierr;
+    PetscBool is_composite;
 
-    ierr = EOSGetType(eos,&type);CHKERRQ(ierr);
-    if (type != SPIDER_EOS_COMPOSITE) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on a Composite EOS");
+    ierr = EOSCheckType(eos,SPIDER_EOS_COMPOSITE,&is_composite);CHKERRQ(ierr);
+    if (!is_composite) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on a Composite EOS");
   }
+#endif
   *matprop_smooth_width = composite->matprop_smooth_width;
   PetscFunctionReturn(0);
 }
 
 PetscErrorCode EOSCompositeGetTwoPhasePhaseFractionNoTruncation(EOS eos, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction)
 {
-  PetscErrorCode     ierr;
-  PetscScalar        solidus, liquidus;
+  PetscErrorCode ierr;
+  PetscScalar    solidus, liquidus;
 
   PetscFunctionBeginUser;
+#if defined(PETSC_USE_DEBUG)
   {
-    EOSType type;
+    PetscBool is_composite;
 
-    ierr = EOSGetType(eos,&type);CHKERRQ(ierr);
-    if (type != SPIDER_EOS_COMPOSITE) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on a Composite EOS");
+    ierr = EOSCheckType(eos,SPIDER_EOS_COMPOSITE,&is_composite);CHKERRQ(ierr);
+    if (!is_composite) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on a Composite EOS");
   }
+#endif
   ierr = EOSCompositeGetTwoPhaseSolidus(eos, P, &solidus ); CHKERRQ(ierr);
   ierr = EOSCompositeGetTwoPhaseLiquidus(eos, P, &liquidus ); CHKERRQ(ierr);
   *phase_fraction = ( S - solidus ) / (liquidus-solidus);
@@ -112,16 +116,18 @@ PetscErrorCode EOSCompositeGetTwoPhasePhaseFractionNoTruncation(EOS eos, PetscSc
 
 PetscErrorCode EOSCompositeGetSubEOS(EOS eos, EOS **sub_eos, PetscInt *n_sub_eos)
 {
-  PetscErrorCode     ierr;
   data_EOSComposite *composite = (data_EOSComposite*) eos->impl_data;
 
   PetscFunctionBeginUser;
+#if defined(PETSC_USE_DEBUG)
   {
-    EOSType type;
+    PetscErrorCode ierr;
+    PetscBool      is_composite;
 
-    ierr = EOSGetType(eos,&type);CHKERRQ(ierr);
-    if (type != SPIDER_EOS_COMPOSITE) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on a Composite EOS");
+    ierr = EOSCheckType(eos,SPIDER_EOS_COMPOSITE,&is_composite);CHKERRQ(ierr);
+    if (!is_composite) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on a Composite EOS");
   }
+#endif
   if (!composite->eos) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"No sub-EOS to get");
   *sub_eos = composite->eos;
   *n_sub_eos = composite->n_eos;
@@ -137,10 +143,10 @@ PetscErrorCode EOSCompositeSetSubEOS(EOS eos, EOS *sub_eos, PetscInt n_sub_eos)
   if (eos->is_setup) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Can only set sub-EOSs before setup");
   if (composite->eos) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONGSTATE,"Can only set sub-EOSs once");
   {
-    EOSType type;
+    PetscBool is_composite;
 
-    ierr = EOSGetType(eos,&type);CHKERRQ(ierr);
-    if (type != SPIDER_EOS_COMPOSITE) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on a Composite EOS");
+    ierr = EOSCheckType(eos,SPIDER_EOS_COMPOSITE,&is_composite);CHKERRQ(ierr);
+    if (!is_composite) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on a Composite EOS");
   }
   composite->eos = sub_eos;
   composite->n_eos = n_sub_eos;
