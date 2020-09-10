@@ -3,7 +3,6 @@
 #include "util.h"
 #include "twophase.h"
 #include "eos.h"
-#include "eos_composite.h" // TODO not ideal to have this?
 
 static PetscErrorCode set_matprop_staggered( Ctx * );
 static PetscErrorCode apply_log10visc_cutoff( Parameters const, PetscScalar * );
@@ -51,15 +50,7 @@ PetscErrorCode set_phase_fraction_staggered( Ctx *E )
     for(i=ilo_s; i<ihi_s; ++i){
         PP = arr_pres[i];
         SS = arr_S[i];
-        /* TODO: this is an obvious switch statement to standardise by consolidating the EOS
-           Structures */
-        if( P->n_phases == 1){
-            ierr = EOSEval( P->eos_phases[0], PP, SS, &eos_eval );CHKERRQ(ierr);
-        }
-        else if (P->n_phases == 2){
-            ierr = EOSEval( P->eos_composites[0], PP, SS, &eos_eval );CHKERRQ(ierr);
-        }
-
+        ierr = EOSEval(P->eos, PP, SS, &eos_eval );CHKERRQ(ierr);
         arr_phi[i] = eos_eval.phase_fraction;
     }
 
@@ -91,24 +82,10 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     ierr = DMDAVecGetArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
-
-        /* there is now obvious symmetry here, and this can be further collapsed when EosComposite and
-           EosParameters are consolidated */
-
-        /* Note for PS: you can see below how if the EOSEvalData and EosCompositeEval are consolidated, the 
-           if statement can probably be removed */
-        /* single phase */
-        if( P->n_phases==1 ){
-            ierr = EOSEval( P->eos_phases[0], arr_pres_s[i], arr_S_s[i], &eos_eval );CHKERRQ(ierr);
-        }
-        else{ /* if P->n_phases==2 */
-            ierr = EOSEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &eos_eval );CHKERRQ(ierr);
-        }
-
+        ierr = EOSEval( P->eos, arr_pres_s[i], arr_S_s[i], &eos_eval );CHKERRQ(ierr);
         arr_rho_s[i] = eos_eval.rho;
         arr_temp_s[i] = eos_eval.T;
         arr_cp_s[i] = eos_eval.Cp;
-
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
@@ -174,15 +151,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArray(    da_b,S->regime,&arr_regime); CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){
-
-      /* single phase */
-      if( P->n_phases==1 ){
-          ierr = EOSEval( P->eos_phases[0], arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
-      }
-      else{
-          ierr = EOSEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
-      }
-
+      ierr = EOSEval( P->eos, arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
       arr_phi[i] = eos_eval.phase_fraction;
       arr_rho[i] = eos_eval.rho;
       arr_dTdrs[i] = arr_dPdr_b[i] * eos_eval.dTdPs;

@@ -550,12 +550,15 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->n_phases = 0;
   {
     char      *prefixes[SPIDER_MAX_PHASES];
-    PetscInt  n_phases = SPIDER_MAX_PHASES;
-    PetscBool set;
+    PetscInt   n_phases = SPIDER_MAX_PHASES;
+    PetscBool  set;
 
     ierr = PetscOptionsGetStringArray(NULL,NULL,"-phase_names",prefixes,&n_phases,&set);CHKERRQ(ierr);
+    /* If there is a single phase, use this "pure" EOS. If there are two phases,
+       form a composite, assuming melt,solid ordering */
     if (set) { 
       P->n_phases = n_phases;
+      if (P->n_phases > SPIDER_MAX_PHASES) SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_SUP,"%D phases specified, but the maximum is %D",P->n_phases,SPIDER_MAX_PHASES);
       for (PetscInt r=0; r<P->n_phases; ++r) {
         char buf[1024]; /* max size */
         PetscInt type = 1;
@@ -574,7 +577,14 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
         ierr = EOSSetUpFromOptions(P->eos_phases[r], prefixes[r], FC, SC);CHKERRQ(ierr);
         ierr = PetscFree(prefixes[r]);CHKERRQ(ierr);
       }
-    }
+      if (P->n_phases == 1) {
+        P->eos = P->eos_phases[0];
+      } else if (P->n_phases == 2) {
+        ierr = EOSCreate(&P->eos, SPIDER_EOS_COMPOSITE);CHKERRQ(ierr);
+        ierr = EOSCompositeSetSubEOS(P->eos, P->eos_phases, P->n_phases);CHKERRQ(ierr);
+        ierr = EOSSetUpFromOptions(P->eos, "composite", FC, SC);CHKERRQ(ierr);
+      } else SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Only one or two phases are supported");
+    } else SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"You must supply the -phase_names option");
   }
 
   /* Energy terms to include */
@@ -592,30 +602,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   if( P->n_phases == 1){
       P->MIXING = PETSC_FALSE;
       P->SEPARATION = PETSC_FALSE;
-  }
-
-
-  /* This is a bit tricky.  Basically, if you define two phases, you will most likely need a mixed
-     phase region to compute the mixed phase region between them.  But, another option is to define
-     two phases (e.g., solid), and use one for an upper layer and one for a lower layer.  So defining
-     two phases in the system does not necessarily mean you need a mixed phase in between them */
-
-  /* currently this is user-specified, but it can probably be determined based on other set parameters */
-
-  /* Look for composite phases */
-  P->n_composite_phases = 0;
-  {
-    PetscBool flg;
-
-    ierr = PetscOptionsGetBool(NULL,NULL,"-eos_composite_two_phase",NULL,&flg);CHKERRQ(ierr);
-    if (flg) {
-      const char *prefix = "composite";
-
-      if (P->n_phases != 2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Exactly two phases must be specified");
-      ierr = EOSCreate(&P->eos_composites[0], SPIDER_EOS_COMPOSITE);CHKERRQ(ierr);
-      ierr = EOSCompositeSetSubEOS(P->eos_composites[0], P->eos_phases, P->n_phases);CHKERRQ(ierr);
-      ierr = EOSSetUpFromOptions(P->eos_composites[0], prefix, FC, SC);CHKERRQ(ierr);
-    }
   }
 
   ierr = AtmosphereParametersSetFromOptions( P, SC ); CHKERRQ(ierr);
@@ -1045,17 +1031,12 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
     }
     P->n_radionuclides = 0;
 
-    /* phases */
+    /* EOS / phases */
     for (i=0; i<P->n_phases; ++i) {
         ierr = EOSDestroy(&P->eos_phases[i]);CHKERRQ(ierr);
     }
     P->n_phases = 0;
-
-    /* composite phases */
-    for (i=0; i<P->n_composite_phases; ++i) {
-        ierr = EOSDestroy(&P->eos_composites[i]);CHKERRQ(ierr);
-    }
-    P->n_composite_phases = 0;
+    P->eos = NULL;
 
     ierr = PetscFree(*parameters_ptr);CHKERRQ(ierr);
     *parameters_ptr = NULL;

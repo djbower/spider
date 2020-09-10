@@ -6,9 +6,6 @@
 
 # time stepping
 
-# maximum number of macro steps
--maxsteps 100000000
-
 # number of macro steps
 -nstepsmacro 100
 
@@ -51,6 +48,8 @@
 # output directory
 -outputDirectory output
 
+# If two phase names are specified, a composite is formed. 
+# The order must be as here (melt, solid).
 -phase_names melt,solid
 
 -melt_TYPE 1
@@ -80,11 +79,6 @@
 -solid_visc_ref_comp -1
 -solid_cond 4.0 # conductivity of solid
 -solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
-
-# new format for mixed phase region(s)
--eos_composite_two_phase
-# liquidus phase (melt) must be first in list, followed by solidus phase (solid) */
--eos_composite_two_phase_names melt,solid
 
 # initial condition
 # [1] is set dS/dr to constant everywhere

@@ -15,6 +15,7 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
   PetscFunctionBeginUser;
   ierr = PetscMalloc1(1, p_eos);CHKERRQ(ierr);
   eos = *p_eos;
+  eos->type = type;
   eos->is_setup = PETSC_FALSE;
   ierr = PetscStrcmp(type, SPIDER_EOS_LOOKUP, &flg);CHKERRQ(ierr);
   if (flg) {
@@ -144,6 +145,13 @@ PetscErrorCode EOSGetPhaseBoundary(EOS eos, PetscScalar P, PetscScalar *boundary
 {
   PetscFunctionBeginUser;
   SetInterp1dValue(eos->phase_boundary, P, boundary, dboundary); /* entropy S and derivative dS/dP */
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSGetType(EOS eos, EOSType *type)
+{
+  PetscFunctionBeginUser;
+  *type = eos->type;
   PetscFunctionReturn(0);
 }
 

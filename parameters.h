@@ -141,7 +141,6 @@ typedef data_RadionuclideParameters* RadionuclideParameters;
 
 #define SPIDER_MAX_RADIONUCLIDES 8
 #define SPIDER_MAX_PHASES 2
-#define SPIDER_MAX_COMPOSITE_PHASES 1
 typedef enum {MO_CORE_TYPE_COOLING=1,MO_CORE_TYPE_HEAT_FLUX,MO_CORE_TYPE_ENTROPY} MagmaOceanCoreType;
 typedef struct {
 
@@ -215,11 +214,10 @@ typedef struct {
     PetscInt    n_radionuclides;
     RadionuclideParameters radionuclide_parameters[SPIDER_MAX_RADIONUCLIDES];
 
-    /* Phases (EOS) */
-    PetscInt    n_phases;
-    EOS eos_phases[SPIDER_MAX_PHASES];
-    PetscInt    n_composite_phases;
-    EOS eos_composites[SPIDER_MAX_COMPOSITE_PHASES];
+    /* Equation of state */
+    EOS      eos;
+    EOS      eos_phases[SPIDER_MAX_PHASES];
+    PetscInt n_phases;
 
 } data_Parameters;
 typedef data_Parameters* Parameters;
