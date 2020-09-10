@@ -57,6 +57,7 @@ typedef struct data_EOS_ {
 } data_EOS;
 typedef data_EOS *EOS;
 
+PetscErrorCode EOSCheckType(EOS,EOSType,PetscBool*);
 PetscErrorCode EOSCreate(EOS*, EOSType);
 PetscErrorCode EOSDestroy(EOS*);
 PetscErrorCode EOSEval(EOS, PetscScalar, PetscScalar, EOSEvalData*);

@@ -6,6 +6,16 @@ static PetscScalar GetCompositionalViscosityPrefactor(PetscScalar);
 static PetscErrorCode LookupFilenameSet(const char*,const char*,char*,PetscBool*);
 
 /* EOS interface functions (public API) */
+PetscErrorCode EOSCheckType(EOS eos, EOSType type, PetscBool *same)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+  ierr = PetscStrcmp(type, eos->type, same);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
 PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
 {
   PetscErrorCode ierr;
