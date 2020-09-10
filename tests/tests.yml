@@ -141,12 +141,12 @@ tests:
       rules:
         -
           key: val:
-          rtol: 1e-11
-          atol: 1e-10
+          rtol: 1e-5
+          atol: 1e-5
         -
           key: scaling:
-          rtol: 1e-11
-          atol: 1e-10
+          rtol: 1e-5
+          atol: 1e-5
 
     -
       name: blackbody_mixed
@@ -161,12 +161,12 @@ tests:
       rules:
         -
           key: val:
-          rtol: 1e-11
-          atol: 1e-10
+          rtol: 1e-5
+          atol: 1e-5
         -
           key: scaling:
-          rtol: 1e-11
-          atol: 1e-10
+          rtol: 1e-5
+          atol: 1e-5
 
     -
       name: reaction
