@@ -112,8 +112,6 @@ tests:
 
     -
       name: blackbody
-      groups:
-        - basic
       commands:
         - HERE/../spider -options_file HERE/opts/blackbody.opts
         - HERE/json_timestep_to_txt.py output/10000.json
