@@ -10,6 +10,8 @@
 
 # for double precision, tolerances should not be tighter than
 # 1.0e-11
+# you may also be able to relax the tolerances to less than
+# 1.0E-10
 
 # tolerances for master timestepper
 -ts_sundials_atol 1.0e-10
@@ -19,27 +21,23 @@
 # these are used to solve for dp/dt for each volatile species during the
 # timestepping
 # rule of thumb: should be around same magnitude as master timestepper
-# TODO: check with PS
 -atmosts_snes_atol 1.0E-10
 -atmosts_snes_rtol 1.0E-10
 -atmosts_ksp_atol 1.0E-10
 -atmosts_ksp_rtol 1.0E-10
 
-# suggested by PS
-# solver for initial volatile contents
+# solve for initial partial pressure of volatile(s)
+# next two lines provide information about the convergence behaviour
 -atmosic_snes_verbose_monitor
 -atmosic_snes_converged_reason
-# FIXME: if the line below is uncomment, the solver fails
-# during timestepping.  Even though the solver reports
-# as converged for the atmosic
-# TODO: ask PS - what is the default snes type?
-#-atmosic_snes_type newtontr
-# FIXME: newtontr does not seem to adhere to these tolerances.  Why?
+# we use a Newton trust region solver, since sometimes the initial
+# estimate for volatile abundance(s) is sub-optimal
+-atmosic_snes_type newtontr
+-atmosic_trtol 1e-10
 -atmosic_ksp_rtol 1e-10
 -atmosic_ksp_atol 1e-10
 
-# FIXME: if the line below is uncommented, the solver fails
-# TODO: ask PS how to set these parameters
+# below are only relevant if we use a linesearch
 #-atmosic_snes_linesearch_damping 0.01
 #-atmosic_snes_max_it 10000
 #-snes_linesearch_max_it 100000
@@ -68,8 +66,7 @@
 -radius0 63710000.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
--density0 1.0E-1 #4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
-# volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
+-density0 1.0E-1
 -volatile0 1.0E-6
 
 # energy fluxes and sources to include
