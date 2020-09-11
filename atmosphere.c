@@ -1164,24 +1164,32 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
             f = -0.1650;
             break;
         case 6:
+            /* Fischer et al. (2011), IW+0.5 at 0 GPa */
+            a = 6.94059; // was 6.44059 for IW
+            b = -28.1808;
+            c = 0.0;
+            d = 0.0;
+            f = 0.0;
+            break;
+        case 7:
             /* Olson and Sharp (2019), IW buffer */
             a = -2.75E6;
             b = -1.7;
             c = 0.0;
             break;
-        case 7:
+        case 8:
             /* Olson and Sharp (2019), IW-1 */
             a = -2.75E6;
             b = -1.7;
             c = -1.0;
             break;
-        case 8:
+        case 9:
             /* Olson and Sharp (2019), IW-2 */
             a = -2.75E6;
             b = -1.7;
             c = -2.0;
             break;
-        case 9:
+        case 10:
             /* Olson and Sharp (2019), IW-3 */
             a = -2.75E6;
             b = -1.7;
@@ -1192,8 +1200,8 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
             break;
         }
 
-    /* Schaefer and Fegley (2017) */
-    if( Ap->OXYGEN_FUGACITY <= 5 ){
+    /* Schaefer and Fegley (2017) or Fischer et al. (2011) */
+    if( Ap->OXYGEN_FUGACITY <= 6 ){
         func = a + b*1E3/temp + c*1E6/PetscPowScalar(temp,2.0) + d*1E9/PetscPowScalar(temp,3.0) + f*1E12/PetscPowScalar(temp,4.0);
         dfuncdT = -b*1E3/PetscPowScalar(temp,2.0) - 2*c*1E6/PetscPowScalar(temp,3.0) - 3*d*1E9/PetscPowScalar(temp,4.0) - 4*f*1E12/PetscPowScalar(temp,5.0);
     }
