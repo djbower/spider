@@ -1172,28 +1172,12 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
             f = 0.0;
             break;
         case 7:
-            /* Olson and Sharp (2019), IW buffer */
-            a = -2.75E6;
-            b = -1.7;
-            c = 0.0;
-            break;
-        case 8:
-            /* Olson and Sharp (2019), IW-1 */
-            a = -2.75E6;
-            b = -1.7;
-            c = -1.0;
-            break;
-        case 9:
-            /* Olson and Sharp (2019), IW-2 */
-            a = -2.75E6;
-            b = -1.7;
-            c = -2.0;
-            break;
-        case 10:
-            /* Olson and Sharp (2019), IW-3 */
-            a = -2.75E6;
-            b = -1.7;
-            c = -3.0;
+            /* O'Neill and Eggins, 2002 for IW + 0.5 */
+            a = 2;
+            b = -244118;
+            c = 115.559;
+            d = -8.474;
+            f = 8.31441;
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported OXYGEN_FUGACITY value %d provided",Ap->OXYGEN_FUGACITY);
@@ -1205,10 +1189,10 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
         func = a + b*1E3/temp + c*1E6/PetscPowScalar(temp,2.0) + d*1E9/PetscPowScalar(temp,3.0) + f*1E12/PetscPowScalar(temp,4.0);
         dfuncdT = -b*1E3/PetscPowScalar(temp,2.0) - 2*c*1E6/PetscPowScalar(temp,3.0) - 3*d*1E9/PetscPowScalar(temp,4.0) - 4*f*1E12/PetscPowScalar(temp,5.0);
     }
-    /* Olson and Sharp (2019) fits to Ebel and Grossman (2000) */
+    /* O'Neill and Eggins, 2002 for IW + 0.5 */
     else{
-        func = a * PetscPowScalar( temp, b ) + c;
-        dfuncdT = a * b * PetscPowScalar( temp, b-1 );
+        func = (a * ( b + c * temp + d * temp * PetscLogReal(temp) ) / (PetscLogReal(10) * f * temp )) + 0.5;
+        dfuncdT = a * (d * temp - b) / ( f * PetscPowScalar(temp,2.0) * PetscLogReal(10) );
     }
 
     /* Remember that oxygen_fugacity is equivalent to a volume
