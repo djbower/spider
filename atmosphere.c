@@ -1032,6 +1032,10 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
             V->dxdp += G * get_dxdp_from_solubility_power_law( V->p, Vp->henry2, Vp->henry_pow2 );
             V->dxdt = V->dxdp * V->dpdt;
             V->dxdt += dGdt *  Vp->henry2 * PetscPowScalar( V->p, 1.0/Vp->henry_pow2);
+            break;
+        case 3:
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Solubility case 3 (CO2 from Dixon et al. 1995) dxdt needs setting");
+            break;
     }
 
     out2 += V->dxdt * ( Ap->volatile_parameters[i]->kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i]->kdist) * A->Mliq);
