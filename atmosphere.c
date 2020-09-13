@@ -369,7 +369,8 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
 {
 
     /* This function contains the solubility laws.  For each solubility law, you must give the relationship
-       between x and p */
+       between x and p. NOTE: for every solubility law, you must also specify dx/dp (hence dx/dt) in
+       get_dpdt() */
 
     PetscInt i;
     Volatile                 *V;
