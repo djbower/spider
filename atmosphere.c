@@ -374,8 +374,7 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
     PetscInt i;
     Volatile                 *V;
     VolatileParameters       Vp;
-    PetscScalar              log10G;
-    PetscScalar              G;
+    PetscScalar              log10G, G, pbar=0, Tkel=0;
 
     PetscFunctionBeginUser;
 
@@ -400,6 +399,16 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 G = PetscPowScalar( 10.0, log10G );
                 V->x = get_x_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
                 V->x += G * get_x_from_solubility_power_law( V->p, Vp->henry2, Vp->henry_pow2 );
+                break;
+
+            case 3:
+                /* CO2 for Basalt from Dixon et al. (1995) */
+                /* need T in K and P in bar for this solubility formulation */
+                pbar = V->p * SC->PRESSURE * 1.0E-5; // bar
+                Tkel = A->tsurf * SC->TEMP; // Kelvin
+                V->x = (3.8E-7)*pbar*PetscExpScalar( -23*(pbar-1)/(83.15*Tkel) );
+                V->x = 1.0E4 * (4400 * V->x ) / (36.6 - 44 * V->x ); // ppm
+                V->x *= 1.0E-6 / SC->VOLATILE;
                 break;
 
             /* add more cases to include more solubility laws */
@@ -1191,7 +1200,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
     }
     /* O'Neill and Eggins, 2002 for IW + 0.5 */
     else{
-        func = (a * ( b + c * temp + d * temp * PetscLogReal(temp) ) / (PetscLogReal(10) * f * temp )) + 0.5;
+        func = a * ( b + c * temp + d * temp * PetscLogReal(temp) ) / (PetscLogReal(10) * f * temp ) + 0.5;
         dfuncdT = a * (d * temp - b) / ( f * PetscPowScalar(temp,2.0) * PetscLogReal(10) );
     }
 
