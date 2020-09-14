@@ -947,7 +947,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
     PetscInt                  j,k;
     VolatileParameters  const Vp = Ap->volatile_parameters[i];
     Volatile                  *V = &A->volatiles[i];
-    PetscScalar               log10G, G, dGdt, dlog10GdT;
+    PetscScalar               log10G, G, dGdt, dlog10GdT, pbar=0, Tkel=0;
 
     /* remember that to this point, V->f_thermal_escape is always
        computed but not necessarily used in the calculation */
@@ -1015,11 +1015,13 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
     }
 
     switch( Vp->SOLUBILITY ){
+
         case 1:
             /* Solubility power law (default) */
             V->dxdp = get_dxdp_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
             V->dxdt = V->dxdp * V->dpdt;
             break;
+
         case 2:
             /* FIXME: need modified equilibrium constant, and we can easily get this assuming
                the H2-H2O reaction is in the first slot (but in general it might not be) */
@@ -1034,8 +1036,23 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
             V->dxdt = V->dxdp * V->dpdt;
             V->dxdt += dGdt *  Vp->henry2 * PetscPowScalar( V->p, 1.0/Vp->henry_pow2);
             break;
+
         case 3:
-            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Solubility case 3 (CO2 from Dixon et al. 1995) dxdt needs setting");
+            /* CO2 for Basalt from Dixon et al. (1995) */
+            /* need T in K and P in bar for this solubility formulation */
+            pbar = V->p * SC->PRESSURE * 1.0E-5; // bar
+            Tkel = A->tsurf * SC->TEMP; // Kelvin
+            V->dxdp = (3.8E-7)*(1.0E4)*(4400)*(36.6)*PetscExpScalar( -23*(pbar-1)/(83.15*Tkel) ) * (-23*pbar + 83.15*Tkel);
+            V->dxdp /= PetscPowScalar( (3.8E-7)*(-44)*pbar*PetscExpScalar( -23*(pbar-1)/(83.15*Tkel)) + 36.6, 2);
+            V->dxdp /= 83.15 * Tkel;
+            /* units here are ppm / bar.  Convert back to non-dimensional */
+            V->dxdp *= SC->PRESSURE * 1.0E-5; /* convert to non-dimensional pressure */
+            V->dxdp *= 1.0E-6 / SC->VOLATILE; /* convert to non-dimensional abundance */
+            V->dxdt = V->dxdp * V->dpdt;
+            break;
+
+        default:
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"dx/dt (dx/dp) not defined for this solubility law");
             break;
     }
 
