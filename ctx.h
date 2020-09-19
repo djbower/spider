@@ -9,18 +9,18 @@
 
 /* common structures */
 
-#define NUMMESHVECS_B 5
-#define NUMMESHVECS_S 7
+#define NUMMESHVECS_B 6
+#define NUMMESHVECS_S 8
 typedef struct Mesh_ {
 
     DimensionalisableField meshFields_b[NUMMESHVECS_B];
     DimensionalisableField meshFields_s[NUMMESHVECS_S];
 
     // TODO: eventually get rid of these (though think about how to better name the DimensionalisableFields..)
-    Vec area_b,dPdr_b,pressure_b,radius_b,mix_b,layer_b;
+    Vec area_b,dPdr_b,pressure_b,radius_b,mix_b,layer_b,xi_b;
 
     // TODO: eventually get rid of these
-    Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,rho_s,mass_s;
+    Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,rho_s,mass_s,xi_s;
 
     /* DJB atmosphere.  For seeing what the 'pressure' estimate of the
        mass is */
