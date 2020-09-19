@@ -24,7 +24,7 @@ typedef struct Mesh_ {
 
     /* DJB atmosphere.  For seeing what the 'pressure' estimate of the
        mass is */
-    PetscScalar mantle_mass;
+    PetscScalar mantle_mass, mantle_volume, mantle_density;
 
 } Mesh;
 

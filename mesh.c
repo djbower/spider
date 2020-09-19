@@ -10,10 +10,11 @@ static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_mass( Mesh * );
+static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Parameters const, PetscScalar );
 
 PetscErrorCode set_mesh( Ctx *E)
 {
-
+    PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     DM             da_b=E->da_b, da_s=E->da_s;
     Parameters     P = E->parameters;
@@ -23,7 +24,7 @@ PetscErrorCode set_mesh( Ctx *E)
     /* for regular mesh, although without resolving the ultra-thin
        thermal boundary layer at the base of the mantle this likely
        gives wrong results */
-    regular_mesh( E );
+    ierr = regular_mesh( E );
 
     /* need to use geometric mesh to resolve ultra-thin thermal
        boundary layer at the base of the mantle */
@@ -32,25 +33,25 @@ PetscErrorCode set_mesh( Ctx *E)
     /* Adams-Williamson EOS */
 
     /* pressure at basic nodes */
-    aw_pressure( da_b, M->radius_b, M->pressure_b, P);
+    ierr = aw_pressure( da_b, M->radius_b, M->pressure_b, P);
 
     /* dP/dr at basic nodes */
-    aw_pressure_gradient( da_b, M->radius_b, M->dPdr_b, P);
+    ierr = aw_pressure_gradient( da_b, M->radius_b, M->dPdr_b, P);
 
     /* pressure at staggered nodes */
-    aw_pressure( da_s, M->radius_s, M->pressure_s, P);
+    ierr = aw_pressure( da_s, M->radius_s, M->pressure_s, P);
 
     /* dP/dr at staggered nodes */
-    aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s, P );
+    ierr = aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s, P );
 
     /* surface area at basic nodes, without 4*pi term */
-    spherical_area( da_b, M->radius_b, M->area_b);
+    ierr = spherical_area( da_b, M->radius_b, M->area_b);
 
     /* surface area at staggered nodes, without 4*pi term */
-    spherical_area( da_s, M->radius_s, M->area_s );
+    ierr = spherical_area( da_s, M->radius_s, M->area_s );
 
     /* volume of spherical cells, without 4*pi term */
-    spherical_volume( E, M->radius_b, M->volume_s);
+    ierr = spherical_volume( E, M->radius_b, M->volume_s);
 
     /* REMOVE */
     /* layer id.  0 everywhere for single layer (as determined by
@@ -59,13 +60,17 @@ PetscErrorCode set_mesh( Ctx *E)
     //get_layer( da_b, M->radius_b, M->layer_b, P );
 
     /* density at staggered nodes */
-    aw_density( da_s, M->radius_s, M->rho_s, P );
+    ierr = aw_density( da_s, M->radius_s, M->rho_s, P );
 
     /* mass at staggered nodes */
-    aw_mass( M );
+    ierr = aw_mass( M );
 
     /* mantle mass also needed for atmosphere calculations */
     P->atmosphere_parameters->mantle_mass_ptr = &M->mantle_mass;
+
+    /* need mantle mass above, but now can map radius to xi (mass coordinate) */
+    ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, P, M->mantle_density );
+    ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, P, M->mantle_density );
 
     PetscFunctionReturn(0);
 }
@@ -274,6 +279,53 @@ static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
 }
 #endif
 
+static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, const Parameters P, PetscScalar mantle_density )
+{
+
+    /* set mass coordinate from radius.  For the simplest case of a prescribed hydrostatic
+       equation of state (Adams-Williamson), density is a function of r and the mapping can
+       be computed directly from radius --> xi (mass coordinate) */
+
+    PetscErrorCode ierr;
+    PetscScalar    dep,*arr_xi;
+    const PetscScalar *arr_r;
+    PetscInt       i,ilo,ihi,w;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ihi = ilo + w;
+    ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da,xi,&arr_xi);CHKERRQ(ierr);
+    for(i=ilo; i<ihi; ++i){
+        dep = P->radius - arr_r[i];
+        /* below is AW density, and could instead use existing function aw_density() */
+        /* evaluate integral at r */
+        /* this is mass contained with shell of radius r */
+        arr_xi[i] = -2/PetscPowScalar(P->beta,3) - PetscPowScalar(arr_r[i],2)/P->beta - 2*arr_r[i]/PetscPowScalar(P->beta,2);
+        arr_xi[i] *= P->rhos * PetscExpScalar( P->beta * dep );
+        /* minus integral at radius = core-mantle boundary */
+        arr_xi[i] -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * P->radius * (1.0-P->coresize) );
+        /* include other prefactors */
+        //arr_xi[i] *= 3 / mantle_density;
+        //arr_xi[i] = PetscPowScalar( arr_xi[i], 1.0/3.0 );
+    }
+
+    /* now know integrated mass, and can computed average density */
+    mantle_density = 0.0; // reset argument for testing
+    mantle_density = arr_xi[ilo] / ( (1.0/3.0) * ( PetscPowScalar(P->radius,3.0) - PetscPowScalar(P->coresize*P->radius,3.0) ) );
+
+    /* now normalise xi with prefactors */
+    for(i=ilo; i<ihi; ++i){
+        arr_xi[i] *= 3 / mantle_density;
+        arr_xi[i] = PetscPowScalar( arr_xi[i], 1.0/3.0 );
+    }
+
+    ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da,xi,&arr_xi);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
 static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parameters P )
 {
     PetscErrorCode    ierr;
@@ -328,6 +380,11 @@ static PetscErrorCode aw_mass( Mesh *M )
     ierr = VecPointwiseMult( M->mass_s, M->mass_s, M->volume_s );
     /* excludes 4*pi prefactor */
     ierr = VecSum( M->mass_s, &M->mantle_mass );
+
+    /* also determine volume, also excluding 4*pi prefactor */
+    ierr = VecSum( M->volume_s, &M->mantle_volume );
+
+    M->mantle_density = M->mantle_mass / M->mantle_volume;
 
     PetscFunctionReturn(0);
 
