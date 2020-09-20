@@ -24,7 +24,7 @@ PetscErrorCode set_mesh( Ctx *E)
     /* for regular mesh, although without resolving the ultra-thin
        thermal boundary layer at the base of the mantle this likely
        gives wrong results */
-    ierr = regular_mesh( E );
+    ierr = regular_mesh( E );CHKERRQ(ierr);
 
     /* need to use geometric mesh to resolve ultra-thin thermal
        boundary layer at the base of the mantle */
@@ -33,25 +33,25 @@ PetscErrorCode set_mesh( Ctx *E)
     /* Adams-Williamson EOS */
 
     /* pressure at basic nodes */
-    ierr = aw_pressure( da_b, M->radius_b, M->pressure_b, P);
+    ierr = aw_pressure( da_b, M->radius_b, M->pressure_b, P);CHKERRQ(ierr);
 
     /* dP/dr at basic nodes */
-    ierr = aw_pressure_gradient( da_b, M->radius_b, M->dPdr_b, P);
+    ierr = aw_pressure_gradient( da_b, M->radius_b, M->dPdr_b, P);CHKERRQ(ierr);
 
     /* pressure at staggered nodes */
-    ierr = aw_pressure( da_s, M->radius_s, M->pressure_s, P);
+    ierr = aw_pressure( da_s, M->radius_s, M->pressure_s, P);CHKERRQ(ierr);
 
     /* dP/dr at staggered nodes */
-    ierr = aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s, P );
+    ierr = aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s, P );CHKERRQ(ierr);
 
     /* surface area at basic nodes, without 4*pi term */
-    ierr = spherical_area( da_b, M->radius_b, M->area_b);
+    ierr = spherical_area( da_b, M->radius_b, M->area_b);CHKERRQ(ierr);
 
     /* surface area at staggered nodes, without 4*pi term */
-    ierr = spherical_area( da_s, M->radius_s, M->area_s );
+    ierr = spherical_area( da_s, M->radius_s, M->area_s );CHKERRQ(ierr);
 
     /* volume of spherical cells, without 4*pi term */
-    ierr = spherical_volume( E, M->radius_b, M->volume_s);
+    ierr = spherical_volume( E, M->radius_b, M->volume_s);CHKERRQ(ierr);
 
     /* REMOVE */
     /* layer id.  0 everywhere for single layer (as determined by
@@ -60,17 +60,17 @@ PetscErrorCode set_mesh( Ctx *E)
     //get_layer( da_b, M->radius_b, M->layer_b, P );
 
     /* density at staggered nodes */
-    ierr = aw_density( da_s, M->radius_s, M->rho_s, P );
+    ierr = aw_density( da_s, M->radius_s, M->rho_s, P );CHKERRQ(ierr);
 
     /* mass at staggered nodes */
-    ierr = aw_mass( M );
+    ierr = aw_mass( M );CHKERRQ(ierr);
 
     /* mantle mass also needed for atmosphere calculations */
     P->atmosphere_parameters->mantle_mass_ptr = &M->mantle_mass;
 
     /* need mantle mass above, but now can map radius to xi (mass coordinate) */
-    ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, P, M->mantle_density );
-    ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, P, M->mantle_density );
+    ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, P, M->mantle_density );CHKERRQ(ierr);
+    ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, P, M->mantle_density );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
