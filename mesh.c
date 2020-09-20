@@ -6,7 +6,7 @@ static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
 // FIXME: TODO: REMOVE
 //static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
-static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const );
+static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const, PetscScalar * );
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_mass( Mesh * );
@@ -18,6 +18,7 @@ PetscErrorCode set_mesh( Ctx *E)
     Mesh           *M = &E->mesh;
     DM             da_b=E->da_b, da_s=E->da_s;
     Parameters     P = E->parameters;
+    PetscScalar    mantle_density;
 
     PetscFunctionBeginUser;
 
@@ -60,7 +61,7 @@ PetscErrorCode set_mesh( Ctx *E)
     //get_layer( da_b, M->radius_b, M->layer_b, P );
 
     /* density at staggered nodes */
-    ierr = aw_density( da_s, M->radius_s, M->rho_s, P );CHKERRQ(ierr);
+    ierr = aw_density( da_s, M->radius_s, M->rho_s, P, &mantle_density );CHKERRQ(ierr);
 
     /* mass at staggered nodes */
     ierr = aw_mass( M );CHKERRQ(ierr);
@@ -69,8 +70,8 @@ PetscErrorCode set_mesh( Ctx *E)
     P->atmosphere_parameters->mantle_mass_ptr = &M->mantle_mass;
 
     /* need mantle mass above, but now can map radius to xi (mass coordinate) */
-    ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, P, M->mantle_density );CHKERRQ(ierr);
-    ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, P, M->mantle_density );CHKERRQ(ierr);
+    ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, P, mantle_density );CHKERRQ(ierr);
+    ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, P, mantle_density );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -304,19 +305,16 @@ static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, const Param
         /* this is mass contained with shell of radius r */
         arr_xi[i] = -2/PetscPowScalar(P->beta,3) - PetscPowScalar(arr_r[i],2)/P->beta - 2*arr_r[i]/PetscPowScalar(P->beta,2);
         arr_xi[i] *= P->rhos * PetscExpScalar( P->beta * dep );
+        /* minus integral at radius = 0 */
+        //arr_xi[i] -= -2/PetscPowScalar(P->beta,3) * P->rhos * PetscExpScalar( P->beta * P->radius );
+        /* seems better to do this instead, since the mantle does not extend to r=0 */
+        /* for mass coordinates, Abe 1995 says that the choice of reference density is perfectly arbitrary, so this should be OK */
         /* minus integral at radius = core-mantle boundary */
+        /* this will set the CMB radius to zero mass coordinate */
         arr_xi[i] -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * P->radius * (1.0-P->coresize) );
-        /* include other prefactors */
-        //arr_xi[i] *= 3 / mantle_density;
-        //arr_xi[i] = PetscPowScalar( arr_xi[i], 1.0/3.0 );
-    }
-
-    /* now know integrated mass, and can computed average density */
-    mantle_density = 0.0; // reset argument for testing
-    mantle_density = arr_xi[ilo] / ( (1.0/3.0) * ( PetscPowScalar(P->radius,3.0) - PetscPowScalar(P->coresize*P->radius,3.0) ) );
-
-    /* now normalise xi with prefactors */
-    for(i=ilo; i<ihi; ++i){
+        /* include other prefactors, according to the formulation from radius to mass coordinate */
+        /* note that due to our choice of the mantle_density representing the true mantle density, the surface mass coordinate will not
+           correspond to P->radius */
         arr_xi[i] *= 3 / mantle_density;
         arr_xi[i] = PetscPowScalar( arr_xi[i], 1.0/3.0 );
     }
@@ -348,7 +346,7 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parame
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Parameters P )
+static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Parameters P, PetscScalar *mantle_density )
 {
     PetscErrorCode    ierr;
     PetscScalar       dep, *arr_density;
@@ -366,6 +364,25 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Paramete
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,density,&arr_density);CHKERRQ(ierr);
+
+    /* average mantle density */
+    /* integral at planetary radius P->radius */
+    dep = 0.0;
+    *mantle_density = -2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius,2)/P->beta - 2*P->radius/PetscPowScalar(P->beta,2);
+    *mantle_density *= P->rhos; // next is unity since dep=0: * PetscExpScalar( P->beta * dep );
+    /* minus integral at r = 0 */
+    //*mantle_density -= -2/PetscPowScalar(P->beta,3) * PetscExpScalar( P->beta * P->radius );
+    /* seems better to do this instead, since the mantle does not extend to r=0 */
+    /* for mass coordinates, Abe 1995 says that the choice of reference density is perfectly arbitrary, so this should be OK */
+    /* minus integral at core-mantle boundary P->radius * P->coresize */
+    dep = P->radius * (1.0-P->coresize);
+    *mantle_density -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * dep );
+    /* above is integrated mass from core-mantle boundary to surface radius.  Now divide by mantle volume to get density */
+    //*mantle_density /= 1.0/3.0 * ( PetscPowScalar(P->radius,3.0) - PetscPowScalar(P->coresize*P->radius,3.0) );
+    /* new below follows definition of mass coordinates to tie the average density to ensure that
+       the outermost mass coordinate xi = r = P->radius (innermost mass coordinate xi = 0 at r = rcmb) */
+    *mantle_density *= 3.0 / PetscPowScalar( P->radius, 3.0 );
+
     PetscFunctionReturn(0);
 }
 
