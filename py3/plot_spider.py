@@ -309,19 +309,19 @@ def spiderplot_fig3( times ):
         ax4.plot( xx_pres, yy, '--', color=color )
         ax4.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # dTdPs / dTdrs
-        yy = myjson_o.get_dict_values_internal(['data','dTdrs_b'])
-        yy2 = myjson_o.get_dict_values_internal(['data','dPdr_b'])
-        yy3 = (yy / yy2) * 1E9 # to K/GPa
-        ax5.plot( xx_pres, yy3, '--', color=color )
-        ax5.plot( xx_pres*MIX, yy3*MIX, '-', color=color )
+        #yy = myjson_o.get_dict_values_internal(['data','dTdrs_b'])
+        #yy2 = myjson_o.get_dict_values_internal(['data','dPdr_b'])
+        #yy3 = (yy / yy2) * 1E9 # to K/GPa
+        #ax5.plot( xx_pres, yy3, '--', color=color )
+        #ax5.plot( xx_pres*MIX, yy3*MIX, '-', color=color )
         # below plots dPdr
         #ax5.plot( xx_pres, yy, '--', color=color )
         #ax5.plot( xx_pres*MIX, yy*MIX, '-', color=color )
         # entropy gradient
-        yy = myjson_o.get_dict_values_internal(['data','dSdr_b'], dSdr_fmt )
-        yy *= -1.0
-        ax2.plot( xx_pres, yy, '--', color=color )
-        ax2.plot( xx_pres*MIX, yy*MIX, '-', color=color )
+        #yy = myjson_o.get_dict_values_internal(['data','dSdr_b'], dSdr_fmt )
+        #yy *= -1.0
+        #ax2.plot( xx_pres, yy, '--', color=color )
+        #ax2.plot( xx_pres*MIX, yy*MIX, '-', color=color )
 
     xticks = [0,50,100,135]
     xmax = 138
@@ -342,8 +342,8 @@ def spiderplot_fig3( times ):
     ax1.yaxis.set_label_coords(-0.1,0.6)
     fig_o.set_mylegend( ax1, handle_l, loc=4, ncol=2 )
 
-    units = myjson_o.get_dict_units(['data','dSdr_b'])
-    title = '(c) Entropy grad, {}'.format(units)
+    #units = myjson_o.get_dict_units(['data','dSdr_b'])
+    #title = '(c) Entropy grad, {}'.format(units)
     #yticks= [-1.0E-3, -1.0E-6, -1.0E-9, -1.0E-12, -1.0E-15]
     yticks = [1E-15, 1E-12, 1E-9, 1E-6, 1E-3]
     fig_o.set_myaxes( ax2, title=title,
@@ -365,7 +365,7 @@ def spiderplot_fig3( times ):
         yticks=yticks, xticks=xticks, xmax=xmax )
     ax4.yaxis.set_label_coords(-0.1,0.475)
 
-    units = myjson_o.get_dict_units(['data','dTdrs_b'])
+    #units = myjson_o.get_dict_units(['data','dTdrs_b'])
     #title = '(f) Adiabatic grad, {}'.format(units)
     title = '(f) Adiabat grad, K/GPa'
     yticks = [0,20,40,60,80,100,120,140,160,180]
