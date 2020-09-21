@@ -19,7 +19,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
   PetscScalar          *arr_dSdt_s, *arr_rhs_b;
-  const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_cp_s, *arr_Htot_s, *arr_radius_s, *arr_radius_b;
+  const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_cp_s, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
   PetscMPIInt          rank,size;
   PetscInt             i,v,ihi_b,ilo_b,w_b,numpts_b;
   DM                   da_s = E->da_s, da_b=E->da_b;
@@ -65,8 +65,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecGetArrayRead(da_s,S->capacitance_s,&arr_capacitance_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->temp_s,&arr_temp_s); CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->cp_s,&arr_cp_s); CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
   /* first staggered node */
   arr_dSdt_s[0] = ( arr_Etot[1] - arr_Etot[0] ) / arr_capacitance_s[0];
@@ -74,12 +74,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   for(i=ilo_b+1; i<ihi_b; ++i){
     /* dSdt at staggered nodes */
-    /* need this quantity for coupling to atmosphere evollution */
+    /* need this quantity for coupling to atmosphere evolution */
     arr_dSdt_s[i] = ( arr_Etot[i+1] - arr_Etot[i] ) / arr_capacitance_s[i];
     arr_dSdt_s[i] += arr_Htot_s[i] / arr_temp_s[i];
     /* d/dt(dS/dr) at internal basic nodes */
     arr_rhs_b[i] = arr_dSdt_s[i] - arr_dSdt_s[i-1];
-    arr_rhs_b[i] /= arr_radius_s[i] - arr_radius_s[i-1]; // note dr is negative
+    arr_rhs_b[i] /= arr_xi_s[i] - arr_xi_s[i-1]; // note dr is negative
   }
 
   /* dTsurf/dr */
@@ -89,8 +89,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* TODO, add effect of gradient to above 0.5*d/dt (dS/dr) */
   /* but this should be a minor effect */
 
-  ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(da_s,S->dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
