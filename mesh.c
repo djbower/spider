@@ -317,8 +317,6 @@ static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, Vec dxidr, 
         /* this will set the CMB radius to zero mass coordinate */
         arr_xi[i] -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * P->radius * (1.0-P->coresize) );
         /* include other prefactors, according to the formulation from radius to mass coordinate */
-        /* note that due to our choice of the mantle_density representing the true mantle density, the surface mass coordinate will not
-           correspond to P->radius */
         arr_xi[i] *= 3 / mantle_density;
         arr_xi[i] = PetscPowScalar( arr_xi[i], 1.0/3.0 );
 
