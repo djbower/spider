@@ -10,7 +10,7 @@ static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const, PetscScalar * 
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_mass( Mesh * );
-static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Parameters const, PetscScalar );
+static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
 
 PetscErrorCode set_mesh( Ctx *E)
 {
@@ -70,8 +70,8 @@ PetscErrorCode set_mesh( Ctx *E)
     P->atmosphere_parameters->mantle_mass_ptr = &M->mantle_mass;
 
     /* need mantle mass above, but now can map radius to xi (mass coordinate) */
-    ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, P, mantle_density );CHKERRQ(ierr);
-    ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, P, mantle_density );CHKERRQ(ierr);
+    ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, mantle_density );CHKERRQ(ierr);
+    ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, mantle_density );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -280,7 +280,7 @@ static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
 }
 #endif
 
-static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, const Parameters P, PetscScalar mantle_density )
+static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, Vec dxidr, const Parameters P, PetscScalar mantle_density )
 {
 
     /* set mass coordinate from radius.  For the simplest case of a prescribed hydrostatic
@@ -288,7 +288,7 @@ static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, const Param
        be computed directly from radius --> xi (mass coordinate) */
 
     PetscErrorCode ierr;
-    PetscScalar    dep,*arr_xi;
+    PetscScalar    dep,*arr_xi,*arr_dxidr;
     const PetscScalar *arr_r;
     PetscInt       i,ilo,ihi,w;
 
@@ -298,6 +298,10 @@ static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, const Param
     ihi = ilo + w;
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da,xi,&arr_xi);CHKERRQ(ierr);
+    if( dxidr != NULL ){
+        ierr = DMDAVecGetArray(da,dxidr,&arr_dxidr);CHKERRQ(ierr);
+    }
+
     for(i=ilo; i<ihi; ++i){
         dep = P->radius - arr_r[i];
         /* below is AW density, and could instead use existing function aw_density() */
@@ -317,10 +321,22 @@ static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, const Param
            correspond to P->radius */
         arr_xi[i] *= 3 / mantle_density;
         arr_xi[i] = PetscPowScalar( arr_xi[i], 1.0/3.0 );
+
+        /* set dxi/dr for derivative mapping */
+        /* last basic node returns dxidr infty, since xi=0 */
+        if( dxidr != NULL ){
+            arr_dxidr[i] = P->rhos * PetscExpScalar( P->beta * dep ) / mantle_density;
+            arr_dxidr[i] *= PetscPowScalar( arr_r[i] / arr_xi[i], 2.0 );
+        }
+
     }
 
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,xi,&arr_xi);CHKERRQ(ierr);
+    if( dxidr != NULL ){
+        ierr = DMDAVecRestoreArray(da,dxidr,&arr_dxidr);CHKERRQ(ierr);
+    }
+
     PetscFunctionReturn(0);
 }
 

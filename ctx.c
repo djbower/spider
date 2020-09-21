@@ -475,6 +475,13 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_b[5],"xi_b");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_b[5],"m");CHKERRQ(ierr);
   }
+  { // dxidr_b (derivative of mass coordinate)
+    PetscScalar scaling = 1.0;
+    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_b[6],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_b[6],&ctx->mesh.dxidr_b); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_b[6],"dxidr_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_b[6],"None");CHKERRQ(ierr);
+  }
   /* mesh staggered nodes */
   { // pressure_s
     PetscScalar scaling = SC->PRESSURE;
