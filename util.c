@@ -18,7 +18,7 @@ PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 }
 #undef SPIDER_ROOT_DIR_STR
 
-static PetscErrorCode set_d_dr_linear( Ctx * );
+static PetscErrorCode set_d_dxi_linear( Ctx * );
 //static PetscErrorCode set_d_dr_quadratic( Ctx * );
 
 PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
@@ -26,13 +26,13 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     /* Set entropy at the basic (S_b) and staggered (S_s) nodes
        as well as the entropy gradient at the basic nodes using 
        the solution fields SPIDER_SOLUTION_FIELD_S0 and
-       SPIDER_SOLUTION_FIELD_DSDR_B */
+       SPIDER_SOLUTION_FIELD_DSDXI_B */
 
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
     PetscScalar    S0;
-    PetscScalar    *arr_S_b, *arr_S_s, *arr_dSdr_b, *arr_radius_s, *arr_radius_b;
+    PetscScalar    *arr_S_b, *arr_S_s, *arr_dSdxi_b, *arr_xi_s, *arr_xi_b;
     PetscInt       i, ihi_b, ilo_b, w_b;
     PetscMPIInt    size;
     DM             da_s = E->da_s, da_b=E->da_b;
@@ -47,7 +47,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     /* set S->dS/dr at basic nodes */
-    ierr = VecCopy( subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]], S->dSdr );CHKERRQ(ierr);
+    ierr = VecCopy( subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]], S->dSdxi );CHKERRQ(ierr);
     /* get first staggered node value (store as S0) */
     ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],1,&ind0,&S0);CHKERRQ(ierr);
 
@@ -57,18 +57,18 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
     /* S (absolute) at all staggered and basic internal nodes */
     arr_S_s[0] = 0.0;
     /* note plus one for start of loop */
     for(i=ilo_b+1; i<ihi_b-1; ++i){
       /* S (absolute) at staggered nodes */
-      arr_S_s[i] = arr_dSdr_b[i] * (arr_radius_s[i] - arr_radius_s[i-1] );
+      arr_S_s[i] = arr_dSdxi_b[i] * (arr_xi_s[i] - arr_xi_s[i-1] );
       arr_S_s[i] += arr_S_s[i-1]; // dS relative to first staggered value
-      arr_S_b[i] = arr_dSdr_b[i] * 0.5 * (arr_radius_b[i] - arr_radius_b[i-1] );
+      arr_S_b[i] = arr_dSdxi_b[i] * 0.5 * (arr_xi_b[i] - arr_xi_b[i-1] );
       arr_S_b[i] += arr_S_s[i-1];
       arr_S_s[i-1] += S0; // add at end to try and retain precision
       arr_S_b[i-1] += S0; // add at end to try and retain precision
@@ -82,16 +82,16 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
        use gradients to give estimates of entropy at the top
        and bottom surfaces by extrapolation.  Remember that S0 has already
        been included by the loop above over the basic internal nodes */
-    arr_S_b[0] = -arr_dSdr_b[1] * 0.5 * (arr_radius_b[1] - arr_radius_b[0]);
+    arr_S_b[0] = -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
     arr_S_b[0] += arr_S_s[0];
-    arr_S_b[ihi_b-1] = arr_dSdr_b[ihi_b-2] * 0.5 * (arr_radius_b[ihi_b-1]-arr_radius_b[ihi_b-2]);
+    arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-2] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
     arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
 
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     PetscFree(subVecs);
@@ -177,18 +177,18 @@ PetscErrorCode set_solution_from_partial_pressures( Ctx *E, Vec sol )
 PetscErrorCode set_solution_from_entropy_at_staggered_nodes( Ctx *E, Vec sol )
 {
     /* Set the solution fields SPIDER_SOLUTION_FIELD_S0 and
-       SPIDER_SOLUTION_FIELD_DSDR_B using the entropy at
+       SPIDER_SOLUTION_FIELD_DSDXI_B using the entropy at
        staggered nodes (S_s) */
 
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
     PetscScalar    S0;
-    PetscScalar    *arr_dSdr_b, *arr_S_s, *arr_radius_s;
+    PetscScalar    *arr_dSdxi_b, *arr_S_s, *arr_xi_s;
     PetscInt       i, ihi_b, ilo_b, w_b;
     PetscMPIInt    size;
     DM             da_s = E->da_s, da_b=E->da_b;
-    Vec            dSdr_b;
+    Vec            dSdxi_b;
     Vec            *subVecs;
 
     PetscFunctionBeginUser;
@@ -197,21 +197,21 @@ PetscErrorCode set_solution_from_entropy_at_staggered_nodes( Ctx *E, Vec sol )
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-    dSdr_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]];
+    dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]];
 
     /* for looping over basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
 
-    ierr = DMDAVecGetArray(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,dSdxi_b,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
-    arr_dSdr_b[0] = 0.0; // first point constrained by boundary conditions
-    arr_dSdr_b[ihi_b-1] = 0.0; // last point constrained by boundary conditions
+    arr_dSdxi_b[0] = 0.0; // first point constrained by boundary conditions
+    arr_dSdxi_b[ihi_b-1] = 0.0; // last point constrained by boundary conditions
     for(i=ilo_b+1; i<ihi_b-1; ++i){
-        arr_dSdr_b[i] = arr_S_s[i] - arr_S_s[i-1];
-        arr_dSdr_b[i] /= arr_radius_s[i] - arr_radius_s[i-1];
+        arr_dSdxi_b[i] = arr_S_s[i] - arr_S_s[i-1];
+        arr_dSdxi_b[i] /= arr_xi_s[i] - arr_xi_s[i-1];
     }
 
     /* set entropy at top staggered node */
@@ -220,9 +220,9 @@ PetscErrorCode set_solution_from_entropy_at_staggered_nodes( Ctx *E, Vec sol )
     ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);CHKERRQ(ierr);
 
-    ierr = DMDAVecRestoreArray(da_b,dSdr_b,&arr_dSdr_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,dSdxi_b,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
@@ -279,21 +279,21 @@ PetscScalar get_smoothing( PetscScalar smooth_width, PetscScalar gphi )
 }
 
 
-PetscErrorCode set_d_dr( Ctx *E )
+PetscErrorCode set_d_dxi( Ctx *E )
 {
 
     PetscFunctionBeginUser;
 
     /* FIXME: can manually select derivative order here */
 
-    set_d_dr_linear( E );
+    set_d_dxi_linear( E );
     //set_d_dr_quadratic( E );
 
     PetscFunctionReturn(0);
 }
 
 
-static PetscErrorCode set_d_dr_linear( Ctx *E )
+static PetscErrorCode set_d_dxi_linear( Ctx *E )
 {
 
     /* piece-wise linear interpolation between neighbouring
@@ -305,7 +305,7 @@ static PetscErrorCode set_d_dr_linear( Ctx *E )
     PetscInt numpts_s, ilo_s, ihi_s, w_s;
     PetscInt numpts_b, ilo_b, w_b; // ihi_b, w_b;
     PetscScalar value[2], dh, dh2;
-    PetscScalar *arr_radius_s, *arr_radius_b;
+    PetscScalar *arr_xi_s, *arr_xi_b;
     Mat A, B;
     Mesh *M;
 
@@ -317,13 +317,13 @@ static PetscErrorCode set_d_dr_linear( Ctx *E )
     ierr = DMDAGetCorners(E->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(E->da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(E->da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
     // basic
     ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     //ihi_b = ilo_b + w_b;
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(E->da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
 
     /* the first and last row are all zeros (implicitly, I think),
        to enable us to return a vector with length numpts_b */
@@ -347,13 +347,13 @@ static PetscErrorCode set_d_dr_linear( Ctx *E )
     rend   = (ihi_s == numpts_s) ? numpts_s-1 : ihi_s;
     for (i=rstart; i<=rend; i++) {
         col[0]=i-1; col[1]=i;
-        dh = arr_radius_s[i] - arr_radius_s[i-1];
+        dh = arr_xi_s[i] - arr_xi_s[i-1];
         // A
         value[0] = -1.0 / dh;
         value[1] = 1.0 / dh;
         ierr = MatSetValues(A,1,&i,2,col,value,INSERT_VALUES); CHKERRQ(ierr);
         // B
-        dh2 = arr_radius_b[i] - arr_radius_s[i-1];
+        dh2 = arr_xi_b[i] - arr_xi_s[i-1];
         value[0] = 1.0 - dh2/dh;
         value[1] = dh2/dh;
         ierr = MatSetValues(B,1,&i,2,col,value,INSERT_VALUES); CHKERRQ(ierr);

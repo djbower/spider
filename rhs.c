@@ -111,7 +111,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* dS/dr at basic nodes */
   ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
   ierr = DMCompositeGetAccessArray(E->dm_sol,rhs,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-  ierr = VecCopy(rhs_b,subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]]);CHKERRQ(ierr);
+  ierr = VecCopy(rhs_b,subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]]);CHKERRQ(ierr);
 
   /* S0, TODO: I think this breaks for parallel */
   ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,arr_dSdt_s[0],INSERT_VALUES);CHKERRQ(ierr);

@@ -36,7 +36,7 @@ typedef struct Solution_ {
     DimensionalisableField solutionFields_s[NUMSOLUTIONVECS_S];
 
     // TODO: eventually get rid of these
-    Vec alpha, cond, cp, dSdr, dTdrs, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, Ra, regime, rho, S, temp, visc;
+    Vec alpha, cond, cp, dSdxi, dTdxis, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, Ra, regime, rho, S, temp, visc;
 
     // TODO: eventually get rid of these
     Vec cp_s, dSdt_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, phi_s, rho_s, S_s, temp_s;
@@ -49,12 +49,12 @@ typedef struct Solution_ {
 static const PetscInt SPIDER_NUM_FIELD_IDS = 4;
 typedef enum {
   SPIDER_SOLUTION_FIELD_UNDEFINED     = 0,
-  SPIDER_SOLUTION_FIELD_DSDR_B        = 1,
+  SPIDER_SOLUTION_FIELD_DSDXI_B       = 1,
   SPIDER_SOLUTION_FIELD_S0            = 2,
   SPIDER_SOLUTION_FIELD_MO_VOLATILES  = 3,
   SPIDER_SOLUTION_FIELD_MO_REACTIONS  = 4,
 } SpiderSolutionFieldID;
-static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr","S at surface","Volatile partial pressure","Reaction total mass"}; /* Order must match the enum! */
+static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dxi","S at surface","Volatile partial pressure","Reaction total mass"}; /* Order must match the enum! */
 static const char * const SpiderSolutionFieldUnits[]        = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "Pa", "kg"}; /* Order must match the enum! */
 
 /* A Context for the Solver */

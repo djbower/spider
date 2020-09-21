@@ -139,7 +139,8 @@ static PetscErrorCode set_ic_interior_entropy( Ctx *E, Vec sol )
     PetscInt         i;
     PetscScalar      S0;
     Parameters const P = E->parameters;
-    Vec              dSdr_b;
+    Mesh       const *M  = &E->mesh;
+    Vec              dSdxi_b;
     Vec              *subVecs;
 
     PetscFunctionBeginUser;
@@ -148,17 +149,19 @@ static PetscErrorCode set_ic_interior_entropy( Ctx *E, Vec sol )
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
 
-    dSdr_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]];
+    dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]];
 
-    ierr = VecSet(dSdr_b, P->ic_dsdr );CHKERRQ(ierr);
+    ierr = VecSet(dSdxi_b, P->ic_dsdr );CHKERRQ(ierr);
+    /* map to mass coordinates */
+    ierr = VecPointwiseDivide(dSdxi_b,dSdxi_b,M->dxidr_b);
 
     /* these next two lines are simply convenient reminders that the
        first and last values are meaningless because the fluxes here
        are controlled by boundary conditions.  But for debugging and
        clarity it is convenient to explicitly set these values to
        zero */
-    ierr = VecSetValue( dSdr_b, 0,             0.0, INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue( dSdr_b, P->numpts_b-1, 0.0, INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue( dSdxi_b, 0,             0.0, INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue( dSdxi_b, P->numpts_b-1, 0.0, INSERT_VALUES);CHKERRQ(ierr);
 
     /* set entropy at top of adiabat */
     S0 = P->ic_adiabat_entropy;
@@ -251,7 +254,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, 
 
         /* FIXME: could break if ordering of subdomains changes */
         if (subdomain_num == 0){
-            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]];
+            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]];
         }
         else if (subdomain_num == 1){
             invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]];
@@ -306,6 +309,8 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
        equal to the cutoff value above.  It is simplest to construct
        the ic using S->S_s, and then map the values to the
        solution Vec */
+
+    /* FIXME: broken for mass coordinates */
 
     PetscErrorCode    ierr;
     Parameters const  P = E->parameters;

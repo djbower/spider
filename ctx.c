@@ -89,7 +89,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     f = 0;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_b);CHKERRQ(ierr);
-    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_DSDR_B;
+    ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_DSDXI_B;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
     sol_scalings[f] = SC->DSDR;
     ++f;
@@ -138,7 +138,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
 
   /* Populate vectors (initial condition is set in main.c) */
   set_mesh(ctx);
-  set_d_dr( ctx );
+  set_d_dxi( ctx );
 
   ierr = initialise_atmosphere( &ctx->atmosphere, ctx->parameters->atmosphere_parameters, ctx->parameters->scaling_constants );CHKERRQ(ierr);
 
@@ -228,18 +228,18 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[2],"cp_b");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[2],"J kg$^{-1}$ K$^{-1}$");CHKERRQ(ierr);
   }
-  { // dsdr
-    PetscScalar scaling = SC->DSDR;
+  { // dsdxi
+    PetscScalar scaling = 1.0; // FIXME what is this scaling now? SC->DSDR;
     ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[3],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[3],&ctx->solution.dSdr); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[3],"dSdr_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[3],&ctx->solution.dSdxi); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[3],"dSdxi_b");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[3],"J kg$^{-1}$ K$^{-1}$ m$^{-1}$");CHKERRQ(ierr);
   }
   {
-    PetscScalar scaling = SC->DTDR;
+    PetscScalar scaling = 1.0; // FIXME what is this scaling now? SC->DTDR;
     ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[4],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[4],&ctx->solution.dTdrs); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[4],"dTdrs_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[4],&ctx->solution.dTdxis); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[4],"dTdxis_b");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[4],"K m$^{-1}$");CHKERRQ(ierr);
   }
   {
