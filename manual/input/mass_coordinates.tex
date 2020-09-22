@@ -1,0 +1,200 @@
+\subsection{Definition}
+\fbox{\parbox{\textwidth}{Definition of mass coordinate.}}\\
+
+\noindent
+\cite{ABE95} defines as:
+\begin{equation}
+\frac{4 \pi}{3} \rho_0 \xi^3 \equiv 4 \pi \int_0^r \rho r^2 dr = m
+\end{equation}
+We similarly define as, since we only consider the mantle which is bounded between $r_{\rm cmb}$ and $r$ \dbnote{in principle you can define the lower bound from zero, but then you either have to consider the core EOS, or extrapolate the mantle EOS through the core---neither of these makes as much sense}:
+\begin{equation}
+\frac{4 \pi}{3} \rho_0 (\xi^3-\xi_{\rm cmb}^3) \equiv 4 \pi \int_{\rm cmb}^r \rho r^2 dr = m
+\label{eq:masscoord}
+\end{equation}
+In actuality, $\xi_{\rm cmb}^3=0$ at $r_{\rm cmb}$, but it is shown here for completeness.  Take derivative with respect to r, where the choice of integration bounds does not matter such that either definition of the mass coordinates above is valid:
+\begin{equation}
+\frac{4 \pi}{3} \rho_0 3 \xi^2 \frac{d \xi}{d r} = 4 \pi \rho r^2
+\end{equation}
+Cancel $4 \pi$ and $3$:
+\begin{equation}
+\rho_0 \xi^2 \frac{d \xi}{d r} = \rho r ^2
+\end{equation}
+$\rho$ is a function of $r$ or $\xi$, so rearrange and integrate \dbnote{This here adds a complication, since we sometimes know $\rho$ as a simple function of $r$, but we don't know $\rho$ as a simple function of $\xi$.  This may change our thinking for the implementation of mass coordinates in the code (at least for the simplest case).}:
+\begin{equation}
+\int_{\xi_{\rm cmb}}^\xi \frac{\rho_0}{\rho} \xi^2 d\xi = \int_{\rm cmb}^r r^2 dr = \frac{r^3}{3} - \frac{r_{\rm cmb}^3}{3}
+\end{equation}
+Makes sense to let $\xi_{\rm cmb}=0$, since no mantle mass is contained within a spherical shell of radius $r_{\rm cmb}$.  Rather, this contains core mass, but the core is not modelled as a dynamic entity currently.
+Finally gives, similar to Eq. 30 in \cite{ABE95}:
+\begin{equation}
+r(\xi) = \left[ r_{\rm cmb}^3 + 3 \int_0^\xi \frac{\rho_0}{\rho(\xi)} \xi^2 d\xi \right]^\frac{1}{3}
+\label{eq:masscoord_inv}
+\end{equation}
+Note that $\xi$ is referred to by \cite{ABE95} as a ``mass coordinate'' and has \textbf{length dimension}.  Due to the choice of integration limits, it's clear that $r=r_{\rm cmb}$ when $\xi=0$.  Eq.~\ref{eq:masscoord_inv} is the inverse of Eq.~\ref{eq:masscoord}, allowing us to go between radius $r$ and mass coordinate $\xi$.
+%%%%
+%%%%
+%%%%
+\subsection{Partial derivatives}
+\fbox{\parbox{\textwidth}{Determine the mapping between the partial derivatives with respect to radius and with respect to mass coordinate..}}\\
+
+Now want to compute the partial derivatives under the coordinate transformation from $r \rightarrow \xi$, with time $t$ remaining as the second variable, i.e.,
+\begin{equation}
+(r,t) \rightarrow (\xi,t)
+\end{equation}
+We use the chain rule.  For the transformation of the spatial derivative, where we explicitly note what is held constant just to be able to compare directly with the formulation in \cite{ABE95}:
+\begin{align}
+\left( \frac{\partial}{\partial \xi} \right)_t &= \left( \frac{\partial}{\partial r} \right)_t \left( \frac{\partial r}{\partial \xi} \right)_t + \left( \frac{\partial}{\partial t} \right)_r \left( \frac{\partial t}{\partial \xi} \right)_t\\
+&= \left( \frac{\partial}{\partial r} \right)_t \left( \frac{\partial r}{\partial \xi} \right)_t
+\end{align}
+For the transformation of the temporal derivative:
+\begin{align}
+\left( \frac{\partial}{\partial t} \right)_\xi &= \left( \frac{\partial}{\partial r} \right)_t \left( \frac{\partial r}{\partial t} \right)_\xi + \left( \frac{\partial}{\partial t} \right)_r \left( \frac{\partial t}{\partial t} \right)_\xi\\
+&= \left( \frac{\partial}{\partial r} \right)_t \left( \frac{\partial r}{\partial t} \right)_\xi + \left( \frac{\partial}{\partial t} \right)_r, \qquad \text{since}\ \left( \frac{\partial t}{\partial t}\right)_\xi=1
+\end{align}
+Re-arrange into the form in \cite{ABE95}:
+\begin{equation}
+\left( \frac{\partial}{\partial r} \right)_t = \left( \frac{\partial \xi}{\partial r} \right)_t \left( \frac{\partial}{\partial \xi} \right)_t = \frac{\rho}{\rho_0} \left( \frac{r}{\xi} \right)^2 \left(\frac{\partial}{\partial \xi} \right)_t
+\label{eq:ddr}
+\end{equation}
+\begin{equation}
+ \left( \frac{\partial}{\partial t} \right)_r  = \left( \frac{\partial}{\partial t} \right)_\xi - \left( \frac{\partial r}{\partial t} \right)_\xi  \left( \frac{\partial}{\partial r} \right)_t = \left( \frac{\partial}{\partial t} \right)_\xi - U  \left( \frac{\partial}{\partial r} \right)_t
+\end{equation}
+where $U$ is the local barycentric velocity in the radial direction.  Thus, the Lagrangian derivatives are replaced by the partial derivative with respect to time, when we use the mass coordinate.
+%%%%
+%%%%
+%%%%
+\subsection{Implementation}
+We time-step the following equation in SPIDER:
+\begin{equation}
+\rho T \frac{Ds}{Dt} = -\nabla \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
+\end{equation}
+Now, transform to mass coordinates by replacing the Lagrangian with a partial derivative with respect to time:
+\begin{equation}
+\rho T \left( \frac{\partial s}{\partial t} \right)_\xi = -\nabla \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
+\end{equation}
+
+\subsubsection{Differential form}
+\cite{ABE93} solves the differential form of the equation using finite differences, so expand $\nabla$ operator for spherical coordinates:
+\begin{equation}
+\rho T \left( \frac{\partial s}{\partial t} \right)_\xi = -\frac{1}{r^2} \frac{\partial}{\partial r} \left( r^2 \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right] \right)
+\end{equation}
+And replace derivative with respect to $r$ with derivative with respect to $\xi$:
+\begin{equation}
+\rho T \left( \frac{\partial s}{\partial t} \right)_\xi = - \frac{\rho}{\rho_0 \xi^2} \left(\frac{\partial}{\partial \xi} \right)_t \left( r^2 \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right] \right)
+\label{eq:finals}
+\end{equation}
+This description is known as the ``Lagrangian description'' \citep[e.g.,][]{KWW12} because we are following mass elements.
+%%%%
+\subsubsection{Integral form}
+\cite{BSW18} instead solve the integral form.  \dbnote{Presumably here we therefore just consider the fluxes into and out of mass elements, hence there are no prefactors creeping in associated with the mapping from $r$ to $\xi$.}
+\begin{equation}
+\int_V \rho T \left( \frac{\partial s}{\partial t} \right)_\xi dV = - \int_A F \cdot n dA + \int_V \rho H dV
+\end{equation}
+%%%%
+\subsubsection{Fluxes}
+Mapping to new spatial coordinate:
+\begin{equation}
+\frac{\partial S}{\partial r}=\frac{\rho}{\rho_0} \left( \frac{r}{\xi} \right)^2 \left(\frac{\partial S}{\partial \xi} \right)_t
+\end{equation}
+So for example, heat flux becomes (and similar for other flux terms involve spatial derivatives):
+\begin{equation}
+\vec{J}_q=-\rho T \kappa_h \frac{\partial S}{\partial r} = -\rho T \kappa_h \frac{\rho}{\rho_0} \left( \frac{r}{\xi} \right)^2 \left(\frac{\partial S}{\partial \xi} \right)_t
+\end{equation}
+\dbnote{Probably now makes sense to track $\partial S/\partial \xi$, and integrate this to get $S$ etc.  It's probably easiest to just do as much crunching as possible using $\xi$ rather than $r$ for consistency.}
+\subsubsection{Implementation continued}
+To implement, we actually define the mesh using radial coordinates, and then map to mass coordinates using Eq.~\ref{eq:masscoord}.  This is because the Adams-Williamson equation of state gives a simple form of the density and the integral involving $r$ on the RHS of Eq.~\ref{eq:masscoord} can be evaluated directly.  Furthermore, we are free to define $\rho_0$ as we wish, since it is a perfectly arbitrary constant.  Nevertheless, it is intuitive to set $\rho_0$ such that $\xi=r$ at the planetary surface.  Therefore, the bounds of radius are $r_{\rm cmb}$ to $r$, and the bounds of the mass coordinate $\xi$ are $0$ to $r$.
+ 
+
+
+
+
+\subsection{Mesh}
+\begin{figure}[!h]
+\begin{center}
+\include{figs/mesh}
+\end{center}
+\caption{Schematic representation of the mesh with mass coordinate ($\xi$) or radius $r$ as the spatial dimension.}
+\end{figure}
+\subsubsection{Relationship to volume (new approach)}
+\begin{itemize}
+\item We consider elements/cells with fixed mass.
+\item Mass of each element is known (prescribed).
+\item \textbf{An approximation: hydrostatic/total pressure $P$ is fixed during magma ocean evolution.}  \dbnote{Clearly fails for accreting planet scenario, but in the simplest case can update the hydrostatic pressure each timestep using the same simple EOS as we currently do.}
+\begin{itemize}
+\item Already in SPIDER, since define radius coordinates and corresponding pressures once during the initialisation.  See Eq.~16 in \cite{BSW18}.
+\item We do not recompute the pressure profile due to the evolution of melt fraction (and hence relative contributions of melt versus solid densities) during a model run.
+\item Or similarly, it's the differences of melt and solid thermophysical properties at a given pressure, rather than the absolute pressure itself, that is most important for driving the flow.
+\item Argument is that melt and solid densities are similar enough to not strongly influence an integrated quantity like pressure.
+\item And from a purely pragmatic perspective, we have to know $P$ and $S$ at basic and staggered nodes in order to compute necessary terms for the RHS.
+\end{itemize}
+\item In the simple case outlined above, we compute density, pressure, and mass by an Adams-Williamson EOS (Eq.~16 in \cite{BSW18}).  \dbnote{Therefore, even for a radial mesh the volume was fixed and also the density, and hence the mass!  Does this partly justify ignoring the convective derivative term in the original formulation?!}
+\item More can probably be done here about integrating the hydrostatic .equilibrium equation (see Sect.~\ref{sect:hydrostatic})
+\item So assuming we can reasonably determine $P$, and prescribe an initial $S$, we can compute $\rho(P,S)$ at all basic and staggered mesh locations.  \textbf{Knowing $\rho$ and the mass of the elements, and presumably a fixed integration point for $r$ such as the CMB, we can determine the volume of each cell and also the surface areas of the bounding surfaces.}
+\item But this could highlight a problem!  Since integrating outwards from the CMB, or inwards from the surface, will not necessarily give us the correct end point of the present-day Earth (since the radius of the surface and core are known well!).
+\item \textbf{Two options: switch to test each?}
+\begin{enumerate}
+\item Assume density of a mass cell is \textbf{constant with time}, i.e. does not respond to changes in melt/solid fraction.  Therefore the volume of the cell will also be constant, and hence the bounding surfaces should correspond to \textbf{time-independent radii}
+\item Compute the density of a mass cell, since $\rho(P,S)$ using melt and solid lookup data.  This will result in \textbf{time-dependent radii} for the bounding surfaces, and effectively a planet that can `breathe''.  This might look a bit strange since a planet's surface will move radially in and out as the melt fraction evolves.  \dbnote{And the uncertainties in the EOS, in addition to the overall simplicity of the modelling, probably means this effect is really not important or worthy of modelling (in the case of a fully formed planet).}
+\end{enumerate}
+\item If we do 1 above, then I think this corresponds closely (or exactly) to the incorrect formulation in the paper?!  Since in both the formulation with $r$ (original) and $\xi$ (new) the bounding surfaces of the elements are assumed to be fixed in time meaning that $\frac{\partial r}{\partial t} = U=0$.  And hence the barycentric velocity is zero and we are justified/consistent when we exclude it from the equation.
+\end{itemize}
+%%%%%%%%%%%%%
+%%% PRESSURE %%%
+%%%%%%%%%%%%%
+\subsection{Hydrostatic pressure}
+\fbox{\parbox{\textwidth}{We use the Adams-Williamson equation of state to compute the hydrostatic pressure profile.  This is important because we need to know a relationship between our mesh (originally radius) and the lookup coordinate (pressure).  It is also useful/important for the conversion from radius to mass coordinates and vice versa.}}\\
+\subsection{Pressure}
+Adams-Williamson equation of state:
+\begin{equation}
+P = - \frac{\rho_r g}{\beta} (\exp( \beta z )-1)
+\end{equation}
+where $\rho_r$ is a reference surface density, $g$ gravity which is negative by convention, $\beta$ is a measure of the compressibility of the material, and $z$ is depth.  For Earth, gravity is near constant throughout the mantle and we solve for $\rho_r$ and $\beta$ using a least-squares fit to the density profile of the lower mantle.  Relationship between depth and radius is:
+\begin{equation}
+z = ro - r \implies \frac{dz}{dr} = -1
+\end{equation}
+\subsection{Pressure gradient}
+\begin{equation}
+\frac{dP}{dr} = \frac{dP}{dz} \frac{dz}{dr} = \rho_s g \exp( \beta z )
+\end{equation}
+\subsection{Density}
+\subsubsection{Functional form}
+Useful since we can approximate the density \emph{a priori} and use this to convert between radius and mass coordinates:
+\begin{equation}
+\rho(z) = \rho_s \exp( \beta z )
+\end{equation}
+\subsubsection{Average density}
+Average mantle density $\rho_0$ is convenient to know for the conversion between radius and mass coordinates:
+\begin{align}
+\frac{4 \pi}{3} \rho_0 (r_o^3-r_i^3) &= 4 \pi \int_{r_i}^{r_o} \rho(r) r^2 dr\\
+\rho_0 &= \frac{3 \rho_s}{(r_o^3-r_i^3)} \int_{r_i}^{r_o} \exp( \beta (r_o-r) ) r^2 dr\\
+\rho_0 &= \frac{3 \rho_s \exp( \beta r_o )}{(r_o^3-r_i^3)} \int_{r_i}^{r_o} r^2 \exp( -\beta r) dr
+\end{align}
+Using Wolfram alpha to evaluate the definite integral:
+\begin{verbatim}
+integrate r^2 exp(-beta*r) dr from r=a to r=b
+\end{verbatim}
+\begin{equation}
+\int_{r_i}^{r_o} r^2 \exp( -\beta r) dr = \frac{\exp(-\beta r_i)(\beta r_i (\beta r_i+2)+2) + \exp(-\beta r_o)(-\beta r_o (\beta r_o+2)-2)}{\beta^3}
+\end{equation}
+Therefore:
+\begin{align}
+\rho_0 &= \frac{3 \rho_s \exp( \beta r_o )}{(r_o^3-r_i^3)}
+\left[
+\frac{\exp(-\beta r_i)(\beta r_i (\beta r_i+2)+2) + \exp(-\beta r_o)(-\beta r_o (\beta r_o+2)-2)}{\beta^3}
+\right]\\
+\rho_0 &= \frac{3 \rho_s}{\beta^3 (r_o^3-r_i^3)}
+\left[
+e^{\beta (r_o-r_i)}(\beta r_i (\beta r_i+2)+2) -\beta r_o (\beta r_o+2)-2
+\right]
+\end{align}
+Hence given our simple EOS we can exactly determine the average density of the mantle using the above expression.  \dbnote{This EOS does not perform well at high pressure, and should really be regarded as a fitting function.  Obvious ways to improve on this include using a more sophisticated and accurate EOS, such as the Vinet.}
+
+Look to implement Vinet?  Can we also relate this to mass coordinate?  Vinet EOS is:
+\begin{equation}
+P = 3 K_{T0} \left( \frac{V}{V_0} \right)^{-\frac{2}{3}} \left[1-\left( \frac{V}{V_0}\right)^\frac{1}{3} \right] \exp \left( \frac{3}{2} ( K_{T0}^\prime-1) \right) \left[1-\left( \frac{V}{V_0}\right)^\frac{1}{3} \right] 
+\end{equation}
+\begin{equation}
+P(r) = \int_r^R \rho(r^\prime) g(r^\prime) dr^\prime
+\end{equation}
+\begin{equation}
+g(r) = \frac{G m(r)}{r^2}
+\end{equation}

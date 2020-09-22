@@ -11,6 +11,8 @@ T_{\rm sol}(P) = T_{\rm fus}(P) - \Delta T_{\rm fus}(P) \big/ 2
 \end{eqnarray}
 where the melting interval width is defined by \mbox{$\Delta T_{\rm fus}(P)=\delta T \cdot T_{\rm fus}(P)$} with $\delta T \approx 0.07$ throughout the mantle \citep{SKS09}.
 %%%%
+%%%%
+%%%%
 \subsection{Solid EOS}
 For the Mosenfelder MgSiO3 model, we use the EOS for MgSiO3 melt and Mg-endmember bridgmanite as given by the global fit to shock wave and diamond anvil cell data in \cite{M09}.  Since this paper does not fully define all of the needed EOS parameters, we rely upon the estimated melting region (bounded by solidus and liquidus profiles) for the mantle given by \cite{SKS09}.  It is important to recognize that \cite{M09} does not present a thermodynamically consistent model of this system, due to its  use of the Mie-Gr\"{u}neisen formulation, which assumes that the gr\"{u}neisen parameter is independent of temperature together with its model for the heat capacity of the melt, which induces temperature dependence to the adiabatic compression curves.
 
@@ -116,13 +118,15 @@ The total pressure is given by the volume derivative of Equation~\eqref{anhEint}
 %
 %Though this same expression is also often used to represent liquids (e.g., \cite{Asimow2012}), $\gamma$ for liquids generally exhibits considerable temperature-dependence \cite{Wolf2015}, and therefore we use this form to express the values along the reference melt adiabat $\gamma_0^{\rm melt}(V)$, and rely upon the thermodynamic definition (Equation~\ref{eq:gamThermo}) to obtain values elsewhere.
 %%%
+%%%%
+%%%%
+%%%%
 \subsection{Liquid EOS}
 To represent the thermodynamics of mantle material in a simple and flexible way, we derive a new parameterization high pressure melt EOS which captures melt behavior while retaining physically meaningful parameters that are easily interpreted in the context of magma ocean crystallization \citep{WB18}.
 %%%
 \subsection{Solution}
 %%% volume-mass proportionality
 \subsubsection{Density: Volume--mass proportionality}
-\dbnote{Need to relate this to formulation using partial densities further down}
 For each component $i$:
 \begin{equation}
 \rho_i = \frac{m_i}{v_i}
@@ -153,7 +157,6 @@ This is perhaps the most used and ``intuitive'' description of the density of a 
 \end{equation}
 %%% volume additivity
 \subsubsection{Density: Volume additivity}
-\dbnote{Need to relate this to formulation using partial densities further down}
 \begin{equation}
 \omega_i = \frac{m_i}{M}
 \end{equation}
