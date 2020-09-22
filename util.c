@@ -18,7 +18,8 @@ PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 }
 #undef SPIDER_ROOT_DIR_STR
 
-static PetscErrorCode set_d_dxi_linear( Ctx * );
+// below no longer used
+//static PetscErrorCode set_d_dxi_linear( Ctx * );
 //static PetscErrorCode set_d_dr_quadratic( Ctx * );
 
 PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
@@ -278,7 +279,9 @@ PetscScalar get_smoothing( PetscScalar smooth_width, PetscScalar gphi )
     return smth;
 }
 
-
+/* below no longer used, since melting curve gradient is computed directly from
+   EOS */
+#if 0
 PetscErrorCode set_d_dxi( Ctx *E )
 {
 
@@ -291,8 +294,9 @@ PetscErrorCode set_d_dxi( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+#endif
 
-
+#if 0
 static PetscErrorCode set_d_dxi_linear( Ctx *E )
 {
 
@@ -374,6 +378,7 @@ static PetscErrorCode set_d_dxi_linear( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+#endif
 
 PetscErrorCode Make2DPetscScalarArray( PetscInt arraySizeX, PetscInt arraySizeY, PetscScalar ***theArray_ptr)
 {
