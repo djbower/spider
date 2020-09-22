@@ -71,6 +71,9 @@ PetscErrorCode set_mesh( Ctx *E)
 
     /* need mantle mass above, but now can map radius to xi (mass coordinate) */
     ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, mantle_density );CHKERRQ(ierr);
+
+    /* FIXME: it probably makes more sense to compute the central point of the xi's basic nodes
+       rather than mapping directly from the staggered radius nodes */
     ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, mantle_density );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -394,8 +397,8 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Paramete
     /* above is integrated mass from core-mantle boundary to surface radius.  Now divide by mantle volume to get density */
     //*mantle_density /= 1.0/3.0 * ( PetscPowScalar(P->radius,3.0) - PetscPowScalar(P->coresize*P->radius,3.0) );
     /* new below follows definition of mass coordinates to tie the average density to ensure that
-       the outermost mass coordinate xi = r = P->radius (innermost mass coordinate xi = 0 at r = rcmb) */
-    *mantle_density *= 3.0 / PetscPowScalar( P->radius, 3.0 );
+       the outermost mass coordinate xi = 1.0 (innermost mass coordinate xi = 0 at r = rcmb) */
+    *mantle_density *= 3.0 / PetscPowScalar( 1.0, 3.0 );
 
     PetscFunctionReturn(0);
 }
