@@ -22,13 +22,12 @@ PetscErrorCode set_mesh( Ctx *E)
 
     PetscFunctionBeginUser;
 
-    /* for regular mesh, although without resolving the ultra-thin
-       thermal boundary layer at the base of the mantle this likely
-       gives wrong results */
+    /* for regular mesh (mass coordinates) */
     ierr = regular_mesh( E );CHKERRQ(ierr);
 
     /* need to use geometric mesh to resolve ultra-thin thermal
        boundary layer at the base of the mantle */
+    /* FIXME: broken for mass coordinates */
     //geometric_mesh( E );
 
     /* Adams-Williamson EOS */
@@ -96,31 +95,34 @@ static PetscErrorCode regular_mesh( Ctx *E )
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* basic node spacing (negative) */
-    dx_b = -P->radius*(1.0-P->coresize) / (numpts_b-1);
+    /* mass coordinate enforced to go from 0 to P->radius */
+    /* note that with appropriate choice of scaling RADIUS, this can be
+       made to go between 0 and unity (i.e., P->radius is a scaled quantity) */
+    dx_b = -P->radius / (numpts_b-1);
 
     /* radius at basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
-    ierr = DMDAVecGetArray(da_b,M->radius_b,&arr);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,M->xi_b,&arr);CHKERRQ(ierr);
     for (i=ilo_b; i<ihi_b; ++i){
-        arr[i] = P->radius*P->coresize - (numpts_b-1-i)*dx_b;
+        arr[i] = -(numpts_b-1-i)*dx_b;
     }
-    ierr = DMDAVecRestoreArray(da_b,M->radius_b,&arr);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,M->xi_b,&arr);CHKERRQ(ierr);
 
     /* radius at staggered nodes */
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
-    ierr = DMDAVecGetArray(da_s,M->radius_s,&arr);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,M->xi_s,&arr);CHKERRQ(ierr);
     for (i=ilo_s;i<ihi_s;++i){
-        arr[i] = P->radius*P->coresize - 0.5*dx_b - (numpts_s-1-i)*dx_b;
+        arr[i] = -0.5*dx_b - (numpts_s-1-i)*dx_b;
     }
-    ierr = DMDAVecRestoreArray(da_s,M->radius_s,&arr);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,M->xi_s,&arr);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 #if 0
+/* FIXME: below broken for mass coordinates */
 static PetscErrorCode geometric_mesh( Ctx *E )
 {
 
@@ -397,8 +399,8 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Paramete
     /* above is integrated mass from core-mantle boundary to surface radius.  Now divide by mantle volume to get density */
     //*mantle_density /= 1.0/3.0 * ( PetscPowScalar(P->radius,3.0) - PetscPowScalar(P->coresize*P->radius,3.0) );
     /* new below follows definition of mass coordinates to tie the average density to ensure that
-       the outermost mass coordinate xi = 1.0 (innermost mass coordinate xi = 0 at r = rcmb) */
-    *mantle_density *= 3.0 / PetscPowScalar( 1.0, 3.0 );
+       the outermost mass coordinate xi = P->radius (innermost mass coordinate xi = 0 at r = rcmb) */
+    *mantle_density *= 3.0 / PetscPowScalar( P->radius, 3.0 );
 
     PetscFunctionReturn(0);
 }
