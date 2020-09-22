@@ -47,7 +47,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-    /* set S->dS/dr at basic nodes */
+    /* set S->dS/dxi at basic nodes */
     ierr = VecCopy( subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]], S->dSdxi );CHKERRQ(ierr);
     /* get first staggered node value (store as S0) */
     ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],1,&ind0,&S0);CHKERRQ(ierr);
