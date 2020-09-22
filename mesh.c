@@ -10,7 +10,10 @@ static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const, PetscScalar * 
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_mass( Mesh * );
-static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
+// below kept for testing purposes
+//static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
+static PetscErrorCode aw_mantle_density( const Parameters, PetscScalar * );
+//static PetscErrorCode aw_radius_from_xi( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
 
 PetscErrorCode set_mesh( Ctx *E)
 {
@@ -25,24 +28,55 @@ PetscErrorCode set_mesh( Ctx *E)
     /* for regular mesh (mass coordinates) */
     ierr = regular_mesh( E );CHKERRQ(ierr);
 
-    /* need to use geometric mesh to resolve ultra-thin thermal
-       boundary layer at the base of the mantle */
     /* FIXME: broken for mass coordinates */
     //geometric_mesh( E );
 
-    /* Adams-Williamson EOS */
+    /* assume we know planetary size (core radius, and total radius)
+       this allows us to compute the rho0 that will recover the exact
+       desired bounds of the mesh (xi from 0 to P->radius, and r from
+       r_cmb to P->radius).  These functions are all tied to the assumed
+       relationship between rho and r, given by the Adams-Williamson
+       EOS */
+    if(1){
 
-    /* pressure at basic nodes */
-    ierr = aw_pressure( da_b, M->radius_b, M->pressure_b, P);CHKERRQ(ierr);
+        /* Adams-Williamson EOS */
 
-    /* dP/dr at basic nodes */
-    ierr = aw_pressure_gradient( da_b, M->radius_b, M->dPdr_b, P);CHKERRQ(ierr);
+        /* determine reference density from AW EOS */
+        ierr = aw_mantle_density( P, &mantle_density );CHKERRQ(ierr);
 
-    /* pressure at staggered nodes */
-    ierr = aw_pressure( da_s, M->radius_s, M->pressure_s, P);CHKERRQ(ierr);
+        /* with rho0 and the form of rho known (rho(r) from AW EOS),
+           we can solve an inverse problem to determine the physical
+           mesh coordinates for both the basic and staggered nodes */
+        // TODO: write below function
+        //ierr = aw_radius_from_xi( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, mantle_density );CHKERRQ(ierr);
 
-    /* dP/dr at staggered nodes */
-    ierr = aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s, P );CHKERRQ(ierr);
+        /* with radius known, now can update other quantities such
+           as pressure, using AW EOS */
+
+        /* pressure at basic nodes */
+        ierr = aw_pressure( da_b, M->radius_b, M->pressure_b, P);CHKERRQ(ierr);
+
+        /* dP/dr at basic nodes */
+        ierr = aw_pressure_gradient( da_b, M->radius_b, M->dPdr_b, P);CHKERRQ(ierr);
+
+        /* pressure at staggered nodes */
+        ierr = aw_pressure( da_s, M->radius_s, M->pressure_s, P);CHKERRQ(ierr);
+
+        /* dP/dr at staggered nodes */
+        ierr = aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s, P );CHKERRQ(ierr);
+
+    }
+
+    /* alternatively, we could solve static structure equations to
+       recover relationship between xi, radius, pressure, rho */
+    else {
+
+        /* solve static structure equations to determine planetary
+           size at this time step (would need to move into time
+           loop) */
+        ;
+    }
+
 
     /* surface area at basic nodes, without 4*pi term */
     ierr = spherical_area( da_b, M->radius_b, M->area_b);CHKERRQ(ierr);
@@ -53,7 +87,7 @@ PetscErrorCode set_mesh( Ctx *E)
     /* volume of spherical cells, without 4*pi term */
     ierr = spherical_volume( E, M->radius_b, M->volume_s);CHKERRQ(ierr);
 
-    /* REMOVE */
+    /* FIXME: this is to be REMOVED, once migrated into the new EOS object approach */
     /* layer id.  0 everywhere for single layer (as determined by
        P->mixing_length), and 0 for upper and 1 for lower layer
        when P->mixing_length==3 */
@@ -68,12 +102,15 @@ PetscErrorCode set_mesh( Ctx *E)
     /* mantle mass also needed for atmosphere calculations */
     P->atmosphere_parameters->mantle_mass_ptr = &M->mantle_mass;
 
+
+    /* TODO: eventually remove below, but can use as a check on the algorithm above
+       for computing radius from xi */
     /* need mantle mass above, but now can map radius to xi (mass coordinate) */
-    ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, mantle_density );CHKERRQ(ierr);
+    //ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, mantle_density );CHKERRQ(ierr);
 
     /* FIXME: it probably makes more sense to compute the central point of the xi's basic nodes
        rather than mapping directly from the staggered radius nodes */
-    ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, mantle_density );CHKERRQ(ierr);
+    //ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, mantle_density );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -285,6 +322,8 @@ static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
 }
 #endif
 
+// kept for testing
+# if 0
 static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, Vec dxidr, const Parameters P, PetscScalar mantle_density )
 {
 
@@ -342,6 +381,7 @@ static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, Vec dxidr, 
 
     PetscFunctionReturn(0);
 }
+#endif
 
 static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parameters P )
 {
@@ -383,6 +423,13 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Paramete
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,density,&arr_density);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode aw_mantle_density( const Parameters P, PetscScalar *mantle_density )
+{
+    PetscScalar dep;
 
     /* average mantle density */
     /* integral at planetary radius P->radius */
