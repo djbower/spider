@@ -269,3 +269,11 @@ Also, the heat capacity and thermal expansion of the melt are assumed constant (
   The next step is thus to read through Ohtani to obtain equations, or at least a table, for the melting curve values.
   We also need to use the EOS formulas for the solid phases to obtain the density and entropy changes for melt and solid.
 }
+
+\subsection{Gravitational potential energy}
+The gravitational potential energy per unit mass is:
+\begin{equation}
+E_{\rm grav} = \frac{\partial U_{\rm grav}}{\partial m} = - \frac{G M(r)}{r} = - |g(r)|r
+\end{equation}
+where $U_{\mathrm{grav}}$ is gravitational energy, $m$ mass, $G$ gravitational constant, $r$ radius from centre of mass, $M(r)$ integrated mass from centre of mass to $r$, and $g(r)$ acceleration due to gravity as a function of $r$.
+Thus, melting influences gravitational potential energy through its affect on $g(r)$, and because $g(r)$ is an integrated quantity it is not sensitive to small changes to the density distribution.  We therefore neglect changes in $E_{\mathrm{grav}}$ for silicate melting in a magma ocean.  However, this term should be included to model mantle-core differentiation because in this case the density contrast between solid and melt components is large.

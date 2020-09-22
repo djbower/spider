@@ -63,13 +63,13 @@ where $U$ is the local barycentric velocity in the radial direction.  Thus, the 
 %%%%
 %%%%
 \subsection{Implementation}
-We time-step the following equation in SPIDER:
+We time step the following equation in SPIDER \dbnote{The differential notation is carried across from Abe, although we actually solve the integral form in SPIDER---see below}:
 \begin{equation}
-\rho T \frac{Ds}{Dt} = -\nabla \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
+\rho T \frac{Ds}{Dt} = -\nabla_r \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
 \end{equation}
-Now, transform to mass coordinates by replacing the Lagrangian with a partial derivative with respect to time:
+Where we add a subscript to $\nabla$ to be explicit that this relates to a physical coordinate $r$.  Now, transform to mass coordinates by replacing the Lagrangian with a partial derivative with respect to time:
 \begin{equation}
-\rho T \left( \frac{\partial s}{\partial t} \right)_\xi = -\nabla \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
+\rho T \left( \frac{\partial s}{\partial t} \right)_\xi = -\nabla_r \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
 \end{equation}
 
 \subsubsection{Differential form}
@@ -84,8 +84,9 @@ And replace derivative with respect to $r$ with derivative with respect to $\xi$
 \end{equation}
 This description is known as the ``Lagrangian description'' \citep[e.g.,][]{KWW12} because we are following mass elements.
 %%%%
+%%%%
 \subsubsection{Integral form}
-\cite{BSW18} instead solve the integral form.  \dbnote{Presumably here we therefore just consider the fluxes into and out of mass elements, hence there are no prefactors creeping in associated with the mapping from $r$ to $\xi$.}
+\cite{BSW18} instead solve the integral form.  Note that here we are still integrating over a physical area $dA$ or volume $dV$ (which both relate to the physical spatial coordinate $r$).  Hence the equation below invariably contains (unavoidably?) both $r$ and $\xi$ terms.  Nevertheless, if the relationship between $r$ and $\xi$ is known as a function of time, this is still fine to evaluate:
 \begin{equation}
 \int_V \rho T \left( \frac{\partial s}{\partial t} \right)_\xi dV = - \int_A F \cdot n dA + \int_V \rho H dV
 \end{equation}
@@ -99,13 +100,52 @@ So for example, heat flux becomes (and similar for other flux terms involve spat
 \begin{equation}
 \vec{J}_q=-\rho T \kappa_h \frac{\partial S}{\partial r} = -\rho T \kappa_h \frac{\rho}{\rho_0} \left( \frac{r}{\xi} \right)^2 \left(\frac{\partial S}{\partial \xi} \right)_t
 \end{equation}
-\dbnote{Probably now makes sense to track $\partial S/\partial \xi$, and integrate this to get $S$ etc.  It's probably easiest to just do as much crunching as possible using $\xi$ rather than $r$ for consistency.}
-\subsubsection{Implementation continued}
-To implement, we actually define the mesh using radial coordinates, and then map to mass coordinates using Eq.~\ref{eq:masscoord}.  This is because the Adams-Williamson equation of state gives a simple form of the density and the integral involving $r$ on the RHS of Eq.~\ref{eq:masscoord} can be evaluated directly.  Furthermore, we are free to define $\rho_0$ as we wish, since it is a perfectly arbitrary constant.  Nevertheless, it is intuitive to set $\rho_0$ such that $\xi=r$ at the planetary surface.  Therefore, the bounds of radius are $r_{\rm cmb}$ to $r$, and the bounds of the mass coordinate $\xi$ are $0$ to $r$.
+%%%%
+%%%%
+%%%%
+\subsection{Hydrostatic pressure}
+\label{sect:hydrostatic}
+\fbox{\parbox{\textwidth}{We use the Adams-Williamson equation of state to compute the hydrostatic pressure profile.  This is important because we need to know a relationship between our mesh (radius) and the lookup coordinate (pressure).  It is also important for the conversion from radius to mass coordinates and vice versa.  A more sophisticated EOS could equally be used.}}\\
+\subsubsection{Pressure}
+Adams-Williamson equation of state:
+\begin{equation}
+P = - \frac{\rho_r g}{\beta} (\exp( \beta z )-1)
+\end{equation}
+where $\rho_r$ is a reference surface density, $g$ gravity which is negative by convention, $\beta$ is a measure of the compressibility of the material, and $z$ is depth.  For Earth, gravity is near constant throughout the mantle and we solve for $\rho_r$ and $\beta$ using a least-squares fit to the density profile of the lower mantle.  Relationship between depth and radius is, where $r_0$ is surface radius:
+\begin{equation}
+z = r_0 - r \implies \frac{dz}{dr} = -1
+\end{equation}
+Pressure gradient is:
+\begin{equation}
+\frac{dP}{dr} = \frac{dP}{dz} \frac{dz}{dr} = \rho_s g \exp( \beta z )
+\end{equation}
+Density is:
+\begin{equation}
+\rho(z) = \rho_s \exp( \beta z ) \implies \rho(r) = \rho_s \exp( \beta (r_0 - r) )
+\end{equation}
+For any such EOS with a simple relation between $\rho$ and $r$, we can integrate the RHS of Eq.~\ref{eq:masscoord} to directly compute the mass coordinate $\xi$ for a given $r$:
+\begin{equation}
+\xi = \left[ \xi_{\rm cmb}^3 + \frac{3}{\rho_0} \int_{\rm cmb}^r \rho r^2 dr \right] ^ {1/3}
+\end{equation}
+Furthermore, we are free to define $\rho_0$ as we wish, since it is a perfectly arbitrary constant.  An intuitive option is to set $\rho_0$ such that $\xi=1.0$ at the planetary surface ($\xi=0$ at the innermost boundary $r=r_{\rm cmb}$).  Therefore, the bounds of radius are $r_{\rm cmb}$ to $r$, and the bounds of the mass coordinate $\xi$ are 0 to 1.
  
-
-
-
+\subsubsection{General formulation}
+\begin{equation}
+\frac{dp(r)}{dr} = g(r) \rho(r) = -G \frac{M(r)}{r^2}\rho(r)
+\end{equation}
+Multiply by $r^2/\rho$ and differentiate with respect to $r$:
+\begin{equation}
+\frac{d}{dr} \left( \frac{r^2}{\rho(r)} \frac{dp(r)}{dr} \right) = -G \frac{dM(r)}{dr} = -G 4 \pi r^2 \rho(r)
+\end{equation}
+Rearranging this becomes:
+\begin{equation}
+\frac{1}{r^2} \frac{d}{dr} \left( \frac{r^2}{\rho}\frac{dp}{dr} \right) = -4 \pi G \rho
+\end{equation}
+Combined with an EOS of the form $p=p(\rho)$, this is an ordinary second order differential equation for the density or pressure.
+ 
+ %%% NOTES BELOW WERE BRAIN-STORMING, AND CAN PROBABLY ALL BE REMOVED SOON
+ %%%%
+ \begin{comment}
 
 \subsection{Mesh}
 \begin{figure}[!h]
@@ -137,30 +177,7 @@ To implement, we actually define the mesh using radial coordinates, and then map
 \end{enumerate}
 \item If we do 1 above, then I think this corresponds closely (or exactly) to the incorrect formulation in the paper?!  Since in both the formulation with $r$ (original) and $\xi$ (new) the bounding surfaces of the elements are assumed to be fixed in time meaning that $\frac{\partial r}{\partial t} = U=0$.  And hence the barycentric velocity is zero and we are justified/consistent when we exclude it from the equation.
 \end{itemize}
-%%%%%%%%%%%%%
-%%% PRESSURE %%%
-%%%%%%%%%%%%%
-\subsection{Hydrostatic pressure}
-\fbox{\parbox{\textwidth}{We use the Adams-Williamson equation of state to compute the hydrostatic pressure profile.  This is important because we need to know a relationship between our mesh (originally radius) and the lookup coordinate (pressure).  It is also useful/important for the conversion from radius to mass coordinates and vice versa.}}\\
-\subsection{Pressure}
-Adams-Williamson equation of state:
-\begin{equation}
-P = - \frac{\rho_r g}{\beta} (\exp( \beta z )-1)
-\end{equation}
-where $\rho_r$ is a reference surface density, $g$ gravity which is negative by convention, $\beta$ is a measure of the compressibility of the material, and $z$ is depth.  For Earth, gravity is near constant throughout the mantle and we solve for $\rho_r$ and $\beta$ using a least-squares fit to the density profile of the lower mantle.  Relationship between depth and radius is:
-\begin{equation}
-z = ro - r \implies \frac{dz}{dr} = -1
-\end{equation}
-\subsection{Pressure gradient}
-\begin{equation}
-\frac{dP}{dr} = \frac{dP}{dz} \frac{dz}{dr} = \rho_s g \exp( \beta z )
-\end{equation}
-\subsection{Density}
-\subsubsection{Functional form}
-Useful since we can approximate the density \emph{a priori} and use this to convert between radius and mass coordinates:
-\begin{equation}
-\rho(z) = \rho_s \exp( \beta z )
-\end{equation}
+
 \subsubsection{Average density}
 Average mantle density $\rho_0$ is convenient to know for the conversion between radius and mass coordinates:
 \begin{align}
@@ -198,3 +215,5 @@ P(r) = \int_r^R \rho(r^\prime) g(r^\prime) dr^\prime
 \begin{equation}
 g(r) = \frac{G m(r)}{r^2}
 \end{equation}
+
+\end{comment}

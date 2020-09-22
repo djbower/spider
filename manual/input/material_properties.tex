@@ -244,3 +244,63 @@ Alternatively:
 In \cite{BSW18,BKW19} we used Eq.~\ref{eqn:adiabatic_temp_grad} to compute the adiabatic gradient in the mixed phase region, but this involves calculating the gradient of the fusion curve, which is a hypothetical melting curve between the solidus and liquidus.  This is not as convenient, nor as exact, as using Eq.~\ref{eqn:adiabatic_temp_grad2} which is an exact thermodynamic representation.  Therefore, the preference would be to switch to a formulation akin to Eq.~\ref{eqn:adiabatic_temp_grad2}.  Tests with SPIDER show that  Eq.~\ref{eqn:adiabatic_temp_grad} and  Eq.~\ref{eqn:adiabatic_temp_grad2} return different results for $dT/dP|_S$ in the mixed phase region, but the overall cooling trends are often near indistinguishable.
 
 Together, these expressions represent a thermodynamically consistent metastable combination of solid and melt phases, chosen to best mimic the behavior of the multicomponent mantle over the melting interval.  Outside of the mixed-phase region the quantities in Eqns.~\ref{eqn:density_agg}--\ref{eqn:adiabatic_temp_grad} are equal to their melt and solid values exclusively, as for temperature (Eqn.~\ref{eqn:temperature_agg}).  This model provides thermodynamic properties as a function of pressure and entropy for the melt, solid, and mixed phase that are input to the evolution model i.e., $\phi$, $T$, $\rho$, $c_p$, $\alpha$, and $dT/dP|_S$.
+
+\subsection{Viscosity}
+Currently, the standard Arrhenius law is implemented.  To pin the viscosity to a reference viscosity $\eta_0$ at pressure $P_0$ and temperature $T_0$, we use:
+\begin{equation}
+\log_{10} ( \eta (P,T)) = \log_{10} \eta_0 + \frac{E_a + V_aP}{RT} - \frac{E_a + V_a P_0}{R T_0},
+\label{eq:viscnopin}
+\end{equation}
+for activation energy $E_a$ and activation volume $V_a$.  This can be rewritten as
+\begin{equation*}
+\log_{10} ( \eta (P,T)) = \log_{10} \eta_0 + \frac{(E_a + V_a(P_0 + \Delta P))T_0 - (E_a + V_aP_0)(T_0 + \Delta T)}{R T_0 (\Delta T + T_0)}
+\end{equation*}
+for $\Delta P = P - P_0$ and $\Delta T = T - T_0$. If we write $\Delta T' = \Delta T/T_0$, we get
+\begin{equation}
+\log_{10} ( \eta (P,T)) = \log_{10} \eta_0 + \frac{V_a \Delta P - (E_a + V_a P_0)\Delta T'}{R T_0 (1 + \Delta T')}.
+\end{equation}
+\begin{equation}
+\log_{10} ( \eta (P,T)) = \log_{10} \eta_0 + \frac{-E_a \Delta T' + V_a (\Delta P - P_0 \Delta T')}{R T}.
+\end{equation}
+Now the form is similar to Eq.~\ref{eq:viscnopin} if the last term was ignored (i.e., no assumed pinning).
+Values can be specified in the input file, where $\eta_0$ is the reference viscosity at P--T conditions given by $P_0$ and $T_0$.  Recommended CMB values are $\eta_0 = 10^{22}$, $T_0 = T_{CMB} \approx 4000$K and $P_0 = P_{CMB} \approx 138$ GPa.  Another option is to adopt the convention used in StagYY, where $P_0 = 0$, $T_0 = 1600$ and $\eta_0 = 10^{19}$.  In this later case, the viscosity structure is pinned to the top of the 1600 K adiabat.
+
+\subsubsection{Compositionally dependent viscosity}
+Viscosity is strongly dependent on the Si-abundance in the mantle. Very Si-rich mantles are much more viscous than very Mg-rich mantles. The compositional dependency is applied simply by adding a term to the viscosity, $\ln \eta_{new} = \ln \eta + \Delta \eta_c$. It depends on the Mg/Si-ratio, which is specified in the input file with -Mg\_Si, where you can enter 0.0 to switch it off. Usually, it is set to 1.08, the value for Earth. It is linearly dependent on Mg/Si in several steps:
+\begin{equation}
+\Delta \eta_c = 
+\begin{cases}
+2 & \text{Mg/Si} < 0.5 \\
+\log(3.3) + (2 - \log(3.3))\frac{0.7 - \text{Mg/Si}}{0.2} & 0.5 \leq \text{Mg/Si} < 0.7 \\
+\log(3.3)\frac{1 - \text{Mg/Si}}{0.3} & 0.7 \leq \text{Mg/Si} < 1.0 \\
+\log(0.033)\frac{\text{Mg/Si}-1}{0.25} & 1.0 \leq \text{Mg/Si} < 1.25 \\
+-2 + (\log(0.033) + 2)\frac{1.5 - \text{Mg/Si}}{0.25} & 1.25 \leq \text{Mg/Si} < 1.5 \\
+-2 & \text{Mg/Si} \geq 1.5
+\end{cases}.
+\end{equation}
+%It is centered around Mg/Si=1 here, but can easily be centered around different Mg/Si values by subtracting $\Delta \eta_c$ for the reference Mg/Si from the actual number. It is recommended to center it around the Mg/Si ratio of Earth (which is currently the case) so a viscosity profile based on Earth can be used.
+The correction above is centered around Mg/Si = 1.0. If the reference viscosity profile is not for a planet with Mg/Si=1.0, then the compositional correction should be altered to compensate for the difference. This is done by subtracting the compositional correction of the composition for which the reference viscosity profile is calculated (usually Earth-like composition). The composition for which the reference viscosity profile has been calculated can be given in the options file as -Mg\_Si\_ref. This should be set to Earth-like composition as default, since most reference viscosity profiles are calculated for Earth. The compositional correction is stored in P visc\_ref\_comp.
+
+\subsubsection{Depth-dependent activation volume}
+Activation volume $V_a$ changes with depth. This change is already implemented in StagYY, and now also in SPIDER. The implementation and numbers are based on Antoine Rozel's paper, Continental crust formation on early Earth controlled by intrusive magmatism (Nature, 2017). It is described by
+\begin{equation}
+V_a(P) = V_0 \exp(- P/P_i),
+\end{equation}
+where $V_0$ is the same as the value for $V_a$ used before, and pressure scaling $P_i$ is given by Rozel et al.\ at $P_i=200$GPa in the lower mantle, and zero in the upper mantle. Currently, in SPIDER it is not possible yet to vary this value between UM and LM (or between layers), but that should not be difficult to implement. Currently, this part is controlled by two input parameters: -activation\_volume\_pressure\_dependency is used to switch this formula on or off (1 is on, any other integer is off), while -activation\_volume\_pressure\_scaling gives the scaling pressure $P_i$ for if the dependency is switched on. Currently it is set to 200e9 Pa (200 GPa).
+
+
+Using this description for $V_a$ changes the equation for viscosity from equation \ref{eq:visc_constVa}, since the $V_a$ multiplied with $P$ is not the same as the one multiplied with $P_0$ in equation \ref{eq:visc_viscstep1}. Starting from the latter equation, we get
+\begin{equation*}
+\ln ( \eta (P,T)) = \ln \eta_0 + \frac{( V_a(P)*(P_0 + \Delta P))*T_0 -  V_a(P_0)*P_0*(T_0 + \Delta T) + E_a (T_0 - (T_0 + \Delta T))}{R T_0 (\Delta T + T_0)},
+\end{equation*}
+which can be slightly rewritten to the form which is implemented in SPIDER,
+\begin{equation}
+\ln ( \eta (P,T)) = \ln \eta_0 + \frac{V_a(P) \Delta P + P_0 \left( V_a(P) - V_a(P_0) (1 + \Delta T' ) \right) - E_a \Delta T' }{R T},
+\label{eq:visc_varVa}
+\end{equation}
+since $T = T_0(1 + \Delta T' )$. Also, $V_a(P_0) =\exp(-P_0/P_i)$ is a constant throughout the simulation.
+%%%%
+%%%%
+%%%%
+
+
