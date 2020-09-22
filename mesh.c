@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include "monitor.h"
 
 static PetscErrorCode regular_mesh( Ctx * );
 //static PetscErrorCode geometric_mesh( Ctx * );
@@ -13,7 +14,7 @@ static PetscErrorCode aw_mass( Mesh * );
 // below kept for testing purposes
 //static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
 static PetscErrorCode aw_mantle_density( const Parameters, PetscScalar * );
-//static PetscErrorCode aw_radius_from_xi( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
+static PetscErrorCode aw_radius_from_xi( Ctx * );
 
 PetscErrorCode set_mesh( Ctx *E)
 {
@@ -21,7 +22,6 @@ PetscErrorCode set_mesh( Ctx *E)
     Mesh           *M = &E->mesh;
     DM             da_b=E->da_b, da_s=E->da_s;
     Parameters     P = E->parameters;
-    PetscScalar    mantle_density;
 
     PetscFunctionBeginUser;
 
@@ -42,13 +42,12 @@ PetscErrorCode set_mesh( Ctx *E)
         /* Adams-Williamson EOS */
 
         /* determine reference density from AW EOS */
-        ierr = aw_mantle_density( P, &mantle_density );CHKERRQ(ierr);
+        ierr = aw_mantle_density( P, &M->mantle_density );CHKERRQ(ierr);
 
         /* with rho0 and the form of rho known (rho(r) from AW EOS),
            we can solve an inverse problem to determine the physical
            mesh coordinates for both the basic and staggered nodes */
-        // TODO: write below function
-        //ierr = aw_radius_from_xi( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, mantle_density );CHKERRQ(ierr);
+        ierr = aw_radius_from_xi( E );CHKERRQ(ierr);
 
         /* with radius known, now can update other quantities such
            as pressure, using AW EOS */
@@ -94,7 +93,7 @@ PetscErrorCode set_mesh( Ctx *E)
     //get_layer( da_b, M->radius_b, M->layer_b, P );
 
     /* density at staggered nodes */
-    ierr = aw_density( da_s, M->radius_s, M->rho_s, P, &mantle_density );CHKERRQ(ierr);
+    ierr = aw_density( da_s, M->radius_s, M->rho_s, P, &M->mantle_density );CHKERRQ(ierr);
 
     /* mass at staggered nodes */
     ierr = aw_mass( M );CHKERRQ(ierr);
@@ -493,3 +492,148 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad, Paramet
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
+
+static PetscErrorCode objective_function_radius( SNES snes, Vec x, Vec f, void *ptr )
+{
+    PetscErrorCode    ierr;
+    const PetscScalar *xx, *xi;
+    PetscScalar       *ff, dep;
+    Ctx               *E = (Ctx*) ptr;
+    Parameters  const P = E->parameters;
+    Mesh        const *M = &E->mesh;
+    PetscInt          i,ilo,ihi,numpts,w;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(E->da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ihi = ilo + w;
+
+    ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr); /* initial guess of r */
+    ierr = VecGetArrayRead(M->xi_b,&xi);CHKERRQ(ierr); /* target mass coordinate */
+    ierr = VecGetArray(f,&ff);CHKERRQ(ierr); /* residual function */
+
+    for(i=ilo; i<ihi; ++i){
+        dep = P->radius - xx[i];
+        /* evaluate integral at r: mass contained with shell of radius r */
+        ff[i] = -2/PetscPowScalar(P->beta,3) - PetscPowScalar(xx[i],2)/P->beta - 2*xx[i]/PetscPowScalar(P->beta,2);
+        ff[i] *= P->rhos * PetscExpScalar( P->beta * dep );
+        /* minus integral at radius = core-mantle boundary */
+        ff[i] -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * P->radius * (1.0-P->coresize) );
+        /* minus predicted mass from mass coordinate */
+        ff[i] -= (M->mantle_density / 3) * PetscPowScalar(xi[i],3.0);
+
+        //ff[i] /= (M->mantle_density / 3) * PetscPowScalar(P->radius,3.0);
+
+        /* include other prefactors, according to the formulation from radius to mass coordinate */
+        //ff[i] *= 3 / M->mantle_density;
+
+        // Dan trying to improve solver behaviour by skipping this cube root
+        //ff[i] = PetscPowScalar( ff[i], 1.0/3.0 );
+        //ff[i] -= PetscPowScalar(xi[i],1.0);
+
+        /* residual is simple difference of this to desired */
+        //ff[i] -= PetscPowScalar(xi[i],3.0);
+        //ff[i] = PetscPowScalar(ff[i],1.0/3.0);
+    }
+
+    ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(M->xi_b,&xi);CHKERRQ(ierr);
+    ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode aw_radius_from_xi( Ctx *E )
+{
+    PetscErrorCode ierr;
+    SNES           snes;
+    Vec            x,r;
+    PetscScalar    *xx, *xi, *radius;
+    PetscInt       i,numpts_b;
+    Mesh           *M = &E->mesh;
+    Parameters const P = E->parameters;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"aw_radius_from_xi()\n");CHKERRQ(ierr);
+
+    ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
+
+    /* Use this to address this specific SNES (nonlinear solver) from the command
+       line or options file, e.g. -atmosic_snes_view */
+    ierr = SNESSetOptionsPrefix(snes,"xi_");CHKERRQ(ierr);
+
+    ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
+    ierr = VecSetFromOptions(x);CHKERRQ(ierr);
+    ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
+
+    ierr = SNESSetFunction(snes,r,objective_function_radius,E);CHKERRQ(ierr);
+
+    /* initialise vector x with initial guess */
+    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&xi);CHKERRQ(ierr); 
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    for (i=0; i<numpts_b; ++i) {
+        //xx[i] = P->coresize * P->radius + 0.5 *P->radius * (1.0-P->coresize); // xi[i];
+        /* best initial guess is evenly space from surface to cmb */
+        xx[i] = P->radius - (P->radius*(1.0-P->coresize)/(numpts_b-1)) * i;
+    }
+    ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&xi);CHKERRQ(ierr);
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+
+    /* Inform the nonlinear solver to generate a finite-difference approximation
+       to the Jacobian */
+    ierr = PetscOptionsSetValue(NULL,"-xi_snes_mf",NULL);CHKERRQ(ierr);
+
+    /* Turn off convergence based on step size */
+    ierr = PetscOptionsSetValue(NULL,"-xi_snes_stol","0");CHKERRQ(ierr);
+
+    /* Turn off convergenced based on trust region tolerance */
+    ierr = PetscOptionsSetValue(NULL,"-xi_snes_trtol","0");CHKERRQ(ierr);
+
+    /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
+    {
+      PetscBool flg = PETSC_FALSE;
+
+      ierr = PetscOptionsGetBool(NULL,NULL,"-xi_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      if (flg) {
+        ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
+      }
+    }
+
+    /* Solve */
+    ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
+    ierr = SNESSolve(snes,NULL,x);CHKERRQ(ierr);
+  {   
+      SNESConvergedReason reason;
+      ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
+      if (reason < 0) SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+          "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
+    }   
+
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_b,M->radius_b,&radius);CHKERRQ(ierr);
+    for (i=0; i<numpts_b; ++i) {
+        if( xx[i] < 0.0 ){
+            /* Sanity check on solution */
+            SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+                "Unphysical radius coordinate, x: %g",xx[i]);
+        }   
+        else{
+            radius[i] = xx[i];
+        }   
+    }   
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(E->da_b,M->radius_b,radius);CHKERRQ(ierr);
+
+    ierr = VecDestroy(&x);CHKERRQ(ierr);
+    ierr = VecDestroy(&r);CHKERRQ(ierr);
+    ierr = SNESDestroy(&snes);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+

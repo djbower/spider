@@ -20,8 +20,21 @@
 -ts_sundials_atol 1.0e-6
 -ts_sundials_rtol 1.0e-6
 
+-xi_snes_type newtontr
+-xi_snes_view
+-xi_snes_converged_reason
+-xi_snes_verbose_monitor
+-xi_ksp_rtol 1e-4
+-xi_ksp_atol 1e-4
+-xi_snes_linesearch_damping 0.01
+-xi_snes_max_it 10000
+-xi_snes_linesearch_max_it 1000
+#-xi_snes_max_funcs 1000000000000
+-xi_snes_rtol 1e-4
+-xi_snes_atol 1e-4
+
 # number of basic nodes
--n 100
+-n 50
 
 # all units are SI unless indicated otherwise
 
@@ -29,7 +42,7 @@
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
--radius0 63710000.0 # Earth radius
+-radius0 6371000.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
