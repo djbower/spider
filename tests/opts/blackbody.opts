@@ -20,18 +20,18 @@
 -ts_sundials_atol 1.0e-6
 -ts_sundials_rtol 1.0e-6
 
--xi_snes_type newtontr
+#-xi_snes_type newtontr
 -xi_snes_view
 -xi_snes_converged_reason
 -xi_snes_verbose_monitor
--xi_ksp_rtol 1e-4
--xi_ksp_atol 1e-4
+-xi_ksp_rtol 1e-2
+-xi_ksp_atol 1e-2
 -xi_snes_linesearch_damping 0.01
 -xi_snes_max_it 10000
 -xi_snes_linesearch_max_it 1000
 #-xi_snes_max_funcs 1000000000000
--xi_snes_rtol 1e-4
--xi_snes_atol 1e-4
+-xi_snes_rtol 1e-2
+-xi_snes_atol 1e-2
 
 # number of basic nodes
 -n 10
@@ -124,7 +124,7 @@
 # static pressure profile derived from Adams-Williamson equation of state
 # these parameters are from fitting PREM in the lower mantle (for Earth)
 -rhos 4078.95095544 # surface density
--beta 1.1115348931000002e-07 # beta parameter
+-beta 1.1115348931000002e-07 #1.1115348931000002e-07 # beta parameter
 -gravity -10.0 # gravity
 
 # eddy diffusivity
