@@ -466,7 +466,9 @@ static PetscErrorCode aw_mass( Mesh *M )
     /* also determine volume, also excluding 4*pi prefactor */
     ierr = VecSum( M->volume_s, &M->mantle_volume );
 
-    M->mantle_density = M->mantle_mass / M->mantle_volume;
+    /* FIXME: M->mantle_density is computed analytically to give exact value */
+    /* this here would over-ride */
+    //M->mantle_density = M->mantle_mass / M->mantle_volume;
 
     PetscFunctionReturn(0);
 
@@ -668,6 +670,25 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
 
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
+    /* now compute dxi/dr once all radius and xi are known */
+    ierr = VecCopy( M->radius_b, M->dxidr_b ); CHKERRQ(ierr);
+    ierr = VecScale( M->dxidr_b, -1.0 );CHKERRQ(ierr);
+    ierr = VecShift( M->dxidr_b, P->radius );CHKERRQ(ierr);
+    ierr = VecScale( M->dxidr_b, P->beta );CHKERRQ(ierr);
+    ierr = VecExp( M->dxidr_b );CHKERRQ(ierr);
+    ierr = VecScale( M->dxidr_b, P->rhos );CHKERRQ(ierr);
+    ierr = VecScale( M->dxidr_b, 1.0 / M->mantle_density );CHKERRQ(ierr);
+    /* multiply radius squared */
+    ierr = VecPointwiseMult( M->dxidr_b, M->dxidr_b, M->radius_b );CHKERRQ(ierr);
+    ierr = VecPointwiseMult( M->dxidr_b, M->dxidr_b, M->radius_b );CHKERRQ(ierr);
+    /* divide xi squared */
+    ierr = VecPointwiseDivide( M->dxidr_b, M->dxidr_b, M->xi_b );CHKERRQ(ierr);
+    ierr = VecPointwiseDivide( M->dxidr_b, M->dxidr_b, M->xi_b );CHKERRQ(ierr);
+
+    /* TODO: last value of M->dxidr_b is inf, and values nearer the base of the
+       mantle increase substantially.  Perhaps an argument for shifting the cmb
+       away from zero mass coordinate */
+    
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);
     ierr = SNESDestroy(&snes);CHKERRQ(ierr);
