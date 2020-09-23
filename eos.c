@@ -295,7 +295,9 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
     /* check for relative path name */
     ierr = PetscSNPrintf(buf1,sizeof(buf1),"%s%s%s%s","-",prefix,property,"_filename_rel_to_src");CHKERRQ(ierr);
     ierr = PetscOptionsGetString(NULL,NULL,buf1,lookup_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);CHKERRQ(ierr);
-    ierr = MakeRelativeToSourcePathAbsolute(lookup_filename);CHKERRQ(ierr);
+    if (set_rel_to_src) {
+      ierr = MakeRelativeToSourcePathAbsolute(lookup_filename);CHKERRQ(ierr);
+    }
     /* check for absolute path name */
     ierr = PetscSNPrintf(buf2,sizeof(buf2),"%s%s%s%s","-",prefix,property,"_filename");CHKERRQ(ierr);
     ierr = PetscOptionsGetString(NULL,NULL,buf2,lookup_filename,PETSC_MAX_PATH_LEN,&set);CHKERRQ(ierr);
