@@ -34,7 +34,7 @@
 -xi_snes_atol 1e-4
 
 # number of basic nodes
--n 50
+-n 10
 
 # all units are SI unless indicated otherwise
 

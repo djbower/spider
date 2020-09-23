@@ -496,24 +496,30 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad, Paramet
 static PetscErrorCode objective_function_radius( SNES snes, Vec x, Vec f, void *ptr )
 {
     PetscErrorCode    ierr;
-    const PetscScalar *xx, *xi;
-    PetscScalar       *ff, dep;
+    const PetscScalar *xx, *xi_b, *xi_s;
+    PetscScalar       *ff, dep, target_xi;
     Ctx               *E = (Ctx*) ptr;
     Parameters  const P = E->parameters;
     Mesh        const *M = &E->mesh;
-    PetscInt          i,ilo,ihi,numpts,w;
+    PetscInt          i,ilo_b,ihi_b,numpts_b,w_b,ilo_s,ihi_s,numpts_s,w_s;
 
     PetscFunctionBeginUser;
 
-    ierr = DMDAGetInfo(E->da_b,NULL,&numpts,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ierr = DMDAGetCorners(E->da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
-    ihi = ilo + w;
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+
+    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(E->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
 
     ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr); /* initial guess of r */
-    ierr = VecGetArrayRead(M->xi_b,&xi);CHKERRQ(ierr); /* target mass coordinate */
+    ierr = VecGetArrayRead(M->xi_b,&xi_b);CHKERRQ(ierr); /* target mass coordinate */
+    ierr = VecGetArrayRead(M->xi_s,&xi_s);CHKERRQ(ierr);
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr); /* residual function */
 
-    for(i=ilo; i<ihi; ++i){
+    /* FIXME: broken for parallel */
+    for(i=0; i< numpts_b+numpts_s; ++i){
         dep = P->radius - xx[i];
         /* evaluate integral at r: mass contained with shell of radius r */
         ff[i] = -2/PetscPowScalar(P->beta,3) - PetscPowScalar(xx[i],2)/P->beta - 2*xx[i]/PetscPowScalar(P->beta,2);
@@ -521,7 +527,15 @@ static PetscErrorCode objective_function_radius( SNES snes, Vec x, Vec f, void *
         /* minus integral at radius = core-mantle boundary */
         ff[i] -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * P->radius * (1.0-P->coresize) );
         /* minus predicted mass from mass coordinate */
-        ff[i] -= (M->mantle_density / 3) * PetscPowScalar(xi[i],3.0);
+        /* first part relates to basic nodes */
+        if (i<numpts_b){
+            target_xi = xi_b[i];
+        }
+        /* second part relates to staggered nodes */
+        else{
+            target_xi = xi_s[i-numpts_b];
+        }
+        ff[i] -= (M->mantle_density / 3) * PetscPowScalar(target_xi,3.0);
 
         //ff[i] /= (M->mantle_density / 3) * PetscPowScalar(P->radius,3.0);
 
@@ -538,7 +552,8 @@ static PetscErrorCode objective_function_radius( SNES snes, Vec x, Vec f, void *
     }
 
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(M->xi_b,&xi);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(M->xi_b,&xi_b);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(M->xi_s,&xi_s);CHKERRQ(ierr);
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -549,14 +564,15 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     PetscErrorCode ierr;
     SNES           snes;
     Vec            x,r;
-    PetscScalar    *xx, *xi, *radius;
-    PetscInt       i,numpts_b;
+    PetscScalar    *xx, *radius, dx;
+    PetscInt       i,numpts_b,numpts_s;
     Mesh           *M = &E->mesh;
     Parameters const P = E->parameters;
 
     PetscFunctionBeginUser;
 
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     ierr = PetscPrintf(PETSC_COMM_WORLD,"aw_radius_from_xi()\n");CHKERRQ(ierr);
 
@@ -567,21 +583,25 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"xi_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    ierr = VecSetSizes( x, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, numpts_b+numpts_s );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
     ierr = SNESSetFunction(snes,r,objective_function_radius,E);CHKERRQ(ierr);
 
     /* initialise vector x with initial guess */
-    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&xi);CHKERRQ(ierr); 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    dx = P->radius * (1.0-P->coresize) / (numpts_b-1);
+    /* basic nodes */
     for (i=0; i<numpts_b; ++i) {
-        //xx[i] = P->coresize * P->radius + 0.5 *P->radius * (1.0-P->coresize); // xi[i];
         /* best initial guess is evenly space from surface to cmb */
-        xx[i] = P->radius - (P->radius*(1.0-P->coresize)/(numpts_b-1)) * i;
+        xx[i] = P->radius - i * dx;
     }
-    ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&xi);CHKERRQ(ierr);
+    /* staggered nodes */
+    for (i=numpts_b; i<numpts_b+numpts_s; ++i) {
+        /* best initial guess is evenly space from surface to cmb */
+        xx[i] = P->radius - 0.5 * dx - (i-numpts_b) * dx;
+    }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
@@ -615,6 +635,7 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     }   
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+
     ierr = DMDAVecGetArray(E->da_b,M->radius_b,&radius);CHKERRQ(ierr);
     for (i=0; i<numpts_b; ++i) {
         if( xx[i] < 0.0 ){
@@ -626,8 +647,22 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
             radius[i] = xx[i];
         }   
     }   
-    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(E->da_b,M->radius_b,radius);CHKERRQ(ierr);
+
+    ierr = DMDAVecGetArray(E->da_s,M->radius_s,&radius);CHKERRQ(ierr);
+    for (i=numpts_b; i<numpts_b+numpts_s; ++i) {
+        if( xx[i] < 0.0 ){
+            /* Sanity check on solution */
+            SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+                "Unphysical radius coordinate, x: %g",xx[i]);
+        }   
+        else{
+            radius[i-numpts_b] = xx[i];
+        }   
+    }   
+    ierr = DMDAVecRestoreArray(E->da_s,M->radius_s,radius);CHKERRQ(ierr);
+
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);
