@@ -583,6 +583,8 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"xi_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
+    /* here I am combining the basic and staggered nodes, but a DMComposite construction
+       is preferred */
     ierr = VecSetSizes( x, PETSC_DECIDE, numpts_b+numpts_s );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
@@ -636,6 +638,7 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
 
+    /* extract solution for basic radius from solution vec */
     ierr = DMDAVecGetArray(E->da_b,M->radius_b,&radius);CHKERRQ(ierr);
     for (i=0; i<numpts_b; ++i) {
         if( xx[i] < 0.0 ){
@@ -649,6 +652,7 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     }   
     ierr = DMDAVecRestoreArray(E->da_b,M->radius_b,radius);CHKERRQ(ierr);
 
+    /* extract solution for staggered radius from solution vec */
     ierr = DMDAVecGetArray(E->da_s,M->radius_s,&radius);CHKERRQ(ierr);
     for (i=numpts_b; i<numpts_b+numpts_s; ++i) {
         if( xx[i] < 0.0 ){
