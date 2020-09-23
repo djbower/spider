@@ -1035,6 +1035,11 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
     for (i=0; i<P->n_phases; ++i) {
         ierr = EOSDestroy(&P->eos_phases[i]);CHKERRQ(ierr);
     }
+    /* destroy composite */
+    if( P->n_phases==2 ){
+        ierr = EOSDestroy(&P->eos);CHKERRQ(ierr);
+    }
+
     P->n_phases = 0;
     P->eos = NULL;
 
