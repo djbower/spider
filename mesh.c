@@ -531,7 +531,19 @@ static PetscErrorCode objective_function_radius( SNES snes, Vec x, Vec f, void *
         else{
             target_xi = xi_s[i-numpts_b];
         }
+
+#if 1
+        // currently best here
         ff[i] -= (M->mantle_density / 3) * PetscPowScalar(target_xi,3.0);
+#endif
+
+#if 0
+        // testing here
+        ff[i] *= 3.0 / M->mantle_density;
+        ff[i] = PetscPowScalar( ff[i], 1.0/3.0 );
+        ff[i] -= target_xi;
+#endif
+
 
         //ff[i] /= (M->mantle_density / 3) * PetscPowScalar(P->radius,3.0);
 
