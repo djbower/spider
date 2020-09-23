@@ -49,6 +49,10 @@ PetscErrorCode set_mesh( Ctx *E)
            mesh coordinates for both the basic and staggered nodes */
         ierr = aw_radius_from_xi( E );CHKERRQ(ierr);
 
+        /* for testing, do the inverse calculation */
+        ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, M->mantle_density );CHKERRQ(ierr);
+        ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, M->mantle_density );CHKERRQ(ierr);
+
         /* with radius known, now can update other quantities such
            as pressure, using AW EOS */
 
@@ -100,16 +104,6 @@ PetscErrorCode set_mesh( Ctx *E)
 
     /* mantle mass also needed for atmosphere calculations */
     P->atmosphere_parameters->mantle_mass_ptr = &M->mantle_mass;
-
-
-    /* TODO: eventually remove below, but can use as a check on the algorithm above
-       for computing radius from xi */
-    /* need mantle mass above, but now can map radius to xi (mass coordinate) */
-    //ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, mantle_density );CHKERRQ(ierr);
-
-    /* FIXME: it probably makes more sense to compute the central point of the xi's basic nodes
-       rather than mapping directly from the staggered radius nodes */
-    //ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, mantle_density );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
