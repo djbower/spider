@@ -183,8 +183,6 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
 
   ierr = PetscFree2(ctx->solutionFieldIDs,ctx->solutionSlots);CHKERRQ(ierr);
   ierr = VecDestroy(&ctx->work_local_b);CHKERRQ(ierr);
-  ierr = MatDestroy(&ctx->qty_at_b);CHKERRQ(ierr);
-  ierr = MatDestroy(&ctx->ddr_at_b);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_s);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_b);CHKERRQ(ierr);
   ierr = DMDestroy(&ctx->da_point);CHKERRQ(ierr);

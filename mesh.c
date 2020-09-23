@@ -12,7 +12,7 @@ static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_mass( Mesh * );
 // below kept for testing purposes
-//static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
+static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
 static PetscErrorCode aw_mantle_density( const Parameters, PetscScalar * );
 static PetscErrorCode aw_radius_from_xi( Ctx * );
 
@@ -316,7 +316,7 @@ static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
 #endif
 
 // kept for testing
-# if 0
+# if 1
 static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, Vec dxidr, const Parameters P, PetscScalar mantle_density )
 {
 

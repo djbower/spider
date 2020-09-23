@@ -67,7 +67,6 @@ typedef struct Ctx_ {
   SpiderSolutionFieldID  *solutionFieldIDs; /* Which fields are in which slot */
   PetscInt               *solutionSlots;    /* The inverse map */
   Atmosphere             atmosphere;
-  Mat                    qty_at_b, ddr_at_b;
   Parameters             parameters;
   DimensionalisableField solDF; /* The solution and attached scalings */
   RheologicalFront       rheological_front_phi;
