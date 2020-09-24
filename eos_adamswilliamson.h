@@ -4,6 +4,7 @@
 #include "eos.h"
 
 typedef struct {
+    PetscScalar radius;
     PetscScalar gravity;
     PetscScalar rhos;
     PetscScalar beta;

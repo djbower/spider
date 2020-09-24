@@ -3,6 +3,7 @@
 
 /* Prototypes for local functions used in EOS interface functions */
 static PetscErrorCode EOSAdamsWilliamson_GetRho( const data_EOSAdamsWilliamson*,PetscScalar,PetscScalar,PetscScalar*);
+static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson*,PetscScalar,PetscScalar*);
 
 /* EOS interface functions */
 static PetscErrorCode EOSEval_AdamsWilliamson(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
@@ -46,6 +47,10 @@ PetscErrorCode EOSSetUpFromOptions_AdamsWilliamson(EOS eos, const char *prefix, 
   PetscFunctionBegin;
   (void) FC; // unused
 
+  /* radius of planet (m) */
+  ierr = PetscOptionsGetPositiveScalar("-radius",&data->radius,6371000.0,NULL);CHKERRQ(ierr); // m
+  data->radius /= SC->RADIUS;
+
   /* gravity (m/s^2), must be negative */
   data->gravity = -10.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-gravity",&data->gravity,NULL);CHKERRQ(ierr);
@@ -80,13 +85,69 @@ PetscErrorCode EOSCreate_AdamsWilliamson(EOS eos) {
 
 static PetscErrorCode EOSAdamsWilliamson_GetRho( const data_EOSAdamsWilliamson *adams,PetscScalar P,PetscScalar S, PetscScalar *rho_ptr)
 {
+   /* Adams-Williamson density is a simple function of depth (radius)
+      Sketch derivation:
+          dP/dr = dP/drho * drho/dr = -rho g
+          dP/drho \sim (dP/drho)_s (adiabatic)
+          drho/dr = -rho g / Si
+          then integrate to give the form rho(r) = k * exp(-(g*r)/c)
+          (g is positive)
+          apply the limit that rho = rhos at r=R
+          gives:
+              rho(z) = rhos * exp( beta * z )
+          where z = R-r
+
+    this is arguably the simplest relation to get rho directly from r, but other
+    EOSs can be envisaged */
+
     PetscScalar rho;
     
     PetscFunctionBeginUser;
+    (void) S;
 
+    /* using pressure, expression is simpler than sketch derivation above */
     rho = adams->rhos - P * adams->beta / adams->gravity;
 
     *rho_ptr = rho;
 
     PetscFunctionReturn(0);
+}
+
+/* Mass coordinate mapping and static structure */
+
+static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson *adams, PetscScalar P, PetscScalar *R_ptr )
+{
+    PetscScalar R;
+
+    PetscFunctionBeginUser;
+
+    R = adams->radius - (1.0/adams->beta)*PetscLogScalar(1.0-(P*adams->beta)/(adams->rhos*adams->gravity));
+
+    *R_ptr = R;
+
+    PetscFunctionReturn(0);
+}
+
+/* add interface function to update a series of quantities relevant to static structure calculations? */
+
+/* TODO: below should be static? */
+PetscErrorCode EOSAdamsWilliamson_GetMassWithinPressure( const data_EOSAdamsWilliamson *adams, PetscScalar P, PetscScalar S, PetscScalar *mass_ptr)
+{
+  /* return integral from 0 to r of r^2 * rho dr */
+
+  PetscErrorCode  ierr;
+  PetscScalar mass, R, rho; /* note mass without 4*pi scaling, as convention in SPIDER */
+  PetscScalar const beta = adams->beta;
+
+  PetscFunctionBeginUser;
+  (void) S; // unused
+
+  ierr = EOSAdamsWilliamson_GetRadiusFromPressure( adams, P, &R );CHKERRQ(ierr);
+  mass = -2.0/PetscPowScalar(beta,3) - PetscPowScalar(R,2)/beta -2*R/PetscPowScalar(beta,2);
+  ierr = EOSAdamsWilliamson_GetRho( adams, P, S, &rho );CHKERRQ(ierr);
+  mass *= rho;
+
+  *mass_ptr = mass;
+
+  PetscFunctionReturn(0);
 }

@@ -35,15 +35,11 @@ PetscErrorCode set_mesh( Ctx *E)
     /* FIXME: broken for mass coordinates */
     //geometric_mesh( E );
 
-    /* assume we know planetary size (core radius, and total radius)
-       this allows us to compute the rho0 that will recover the exact
-       desired bounds of the mesh (xi from 0 to P->radius, and r from
-       r_cmb to P->radius).  These functions are all tied to the assumed
-       relationship between rho and r, given by the Adams-Williamson
-       EOS */
     if(1){
 
-        /* Adams-Williamson EOS */
+        /* Adams-Williamson EOS is the simplest case, since rho
+           is a simple function of radius (or pressure) */
+
         ierr = EOSCreate(&M->eos, SPIDER_EOS_ADAMSWILLIAMSON);CHKERRQ(ierr);
         ierr = EOSSetUpFromOptions( M->eos, "adams_williamson", FC, SC );CHKERRQ(ierr);
 
@@ -486,6 +482,7 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad, Paramet
     PetscFunctionReturn(0);
 }
 
+/* TODO: remove from here, move to AW EOS */
 static PetscScalar aw_density_from_radius( PetscScalar radius, Parameters const P )
 {
 
@@ -509,6 +506,7 @@ static PetscScalar aw_density_from_radius( PetscScalar radius, Parameters const 
 
 }
 
+/* TODO: remove from here, move to AW EOS */
 static PetscScalar aw_rsquared_integrated( PetscScalar radius, Parameters const P )
 {
     /* return the integral of r^2 * rho( Adams-Williamson ) = r^2 * rhos exp( beta * z ) */
