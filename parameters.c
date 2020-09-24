@@ -11,61 +11,12 @@ Custom PETSc command line options should only ever be parsed during the populate
 #include "ic.h"
 #include "eos.h"
 #include "eos_composite.h"
+#include "util.h"
 
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
 static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
 static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, ScalingConstants );
-static PetscErrorCode PetscScalarCheckPositive( PetscScalar, const char * );
-static PetscErrorCode PetscIntCheckPositive( PetscInt, const char * );
-static PetscErrorCode PetscOptionsGetPositiveScalar( const char *, PetscScalar *, PetscScalar, PetscBool * );
-static PetscErrorCode PetscOptionsGetPositiveInt( const char *, PetscInt *, PetscInt, PetscBool * );
-
-/* helper functions for parsing parameters */
-
-static PetscErrorCode PetscScalarCheckPositive( PetscScalar value, const char * value_string )
-{
-    PetscFunctionBeginUser;
-    if( value < 0.0 ){
-        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",value_string,value);
-    }
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode PetscIntCheckPositive( PetscInt value, const char * value_string )
-{
-    PetscFunctionBeginUser;
-    if( value < 0 ){
-        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %d)",value_string,value);
-    }
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode PetscOptionsGetPositiveScalar( const char *value_string, PetscScalar *value_ptr, PetscScalar value_default, PetscBool *set )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    *value_ptr = value_default;
-    ierr = PetscOptionsGetScalar(NULL,NULL,value_string,value_ptr,set);CHKERRQ(ierr);
-    ierr = PetscScalarCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode PetscOptionsGetPositiveInt( const char *value_string, PetscInt *value_ptr, PetscInt value_default, PetscBool *set )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    *value_ptr = value_default;
-    ierr = PetscOptionsGetInt(NULL,NULL,value_string,value_ptr,set);CHKERRQ(ierr);
-    ierr = PetscIntCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
 
 static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {

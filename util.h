@@ -16,5 +16,9 @@ PetscErrorCode set_solution_from_partial_pressures( Ctx *, Vec );
 PetscErrorCode average_by_mass_staggered( Ctx *, Vec, Vec *, PetscScalar * );
 PetscErrorCode invert_vec_mask( Vec * );
 PetscErrorCode make_vec_mask( DM, PetscInt, Vec * );
+PetscErrorCode PetscScalarCheckPositive( PetscScalar, const char * );
+PetscErrorCode PetscIntCheckPositive( PetscInt, const char * );
+PetscErrorCode PetscOptionsGetPositiveScalar( const char *, PetscScalar *, PetscScalar, PetscBool * );
+PetscErrorCode PetscOptionsGetPositiveInt( const char *, PetscInt *, PetscInt, PetscBool * );
 
 #endif

@@ -6,6 +6,7 @@
 #include "dimensionalisablefield.h"
 #include "rheologicalfront.h"
 #include "atmosphere.h"
+#include "eos.h"
 
 /* common structures */
 
@@ -25,6 +26,8 @@ typedef struct Mesh_ {
     /* DJB atmosphere.  For seeing what the 'pressure' estimate of the
        mass is */
     PetscScalar mantle_mass, mantle_volume, mantle_density;
+
+    EOS eos;
 
 } Mesh;
 

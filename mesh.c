@@ -24,6 +24,8 @@ PetscErrorCode set_mesh( Ctx *E)
     Mesh           *M = &E->mesh;
     DM             da_b=E->da_b, da_s=E->da_s;
     Parameters     P = E->parameters;
+    FundamentalConstants const FC = P->fundamental_constants;
+    ScalingConstants const     SC = P->scaling_constants;
 
     PetscFunctionBeginUser;
 
@@ -42,6 +44,8 @@ PetscErrorCode set_mesh( Ctx *E)
     if(1){
 
         /* Adams-Williamson EOS */
+        ierr = EOSCreate(&M->eos, SPIDER_EOS_ADAMSWILLIAMSON);CHKERRQ(ierr);
+        ierr = EOSSetUpFromOptions( M->eos, "adams_williamson", FC, SC );CHKERRQ(ierr);
 
         /* determine reference density from AW EOS */
         ierr = aw_mantle_density( P, &M->mantle_density );CHKERRQ(ierr);
@@ -69,6 +73,9 @@ PetscErrorCode set_mesh( Ctx *E)
 
         /* dP/dr at staggered nodes */
         ierr = aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s, P );CHKERRQ(ierr);
+
+        /* must destroy EOS */
+        ierr = EOSDestroy(&M->eos);CHKERRQ(ierr);
 
     }
 
