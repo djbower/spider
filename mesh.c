@@ -8,6 +8,7 @@ static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
 // FIXME: TODO: REMOVE
 //static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
 static PetscScalar aw_density_from_radius( PetscScalar, Parameters const );
+static PetscScalar aw_rsquared_integrated( PetscScalar, Parameters const );
 static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const, PetscScalar * );
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
@@ -513,15 +514,18 @@ static PetscScalar aw_density_from_radius( PetscScalar radius, Parameters const 
 
 }
 
-#if 0
-static PetscScalar aw_with_rsquared_integrated( PetscScalar radius, const Parameters *P )
+static PetscScalar aw_rsquared_integrated( PetscScalar radius, Parameters const P )
 {
-    /* return the integral of r^2 * rho( Adams-Williamson ) = r^2 * rho_s exp( beta*(R0-r) ) */
+    /* return the integral of r^2 * rho( Adams-Williamson ) = r^2 * rhos exp( beta * z ) */
 
-    return P->rhos * PetscExpScalar( P->beta * (P->radius-radius) );
+    PetscScalar integ;
+
+    integ = -2.0/P->beta - PetscPowScalar( radius, 2 )/P->beta -2*radius/PetscPowScalar(P->beta,2);
+    integ *= aw_density_from_radius( radius, P );
+
+    return integ;
 
 }
-#endif
 
 static PetscErrorCode objective_function_radius( SNES snes, Vec x, Vec f, void *ptr )
 {
