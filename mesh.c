@@ -403,7 +403,7 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parame
 static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Parameters P, PetscScalar *mantle_density )
 {
     PetscErrorCode    ierr;
-    PetscScalar       dep, *arr_density;
+    PetscScalar       *arr_density;
     const PetscScalar *arr_r;
     PetscInt          i,ilo,ihi,w;
 
@@ -413,8 +413,7 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Paramete
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da,density,&arr_density);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        dep = P->radius - arr_r[i];
-        arr_density[i] = P->rhos * PetscExpScalar( P->beta * dep );
+        arr_density[i] = aw_density_from_radius( arr_r[i], P );
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,density,&arr_density);CHKERRQ(ierr);
@@ -424,24 +423,13 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Paramete
 
 static PetscErrorCode aw_mantle_density( const Parameters P, PetscScalar *mantle_density )
 {
-    PetscScalar dep;
-
     /* average mantle density */
     /* integral at planetary radius P->radius */
-    dep = 0.0;
-    *mantle_density = -2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius,2)/P->beta - 2*P->radius/PetscPowScalar(P->beta,2);
-    *mantle_density *= P->rhos; // next is unity since dep=0: * PetscExpScalar( P->beta * dep );
-    /* minus integral at r = 0 */
-    //*mantle_density -= -2/PetscPowScalar(P->beta,3) * PetscExpScalar( P->beta * P->radius );
-    /* seems better to do this instead, since the mantle does not extend to r=0 */
-    /* for mass coordinates, Abe 1995 says that the choice of reference density is perfectly arbitrary, so this should be OK */
+    *mantle_density = aw_rsquared_integrated( P->radius, P );
     /* minus integral at core-mantle boundary P->radius * P->coresize */
-    dep = P->radius * (1.0-P->coresize);
-    *mantle_density -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * dep );
-    /* above is integrated mass from core-mantle boundary to surface radius.  Now divide by mantle volume to get density */
-    //*mantle_density /= 1.0/3.0 * ( PetscPowScalar(P->radius,3.0) - PetscPowScalar(P->coresize*P->radius,3.0) );
-    /* new below follows definition of mass coordinates to tie the average density to ensure that
-       the outermost mass coordinate xi = P->radius (innermost mass coordinate xi = 0 at r = rcmb) */
+    *mantle_density -= aw_rsquared_integrated( P->radius*P->coresize, P );
+    /* tie average density to ensure that the outermost mass coordinate
+       xi = P->radius (innermost mass coordinate xi = 0 at r = rcmb) */
     *mantle_density *= 3.0 / PetscPowScalar( P->radius, 3.0 );
 
     PetscFunctionReturn(0);
@@ -520,7 +508,7 @@ static PetscScalar aw_rsquared_integrated( PetscScalar radius, Parameters const 
 
     PetscScalar integ;
 
-    integ = -2.0/P->beta - PetscPowScalar( radius, 2 )/P->beta -2*radius/PetscPowScalar(P->beta,2);
+    integ = -2.0/PetscPowScalar(P->beta,3) - PetscPowScalar( radius, 2 )/P->beta -2*radius/PetscPowScalar(P->beta,2);
     integ *= aw_density_from_radius( radius, P );
 
     return integ;
@@ -557,7 +545,7 @@ static PetscErrorCode objective_function_radius( SNES snes, Vec x, Vec f, void *
         dep = P->radius - xx[i];
         /* evaluate integral at r: mass contained with shell of radius r */
         ff[i] = -2/PetscPowScalar(P->beta,3) - PetscPowScalar(xx[i],2)/P->beta - 2*xx[i]/PetscPowScalar(P->beta,2);
-        ff[i] *= P->rhos * PetscExpScalar( P->beta * dep );
+        ff[i] *= aw_density_from_radius( xx[i], P ); // P->rhos * PetscExpScalar( P->beta * dep );
         /* minus integral at radius = core-mantle boundary */
         ff[i] -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * P->radius * (1.0-P->coresize) );
         /* minus predicted mass from mass coordinate */
