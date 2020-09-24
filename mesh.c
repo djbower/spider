@@ -7,6 +7,7 @@ static PetscErrorCode spherical_area( DM, Vec, Vec );
 static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
 // FIXME: TODO: REMOVE
 //static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
+static PetscScalar aw_density_from_radius( PetscScalar, Parameters const );
 static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const, PetscScalar * );
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
@@ -488,6 +489,39 @@ static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad, Paramet
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
+
+static PetscScalar aw_density_from_radius( PetscScalar radius, Parameters const P )
+{
+
+    /* Adams-Williamson density is a simple function of depth (radius)
+       Derivation:
+           dP/dr = dP/drho * drho/dr = -rho g
+           dP/drho \sim (dP/drho)_s (adiabatic)
+           drho/dr = -rho g / Si
+           then integrate to give the form rho(r) = k * exp(-(g*r)/c)
+           (g is positive)
+           apply the limit that rho = rhos at r=R
+           gives:
+               rho(z) = rhos * exp( beta * z )
+           where z = R-r
+
+    this is arguably the simplest relation to get rho directly from r, but other
+    EOSs can be envisaged
+    */
+
+    return P->rhos * PetscExpScalar( P->beta * (P->radius-radius) );
+
+}
+
+#if 0
+static PetscScalar aw_with_rsquared_integrated( PetscScalar radius, const Parameters *P )
+{
+    /* return the integral of r^2 * rho( Adams-Williamson ) = r^2 * rho_s exp( beta*(R0-r) ) */
+
+    return P->rhos * PetscExpScalar( P->beta * (P->radius-radius) );
+
+}
+#endif
 
 static PetscErrorCode objective_function_radius( SNES snes, Vec x, Vec f, void *ptr )
 {
