@@ -6,6 +6,7 @@ static PetscErrorCode EOSAdamsWilliamson_GetRho(const data_EOSAdamsWilliamson*,P
 static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar * );
 static PetscErrorCode EOSAdamsWilliamson_GetPressureFromRadius( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar * );
 static PetscErrorCode EOSAdamsWilliamson_GetMassWithinRadius( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar *);
+static PetscErrorCode EOSAdamsWilliamson_GetMassWithinShell( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar, PetscScalar *);
 
 /* EOS interface functions */
 static PetscErrorCode EOSEval_AdamsWilliamson(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
@@ -168,18 +169,33 @@ static PetscErrorCode EOSAdamsWilliamson_GetMassWithinRadius( const data_EOSAdam
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode EOSAdamsWilliamson_GetMassWithinShell( const data_EOSAdamsWilliamson *adams, PetscScalar Rout, PetscScalar Rin, PetscScalar *mass_ptr)
+{
+  PetscErrorCode ierr;
+  PetscScalar massout, massin; /* note mass without 4*pi scaling, as convention in SPIDER */
+
+  PetscFunctionBeginUser;
+
+  ierr = EOSAdamsWilliamson_GetMassWithinRadius( adams, Rout, &massout );CHKERRQ(ierr);
+  ierr = EOSAdamsWilliamson_GetMassWithinRadius( adams, Rin, &massin );CHKERRQ(ierr);
+
+  *mass_ptr = massout - massin;
+
+  PetscFunctionReturn(0);
+}
+
+
 PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( EOS eos, PetscScalar Rin, PetscScalar *rho_ptr )
 {
   PetscErrorCode ierr;
-  PetscScalar rho, massout, massin;
+  PetscScalar rho, mass;
   data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
 
   PetscFunctionBeginUser;
 
-  ierr = EOSAdamsWilliamson_GetMassWithinRadius( adams, adams->radius, &massout );CHKERRQ(ierr);
-  ierr = EOSAdamsWilliamson_GetMassWithinRadius( adams, Rin, &massin );CHKERRQ(ierr);
+  ierr = EOSAdamsWilliamson_GetMassWithinShell( adams, adams->radius, Rin, &mass ); CHKERRQ(ierr);
 
-  rho = (massout-massin) * 3.0 / PetscPowScalar( adams->radius, 3.0 );
+  rho = mass * 3.0 / PetscPowScalar( adams->radius, 3.0 );
 
   *rho_ptr = rho;
 
