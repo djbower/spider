@@ -27,8 +27,6 @@ typedef struct Mesh_ {
        mass is */
     PetscScalar mantle_mass, mantle_volume, mantle_density;
 
-    EOS eos;
-
 } Mesh;
 
 #define NUMSOLUTIONVECS_B 22

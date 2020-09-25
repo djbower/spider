@@ -2,8 +2,7 @@
 #include "util.h"
 
 /* Prototypes for local functions used in EOS interface functions */
-static PetscErrorCode EOSAdamsWilliamson_GetRho( const data_EOSAdamsWilliamson*,PetscScalar,PetscScalar,PetscScalar*);
-static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson*,PetscScalar,PetscScalar*);
+static PetscErrorCode EOSAdamsWilliamson_GetRho(const data_EOSAdamsWilliamson*,PetscScalar,PetscScalar,PetscScalar*);
 
 /* EOS interface functions */
 static PetscErrorCode EOSEval_AdamsWilliamson(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
@@ -115,9 +114,14 @@ static PetscErrorCode EOSAdamsWilliamson_GetRho( const data_EOSAdamsWilliamson *
 
 /* Mass coordinate mapping and static structure */
 
-static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson *adams, PetscScalar P, PetscScalar *R_ptr )
+/* Currently, these functions are accessed directly, not through an interface, and hence they
+   take EOS as an argument (which must be a AdamsWilliamson EOS obviously) */
+
+/* might be able to convert to static, and take data argument instead of eos */
+PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( EOS eos, PetscScalar P, PetscScalar *R_ptr )
 {
     PetscScalar R;
+    data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
 
     PetscFunctionBeginUser;
 
@@ -130,19 +134,19 @@ static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAd
 
 /* add interface function to update a series of quantities relevant to static structure calculations? */
 
-/* TODO: below should be static? */
-PetscErrorCode EOSAdamsWilliamson_GetMassWithinPressure( const data_EOSAdamsWilliamson *adams, PetscScalar P, PetscScalar S, PetscScalar *mass_ptr)
+PetscErrorCode EOSAdamsWilliamson_GetMassWithinPressure( EOS eos, PetscScalar P, PetscScalar S, PetscScalar *mass_ptr)
 {
   /* return integral from 0 to r of r^2 * rho dr */
 
   PetscErrorCode  ierr;
   PetscScalar mass, R, rho; /* note mass without 4*pi scaling, as convention in SPIDER */
+  data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
   PetscScalar const beta = adams->beta;
 
   PetscFunctionBeginUser;
   (void) S; // unused
 
-  ierr = EOSAdamsWilliamson_GetRadiusFromPressure( adams, P, &R );CHKERRQ(ierr);
+  ierr = EOSAdamsWilliamson_GetRadiusFromPressure( eos, P, &R );CHKERRQ(ierr);
   mass = -2.0/PetscPowScalar(beta,3) - PetscPowScalar(R,2)/beta -2*R/PetscPowScalar(beta,2);
   ierr = EOSAdamsWilliamson_GetRho( adams, P, S, &rho );CHKERRQ(ierr);
   mass *= rho;

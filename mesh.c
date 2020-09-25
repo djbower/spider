@@ -1,5 +1,8 @@
 #include "mesh.h"
 #include "monitor.h"
+/* currently the choice of the eos to map radius to mass coordinates is
+   the Adams Williamson EOS */
+#include "eos_adamswilliamson.h"
 
 static PetscErrorCode regular_mesh( Ctx * );
 //static PetscErrorCode geometric_mesh( Ctx * );
@@ -24,8 +27,6 @@ PetscErrorCode set_mesh( Ctx *E)
     Mesh           *M = &E->mesh;
     DM             da_b=E->da_b, da_s=E->da_s;
     Parameters     P = E->parameters;
-    FundamentalConstants const FC = P->fundamental_constants;
-    ScalingConstants const     SC = P->scaling_constants;
 
     PetscFunctionBeginUser;
 
@@ -39,9 +40,6 @@ PetscErrorCode set_mesh( Ctx *E)
 
         /* Adams-Williamson EOS is the simplest case, since rho
            is a simple function of radius (or pressure) */
-
-        ierr = EOSCreate(&M->eos, SPIDER_EOS_ADAMSWILLIAMSON);CHKERRQ(ierr);
-        ierr = EOSSetUpFromOptions( M->eos, "adams_williamson", FC, SC );CHKERRQ(ierr);
 
         /* determine reference density from AW EOS */
         ierr = aw_mantle_density( P, &M->mantle_density );CHKERRQ(ierr);
@@ -69,9 +67,6 @@ PetscErrorCode set_mesh( Ctx *E)
 
         /* dP/dr at staggered nodes */
         ierr = aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s, P );CHKERRQ(ierr);
-
-        /* must destroy EOS */
-        ierr = EOSDestroy(&M->eos);CHKERRQ(ierr);
 
     }
 

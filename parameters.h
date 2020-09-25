@@ -214,6 +214,9 @@ typedef struct {
     PetscInt    n_radionuclides;
     RadionuclideParameters radionuclide_parameters[SPIDER_MAX_RADIONUCLIDES];
 
+    /* Equation of state for mass coordinates */
+    EOS      eos_mesh;
+
     /* Equation of state */
     EOS      eos;
     EOS      eos_phases[SPIDER_MAX_PHASES];

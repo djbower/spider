@@ -354,6 +354,11 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     P->ic_core_entropy /= SC->ENTROPY;
   }
 
+  /* eos for determining mapping between radius and mass coordinate */
+  ierr = EOSCreate(&P->eos_mesh, SPIDER_EOS_ADAMSWILLIAMSON);CHKERRQ(ierr);
+  ierr = EOSSetUpFromOptions( P->eos_mesh, "adams_williamson", FC, SC );CHKERRQ(ierr);
+
+  /* TODO: remove, moved elsewhere in EOS object */
   /* surface density (kg/m^3) for Adams-Williamson EOS for pressure */
   P->rhos = 4078.95095544;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-rhos",&P->rhos,NULL);CHKERRQ(ierr);
@@ -981,6 +986,9 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
         ierr = RadionuclideParametersDestroy(&P->radionuclide_parameters[i]);CHKERRQ(ierr);
     }
     P->n_radionuclides = 0;
+
+    /* radius to mass coordinate eos */
+    ierr = EOSDestroy(&P->eos_mesh);
 
     /* EOS / phases */
     for (i=0; i<P->n_phases; ++i) {
