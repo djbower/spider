@@ -3,6 +3,8 @@
 
 /* Prototypes for local functions used in EOS interface functions */
 static PetscErrorCode EOSAdamsWilliamson_GetRho(const data_EOSAdamsWilliamson*,PetscScalar,PetscScalar,PetscScalar*);
+static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar * );
+static PetscErrorCode EOSAdamsWilliamson_GetPressureFromRadius( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar * );
 
 /* EOS interface functions */
 static PetscErrorCode EOSEval_AdamsWilliamson(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
@@ -117,11 +119,9 @@ static PetscErrorCode EOSAdamsWilliamson_GetRho( const data_EOSAdamsWilliamson *
 /* Currently, these functions are accessed directly, not through an interface, and hence they
    take EOS as an argument (which must be a AdamsWilliamson EOS obviously) */
 
-/* might be able to convert to static, and take data argument instead of eos */
-PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( EOS eos, PetscScalar P, PetscScalar *R_ptr )
+static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson *adams, PetscScalar P, PetscScalar *R_ptr )
 {
     PetscScalar R;
-    data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
 
     PetscFunctionBeginUser;
 
@@ -132,26 +132,47 @@ PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( EOS eos, PetscScalar P,
     PetscFunctionReturn(0);
 }
 
-/* add interface function to update a series of quantities relevant to static structure calculations? */
+static PetscErrorCode EOSAdamsWilliamson_GetPressureFromRadius( const data_EOSAdamsWilliamson *adams, PetscScalar R, PetscScalar *P_ptr )
+{
+    PetscScalar P;
 
-PetscErrorCode EOSAdamsWilliamson_GetMassWithinPressure( EOS eos, PetscScalar P, PetscScalar S, PetscScalar *mass_ptr)
+    PetscFunctionBeginUser;
+
+    P = -adams->rhos * adams->gravity / adams->beta;
+    P *= PetscExpScalar( adams->beta*(adams->radius-R) ) - 1.0;
+
+    *P_ptr = P;
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSAdamsWilliamson_GetMassWithinRadius( EOS eos, PetscScalar R, PetscScalar *mass_ptr)
 {
   /* return integral from 0 to r of r^2 * rho dr */
 
   PetscErrorCode  ierr;
-  PetscScalar mass, R, rho; /* note mass without 4*pi scaling, as convention in SPIDER */
+  PetscScalar mass, P, rho; /* note mass without 4*pi scaling, as convention in SPIDER */
   data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
   PetscScalar const beta = adams->beta;
 
   PetscFunctionBeginUser;
-  (void) S; // unused
 
-  ierr = EOSAdamsWilliamson_GetRadiusFromPressure( eos, P, &R );CHKERRQ(ierr);
   mass = -2.0/PetscPowScalar(beta,3) - PetscPowScalar(R,2)/beta -2*R/PetscPowScalar(beta,2);
-  ierr = EOSAdamsWilliamson_GetRho( adams, P, S, &rho );CHKERRQ(ierr);
+  ierr = EOSAdamsWilliamson_GetPressureFromRadius( adams, R, &P );CHKERRQ(ierr);
+  ierr = EOSAdamsWilliamson_GetRho( adams, P, 0.0, &rho );CHKERRQ(ierr);
   mass *= rho;
 
   *mass_ptr = mass;
 
   PetscFunctionReturn(0);
 }
+
+#if 0
+PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateRho( EOS eos, PetscScalar P, PetscScalar S, PetscScalar *rho_ptr )
+{
+  
+
+
+
+}
+#endif
