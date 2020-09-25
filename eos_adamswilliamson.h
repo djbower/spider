@@ -10,6 +10,6 @@ typedef struct {
     PetscScalar beta;
 } data_EOSAdamsWilliamson;
 
-PetscErrorCode EOSAdamsWilliamson_GetMassWithinPressure( EOS, PetscScalar, PetscScalar, PetscScalar *);
+PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( EOS, PetscScalar, PetscScalar * );
 
 #endif

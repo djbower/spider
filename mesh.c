@@ -11,14 +11,12 @@ static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
 // FIXME: TODO: REMOVE
 //static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
 static PetscScalar aw_density_from_radius( PetscScalar, Parameters const );
-static PetscScalar aw_rsquared_integrated( PetscScalar, Parameters const );
 static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const, PetscScalar * );
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_mass( Mesh * );
 // below kept for testing purposes
 static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
-static PetscErrorCode aw_mantle_density( const Parameters, PetscScalar * );
 static PetscErrorCode aw_radius_from_xi( Ctx * );
 
 PetscErrorCode set_mesh( Ctx *E)
@@ -41,8 +39,8 @@ PetscErrorCode set_mesh( Ctx *E)
         /* Adams-Williamson EOS is the simplest case, since rho
            is a simple function of radius (or pressure) */
 
-        /* determine reference density from AW EOS */
-        ierr = aw_mantle_density( P, &M->mantle_density );CHKERRQ(ierr);
+        /* determine mass coordinate reference density */
+        ierr = EOSAdamsWilliamson_GetMassCoordinateAverageRho( P->eos_mesh, P->radius*P->coresize, &M->mantle_density );CHKERRQ(ierr);
 
         /* with rho0 and the form of rho known (rho(r) from AW EOS),
            we can solve an inverse problem to determine the physical
@@ -419,20 +417,6 @@ static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Paramete
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_mantle_density( const Parameters P, PetscScalar *mantle_density )
-{
-    /* average mantle density */
-    /* integral at planetary radius P->radius */
-    *mantle_density = aw_rsquared_integrated( P->radius, P );
-    /* minus integral at core-mantle boundary P->radius * P->coresize */
-    *mantle_density -= aw_rsquared_integrated( P->radius*P->coresize, P );
-    /* tie average density to ensure that the outermost mass coordinate
-       xi = P->radius (innermost mass coordinate xi = 0 at r = rcmb) */
-    *mantle_density *= 3.0 / PetscPowScalar( P->radius, 3.0 );
-
-    PetscFunctionReturn(0);
-}
-
 static PetscErrorCode aw_mass( Mesh *M )
 {
     PetscErrorCode ierr;
@@ -498,20 +482,6 @@ static PetscScalar aw_density_from_radius( PetscScalar radius, Parameters const 
     */
 
     return P->rhos * PetscExpScalar( P->beta * (P->radius-radius) );
-
-}
-
-/* TODO: remove from here, move to AW EOS */
-static PetscScalar aw_rsquared_integrated( PetscScalar radius, Parameters const P )
-{
-    /* return the integral of r^2 * rho( Adams-Williamson ) = r^2 * rhos exp( beta * z ) */
-
-    PetscScalar integ;
-
-    integ = -2.0/PetscPowScalar(P->beta,3) - PetscPowScalar( radius, 2 )/P->beta -2*radius/PetscPowScalar(P->beta,2);
-    integ *= aw_density_from_radius( radius, P );
-
-    return integ;
 
 }
 
