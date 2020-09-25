@@ -421,7 +421,9 @@ PetscErrorCode PetscOptionsGetPositiveScalar( const char *value_string, PetscSca
 
     *value_ptr = value_default;
     ierr = PetscOptionsGetScalar(NULL,NULL,value_string,value_ptr,set);CHKERRQ(ierr);
-    ierr = PetscScalarCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
+    if(*set){
+        ierr = PetscScalarCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
@@ -434,7 +436,9 @@ PetscErrorCode PetscOptionsGetPositiveInt( const char *value_string, PetscInt *v
 
     *value_ptr = value_default;
     ierr = PetscOptionsGetInt(NULL,NULL,value_string,value_ptr,set);CHKERRQ(ierr);
-    ierr = PetscIntCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
+    if(*set){
+        ierr = PetscIntCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
