@@ -154,12 +154,13 @@ PetscErrorCode EOSAdamsWilliamson_GetMassWithinRadius( EOS eos, PetscScalar R, P
   PetscScalar mass, P, rho; /* note mass without 4*pi scaling, as convention in SPIDER */
   data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
   PetscScalar const beta = adams->beta;
+  PetscScalar S = 0.0; // S not used in this function;
 
   PetscFunctionBeginUser;
 
   mass = -2.0/PetscPowScalar(beta,3) - PetscPowScalar(R,2)/beta -2*R/PetscPowScalar(beta,2);
   ierr = EOSAdamsWilliamson_GetPressureFromRadius( adams, R, &P );CHKERRQ(ierr);
-  ierr = EOSAdamsWilliamson_GetRho( adams, P, 0.0, &rho );CHKERRQ(ierr);
+  ierr = EOSAdamsWilliamson_GetRho( adams, P, S, &rho );CHKERRQ(ierr);
   mass *= rho;
 
   *mass_ptr = mass;
