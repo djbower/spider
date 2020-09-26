@@ -36,7 +36,7 @@ PetscErrorCode set_mesh( Ctx *E)
 
     if(1){
 
-        ierr = EOSAdamsWilliamson_GetMassCoordinateAverageRho( P->eos_mesh, P->radius*P->coresize, &M->mantle_density );CHKERRQ(ierr);
+        ierr = EOSAdamsWilliamson_GetMassCoordinateAverageRho( P->eos_mesh, &M->mantle_density );CHKERRQ(ierr);
 
         /* with rho0 and the form of rho known (rho(r) from AW EOS),
            we can solve an inverse problem to determine the physical

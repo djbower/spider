@@ -54,6 +54,13 @@ PetscErrorCode EOSSetUpFromOptions_AdamsWilliamson(EOS eos, const char *prefix, 
   ierr = PetscOptionsGetPositiveScalar("-radius",&data->radius,6371000.0,NULL);CHKERRQ(ierr); // m
   data->radius /= SC->RADIUS;
 
+  /* core radius relative to physical radius i.e. radius
+     therefore, scaled (code) core radius is P->coresize * P->radius
+     and actual physical core radius is P->coresize * P->radius * SC->RADIUS */
+  ierr = PetscOptionsGetPositiveScalar("-coresize",&data->radius_core,0.55,NULL);CHKERRQ(ierr); // Earth core radius
+  /* already non-dimensonal, but more convenient to have core radius directly */
+  data->radius_core *= data->radius;
+
   /* gravity (m/s^2), must be negative */
   data->gravity = -10.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-gravity",&data->gravity,NULL);CHKERRQ(ierr);
@@ -184,8 +191,7 @@ static PetscErrorCode EOSAdamsWilliamson_GetMassWithinShell( const data_EOSAdams
   PetscFunctionReturn(0);
 }
 
-
-PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( EOS eos, PetscScalar Rin, PetscScalar *rho_ptr )
+PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( EOS eos, PetscScalar *rho_ptr )
 {
   PetscErrorCode ierr;
   PetscScalar rho, mass;
@@ -193,8 +199,11 @@ PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( EOS eos, PetscSca
 
   PetscFunctionBeginUser;
 
-  ierr = EOSAdamsWilliamson_GetMassWithinShell( adams, adams->radius, Rin, &mass ); CHKERRQ(ierr);
+  ierr = EOSAdamsWilliamson_GetMassWithinShell( adams, adams->radius, adams->radius_core, &mass ); CHKERRQ(ierr);
 
+  /* a choice is made here to define rho based on a mass coordinate
+     0 < xi < radius.  Recall that radius is non-dimensional, so it
+     can always be chosen (if desired) such that 0 < xi < 1.0 */
   rho = mass * 3.0 / PetscPowScalar( adams->radius, 3.0 );
 
   *rho_ptr = rho;
