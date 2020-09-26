@@ -38,10 +38,13 @@ PetscErrorCode set_mesh( Ctx *E)
 
         ierr = GetRadiusFromMassCoordinate( E );CHKERRQ(ierr);
 
+#if 0
         /* for testing, do the inverse calculation */
-        // FIXME: breaks due to mantle_density
-        //ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, M->mantle_density );CHKERRQ(ierr);
-        //ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, M->mantle_density );CHKERRQ(ierr);
+        EOS               eos = P->eos_mesh;
+        data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
+        ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, adams->density_average );CHKERRQ(ierr);
+        ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, adams->density_average );CHKERRQ(ierr);
+#endif
 
         /* with radius known, now can update other quantities such
            as pressure, using AW EOS */
