@@ -482,6 +482,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
     PetscErrorCode  ierr;
     SNES            snes;
     Vec             x,r;
+    Mat             J;
     PetscScalar     *xx, *radius, *xi, *dxidr, dx;
     PetscInt        i,numpts_b,numpts_s;
     Mesh            *M = &E->mesh;
@@ -505,11 +506,17 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
        line or options file, e.g. -atmosic_snes_view */
     ierr = SNESSetOptionsPrefix(snes,"xi_");CHKERRQ(ierr);
 
-    ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
     /* TODO: convert to DMComposite */
+    ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
     ierr = VecSetSizes( x, PETSC_DECIDE, numpts_b+numpts_s );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
+
+    /* Jacobian */
+    MatCreate(PETSC_COMM_WORLD,&J);
+    MatSetSizes(J,PETSC_DECIDE,PETSC_DECIDE,numpts_b+numpts_s,numpts_b+numpts_s);
+    MatSetFromOptions(J);
+    MatSetUp(J);
 
     ierr = SNESSetFunction(snes,r,EOSAdamsWilliamson_ObjectiveFunctionRadius,E);CHKERRQ(ierr);
 
@@ -608,6 +615,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
     
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);
+    ierr = MatDestroy(&J);CHKERRQ(ierr);
     ierr = SNESDestroy(&snes);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
