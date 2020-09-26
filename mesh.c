@@ -118,26 +118,25 @@ static PetscErrorCode regular_mesh( Ctx *E )
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* basic node spacing (negative) */
-    /* mass coordinate enforced to go from 0 to P->radius */
-    /* note that with appropriate choice of scaling RADIUS, this can be
-       made to go between 0 and unity (i.e., P->radius is a scaled quantity) */
-    dx_b = -P->radius / (numpts_b-1);
+    /* mass coordinate enforced to go from core radius to P->radius */
 
-    /* radius at basic nodes */
+    dx_b = -P->radius * (1.0-P->coresize) / (numpts_b-1);
+
+    /* mass coordinate at basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
     ierr = DMDAVecGetArray(da_b,M->xi_b,&arr);CHKERRQ(ierr);
     for (i=ilo_b; i<ihi_b; ++i){
-        arr[i] = -(numpts_b-1-i)*dx_b;
+        arr[i] = P->radius*P->coresize - (numpts_b-1-i)*dx_b;
     }
     ierr = DMDAVecRestoreArray(da_b,M->xi_b,&arr);CHKERRQ(ierr);
 
-    /* radius at staggered nodes */
+    /* mass coordinate at staggered nodes */
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
     ierr = DMDAVecGetArray(da_s,M->xi_s,&arr);CHKERRQ(ierr);
     for (i=ilo_s;i<ihi_s;++i){
-        arr[i] = -0.5*dx_b - (numpts_s-1-i)*dx_b;
+        arr[i] = P->radius*P->coresize-0.5*dx_b - (numpts_s-1-i)*dx_b;
     }
     ierr = DMDAVecRestoreArray(da_s,M->xi_s,&arr);CHKERRQ(ierr);
 
@@ -348,6 +347,7 @@ static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, Vec dxidr, 
         arr_xi[i] -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * P->radius * (1.0-P->coresize) );
         /* include other prefactors, according to the formulation from radius to mass coordinate */
         arr_xi[i] *= 3 / mantle_density;
+        arr_xi[i] += PetscPowScalar( P->radius*P->coresize,3.0);
         arr_xi[i] = PetscPowScalar( arr_xi[i], 1.0/3.0 );
 
         /* set dxi/dr for derivative mapping */

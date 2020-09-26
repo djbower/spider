@@ -211,12 +211,13 @@ static PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( const data
 
   PetscFunctionBeginUser;
 
+  /* radius_core < r < radius: mass within mantle */
   ierr = EOSAdamsWilliamson_GetMassWithinShell( adams, adams->radius, adams->radius_core, &mass ); CHKERRQ(ierr);
 
-  /* a choice is made here to define rho based on a mass coordinate
-     0 < xi < radius.  Recall that radius is non-dimensional, so it
-     can always be chosen (if desired) such that 0 < xi < 1.0 */
-  rho = mass * 3.0 / PetscPowScalar( adams->radius, 3.0 );
+  /* use the same range applied to construct the mass coordinate mesh
+     radius < xi < radius_core
+     hence rho is the actual average density of the mantle */
+  rho = mass * 3.0 / ( PetscPowScalar( adams->radius, 3.0 ) - PetscPowScalar( adams->radius_core, 3.0) );
 
   *rho_ptr = rho;
 
@@ -251,6 +252,7 @@ PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES snes, Vec x, Vec
   ierr = VecGetArray(f,&ff);CHKERRQ(ierr); /* residual function */
 
   for(i=0; i< numpts_b+numpts_s; ++i){
+    /* mass within radial shell of mantle */
     ierr = EOSAdamsWilliamson_GetMassWithinShell( adams, xx[i], adams->radius_core, &ff[i] ); CHKERRQ(ierr);
 
     /* get mass coordinate */
@@ -262,7 +264,7 @@ PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES snes, Vec x, Vec
     }   
 
     /* difference from mass coordinate mass */
-    ff[i] -= (adams->density_average / 3.0) * PetscPowScalar(xi,3.0);
+    ff[i] -= (adams->density_average / 3.0) * (PetscPowScalar(xi,3.0)-PetscPowScalar(adams->radius_core,3.0));
 
   }
 
