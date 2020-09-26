@@ -13,19 +13,11 @@ static PetscErrorCode EOSEval_AdamsWilliamson(EOS eos, PetscScalar P, PetscScala
 {
   PetscErrorCode  ierr;
   data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
+  (void) S; //unused
 
   PetscFunctionBegin;
   eval->P = P;
-  eval->S = S;
-  eval->T = 0.0;
   ierr = EOSAdamsWilliamson_GetRho( adams, P, S, &eval->rho );CHKERRQ(ierr);
-  eval->Cp = 0.0;
-  eval->dTdPs = 0.0;
-  eval->alpha = 0.0;
-  eval->Cv = 0.0;
-  eval->V = 0.0;
-  eval->log10visc = 0.0;
-  eval->cond = 0.0;
   eval->phase_fraction = 1.0; // by definition, since only one phase
   PetscFunctionReturn(0);
 }
