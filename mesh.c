@@ -16,7 +16,7 @@ static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_mass( Mesh * );
 // below kept for testing purposes
-//static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
+static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
 static PetscErrorCode GetRadiusFromMassCoordinate( Ctx * );
 
 PetscErrorCode set_mesh( Ctx *E)
@@ -38,7 +38,7 @@ PetscErrorCode set_mesh( Ctx *E)
 
         ierr = GetRadiusFromMassCoordinate( E );CHKERRQ(ierr);
 
-#if 0
+#if 1
         /* for testing, do the inverse calculation */
         EOS               eos = P->eos_mesh;
         data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
@@ -309,7 +309,7 @@ static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
 #endif
 
 // kept for testing
-# if 0
+# if 1
 static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, Vec dxidr, const Parameters P, PetscScalar mantle_density )
 {
 
