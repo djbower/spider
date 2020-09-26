@@ -7,10 +7,11 @@ typedef struct {
     PetscScalar radius;
     PetscScalar radius_core;
     PetscScalar gravity;
-    PetscScalar rhos;
+    PetscScalar density_surface;
+    PetscScalar density_average; // computed
     PetscScalar beta;
 } data_EOSAdamsWilliamson;
 
-PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( EOS, PetscScalar * );
-
 #endif
+
+PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES, Vec, Vec, void* );

@@ -36,16 +36,15 @@ PetscErrorCode set_mesh( Ctx *E)
 
     if(1){
 
-        ierr = EOSAdamsWilliamson_GetMassCoordinateAverageRho( P->eos_mesh, &M->mantle_density );CHKERRQ(ierr);
-
         /* with rho0 and the form of rho known (rho(r) from AW EOS),
            we can solve an inverse problem to determine the physical
            mesh coordinates for both the basic and staggered nodes */
         ierr = aw_radius_from_xi( E );CHKERRQ(ierr);
 
         /* for testing, do the inverse calculation */
-        ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, M->mantle_density );CHKERRQ(ierr);
-        ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, M->mantle_density );CHKERRQ(ierr);
+        // FIXME: breaks due to mantle_density
+        //ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, M->mantle_density );CHKERRQ(ierr);
+        //ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, M->mantle_density );CHKERRQ(ierr);
 
         /* with radius known, now can update other quantities such
            as pressure, using AW EOS */
@@ -481,93 +480,19 @@ static PetscScalar aw_density_from_radius( PetscScalar radius, Parameters const 
 
 }
 
-static PetscErrorCode objective_function_radius( SNES snes, Vec x, Vec f, void *ptr )
-{
-    PetscErrorCode    ierr;
-    const PetscScalar *xx, *xi_b, *xi_s;
-    PetscScalar       *ff, dep, target_xi;
-    Ctx               *E = (Ctx*) ptr;
-    Parameters  const P = E->parameters;
-    Mesh        const *M = &E->mesh;
-    PetscInt          i,ilo_b,ihi_b,numpts_b,w_b,ilo_s,ihi_s,numpts_s,w_s;
-
-    PetscFunctionBeginUser;
-
-    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b;
-
-    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ierr = DMDAGetCorners(E->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
-    ihi_s = ilo_s + w_s;
-
-    ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr); /* initial guess of r */
-    ierr = VecGetArrayRead(M->xi_b,&xi_b);CHKERRQ(ierr); /* target mass coordinate */
-    ierr = VecGetArrayRead(M->xi_s,&xi_s);CHKERRQ(ierr);
-    ierr = VecGetArray(f,&ff);CHKERRQ(ierr); /* residual function */
-
-    /* FIXME: broken for parallel */
-    for(i=0; i< numpts_b+numpts_s; ++i){
-        dep = P->radius - xx[i];
-        /* evaluate integral at r: mass contained with shell of radius r */
-        ff[i] = -2/PetscPowScalar(P->beta,3) - PetscPowScalar(xx[i],2)/P->beta - 2*xx[i]/PetscPowScalar(P->beta,2);
-        ff[i] *= aw_density_from_radius( xx[i], P ); // P->rhos * PetscExpScalar( P->beta * dep );
-        /* minus integral at radius = core-mantle boundary */
-        ff[i] -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * P->radius * (1.0-P->coresize) );
-        /* minus predicted mass from mass coordinate */
-        /* first part relates to basic nodes */
-        if (i<numpts_b){
-            target_xi = xi_b[i];
-        }
-        /* second part relates to staggered nodes */
-        else{
-            target_xi = xi_s[i-numpts_b];
-        }
-
-#if 1
-        // currently best here
-        ff[i] -= (M->mantle_density / 3) * PetscPowScalar(target_xi,3.0);
-#endif
-
-#if 0
-        // testing here
-        ff[i] *= 3.0 / M->mantle_density;
-        ff[i] = PetscPowScalar( ff[i], 1.0/3.0 );
-        ff[i] -= target_xi;
-#endif
-
-
-        //ff[i] /= (M->mantle_density / 3) * PetscPowScalar(P->radius,3.0);
-
-        /* include other prefactors, according to the formulation from radius to mass coordinate */
-        //ff[i] *= 3 / M->mantle_density;
-
-        // Dan trying to improve solver behaviour by skipping this cube root
-        //ff[i] = PetscPowScalar( ff[i], 1.0/3.0 );
-        //ff[i] -= PetscPowScalar(xi[i],1.0);
-
-        /* residual is simple difference of this to desired */
-        //ff[i] -= PetscPowScalar(xi[i],3.0);
-        //ff[i] = PetscPowScalar(ff[i],1.0/3.0);
-    }
-
-    ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(M->xi_b,&xi_b);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(M->xi_s,&xi_s);CHKERRQ(ierr);
-    ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
 static PetscErrorCode aw_radius_from_xi( Ctx *E )
 {
-    PetscErrorCode ierr;
-    SNES           snes;
-    Vec            x,r;
-    PetscScalar    *xx, *radius, dx;
-    PetscInt       i,numpts_b,numpts_s;
-    Mesh           *M = &E->mesh;
+    PetscErrorCode  ierr;
+    SNES            snes;
+    Vec             x,r;
+    PetscScalar     *xx, *radius, dx, density_average;
+    PetscInt        i,numpts_b,numpts_s;
+    Mesh            *M = &E->mesh;
     Parameters const P = E->parameters;
+    EOS        const eos = P->eos_mesh;
+
+    data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
+    density_average = adams->density_average;
 
     PetscFunctionBeginUser;
 
@@ -589,7 +514,7 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
 
-    ierr = SNESSetFunction(snes,r,objective_function_radius,E);CHKERRQ(ierr);
+    ierr = SNESSetFunction(snes,r,EOSAdamsWilliamson_ObjectiveFunctionRadius,E);CHKERRQ(ierr);
 
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
@@ -675,7 +600,7 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     ierr = VecScale( M->dxidr_b, P->beta );CHKERRQ(ierr);
     ierr = VecExp( M->dxidr_b );CHKERRQ(ierr);
     ierr = VecScale( M->dxidr_b, P->rhos );CHKERRQ(ierr);
-    ierr = VecScale( M->dxidr_b, 1.0 / M->mantle_density );CHKERRQ(ierr);
+    ierr = VecScale( M->dxidr_b, 1.0 / density_average );CHKERRQ(ierr);
     /* multiply radius squared */
     ierr = VecPointwiseMult( M->dxidr_b, M->dxidr_b, M->radius_b );CHKERRQ(ierr);
     ierr = VecPointwiseMult( M->dxidr_b, M->dxidr_b, M->radius_b );CHKERRQ(ierr);

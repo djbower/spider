@@ -7,6 +7,7 @@ static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAd
 static PetscErrorCode EOSAdamsWilliamson_GetPressureFromRadius( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar * );
 static PetscErrorCode EOSAdamsWilliamson_GetMassWithinRadius( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar *);
 static PetscErrorCode EOSAdamsWilliamson_GetMassWithinShell( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar, PetscScalar *);
+static PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( const data_EOSAdamsWilliamson*, PetscScalar * );
 
 /* EOS interface functions */
 static PetscErrorCode EOSEval_AdamsWilliamson(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
@@ -60,13 +61,16 @@ PetscErrorCode EOSSetUpFromOptions_AdamsWilliamson(EOS eos, const char *prefix, 
 
   /* surface density (kg/m^3) */
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_rhos");CHKERRQ(ierr);
-  ierr = PetscOptionsGetPositiveScalar(buf,&data->rhos,4078.95095544,NULL);CHKERRQ(ierr);
-  data->rhos /= SC->DENSITY;
+  ierr = PetscOptionsGetPositiveScalar(buf,&data->density_surface,4078.95095544,NULL);CHKERRQ(ierr);
+  data->density_surface /= SC->DENSITY;
 
   /* parameter (1/m) */
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_beta");CHKERRQ(ierr);
   ierr = PetscOptionsGetPositiveScalar(buf,&data->beta,1.1115348931000002e-07,NULL);CHKERRQ(ierr);
   data->beta *= SC->RADIUS;
+
+  /* we need the average density for the mass coordinate to radius mapping */
+  ierr = EOSAdamsWilliamson_GetMassCoordinateAverageRho( data, &data->density_average );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
@@ -108,7 +112,7 @@ static PetscErrorCode EOSAdamsWilliamson_GetRho( const data_EOSAdamsWilliamson *
     (void) S;
 
     /* using pressure, expression is simpler than sketch derivation above */
-    rho = adams->rhos - P * adams->beta / adams->gravity;
+    rho = adams->density_surface - P * adams->beta / adams->gravity;
 
     *rho_ptr = rho;
 
@@ -126,7 +130,7 @@ static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAd
 
     PetscFunctionBeginUser;
 
-    R = adams->radius - (1.0/adams->beta)*PetscLogScalar(1.0-(P*adams->beta)/(adams->rhos*adams->gravity));
+    R = adams->radius - (1.0/adams->beta)*PetscLogScalar(1.0-(P*adams->beta)/(adams->density_surface*adams->gravity));
 
     *R_ptr = R;
 
@@ -139,7 +143,7 @@ static PetscErrorCode EOSAdamsWilliamson_GetPressureFromRadius( const data_EOSAd
 
     PetscFunctionBeginUser;
 
-    P = -adams->rhos * adams->gravity / adams->beta;
+    P = -adams->density_surface * adams->gravity / adams->beta;
     P *= PetscExpScalar( adams->beta*(adams->radius-R) ) - 1.0;
 
     *P_ptr = P;
@@ -183,11 +187,10 @@ static PetscErrorCode EOSAdamsWilliamson_GetMassWithinShell( const data_EOSAdams
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( EOS eos, PetscScalar *rho_ptr )
+static PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( const data_EOSAdamsWilliamson *adams, PetscScalar *rho_ptr )
 {
   PetscErrorCode ierr;
   PetscScalar rho, mass;
-  data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
 
   PetscFunctionBeginUser;
 
@@ -201,4 +204,56 @@ PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( EOS eos, PetscSca
   *rho_ptr = rho;
 
   PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES snes, Vec x, Vec f, void *ptr )
+{
+  /* uses definition of mass coordinates */
+
+  PetscErrorCode    ierr;
+  const PetscScalar *xx, *xi_b, *xi_s;
+  PetscScalar       *ff, xi; 
+  Ctx               *E = (Ctx*) ptr;
+  Parameters  const P = E->parameters;
+  Mesh        const *M = &E->mesh;
+  PetscInt          i,numpts_b,numpts_s;
+  EOS               eos = P->eos_mesh;
+  data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
+
+  PetscFunctionBeginUser;
+
+  /* TODO: replace with composite DM */
+  /* below is simple loop over all nodes (basic and staggered), but will clearly break for parallel */
+  ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+  ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+  ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr); /* initial guess of r */
+  /* below instead should use composite DM */
+  ierr = VecGetArrayRead(M->xi_b,&xi_b);CHKERRQ(ierr); /* target mass coordinate */
+  ierr = VecGetArrayRead(M->xi_s,&xi_s);CHKERRQ(ierr);
+  ierr = VecGetArray(f,&ff);CHKERRQ(ierr); /* residual function */
+
+  for(i=0; i< numpts_b+numpts_s; ++i){
+    ierr = EOSAdamsWilliamson_GetMassWithinShell( adams, xx[i], adams->radius_core, &ff[i] ); CHKERRQ(ierr);
+
+    /* get mass coordinate */
+    if (i<numpts_b){
+      xi = xi_b[i]; // basic nodes
+    }   
+    else{
+      xi = xi_s[i-numpts_b]; // staggered nodes
+    }   
+
+    /* difference from mass coordinate mass */
+    ff[i] -= (adams->density_average / 3.0) * PetscPowScalar(xi,3.0);
+
+  }
+
+  ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
+  ierr = VecRestoreArrayRead(M->xi_b,&xi_b);CHKERRQ(ierr);
+  ierr = VecRestoreArrayRead(M->xi_s,&xi_s);CHKERRQ(ierr);
+  ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+
 }
