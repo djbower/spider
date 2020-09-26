@@ -16,8 +16,8 @@ static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_mass( Mesh * );
 // below kept for testing purposes
-static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
-static PetscErrorCode aw_radius_from_xi( Ctx * );
+//static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
+static PetscErrorCode GetRadiusFromMassCoordinate( Ctx * );
 
 PetscErrorCode set_mesh( Ctx *E)
 {
@@ -36,10 +36,7 @@ PetscErrorCode set_mesh( Ctx *E)
 
     if(1){
 
-        /* with rho0 and the form of rho known (rho(r) from AW EOS),
-           we can solve an inverse problem to determine the physical
-           mesh coordinates for both the basic and staggered nodes */
-        ierr = aw_radius_from_xi( E );CHKERRQ(ierr);
+        ierr = GetRadiusFromMassCoordinate( E );CHKERRQ(ierr);
 
         /* for testing, do the inverse calculation */
         // FIXME: breaks due to mantle_density
@@ -309,7 +306,7 @@ static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
 #endif
 
 // kept for testing
-# if 1
+# if 0
 static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, Vec dxidr, const Parameters P, PetscScalar mantle_density )
 {
 
@@ -480,7 +477,7 @@ static PetscScalar aw_density_from_radius( PetscScalar radius, Parameters const 
 
 }
 
-static PetscErrorCode aw_radius_from_xi( Ctx *E )
+static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
 {
     PetscErrorCode  ierr;
     SNES            snes;
@@ -491,6 +488,8 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     Parameters const P = E->parameters;
     EOS        const eos = P->eos_mesh;
 
+    /* lines such as the below tie the calculation to the AW EOS, but this is
+       straightforward to generalise in the future */
     data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
 
     PetscFunctionBeginUser;
@@ -507,8 +506,7 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     ierr = SNESSetOptionsPrefix(snes,"xi_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    /* here I am combining the basic and staggered nodes, but a DMComposite construction
-       is preferred */
+    /* TODO: convert to DMComposite */
     ierr = VecSetSizes( x, PETSC_DECIDE, numpts_b+numpts_s );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);

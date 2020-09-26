@@ -8,6 +8,7 @@ static PetscErrorCode EOSAdamsWilliamson_GetPressureFromRadius( const data_EOSAd
 static PetscErrorCode EOSAdamsWilliamson_GetMassWithinRadius( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar *);
 static PetscErrorCode EOSAdamsWilliamson_GetMassWithinShell( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar, PetscScalar *);
 static PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( const data_EOSAdamsWilliamson*, PetscScalar * );
+static PetscErrorCode EOSAdamsWilliamson_GetMassElement( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar * );
 
 /* EOS interface functions */
 static PetscErrorCode EOSEval_AdamsWilliamson(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
@@ -187,6 +188,20 @@ static PetscErrorCode EOSAdamsWilliamson_GetMassWithinShell( const data_EOSAdams
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode EOSAdamsWilliamson_GetMassElement( const data_EOSAdamsWilliamson *adams, PetscScalar R, PetscScalar *mass_ptr )
+{
+  PetscErrorCode ierr;
+  PetscScalar mass, P, S=0.0; // S unused
+
+  PetscFunctionBeginUser;
+
+  ierr = EOSAdamsWilliamson_GetPressureFromRadius( adams, R, &P );CHKERRQ(ierr);
+  ierr = EOSAdamsWilliamson_GetRho( adams, P, S, &mass );CHKERRQ(ierr);
+  mass *= PetscPowScalar( R, 2.0 );
+
+  PetscFunctionReturn(0);
+}
+
 static PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( const data_EOSAdamsWilliamson *adams, PetscScalar *rho_ptr )
 {
   PetscErrorCode ierr;
@@ -258,6 +273,32 @@ PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES snes, Vec x, Vec
 
 }
 
+PetscErrorCode EOSAdamsWilliamson_JacobianRadius( SNES snes, Vec x, Mat jab, Mat B, void *ptr)
+{
+  PetscErrorCode    ierr;
+  const PetscScalar *xx;
+  Ctx               *E = (Ctx*) ptr;
+  Parameters  const P = E->parameters;
+  PetscInt          i,numpts_b,numpts_s;
+  EOS               eos = P->eos_mesh;
+  data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
+
+  PetscFunctionBeginUser;
+
+  ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+  ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+  ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
+
+  /* TODO: STUFF */
+
+  ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+
+}
+
+/* below could be generalised to accommodate any EOS */
 PetscErrorCode EOSAdamsWilliamson_MassCoordinateSpatialDerivative( const data_EOSAdamsWilliamson *adams, PetscScalar R, PetscScalar xi, PetscScalar *dxidr_ptr )
 {
   PetscErrorCode ierr;
