@@ -485,14 +485,13 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     PetscErrorCode  ierr;
     SNES            snes;
     Vec             x,r;
-    PetscScalar     *xx, *radius, *xi, *dxidr, dx, density_average;
+    PetscScalar     *xx, *radius, *xi, *dxidr, dx;
     PetscInt        i,numpts_b,numpts_s;
     Mesh            *M = &E->mesh;
     Parameters const P = E->parameters;
     EOS        const eos = P->eos_mesh;
 
     data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
-    density_average = adams->density_average;
 
     PetscFunctionBeginUser;
 

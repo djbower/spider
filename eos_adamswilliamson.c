@@ -275,4 +275,3 @@ PetscErrorCode EOSAdamsWilliamson_MassCoordinateSpatialDerivative( const data_EO
   PetscFunctionReturn(0);
 
 }
-
