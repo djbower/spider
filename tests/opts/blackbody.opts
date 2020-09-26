@@ -20,21 +20,21 @@
 -ts_sundials_atol 1.0e-6
 -ts_sundials_rtol 1.0e-6
 
-#-xi_snes_type newtontr
+-xi_snes_type newtontr
 -xi_snes_view
 -xi_snes_converged_reason
 -xi_snes_verbose_monitor
--xi_ksp_rtol 1e-2
--xi_ksp_atol 1e-2
+-xi_ksp_rtol 1e-6
+-xi_ksp_atol 1e-6
 -xi_snes_linesearch_damping 0.01
 -xi_snes_max_it 10000
 -xi_snes_linesearch_max_it 1000
 #-xi_snes_max_funcs 1000000000000
--xi_snes_rtol 1e-2
--xi_snes_atol 1e-2
+-xi_snes_rtol 1e-6
+-xi_snes_atol 1e-6
 
 # number of basic nodes
--n 10
+-n 50
 
 # all units are SI unless indicated otherwise
 

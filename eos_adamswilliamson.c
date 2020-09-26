@@ -199,6 +199,8 @@ static PetscErrorCode EOSAdamsWilliamson_GetMassElement( const data_EOSAdamsWill
   ierr = EOSAdamsWilliamson_GetRho( adams, P, S, &mass );CHKERRQ(ierr);
   mass *= PetscPowScalar( R, 2.0 );
 
+  *mass_ptr = mass;
+
   PetscFunctionReturn(0);
 }
 
@@ -273,13 +275,15 @@ PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES snes, Vec x, Vec
 
 }
 
-PetscErrorCode EOSAdamsWilliamson_JacobianRadius( SNES snes, Vec x, Mat jab, Mat B, void *ptr)
+PetscErrorCode EOSAdamsWilliamson_JacobianRadius( SNES snes, Vec x, Mat jac, Mat B, void *ptr)
 {
   PetscErrorCode    ierr;
   const PetscScalar *xx;
   Ctx               *E = (Ctx*) ptr;
   Parameters  const P = E->parameters;
   PetscInt          i,numpts_b,numpts_s;
+  Vec               diag;
+  PetscScalar       *arr_diag;
   EOS               eos = P->eos_mesh;
   data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
 
@@ -288,11 +292,33 @@ PetscErrorCode EOSAdamsWilliamson_JacobianRadius( SNES snes, Vec x, Mat jab, Mat
   ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
   ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
-  ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
+  /* work vector for diagonal of Jacobian */
+  ierr = VecCreate( PETSC_COMM_WORLD, &diag );CHKERRQ(ierr);
+  ierr = VecSetSizes( diag, PETSC_DECIDE, numpts_b+numpts_s );CHKERRQ(ierr);
+  ierr = VecSetFromOptions(diag);CHKERRQ(ierr);
 
-  /* TODO: STUFF */
+  ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
+  ierr = VecGetArray(diag,&arr_diag);CHKERRQ(ierr);
+
+  /* set diagonal */
+  for(i=0; i < numpts_b+numpts_s; ++i){
+    ierr = EOSAdamsWilliamson_GetMassElement( adams, xx[i], &arr_diag[i] );CHKERRQ(ierr); 
+  }
 
   ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
+  ierr = VecRestoreArray(diag,&arr_diag);CHKERRQ(ierr);
+
+  ierr = MatDiagonalSet( B, diag, INSERT_VALUES );CHKERRQ(ierr);
+
+  /* Assemble matrix */
+  MatAssemblyBegin(B,MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(B,MAT_FINAL_ASSEMBLY);
+  if (jac != B) {
+    MatAssemblyBegin(jac,MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(jac,MAT_FINAL_ASSEMBLY);
+  }
+
+  ierr = VecDestroy(&diag);
 
   PetscFunctionReturn(0);
 

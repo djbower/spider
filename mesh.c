@@ -537,7 +537,8 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
-    ierr = PetscOptionsSetValue(NULL,"-xi_snes_mf",NULL);CHKERRQ(ierr);
+    //ierr = PetscOptionsSetValue(NULL,"-xi_snes_mf",NULL);CHKERRQ(ierr);
+    ierr = SNESSetJacobian(snes,J,J,EOSAdamsWilliamson_JacobianRadius,E);CHKERRQ(ierr);
 
     /* Turn off convergence based on step size */
     ierr = PetscOptionsSetValue(NULL,"-xi_snes_stol","0");CHKERRQ(ierr);
