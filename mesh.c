@@ -485,7 +485,7 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     PetscErrorCode  ierr;
     SNES            snes;
     Vec             x,r;
-    PetscScalar     *xx, *radius, dx, density_average;
+    PetscScalar     *xx, *radius, *xi, *dxidr, dx, density_average;
     PetscInt        i,numpts_b,numpts_s;
     Mesh            *M = &E->mesh;
     Parameters const P = E->parameters;
@@ -594,19 +594,16 @@ static PetscErrorCode aw_radius_from_xi( Ctx *E )
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* now compute dxi/dr once all radius and xi are known */
-    ierr = VecCopy( M->radius_b, M->dxidr_b ); CHKERRQ(ierr);
-    ierr = VecScale( M->dxidr_b, -1.0 );CHKERRQ(ierr);
-    ierr = VecShift( M->dxidr_b, P->radius );CHKERRQ(ierr);
-    ierr = VecScale( M->dxidr_b, P->beta );CHKERRQ(ierr);
-    ierr = VecExp( M->dxidr_b );CHKERRQ(ierr);
-    ierr = VecScale( M->dxidr_b, P->rhos );CHKERRQ(ierr);
-    ierr = VecScale( M->dxidr_b, 1.0 / density_average );CHKERRQ(ierr);
-    /* multiply radius squared */
-    ierr = VecPointwiseMult( M->dxidr_b, M->dxidr_b, M->radius_b );CHKERRQ(ierr);
-    ierr = VecPointwiseMult( M->dxidr_b, M->dxidr_b, M->radius_b );CHKERRQ(ierr);
-    /* divide xi squared */
-    ierr = VecPointwiseDivide( M->dxidr_b, M->dxidr_b, M->xi_b );CHKERRQ(ierr);
-    ierr = VecPointwiseDivide( M->dxidr_b, M->dxidr_b, M->xi_b );CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_b,M->dxidr_b,&dxidr);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(E->da_b,M->radius_b,&radius);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&xi);CHKERRQ(ierr);
+    for (i=0; i<numpts_b; ++i) {
+        EOSAdamsWilliamson_MassCoordinateSpatialDerivative( adams, radius[i], xi[i], &dxidr[i] );CHKERRQ(ierr);
+
+    }
+    ierr = DMDAVecRestoreArray(E->da_b,M->dxidr_b,&dxidr);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(E->da_b,M->radius_b,&radius);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&xi);CHKERRQ(ierr);
 
     /* TODO: last value of M->dxidr_b is inf, and values nearer the base of the
        mantle increase substantially.  Perhaps an argument for shifting the cmb

@@ -15,3 +15,4 @@ typedef struct {
 #endif
 
 PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES, Vec, Vec, void* );
+PetscErrorCode EOSAdamsWilliamson_MassCoordinateSpatialDerivative( const data_EOSAdamsWilliamson *, PetscScalar, PetscScalar, PetscScalar * );

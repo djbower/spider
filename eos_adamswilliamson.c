@@ -257,3 +257,22 @@ PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES snes, Vec x, Vec
   PetscFunctionReturn(0);
 
 }
+
+PetscErrorCode EOSAdamsWilliamson_MassCoordinateSpatialDerivative( const data_EOSAdamsWilliamson *adams, PetscScalar R, PetscScalar xi, PetscScalar *dxidr_ptr )
+{
+  PetscErrorCode ierr;
+  PetscScalar dxidr, P, S=0.0; // S unused
+
+  PetscFunctionBeginUser;
+
+  ierr = EOSAdamsWilliamson_GetPressureFromRadius( adams, R, &P );CHKERRQ(ierr);
+  ierr = EOSAdamsWilliamson_GetRho( adams, P, S, &dxidr );CHKERRQ(ierr);
+  dxidr /= adams->density_average;
+  dxidr *= (R/xi) * (R/xi);
+
+  *dxidr_ptr = dxidr;
+
+  PetscFunctionReturn(0);
+
+}
+
