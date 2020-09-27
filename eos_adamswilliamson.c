@@ -215,7 +215,7 @@ static PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho( const data
   ierr = EOSAdamsWilliamson_GetMassWithinShell( adams, adams->radius, adams->radius_core, &mass ); CHKERRQ(ierr);
 
   /* use the same range applied to construct the mass coordinate mesh
-     radius < xi < radius_core
+     radius_core < xi < radius
      hence rho is the actual average density of the mantle */
   rho = mass * 3.0 / ( PetscPowScalar( adams->radius, 3.0 ) - PetscPowScalar( adams->radius_core, 3.0) );
 
