@@ -520,6 +520,12 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
     ierr = SNESSetFunction(snes,r,EOSAdamsWilliamson_ObjectiveFunctionRadius,E);CHKERRQ(ierr);
 
     /* initialise vector x with initial guess */
+    /* the main reason I loop here is because I have slammed the basic and staggered nodes
+       together, but the initial guesses for the basic and staggered radius can be identical
+       to their mass coordinate counterparts.  i.e.,
+           radius_s = xi_s
+           radius_b = xi_b
+       Presumably this can be done using Vec operations, once a DMcomposite is implemented */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     dx = P->radius * (1.0-P->coresize) / (numpts_b-1);
     /* basic nodes */
@@ -569,6 +575,9 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
 
+    /* if we can gratly reduce the number of lines of code here by NOT sanity
+       checking, perhaps that is OK?  Or can we do something like if.any(values) < 0.0
+       on a Vec without decomposing the Vec into an array? */
     /* extract solution for basic radius from solution vec */
     ierr = DMDAVecGetArray(E->da_b,M->radius_b,&radius);CHKERRQ(ierr);
     for (i=0; i<numpts_b; ++i) {
@@ -605,16 +614,11 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
     ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&xi);CHKERRQ(ierr);
     for (i=0; i<numpts_b; ++i) {
         EOSAdamsWilliamsonMassCoordinateSpatialDerivative( eos, radius[i], xi[i], &dxidr[i] );CHKERRQ(ierr);
-
     }
     ierr = DMDAVecRestoreArray(E->da_b,M->dxidr_b,&dxidr);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(E->da_b,M->radius_b,&radius);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&xi);CHKERRQ(ierr);
 
-    /* TODO: last value of M->dxidr_b is inf, and values nearer the base of the
-       mantle increase substantially.  Perhaps an argument for shifting the cmb
-       away from zero mass coordinate */
-    
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);
     ierr = MatDestroy(&J);CHKERRQ(ierr);
