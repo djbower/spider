@@ -503,7 +503,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
 
     /* Use this to address this specific SNES (nonlinear solver) from the command
        line or options file, e.g. -atmosic_snes_view */
-    ierr = SNESSetOptionsPrefix(snes,"xi_");CHKERRQ(ierr);
+    ierr = SNESSetOptionsPrefix(snes,"mass_coord_");CHKERRQ(ierr);
 
     /* TODO: convert to DMComposite */
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
@@ -534,22 +534,24 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
-    /* Inform the nonlinear solver to generate a finite-difference approximation
-       to the Jacobian */
-    //ierr = PetscOptionsSetValue(NULL,"-xi_snes_mf",NULL);CHKERRQ(ierr);
     ierr = SNESSetJacobian(snes,J,J,EOSAdamsWilliamson_JacobianRadius,E);CHKERRQ(ierr);
 
+    /* Hard-coded solver parameters */
     /* Turn off convergence based on step size */
-    ierr = PetscOptionsSetValue(NULL,"-xi_snes_stol","0");CHKERRQ(ierr);
-
+    ierr = PetscOptionsSetValue(NULL,"-mass_coord_snes_stol","0");CHKERRQ(ierr);
     /* Turn off convergenced based on trust region tolerance */
-    ierr = PetscOptionsSetValue(NULL,"-xi_snes_trtol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-mass_coord_snes_trtol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-mass_coord_snes_type","newtontr");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-mass_coord_snes_rtol","1.0e-6");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-mass_coord_snes_atol","1.0e-6");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-mass_coord_ksp_rtol","1.0e-6");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-mass_coord_ksp_atol","1.0e-6");CHKERRQ(ierr);
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
     {
       PetscBool flg = PETSC_FALSE;
 
-      ierr = PetscOptionsGetBool(NULL,NULL,"-xi_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      ierr = PetscOptionsGetBool(NULL,NULL,"-mass_coord_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
       if (flg) {
         ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
       }
