@@ -15,8 +15,6 @@ static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const, PetscScalar * 
 static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
 static PetscErrorCode aw_mass( Mesh * );
-// below kept for testing purposes
-static PetscErrorCode set_xi_from_radius( DM, Vec, Vec, Vec, Parameters const, PetscScalar );
 static PetscErrorCode GetRadiusFromMassCoordinate( Ctx * );
 
 PetscErrorCode set_mesh( Ctx *E)
@@ -37,14 +35,6 @@ PetscErrorCode set_mesh( Ctx *E)
     if(1){
 
         ierr = GetRadiusFromMassCoordinate( E );CHKERRQ(ierr);
-
-#if 1
-        /* for testing, do the inverse calculation */
-        EOS               eos = P->eos_mesh;
-        data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
-        ierr = set_xi_from_radius( da_b, M->radius_b, M->xi_b, M->dxidr_b, P, adams->density_average );CHKERRQ(ierr);
-        ierr = set_xi_from_radius( da_s, M->radius_s, M->xi_s, NULL, P, adams->density_average );CHKERRQ(ierr);
-#endif
 
         /* with radius known, now can update other quantities such
            as pressure, using AW EOS */
@@ -303,68 +293,6 @@ static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,layer,&arr_layer);CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
-#endif
-
-// kept for testing
-# if 1
-static PetscErrorCode set_xi_from_radius( DM da, Vec radius, Vec xi, Vec dxidr, const Parameters P, PetscScalar mantle_density )
-{
-
-    /* set mass coordinate from radius.  For the simplest case of a prescribed hydrostatic
-       equation of state (Adams-Williamson), density is a function of r and the mapping can
-       be computed directly from radius --> xi (mass coordinate) */
-
-    PetscErrorCode ierr;
-    PetscScalar    dep,*arr_xi,*arr_dxidr;
-    const PetscScalar *arr_r;
-    PetscInt       i,ilo,ihi,w;
-
-    PetscFunctionBeginUser;
-
-    ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
-    ihi = ilo + w;
-    ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da,xi,&arr_xi);CHKERRQ(ierr);
-    if( dxidr != NULL ){
-        ierr = DMDAVecGetArray(da,dxidr,&arr_dxidr);CHKERRQ(ierr);
-    }
-
-    for(i=ilo; i<ihi; ++i){
-        dep = P->radius - arr_r[i];
-        /* below is AW density, and could instead use existing function aw_density() */
-        /* evaluate integral at r */
-        /* this is mass contained with shell of radius r */
-        arr_xi[i] = -2/PetscPowScalar(P->beta,3) - PetscPowScalar(arr_r[i],2)/P->beta - 2*arr_r[i]/PetscPowScalar(P->beta,2);
-        arr_xi[i] *= P->rhos * PetscExpScalar( P->beta * dep );
-        /* minus integral at radius = 0 */
-        //arr_xi[i] -= -2/PetscPowScalar(P->beta,3) * P->rhos * PetscExpScalar( P->beta * P->radius );
-        /* seems better to do this instead, since the mantle does not extend to r=0 */
-        /* for mass coordinates, Abe 1995 says that the choice of reference density is perfectly arbitrary, so this should be OK */
-        /* minus integral at radius = core-mantle boundary */
-        /* this will set the CMB radius to zero mass coordinate */
-        arr_xi[i] -= (-2/PetscPowScalar(P->beta,3) - PetscPowScalar(P->radius*P->coresize,2)/P->beta - 2*P->radius*P->coresize/PetscPowScalar(P->beta,2)) * P->rhos * PetscExpScalar( P->beta * P->radius * (1.0-P->coresize) );
-        /* include other prefactors, according to the formulation from radius to mass coordinate */
-        arr_xi[i] *= 3 / mantle_density;
-        arr_xi[i] += PetscPowScalar( P->radius*P->coresize,3.0);
-        arr_xi[i] = PetscPowScalar( arr_xi[i], 1.0/3.0 );
-
-        /* set dxi/dr for derivative mapping */
-        /* last basic node returns dxidr infty, since xi=0 */
-        if( dxidr != NULL ){
-            arr_dxidr[i] = P->rhos * PetscExpScalar( P->beta * dep ) / mantle_density;
-            arr_dxidr[i] *= PetscPowScalar( arr_r[i] / arr_xi[i], 2.0 );
-        }
-
-    }
-
-    ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da,xi,&arr_xi);CHKERRQ(ierr);
-    if( dxidr != NULL ){
-        ierr = DMDAVecRestoreArray(da,dxidr,&arr_dxidr);CHKERRQ(ierr);
-    }
-
     PetscFunctionReturn(0);
 }
 #endif
