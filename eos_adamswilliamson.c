@@ -326,13 +326,18 @@ PetscErrorCode EOSAdamsWilliamson_JacobianRadius( SNES snes, Vec x, Mat jac, Mat
 
 }
 
-/* below could be generalised to accommodate any EOS */
-PetscErrorCode EOSAdamsWilliamson_MassCoordinateSpatialDerivative( const data_EOSAdamsWilliamson *adams, PetscScalar R, PetscScalar xi, PetscScalar *dxidr_ptr )
+PetscErrorCode EOSAdamsWilliamsonMassCoordinateSpatialDerivative( EOS eos, PetscScalar R, PetscScalar xi, PetscScalar *dxidr_ptr )
 {
   PetscErrorCode ierr;
+  PetscBool is_composite;
   PetscScalar dxidr, P, S=0.0; // S unused
 
+  data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
+
   PetscFunctionBeginUser;
+
+  ierr = EOSCheckType(eos,SPIDER_EOS_ADAMSWILLIAMSON,&is_composite);CHKERRQ(ierr);
+  if (!is_composite) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on an Adams-Williamson EOS");
 
   ierr = EOSAdamsWilliamson_GetPressureFromRadius( adams, R, &P );CHKERRQ(ierr);
   ierr = EOSAdamsWilliamson_GetRho( adams, P, S, &dxidr );CHKERRQ(ierr);

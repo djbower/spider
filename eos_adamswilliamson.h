@@ -16,4 +16,4 @@ typedef struct {
 
 PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES, Vec, Vec, void* );
 PetscErrorCode EOSAdamsWilliamson_JacobianRadius( SNES, Vec, Mat, Mat, void* );
-PetscErrorCode EOSAdamsWilliamson_MassCoordinateSpatialDerivative( const data_EOSAdamsWilliamson *, PetscScalar, PetscScalar, PetscScalar * );
+PetscErrorCode EOSAdamsWilliamsonMassCoordinateSpatialDerivative( EOS eos, PetscScalar, PetscScalar, PetscScalar * );

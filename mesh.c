@@ -492,16 +492,12 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
     Parameters const P = E->parameters;
     EOS        const eos = P->eos_mesh;
 
-    /* lines such as the below tie the calculation to the AW EOS, but this is
-       straightforward to generalise in the future */
-    data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
-
     PetscFunctionBeginUser;
 
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"aw_radius_from_xi()\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"GetRadiusFromMassCoordinate()\n");CHKERRQ(ierr);
 
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
 
@@ -606,7 +602,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
     ierr = DMDAVecGetArrayRead(E->da_b,M->radius_b,&radius);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&xi);CHKERRQ(ierr);
     for (i=0; i<numpts_b; ++i) {
-        EOSAdamsWilliamson_MassCoordinateSpatialDerivative( adams, radius[i], xi[i], &dxidr[i] );CHKERRQ(ierr);
+        EOSAdamsWilliamsonMassCoordinateSpatialDerivative( eos, radius[i], xi[i], &dxidr[i] );CHKERRQ(ierr);
 
     }
     ierr = DMDAVecRestoreArray(E->da_b,M->dxidr_b,&dxidr);CHKERRQ(ierr);
