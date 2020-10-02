@@ -104,7 +104,7 @@ static PetscErrorCode set_ic_interior_from_file( Ctx *E, Vec sol )
 {
     PetscErrorCode ierr;
     Parameters const P = E->parameters;
-    /* subdomains to use, i.e. dS/dr and S0 */
+    /* subdomains to use, i.e. dS/dxi and S0 */
     PetscInt const arr[2] = {0, 1};
 
     PetscFunctionBeginUser;

@@ -11,7 +11,7 @@
 #define __FUNCT__ "RHSFunction"
 PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 {
-  PetscErrorCode    ierr;
+  PetscErrorCode       ierr;
   Ctx                  *E = (Ctx*) ptr;
   Parameters           P = E->parameters;
   AtmosphereParameters Ap = P->atmosphere_parameters;
@@ -41,8 +41,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = VecSetFromOptions( rhs_b );CHKERRQ(ierr);
   ierr = VecSetUp( rhs_b );CHKERRQ(ierr);
 
-  /* DJB: this new function sets everything possible (and consistently)
-     from an initial thermal (entropy) profile */
+  /* sets everything possible (and consistently) from entropy */
   ierr = set_interior_structure_from_solution( E, t, sol_in );CHKERRQ(ierr);
 
   /* below also sets reaction masses in Atmosphere struct (required
@@ -77,16 +76,16 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
     /* need this quantity for coupling to atmosphere evolution */
     arr_dSdt_s[i] = ( arr_Etot[i+1] - arr_Etot[i] ) / arr_capacitance_s[i];
     arr_dSdt_s[i] += arr_Htot_s[i] / arr_temp_s[i];
-    /* d/dt(dS/dr) at internal basic nodes */
+    /* d/dt(dS/dxi) at internal basic nodes */
     arr_rhs_b[i] = arr_dSdt_s[i] - arr_dSdt_s[i-1];
-    arr_rhs_b[i] /= arr_xi_s[i] - arr_xi_s[i-1]; // note dr is negative
+    arr_rhs_b[i] /= arr_xi_s[i] - arr_xi_s[i-1]; // note dxi is negative
   }
 
   /* dTsurf/dr */
   /* A->dtsurfdt already contains contribution of dTsurf/dT */
   /* By chain rule, just need dT/dt */
   A->dtsurfdt *= arr_dSdt_s[0] * arr_temp_s[0] / arr_cp_s[0];
-  /* TODO, add effect of gradient to above 0.5*d/dt (dS/dr) */
+  /* TODO, add effect of gradient to above 0.5*d/dt (dS/dxi) */
   /* but this should be a minor effect */
 
   ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);

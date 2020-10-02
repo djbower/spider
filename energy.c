@@ -365,7 +365,6 @@ static PetscErrorCode append_Jgrav( Ctx *E )
         arr_Jgrav[i] *= PetscPowScalar(P->grain,2);
         arr_Jgrav[i] *= P->gravity;
         arr_Jgrav[i] *= F;
-        /* FIXME: should be evaluated from the EOS.  Here is assumed constant! */
         arr_Jgrav[i] /= PetscPowScalar(10.0, P->eos_phases[0]->log10visc);
 
     }

@@ -3,7 +3,7 @@
 
 /* Prototypes for local functions used in EOS interface functions */
 static PetscErrorCode EOSAdamsWilliamson_GetRho(const data_EOSAdamsWilliamson*,PetscScalar,PetscScalar,PetscScalar*);
-static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar * );
+//static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar * );
 static PetscErrorCode EOSAdamsWilliamson_GetPressureFromRadius( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar * );
 static PetscErrorCode EOSAdamsWilliamson_GetMassWithinRadius( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar *);
 static PetscErrorCode EOSAdamsWilliamson_GetMassWithinShell( const data_EOSAdamsWilliamson*, PetscScalar, PetscScalar, PetscScalar *);
@@ -122,6 +122,8 @@ static PetscErrorCode EOSAdamsWilliamson_GetRho( const data_EOSAdamsWilliamson *
 
 /* Mass coordinate mapping and static structure */
 
+/* below currently not used */
+#if 0
 static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson *adams, PetscScalar P, PetscScalar *R_ptr )
 {
     PetscScalar R;
@@ -134,6 +136,7 @@ static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAd
 
     PetscFunctionReturn(0);
 }
+#endif
 
 static PetscErrorCode EOSAdamsWilliamson_GetPressureFromRadius( const data_EOSAdamsWilliamson *adams, PetscScalar R, PetscScalar *P_ptr )
 {
