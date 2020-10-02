@@ -122,9 +122,6 @@ static PetscErrorCode EOSAdamsWilliamson_GetRho( const data_EOSAdamsWilliamson *
 
 /* Mass coordinate mapping and static structure */
 
-/* Currently, these functions are accessed directly, not through an interface, and hence they
-   take EOS as an argument (which must be a AdamsWilliamson EOS obviously) */
-
 static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson *adams, PetscScalar P, PetscScalar *R_ptr )
 {
     PetscScalar R;
@@ -150,6 +147,47 @@ static PetscErrorCode EOSAdamsWilliamson_GetPressureFromRadius( const data_EOSAd
     *P_ptr = P;
 
     PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSAdamsWilliamsonGetPressureFromRadius( const EOS eos, PetscScalar R, PetscScalar *P_ptr )
+{
+  /* as above, but global in scope to allow taking an EOS argument.  Otherwise, pretty much all functions
+     local to this EOS have to be converted from static to global which didn't seem like a good idea */
+  PetscErrorCode ierr;
+  PetscBool      is_adams;
+
+  data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
+
+  PetscFunctionBeginUser;
+ 
+  ierr = EOSCheckType(eos,SPIDER_EOS_ADAMSWILLIAMSON,&is_adams);CHKERRQ(ierr);
+  if (!is_adams) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on an Adams-Williamson EOS");
+
+  ierr = EOSAdamsWilliamson_GetPressureFromRadius( adams, R, P_ptr );CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSAdamsWilliamsonGetPressureGradientFromRadius( const EOS eos, PetscScalar R, PetscScalar *dPdr_ptr )
+{
+  PetscErrorCode  ierr;
+  PetscBool       is_adams;
+  PetscScalar     P, dPdr, S=0.0;
+
+  data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
+
+  PetscFunctionBeginUser;
+
+  ierr = EOSCheckType(eos,SPIDER_EOS_ADAMSWILLIAMSON,&is_adams);CHKERRQ(ierr);
+  if (!is_adams) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on an Adams-Williamson EOS");
+
+  ierr = EOSAdamsWilliamson_GetPressureFromRadius( adams, R, &P); CHKERRQ(ierr);
+  ierr = EOSAdamsWilliamson_GetRho( adams, P, S, &dPdr );CHKERRQ(ierr);CHKERRQ(ierr);
+  dPdr *= adams->gravity;
+
+  *dPdr_ptr = dPdr;
+
+  PetscFunctionReturn(0);
 }
 
 static PetscErrorCode EOSAdamsWilliamson_GetMassWithinRadius( const data_EOSAdamsWilliamson *adams, PetscScalar R, PetscScalar *mass_ptr)
@@ -184,6 +222,23 @@ static PetscErrorCode EOSAdamsWilliamson_GetMassWithinShell( const data_EOSAdams
   ierr = EOSAdamsWilliamson_GetMassWithinRadius( adams, Rin, &massin );CHKERRQ(ierr);
 
   *mass_ptr = massout - massin;
+
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode EOSAdamsWilliamsonGetMassWithinShell( const EOS eos, PetscScalar Rout, PetscScalar Rin, PetscScalar *mass_ptr)
+{
+  PetscErrorCode ierr;
+  PetscBool    is_adams;
+
+  data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
+
+  PetscFunctionBeginUser;
+
+  ierr = EOSCheckType(eos,SPIDER_EOS_ADAMSWILLIAMSON,&is_adams);CHKERRQ(ierr);
+  if (!is_adams) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Must be called on an Adams-Williamson EOS");
+
+  ierr = EOSAdamsWilliamson_GetMassWithinShell( adams, Rout, Rin, mass_ptr );CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
@@ -326,7 +381,7 @@ PetscErrorCode EOSAdamsWilliamson_JacobianRadius( SNES snes, Vec x, Mat jac, Mat
 
 }
 
-PetscErrorCode EOSAdamsWilliamsonMassCoordinateSpatialDerivative( EOS eos, PetscScalar R, PetscScalar xi, PetscScalar *dxidr_ptr )
+PetscErrorCode EOSAdamsWilliamsonMassCoordinateSpatialDerivative( const EOS eos, PetscScalar R, PetscScalar xi, PetscScalar *dxidr_ptr )
 {
   PetscErrorCode ierr;
   PetscBool is_composite;

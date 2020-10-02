@@ -519,26 +519,19 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_s[4],"area_s");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_s[4],"m$^2$");CHKERRQ(ierr);
   }
-  { // rho_s
-    PetscScalar scaling = SC->DENSITY;
-    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_s[5],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_s[5],&ctx->mesh.rho_s); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_s[5],"rho_s");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_s[5],"kg m$^{-3}$");CHKERRQ(ierr);
-  }
   { // mass_s
     PetscScalar scaling = SC->MASS * 4.0 * PETSC_PI;
-    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_s[6],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_s[6],&ctx->mesh.mass_s); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_s[6],"mass_s");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_s[6],"kg");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_s[5],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_s[5],&ctx->mesh.mass_s); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_s[5],"mass_s");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_s[5],"kg");CHKERRQ(ierr);
   }
   { // xi_s (mass coordinate)
     PetscScalar scaling = SC->RADIUS;
-    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_s[7],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_s[7],&ctx->mesh.xi_s); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_s[7],"xi_s");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_s[7],"m");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_s[6],ctx->da_s,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_s[6],&ctx->mesh.xi_s); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_s[6],"xi_s");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_s[6],"m");CHKERRQ(ierr);
   }
 
   PetscFunctionReturn(0);

@@ -14,6 +14,9 @@ typedef struct {
 
 #endif
 
+PetscErrorCode EOSAdamsWilliamsonGetMassWithinShell( const EOS, PetscScalar, PetscScalar, PetscScalar *);
+PetscErrorCode EOSAdamsWilliamsonGetPressureFromRadius( const EOS, PetscScalar, PetscScalar * );
+PetscErrorCode EOSAdamsWilliamsonGetPressureGradientFromRadius( const EOS, PetscScalar, PetscScalar * );
 PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES, Vec, Vec, void* );
 PetscErrorCode EOSAdamsWilliamson_JacobianRadius( SNES, Vec, Mat, Mat, void* );
-PetscErrorCode EOSAdamsWilliamsonMassCoordinateSpatialDerivative( EOS eos, PetscScalar, PetscScalar, PetscScalar * );
+PetscErrorCode EOSAdamsWilliamsonMassCoordinateSpatialDerivative( const EOS, PetscScalar, PetscScalar, PetscScalar * );

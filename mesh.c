@@ -4,17 +4,15 @@
    the Adams Williamson EOS */
 #include "eos_adamswilliamson.h"
 
-static PetscErrorCode regular_mesh( Ctx * );
+static PetscErrorCode SetMeshRegular( Ctx * );
 //static PetscErrorCode geometric_mesh( Ctx * );
-static PetscErrorCode spherical_area( DM, Vec, Vec );
-static PetscErrorCode spherical_volume( Ctx *, Vec, Vec );
-// FIXME: TODO: REMOVE
+static PetscErrorCode SetMeshPressureFromRadius( EOS, DM, Vec, Vec );
+static PetscErrorCode SetMeshPressureGradientFromRadius( EOS, DM, Vec, Vec );
+static PetscErrorCode SetMeshSphericalArea( DM, Vec, Vec );
+static PetscErrorCode SetMeshSphericalVolume( Ctx *, Vec, Vec );
+// FIXME: last component(?) to merge from Rob's branch
 //static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
-static PetscScalar aw_density_from_radius( PetscScalar, Parameters const );
-static PetscErrorCode aw_density( DM, Vec, Vec, Parameters const, PetscScalar * );
-static PetscErrorCode aw_pressure( DM, Vec, Vec, Parameters const );
-static PetscErrorCode aw_pressure_gradient( DM, Vec, Vec, Parameters const );
-static PetscErrorCode aw_mass( Mesh * );
+static PetscErrorCode SetMeshMass( EOS, Ctx * );
 static PetscErrorCode GetRadiusFromMassCoordinate( Ctx * );
 
 PetscErrorCode set_mesh( Ctx *E)
@@ -27,30 +25,18 @@ PetscErrorCode set_mesh( Ctx *E)
     PetscFunctionBeginUser;
 
     /* for regular mesh (mass coordinates) */
-    ierr = regular_mesh( E );CHKERRQ(ierr);
+    ierr = SetMeshRegular( E );CHKERRQ(ierr);
 
     /* FIXME: broken for mass coordinates */
     //geometric_mesh( E );
 
     if(1){
-
         ierr = GetRadiusFromMassCoordinate( E );CHKERRQ(ierr);
-
-        /* with radius known, now can update other quantities such
-           as pressure, using AW EOS */
-
-        /* pressure at basic nodes */
-        ierr = aw_pressure( da_b, M->radius_b, M->pressure_b, P);CHKERRQ(ierr);
-
-        /* dP/dr at basic nodes */
-        ierr = aw_pressure_gradient( da_b, M->radius_b, M->dPdr_b, P);CHKERRQ(ierr);
-
-        /* pressure at staggered nodes */
-        ierr = aw_pressure( da_s, M->radius_s, M->pressure_s, P);CHKERRQ(ierr);
-
-        /* dP/dr at staggered nodes */
-        ierr = aw_pressure_gradient( da_s, M->radius_s, M->dPdr_s, P );CHKERRQ(ierr);
-
+        ierr = SetMeshPressureFromRadius( P->eos_mesh, da_b, M->radius_b, M->pressure_b );CHKERRQ(ierr);
+        ierr = SetMeshPressureGradientFromRadius( P->eos_mesh, da_b, M->radius_b, M->dPdr_b);CHKERRQ(ierr);
+        ierr = SetMeshPressureFromRadius( P->eos_mesh, da_s, M->radius_s, M->pressure_s );CHKERRQ(ierr);
+        ierr = SetMeshPressureGradientFromRadius( P->eos_mesh, da_s, M->radius_s, M->dPdr_s  );CHKERRQ(ierr);
+        ierr = SetMeshMass( P->eos_mesh, E );CHKERRQ(ierr);
     }
 
     /* alternatively, we could solve static structure equations to
@@ -63,15 +49,10 @@ PetscErrorCode set_mesh( Ctx *E)
         ;
     }
 
-
-    /* surface area at basic nodes, without 4*pi term */
-    ierr = spherical_area( da_b, M->radius_b, M->area_b);CHKERRQ(ierr);
-
-    /* surface area at staggered nodes, without 4*pi term */
-    ierr = spherical_area( da_s, M->radius_s, M->area_s );CHKERRQ(ierr);
-
-    /* volume of spherical cells, without 4*pi term */
-    ierr = spherical_volume( E, M->radius_b, M->volume_s);CHKERRQ(ierr);
+    /* geometry terms without 4*pi prefactor */
+    ierr = SetMeshSphericalArea( da_b, M->radius_b, M->area_b);CHKERRQ(ierr);
+    ierr = SetMeshSphericalArea( da_s, M->radius_s, M->area_s );CHKERRQ(ierr);
+    ierr = SetMeshSphericalVolume( E, M->radius_b, M->volume_s);CHKERRQ(ierr);
 
     /* FIXME: this is to be REMOVED, once migrated into the new EOS object approach */
     /* layer id.  0 everywhere for single layer (as determined by
@@ -79,19 +60,13 @@ PetscErrorCode set_mesh( Ctx *E)
        when P->mixing_length==3 */
     //get_layer( da_b, M->radius_b, M->layer_b, P );
 
-    /* density at staggered nodes */
-    ierr = aw_density( da_s, M->radius_s, M->rho_s, P, &M->mantle_density );CHKERRQ(ierr);
-
-    /* mass at staggered nodes */
-    ierr = aw_mass( M );CHKERRQ(ierr);
-
     /* mantle mass also needed for atmosphere calculations */
     P->atmosphere_parameters->mantle_mass_ptr = &M->mantle_mass;
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode regular_mesh( Ctx *E )
+static PetscErrorCode SetMeshRegular( Ctx *E )
 {
 
     PetscErrorCode ierr;
@@ -210,7 +185,7 @@ static PetscErrorCode geometric_mesh( Ctx *E )
 }
 #endif
 
-static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
+static PetscErrorCode SetMeshSphericalArea(DM da, Vec radius, Vec area )
 {
 
     PetscErrorCode    ierr;
@@ -232,7 +207,7 @@ static PetscErrorCode spherical_area(DM da, Vec radius, Vec area )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
+static PetscErrorCode SetMeshSphericalVolume(Ctx * E, Vec radius, Vec volume )
 {
 
     PetscErrorCode    ierr;
@@ -262,7 +237,7 @@ static PetscErrorCode spherical_volume(Ctx * E, Vec radius, Vec volume )
     PetscFunctionReturn(0);
 }
 
-/* FIXME: TODO: REMOVE EVENTUALLY */
+/* FIXME: last component to merge from Rob's branch */
 #if 0
 /* TODO: need to have some notion of a layer ID, but should it be within mesh.c? */
 static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
@@ -297,10 +272,10 @@ static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
 }
 #endif
 
-static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parameters P )
+static PetscErrorCode SetMeshPressureFromRadius( const EOS eos, DM da, Vec radius, Vec pressure )
 {
     PetscErrorCode    ierr;
-    PetscScalar       dep,*arr_p;
+    PetscScalar       *arr_p;
     const PetscScalar *arr_r;
     PetscInt          i,ilo,ihi,w;
 
@@ -310,102 +285,60 @@ static PetscErrorCode aw_pressure( DM da, Vec radius, Vec pressure, const Parame
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da,pressure,&arr_p);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        dep = P->radius - arr_r[i];
-        arr_p[i] = P->rhos * -P->gravity / P->beta;
-        arr_p[i] *= PetscExpScalar( P->beta * dep ) - 1.0;
+        ierr = EOSAdamsWilliamsonGetPressureFromRadius( eos, arr_r[i], &arr_p[i] );CHKERRQ(ierr);
     }
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da,pressure,&arr_p);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_density( DM da, Vec radius, Vec density, const Parameters P, PetscScalar *mantle_density )
+static PetscErrorCode SetMeshPressureGradientFromRadius( const EOS eos, DM da, Vec radius, Vec pressureg )
 {
     PetscErrorCode    ierr;
-    PetscScalar       *arr_density;
+    PetscScalar       *arr_pg;
     const PetscScalar *arr_r;
     PetscInt          i,ilo,ihi,w;
 
     PetscFunctionBeginUser;
     ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w;
+    ierr = DMDAVecGetArray(da,pressureg,&arr_pg);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da,density,&arr_density);CHKERRQ(ierr);
     for(i=ilo; i<ihi; ++i){
-        arr_density[i] = aw_density_from_radius( arr_r[i], P );
+        ierr = EOSAdamsWilliamsonGetPressureGradientFromRadius( eos, arr_r[i], &arr_pg[i]);CHKERRQ(ierr);
     }
+    ierr = DMDAVecRestoreArray(da,pressureg,&arr_pg);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da,density,&arr_density);CHKERRQ(ierr);
-
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode aw_mass( Mesh *M )
-{
-    PetscErrorCode ierr;
- 
-    PetscFunctionBeginUser;
-
-    ierr = VecCopy( M->rho_s, M->mass_s ); CHKERRQ(ierr);
-
-    ierr = VecPointwiseMult( M->mass_s, M->mass_s, M->volume_s );
-    /* excludes 4*pi prefactor */
-    ierr = VecSum( M->mass_s, &M->mantle_mass );
-
-    /* also determine volume, also excluding 4*pi prefactor */
-    ierr = VecSum( M->volume_s, &M->mantle_volume );
-
-    /* FIXME: M->mantle_density is computed analytically to give exact value */
-    /* this here would over-ride */
-    //M->mantle_density = M->mantle_mass / M->mantle_volume;
-
-    PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode aw_pressure_gradient( DM da, Vec radius, Vec grad, Parameters const P )
+static PetscErrorCode SetMeshMass( const EOS eos, Ctx *E)
 {
     PetscErrorCode    ierr;
-    PetscScalar       dep,*arr_g;
+    Mesh              *M = &E->mesh;
+    PetscScalar       *arr_m;
     const PetscScalar *arr_r;
-    PetscInt          i,ilo,ihi,w;
+    PetscInt          i,ilo,ihi,w,ilo_s,ihi_s,w_s;
 
     PetscFunctionBeginUser;
-    ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(E->da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w;
-    ierr = DMDAVecGetArray(da,grad,&arr_g);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
-    for(i=ilo; i<ihi; ++i){
-        dep = P->radius - arr_r[i];
-        arr_g[i] = P->rhos * P->gravity * PetscExpScalar( P->beta * dep );
-    }
-    ierr = DMDAVecRestoreArray(da,grad,&arr_g);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(E->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+    ihi_s = ilo_s + w_s;
+
+    ierr = DMDAVecGetArray(E->da_b,M->radius_b,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_s,M->mass_s,&arr_m);CHKERRQ(ierr);
+
+    for(i=ilo; i<ihi-1; ++i){
+        ierr = EOSAdamsWilliamsonGetMassWithinShell( eos, arr_r[i], arr_r[i+1], &arr_m[i]);CHKERRQ(ierr);
+     }
+    /* total mantle mass */
+    ierr = EOSAdamsWilliamsonGetMassWithinShell( eos, arr_r[ilo], arr_r[ihi-1], &M->mantle_mass);CHKERRQ(ierr);
+
+    ierr = DMDAVecRestoreArrayRead(E->da_b,M->radius_b,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(E->da_s,M->mass_s,&arr_m);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
-}
-
-/* TODO: remove from here, move to AW EOS */
-static PetscScalar aw_density_from_radius( PetscScalar radius, Parameters const P )
-{
-
-    /* Adams-Williamson density is a simple function of depth (radius)
-       Derivation:
-           dP/dr = dP/drho * drho/dr = -rho g
-           dP/drho \sim (dP/drho)_s (adiabatic)
-           drho/dr = -rho g / Si
-           then integrate to give the form rho(r) = k * exp(-(g*r)/c)
-           (g is positive)
-           apply the limit that rho = rhos at r=R
-           gives:
-               rho(z) = rhos * exp( beta * z )
-           where z = R-r
-
-    this is arguably the simplest relation to get rho directly from r, but other
-    EOSs can be envisaged
-    */
-
-    return P->rhos * PetscExpScalar( P->beta * (P->radius-radius) );
-
 }
 
 static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
@@ -476,6 +409,8 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
     /* Turn off convergenced based on trust region tolerance */
     ierr = PetscOptionsSetValue(NULL,"-mass_coord_snes_trtol","0");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-mass_coord_snes_type","newtontr");CHKERRQ(ierr);
+    /* for typical terrestrial planet sizes around 1E6 m, this gives an accurate
+       mapping to about 1 m, which should be more than sufficient */
     ierr = PetscOptionsSetValue(NULL,"-mass_coord_snes_rtol","1.0e-6");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-mass_coord_snes_atol","1.0e-6");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-mass_coord_ksp_rtol","1.0e-6");CHKERRQ(ierr);
