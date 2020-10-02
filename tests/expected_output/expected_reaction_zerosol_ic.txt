@@ -1,6 +1,6 @@
-description: dS/dr
+description: dS/dxi
 scaling: 4.697889028520918e-05
-val:                0
+val: 0.0
 val: -0.2128615626996608
 val: -0.2128615626994166
 val: -0.2128615626996608
@@ -99,16 +99,16 @@ val: -0.2128615626996641
 val: -0.2128615626994166
 val: -0.2128615626996641
 val: -0.2128615626994166
-val:                0
+val: 0.0
 description: S at surface
 scaling: 2993.025100070677
 val: 0.8686863334151804
 description: Volatile partial pressure
 scaling: 1207268.722106174
-val: 0.05335062075947954
-val: 3.22906599782761
-val: 0.6192436222866897
-val: 6.629522701103349
+val: 0.0533504780821308
+val: 3.22905736180867
+val: 0.6192419661169041
+val: 6.629504970461213
 description: Reaction total mass
 scaling: 3.249620750537261e+17
 val:                0
