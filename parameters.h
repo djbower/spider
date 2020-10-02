@@ -161,6 +161,7 @@ typedef struct {
     MagmaOceanCoreType CORE_BC;
     PetscScalar core_bc_value;
 
+    PetscBool MASS_COORDINATES;
     PetscBool CONDUCTION;
     PetscBool CONVECTION;
     PetscBool MIXING;

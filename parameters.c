@@ -253,6 +253,11 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   }
   P->numpts_s = P->numpts_b - 1;
 
+  /* this allows backward compatibility with older versions of the code
+     that worked directly with radius coordinates, rather than mass coordinates */
+  P->MASS_COORDINATES = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-MASS_COORDINATES",&P->MASS_COORDINATES,NULL);CHKERRQ(ierr);
+
   /* RollBack and PostStep options */
   P->rollBackActive = PETSC_FALSE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-activate_rollback",&P->rollBackActive,NULL);CHKERRQ(ierr);

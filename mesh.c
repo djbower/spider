@@ -14,6 +14,7 @@ static PetscErrorCode SetMeshSphericalVolume( Ctx *, Vec, Vec );
 //static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
 static PetscErrorCode SetMeshMass( EOS, Ctx * );
 static PetscErrorCode GetRadiusFromMassCoordinate( Ctx * );
+static PetscErrorCode RadiusIsMassCoordinate( Ctx * );
 
 PetscErrorCode set_mesh( Ctx *E)
 {
@@ -30,8 +31,14 @@ PetscErrorCode set_mesh( Ctx *E)
     /* FIXME: broken for mass coordinates */
     //geometric_mesh( E );
 
-    if(1){
+    if(P->MASS_COORDINATES){
         ierr = GetRadiusFromMassCoordinate( E );CHKERRQ(ierr);
+    }
+    else{
+        ierr = RadiusIsMassCoordinate( E );CHKERRQ(ierr);
+    }
+
+    if(1){
         ierr = SetMeshPressureFromRadius( P->eos_mesh, da_b, M->radius_b, M->pressure_b );CHKERRQ(ierr);
         ierr = SetMeshPressureGradientFromRadius( P->eos_mesh, da_b, M->radius_b, M->dPdr_b);CHKERRQ(ierr);
         ierr = SetMeshPressureFromRadius( P->eos_mesh, da_s, M->radius_s, M->pressure_s );CHKERRQ(ierr);
@@ -337,6 +344,23 @@ static PetscErrorCode SetMeshMass( const EOS eos, Ctx *E)
 
     ierr = DMDAVecRestoreArrayRead(E->da_b,M->radius_b,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(E->da_s,M->mass_s,&arr_m);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode RadiusIsMassCoordinate( Ctx *E )
+{
+    /* recovers legacy behaviour of the code by setting the operational/code
+       coordinate to the radius directly */
+
+    PetscErrorCode ierr;
+    Mesh           *M = &E->mesh;
+
+    PetscFunctionBeginUser;
+
+    ierr = VecCopy( M->xi_b, M->radius_b );CHKERRQ(ierr);
+    ierr = VecCopy( M->xi_s, M->radius_s );CHKERRQ(ierr);
+    ierr = VecSet( M->dxidr_b, 1.0);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

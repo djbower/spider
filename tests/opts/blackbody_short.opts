@@ -108,8 +108,8 @@
 
 # static pressure profile derived from Adams-Williamson equation of state
 # these parameters are from fitting PREM in the lower mantle (for Earth)
--rhos 4078.95095544 # surface density
--beta 1.1115348931000002e-07 # beta parameter
+-adams_williamson_rhos 4078.95095544 # surface density
+-adams_williamson_beta 1.1115348931000002e-07 # beta parameter
 -gravity -10.0 # gravity
 
 # eddy diffusivity
