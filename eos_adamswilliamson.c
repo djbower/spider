@@ -321,8 +321,10 @@ PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES snes, Vec x, Vec
       xi = xi_s[i-numpts_b]; // staggered nodes
     }   
 
-    /* difference from mass coordinate mass */
-    ff[i] -= (adams->density_average / 3.0) * (PetscPowScalar(xi,3.0)-PetscPowScalar(adams->radius_core,3.0));
+    ff[i] *= 3.0 / adams->density_average;
+    ff[i] += PetscPowScalar(adams->radius_core,3.0);
+    ff[i] = PetscPowScalar(ff[i],1.0/3.0);
+    ff[i] -= xi;
 
   }
 
@@ -343,7 +345,7 @@ PetscErrorCode EOSAdamsWilliamson_JacobianRadius( SNES snes, Vec x, Mat jac, Mat
   Parameters  const P = E->parameters;
   PetscInt          i,numpts_b,numpts_s;
   Vec               diag;
-  PetscScalar       *arr_diag;
+  PetscScalar       *arr_diag, mass;
   EOS               eos = P->eos_mesh;
   data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson*) eos->impl_data;
 
@@ -362,7 +364,13 @@ PetscErrorCode EOSAdamsWilliamson_JacobianRadius( SNES snes, Vec x, Mat jac, Mat
 
   /* set diagonal */
   for(i=0; i < numpts_b+numpts_s; ++i){
-    ierr = EOSAdamsWilliamson_GetMassElement( adams, xx[i], &arr_diag[i] );CHKERRQ(ierr); 
+    ierr = EOSAdamsWilliamson_GetMassElement( adams, xx[i], &arr_diag[i] );CHKERRQ(ierr);
+    arr_diag[i] *= 3.0 / adams->density_average;
+    ierr = EOSAdamsWilliamson_GetMassWithinShell( adams, xx[i], adams->radius_core, &mass );CHKERRQ(ierr);
+    mass *= (3.0 / adams->density_average);
+    mass += PetscPowScalar( adams->radius_core, 3.0);
+    mass = (1.0/3.0) * PetscPowScalar( mass, -2.0/3.0 );
+    arr_diag[i] *= mass;
   }
 
   ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
