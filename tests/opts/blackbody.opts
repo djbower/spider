@@ -20,12 +20,8 @@
 -ts_sundials_atol 1.0e-6
 -ts_sundials_rtol 1.0e-6
 
-#-mass_coord_snes_view
-#-mass_coord_snes_converged_reason
-#-mass_coord_snes_verbose_monitor 1
-
 # number of basic nodes
--n 50
+-n 100
 
 # all units are SI unless indicated otherwise
 
@@ -115,7 +111,7 @@
 # static pressure profile derived from Adams-Williamson equation of state
 # these parameters are from fitting PREM in the lower mantle (for Earth)
 -adams_williamson_rhos 4078.95095544 # surface density
--adams_williamson_beta 1.1115348931000002e-07 #1.1115348931000002e-07 # beta parameter
+-adams_williamson_beta 1.1115348931000002e-07 # beta parameter
 -gravity -10.0 # gravity
 
 # eddy diffusivity
