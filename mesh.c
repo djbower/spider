@@ -31,6 +31,10 @@ PetscErrorCode set_mesh( Ctx *E)
     /* FIXME: broken for mass coordinates */
     //geometric_mesh( E );
 
+    /* here, could solve static structure equations to give
+       relationship between radius, pressure, etc. for a given
+       EOS */
+
     if(P->MASS_COORDINATES){
         ierr = GetRadiusFromMassCoordinate( E );CHKERRQ(ierr);
     }
@@ -38,23 +42,13 @@ PetscErrorCode set_mesh( Ctx *E)
         ierr = RadiusIsMassCoordinate( E );CHKERRQ(ierr);
     }
 
-    if(1){
-        ierr = SetMeshPressureFromRadius( P->eos_mesh, da_b, M->radius_b, M->pressure_b );CHKERRQ(ierr);
-        ierr = SetMeshPressureGradientFromRadius( P->eos_mesh, da_b, M->radius_b, M->dPdr_b);CHKERRQ(ierr);
-        ierr = SetMeshPressureFromRadius( P->eos_mesh, da_s, M->radius_s, M->pressure_s );CHKERRQ(ierr);
-        ierr = SetMeshPressureGradientFromRadius( P->eos_mesh, da_s, M->radius_s, M->dPdr_s  );CHKERRQ(ierr);
-        ierr = SetMeshMass( P->eos_mesh, E );CHKERRQ(ierr);
-    }
-
-    /* alternatively, we could solve static structure equations to
-       recover relationship between xi, radius, pressure, rho */
-    else {
-
-        /* solve static structure equations to determine planetary
-           size at this time step (would need to move into time
-           loop) */
-        ;
-    }
+    /* these all currently use the Adams-Williamson EOS, but it could be
+       easily generalised */
+    ierr = SetMeshPressureFromRadius( P->eos_mesh, da_b, M->radius_b, M->pressure_b );CHKERRQ(ierr);
+    ierr = SetMeshPressureGradientFromRadius( P->eos_mesh, da_b, M->radius_b, M->dPdr_b);CHKERRQ(ierr);
+    ierr = SetMeshPressureFromRadius( P->eos_mesh, da_s, M->radius_s, M->pressure_s );CHKERRQ(ierr);
+    ierr = SetMeshPressureGradientFromRadius( P->eos_mesh, da_s, M->radius_s, M->dPdr_s  );CHKERRQ(ierr);
+    ierr = SetMeshMass( P->eos_mesh, E );CHKERRQ(ierr);
 
     /* geometry terms without 4*pi prefactor */
     ierr = SetMeshSphericalArea( da_b, M->radius_b, M->area_b);CHKERRQ(ierr);

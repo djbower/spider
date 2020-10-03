@@ -167,6 +167,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     vp->henry2 /= 1.0E6 * SC->VOLATILE * PetscPowScalar(SC->PRESSURE, -1.0/vp->henry_pow2);
     /* end of Paolo Sossi prototype */
 
+    vp->jeans_value = 0.0;
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
     ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,NULL);CHKERRQ(ierr); // TODO: check units and scaling
 
