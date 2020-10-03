@@ -573,6 +573,10 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
 
 #if 0
     /* TODO: testing, solve for surface entropy based on boundary condition */
+    /* when we solve for surface entropy, we are also constraining the entropy
+       at the top staggered node (which is used to reconstruct the whole entropy
+       profile.  So I don't think this can be here, since the profile is constructed
+       in the function above.  To revise */
     ierr = solve_surface_entropy( E );CHKERRQ(ierr);
 #endif
 

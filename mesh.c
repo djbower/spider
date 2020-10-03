@@ -5,8 +5,8 @@
 #include "eos_adamswilliamson.h"
 
 static PetscErrorCode SetMeshRegular( Ctx * );
-static PetscErrorCode geometric_mesh_refine_upper( Ctx * );
-static PetscErrorCode geometric_mesh_refine_lower( Ctx * );
+//static PetscErrorCode SetMeshGeometricRefineUpper( Ctx * );
+//static PetscErrorCode SetMeshGeometricRefineLower( Ctx * );
 static PetscErrorCode SetMeshPressureFromRadius( EOS, DM, Vec, Vec );
 static PetscErrorCode SetMeshPressureGradientFromRadius( EOS, DM, Vec, Vec );
 static PetscErrorCode SetMeshSphericalArea( DM, Vec, Vec );
@@ -26,20 +26,12 @@ PetscErrorCode set_mesh( Ctx *E)
 
     PetscFunctionBeginUser;
 
-#if 1
     /* for regular mesh (mass coordinates) */
     ierr = SetMeshRegular( E );CHKERRQ(ierr);
-#endif
 
-#if 0
     /* to refine mesh */
-    geometric_mesh_refine_lower( E );
-#endif
-
-#if 0
-    /* to refine mesh */
-    geometric_mesh_refine_upper( E );
-#endif
+    //ierr = SetMeshGeometricRefineUpper( E );
+    //ierr = SetMeshGeometricRefineLower( E );
 
     /* here, could solve static structure equations to give
        relationship between radius, pressure, etc. for a given
@@ -119,8 +111,8 @@ static PetscErrorCode SetMeshRegular( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-#if 1
-static PetscErrorCode geometric_mesh_refine_upper( Ctx *E )
+#if 0
+static PetscErrorCode SetMeshGeometricRefineUpper( Ctx *E )
 {
 
     PetscErrorCode ierr;
@@ -207,8 +199,8 @@ static PetscErrorCode geometric_mesh_refine_upper( Ctx *E )
 #endif
 
 
-#if 1
-static PetscErrorCode geometric_mesh_refine_lower( Ctx *E )
+#if 0
+static PetscErrorCode SetMeshGeometricRefineLower( Ctx *E )
 {
 
     PetscErrorCode ierr;
