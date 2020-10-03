@@ -170,13 +170,13 @@ static PetscErrorCode geometric_mesh_refine_upper( Ctx *E )
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* TODO: dynamically determine number of mesh points, and
-       automatically ensure that arr[0] = 1.0 and
-       arr[numpts_b-1] = RADIN */
+       automatically ensure that arr[0] = radius and
+       arr[numpts_b-1] = radius*P->coresize */
 
     /* radius at basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
-    ierr = DMDAVecGetArray(da_b,M->radius_b,&arr_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,M->xi_b,&arr_b);CHKERRQ(ierr);
     arr_b[0] =  P->radius;
     dr_prev = dr_min / geom_fac;
     for (i=ilo_b+1; i<ihi_b; ++i){ /* Note upper bound */
@@ -190,16 +190,16 @@ static PetscErrorCode geometric_mesh_refine_upper( Ctx *E )
     // TODO: below is hacky.
     arr_b[numpts_b-1] = P->radius * P->coresize;
 
-    ierr = DMDAVecRestoreArray(da_b,M->radius_b,&arr_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,M->xi_b,&arr_b);CHKERRQ(ierr);
 
     /* radius at staggered nodes */
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
-    ierr = DMDAVecGetArray(da_s,M->radius_s,&arr_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,M->xi_s,&arr_s);CHKERRQ(ierr);
     for (i=ilo_s;i<ihi_s;++i){
         arr_s[i] = 0.5 * (arr_b[i]+arr_b[i+1]);
     }
-    ierr = DMDAVecRestoreArray(da_s,M->radius_s,&arr_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,M->xi_s,&arr_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -255,13 +255,13 @@ static PetscErrorCode geometric_mesh_refine_lower( Ctx *E )
     ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* TODO: dynamically determine number of mesh points, and
-       automatically ensure that arr[0] = 1.0 and
-       arr[numpts_b-1] = RADIN */
+       automatically ensure that arr[0] = radius and
+       arr[numpts_b-1] = radius * P->coresize */
 
     /* radius at basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
-    ierr = DMDAVecGetArray(da_b,M->radius_b,&arr_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,M->xi_b,&arr_b);CHKERRQ(ierr);
     arr_b[numpts_b-1] =  P->radius * P->coresize;
     dr_prev = dr_min / geom_fac;
     for (i=ilo_b; i<ihi_b-1; ++i){ /* Note upper bound */
@@ -275,16 +275,16 @@ static PetscErrorCode geometric_mesh_refine_lower( Ctx *E )
     // TODO: below is hacky.
     arr_b[0] = P->radius;
 
-    ierr = DMDAVecRestoreArray(da_b,M->radius_b,&arr_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,M->xi_b,&arr_b);CHKERRQ(ierr);
 
     /* radius at staggered nodes */
     ierr = DMDAGetCorners(da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
-    ierr = DMDAVecGetArray(da_s,M->radius_s,&arr_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,M->xi_s,&arr_s);CHKERRQ(ierr);
     for (i=ilo_s;i<ihi_s;++i){
         arr_s[i] = 0.5 * (arr_b[i]+arr_b[i+1]);
     }
-    ierr = DMDAVecRestoreArray(da_s,M->radius_s,&arr_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,M->xi_s,&arr_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
