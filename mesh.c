@@ -119,15 +119,8 @@ static PetscErrorCode SetMeshRegular( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-<<<<<<< HEAD
-
 #if 1
 static PetscErrorCode geometric_mesh_refine_upper( Ctx *E )
-=======
-#if 0
-/* FIXME: below broken for mass coordinates */
-static PetscErrorCode geometric_mesh( Ctx *E )
->>>>>>> master
 {
 
     PetscErrorCode ierr;

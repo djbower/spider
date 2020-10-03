@@ -389,7 +389,7 @@ PetscErrorCode solve_surface_entropy( Ctx *E )
     PetscErrorCode             ierr;
     SNES                       snes;
     Vec                        x,r;
-    PetscScalar                *xx, *arr_radius_b, *arr_S_b, *arr_S_s, *arr_dSdr_b;
+    PetscScalar                *xx, *arr_xi_b, *arr_S_b, *arr_S_s, *arr_dSdxi_b;
     DM                         da_b=E->da_b,da_s=E->da_s;
     Mesh                       *M = &E->mesh;
     Solution                   *S = &E->solution;
@@ -449,21 +449,21 @@ PetscErrorCode solve_surface_entropy( Ctx *E )
 
     ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
 
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    arr_dSdr_b[0] = xx[0];
+    arr_dSdxi_b[0] = xx[0];
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* over-rides value calculated in set_entropy_from_solution */
-    arr_S_b[0] = -arr_dSdr_b[0] * 0.5 * (arr_radius_b[1] - arr_radius_b[0]);
+    arr_S_b[0] = -arr_dSdxi_b[0] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
     arr_S_b[0] += arr_S_s[0];
  
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
 
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);
@@ -488,7 +488,7 @@ static PetscErrorCode objective_function_surfacebc( SNES snes, Vec x, Vec f, voi
     Solution                   *S = &E->solution;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
     DM                         da_b=E->da_b;
-    EosEval                    eos_eval;
+    EOSEvalData                eos_eval;
     
     const PetscInt ind0 = 0;
     
@@ -517,12 +517,7 @@ static PetscErrorCode objective_function_surfacebc( SNES snes, Vec x, Vec f, voi
     
     /* now need material properties at this entropy and surface pressure (0 GPa) */
     
-    if( P->n_phases==1 ){
-        ierr = SetEosEval( P->eos_parameters[0], 0.0, Sb0, &eos_eval );CHKERRQ(ierr);
-    }
-    else{
-        ierr = SetEosCompositeEval( P->eos_composites[0], 0.0, Sb0, &eos_eval );CHKERRQ(ierr);
-    }
+    ierr = EOSEval( P->eos, 0.0, Sb0, &eos_eval );CHKERRQ(ierr);
     
     /* test only */
     const PetscScalar emissivity = 1.0;
@@ -532,7 +527,7 @@ static PetscErrorCode objective_function_surfacebc( SNES snes, Vec x, Vec f, voi
     
     /* conductive flux */
     /* FIXME: does arr_dPdr_b[i] have a valid value at i=0? */ 
-    res += eos_eval.cond * (eos_eval.T / eos_eval.Cp * dSdr0 + arr_dPdr_b[ind0] * E->eos_eval.dTdPs);
+    res += eos_eval.cond * (eos_eval.T / eos_eval.Cp * dSdr0 + arr_dPdr_b[ind0] * eos_eval.dTdPs);
   
     /* for normalising residual? */ 
     res /= emissivity * FC->STEFAN_BOLTZMANN * ( PetscPowScalar( eos_eval.T, 4.0 ) - PetscPowScalar( Ap->teqm, 4.0 ) ); 
@@ -576,7 +571,7 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
     /* set solution in the relevant structs */
     ierr = set_entropy_from_solution( E, sol_in );CHKERRQ(ierr);
 
-#if 1
+#if 0
     /* TODO: testing, solve for surface entropy based on boundary condition */
     ierr = solve_surface_entropy( E );CHKERRQ(ierr);
 #endif
