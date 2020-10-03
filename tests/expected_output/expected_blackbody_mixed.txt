@@ -102,14 +102,4 @@ val: -0.2128615626994166
 val:                0
 description: S at surface
 scaling: 2993.025100070677
-val: 0.8686863334151804
-description: Volatile partial pressure
-scaling: 1207268.722106174
-val: 0.1535096218969763
-val: 0.1262602168792997
-val: 1.781794671036701
-val: 0.2592220086556544
-description: Reaction total mass
-scaling: 3.249620750537262e+16
-val:                0
-val:                0
+val: 0.7016312692968765

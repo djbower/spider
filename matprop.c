@@ -36,7 +36,7 @@ PetscErrorCode set_phase_fraction_staggered( Ctx *E )
     Parameters        P = E->parameters;
     Solution          *S = &E->solution;
     PetscScalar       *arr_phi, *arr_S, *arr_pres, PP, SS;
-    EosEval eos_eval;
+    EOSEvalData       eos_eval;
 
     PetscFunctionBeginUser;
 
@@ -50,15 +50,7 @@ PetscErrorCode set_phase_fraction_staggered( Ctx *E )
     for(i=ilo_s; i<ihi_s; ++i){
         PP = arr_pres[i];
         SS = arr_S[i];
-        /* TODO: this is an obvious switch statement to standardise by consolidating the EOS
-           Structures */
-        if( P->n_phases == 1){
-            ierr = SetEosEval( P->eos_parameters[0], PP, SS, &eos_eval );CHKERRQ(ierr);
-        }
-        else if (P->n_phases == 2){
-            ierr = SetEosCompositeEval( P->eos_composites[0], PP, SS, &eos_eval );CHKERRQ(ierr);
-        }
-
+        ierr = EOSEval(P->eos, PP, SS, &eos_eval );CHKERRQ(ierr);
         arr_phi[i] = eos_eval.phase_fraction;
     }
 
@@ -76,6 +68,7 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     Vec               pres_s = M->pressure_s;
     PetscScalar       *arr_rho_s, *arr_temp_s, *arr_cp_s;
     const PetscScalar *arr_pres_s, *arr_S_s;
+    EOSEvalData       eos_eval;
 
     PetscFunctionBeginUser;
 
@@ -89,24 +82,10 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
     ierr = DMDAVecGetArray(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
-
-        /* there is now obvious symmetry here, and this can be further collapsed when EosComposite and
-           EosParameters are consolidated */
-
-        /* Note for PS: you can see below how if the EosEval and EosCompositeEval are consolidated, the 
-           if statement can probably be removed */
-        /* single phase */
-        if( P->n_phases==1 ){
-            ierr = SetEosEval( P->eos_parameters[0], arr_pres_s[i], arr_S_s[i], &E->eos_eval );CHKERRQ(ierr);
-        }
-        else{ /* if P->n_phases==2 */
-            ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres_s[i], arr_S_s[i], &E->eos_eval );CHKERRQ(ierr);
-        }
-
-        arr_rho_s[i] = E->eos_eval.rho;
-        arr_temp_s[i] = E->eos_eval.T;
-        arr_cp_s[i] = E->eos_eval.Cp;
-
+        ierr = EOSEval( P->eos, arr_pres_s[i], arr_S_s[i], &eos_eval );CHKERRQ(ierr);
+        arr_rho_s[i] = eos_eval.rho;
+        arr_temp_s[i] = eos_eval.T;
+        arr_cp_s[i] = eos_eval.Cp;
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s,pres_s,&arr_pres_s);CHKERRQ(ierr);
@@ -132,6 +111,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
+    EOSEvalData       eos_eval;
 
     PetscFunctionBeginUser;
 
@@ -171,23 +151,15 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArray(    da_b,S->regime,&arr_regime); CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){
-
-      /* single phase */
-      if( P->n_phases==1 ){
-          ierr = SetEosEval( P->eos_parameters[0], arr_pres[i], arr_S_b[i], &E->eos_eval );CHKERRQ(ierr);
-      }
-      else{
-          ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S_b[i], &E->eos_eval );CHKERRQ(ierr);
-      }
-
-      arr_phi[i] = E->eos_eval.phase_fraction;
-      arr_rho[i] = E->eos_eval.rho;
-      arr_dTdrs[i] = arr_dPdr_b[i] * E->eos_eval.dTdPs;
-      arr_cp[i] = E->eos_eval.Cp;
-      arr_temp[i] = E->eos_eval.T;
-      arr_alpha[i] = E->eos_eval.alpha;
-      arr_cond[i] = E->eos_eval.cond;
-      arr_visc[i] = E->eos_eval.log10visc;
+      ierr = EOSEval( P->eos, arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
+      arr_phi[i] = eos_eval.phase_fraction;
+      arr_rho[i] = eos_eval.rho;
+      arr_dTdrs[i] = arr_dPdr_b[i] * eos_eval.dTdPs;
+      arr_cp[i] = eos_eval.Cp;
+      arr_temp[i] = eos_eval.T;
+      arr_alpha[i] = eos_eval.alpha;
+      arr_cond[i] = eos_eval.cond;
+      arr_visc[i] = eos_eval.log10visc;
 
       /* compute viscosity */
       /* note that prior versions of the code applied a cutoff to each individual

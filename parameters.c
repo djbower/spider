@@ -3,13 +3,14 @@ Parameter Management
 
 Parameters should only ever be set by the functions in this file. That is, everywhere else they should be considered read-only.
 
-Custom PETSc command line options should only ever be parsed here.
+Custom PETSc command line options should only ever be parsed during the populate of the Parameters struct here.
 */
 
 #include "parameters.h"
 #include "ctx.h"
 #include "ic.h"
 #include "eos.h"
+#include "eos_composite.h"
 
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
@@ -60,7 +61,7 @@ static PetscErrorCode PetscOptionsGetPositiveInt( const char *value_string, Pets
     PetscFunctionBeginUser;
 
     *value_ptr = value_default;
-    ierr = PetscOptionsGetInt(NULL,NULL,value_string,value_ptr,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetInt(NULL,NULL,value_string,value_ptr,set);CHKERRQ(ierr);
     ierr = PetscIntCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -114,31 +115,6 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode FundamentalConstantsSet( FundamentalConstants FC, ScalingConstants const SC )
-{
-    /* fundamental physical and chemical constants are all here, and should
-       always be accessed from this struct to avoid duplication */
-
-    PetscFunctionBeginUser;
-
-    FC->AVOGADRO = 6.02214076E23; /* 1/mol */
-
-    FC->GAS = 8.3144598; /* J/K/mol */
-    FC->GAS *= SC->TEMP / SC->ENERGY; /* 1/mol */
-
-    /* BOLTZMANN is 1.380649E-23 J/K */
-    /* note that BOLTZMANN is also GAS constant per particle */
-    FC->BOLTZMANN = FC->GAS / FC->AVOGADRO;
-
-    FC->GRAVITATIONAL = 6.67408E-11; /* m^3/kg/s^2 */
-    FC->GRAVITATIONAL *= SC->DENSITY * PetscPowScalar( SC->TIME, 2.0 );
-
-    FC->STEFAN_BOLTZMANN = 5.670367e-08; /* W/m^2/K^4 */
-    FC->STEFAN_BOLTZMANN /= SC->SIGMA;
-
-    PetscFunctionReturn(0);
-
-}
 
 static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
 {
@@ -574,21 +550,41 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->n_phases = 0;
   {
     char      *prefixes[SPIDER_MAX_PHASES];
-    PetscInt  n_phases = SPIDER_MAX_PHASES;
-    PetscBool set;
+    PetscInt   n_phases = SPIDER_MAX_PHASES;
+    PetscBool  set;
 
     ierr = PetscOptionsGetStringArray(NULL,NULL,"-phase_names",prefixes,&n_phases,&set);CHKERRQ(ierr);
+    /* If there is a single phase, use this "pure" EOS. If there are two phases,
+       form a composite, assuming melt,solid ordering */
     if (set) { 
-      PetscInt r;
-
       P->n_phases = n_phases;
-      for (r=0; r<P->n_phases; ++r) {
-        ierr = EosParametersCreate(&P->eos_parameters[r]);CHKERRQ(ierr);
-        ierr = PetscStrncpy(P->eos_parameters[r]->prefix,prefixes[r],sizeof(P->eos_parameters[r]->prefix));CHKERRQ(ierr);
+      if (P->n_phases > SPIDER_MAX_PHASES) SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_SUP,"%D phases specified, but the maximum is %D",P->n_phases,SPIDER_MAX_PHASES);
+      for (PetscInt r=0; r<P->n_phases; ++r) {
+        char buf[1024]; /* max size */
+        PetscInt type = 1;
+
+        ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefixes[r],"_TYPE");CHKERRQ(ierr);
+        ierr = PetscOptionsGetInt(NULL,NULL,buf,&type,NULL);CHKERRQ(ierr);
+        switch (type) {
+          case 1:
+            ierr = EOSCreate(&P->eos_phases[r], SPIDER_EOS_LOOKUP);CHKERRQ(ierr);
+            break;
+          case 2:
+            ierr = EOSCreate(&P->eos_phases[r], SPIDER_EOS_RTPRESS);CHKERRQ(ierr);
+            break;
+          default: SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unrecognized type code %D", type);
+        }
+        ierr = EOSSetUpFromOptions(P->eos_phases[r], prefixes[r], FC, SC);CHKERRQ(ierr);
         ierr = PetscFree(prefixes[r]);CHKERRQ(ierr);
-        ierr = EosParametersSetFromOptions(P->eos_parameters[r], FC, SC );CHKERRQ(ierr);
       }
-    }
+      if (P->n_phases == 1) {
+        P->eos = P->eos_phases[0];
+      } else if (P->n_phases == 2) {
+        ierr = EOSCreate(&P->eos, SPIDER_EOS_COMPOSITE);CHKERRQ(ierr);
+        ierr = EOSCompositeSetSubEOS(P->eos, P->eos_phases, P->n_phases);CHKERRQ(ierr);
+        ierr = EOSSetUpFromOptions(P->eos, "composite", FC, SC);CHKERRQ(ierr);
+      } else SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Only one or two phases are supported");
+    } else SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"You must supply the -phase_names option");
   }
 
   /* Energy terms to include */
@@ -606,36 +602,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   if( P->n_phases == 1){
       P->MIXING = PETSC_FALSE;
       P->SEPARATION = PETSC_FALSE;
-  }
-
-
-  /* TODO: this is a bit tricky.  Basically, if you define two phases, you will most likely need a mixed
-     phase region to compute the mixed phase region between them.  But, another option is to define
-     two phases (e.g., solid), and use one for an upper layer and one for a lower layer.  So defining
-     two phases in the system does not necessarily mean you need a mixed phase in between them */
-
-  /* currently this is user-specified, but it can probably be determined based on other set parameters */
-
-  /* Look for composite phases */
-  P->n_composite_phases = 0;
-  {
-    PetscBool flg;
-
-    ierr = PetscOptionsGetBool(NULL,NULL,"-eos_composite_two_phase",NULL,&flg);CHKERRQ(ierr);
-    if (flg) {
-      if (P->n_composite_phases >= SPIDER_MAX_COMPOSITE_PHASES) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many composite phases. Increase SPIDER_MAX_COMPOSITE_PHASES (currently %d) in the source",SPIDER_MAX_COMPOSITE_PHASES);
-        ierr = EosCompositeCreateTwoPhase(&P->eos_composites[P->n_composite_phases],P->eos_parameters,P->n_phases);CHKERRQ(ierr);
-        P->eos_composites[P->n_composite_phases]->n_eos = 2; /* useful for looping over constituent eos for this composite */
-        /* smoothing across phase boundary */
-        P->eos_composites[P->n_composite_phases]->matprop_smooth_width = 0.0;
-        ierr = PetscOptionsGetScalar(NULL,NULL,"-matprop_smooth_width",&P->eos_composites[P->n_composite_phases]->matprop_smooth_width,NULL);CHKERRQ(ierr);
-        /* parameters for composite viscosity */
-        P->eos_composites[P->n_composite_phases]->phi_critical = 0.4; // transition melt fraction
-        ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_critical",&P->eos_composites[P->n_composite_phases]->phi_critical,NULL);CHKERRQ(ierr);
-        P->eos_composites[P->n_composite_phases]->phi_width = 0.15; // transition width (melt fraction)
-        ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_width",&P->eos_composites[P->n_composite_phases]->phi_width,NULL);CHKERRQ(ierr);
-        ++P->n_composite_phases; // must always be at end of this block
-    }
   }
 
   ierr = AtmosphereParametersSetFromOptions( P, SC ); CHKERRQ(ierr);
@@ -943,51 +909,7 @@ PetscErrorCode PrintParameters(Parameters const P)
  */
 
 /* Note: functions to Create and Destroy eos-related structs are in eos.c */
-
-static PetscErrorCode ScalingConstantsCreate( ScalingConstants* scaling_constants_ptr )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscMalloc1(1,scaling_constants_ptr);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode ScalingConstantsDestroy( ScalingConstants* scaling_constants_ptr )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
- 
-    ierr = PetscFree(*scaling_constants_ptr);CHKERRQ(ierr);
-    *scaling_constants_ptr = NULL;
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode FundamentalConstantsCreate( FundamentalConstants* fundamental_constants_ptr )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscMalloc1(1,fundamental_constants_ptr);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode FundamentalConstantsDestroy( FundamentalConstants* fundamental_constants_ptr )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    ierr = PetscFree(*fundamental_constants_ptr);CHKERRQ(ierr);
-    *fundamental_constants_ptr = NULL;
-
-    PetscFunctionReturn(0);
-}
+/* Note: functions to Create and Destroy ScalingConstants and FundamentalConstants are in constants.c */
 
 static PetscErrorCode VolatileParametersCreate( VolatileParameters* volatile_parameters_ptr )
 {
@@ -1109,17 +1031,17 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
     }
     P->n_radionuclides = 0;
 
-    /* phases */
+    /* EOS / phases */
     for (i=0; i<P->n_phases; ++i) {
-        ierr = EosParametersDestroy(&P->eos_parameters[i]);CHKERRQ(ierr);
+        ierr = EOSDestroy(&P->eos_phases[i]);CHKERRQ(ierr);
     }
-    P->n_phases = 0;
+    /* destroy composite */
+    if( P->n_phases==2 ){
+        ierr = EOSDestroy(&P->eos);CHKERRQ(ierr);
+    }
 
-    /* composite phases */
-    for (i=0; i<P->n_composite_phases; ++i) {
-        ierr = EosCompositeDestroy(&P->eos_composites[i]);CHKERRQ(ierr);
-    }
-    P->n_composite_phases = 0;
+    P->n_phases = 0;
+    P->eos = NULL;
 
     ierr = PetscFree(*parameters_ptr);CHKERRQ(ierr);
     *parameters_ptr = NULL;

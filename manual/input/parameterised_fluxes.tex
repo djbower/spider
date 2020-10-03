@@ -157,3 +157,25 @@ This agrees with \cite[Eq.~6a,][]{V53}.  Note that in \cite{V58} she increases t
 \begin{equation}
 v_{\rm invis} = \sqrt{\frac{\alpha g l^2}{16} \left( \frac{dT}{dz} - \left( \frac{dT}{dz} \right)_s \right)}
 \end{equation}
+
+%%% added Rob Spaargaren as part of his MSc work
+\subsection{Kamata and Wagner profile}
+According to Kamata (2018) and Wagner et al.\ (2019), the classical mixing length profile is not able to reproduce realistic results, with Nusselt number and average temperature deviating by up to 60\% from 3D simulations. They came up with a way of parametrizing the mixing length profile to get more realistic results. For mantle thickness $D$, the profile can be characterized by two parameters: depth $a$ and size$b$, where the peak of the profile is at a depth of $a\cdot D$ km, and the size of the peak is $b \cdot D$ km. The profile consists of two linear lines from 0 at the top and bottom of the mantle to the peak of the profile. In the classical MLT, we have $a=b=0.5$. Kamata (2018) and Wagner et al. (2019) varied these numbers in their simulations to see which sets gives the most representative results.
+
+\subsubsection{Kamata's results}
+Kamata (2018) finds that the coefficients $a$ and $b$ depend on two parameters: relative mantle size $f = R_{CMB}/R_{top}$, which is about 0.55 for Earth (and is an input parameter for SPIDER), and viscosity contrast across the mantle $\gamma = \ln (\eta_{top}/\eta_{bottom})$.  His descriptions for the parameters are quadratic equations of $f$, $a,b = a_2,b_2 f^2 + a_1,b_1f + a_0,b_0$, where the coefficients depend on $\gamma$. (see equations 13-20 in his paper). He finds that the coefficients slightly depend on the Rayleigh number of the system, but not significantly enough to include it in the parametrization (see Figure 4 in his paper).
+
+\subsubsection{Wagner et al.'s results}
+Wagner et al.\ (2019) use a different parametrization in terms of $\alpha$ and $\beta$, which can be transformed to the original coefficients as $a = \beta/2$ and $b=\alpha/2$. They find a more complex relationship, which depends on the viscosity contrast and on the Rayleigh number of the system. They present a scaling law in their Figure 7 and Table 4,
+\begin{equation}
+\alpha = \left( a_0 - a_1 \gamma - a_2 \log(\text{Ra}) \right) \tanh \left( a_3 \log (\text{Ra}/\text{Ra}_c) \right),
+\end{equation}
+where Ra$_c$ is the critical Rayleigh number (which they present an approximation for as a function of $\gamma$). Their parametrization of $\beta$ depends on the dynamic regime. For the stagnant lid regime it is slightly simpler:
+\begin{equation}
+\beta = b_0 - b_1 \gamma - b_2 \log (\text{Ra}),
+\end{equation}
+while for the mobile and sluggish lids it's a more complex equation
+\begin{equation}
+\beta = b_0 - b_1  \tanh \left( \log(\text{Ra}) - b_2 - b_3 \gamma^{b_4} \right).
+\end{equation}
+Values for the numbers are given in their Table 4, for both Bottom-heated and Mixed heated models (as long as internal heating by radiogenic elements is switched on, we're in the mixed heating regime).

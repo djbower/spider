@@ -64,7 +64,7 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     Vec               result_s;
     PetscScalar       *arr_result_s;
     const PetscScalar *arr_dSdt_s, *arr_phi_s, *arr_mass_s, *arr_pres, *arr_S;
-    EosEval           eos_eval;
+    EOSEvalData        eos_eval;
 
     PetscFunctionBeginUser;
 
@@ -81,8 +81,17 @@ PetscErrorCode set_dMliqdt( Ctx *E )
     ierr = DMDAVecGetArray(da_s,result_s,&arr_result_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S);CHKERRQ(ierr);
 
+#if defined(PETSC_USE_DEBUG)
+    {
+      PetscBool is_composite;
+
+      ierr = EOSCheckType(P->eos,SPIDER_EOS_COMPOSITE,&is_composite);CHKERRQ(ierr);
+      if (!is_composite) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"Only defined for a composite EOS");
+    }
+#endif
+
     for(i=ilo_s; i<ihi_s; ++i){
-        ierr = SetEosCompositeEval( P->eos_composites[0], arr_pres[i], arr_S[i], &eos_eval );CHKERRQ(ierr);
+        ierr = EOSEval( P->eos, arr_pres[i], arr_S[i], &eos_eval );CHKERRQ(ierr);
         arr_result_s[i] = arr_dSdt_s[i] * arr_mass_s[i];
         arr_result_s[i] /= eos_eval.fusion;
 

@@ -1,2 +1,3 @@
-pythontestharness
+sciath
 *.pyc
+*.conf

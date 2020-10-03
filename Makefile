@@ -6,10 +6,33 @@
 EXNAME = spider
 
 # Source files, each corresponding to a .o object file and .d dependency file
-SRC_C = main.c ctx.c rhs.c ic.c mesh.c bc.c util.c twophase.c \
-        monitor.c energy.c matprop.c dimensionalisablefield.c rheologicalfront.c \
-        cJSON.c rollback.c poststep.c parameters.c atmosphere.c \
-        reaction.c eos.c \
+SRC_C = \
+        atmosphere.c \
+        bc.c \
+        cJSON.c \
+				constants.c \
+        ctx.c \
+        dimensionalisablefield.c \
+        energy.c \
+        eos.c \
+        eos_composite.c \
+        eos_lookup.c \
+        eos_output.c \
+        eos_rtpress.c \
+        ic.c \
+        interp.c \
+        main.c \
+        matprop.c \
+        mesh.c \
+        monitor.c \
+        parameters.c \
+        poststep.c \
+        reaction.c \
+        rheologicalfront.c \
+        rhs.c \
+        rollback.c \
+        twophase.c \
+        util.c \
 
 # Main Target
 all :: ${EXNAME}
@@ -54,14 +77,17 @@ ${EXNAME} : ${SRC_O}
 
 ### Tests ######################################################################
 SPIDER_TEST_DIR=${SPIDER_ROOT_DIR}/test_dir
-SPIDER_TEST_SCRIPT=python -m sciath ${SPIDER_ROOT_DIR}/tests/tests.yml
+SPIDER_TEST_SCRIPT=PYTHONPATH=${PYTHONPATH}:${SPIDER_ROOT_DIR}/tests/sciath python -m sciath ${SPIDER_ROOT_DIR}/tests/tests.yml
 SPIDER_TEST_CONF=${SPIDER_TEST_DIR}/pth.conf
+
+check_sciath:
+	PYTHONPATH=${PYTHONPATH}:${PWD}/tests/sciath ./tests/check_sciath.sh
 
 test_create_output_dir :
 	mkdir -p ${SPIDER_TEST_DIR}
 
 # Basic Tests
-test : test_create_output_dir
+test : test_create_output_dir check_sciath
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -g basic  && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "To run more tests\n"
@@ -69,11 +95,11 @@ test : test_create_output_dir
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make test_check\n"
 
-test_check : test_create_output_dir
+test_check : test_create_output_dir check_sciath
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -g basic && cd -
 
 # Atmosphere tests
-test_atmos : test_create_output_dir
+test_atmos : test_create_output_dir check_sciath
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -g atmos && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "To run more tests\n"
@@ -81,11 +107,11 @@ test_atmos : test_create_output_dir
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testatmoscheck\n"
 
-test_atmos_check : test_create_output_dir
+test_atmos_check : test_create_output_dir check_sciath
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -g atmos && cd -
 
 # Sossi solubility test
-test_sossi : test_create_output_dir
+test_sossi : test_create_output_dir check_sciath
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -g sossi && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "To run more tests\n"
@@ -93,17 +119,17 @@ test_sossi : test_create_output_dir
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make testatmoscheck\n"
 
-test_sossi_check : test_create_output_dir
+test_sossi_check : test_create_output_dir check_sciath
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -g sossi && cd -
 
 # All Tests
-test_all : test_create_output_dir
+test_all : test_create_output_dir check_sciath
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make test_all_check\n"
 
-test_all_check : test_create_output_dir
+test_all_check : test_create_output_dir check_sciath
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v && cd -
 
 .PHONY: test testatmos testall test_create_output_dir

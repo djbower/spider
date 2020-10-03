@@ -369,13 +369,13 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
 {
 
     /* This function contains the solubility laws.  For each solubility law, you must give the relationship
-       between x and p */
+       between x and p. NOTE: for every solubility law, you must also specify dx/dp (hence dx/dt) in
+       get_dpdt() */
 
     PetscInt i;
     Volatile                 *V;
     VolatileParameters       Vp;
-    PetscScalar              log10G;
-    PetscScalar              G;
+    PetscScalar              log10G, G, pbar=0, Tkel=0;
 
     PetscFunctionBeginUser;
 
@@ -400,6 +400,16 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 G = PetscPowScalar( 10.0, log10G );
                 V->x = get_x_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
                 V->x += G * get_x_from_solubility_power_law( V->p, Vp->henry2, Vp->henry_pow2 );
+                break;
+
+            case 3:
+                /* CO2 for Basalt from Dixon et al. (1995) */
+                /* need T in K and P in bar for this solubility formulation */
+                pbar = V->p * SC->PRESSURE * 1.0E-5; // bar
+                Tkel = A->tsurf * SC->TEMP; // Kelvin
+                V->x = (3.8E-7)*pbar*PetscExpScalar( -23*(pbar-1)/(83.15*Tkel) );
+                V->x = 1.0E4 * (4400 * V->x ) / (36.6 - 44 * V->x ); // ppm
+                V->x *= 1.0E-6 / SC->VOLATILE;
                 break;
 
             /* add more cases to include more solubility laws */
@@ -937,7 +947,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
     PetscInt                  j,k;
     VolatileParameters  const Vp = Ap->volatile_parameters[i];
     Volatile                  *V = &A->volatiles[i];
-    PetscScalar               log10G, G, dGdt, dlog10GdT;
+    PetscScalar               log10G, G, dGdt, dlog10GdT, pbar=0, Tkel=0;
 
     /* remember that to this point, V->f_thermal_escape is always
        computed but not necessarily used in the calculation */
@@ -1005,11 +1015,13 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
     }
 
     switch( Vp->SOLUBILITY ){
+
         case 1:
             /* Solubility power law (default) */
             V->dxdp = get_dxdp_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
             V->dxdt = V->dxdp * V->dpdt;
             break;
+
         case 2:
             /* FIXME: need modified equilibrium constant, and we can easily get this assuming
                the H2-H2O reaction is in the first slot (but in general it might not be) */
@@ -1023,6 +1035,25 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
             V->dxdp += G * get_dxdp_from_solubility_power_law( V->p, Vp->henry2, Vp->henry_pow2 );
             V->dxdt = V->dxdp * V->dpdt;
             V->dxdt += dGdt *  Vp->henry2 * PetscPowScalar( V->p, 1.0/Vp->henry_pow2);
+            break;
+
+        case 3:
+            /* CO2 for Basalt from Dixon et al. (1995) */
+            /* need T in K and P in bar for this solubility formulation */
+            pbar = V->p * SC->PRESSURE * 1.0E-5; // bar
+            Tkel = A->tsurf * SC->TEMP; // Kelvin
+            V->dxdp = (3.8E-7)*(1.0E4)*(4400)*(36.6)*PetscExpScalar( -23*(pbar-1)/(83.15*Tkel) ) * (-23*pbar + 83.15*Tkel);
+            V->dxdp /= PetscPowScalar( (3.8E-7)*(-44)*pbar*PetscExpScalar( -23*(pbar-1)/(83.15*Tkel)) + 36.6, 2);
+            V->dxdp /= 83.15 * Tkel;
+            /* units here are ppm / bar.  Convert back to non-dimensional */
+            V->dxdp *= SC->PRESSURE * 1.0E-5; /* convert to non-dimensional pressure */
+            V->dxdp *= 1.0E-6 / SC->VOLATILE; /* convert to non-dimensional abundance */
+            V->dxdt = V->dxdp * V->dpdt;
+            break;
+
+        default:
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"dx/dt (dx/dp) not defined for this solubility law");
+            break;
     }
 
     out2 += V->dxdt * ( Ap->volatile_parameters[i]->kdist * (*Ap->mantle_mass_ptr) + (1.0-Ap->volatile_parameters[i]->kdist) * A->Mliq);
@@ -1164,43 +1195,35 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
             f = -0.1650;
             break;
         case 6:
-            /* Olson and Sharp (2019), IW buffer */
-            a = -2.75E6;
-            b = -1.7;
+            /* Fischer et al. (2011), IW+0.5 at 0 GPa */
+            a = 6.94059; // was 6.44059 for IW
+            b = -28.1808;
             c = 0.0;
+            d = 0.0;
+            f = 0.0;
             break;
         case 7:
-            /* Olson and Sharp (2019), IW-1 */
-            a = -2.75E6;
-            b = -1.7;
-            c = -1.0;
-            break;
-        case 8:
-            /* Olson and Sharp (2019), IW-2 */
-            a = -2.75E6;
-            b = -1.7;
-            c = -2.0;
-            break;
-        case 9:
-            /* Olson and Sharp (2019), IW-3 */
-            a = -2.75E6;
-            b = -1.7;
-            c = -3.0;
+            /* O'Neill and Eggins, 2002 for IW + 0.5 */
+            a = 2;
+            b = -244118;
+            c = 115.559;
+            d = -8.474;
+            f = 8.31441;
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported OXYGEN_FUGACITY value %d provided",Ap->OXYGEN_FUGACITY);
             break;
         }
 
-    /* Schaefer and Fegley (2017) */
-    if( Ap->OXYGEN_FUGACITY <= 5 ){
+    /* Schaefer and Fegley (2017) or Fischer et al. (2011) */
+    if( Ap->OXYGEN_FUGACITY <= 6 ){
         func = a + b*1E3/temp + c*1E6/PetscPowScalar(temp,2.0) + d*1E9/PetscPowScalar(temp,3.0) + f*1E12/PetscPowScalar(temp,4.0);
         dfuncdT = -b*1E3/PetscPowScalar(temp,2.0) - 2*c*1E6/PetscPowScalar(temp,3.0) - 3*d*1E9/PetscPowScalar(temp,4.0) - 4*f*1E12/PetscPowScalar(temp,5.0);
     }
-    /* Olson and Sharp (2019) fits to Ebel and Grossman (2000) */
+    /* O'Neill and Eggins, 2002 for IW + 0.5 */
     else{
-        func = a * PetscPowScalar( temp, b ) + c;
-        dfuncdT = a * b * PetscPowScalar( temp, b-1 );
+        func = a * ( b + c * temp + d * temp * PetscLogReal(temp) ) / (PetscLogReal(10) * f * temp ) + 0.5;
+        dfuncdT = a * (d * temp - b) / ( f * PetscPowScalar(temp,2.0) * PetscLogReal(10) );
     }
 
     /* Remember that oxygen_fugacity is equivalent to a volume

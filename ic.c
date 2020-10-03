@@ -324,7 +324,7 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
     for(i=1; i<numpts_s-1;++i) {
         /* TODO: assumes the relevant phase boundary is in slot 0, which it will be for a single
            phase system (although still potential for a bug here) */
-        ierr = SetPhaseBoundary( E->parameters->eos_parameters[0], arr_pres_s[i], &Ssol, NULL);CHKERRQ(ierr);
+        ierr = EOSGetPhaseBoundary( E->parameters->eos_phases[0], arr_pres_s[i], &Ssol, NULL);CHKERRQ(ierr);
         if(P->ic_adiabat_entropy < Ssol){
             ierr = VecSetValues(S->S_s,1,&i,&P->ic_adiabat_entropy,INSERT_VALUES);CHKERRQ(ierr);
         }

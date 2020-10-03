@@ -1,40 +1,80 @@
 #ifndef EOS_H_
 #define EOS_H_
 
-#include "ctx.h"
-#include "parameters.h"
+#include "constants.h"
+#include "interp.h"
 
-typedef struct RTpressEval_ {
+/* A (temporary) struct that is used to hold  EOS properties at a given V,T or P, S.  */
+typedef struct EOSEvalData_ {
   PetscScalar P; /* pressure */
   PetscScalar S; /* entropy */
-  RTpressParameters rtp;
-} RTpressEval;
+  PetscScalar V; /* volume */
+  PetscScalar T; /* temperature */
+  PetscScalar Cp; /* heat capacity at constant pressure */
+  PetscScalar Cv; /* heat capacity at constant volume */
+  PetscScalar alpha; /* thermal expansion */
+  PetscScalar rho; /* density */
+  PetscScalar dTdPs; /* adiabatic temperature gradient */
+  PetscScalar cond;
+  PetscScalar log10visc;
+  PetscScalar phase_fraction; // by definition unity for single species, but can be 0<x<1 for a composite EOS (with two phases) */
+  PetscScalar fusion; // only relevant for EOSComposite (with two phases)
+} EOSEvalData;
 
-PetscErrorCode EosParametersCreate( EosParameters * );
-PetscErrorCode EosParametersDestroy( EosParameters * );
-PetscErrorCode EosParametersSetFromOptions( EosParameters, const FundamentalConstants, const ScalingConstants );
-PetscErrorCode SetPhaseBoundary( const EosParameters, PetscScalar, PetscScalar *, PetscScalar * );
+typedef const char* EOSType;
 
-PetscErrorCode SetEosEval( const EosParameters, PetscScalar, PetscScalar, EosEval * );
-PetscErrorCode SetEosCompositeEval( const EosComposite, PetscScalar, PetscScalar, EosEval * );
-PetscErrorCode SetTwoPhasePhaseFractionNoTruncation( const EosComposite eos_composite, PetscScalar, PetscScalar, PetscScalar * );
+typedef struct data_EOS_ {
+  EOSType type;  /* Implementation type */
 
-PetscErrorCode EosCompositeCreateTwoPhase( EosComposite *, const EosParameters[], PetscInt );
-PetscErrorCode EosCompositeDestroy( EosComposite * );
+  PetscScalar cond; /* thermal conductivity, W/m/K */
+  PetscScalar log10visc; /* log base 10 of viscosity */
+  PetscScalar activation_energy;
+  PetscScalar activation_volume;
+  PetscScalar activation_volume_pressure_scale;
+  PetscScalar visc_ref_temp;
+  PetscScalar visc_ref_pressure;
+  PetscScalar visc_comp;
+  PetscScalar visc_ref_comp;
 
-/* TODO: below probably moves elsewhere eventually (becomes static?) */
-//PetscErrorCode set_rtpress_struct( PetscScalar, PetscScalar, Ctx * );
+  /* phase boundary which is evaluated using this EOS */
+  PetscBool PHASE_BOUNDARY; /* is a phase boundary for this EOS defined? */
+  char phase_boundary_filename[PETSC_MAX_PATH_LEN]; // filename of phase boundary
+  /* in generality, the phase boundary should be a function pointer as well.  Currently,
+     it is always a 1D lookup, but could be any function */
+  Interp1d phase_boundary; /* pressure-entropy space, J/kg/K */
 
-#if 0
-/* TODO: need to refresh with new eos evaluation structs */
-/* for function testing */
-PetscScalar get_rtpress_pressure_test( Ctx * );
-PetscScalar get_rtpress_entropy_test( Ctx * );
-#endif
+  /* Pointer to implementation-specific data */
+  void *impl_data;
 
-PetscErrorCode JSON_add_phase_boundary( const Ctx *, const EosParameters, const char *, cJSON * );
+  /* Flag to signify that set up has been completed and the object can be used */
+  PetscBool is_setup;
 
-PetscErrorCode SetInterp1dValue( Interp1d const, PetscScalar, PetscScalar *, PetscScalar * );
-PetscErrorCode SetInterp2dValue( Interp2d const, PetscScalar, PetscScalar, PetscScalar * );
+  /* Pointers to implementation-specific functions */
+  // Note: no "create" pointer here, since we have a factory method (EOSCreate())
+  PetscErrorCode (*eval)(struct data_EOS_*, PetscScalar, PetscScalar, EOSEvalData*);
+  PetscErrorCode (*destroy)(struct data_EOS_*);
+  PetscErrorCode (*setupfromoptions)(struct data_EOS_*, const char*, const FundamentalConstants, const ScalingConstants);
+} data_EOS;
+typedef data_EOS *EOS;
+
+PetscErrorCode EOSCheckType(EOS,EOSType,PetscBool*);
+PetscErrorCode EOSCreate(EOS*, EOSType);
+PetscErrorCode EOSDestroy(EOS*);
+PetscErrorCode EOSEval(EOS, PetscScalar, PetscScalar, EOSEvalData*);
+PetscErrorCode EOSSetUpFromOptions(EOS, const char*, const FundamentalConstants, const ScalingConstants);
+PetscErrorCode EOSGetPhaseBoundary(EOS,PetscScalar, PetscScalar*, PetscScalar*);
+PetscErrorCode EOSGetType(EOS,EOSType*);
+PetscErrorCode EOSEvalSetViscosity(EOS,EOSEvalData*);
+
+/* Note that this is the only place in this header that anything
+   related to specific types is mentioned. These must correspond to all available
+   values for EOSType, giving a string and a Creation function. */
+#define SPIDER_EOS_LOOKUP "lookup"
+#define SPIDER_EOS_RTPRESS "rtpress"
+#define SPIDER_EOS_COMPOSITE "composite"
+
+PetscErrorCode EOSCreate_Lookup(EOS);
+PetscErrorCode EOSCreate_RTpress(EOS);
+PetscErrorCode EOSCreate_Composite(EOS);
 
 #endif

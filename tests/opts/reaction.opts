@@ -4,7 +4,7 @@
 -nstepsmacro 10
 
 # macro step size in years
--dtmacro 10000
+-dtmacro 1000
 
 # tolerances
 -ts_sundials_atol 1.0e-10
@@ -47,7 +47,7 @@
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -density0 1.0E-1 #4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
--volatile0 1.0E-6
+-volatile0 1.0E-7
 
 # energy fluxes and sources to include
 # [0] is off
@@ -83,11 +83,6 @@
 -solid_log10visc 21.0
 -solid_cond 4.0 # conductivity of solid
 -solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
-
-# new format for mixed phase region(s)
--eos_composite_two_phase
-# liquidus phase (melt) must be first in list, followed by solidus phase (solid) */
--eos_composite_two_phase_names melt,solid
 
 # initial condition
 # [1] is set dS/dr to constant everywhere

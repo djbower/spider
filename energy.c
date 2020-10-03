@@ -1,6 +1,7 @@
 #include "atmosphere.h"
 #include "energy.h"
 #include "eos.h"
+#include "eos_composite.h"
 #include "matprop.h"
 #include "twophase.h"
 #include "util.h"
@@ -84,6 +85,8 @@ static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
     //Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
+    (void) E; // unused for now
+    (void) tyrs; // unused for now
 
     /* do stuff here */
     //ierr = VecSet( S->Htidal_s, 0.0 ); CHKERRQ(ierr);
@@ -187,15 +190,17 @@ static PetscErrorCode append_Jmix( Ctx *E )
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
     Parameters const P = E->parameters;
-    PetscInt       i, ilo, ihi, w;
+    PetscInt       i, ilo, ihi, w, should_be_two;
     PetscScalar    *arr_Jmix;
     PetscScalar    dSliqdP, dSsoldP, smth, gphi;
     const PetscScalar *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_pres, *arr_S, *arr_dPdr;
+    EOS *sub_eos;
 
     /* Jmix requires two phases */
-    const EosComposite eos_composite = P->eos_composites[0];
-    const EosParameters Ep0 = eos_composite->eos_parameters[0];
-    const EosParameters Ep1 = eos_composite->eos_parameters[1];
+    ierr = EOSCompositeGetSubEOS(P->eos, &sub_eos, &should_be_two);CHKERRQ(ierr);
+    if (should_be_two!=2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Expecting two sub-EOSs");
+    const EOS Ep0 = sub_eos[0];
+    const EOS Ep1 = sub_eos[1];
 
     PetscFunctionBeginUser;
 
@@ -213,15 +218,20 @@ static PetscErrorCode append_Jmix( Ctx *E )
     ierr = DMDAVecGetArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){
-        ierr = SetPhaseBoundary( Ep0, arr_pres[i], NULL, &dSliqdP );CHKERRQ(ierr);
-        ierr = SetPhaseBoundary( Ep1, arr_pres[i], NULL, &dSsoldP );CHKERRQ(ierr);
+        ierr = EOSGetPhaseBoundary( Ep0, arr_pres[i], NULL, &dSliqdP );CHKERRQ(ierr);
+        ierr = EOSGetPhaseBoundary( Ep1, arr_pres[i], NULL, &dSsoldP );CHKERRQ(ierr);
         arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * dSliqdP * arr_dPdr[i];
         arr_Jmix[i] += (arr_phi[i]-1.0) * dSsoldP * arr_dPdr[i];
         arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
 
         /* (optional) smoothing across phase boundaries for two phase composite */
-        ierr = SetTwoPhasePhaseFractionNoTruncation( eos_composite, arr_pres[i], arr_S[i], &gphi );CHKERRQ(ierr);
-        smth = get_smoothing(  eos_composite->matprop_smooth_width, gphi );
+        ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, arr_pres[i], arr_S[i], &gphi);CHKERRQ(ierr);
+        {
+          PetscScalar matprop_smooth_width;
+
+          ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
+          smth = get_smoothing(matprop_smooth_width, gphi );
+        }
         arr_Jmix[i] *= smth;
 
     }
@@ -279,14 +289,16 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     Solution *S = &E->solution;
     Parameters P = E->parameters;
     PetscScalar *arr_Jgrav, F, cond1, cond2, phi, rhol, rhos, Sliq, Ssol;
-    PetscInt i,ilo_b,ihi_b,w_b,numpts_b;
+    PetscInt i,ilo_b,ihi_b,w_b,numpts_b, should_be_two;
     DM da_b = E->da_b;
     const PetscScalar *arr_phi, *arr_pres, *arr_rho, *arr_temp;
+    EOS *sub_eos;
 
     /* Jgrav requires two phases */
-    const EosComposite eos_composite = P->eos_composites[0];
-    const EosParameters Ep0 = eos_composite->eos_parameters[0];
-    const EosParameters Ep1 = eos_composite->eos_parameters[1];
+    ierr = EOSCompositeGetSubEOS(P->eos, &sub_eos, &should_be_two);CHKERRQ(ierr);
+    if (should_be_two!=2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Expecting two sub-EOSs");
+    const EOS Ep0 = sub_eos[0];
+    const EOS Ep1 = sub_eos[1];
 
     PetscFunctionBeginUser;
 
@@ -303,14 +315,15 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
 
     for(i=ilo_b; i<ihi_b; ++i){
-        ierr = SetPhaseBoundary( Ep0, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
-        /* FIXME: recovers previous behaviour, but intrinisically assumes that lookup is
-           used.  Instead, evaluate directly from chosen EOS */
-        ierr = SetInterp2dValue( Ep0->lookup->rho, arr_pres[i], Sliq, &rhol );CHKERRQ(ierr);
-        ierr = SetPhaseBoundary( Ep1, arr_pres[i], &Ssol, NULL );CHKERRQ(ierr);
-        /* FIXME: recovers previous behaviour, but intrinisically assumes that lookup is
-           used.  Instead, evaluate directly from chosen EOS */
-        ierr = SetInterp2dValue( Ep1->lookup->rho, arr_pres[i], Ssol, &rhos );CHKERRQ(ierr);
+        EOSEvalData eval_liq, eval_sol;
+
+        ierr = EOSGetPhaseBoundary( Ep0, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
+        ierr = EOSGetPhaseBoundary( Ep1, arr_pres[i], &Ssol, NULL );CHKERRQ(ierr);
+
+        ierr = EOSEval(Ep0, arr_pres[i], Sliq, &eval_liq);CHKERRQ(ierr);
+        rhol = eval_liq.rho;
+        ierr = EOSEval(Ep1, arr_pres[i], Ssol, &eval_sol);CHKERRQ(ierr);
+        rhos = eval_sol.rho;
 
         cond1 = rhol / (11.993 * rhos + rhol);
         cond2 = rhol / (0.29624 * rhos + rhol);
@@ -341,7 +354,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
         arr_Jgrav[i] *= P->gravity;
         arr_Jgrav[i] *= F;
         /* FIXME: should be evaluated from the EOS.  Here is assumed constant! */
-        arr_Jgrav[i] /= PetscPowScalar(10.0, P->eos_parameters[0]->log10visc);
+        arr_Jgrav[i] /= PetscPowScalar(10.0, P->eos_phases[0]->log10visc);
 
     }
 
