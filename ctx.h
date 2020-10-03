@@ -6,24 +6,21 @@
 #include "dimensionalisablefield.h"
 #include "rheologicalfront.h"
 #include "atmosphere.h"
+#include "eos.h"
 
 /* common structures */
 
-#define NUMMESHVECS_B 5
+#define NUMMESHVECS_B 7
 #define NUMMESHVECS_S 7
 typedef struct Mesh_ {
 
     DimensionalisableField meshFields_b[NUMMESHVECS_B];
     DimensionalisableField meshFields_s[NUMMESHVECS_S];
 
-    // TODO: eventually get rid of these (though think about how to better name the DimensionalisableFields..)
-    Vec area_b,dPdr_b,pressure_b,radius_b,mix_b,layer_b;
+    // eventually get rid of these (though think about how to better name the DimensionalisableFields..)
+    Vec area_b,dPdr_b,pressure_b,radius_b,mix_b,layer_b,xi_b,dxidr_b;
+    Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,mass_s,xi_s;
 
-    // TODO: eventually get rid of these
-    Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,rho_s,mass_s;
-
-    /* DJB atmosphere.  For seeing what the 'pressure' estimate of the
-       mass is */
     PetscScalar mantle_mass;
 
 } Mesh;
@@ -36,7 +33,7 @@ typedef struct Solution_ {
     DimensionalisableField solutionFields_s[NUMSOLUTIONVECS_S];
 
     // TODO: eventually get rid of these
-    Vec alpha, cond, cp, dSdr, dTdrs, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, Ra, regime, rho, S, temp, visc;
+    Vec alpha, cond, cp, dSdxi, dTdxis, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, Ra, regime, rho, S, temp, visc;
 
     // TODO: eventually get rid of these
     Vec cp_s, dSdt_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, phi_s, rho_s, S_s, temp_s;
@@ -49,12 +46,12 @@ typedef struct Solution_ {
 static const PetscInt SPIDER_NUM_FIELD_IDS = 4;
 typedef enum {
   SPIDER_SOLUTION_FIELD_UNDEFINED     = 0,
-  SPIDER_SOLUTION_FIELD_DSDR_B        = 1,
+  SPIDER_SOLUTION_FIELD_DSDXI_B       = 1,
   SPIDER_SOLUTION_FIELD_S0            = 2,
   SPIDER_SOLUTION_FIELD_MO_VOLATILES  = 3,
   SPIDER_SOLUTION_FIELD_MO_REACTIONS  = 4,
 } SpiderSolutionFieldID;
-static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dr","S at surface","Volatile partial pressure","Reaction total mass"}; /* Order must match the enum! */
+static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dxi","S at surface","Volatile partial pressure","Reaction total mass"}; /* Order must match the enum! */
 static const char * const SpiderSolutionFieldUnits[]        = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "Pa", "kg"}; /* Order must match the enum! */
 
 /* A Context for the Solver */
@@ -67,7 +64,6 @@ typedef struct Ctx_ {
   SpiderSolutionFieldID  *solutionFieldIDs; /* Which fields are in which slot */
   PetscInt               *solutionSlots;    /* The inverse map */
   Atmosphere             atmosphere;
-  Mat                    qty_at_b, ddr_at_b;
   Parameters             parameters;
   DimensionalisableField solDF; /* The solution and attached scalings */
   RheologicalFront       rheological_front_phi;

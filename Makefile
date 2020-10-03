@@ -15,6 +15,7 @@ SRC_C = \
         dimensionalisablefield.c \
         energy.c \
         eos.c \
+        eos_adamswilliamson.c \
         eos_composite.c \
         eos_lookup.c \
         eos_output.c \
