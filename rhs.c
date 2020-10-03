@@ -11,7 +11,7 @@
 #define __FUNCT__ "RHSFunction"
 PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 {
-  PetscErrorCode    ierr;
+  PetscErrorCode       ierr;
   Ctx                  *E = (Ctx*) ptr;
   Parameters           P = E->parameters;
   AtmosphereParameters Ap = P->atmosphere_parameters;
@@ -19,7 +19,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
   PetscScalar          *arr_dSdt_s, *arr_rhs_b;
-  const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_cp_s, *arr_Htot_s, *arr_radius_s, *arr_radius_b;
+  const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_cp_s, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
   PetscMPIInt          rank,size;
   PetscInt             i,v,ihi_b,ilo_b,w_b,numpts_b;
   DM                   da_s = E->da_s, da_b=E->da_b;
@@ -41,8 +41,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = VecSetFromOptions( rhs_b );CHKERRQ(ierr);
   ierr = VecSetUp( rhs_b );CHKERRQ(ierr);
 
-  /* DJB: this new function sets everything possible (and consistently)
-     from an initial thermal (entropy) profile */
+  /* sets everything possible (and consistently) from entropy */
   ierr = set_interior_structure_from_solution( E, t, sol_in );CHKERRQ(ierr);
 
   /* below also sets reaction masses in Atmosphere struct (required
@@ -65,8 +64,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecGetArrayRead(da_s,S->capacitance_s,&arr_capacitance_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->temp_s,&arr_temp_s); CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->cp_s,&arr_cp_s); CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
   /* first staggered node */
   arr_dSdt_s[0] = ( arr_Etot[1] - arr_Etot[0] ) / arr_capacitance_s[0];
@@ -74,23 +73,23 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   for(i=ilo_b+1; i<ihi_b; ++i){
     /* dSdt at staggered nodes */
-    /* need this quantity for coupling to atmosphere evollution */
+    /* need this quantity for coupling to atmosphere evolution */
     arr_dSdt_s[i] = ( arr_Etot[i+1] - arr_Etot[i] ) / arr_capacitance_s[i];
     arr_dSdt_s[i] += arr_Htot_s[i] / arr_temp_s[i];
-    /* d/dt(dS/dr) at internal basic nodes */
+    /* d/dt(dS/dxi) at internal basic nodes */
     arr_rhs_b[i] = arr_dSdt_s[i] - arr_dSdt_s[i-1];
-    arr_rhs_b[i] /= arr_radius_s[i] - arr_radius_s[i-1]; // note dr is negative
+    arr_rhs_b[i] /= arr_xi_s[i] - arr_xi_s[i-1]; // note dxi is negative
   }
 
   /* dTsurf/dr */
   /* A->dtsurfdt already contains contribution of dTsurf/dT */
   /* By chain rule, just need dT/dt */
   A->dtsurfdt *= arr_dSdt_s[0] * arr_temp_s[0] / arr_cp_s[0];
-  /* TODO, add effect of gradient to above 0.5*d/dt (dS/dr) */
+  /* TODO, add effect of gradient to above 0.5*d/dt (dS/dxi) */
   /* but this should be a minor effect */
 
-  ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArrayRead(da_s,M->radius_s,&arr_radius_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(da_s,S->dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
@@ -111,7 +110,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* dS/dr at basic nodes */
   ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
   ierr = DMCompositeGetAccessArray(E->dm_sol,rhs,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-  ierr = VecCopy(rhs_b,subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDR_B]]);CHKERRQ(ierr);
+  ierr = VecCopy(rhs_b,subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]]);CHKERRQ(ierr);
 
   /* S0, TODO: I think this breaks for parallel */
   ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,arr_dSdt_s[0],INSERT_VALUES);CHKERRQ(ierr);

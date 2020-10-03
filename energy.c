@@ -162,13 +162,16 @@ static PetscErrorCode append_Jconv( Ctx *E )
 {
     PetscErrorCode ierr;
     Solution       *S = &E->solution;
+    Mesh     const *M = &E->mesh;
 
     PetscFunctionBeginUser;
 
     /* convective heat flux */
     //   arr_Jconv[i] = -arr_dSdr[i] * arr_kappah[i] * arr_rho[i] * arr_temp[i];
 
-    ierr = VecPointwiseMult(S->Jconv,S->dSdr, S->kappah);CHKERRQ(ierr);
+    /* line below converts mass coordinate to physical dS/dr */
+    ierr = VecPointwiseMult(S->Jconv, S->dSdxi, M->dxidr_b );CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->Jconv,S->Jconv, S->kappah);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Jconv,S->Jconv, S->rho);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Jconv, S->Jconv, S->temp);CHKERRQ(ierr);
     ierr = VecScale(S->Jconv, -1.0);CHKERRQ(ierr);
@@ -190,7 +193,7 @@ static PetscErrorCode append_Jmix( Ctx *E )
     PetscInt       i, ilo, ihi, w, should_be_two;
     PetscScalar    *arr_Jmix;
     PetscScalar    dSliqdP, dSsoldP, smth, gphi;
-    const PetscScalar *arr_phi, *arr_dSdr, *arr_kappac, *arr_rho, *arr_temp, *arr_pres, *arr_S, *arr_dPdr;
+    const PetscScalar *arr_phi, *arr_dSdxi, *arr_kappac, *arr_rho, *arr_temp, *arr_pres, *arr_S, *arr_dPdr, *arr_dxidr;
     EOS *sub_eos;
 
     /* Jmix requires two phases */
@@ -205,19 +208,20 @@ static PetscErrorCode append_Jmix( Ctx *E )
     ihi = ilo + w;
 
     ierr = DMDAVecGetArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->S,&arr_S);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->dxidr_b,&arr_dxidr);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
     for(i=ilo; i<ihi; ++i){
         ierr = EOSGetPhaseBoundary( Ep0, arr_pres[i], NULL, &dSliqdP );CHKERRQ(ierr);
         ierr = EOSGetPhaseBoundary( Ep1, arr_pres[i], NULL, &dSsoldP );CHKERRQ(ierr);
-        arr_Jmix[i] = arr_dSdr[i] - arr_phi[i] * dSliqdP * arr_dPdr[i];
+        arr_Jmix[i] = arr_dSdxi[i] * arr_dxidr[i] - arr_phi[i] * dSliqdP * arr_dPdr[i];
         arr_Jmix[i] += (arr_phi[i]-1.0) * dSsoldP * arr_dPdr[i];
         arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
 
@@ -234,13 +238,14 @@ static PetscErrorCode append_Jmix( Ctx *E )
     }
 
     ierr = DMDAVecRestoreArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->S,&arr_S);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->dxidr_b,&arr_dxidr);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
 
     ierr = VecAXPY( S->Jtot, 1.0, S->Jmix ); CHKERRQ(ierr);
@@ -254,16 +259,24 @@ static PetscErrorCode append_Jcond( Ctx *E )
 {
     PetscErrorCode ierr;
     Solution *S = &E->solution;
+    Mesh const *M = &E->mesh;
+    Vec adiabat;
 
     PetscFunctionBeginUser;
+
+    /* create work vector */
+    ierr = VecDuplicate(M->dxidr_b,&adiabat);CHKERRQ(ierr);
+    ierr = VecCopy(M->dxidr_b,adiabat);CHKERRQ(ierr);
+    ierr = VecPointwiseMult(adiabat,adiabat,S->dTdxis);CHKERRQ(ierr);
 
     /* conductive heat flux */
     //   arr_Jcond[i] = arr_temp[i] / arr_cp[i] * arr_dSdr[i] + arr_dTdrs[i];
     //   arr_Jcond[i] *= -arr_cond[i];
 
     ierr = VecPointwiseDivide(S->Jcond, S->temp, S->cp);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jcond, S->Jcond, S->dSdr);CHKERRQ(ierr);
-    ierr = VecAYPX(S->Jcond, 1.0, S->dTdrs);CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->Jcond, S->Jcond, S->dSdxi);CHKERRQ(ierr);
+    ierr = VecPointwiseMult(S->Jcond, S->Jcond, M->dxidr_b);CHKERRQ(ierr);
+    ierr = VecAYPX(S->Jcond, 1.0, adiabat);CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->Jcond, S->Jcond, S->cond);CHKERRQ(ierr);
     ierr = VecScale(S->Jcond, -1.0);CHKERRQ(ierr);
 
@@ -272,6 +285,8 @@ static PetscErrorCode append_Jcond( Ctx *E )
        and bottom surface */
 
     ierr = VecAXPY( S->Jtot, 1.0, S->Jcond ); CHKERRQ(ierr);
+
+    ierr = VecDestroy(&adiabat);
 
     PetscFunctionReturn(0);
 
@@ -350,7 +365,6 @@ static PetscErrorCode append_Jgrav( Ctx *E )
         arr_Jgrav[i] *= PetscPowScalar(P->grain,2);
         arr_Jgrav[i] *= P->gravity;
         arr_Jgrav[i] *= F;
-        /* FIXME: should be evaluated from the EOS.  Here is assumed constant! */
         arr_Jgrav[i] /= PetscPowScalar(10.0, P->eos_phases[0]->log10visc);
 
     }
@@ -371,7 +385,7 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
 {
 
     /* set all possible quantities for a given entropy structure (i.e. top staggered 
-       value S0 and dS/dr at all basic nodes excluding the top and bottom which are 
+       value S0 and dS/dxi at all basic nodes excluding the top and bottom which are 
        controlled by boundary conditions).  This one function ensure that everything
        is set self-consistently. */
 

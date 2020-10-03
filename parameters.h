@@ -161,6 +161,7 @@ typedef struct {
     MagmaOceanCoreType CORE_BC;
     PetscScalar core_bc_value;
 
+    PetscBool MASS_COORDINATES;
     PetscBool CONDUCTION;
     PetscBool CONVECTION;
     PetscBool MIXING;
@@ -213,6 +214,9 @@ typedef struct {
     /* Radionuclides */
     PetscInt    n_radionuclides;
     RadionuclideParameters radionuclide_parameters[SPIDER_MAX_RADIONUCLIDES];
+
+    /* Equation of state for mass coordinates */
+    EOS      eos_mesh;
 
     /* Equation of state */
     EOS      eos;

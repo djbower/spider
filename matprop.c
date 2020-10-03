@@ -103,9 +103,9 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
     DM                da_b=E->da_b;
     // material properties that are updated here
-    PetscScalar       *arr_Ra, *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdrs, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
+    PetscScalar       *arr_Ra, *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdxis, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
     // material properties used to update above
-    const PetscScalar *arr_dSdr, *arr_S_b, *arr_pres, *arr_dPdr_b, *arr_radius_b;
+    const PetscScalar *arr_dSdxi, *arr_S_b, *arr_pres, *arr_dPdr_b, *arr_radius_b, *arr_dxidr_b;
     const PetscInt *arr_layer_b;
     PetscScalar       mix;
     Mesh              *M = &E->mesh;
@@ -126,18 +126,19 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     //ilo = ilo_b == 0        ? 1            : ilo_b;
     //ihi = ihi_b == numpts_b ? numpts_b - 1 : ihi_b;
 
-    ierr = DMDAVecGetArrayRead(da_b,S->dSdr,&arr_dSdr); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->S,&arr_S_b); CHKERRQ(ierr);
     /* mesh quantities */
     ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->dxidr_b,&arr_dxidr_b); CHKERRQ(ierr);
     /* material properties */
     ierr = DMDAVecGetArray(    da_b,S->alpha,&arr_alpha); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->cp,&arr_cp); CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->dTdrs,&arr_dTdrs); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(    da_b,S->dTdxis,&arr_dTdxis); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->kappac,&arr_kappac); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr);
@@ -154,7 +155,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       ierr = EOSEval( P->eos, arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
       arr_phi[i] = eos_eval.phase_fraction;
       arr_rho[i] = eos_eval.rho;
-      arr_dTdrs[i] = arr_dPdr_b[i] * eos_eval.dTdPs;
+      arr_dTdxis[i] = arr_dPdr_b[i] * eos_eval.dTdPs / arr_dxidr_b[i];
       arr_cp[i] = eos_eval.Cp;
       arr_temp[i] = eos_eval.T;
       arr_alpha[i] = eos_eval.alpha;
@@ -173,7 +174,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       arr_nu[i] = arr_visc[i] / arr_rho[i];
 
       /* gravity * super-adiabatic temperature gradient */
-      arr_gsuper[i] = P->gravity * arr_temp[i] / arr_cp[i] * arr_dSdr[i];
+      arr_gsuper[i] = P->gravity * arr_temp[i] / arr_cp[i] * arr_dSdxi[i] * arr_dxidr_b[i];
 
       /* FIXME: below */
 #if 0
@@ -229,17 +230,18 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       }
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdr,&arr_dSdr); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->S,&arr_S_b); CHKERRQ(ierr);
     /* mesh quantities */
     ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->dxidr_b,&arr_dxidr_b); CHKERRQ(ierr);
     /* material properties */
     ierr = DMDAVecRestoreArray(    da_b,S->alpha,&arr_alpha); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->cond,&arr_cond); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->cp,&arr_cp); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->dTdrs,&arr_dTdrs); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(    da_b,S->dTdxis,&arr_dTdxis); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->gsuper,&arr_gsuper); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->kappac,&arr_kappac); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr);

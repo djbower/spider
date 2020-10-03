@@ -39,6 +39,11 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
   if (flg) {
     ierr = EOSCreate_Composite(eos);CHKERRQ(ierr);
   }
+  ierr = PetscStrcmp(type, SPIDER_EOS_ADAMSWILLIAMSON, &flg);CHKERRQ(ierr);
+  if (flg) {
+    ierr = EOSCreate_AdamsWilliamson(eos);CHKERRQ(ierr);
+  }
+
   PetscFunctionReturn(0);
 }
 

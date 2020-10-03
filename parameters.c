@@ -11,61 +11,12 @@ Custom PETSc command line options should only ever be parsed during the populate
 #include "ic.h"
 #include "eos.h"
 #include "eos_composite.h"
+#include "util.h"
 
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
 static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
 static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, ScalingConstants );
-static PetscErrorCode PetscScalarCheckPositive( PetscScalar, const char * );
-static PetscErrorCode PetscIntCheckPositive( PetscInt, const char * );
-static PetscErrorCode PetscOptionsGetPositiveScalar( const char *, PetscScalar *, PetscScalar, PetscBool * );
-static PetscErrorCode PetscOptionsGetPositiveInt( const char *, PetscInt *, PetscInt, PetscBool * );
-
-/* helper functions for parsing parameters */
-
-static PetscErrorCode PetscScalarCheckPositive( PetscScalar value, const char * value_string )
-{
-    PetscFunctionBeginUser;
-    if( value < 0.0 ){
-        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %f)",value_string,value);
-    }
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode PetscIntCheckPositive( PetscInt value, const char * value_string )
-{
-    PetscFunctionBeginUser;
-    if( value < 0 ){
-        SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"%s must be positive (currently %d)",value_string,value);
-    }
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode PetscOptionsGetPositiveScalar( const char *value_string, PetscScalar *value_ptr, PetscScalar value_default, PetscBool *set )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    *value_ptr = value_default;
-    ierr = PetscOptionsGetScalar(NULL,NULL,value_string,value_ptr,set);CHKERRQ(ierr);
-    ierr = PetscScalarCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode PetscOptionsGetPositiveInt( const char *value_string, PetscInt *value_ptr, PetscInt value_default, PetscBool *set )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-
-    *value_ptr = value_default;
-    ierr = PetscOptionsGetInt(NULL,NULL,value_string,value_ptr,set);CHKERRQ(ierr);
-    ierr = PetscIntCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
 
 static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
 {
@@ -216,6 +167,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     vp->henry2 /= 1.0E6 * SC->VOLATILE * PetscPowScalar(SC->PRESSURE, -1.0/vp->henry_pow2);
     /* end of Paolo Sossi prototype */
 
+    vp->jeans_value = 0.0;
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
     ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,NULL);CHKERRQ(ierr); // TODO: check units and scaling
 
@@ -301,6 +253,11 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
       SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"numpts_b must >= 2 (currently %d)",P->numpts_b);
   }
   P->numpts_s = P->numpts_b - 1;
+
+  /* this allows backward compatibility with older versions of the code
+     that worked directly with radius coordinates, rather than mass coordinates */
+  P->MASS_COORDINATES = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-MASS_COORDINATES",&P->MASS_COORDINATES,NULL);CHKERRQ(ierr);
 
   /* RollBack and PostStep options */
   P->rollBackActive = PETSC_FALSE;
@@ -403,6 +360,11 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     P->ic_core_entropy /= SC->ENTROPY;
   }
 
+  /* eos for determining mapping between radius and mass coordinate */
+  ierr = EOSCreate(&P->eos_mesh, SPIDER_EOS_ADAMSWILLIAMSON);CHKERRQ(ierr);
+  ierr = EOSSetUpFromOptions( P->eos_mesh, "adams_williamson", FC, SC );CHKERRQ(ierr);
+
+  /* TODO: remove, moved elsewhere in EOS object */
   /* surface density (kg/m^3) for Adams-Williamson EOS for pressure */
   P->rhos = 4078.95095544;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-rhos",&P->rhos,NULL);CHKERRQ(ierr);
@@ -1030,6 +992,9 @@ PetscErrorCode ParametersDestroy( Parameters* parameters_ptr)
         ierr = RadionuclideParametersDestroy(&P->radionuclide_parameters[i]);CHKERRQ(ierr);
     }
     P->n_radionuclides = 0;
+
+    /* radius to mass coordinate eos */
+    ierr = EOSDestroy(&P->eos_mesh);
 
     /* EOS / phases */
     for (i=0; i<P->n_phases; ++i) {
