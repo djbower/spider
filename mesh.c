@@ -325,13 +325,11 @@ static PetscErrorCode SetMeshMass( const EOS eos, Ctx *E)
     Mesh              *M = &E->mesh;
     PetscScalar       *arr_m;
     const PetscScalar *arr_r;
-    PetscInt          i,ilo,ihi,w,ilo_s,ihi_s,w_s;
+    PetscInt          i,ilo,ihi,w;
 
     PetscFunctionBeginUser;
     ierr = DMDAGetCorners(E->da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
     ihi = ilo + w;
-    ierr = DMDAGetCorners(E->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
-    ihi_s = ilo_s + w_s;
 
     ierr = DMDAVecGetArray(E->da_b,M->radius_b,&arr_r);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(E->da_s,M->mass_s,&arr_m);CHKERRQ(ierr);
