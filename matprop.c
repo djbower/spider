@@ -9,7 +9,7 @@ static PetscErrorCode apply_log10visc_cutoff( Parameters const, PetscScalar * );
 static PetscScalar GetModifiedMixingLength( PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar GetConstantMixingLength( PetscScalar outer_radius, PetscScalar inner_radius );
 static PetscScalar GetMixingLength( const Parameters, PetscScalar );
-
+static PetscErrorCode GetEddyDiffusivity( const EOSEvalData, const Parameters, PetscScalar, PetscScalar, PetscScalar, PetscScalar *, PetscScalar *, PetscScalar * );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -107,7 +107,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     // material properties used to update above
     const PetscScalar *arr_dSdxi, *arr_S_b, *arr_pres, *arr_dPdr_b, *arr_radius_b, *arr_dxidr_b;
     const PetscInt *arr_layer_b;
-    PetscScalar       mix;
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
@@ -162,19 +161,17 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       arr_cond[i] = eos_eval.cond;
       arr_visc[i] = eos_eval.log10visc;
 
-      /* compute viscosity */
-      /* note that prior versions of the code applied a cutoff to each individual
-         phase, rather than to the aggregate.  But I think it makes the most sense to
-         apply the cutoff once */
+      /* apply viscosity cutoff */
       ierr = apply_log10visc_cutoff( P, &arr_visc[i] );
       arr_visc[i] = PetscPowScalar( 10.0, arr_visc[i] );
 
-      /* other useful material properties */
+      /* below are computed in GetEddyDiffusivity, but not yet stored to the arrays */
       /* kinematic viscosity */
       arr_nu[i] = arr_visc[i] / arr_rho[i];
-
       /* gravity * super-adiabatic temperature gradient */
       arr_gsuper[i] = P->gravity * arr_temp[i] / arr_cp[i] * arr_dSdxi[i] * arr_dxidr_b[i];
+
+      ierr = GetEddyDiffusivity( eos_eval, P, arr_radius_b[i], arr_dSdxi[i], arr_dxidr_b[i], &arr_kappah[i], &arr_kappac[i], &arr_regime[i] );CHKERRQ(ierr);
 
       /* FIXME: below */
 #if 0
@@ -184,50 +181,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
       arr_Ra[i] *= arr_alpha[i] * PetscPowScalar(arr_mix_b[i],4) * arr_rho[i] * arr_cp[i];
       arr_Ra[i] /= arr_nu[i] * arr_cond[i];
 #endif
-      arr_Ra[i] = 0.0; // HACK FOR RA TO AVOID UNINITIALISED VALUES
+      arr_Ra[i] = 0.0; // placeholder, to update
 
-      /* eddy diffusivity */
-      {
-        /* always compute based on force balance and then select below */
-        PetscScalar kh, crit;
-        crit = 81.0 * PetscPowScalar(arr_nu[i],2);
-        mix = GetMixingLength( P, arr_radius_b[i]);
-        crit /= 4.0 * arr_alpha[i] * PetscPowScalar(mix,4);
-
-        if( arr_gsuper[i] <= 0.0 ){
-          /* no convection, subadiabatic */
-          kh = 0.0;
-          arr_regime[i] = 0.0;
-        } else if( arr_gsuper[i] > crit ){
-          /* inviscid scaling from Vitense (1953) */
-          kh = 0.25 * PetscPowScalar(mix,2) * PetscSqrtScalar(arr_alpha[i]*arr_gsuper[i]);
-          arr_regime[i] = 2.0;
-        } else{
-          /* viscous scaling */
-          kh = arr_alpha[i] * arr_gsuper[i] * PetscPowScalar(mix,4) / (18.0*arr_nu[i]);
-          arr_regime[i] = 1.0;
-        }
-
-        /* thermal eddy diffusivity */
-        if (P->eddy_diffusivity_thermal > 0.0){
-          /* scale */
-          arr_kappah[i] = P->eddy_diffusivity_thermal * kh;
-        }
-        else{
-          /* else set (and negate to account for sign flag) */
-          arr_kappah[i] = -P->eddy_diffusivity_thermal;
-        }
-
-        /* chemical eddy diffusivity */
-        if (P->eddy_diffusivity_chemical > 0.0){
-          /* scale */
-          arr_kappac[i] = P->eddy_diffusivity_chemical * kh;
-        }
-        else{
-          /* else set (and negate to account for sign flag) */
-          arr_kappac[i] = -P->eddy_diffusivity_chemical;
-        }
-      }
     }
 
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi); CHKERRQ(ierr);
@@ -271,6 +226,64 @@ static PetscErrorCode apply_log10visc_cutoff( Parameters const P, PetscScalar *v
             *viscosity = P->log10visc_max;
         }
     }
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode GetEddyDiffusivity( const EOSEvalData eos_eval, const Parameters P, PetscScalar radius, PetscScalar dSdxi, PetscScalar dxidr, PetscScalar *kappah_ptr, PetscScalar *kappac_ptr, PetscScalar *regime_ptr )
+{
+    PetscErrorCode ierr;
+    PetscScalar    visc, kvisc, gsuper, kh, crit, mix, kappah, kappac, regime;
+
+    PetscFunctionBeginUser;
+
+    visc = eos_eval.log10visc;
+    ierr = apply_log10visc_cutoff( P, &visc );
+    visc = PetscPowScalar( 10.0, visc );
+    kvisc = visc / eos_eval.rho; // kinematic viscosity
+    gsuper = P->gravity * eos_eval.T / eos_eval.Cp * dSdxi * dxidr; // g * super adiabatic gradient
+
+    crit = 81.0 * PetscPowScalar(kvisc,2);
+    mix = GetMixingLength( P, radius);
+    crit /= 4.0 * eos_eval.alpha * PetscPowScalar(mix,4);
+
+    if( gsuper <= 0.0 ){
+      /* no convection, subadiabatic */
+      kh = 0.0;
+      regime = 0.0;
+    } else if( gsuper > crit ){
+      /* inviscid scaling from Vitense (1953) */
+      kh = 0.25 * PetscPowScalar(mix,2) * PetscSqrtScalar(eos_eval.alpha * gsuper);
+      regime = 2.0;
+    } else{
+      /* viscous scaling */
+      kh = eos_eval.alpha * gsuper * PetscPowScalar(mix,4) / ( 18.0 * kvisc );
+      regime = 1.0;
+    }   
+
+    /* thermal eddy diffusivity */
+    if (P->eddy_diffusivity_thermal > 0.0){
+      /* scale */
+      kappah = P->eddy_diffusivity_thermal * kh; 
+    }   
+    else{
+      /* else set (and negate to account for sign flag) */
+      kappah = -P->eddy_diffusivity_thermal;
+    }   
+
+    /* chemical eddy diffusivity */
+    if (P->eddy_diffusivity_chemical > 0.0){
+      /* scale */
+      kappac = P->eddy_diffusivity_chemical * kh; 
+    }   
+    else{
+      /* else set (and negate to account for sign flag) */
+      kappac = -P->eddy_diffusivity_chemical;
+    }   
+
+    *kappah_ptr = kappah;
+    *kappac_ptr = kappac;
+    *regime_ptr = regime;
 
     PetscFunctionReturn(0);
 }
