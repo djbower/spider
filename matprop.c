@@ -9,7 +9,6 @@ static PetscErrorCode apply_log10visc_cutoff( Parameters const, PetscScalar * );
 static PetscScalar GetModifiedMixingLength( PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar );
 static PetscScalar GetConstantMixingLength( PetscScalar outer_radius, PetscScalar inner_radius );
 static PetscScalar GetMixingLength( const Parameters, PetscScalar );
-static PetscErrorCode GetEddyDiffusivity( const EOSEvalData, const Parameters, PetscScalar, PetscScalar, PetscScalar, PetscScalar *, PetscScalar *, PetscScalar * );
 
 PetscErrorCode set_capacitance_staggered( Ctx *E )
 {
@@ -230,7 +229,7 @@ static PetscErrorCode apply_log10visc_cutoff( Parameters const P, PetscScalar *v
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode GetEddyDiffusivity( const EOSEvalData eos_eval, const Parameters P, PetscScalar radius, PetscScalar dSdxi, PetscScalar dxidr, PetscScalar *kappah_ptr, PetscScalar *kappac_ptr, PetscScalar *regime_ptr )
+PetscErrorCode GetEddyDiffusivity( const EOSEvalData eos_eval, const Parameters P, PetscScalar radius, PetscScalar dSdxi, PetscScalar dxidr, PetscScalar *kappah_ptr, PetscScalar *kappac_ptr, PetscScalar *regime_ptr )
 {
     PetscErrorCode ierr;
     PetscScalar    visc, kvisc, gsuper, kh, crit, mix, kappah, kappac, regime;
@@ -281,9 +280,15 @@ static PetscErrorCode GetEddyDiffusivity( const EOSEvalData eos_eval, const Para
       kappac = -P->eddy_diffusivity_chemical;
     }   
 
-    *kappah_ptr = kappah;
-    *kappac_ptr = kappac;
-    *regime_ptr = regime;
+    if(kappah_ptr != NULL){
+        *kappah_ptr = kappah;
+    }
+    if(kappac_ptr != NULL){
+        *kappac_ptr = kappac;
+    }
+    if(regime_ptr != NULL){
+        *regime_ptr = regime;
+    }
 
     PetscFunctionReturn(0);
 }

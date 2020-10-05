@@ -399,7 +399,7 @@ PetscErrorCode solve_surface_entropy( Ctx *E )
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
 
     /* Use this to address this specific SNES (nonlinear solver) from the command
-       line or options file, e.g. -atmosic_snes_view */
+       line or options file, e.g. -surfacebc_snes_view */
     ierr = SNESSetOptionsPrefix(snes,"surfacebc_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
@@ -445,7 +445,7 @@ PetscErrorCode solve_surface_entropy( Ctx *E )
     }
 
     /* double check solution */
-    //objective_function_surfacebc( NULL, x, r, &Ctx );
+    //objective_function_surfacebc( NULL, x, r, Ctx );
 
     ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
@@ -477,9 +477,8 @@ static PetscErrorCode objective_function_surfacebc( SNES snes, Vec x, Vec f, voi
     PetscErrorCode             ierr;
     const PetscScalar          *xx;
     PetscScalar                *ff; 
-    PetscScalar                Ss0, Sb0, res, dSdr0;
-    PetscScalar                *arr_radius_b;
-    const PetscScalar          *arr_dPdr_b;
+    PetscScalar                Ss0, dxidr0, Sb0, res, dSdxi0, radius0;
+    const PetscScalar          *arr_xi_b, *arr_dPdr_b;
     Ctx                        *E = (Ctx*) ptr;
     //Atmosphere                 *A = &E->atmosphere;
     Parameters           const P = E->parameters;
@@ -487,62 +486,71 @@ static PetscErrorCode objective_function_surfacebc( SNES snes, Vec x, Vec f, voi
     Mesh                 const *M = &E->mesh;
     Solution                   *S = &E->solution;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
-    DM                         da_b=E->da_b;
+    DM                         da_b = E->da_b;
     EOSEvalData                eos_eval;
     
     const PetscInt ind0 = 0;
     
     PetscFunctionBeginUser;
     
-    ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
     
     ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
-    
-    dSdr0 = xx[ind0];
-    
-    /* given a guess of dSdr0, compute S0 (surface value) by extrapolation
-       from first staggered node */
+
+    /* gradient we are solving for, dSdxi for the top basic node must adhere to
+       the energy balance of radiation out and heat from the interior in */ 
+    dSdxi0 = xx[ind0];
     
     /* get first staggered node value (store as Ss0) */
     ierr = VecGetValues(S->S_s,1,&ind0,&Ss0);CHKERRQ(ierr);
-    
+    /* surface mapping from mass coordinate to radius */
+    /* TODO: check not zero or NaN */
+    ierr = VecGetValues(M->dxidr_b,1,&ind0,&dxidr0);CHKERRQ(ierr);
+    ierr = VecGetValues(M->radius_b,1,&ind0,&radius0);CHKERRQ(ierr);
+
     /* based on surface gradient (which we are solving for), compute surface
-       entropy (uppermost basic node) */
-    Sb0 = -dSdr0 * 0.5 * (arr_radius_b[1] - arr_radius_b[0]) + Ss0;
+       entropy (uppermost basic node) using our reconstruction */
+    Sb0 = -dSdxi0 * 0.5 * (arr_xi_b[1] - arr_xi_b[0]) + Ss0;
     
-    /* now process dSdr0 and other arguments to get the residual of the surface boundary
+    /* now process dSdxi0 and other arguments to get the residual of the surface boundary
        condition */
-    
-    /* now need material properties at this entropy and surface pressure (0 GPa) */
-    
+    /* need material properties at this entropy and surface pressure (0 GPa).  Since these
+       are lookup quantities it precludes defining a Jacobian */
     ierr = EOSEval( P->eos, 0.0, Sb0, &eos_eval );CHKERRQ(ierr);
     
-    /* test only */
+    /* TODO: test only, but should be emissivity consistent with atmosphere */
     const PetscScalar emissivity = 1.0;
     
     /* radiative flux */
     res = emissivity * FC->STEFAN_BOLTZMANN * ( PetscPowScalar( eos_eval.T, 4.0 ) - PetscPowScalar( Ap->teqm, 4.0 ) );
     
     /* conductive flux */
-    /* FIXME: does arr_dPdr_b[i] have a valid value at i=0? */ 
-    res += eos_eval.cond * (eos_eval.T / eos_eval.Cp * dSdr0 + arr_dPdr_b[ind0] * eos_eval.dTdPs);
+    /* TODO: does arr_dPdr_b[i] have a valid value at i=0? */ 
+    /* Jcond is negaative, so this is positive for residual calculation */
+    res += eos_eval.cond * (eos_eval.T / eos_eval.Cp * dSdxi0 * dxidr0 + arr_dPdr_b[ind0] * eos_eval.dTdPs);
   
     /* for normalising residual? */ 
-    res /= emissivity * FC->STEFAN_BOLTZMANN * ( PetscPowScalar( eos_eval.T, 4.0 ) - PetscPowScalar( Ap->teqm, 4.0 ) ); 
+    //res /= emissivity * FC->STEFAN_BOLTZMANN * ( PetscPowScalar( eos_eval.T, 4.0 ) - PetscPowScalar( Ap->teqm, 4.0 ) ); 
     //res *= 1.0E8;
     //res = res - 1.0;
 
     /* convective flux, probably only works when mixing length constant */
     /* FIXME TODO */
+
+    PetscScalar kappah;
+    ierr = GetEddyDiffusivity( eos_eval, P, radius0, dSdxi0, dxidr0, &kappah, NULL, NULL );CHKERRQ(ierr);
+
+    res += dSdxi0 * dxidr0 * kappah * eos_eval.rho * eos_eval.T;
+
     ff[ind0] = res;
     
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
     
     ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->radius_b,&arr_radius_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
     
     PetscFunctionReturn(0);
 }
@@ -571,12 +579,8 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
     /* set solution in the relevant structs */
     ierr = set_entropy_from_solution( E, sol_in );CHKERRQ(ierr);
 
-#if 0
+#if 1
     /* TODO: testing, solve for surface entropy based on boundary condition */
-    /* when we solve for surface entropy, we are also constraining the entropy
-       at the top staggered node (which is used to reconstruct the whole entropy
-       profile.  So I don't think this can be here, since the profile is constructed
-       in the function above.  To revise */
     ierr = solve_surface_entropy( E );CHKERRQ(ierr);
 #endif
 
