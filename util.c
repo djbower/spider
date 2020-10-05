@@ -75,14 +75,20 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     arr_S_s[ihi_b-2] += S0; // add at end to try and retain precision
     arr_S_b[ihi_b-2] += S0; // add at end to try and retain precision
 
-    /* now deal with top and bottom surfaces (outermost basic nodes)
-       use gradients to give estimates of entropy at the top
-       and bottom surfaces by extrapolation.  Remember that S0 has already
-       been included by the loop above over the basic internal nodes */
-    /* FIXME: in fact, dS/dr at the surface should be constrained by the bc.  For the time
-       being, leave this here and process the near-surface gradient elsewhere */
-    arr_S_b[0] = -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
-    arr_S_b[0] += arr_S_s[0];
+    /* now deal with top and bottom surfaces (outermost basic nodes) */
+
+    /* legacy formulation for the uppermost basic node */
+    if(1){
+        /* extrapolate to surface using gradient */
+        arr_S_b[0] = -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
+        arr_S_b[0] += arr_S_s[0];
+    }
+
+    if(0){
+        /* else solve for surface using flux balance */
+    }
+
+    /* legacy formulation for the lowermost basic node */
     arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-2] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
     arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
 

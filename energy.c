@@ -419,10 +419,15 @@ PetscErrorCode solve_surface_entropy( Ctx *E )
     ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_mf",NULL);CHKERRQ(ierr);
 
     /* Turn off convergence based on step size */
-    //ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_stol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_stol","0");CHKERRQ(ierr);
 
     /* Turn off convergenced based on trust region tolerance */
-    //ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_trtol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_trtol","0");CHKERRQ(ierr);
+
+    ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_rtol","1.0e-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfacebc_snes_atol","1.0e-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfacebc_ksp_rtol","1.0e-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfacebc_ksp_atol","1.0e-9");CHKERRQ(ierr);
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
     {
