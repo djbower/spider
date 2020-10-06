@@ -85,17 +85,10 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     /* now deal with top and bottom surfaces (outermost basic nodes) */
 
     /* legacy formulation for the uppermost basic node */
-    if(1){
-        /* extrapolate to surface using gradient */
-        arr_S_b[0] = -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
-        arr_S_b[0] += arr_S_s[0];
-    }
-
-    /* below can be activated for testing here, and eventually a switch included
-       that also checks for mixing_length=2 to adequately resolve the boundary layer? */
     if(0){
-        /* else solve for surface using flux balance */
-        ierr = solve_surface_entropy( E );CHKERRQ(ierr);
+        /* extrapolate to surface using gradient */
+        arr_S_b[0] = arr_S_s[0];
+        arr_S_b[0] += -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
     }
 
     /* legacy formulation for the lowermost basic node */
@@ -107,6 +100,13 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
+
+    /* below can be activated for testing here, and eventually a switch included
+       that also checks for mixing_length=2 to adequately resolve the boundary layer? */
+    if(1){
+        /* else solve for surface using flux balance */
+        ierr = solve_surface_entropy( E );CHKERRQ(ierr);
+    }
 
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     PetscFree(subVecs);
@@ -271,7 +271,7 @@ static PetscErrorCode solve_surface_entropy( Ctx *E )
 
     /* maybe guess entropy at staggered node? */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    xx[0] = -10;
+    xx[0] = -1.E-4;
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
@@ -308,9 +308,6 @@ static PetscErrorCode solve_surface_entropy( Ctx *E )
       if (reason < 0) SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
           "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
     }
-
-    /* double check solution */
-    //objective_function_surfacebc( NULL, x, r, Ctx );
 
     ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
@@ -395,6 +392,9 @@ static PetscErrorCode objective_function_surfacebc( SNES snes, Vec x, Vec f, voi
     PetscScalar kappah;
     ierr = GetEddyDiffusivity( eos_eval, P, radius0, dSdxi0, dxidr0, &kappah, NULL, NULL );CHKERRQ(ierr);
     res += dSdxi0 * dxidr0 * kappah * eos_eval.rho * eos_eval.T;
+
+    /* scale */
+    res /= FC->STEFAN_BOLTZMANN;
 
     /* set residual of fluxes */
     ff[ind0] = res;

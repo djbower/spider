@@ -55,6 +55,8 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 
 static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
 {
+    /* these functions generally work on the Vec sol directly */
+
     PetscErrorCode ierr;
     Parameters const P = E->parameters;
     PetscInt IC = P->IC_INTERIOR;
@@ -133,7 +135,7 @@ static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
 
 static PetscErrorCode set_ic_interior_entropy( Ctx *E, Vec sol )
 {
-    /* set initial entropy gradient to constant for all nodes */
+    /* set initial entropy gradient to constant for all basic nodes */
 
     PetscErrorCode   ierr;
     PetscInt         i;
@@ -195,8 +197,7 @@ PetscErrorCode read_JSON_file_to_JSON_object( const char * filename, cJSON ** js
     }
 
     /* read file to zero terminated string */
-    /* TODO: can this be improved? */
-    // https://stackoverflow.com/questions/174531/how-to-read-the-content-of-a-file-to-a-string-in-c
+    /* https://stackoverflow.com/questions/174531/how-to-read-the-content-of-a-file-to-a-string-in-c */
     if (fp){
         fseek(fp,0,SEEK_END);
         length = ftell(fp);
@@ -304,11 +305,10 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, 
 
 static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
 {
-
-    /* entropy tracks the solidus below a cutoff value, and is
-       equal to the cutoff value above.  It is simplest to construct
-       the ic using S->S_s, and then map the values to the
-       solution Vec */
+ 
+    /* entropy tracks a phase boundary (usually the solidus) below a cutoff value, and is
+       equal to the cutoff value above.  It is simplest to construct the ic using S->S_s,
+       and then map the values to the solution Vec */
 
     /* FIXME: broken for mass coordinates */
 
@@ -327,8 +327,9 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
     ierr = DMDAVecGetArrayRead(E->da_s,E->mesh.pressure_s,&arr_pres_s);CHKERRQ(ierr);
 
     for(i=1; i<numpts_s-1;++i) {
-        /* TODO: assumes the relevant phase boundary is in slot 0, which it will be for a single
-           phase system (although still potential for a bug here) */
+        /* assumes the relevant phase boundary is in slot 0, which it will be for a single
+           phase system (although still potential for a bug here if you want to initialise a
+           two phase system from a phase boundary ic) */
         ierr = EOSGetPhaseBoundary( E->parameters->eos_phases[0], arr_pres_s[i], &Ssol, NULL);CHKERRQ(ierr);
         if(P->ic_adiabat_entropy < Ssol){
             ierr = VecSetValues(S->S_s,1,&i,&P->ic_adiabat_entropy,INSERT_VALUES);CHKERRQ(ierr);
