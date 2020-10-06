@@ -120,25 +120,21 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
         arr_dSdxi_b[1] /= arr_xi_s[1] - arr_xi_s[0];
     }
     /* legacy extrapolation for the uppermost basic node */
-    else{
-        /* extrapolate to surface using gradient */
-        arr_S_b[0] = arr_S_s[0];
-        arr_S_b[0] += -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
-    }
+    /* extrapolate to surface using gradient */
+    arr_S_b[0] = arr_S_s[0];
+    arr_S_b[0] += -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
 
     /* core-mantle boundary */
     /* isothermal core-mantle boundary */
     if( P->ic_core_entropy > 0.0 ){
-        arr_S_s[ihi_b-1] = P->ic_core_entropy;
+        arr_S_s[ihi_b-2] = P->ic_core_entropy;
         /* basic node gradient should be consistent */
         arr_dSdxi_b[ihi_b-2] = arr_S_s[ihi_b-2] - arr_S_s[ihi_b-3];
         arr_dSdxi_b[ihi_b-2] /= arr_xi_s[ihi_b-2] - arr_xi_s[ihi_b-3];
     }
-    else{
-        /* legacy extrapolation for the lowermost basic node */
-        arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-2] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
-        arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
-    }
+    /* legacy extrapolation for the lowermost basic node */
+    arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-2] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
+    arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
 
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);

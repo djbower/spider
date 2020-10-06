@@ -79,16 +79,19 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
         SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported IC_INTERIOR value %d provided",P->IC_INTERIOR);
     }
 
-    // TODO: I don't think this should be required anymore
-    ierr = set_ic_interior_conform_to_bcs( E, sol ); CHKERRQ(ierr);
-
     /* this copies the sol Vecs to E and applies boundary conditions on the copy */
     /* this function is useful, because it encapsulates a self-consistent
        calculation of the entropy profile with bcs applied */
     ierr = set_entropy_from_solution(E, sol); CHKERRQ(ierr);
 
-    // TODO: new here, to use
+    // TODO: I don't think this should be required anymore
+    ierr = set_ic_interior_conform_to_bcs( E, sol ); CHKERRQ(ierr);
+    ierr = set_solution_from_entropy_at_staggered_nodes( E, sol );CHKERRQ(ierr);
+
+    // TODO: new to slot in
     //ierr = set_solution_from_entropy(E, sol);CHKERRQ(ierr);
+
+    ierr = set_entropy_from_solution(E,sol);CHKERRQ(ierr);
 
     /* P->t0 is set in parameters.c */
     /* time is needed for the radiogenic energy input */
@@ -396,14 +399,15 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E, Vec sol )
     ind = numpts_s-1;
 
     /* conform entropy-related Vecs in solution struct to sol Vec */
-    ierr = set_entropy_from_solution( E, sol ); CHKERRQ(ierr);
+    //ierr = set_entropy_from_solution( E, sol ); CHKERRQ(ierr);
 
     /* ensure that initial condition conforms to boundary conditions */
     /* TODO: these are just for isothermal, and also first order, since
        we set the top and bottom staggered node to the surface and
        CMB entropy, respectively */
 
-#if 1
+/* THIS BLOCK IS REALLY IMPORTANT BUT WHY? */
+#if 0
     if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
         if( P->ic_surface_entropy > 0.0 ){
             ierr = VecSetValues( S->S_s,1,&ind0,&P->ic_surface_entropy,INSERT_VALUES );CHKERRQ(ierr);
@@ -417,11 +421,11 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E, Vec sol )
 #endif
 
     /* conform sol Vec to (potentially) modified S->S_s */
-    ierr = set_solution_from_entropy_at_staggered_nodes( E, sol );CHKERRQ(ierr);
+    //ierr = set_solution_from_entropy_at_staggered_nodes( E, sol );CHKERRQ(ierr);
 
     /* conform other entropy-related Vecs in sol struct, since thus
        far only S->S_s is guaranteed to be consistent with sol Vec */
-    ierr = set_entropy_from_solution( E, sol );CHKERRQ(ierr);
+    //ierr = set_entropy_from_solution( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
