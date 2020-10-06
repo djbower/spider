@@ -25,6 +25,32 @@ PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 }
 #undef SPIDER_ROOT_DIR_STR
 
+PetscErrorCode set_solution_from_entropy( Ctx *E, Vec sol )
+{
+    PetscErrorCode ierr;
+    Solution       *S = &E->solution;
+    PetscScalar    S0;
+    PetscInt       ind0 = 0;
+    Vec            *subVecs
+
+    PetscFunctionBeginUser;
+
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    /* set dS/dxi at basic nodes to solution Vec */
+    ierr = VecCopy( S->dSdxi, subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]] );CHKERRQ(ierr);
+    /* set S0 to solution Vec */
+    ierr = VecGetValues( S->S_s,1,&ind0,&S0);CHKERRQ(ierr);
+    ierr = VecSetValue( subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,S0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);CHKERRQ(ierr);
+
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 {
     /* Set entropy at the basic (S_b) and staggered (S_s) nodes
@@ -34,6 +60,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
+    Parameters     P = E->parameters;
     Solution       *S = &E->solution;
     PetscScalar    S0;
     PetscScalar    *arr_S_b, *arr_S_s, *arr_dSdxi_b, *arr_xi_s, *arr_xi_b;
@@ -82,18 +109,36 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     arr_S_s[ihi_b-2] += S0; // add at end to try and retain precision
     arr_S_b[ihi_b-2] += S0; // add at end to try and retain precision
 
-    /* now deal with top and bottom surfaces (outermost basic nodes) */
+    /* conform to boundary conditions */ 
 
-    /* legacy formulation for the uppermost basic node */
-    if(0){
+    /* surface */
+    /* isothermal surface */
+    if( P->ic_surface_entropy > 0.0 ){
+        arr_S_s[0] = P->ic_surface_entropy;
+        /* basic node gradient should be consistent */
+        arr_dSdxi_b[1] = arr_S_s[1] - arr_S_s[0];
+        arr_dSdxi_b[1] /= arr_xi_s[1] - arr_xi_s[0];
+    }
+    /* legacy extrapolation for the uppermost basic node */
+    else{
         /* extrapolate to surface using gradient */
         arr_S_b[0] = arr_S_s[0];
         arr_S_b[0] += -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
     }
 
-    /* legacy formulation for the lowermost basic node */
-    arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-2] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
-    arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
+    /* core-mantle boundary */
+    /* isothermal core-mantle boundary */
+    if( P->ic_core_entropy > 0.0 ){
+        arr_S_s[ihi_b-1] = P->ic_core_entropy;
+        /* basic node gradient should be consistent */
+        arr_dSdxi_b[ihi_b-2] = arr_S_s[ihi_b-2] - arr_S_s[ihi_b-3];
+        arr_dSdxi_b[ihi_b-2] /= arr_xi_s[ihi_b-2] - arr_xi_s[ihi_b-3];
+    }
+    else{
+        /* legacy extrapolation for the lowermost basic node */
+        arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-2] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
+        arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
+    }
 
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
@@ -103,7 +148,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     /* below can be activated for testing here, and eventually a switch included
        that also checks for mixing_length=2 to adequately resolve the boundary layer? */
-    if(1){
+    if(0){
         /* else solve for surface using flux balance */
         ierr = solve_surface_entropy( E );CHKERRQ(ierr);
     }

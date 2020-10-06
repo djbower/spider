@@ -79,7 +79,16 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
         SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported IC_INTERIOR value %d provided",P->IC_INTERIOR);
     }
 
+    // TODO: I don't think this should be required anymore
     ierr = set_ic_interior_conform_to_bcs( E, sol ); CHKERRQ(ierr);
+
+    /* this copies the sol Vecs to E and applies boundary conditions on the copy */
+    /* this function is useful, because it encapsulates a self-consistent
+       calculation of the entropy profile with bcs applied */
+    ierr = set_entropy_from_solution(E, sol); CHKERRQ(ierr);
+
+    // TODO: new here, to use
+    //ierr = set_solution_from_entropy(E, sol);CHKERRQ(ierr);
 
     /* P->t0 is set in parameters.c */
     /* time is needed for the radiogenic energy input */
@@ -307,45 +316,63 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
 {
  
     /* entropy tracks a phase boundary (usually the solidus) below a cutoff value, and is
-       equal to the cutoff value above.  It is simplest to construct the ic using S->S_s,
-       and then map the values to the solution Vec */
+       equal to the cutoff value above */
 
-    /* FIXME: broken for mass coordinates */
-
-    PetscErrorCode    ierr;
-    Parameters const  P = E->parameters;
-    PetscInt          i, numpts_s;
-    PetscScalar       Ssol;
-    const PetscScalar *arr_pres_s;
-    Solution          *S = &E->solution;
+    PetscErrorCode     ierr;
+    Parameters const   P = E->parameters;
+    Mesh const         *M = &E->mesh;
+    PetscScalar        S0,S1,S2;
+    const PetscScalar  *arr_pres_s;
+    PetscScalar        *arr_dSdxi_b, *arr_xi_s;
+    PetscInt           i, ihi_b, ilo_b, w_b;
+    DM                 da_s = E->da_s, da_b=E->da_b;
+    Vec                dSdxi_b, *subVecs;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_phase_boundary()\n");CHKERRQ(ierr);
 
-    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
+    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]];
 
-    ierr = DMDAVecGetArrayRead(E->da_s,E->mesh.pressure_s,&arr_pres_s);CHKERRQ(ierr);
+    /* for looping over basic nodes */
+    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
 
-    for(i=1; i<numpts_s-1;++i) {
+    ierr = DMDAVecGetArray(da_b,dSdxi_b,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(E->da_s,M->pressure_s,&arr_pres_s);CHKERRQ(ierr);
+
+    arr_dSdxi_b[0] = 0.0; // first point constrained by boundary conditions
+    arr_dSdxi_b[ihi_b-1] = 0.0; // last point constrained by boundary conditions
+    for(i=ilo_b+1; i<ihi_b-1; ++i){
         /* assumes the relevant phase boundary is in slot 0, which it will be for a single
            phase system (although still potential for a bug here if you want to initialise a
            two phase system from a phase boundary ic) */
-        ierr = EOSGetPhaseBoundary( E->parameters->eos_phases[0], arr_pres_s[i], &Ssol, NULL);CHKERRQ(ierr);
-        if(P->ic_adiabat_entropy < Ssol){
-            ierr = VecSetValues(S->S_s,1,&i,&P->ic_adiabat_entropy,INSERT_VALUES);CHKERRQ(ierr);
-        }
-        else{
-            ierr = VecSetValues(S->S_s,1,&i,&Ssol,INSERT_VALUES);CHKERRQ(ierr);
-        }
+        /* get staggered nodes values either side of the basic node */
+        ierr = EOSGetPhaseBoundary( E->parameters->eos_phases[0], arr_pres_s[i], &S1, NULL);CHKERRQ(ierr);
+        S1 = PetscMin( S1, P->ic_adiabat_entropy );
+        ierr = EOSGetPhaseBoundary( E->parameters->eos_phases[0], arr_pres_s[i-1], &S2, NULL);CHKERRQ(ierr);
+        S2 = PetscMin( S2, P->ic_adiabat_entropy );
+        /* now compute gradient at basic node */
+        arr_dSdxi_b[i] = S1 - S2;
+        arr_dSdxi_b[i] /= arr_xi_s[i] - arr_xi_s[i-1];
     }
 
-    ierr = DMDAVecRestoreArrayRead(E->da_s,E->mesh.pressure_s,&arr_pres_s);CHKERRQ(ierr);
+    /* set entropy at top staggered node */
+    ierr = EOSGetPhaseBoundary( E->parameters->eos_phases[0], arr_pres_s[0], &S0, NULL);CHKERRQ(ierr);
+    S0 = PetscMin( S0, P->ic_adiabat_entropy );
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,S0,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);CHKERRQ(ierr);
 
-    VecAssemblyBegin( S->S_s );
-    VecAssemblyEnd( S->S_s );
+    /* restore basic node gradient array and sol Vec */
+    ierr = DMDAVecRestoreArray(da_b,dSdxi_b,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
-    /* map S->S_s to the solution Vec (derivatives are taken) */
-    ierr = set_solution_from_entropy_at_staggered_nodes( E, sol ); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,M->pressure_s,&arr_pres_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -376,6 +403,7 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E, Vec sol )
        we set the top and bottom staggered node to the surface and
        CMB entropy, respectively */
 
+#if 1
     if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
         if( P->ic_surface_entropy > 0.0 ){
             ierr = VecSetValues( S->S_s,1,&ind0,&P->ic_surface_entropy,INSERT_VALUES );CHKERRQ(ierr);
@@ -386,6 +414,7 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E, Vec sol )
         ierr = VecAssemblyBegin(S->S_s);CHKERRQ(ierr);
         ierr = VecAssemblyEnd(S->S_s);CHKERRQ(ierr);
     }
+#endif
 
     /* conform sol Vec to (potentially) modified S->S_s */
     ierr = set_solution_from_entropy_at_staggered_nodes( E, sol );CHKERRQ(ierr);
