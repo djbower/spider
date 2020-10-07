@@ -69,7 +69,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     }
     else if (IC==2){
         ierr = set_ic_interior_from_file( E, sol ); CHKERRQ(ierr);
-        /* in parameters.c, this condition also sets the start time
+        /* in parameters.c, IC==2 also sets the start time
            P->t0 from the interior file */
     }
     else if (IC==3){
@@ -79,19 +79,22 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
         SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported IC_INTERIOR value %d provided",P->IC_INTERIOR);
     }
 
-    /* this copies the sol Vecs to E and applies boundary conditions on the copy */
-    /* this function is useful, because it encapsulates a self-consistent
-       calculation of the entropy profile with bcs applied */
+    /* this copies the sol Vecs to E and applies relevant bcs */
+    /* the reason we set sol above, rather than Vecs in struct, is
+       because the function below is called by the RHS and must take
+       sol as the input.  This now sets the Vecs in E */
     ierr = set_entropy_from_solution(E, sol); CHKERRQ(ierr);
 
-    // TODO: I don't think this should be required anymore
-    ierr = set_ic_interior_conform_to_bcs( E, sol ); CHKERRQ(ierr);
-    ierr = set_solution_from_entropy_at_staggered_nodes( E, sol );CHKERRQ(ierr);
+    /* set surface and core entropy for the IC (if set), but then can
+       evolve (not necessarily isothermal).  Updates the Vecs in E */
+    if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
+        ierr = set_ic_interior_conform_to_bcs( E, sol ); CHKERRQ(ierr);
+    }
 
-    // TODO: new to slot in
-    //ierr = set_solution_from_entropy(E, sol);CHKERRQ(ierr);
-
-    ierr = set_entropy_from_solution(E,sol);CHKERRQ(ierr);
+    /* Now the Vecs in E are set and consistent, clone them
+       to the sol Vec which is what is actually used by the
+       time-stepper */
+    ierr = set_solution_from_entropy(E, sol);CHKERRQ(ierr);
 
     /* P->t0 is set in parameters.c */
     /* time is needed for the radiogenic energy input */
@@ -386,46 +389,43 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E, Vec sol )
        conditions, and that the entropy vecs in the solution
        struct are consistent with the sol Vec (and vice-versa) */
 
-    PetscErrorCode ierr;
-    PetscInt ind,numpts_s;
-    Solution *S = &E->solution;
+    PetscErrorCode   ierr;
+    Mesh             *M = &E->mesh;
+    Solution         *S = &E->solution;
+    PetscScalar      *arr_S_s, *arr_dSdxi_b, *arr_xi_s;
+    PetscInt         ihi_b, ilo_b, w_b;
     Parameters const P = E->parameters;
-    PetscInt const ind0=0;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_conform_to_bcs()\n");CHKERRQ(ierr);
 
-    ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ind = numpts_s-1;
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
 
-    /* conform entropy-related Vecs in solution struct to sol Vec */
-    //ierr = set_entropy_from_solution( E, sol ); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(E->da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
-    /* ensure that initial condition conforms to boundary conditions */
-    /* TODO: these are just for isothermal, and also first order, since
-       we set the top and bottom staggered node to the surface and
-       CMB entropy, respectively */
-
-/* THIS BLOCK IS REALLY IMPORTANT BUT WHY? */
-#if 0
-    if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
-        if( P->ic_surface_entropy > 0.0 ){
-            ierr = VecSetValues( S->S_s,1,&ind0,&P->ic_surface_entropy,INSERT_VALUES );CHKERRQ(ierr);
-        }
-        if( P->ic_core_entropy > 0.0 ){
-            ierr = VecSetValues( S->S_s,1,&ind,&P->ic_core_entropy,INSERT_VALUES );CHKERRQ(ierr);
-        }
-        ierr = VecAssemblyBegin(S->S_s);CHKERRQ(ierr);
-        ierr = VecAssemblyEnd(S->S_s);CHKERRQ(ierr);
+    /* surface */
+    /* isothermal surface */
+    if( P->ic_surface_entropy > 0.0 ){
+        arr_S_s[0] = P->ic_surface_entropy;
+        /* basic node gradient should be consistent */
+        arr_dSdxi_b[1] = arr_S_s[1] - arr_S_s[0];
+        arr_dSdxi_b[1] /= arr_xi_s[1] - arr_xi_s[0];
     }
-#endif
 
-    /* conform sol Vec to (potentially) modified S->S_s */
-    //ierr = set_solution_from_entropy_at_staggered_nodes( E, sol );CHKERRQ(ierr);
+    /* core-mantle boundary */
+    /* isothermal core-mantle boundary */
+    if( P->ic_core_entropy > 0.0 ){
+        arr_S_s[ihi_b-2] = P->ic_core_entropy;
+        /* basic node gradient should be consistent */
+        arr_dSdxi_b[ihi_b-2] = arr_S_s[ihi_b-2] - arr_S_s[ihi_b-3];
+        arr_dSdxi_b[ihi_b-2] /= arr_xi_s[ihi_b-2] - arr_xi_s[ihi_b-3];
+    }
 
-    /* conform other entropy-related Vecs in sol struct, since thus
-       far only S->S_s is guaranteed to be consistent with sol Vec */
-    //ierr = set_entropy_from_solution( E, sol );CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(E->da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

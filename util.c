@@ -27,6 +27,9 @@ PetscErrorCode MakeRelativeToSourcePathAbsolute(char* path) {
 
 PetscErrorCode set_solution_from_entropy( Ctx *E, Vec sol )
 {
+    /* Clone data in S->dSdxi and top staggered node value (from S->S_s)
+       to Vec sol */
+
     PetscErrorCode ierr;
     Solution       *S = &E->solution;
     PetscScalar    S0;
@@ -53,14 +56,12 @@ PetscErrorCode set_solution_from_entropy( Ctx *E, Vec sol )
 
 PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 {
-    /* Set entropy at the basic (S_b) and staggered (S_s) nodes
-       as well as the entropy gradient at the basic nodes using 
-       the solution fields SPIDER_SOLUTION_FIELD_S0 and
-       SPIDER_SOLUTION_FIELD_DSDXI_B */
+    /* Set entropy-related Vecs in E to be consistent with
+       the Vec sol, and additionally compute values for
+       outer boundaries of the basic mesh */
 
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
-    Parameters     P = E->parameters;
     Solution       *S = &E->solution;
     PetscScalar    S0;
     PetscScalar    *arr_S_b, *arr_S_s, *arr_dSdxi_b, *arr_xi_s, *arr_xi_b;
@@ -88,7 +89,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
@@ -111,34 +112,18 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     /* conform to boundary conditions */ 
 
-    /* surface */
-    /* isothermal surface */
-    if( P->ic_surface_entropy > 0.0 ){
-        arr_S_s[0] = P->ic_surface_entropy;
-        /* basic node gradient should be consistent */
-        arr_dSdxi_b[1] = arr_S_s[1] - arr_S_s[0];
-        arr_dSdxi_b[1] /= arr_xi_s[1] - arr_xi_s[0];
-    }
     /* legacy extrapolation for the uppermost basic node */
     /* extrapolate to surface using gradient */
     arr_S_b[0] = arr_S_s[0];
     arr_S_b[0] += -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
 
-    /* core-mantle boundary */
-    /* isothermal core-mantle boundary */
-    if( P->ic_core_entropy > 0.0 ){
-        arr_S_s[ihi_b-2] = P->ic_core_entropy;
-        /* basic node gradient should be consistent */
-        arr_dSdxi_b[ihi_b-2] = arr_S_s[ihi_b-2] - arr_S_s[ihi_b-3];
-        arr_dSdxi_b[ihi_b-2] /= arr_xi_s[ihi_b-2] - arr_xi_s[ihi_b-3];
-    }
     /* legacy extrapolation for the lowermost basic node */
     arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-2] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
     arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
 
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
@@ -228,61 +213,6 @@ PetscErrorCode set_solution_from_partial_pressures( Ctx *E, Vec sol )
 
     PetscFunctionReturn(0);
 
-}
-
-PetscErrorCode set_solution_from_entropy_at_staggered_nodes( Ctx *E, Vec sol )
-{
-    /* Set the solution fields SPIDER_SOLUTION_FIELD_S0 and
-       SPIDER_SOLUTION_FIELD_DSDXI_B using the entropy at
-       staggered nodes (S_s) */
-
-    PetscErrorCode ierr;
-    Mesh           *M = &E->mesh;
-    Solution       *S = &E->solution;
-    PetscScalar    S0;
-    PetscScalar    *arr_dSdxi_b, *arr_S_s, *arr_xi_s;
-    PetscInt       i, ihi_b, ilo_b, w_b;
-    PetscMPIInt    size;
-    DM             da_s = E->da_s, da_b=E->da_b;
-    Vec            dSdxi_b;
-    Vec            *subVecs;
-
-    PetscFunctionBeginUser;
-    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
-    if (size > 1) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"This code has only been correctly implemented for serial runs");
-
-    ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
-    ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-    dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]];
-
-    /* for looping over basic nodes */
-    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b;
-
-    ierr = DMDAVecGetArray(da_b,dSdxi_b,&arr_dSdxi_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
-
-    arr_dSdxi_b[0] = 0.0; // first point constrained by boundary conditions
-    arr_dSdxi_b[ihi_b-1] = 0.0; // last point constrained by boundary conditions
-    for(i=ilo_b+1; i<ihi_b-1; ++i){
-        arr_dSdxi_b[i] = arr_S_s[i] - arr_S_s[i-1];
-        arr_dSdxi_b[i] /= arr_xi_s[i] - arr_xi_s[i-1];
-    }
-
-    /* set entropy at top staggered node */
-    S0 = arr_S_s[0];
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,S0,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);CHKERRQ(ierr);
-
-    ierr = DMDAVecRestoreArray(da_b,dSdxi_b,&arr_dSdxi_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
-    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-    ierr = PetscFree(subVecs);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
 }
 
 static PetscErrorCode solve_surface_entropy( Ctx *E )
