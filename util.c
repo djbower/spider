@@ -89,7 +89,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
@@ -123,7 +123,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
