@@ -605,7 +605,7 @@ PetscErrorCode GetEddyDiffusivity( const EOSEvalData eos_eval, const Parameters 
     PetscFunctionBeginUser;
 
     visc = eos_eval.log10visc;
-    ierr = apply_log10visc_cutoff( P, &visc );
+    ierr = apply_log10visc_cutoff( P, &visc );CHKERRQ(ierr);
     visc = PetscPowScalar( 10.0, visc );
     kvisc = visc / eos_eval.rho; // kinematic viscosity
     gsuper = P->gravity * eos_eval.T / eos_eval.Cp * dSdxi * dxidr; // g * super adiabatic gradient
