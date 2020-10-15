@@ -561,8 +561,8 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->SEPARATION = 1;
   ierr = PetscOptionsGetInt(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
   /* currently for use in Rudge permeability law */
-  P->separation_constant = 1.0/75; // from Rudge (2018)
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-separation_constant",&P->separation_constant,NULL);CHKERRQ(ierr);
+  P->separation_factor = 1.0; // multipler for gravitational separation
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-separation_factor",&P->separation_factor,NULL);CHKERRQ(ierr);
 
   /* separation and mixing only relevant for multiphase systems */
   if( P->n_phases == 1){

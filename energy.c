@@ -373,19 +373,19 @@ static PetscErrorCode append_Jgrav( Ctx *E )
                 break;
             case 2:
                 /* apply separation below 40% melt volume fraction */
-                if( porosity < 0.4 ){
+         //       if( porosity < 0.4 ){
                     /* large permeability from Rudge (2018) */
-                    F = GetPermeabilityRudge( P->grain, porosity, P->separation_constant );
-                    F /= porosity;
+                F = GetPermeabilityRudge( P->grain, porosity, 1.0/75 );
+                F /= porosity;
+          //      }
+          //      else{
+          //          F = 0.0;
+          //      }
+                {
+                    PetscScalar matprop_smooth_width;
+                    ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
+                    F *= 1.0 - tanh_weight( porosity, 0.3, 1.0E-2 );
                 }
-                else{
-                    F = 0.0;
-                }
-      //          {
-       //             PetscScalar matprop_smooth_width;
-        //            ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
-         //           F *= 1.0 - tanh_weight( porosity, 0.4, 1.0E-4 );
-         //       }
                 break;
             default:
                 SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SEPARATION value %d provided",P->SEPARATION);
@@ -406,6 +406,10 @@ static PetscErrorCode append_Jgrav( Ctx *E )
         /* energy flux */
         arr_Jgrav[i] *= Sliq - Ssol; // entropy of fusion
         arr_Jgrav[i] *= arr_temp[i];
+
+        /* multiplier */
+        arr_Jgrav[i] *= P->separation_factor;
+
     }
 
     ierr = DMDAVecRestoreArrayRead(da_b, S->phi, &arr_phi);CHKERRQ(ierr);
