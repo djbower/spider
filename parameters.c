@@ -558,12 +558,12 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetBool(NULL,NULL,"-HTIDAL",&P->HTIDAL,NULL);CHKERRQ(ierr);
   P->MIXING = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-MIXING",&P->MIXING,NULL);CHKERRQ(ierr);
-  P->SEPARATION = PETSC_TRUE;
-  ierr = PetscOptionsGetBool(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
+  P->SEPARATION = 1;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-SEPARATION",&P->SEPARATION,NULL);CHKERRQ(ierr);
   /* separation and mixing only relevant for multiphase systems */
   if( P->n_phases == 1){
       P->MIXING = PETSC_FALSE;
-      P->SEPARATION = PETSC_FALSE;
+      P->SEPARATION = 0;
   }
 
   ierr = AtmosphereParametersSetFromOptions( P, SC ); CHKERRQ(ierr);

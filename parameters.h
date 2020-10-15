@@ -165,7 +165,8 @@ typedef struct {
     PetscBool CONDUCTION;
     PetscBool CONVECTION;
     PetscBool MIXING;
-    PetscBool SEPARATION;
+    /* now an int to explore different separation schemes */
+    PetscInt  SEPARATION;
     PetscBool HTIDAL;
     PetscInt mixing_length;
     PetscScalar mixing_length_a;

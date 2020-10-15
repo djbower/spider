@@ -17,8 +17,10 @@ static PetscErrorCode append_Htidal( Ctx *, PetscReal );
 static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const, PetscReal );
 static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
 static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
+/* permeability laws */
 static PetscScalar GetPermeabilityBlakeKozenyCarman( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
 static PetscScalar GetPermeabilityRumpfGupte( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
+static PetscScalar GetPermeabilityRudge( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
 
 ///////////////////////////
 /* internal heat sources */
@@ -341,29 +343,42 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 
         porosity = (eval_sol.rho - arr_rho[i]) / ( eval_sol.rho - eval_liq.rho );
 
-        /* these switches depend on the functions below, and are constructed to
-           ensure F is a smooth function of porosity.  They are given in Abe in
-           terms of the volume fraction of solid, hence the 1.0 minus in the if
-           statement.  They depend on the choice of constants to the flow laws */
-        /* See Eq. 44 in Abe (1995).  But below we use permeability directly to
-           stay connected to the physics */
-        cond1 = 0.23;
-        cond2 = 0.92;
+        switch( P->SEPARATION ){
+            case 1:
+                /* Abe formulation */
+                /* these switches depend on the functions below, and are constructed to
+                   ensure F is a smooth function of porosity.  They are given in Abe in
+                   terms of the volume fraction of solid, hence the 1.0 minus in the if
+                   statement.  They depend on the choice of constants to the flow laws */
+                /* See Eq. 44 in Abe (1995).  But below we use permeability directly to
+                   stay connected to the physics */
+                cond1 = 0.23;
+                cond2 = 0.92;
 
-        /* solid_volume < cond1 (Abe) is porosity > 1-cond1 (here) */
-        if(porosity > 1.0-cond1){
-            /* Stokes settling factor with grainsize squared */
-            F = (2.0/9.0) * PetscPowScalar( P->grain, 2.0);
-        }
-        else if(porosity < 1.0-cond2){
-            /* permeability includes grainsize squared */
-            F = GetPermeabilityBlakeKozenyCarman( P->grain, porosity, 1.0E-3 );
-            F /= porosity;
-        }
-        else{
-            /* permeability includes grainsize squared */
-            F = GetPermeabilityRumpfGupte( P->grain, porosity, 5.0/7.0 );
-            F /= porosity;
+                /* solid_volume < cond1 (Abe) is porosity > 1-cond1 (here) */
+                if(porosity > 1.0-cond1){
+                    /* Stokes settling factor with grainsize squared */
+                    F = (2.0/9.0) * PetscPowScalar( P->grain, 2.0);
+                }
+                else if(porosity < 1.0-cond2){
+                    /* permeability includes grainsize squared */
+                    F = GetPermeabilityBlakeKozenyCarman( P->grain, porosity, 1.0E-3 );
+                    F /= porosity;
+                }
+                else{
+                    /* permeability includes grainsize squared */
+                    F = GetPermeabilityRumpfGupte( P->grain, porosity, 5.0/7.0 );
+                    F /= porosity;
+                }
+                break;
+            case 2:
+                /* large permeability from Rudge (2018) */
+                F = GetPermeabilityRudge( P->grain, porosity, 1.0/75 );
+                F /= porosity;
+                break;
+            default:
+                SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SEPARATION value %d provided",P->SEPARATION);
+                break;
         }
 
         /* relative velocity: velocity_melt - velocity_solid */
@@ -526,6 +541,19 @@ static PetscScalar GetPermeabilityRumpfGupte( PetscScalar grainsize, PetscScalar
     PetscScalar kp;
 
     kp = PetscPowScalar( grainsize, 2.0 ) * PetscPowScalar( porosity, 5.5 );
+    kp *= constant;
+
+    return kp;
+
+}
+
+static PetscScalar GetPermeabilityRudge( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant )
+{
+    /* Rudge (2018) Eq. 7.4, large permeability for 0.1 < porosity < 0.3 */
+
+    PetscScalar kp;
+
+    kp = PetscPowScalar( grainsize, 2.0 ) * PetscPowScalar( porosity, 3.0 );
     kp *= constant;
 
     return kp;
