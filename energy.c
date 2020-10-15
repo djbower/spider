@@ -17,6 +17,8 @@ static PetscErrorCode append_Htidal( Ctx *, PetscReal );
 static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const, PetscReal );
 static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
 static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
+static PetscScalar GetPermeabilityBlakeKozenyCarman( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
+static PetscScalar GetPermeabilityRumpfGupte( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
 
 ///////////////////////////
 /* internal heat sources */
@@ -301,7 +303,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     Mesh *M = &E->mesh;
     Solution *S = &E->solution;
     Parameters P = E->parameters;
-    PetscScalar *arr_Jgrav, F, cond1, cond2, phi, rhol, rhos, Sliq, Ssol;
+    PetscScalar *arr_Jgrav, F, cond1, cond2, Sliq, Ssol, dv;
     PetscInt i,ilo_b,ihi_b,w_b,numpts_b, should_be_two;
     DM da_b = E->da_b;
     const PetscScalar *arr_phi, *arr_pres, *arr_rho, *arr_temp;
@@ -329,45 +331,53 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 
     for(i=ilo_b; i<ihi_b; ++i){
         EOSEvalData eval_liq, eval_sol;
+        PetscScalar porosity;
 
         ierr = EOSGetPhaseBoundary( Ep0, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
         ierr = EOSGetPhaseBoundary( Ep1, arr_pres[i], &Ssol, NULL );CHKERRQ(ierr);
 
         ierr = EOSEval(Ep0, arr_pres[i], Sliq, &eval_liq);CHKERRQ(ierr);
-        rhol = eval_liq.rho;
         ierr = EOSEval(Ep1, arr_pres[i], Ssol, &eval_sol);CHKERRQ(ierr);
-        rhos = eval_sol.rho;
 
-        cond1 = rhol / (11.993 * rhos + rhol);
-        cond2 = rhol / (0.29624 * rhos + rhol);
+        porosity = (eval_sol.rho - arr_rho[i]) / ( eval_sol.rho - eval_liq.rho );
 
-        phi = arr_phi[i];
+        /* these switches depend on the functions below, and are constructed to
+           ensure F is a smooth function of porosity.  They are given in Abe in
+           terms of the volume fraction of solid, hence the 1.0 minus in the if
+           statement.  They depend on the choice of constants to the flow laws */
+        /* See Eq. 44 in Abe (1995).  But below we use permeability directly to
+           stay connected to the physics */
+        cond1 = 0.23;
+        cond2 = 0.92;
 
-        /* TODO: check that F=0 for phi=0 and phi=1 */
-        if(phi < cond1){
-            F = 0.001*PetscPowScalar(rhos,2)*PetscPowScalar(phi,3);
-            F /= PetscPowScalar(rhol,2)*(1.0-phi);
-        } else if(phi > cond2){
-            F = 2.0/9.0 * phi * (1.0-phi);
-        } else{
-            F = 5.0/7.0*PetscPowScalar(rhos,4.5)*PetscPowScalar(phi,5.5)*(1.0-phi);
-            F /= PetscPowScalar( rhol+(rhos-rhol)*phi, 4.5 );
+        /* solid_volume < cond1 (Abe) is porosity > 1-cond1 (here) */
+        if(porosity > 1.0-cond1){
+            /* Stokes settling factor with grainsize squared */
+            F = (2.0/9.0) * PetscPowScalar( P->grain, 2.0);
+        }
+        else if(porosity < 1.0-cond2){
+            /* permeability includes grainsize squared */
+            F = GetPermeabilityBlakeKozenyCarman( P->grain, porosity, 1.0E-3 );
+            F /= porosity;
+        }
+        else{
+            /* permeability includes grainsize squared */
+            F = GetPermeabilityRumpfGupte( P->grain, porosity, 5.0/7.0 );
+            F /= porosity;
         }
 
-        /* changing the order of these operations, or even consolidating the lines
-           actually changes the behaviour of the timestepper, and makes direct
-           comparison with current test data more tricky */
-        // arr_Jgrav[i] = (rhol-rhos) * rho;
-        arr_Jgrav[i] = rhol - rhos;
-        arr_Jgrav[i] *= arr_rho[i];
-        // arr_Jgrav[i] *= pref * PetscPowScalar(GRAIN,2) * GRAVITY * F;
+        /* relative velocity: velocity_melt - velocity_solid */
+        /* works for Stokes and permeability since F is different above */
+        /* e.g. Abe (1995) Eq. 39 and 40 */
+        dv = ( eval_liq.rho - eval_sol.rho ) * P->gravity * F;
+        dv /= PetscPowScalar(10.0, P->eos_phases[0]->log10visc);
+
+        /* mass flux, e.g. Abe (1995) Eq. 8 */
+        arr_Jgrav[i] = arr_rho[i] * arr_phi[i] * ( 1.0-arr_phi[i] ) * dv;
+
+        /* energy flux */
         arr_Jgrav[i] *= Sliq - Ssol; // entropy of fusion
         arr_Jgrav[i] *= arr_temp[i];
-        arr_Jgrav[i] *= PetscPowScalar(P->grain,2);
-        arr_Jgrav[i] *= P->gravity;
-        arr_Jgrav[i] *= F;
-        arr_Jgrav[i] /= PetscPowScalar(10.0, P->eos_phases[0]->log10visc);
-
     }
 
     ierr = DMDAVecRestoreArrayRead(da_b, S->phi, &arr_phi);CHKERRQ(ierr);
@@ -493,5 +503,31 @@ static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar te
     dTsdT = part1 - part2;
 
     return dTsdT;
+
+}
+
+static PetscScalar GetPermeabilityBlakeKozenyCarman( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant )
+{
+    /* Abe (1995) Eq. 42a.  Also see McKenzie (1984) */
+
+    PetscScalar kp;
+
+    kp = PetscPowScalar( grainsize, 2.0 ) * PetscPowScalar( porosity, 3.0 ) / PetscPowScalar( 1.0-porosity, 2.0 );
+    kp *= constant;
+
+    return kp;
+
+}
+
+static PetscScalar GetPermeabilityRumpfGupte( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant )
+{
+    /* Abe (1995) Eq. 42b.  Also see McKenzie (1984) */
+
+    PetscScalar kp;
+
+    kp = PetscPowScalar( grainsize, 2.0 ) * PetscPowScalar( porosity, 5.5 );
+    kp *= constant;
+
+    return kp;
 
 }
