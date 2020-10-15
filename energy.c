@@ -372,9 +372,20 @@ static PetscErrorCode append_Jgrav( Ctx *E )
                 }
                 break;
             case 2:
-                /* large permeability from Rudge (2018) */
-                F = GetPermeabilityRudge( P->grain, porosity, 1.0/75 );
-                F /= porosity;
+                /* apply separation below 40% melt volume fraction */
+                if( porosity < 0.4 ){
+                    /* large permeability from Rudge (2018) */
+                    F = GetPermeabilityRudge( P->grain, porosity, P->separation_constant );
+                    F /= porosity;
+                }
+                else{
+                    F = 0.0;
+                }
+      //          {
+       //             PetscScalar matprop_smooth_width;
+        //            ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
+         //           F *= 1.0 - tanh_weight( porosity, 0.4, 1.0E-4 );
+         //       }
                 break;
             default:
                 SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SEPARATION value %d provided",P->SEPARATION);
@@ -388,6 +399,8 @@ static PetscErrorCode append_Jgrav( Ctx *E )
         dv /= PetscPowScalar(10.0, P->eos_phases[0]->log10visc);
 
         /* mass flux, e.g. Abe (1995) Eq. 8 */
+        /* here, clear that Jgrav is zero when phi is single phase (phi=0
+           or phi=1) */
         arr_Jgrav[i] = arr_rho[i] * arr_phi[i] * ( 1.0-arr_phi[i] ) * dv;
 
         /* energy flux */
