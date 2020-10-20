@@ -188,13 +188,6 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
 
   PetscFunctionBeginUser;
 
-  /* TODO: the functions below are clean, in the sense that each updates one material property.  This might
-     be an advantage for setting up function pointers or the like.  However, a consequence of this approach
-     is that the code is not optimised for speed, since many of these functions call the same functions
-     to evaluate properties.  So an obvious speed enhancement is to perhaps scrap these individual functions
-     and just update everything together in this function (still populating the eval struct, so the end
-     result is the same). */
-
   eval->P = P;
   eval->S = S;
 
@@ -236,8 +229,12 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   eval->rho = eval->phase_fraction * (1.0/eval_melt.rho) + (1-eval->phase_fraction) * (1.0/eval_solid.rho);
   eval->rho = 1.0/(eval->rho);
 
+  /* porosity */
+  /* i.e. volume fraction occupied by the melt */
+  eval->porosity = (eval_solid.rho - eval->rho) / (eval_solid.rho - eval_melt.rho);
+
   /* Alpha */
-  /* FIXME: positive for MgSiO3 since solid rho > melt rho.  But need to adjust for compositional
+  /* positive for MgSiO3 since solid rho > melt rho.  But may need to adjust for compositional
      effects */
   eval->alpha = (eval_solid.rho - eval_melt.rho) / (eval_melt.T - eval_solid.T) / eval->rho;
 
