@@ -263,11 +263,6 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
   PetscFunctionReturn(0);
 }
 
-/* TODO: it will probably be helpful for debugging and output to store
-   the equilibrium constant and its derivative, but currently we do not
-   have an obvious place to store them since they are not parameters
-   but rather time-dependent quantities */
-
 /* Compute equilibrium constant */
 static PetscScalar get_log10_equilibrium_constant( const ReactionParameters reaction_parameters, PetscScalar temp, const ScalingConstants SC )
 {

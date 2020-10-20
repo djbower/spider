@@ -352,15 +352,15 @@ static PetscErrorCode append_Jgrav( Ctx *E )
                    statement.  They depend on the choice of constants to the flow laws */
                 /* See Eq. 44 in Abe (1995).  But below we use permeability directly to
                    stay connected to the physics */
-                cond1 = 0.23;
-                cond2 = 0.92;
+                cond1 = 0.7714620383592684;
+                cond2 = 0.0769618;
 
                 /* solid_volume < cond1 (Abe) is porosity > 1-cond1 (here) */
-                if(porosity > 1.0-cond1){
+                if(porosity > cond1){
                     /* Stokes settling factor with grainsize squared */
                     F = (2.0/9.0) * PetscPowScalar( P->grain, 2.0);
                 }
-                else if(porosity < 1.0-cond2){
+                else if(porosity < cond2){
                     /* permeability includes grainsize squared */
                     F = GetPermeabilityBlakeKozenyCarman( P->grain, porosity, 1.0E-3 );
                     F /= porosity;
@@ -372,15 +372,18 @@ static PetscErrorCode append_Jgrav( Ctx *E )
                 }
                 break;
             case 2:
+                /* numerically it seems problematic to have no separation and then
+                   try and turn it on for low melt fraction.  Hence this seems
+                   to work less well than the Abe smooth approach above */
                 /* apply separation below 40% melt volume fraction */
-         //       if( porosity < 0.4 ){
+                //if( porosity < 0.4 ){
                     /* large permeability from Rudge (2018) */
                 F = GetPermeabilityRudge( P->grain, porosity, 1.0/75 );
                 F /= porosity;
-          //      }
-          //      else{
-          //          F = 0.0;
-          //      }
+                //}
+                //else{
+                //    F = 0.0;
+                //}
                 {
                     PetscScalar matprop_smooth_width;
                     ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
@@ -406,9 +409,6 @@ static PetscErrorCode append_Jgrav( Ctx *E )
         /* energy flux */
         arr_Jgrav[i] *= Sliq - Ssol; // entropy of fusion
         arr_Jgrav[i] *= arr_temp[i];
-
-        /* multiplier */
-        arr_Jgrav[i] *= P->separation_factor;
 
     }
 

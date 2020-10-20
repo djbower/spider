@@ -167,7 +167,6 @@ typedef struct {
     PetscBool MIXING;
     /* now an int to explore different separation schemes */
     PetscInt  SEPARATION;
-    PetscScalar separation_factor;
     PetscBool HTIDAL;
     PetscInt mixing_length;
     PetscScalar mixing_length_a;
