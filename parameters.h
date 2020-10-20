@@ -235,9 +235,10 @@ PetscErrorCode PrintParameters( Parameters const );
 /* ReactionParameters Methods */
 PetscErrorCode ReactionParametersCreateAmmonia1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersCreateCarbonDioxide1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
+PetscErrorCode ReactionParametersCreateCarbonDioxideJANAF( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersCreateMethane1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersCreateWaterSchaefer( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
-PetscErrorCode ReactionParametersCreateWaterSossi( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
+PetscErrorCode ReactionParametersCreateWaterJANAF( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersDestroy( ReactionParameters *);
 
 #endif

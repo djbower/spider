@@ -117,7 +117,7 @@ PetscErrorCode ReactionParametersCreateWaterSchaefer(ReactionParameters* reactio
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode ReactionParametersCreateWaterSossi(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
+PetscErrorCode ReactionParametersCreateWaterJANAF(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -127,7 +127,7 @@ PetscErrorCode ReactionParametersCreateWaterSossi(ReactionParameters* reaction_p
   PetscFunctionBeginUser;
   ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
   reaction_parameters = *reaction_parameters_ptr;
-  reaction_parameters->type = "watersossi";
+  reaction_parameters->type = "waterJANAF";
   reaction_parameters->n_volatiles = 2;
   ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
 
@@ -138,7 +138,7 @@ PetscErrorCode ReactionParametersCreateWaterSossi(ReactionParameters* reaction_p
   /* equilibrium constant coefficients */
   reaction_parameters->Keq_coeffs[0] = 13152.477779978302; // K, computed from 251801/( (np.log(10)*R))
   reaction_parameters->Keq_coeffs[0] /= SC->TEMP; // non-dimensional
-  reaction_parameters->Keq_coeffs[1] = -3.038586383273608;
+  reaction_parameters->Keq_coeffs[1] = -3.038586383273608; // computed from -58.173/(np.log(10)*R)
   /* fO2 stoichiometry */
   reaction_parameters->fO2_stoichiometry = -0.5;
 
@@ -147,6 +147,42 @@ PetscErrorCode ReactionParametersCreateWaterSossi(ReactionParameters* reaction_p
     ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
     ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[1] = v;
+  }
+  for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode ReactionParametersCreateCarbonDioxideJANAF(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
+{
+  PetscErrorCode     ierr;
+  PetscInt           i,v;
+  PetscBool          flg;
+  ReactionParameters reaction_parameters;
+
+  PetscFunctionBeginUser;
+  ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
+  reaction_parameters = *reaction_parameters_ptr;
+  reaction_parameters->type = "carbondioxideJANAF";
+  reaction_parameters->n_volatiles = 2;
+  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
+
+  /* CO + 0.5 fO2 = CO2 */
+  /* Keq from JANAF for 1500 < T < 3000 K */
+  reaction_parameters->stoichiometry[0] = -1.0;  // CO
+  reaction_parameters->stoichiometry[1] = 1.0;  // CO2
+  /* equilibrium constant coefficients */
+  reaction_parameters->Keq_coeffs[0] = 14467.511400133637; // K, computed from 276977/(np.log(10)*R)
+  reaction_parameters->Keq_coeffs[0] /= SC->TEMP; // non-dimensional
+  reaction_parameters->Keq_coeffs[1] = -4.348135473316284; // computed from -83.244/(np.log(10)*R)
+  /* fO2 stoichiometry */
+  reaction_parameters->fO2_stoichiometry = -0.5;
+
+  for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
+  for (v=0; v<Ap->n_volatiles; ++v) {
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"CO",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[0] = v;
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"CO2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);

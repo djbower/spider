@@ -714,10 +714,19 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
         ++Ap->n_reactions;
     }
 
+    /* ideally, should not allow the user to select both water reactions at the same time */
     ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_carbondioxide1",NULL,&flg);CHKERRQ(ierr);
     if (flg) {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
         ierr = ReactionParametersCreateCarbonDioxide1(&Ap->reaction_parameters[Ap->n_reactions],Ap,SC);CHKERRQ(ierr);
+        ++Ap->n_reactions;
+    }
+
+    /* ideally, should not allow the user to select both carbon dioxide reactions at the same time */
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_carbondioxide_JANAF",NULL,&flg);CHKERRQ(ierr);
+    if (flg) {
+      if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
+        ierr = ReactionParametersCreateCarbonDioxideJANAF(&Ap->reaction_parameters[Ap->n_reactions],Ap,SC);CHKERRQ(ierr);
         ++Ap->n_reactions;
     }
 
@@ -728,6 +737,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
         ++Ap->n_reactions;
     }
 
+    /* ideally, should not allow the user to select both water reactions at the same time */
     ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_water_schaefer",NULL,&flg);CHKERRQ(ierr);
     if (flg) {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
@@ -735,10 +745,10 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
         ++Ap->n_reactions;
     }
 
-    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_water_sossi",NULL,&flg);CHKERRQ(ierr);
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_water_JANAF",NULL,&flg);CHKERRQ(ierr);
     if (flg) {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
-        ierr = ReactionParametersCreateWaterSossi(&Ap->reaction_parameters[Ap->n_reactions],Ap,SC);CHKERRQ(ierr);
+        ierr = ReactionParametersCreateWaterJANAF(&Ap->reaction_parameters[Ap->n_reactions],Ap,SC);CHKERRQ(ierr);
         ++Ap->n_reactions;
     }
 
