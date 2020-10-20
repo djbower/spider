@@ -233,14 +233,10 @@ PetscErrorCode ParametersDestroy( Parameters * );
 PetscErrorCode PrintParameters( Parameters const );
 
 /* ReactionParameters Methods */
-PetscErrorCode ReactionParametersCreateAmmonia1( ReactionParameters *, const AtmosphereParameters );
-PetscErrorCode ReactionParametersCreateCarbonDioxide1( ReactionParameters *, const AtmosphereParameters );
-PetscErrorCode ReactionParametersCreateMethane1( ReactionParameters *, const AtmosphereParameters );
-PetscErrorCode ReactionParametersCreateWater1( ReactionParameters *, const AtmosphereParameters );
-PetscErrorCode ReactionParametersCreateSimpleWater1( ReactionParameters *, const AtmosphereParameters );
-PetscErrorCode ReactionParametersCreateSimpleWater2( ReactionParameters *, const AtmosphereParameters );
-PetscErrorCode ReactionParametersCreateSimpleWater3( ReactionParameters *, const AtmosphereParameters );
-PetscErrorCode ReactionParametersCreateMiddleWater2( ReactionParameters *, const AtmosphereParameters );
+PetscErrorCode ReactionParametersCreateAmmonia1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
+PetscErrorCode ReactionParametersCreateCarbonDioxide1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
+PetscErrorCode ReactionParametersCreateMethane1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
+PetscErrorCode ReactionParametersCreateWater1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersDestroy( ReactionParameters *);
 
 #endif

@@ -9,7 +9,7 @@ static PetscScalar get_dlog10KdT( const ReactionParameters, PetscScalar, const S
 /* Note: this could logically be included in parameters.c, but that file was getting crowded */
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap )
+PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -26,7 +26,8 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_par
   reaction_parameters->stoichiometry[1] = -2.0;  // H2
   reaction_parameters->stoichiometry[2] = 1.0; // CH4
   /* equilibrium constant coefficients */
-  reaction_parameters->Keq_coeffs[0] = -16276;
+  reaction_parameters->Keq_coeffs[0] = -16276; // K
+  reaction_parameters->Keq_coeffs[0] /= SC->TEMP; // non-dimensional
   reaction_parameters->Keq_coeffs[1] = -5.4738;
   /* fO2 stoichiometry */
   reaction_parameters->fO2_stoichiometry = 1.0;
@@ -44,8 +45,7 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_par
   PetscFunctionReturn(0);
 }
 
-/* A named reaction */
-PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
+PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -62,7 +62,8 @@ PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_par
   reaction_parameters->stoichiometry[1] = -3.0;  // H2
   reaction_parameters->stoichiometry[2] = 2.0; // NH3
   /* equilibrium constant coefficients */
-  reaction_parameters->Keq_coeffs[0] = 5331.9;
+  reaction_parameters->Keq_coeffs[0] = 5331.9; // K
+  reaction_parameters->Keq_coeffs[0] /= SC->TEMP; // non-dimensional
   reaction_parameters->Keq_coeffs[1] = -11.884;
   /* fO2 stoichiometry */
   reaction_parameters->fO2_stoichiometry = 0;
@@ -80,7 +81,7 @@ PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_par
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
+PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -96,7 +97,8 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
   reaction_parameters->stoichiometry[0] = -1.0;  // H2O
   reaction_parameters->stoichiometry[1] = 1.0;  // H2
   /* equilibrium constant coefficients */
-  reaction_parameters->Keq_coeffs[0] = -12794;
+  reaction_parameters->Keq_coeffs[0] = -12794; // K
+  reaction_parameters->Keq_coeffs[0] /= SC->TEMP; // non-dimensional
   reaction_parameters->Keq_coeffs[1] = 2.7768;
   /* fO2 stoichiometry */
   reaction_parameters->fO2_stoichiometry = 0.5;
@@ -113,7 +115,7 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
 }
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap)
+PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -129,7 +131,8 @@ PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reacti
   reaction_parameters->stoichiometry[0] = -1.0;  // CO2
   reaction_parameters->stoichiometry[1] = 1.0;  // CO
   /* equilibrium constant coefficients */
-  reaction_parameters->Keq_coeffs[0] = -14787;
+  reaction_parameters->Keq_coeffs[0] = -14787; // K
+  reaction_parameters->Keq_coeffs[0] /= SC->TEMP; // non-dimensional
   reaction_parameters->Keq_coeffs[1] = 4.5472;
   /* fO2 stoichiometry */
   reaction_parameters->fO2_stoichiometry = 0.5;
@@ -159,12 +162,11 @@ PetscErrorCode ReactionParametersDestroy(ReactionParameters* reaction_parameters
 /* Compute equilibrium constant */
 static PetscScalar get_log10_equilibrium_constant( const ReactionParameters reaction_parameters, PetscScalar temp, const ScalingConstants SC )
 {
+    /* log10Keq = a/T + b */
+    /* e.g., Schaefer and Fegley (2017) */
+
     PetscScalar        log10Keq;
 
-    temp *= SC->TEMP;
-
-    /* log10Keq = a/T + b is a standard form for computing an equilibrium constant */
-    /* e.g., Schaefer and Fegley (2017) */
     log10Keq = reaction_parameters->Keq_coeffs[0] / temp + reaction_parameters->Keq_coeffs[1];
 
     return log10Keq;
@@ -176,13 +178,7 @@ PetscScalar get_dlog10KdT( const ReactionParameters reaction_parameters, PetscSc
 {
     PetscScalar        dlog10KdT;
 
-    temp *= SC->TEMP;
-
     dlog10KdT = -reaction_parameters->Keq_coeffs[0] / PetscPowScalar( temp, 2.0 );
-
-    /* TODO: check, must non-dimensionalise, since we used a scaled
-       (dimensional) temperature */
-    dlog10KdT *= SC->TEMP;
 
     return dlog10KdT;
 
