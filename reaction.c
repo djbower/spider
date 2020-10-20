@@ -81,7 +81,7 @@ PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_par
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
+PetscErrorCode ReactionParametersCreateWaterSchaefer(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -91,9 +91,12 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
   PetscFunctionBeginUser;
   ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
   reaction_parameters = *reaction_parameters_ptr;
-  reaction_parameters->type = "water1";
+  reaction_parameters->type = "waterschaefer";
   reaction_parameters->n_volatiles = 2;
   ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
+
+  /* H2O = H2 + 0.5 fO2 */
+  /* Keq from IVTANTHERMO for 298.15 < T < 2000 K */
   reaction_parameters->stoichiometry[0] = -1.0;  // H2O
   reaction_parameters->stoichiometry[1] = 1.0;  // H2
   /* equilibrium constant coefficients */
@@ -114,7 +117,42 @@ PetscErrorCode ReactionParametersCreateWater1(ReactionParameters* reaction_param
   PetscFunctionReturn(0);
 }
 
-/* A named reaction */
+PetscErrorCode ReactionParametersCreateWaterSossi(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
+{
+  PetscErrorCode     ierr;
+  PetscInt           i,v;
+  PetscBool          flg;
+  ReactionParameters reaction_parameters;
+
+  PetscFunctionBeginUser;
+  ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
+  reaction_parameters = *reaction_parameters_ptr;
+  reaction_parameters->type = "watersossi";
+  reaction_parameters->n_volatiles = 2;
+  ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
+
+  /* H2 + 0.5 fO2 = H2O */
+  /* Keq from JANAF for 1500 < T < 3000 K */
+  reaction_parameters->stoichiometry[0] = -1.0;  // H2
+  reaction_parameters->stoichiometry[1] = 1.0;  // H2O
+  /* equilibrium constant coefficients */
+  reaction_parameters->Keq_coeffs[0] = 13152.477779978302; // K, computed from 251801/( (np.log(10)*R))
+  reaction_parameters->Keq_coeffs[0] /= SC->TEMP; // non-dimensional
+  reaction_parameters->Keq_coeffs[1] = -3.038586383273608;
+  /* fO2 stoichiometry */
+  reaction_parameters->fO2_stoichiometry = -0.5;
+
+  for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
+  for (v=0; v<Ap->n_volatiles; ++v) {
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[1] = v;
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[0] = v;
+  }
+  for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
+  PetscFunctionReturn(0);
+}
+
 PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
   PetscErrorCode     ierr;
