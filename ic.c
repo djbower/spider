@@ -914,7 +914,7 @@ static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Ve
         Qp = get_reaction_quotient_products( Ap->reaction_parameters[i], A );
         Qr = get_reaction_quotient_reactants( Ap->reaction_parameters[i], A );
         /* (Modified) equilibrium constant that accommodates fO2 */
-        log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[i], A->tsurf, SC, A );
+        log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[i], A->tsurf, A );
         G = PetscPowScalar( 10.0, log10G );
 
         ff[Ap->n_volatiles + i] = Qp/Qr - G;
