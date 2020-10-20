@@ -144,10 +144,10 @@ PetscErrorCode ReactionParametersCreateWaterSossi(ReactionParameters* reaction_p
 
   for (i=0; i<reaction_parameters->n_volatiles; ++i) reaction_parameters->volatiles[i] = -1; /* error value */
   for (v=0; v<Ap->n_volatiles; ++v) {
-    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
-    if (flg) reaction_parameters->volatiles[1] = v;
     ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2",&flg);CHKERRQ(ierr);
     if (flg) reaction_parameters->volatiles[0] = v;
+    ierr = PetscStrcmp(Ap->volatile_parameters[v]->prefix,"H2O",&flg);CHKERRQ(ierr);
+    if (flg) reaction_parameters->volatiles[1] = v;
   }
   for (i=0; i<reaction_parameters->n_volatiles; ++i) if (reaction_parameters->volatiles[i] == -1) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Didn't find required volatiles for reaction %s",reaction_parameters->type);
   PetscFunctionReturn(0);

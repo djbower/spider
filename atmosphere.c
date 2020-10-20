@@ -1140,12 +1140,11 @@ PetscScalar get_residual_volatile_mass( Atmosphere *A, const AtmosphereParameter
 PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
 
-    /* These are oxygen fugacity fits for individual meteoritic materials as
-       as function of temperature from Schaefer and Fegley (2017), ApJ.
-       Also, fits to IW buffer from Olson and Sharp (2019) based on Ebel and Grossman (2000) */
+    /* Various oxygen fugacity models */
 
     PetscScalar a,b,c,d,f,func,dfuncdT;
-    /* temperature must be dimensional in K */
+
+    /* temperature must be dimensional in K.  This is simpler than scaling all the constants below */
     PetscScalar temp = A->tsurf * SC->TEMP;
 
     PetscFunctionBeginUser;
@@ -1203,7 +1202,8 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
             f = 0.0;
             break;
         case 7:
-            /* O'Neill and Eggins, 2002 for IW + 0.5 */
+            /* O'Neill and Eggins, 2002 for IW+0.5 */
+            /* note that the 0.5 is added below, not included here as a constant */
             a = 2;
             b = -244118;
             c = 115.559;
@@ -1222,6 +1222,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
     }
     /* O'Neill and Eggins, 2002 for IW + 0.5 */
     else{
+        /* 0.5 added here at end, to give IW+0.5 */
         func = a * ( b + c * temp + d * temp * PetscLogReal(temp) ) / (PetscLogReal(10) * f * temp ) + 0.5;
         dfuncdT = a * (d * temp - b) / ( f * PetscPowScalar(temp,2.0) * PetscLogReal(10) );
     }
@@ -1230,8 +1231,8 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
        mixing ratio, and therefore does not need scaling */
     A->log10fO2 = func;
 
-    /* TODO: check, must non-dimensionalise, because we used a scaled
-       (dimensional) temperature to compute the derivative */
+    /* must non-dimensionalise, because we used a scaled
+      (dimensional) temperature to compute the derivative */
     A->dlog10fO2dT = dfuncdT * SC->TEMP;
 
     PetscFunctionReturn(0);
