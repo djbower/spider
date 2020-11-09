@@ -9,8 +9,8 @@ def main():
     #casenum = '1m'
     #casenum = '9m'
     # for Mercury models
-    #casenum = 'S3'
-    casenum = 'S3A'
+    casenum = 'SV'
+    #casenum = 'LV'
     strcase = 'case' + str(casenum)
 
     # this is for short-cutting to generate data for transmission
@@ -25,12 +25,13 @@ def main():
             #time_l = [0,3850000,12050000,141000000,802000000,4550000000]
             time_l = [0,3850000,11150000,16300000,21250000]
         elif casenum == 'S3':
-            # for Mercury models
             time_l = [9437]
-        elif casenum == 'S3A':
-            time_l = [1302]
-        elif casenum == 'L3A':
-            time_l = [2609]
+        # for Mercury models
+        # 2400 K, 2000 K, 1600 K
+        elif casenum == 'SV':
+            time_l = [30,1302,3550]
+        elif casenum == 'LV':
+            time_l = [50,2609,7100]
 
     else:
         # this is for looping over all date to compute the static structure
