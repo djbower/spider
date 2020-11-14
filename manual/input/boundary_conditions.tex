@@ -114,6 +114,34 @@ Equivalently, in terms of fluxes:
 J_{cmb} = \left( \frac{1}{A_{cmb}} \right) \frac{J_1A_1 - V \rho H}{\left(1+\frac{V \rho c}{\hat{T}_{core} m_c c_c}\right)} = \left( \frac{1}{A_{cmb}} \right) (J_1A_1 - V \rho H)\left(1+\frac{V \rho c}{\hat{T}_{core} m_c c_c}\right)^{-1}
 \end{equation}
 %%%
+\subsubsection{Simple core cooling II}
+An issue with the simple core cooling model is that we are considering the element that neighbours the core.  If the heat out of this element (say, due to gravitational separation) is large (because the basic node is in the mixed phase region), this can result in unrealistic cooling of the element.  Hence it is preferred to instead consider the actual boundary of the CMB (the lowermost basic node) when constructing the boundary condition.  As before:
+\begin{equation}
+\frac{dQ_c}{dt} = m_c c_c \frac{dT_{core}}{dt} = -A_{cmb} J_{cmb} = -E_{cmb}
+\label{eq:core_energy_balanceII}
+\end{equation}
+But now express in terms of the entropy change at the CMB:
+\begin{equation}
+\frac{dQ_c}{dt} = m_c c_c \hat{T}_{core} \frac{T_{cmb}}{c_{cmb}} \frac{dS_{cmb}}{dt} = -A_{cmb} J_{cmb} = -E_{cmb}
+\end{equation}
+\begin{equation}
+S_{cmb} = S_{-1} + \frac{\Delta r}{2} \left( \left. \frac{dS}{dr} \right |_{cmb} \right)
+\end{equation}
+Since $\Delta r$ and $dS/dr$ are negative.  Therefore:
+\begin{equation}
+m_c c_c \hat{T}_{core} \frac{T_{cmb}}{c_{cmb}} \left( \frac{dS_{-1}}{dt} + \frac{\Delta r}{2} \frac{d}{dt} \left( \left. \frac{dS}{dr} \right |_{cmb} \right)  \right) = -A_{cmb} J_{cmb} = -E_{cmb}
+\end{equation}
+\begin{equation}
+\left( \frac{dS_{-1}}{dt} + \frac{\Delta r}{2} \frac{d}{dt} \left( \left. \frac{dS}{dr} \right |_{cmb} \right)  \right) = -E_{cmb} \frac{c_{cmb}}{c_c} \frac{1}{m_c \hat{T}_{core} T_{cmb}}
+\end{equation}
+\begin{equation}
+\frac{\Delta r}{2} \frac{d}{dt} \left( \left. \frac{dS}{dr} \right |_{cmb} \right) = -E_{cmb} \frac{c_{cmb}}{c_c} \frac{1}{m_c \hat{T}_{core} T_{cmb}} - \frac{dS_{-1}}{dt}
+\end{equation}
+\begin{equation}
+\frac{\Delta r}{2} \frac{d}{dt} \left( \left. \frac{dS}{dr} \right |_{cmb} \right) = -E_{cmb} \frac{c_{cmb}}{c_c} \frac{1}{m_c \hat{T}_{core} T_{cmb}} - \frac{(Eout_{-1}+Ein_{-1}+H_{-1})}{\rho T V}
+\end{equation}
+Now, $Ein_{-1}=E_{cmb}$.  Also $Eout_{-1}$ and $H_{-1}$ are both known since they lie exclusively in the magma ocean domain.  In the magma ocean, $E_{cmb}$ can be computed for known $S_{cmb}$ and $dS/dr|_{cmb}$ (given by initial condition to start with).  Crucially, this will enable us to cut off gravitational separation as soon as the CMB drops below the solidus.
+%%%
 \subsubsection{Isothermal (constant entropy)}
 To apply this boundary condition in terms of fluxes, the heat leaving the lowermost cell must balance the heat entering the cell plus any internal heat generation:
 \begin{equation}
