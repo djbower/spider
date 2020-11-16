@@ -159,7 +159,7 @@ static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qi
     return Qout;
 }
 
-PetscErrorCode set_core_mantle_flux( Ctx *E )
+PetscErrorCode set_core_mantle_flux_legacy( Ctx *E )
 {
     /* computes the necessary core flux such that the lowermost staggered node approximates
        the desired behaviour of the core mantle boundary condition */

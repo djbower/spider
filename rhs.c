@@ -50,7 +50,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   /* boundary conditions must be after all arrays are set */
   ierr = set_surface_flux( E );CHKERRQ(ierr);
-  ierr = set_core_mantle_flux( E );CHKERRQ(ierr);
+
+  /* legacy function for core mantle boundary sets Jtot and Etot
+     at the CMB to adhere to boundary condition */
+  if(1){
+    ierr = set_core_mantle_flux_legacy( E );CHKERRQ(ierr);
+  }
 
   /* now we compute the time-dependent quantities */
 

@@ -285,10 +285,6 @@ static PetscErrorCode append_Jcond( Ctx *E )
     ierr = VecPointwiseMult(S->Jcond, S->Jcond, S->cond);CHKERRQ(ierr);
     ierr = VecScale(S->Jcond, -1.0);CHKERRQ(ierr);
 
-    /* at the moment, thermophysical properties are only computed at
-       the basic internal nodes, so temp/cp = 0/0 = NaN at the top
-       and bottom surface */
-
     ierr = VecAXPY( S->Jtot, 1.0, S->Jcond ); CHKERRQ(ierr);
 
     ierr = VecDestroy(&adiabat);
