@@ -173,7 +173,6 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
     PetscFunctionBeginUser;
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ix  = numpts_b-1; // index of last basic node
-    //ix2 = ix-1; // see TODO below
 
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
@@ -188,12 +187,6 @@ PetscErrorCode set_core_mantle_flux( Ctx *E )
           // core cooling
           fac = get_core_cooling_factor( E );
           Qin = isothermal_or_cooling_cmb( E, fac );
-          // TODO (optional?): add switch
-          //ierr = VecGetValues(S->temp_s,1,&ix2,&temp_cmb);
-          //if(temp_cmb<1.0){
-          //    fac = 1.0;
-          //    Qin = isothermal_or_cooling_cmb( E, fac );
-          //}
           break;
         case 2:
           // heat flux

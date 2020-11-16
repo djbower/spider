@@ -428,9 +428,8 @@ PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec so
 {
 
     /* set all possible quantities for a given entropy structure (i.e. top staggered 
-       value S0 and dS/dxi at all basic nodes excluding the top and bottom which are 
-       controlled by boundary conditions).  This one function ensure that everything
-       is set self-consistently. */
+       value S0 and dS/dxi at all basic nodes).  This one function ensure that 
+       everything is set self-consistently. */
 
     PetscErrorCode       ierr;
     PetscMPIInt          rank;

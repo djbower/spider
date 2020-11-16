@@ -268,7 +268,7 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, 
         subdomain_num = subdomain->valueint;
         values = cJSON_GetObjectItem( data, "values" );
 
-        /* FIXME: could break if ordering of subdomains changes */
+        /* could break if ordering of subdomains changes */
         if (subdomain_num == 0){
             invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]];
         }
@@ -349,8 +349,9 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
     ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(E->da_s,M->pressure_s,&arr_pres_s);CHKERRQ(ierr);
 
-    arr_dSdxi_b[0] = 0.0; // first point constrained by boundary conditions
-    arr_dSdxi_b[ihi_b-1] = 0.0; // last point constrained by boundary conditions
+    /* first and last points not updated by loop below */
+    arr_dSdxi_b[0] = 0.0;
+    arr_dSdxi_b[ihi_b-1] = 0.0;
     for(i=ilo_b+1; i<ihi_b-1; ++i){
         /* assumes the relevant phase boundary is in slot 0, which it will be for a single
            phase system (although still potential for a bug here if you want to initialise a
@@ -364,6 +365,9 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
         arr_dSdxi_b[i] = S1 - S2;
         arr_dSdxi_b[i] /= arr_xi_s[i] - arr_xi_s[i-1];
     }
+
+    /* for last point */
+    /* TODO: update gradient for last point */
 
     /* set entropy at top staggered node */
     ierr = EOSGetPhaseBoundary( E->parameters->eos_phases[0], arr_pres_s[0], &S0, NULL);CHKERRQ(ierr);
@@ -404,6 +408,9 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E )
     ierr = DMDAVecGetArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(E->da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
+
+    /* these fix the entropy of the uppermost and/or lowermost staggered
+       nodes, which is OK but not ideal.  Move to boundary? */
 
     /* surface */
     /* isothermal surface */

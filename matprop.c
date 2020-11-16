@@ -95,13 +95,11 @@ static PetscErrorCode set_matprop_staggered( Ctx *E )
 PetscErrorCode set_matprop_basic( Ctx *E )
 {
     PetscErrorCode    ierr;
-    PetscInt          i,ilo_b,ihi_b,w_b,ilo,ihi,numpts_b;
+    PetscInt          i,ilo_b,ihi_b,w_b,numpts_b;
     DM                da_b=E->da_b;
-    // material properties that are updated here
     PetscScalar       *arr_Ra, *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdxis, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
-    // material properties used to update above
     const PetscScalar *arr_dSdxi, *arr_S_b, *arr_pres, *arr_dPdr_b, *arr_radius_b, *arr_dxidr_b;
-    const PetscInt *arr_layer_b;
+    const PetscInt    *arr_layer_b;
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
@@ -113,12 +111,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ierr = DMDAGetInfo(da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
-    /* loop over all basic nodes */
-    ilo = ilo_b;
-    ihi = ihi_b;
-    /* restrict to basic nodes by uncommenting below */
-    //ilo = ilo_b == 0        ? 1            : ilo_b;
-    //ihi = ihi_b == numpts_b ? numpts_b - 1 : ihi_b;
 
     ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,S->S,&arr_S_b); CHKERRQ(ierr);
@@ -145,7 +137,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     /* regime: not convecting (0), inviscid (1), viscous (2) */
     ierr = DMDAVecGetArray(    da_b,S->regime,&arr_regime); CHKERRQ(ierr);
 
-    for(i=ilo; i<ihi; ++i){
+    /* loop over all basic nodes */ 
+    for(i=ilo_b; i=ihi_b; ++i){
       ierr = EOSEval( P->eos, arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
       arr_phi[i] = eos_eval.phase_fraction;
       arr_rho[i] = eos_eval.rho;
