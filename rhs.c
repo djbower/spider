@@ -21,8 +21,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   PetscScalar          *arr_dSdt_s, *arr_rhs_b;
   const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_cp_s, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
   PetscMPIInt          rank,size;
-  PetscInt             i,v,ihi_b,ilo_b,w_b,numpts_b;
   DM                   da_s = E->da_s, da_b=E->da_b;
+  PetscInt             i,v,ihi_s,ilo_s,w_s,numpts_b;
   Vec                  rhs_b, *subVecs;
 
   PetscFunctionBeginUser;
@@ -32,8 +32,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   MPI_Comm_size(PETSC_COMM_WORLD,&size);
 
   /* for looping over basic nodes */
-  ierr = DMDAGetCorners(da_s,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-  ihi_b = ilo_b + w_b;
+  ierr = DMDAGetCorners(E->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
+  ihi_s = ilo_s + w_s;
 
   /* allocate memory for RHS vector */
   ierr = VecCreate( PETSC_COMM_WORLD, &rhs_b );
@@ -71,7 +71,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   arr_dSdt_s[0] = ( arr_Etot[1] - arr_Etot[0] ) / arr_capacitance_s[0];
   arr_dSdt_s[0] += arr_Htot_s[0] / arr_temp_s[0];
 
-  for(i=ilo_b+1; i<ihi_b; ++i){
+  for(i=ilo_s+1; i<ihi_s; ++i){
     /* dSdt at staggered nodes */
     /* need this quantity for coupling to atmosphere evolution */
     arr_dSdt_s[i] = ( arr_Etot[i+1] - arr_Etot[i] ) / arr_capacitance_s[i];
