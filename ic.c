@@ -168,17 +168,9 @@ static PetscErrorCode set_ic_interior_entropy( Ctx *E, Vec sol )
 
     dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]];
 
+    /* set entropy gradient and map to mass coordinates */
     ierr = VecSet(dSdxi_b, P->ic_dsdr );CHKERRQ(ierr);
-    /* map to mass coordinates */
     ierr = VecPointwiseDivide(dSdxi_b,dSdxi_b,M->dxidr_b);
-
-    /* these next two lines are simply convenient reminders that the
-       first and last values are meaningless because the fluxes here
-       are controlled by boundary conditions.  But for debugging and
-       clarity it is convenient to explicitly set these values to
-       zero */
-    ierr = VecSetValue( dSdxi_b, 0,             0.0, INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue( dSdxi_b, P->numpts_b-1, 0.0, INSERT_VALUES);CHKERRQ(ierr);
 
     /* set entropy at top of adiabat */
     S0 = P->ic_adiabat_entropy;
