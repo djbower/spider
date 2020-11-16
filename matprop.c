@@ -138,7 +138,7 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArray(    da_b,S->regime,&arr_regime); CHKERRQ(ierr);
 
     /* loop over all basic nodes */ 
-    for(i=ilo_b; i=ihi_b; ++i){
+    for(i=ilo_b; i<ihi_b; ++i){
       ierr = EOSEval( P->eos, arr_pres[i], arr_S_b[i], &eos_eval );CHKERRQ(ierr);
       arr_phi[i] = eos_eval.phase_fraction;
       arr_rho[i] = eos_eval.rho;
