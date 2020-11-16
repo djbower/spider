@@ -119,7 +119,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     /* legacy extrapolation for the lowermost basic node */
     /* extrapolate to CMB using gradient */
-    arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-2] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
+    arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-1] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
     arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
 
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
