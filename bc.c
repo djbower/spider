@@ -161,9 +161,14 @@ static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qi
 
 PetscErrorCode set_core_mantle_flux( Ctx *E )
 {
+    /* computes the necessary core flux such that the lowermost staggered node approximates
+       the desired behaviour of the core mantle boundary condition */
+    /* updates Jtot and Etot */
+    /* TODO: replace with improved bcs at the CMB */
+
     PetscErrorCode    ierr;
-    PetscInt          ix,numpts_b; // ix2 // see TODO below
-    PetscScalar       fac,area1,Qin;//,temp_cmb; // see TODO below
+    PetscInt          ix,numpts_b;
+    PetscScalar       fac,area1,Qin;
     PetscMPIInt       rank,size;
 
     Mesh        const *M = &E->mesh;
