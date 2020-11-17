@@ -173,7 +173,7 @@ static PetscErrorCode set_Jtot( Ctx *E )
     /* now conform heat flux at the core mantle boundary to the
        imposed boundary condition */
 
-    /* assume that the last rank contains the last two points */
+    /* assume that the last rank contains the last basic node */
     if (rank == size-1){
 
         /* conform basal mantle flux to core mantle boundary condition */
@@ -184,20 +184,20 @@ static PetscErrorCode set_Jtot( Ctx *E )
                    as determined above */
                 break;
             case 2:
-                // set heat flux to desired value
+                // constant heat flux
                 ierr = VecSetValue( S->Jtot, ind_cmb, P->core_bc_value, INSERT_VALUES);CHKERRQ(ierr);
-                ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
-                ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
                 break;
             case 3:
                 // isothermal core, i.e. CMB entropy/temperature fixed
                 ierr = VecSetValue( S->Jtot, ind_cmb, 0.0, INSERT_VALUES);CHKERRQ(ierr);
-                ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
-                ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
                 break;
             default:
                 SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported CORE_BC value %d provided",P->CORE_BC);
         }
+
+        ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+        ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+
     }
 
     PetscFunctionReturn(0);

@@ -51,6 +51,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = set_partial_pressures_from_solution( E, sol_in );CHKERRQ(ierr);
 
   /* boundary conditions must be after all arrays are set */
+  /* cmb boundary condition is set when the energy fluxes
+     are calculated (prior to here) */
   ierr = set_surface_flux( E );CHKERRQ(ierr);
 
   /* now we compute the time-dependent quantities */
@@ -89,6 +91,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* Jcmb/Ecmb were previously updated to adhere to bc */
   fac_cmb = arr_cp_b[ind_cmb] / P->cp_core;
   fac_cmb /= arr_temp_b[ind_cmb] * P->tfac_core_avg;
+  /* recall factors of 4 pi are not included in SPIDER (only used for output) */
   fac_cmb /= 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
   fac_cmb /= P->rho_core;
   arr_rhs_b[ind_cmb] = -arr_Etot[ind_cmb] * fac_cmb;
