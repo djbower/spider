@@ -297,11 +297,16 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
   /* option to include a mid-mantle layer
      this is non-dimensional fractional radius, as with coresize
-     if set to P->coresize, then a single layer is recovered (default)
+     Default of 1.0E-10 is effectively zero so gives a single layer
      note this only influences the radial mixing length (not viscosity etc.) */
-  ierr = PetscOptionsGetPositiveScalar("-layer_interface_radius",&P->layer_interface_radius,P->coresize,NULL);CHKERRQ(ierr);
-  if( (P->layer_interface_radius < P->coresize || P->layer_interface_radius > 1.0) ){
-      SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-layer_interface_radius %f must be greater than -coresize and less than 1.0",P->layer_interface_radius);
+  {
+    PetscBool set;
+    ierr = PetscOptionsGetPositiveScalar("-layer_interface_radius",&P->layer_interface_radius,1.0E-10,&set);CHKERRQ(ierr);
+    if(set){
+      if( (P->layer_interface_radius < P->coresize || P->layer_interface_radius > 1.0) ){
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_OUTOFRANGE,"-layer_interface_radius %f must be greater than -coresize and less than 1.0",P->layer_interface_radius);
+      }
+    }
   }
 
   P->Mg_Si0 = 0.0;
