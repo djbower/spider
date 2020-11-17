@@ -692,12 +692,16 @@ static PetscScalar GetMixingLength( const Parameters P, PetscScalar radius )
 {
     PetscScalar outer_radius, inner_radius;
     PetscScalar mix_length = 0.0;
+    PetscScalar eps = 1.0E-10;
 
     /* for a single layer, P->layer_interface_radius = P->coresize (parameters.c),
        enabling this single expression to work for both a single and double
        layered mantle */
+    /* due to floating points, sometimes the radius at the innermost boundary is slightly
+       less than P->layer_interface_radius, so account for this with a small offset (eps) */
+    /* if we try to resolve the ultra-thin boundary layer, eps might not be smaller enough? */
 
-    if( radius >= P->radius * P->layer_interface_radius ){
+    if( radius >= P->radius * P->layer_interface_radius - eps ){
         outer_radius = P->radius;
         inner_radius = P->radius * P->layer_interface_radius;
     }   
