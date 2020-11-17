@@ -135,6 +135,10 @@ PetscErrorCode set_Etot( Ctx *E )
 /* total heat flux at basic nodes */
 static PetscErrorCode set_Jtot( Ctx *E )
 {
+
+    /* also ensures the core mantle boundary flux adheres to the
+       imposed boundary condition */
+
     PetscErrorCode ierr;
     PetscInt       ind_cmb, numpts_b;
     PetscMPIInt    rank, size;
@@ -166,6 +170,9 @@ static PetscErrorCode set_Jtot( Ctx *E )
       ierr = append_Jgrav( E );
     }
 
+    /* now conform heat flux at the core mantle boundary to the
+       imposed boundary condition */
+
     /* assume that the last rank contains the last two points */
     if (rank == size-1){
 
@@ -183,7 +190,7 @@ static PetscErrorCode set_Jtot( Ctx *E )
                 ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
                 break;
             case 3:
-                // isotherm core, i.e. no cooling
+                // isothermal core, i.e. CMB entropy/temperature fixed
                 ierr = VecSetValue( S->Jtot, ind_cmb, 0.0, INSERT_VALUES);CHKERRQ(ierr);
                 ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
                 ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
