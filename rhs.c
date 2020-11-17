@@ -19,7 +19,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
   PetscScalar          *arr_dSdt_s, *arr_rhs_b;
-  const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_cp_s, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
+  const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_temp_b, *arr_cp_s, *arr_cp_b, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
   PetscMPIInt          rank,size;
   DM                   da_s = E->da_s, da_b=E->da_b;
   PetscInt             i,v,ihi_s,ilo_s,w_s,numpts_b;
@@ -53,7 +53,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
 
   /* legacy function for core mantle boundary sets Jtot and Etot
      at the CMB to adhere to boundary condition */
-  if(1){
+  if(0){
     ierr = set_core_mantle_flux_legacy( E );CHKERRQ(ierr);
   }
 
@@ -68,7 +68,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecGetArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->capacitance_s,&arr_capacitance_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->temp_s,&arr_temp_s); CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp_b); CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->cp_s,&arr_cp_s); CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_b,S->cp,&arr_cp_b); CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
@@ -86,6 +88,19 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
     arr_rhs_b[i] /= arr_xi_s[i] - arr_xi_s[i-1]; // note dxi is negative
   }
 
+  if(1){
+    /* TODO: testing new CMB boundary condition */
+    /* must comment out legacy formulation above */
+    arr_rhs_b[ihi_s] = -arr_Etot[ihi_s];
+    arr_rhs_b[ihi_s] *= arr_cp_b[ihi_s] / P->cp_core;
+    arr_rhs_b[ihi_s] /= arr_temp_b[ihi_s] * P->tfac_core_avg;
+    arr_rhs_b[ihi_s] /= 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
+    arr_rhs_b[ihi_s] /= P->rho_core;
+    arr_rhs_b[ihi_s] -= arr_dSdt_s[ihi_s-1];
+    arr_rhs_b[ihi_s] *= 2.0;
+    arr_rhs_b[ihi_s] /= arr_xi_b[ihi_s] - arr_xi_b[ihi_s-1];
+  }
+
   /* dTsurf/dr */
   /* A->dtsurfdt already contains contribution of dTsurf/dT */
   /* By chain rule, just need dT/dt */
@@ -101,7 +116,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecRestoreArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->capacitance_s,&arr_capacitance_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_b,S->temp,&arr_temp_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_b,S->cp,&arr_cp_b);CHKERRQ(ierr);
 
   /* must be here since must be after dS/dt computation */
 
