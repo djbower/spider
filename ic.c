@@ -401,11 +401,10 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E )
     ierr = DMDAVecGetArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(E->da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
-    /* these fix the entropy of the uppermost and/or lowermost staggered
-       nodes, which is OK but not ideal.  Move to boundary? */
+    /* below adjust the initial entropy (temperature) of the surface and
+       the core mantle boundary */
 
     /* surface */
-    /* isothermal surface */
     if( P->ic_surface_entropy > 0.0 ){
         arr_S_s[0] = P->ic_surface_entropy;
         /* basic node gradient should be consistent */
@@ -414,7 +413,6 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E )
     }
 
     /* core-mantle boundary */
-    /* isothermal core-mantle boundary */
     if( P->ic_core_entropy > 0.0 ){
         arr_S_s[ihi_b-2] = P->ic_core_entropy;
         /* basic node gradient should be consistent */

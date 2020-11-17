@@ -6,6 +6,7 @@
 static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
 static PetscScalar get_isothermal_surface( const Ctx * );
 static PetscScalar isothermal_or_cooling_cmb( const Ctx *, PetscScalar );
+static PetscScalar get_core_cooling_factor_legacy( const Ctx * );
 static PetscScalar get_core_cooling_factor( const Ctx * );
 
 PetscErrorCode set_surface_flux( Ctx *E )
@@ -159,6 +160,86 @@ static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qi
     return Qout;
 }
 
+PetscErrorCode set_core_mantle_boundary_condition( Ctx *E, Vec rhs )
+{
+    PetscErrorCode ierr;
+    PetscInt       ind_cmb, ind_abv, numpts_b;
+    PetscScalar    E_cmb, dSdt_s, xi_cmb, xi_abv, rhs_cmb, fac;
+    PetscMPIInt    rank, size;
+
+    Mesh        const *M = &E->mesh;
+    Parameters  const P = E->parameters;
+    Solution          *S = &E->solution;
+
+    PetscFunctionBeginUser;
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ind_cmb  = numpts_b-1; // index of last basic node (i.e., cmb)
+    ind_abv = ind_cmb-1; // index of next basic node above the CMB and last staggered node
+
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+
+    /* assume that the last rank contains the last two points */
+    if (rank == size-1){
+
+      //ierr = VecGetValues(M->area_b,1,&ix,&area1);CHKERRQ(ierr); // area of cmb
+
+      switch( P->CORE_BC ){
+        case 1:
+          // core cooling
+          fac = get_core_cooling_factor( E );
+
+          ierr = VecGetValues(S->Etot,1,&ind_cmb,&E_cmb);CHKERRQ(ierr);
+          ierr = VecGetValues(S->dSdt_s,1,&ind_abv,&dSdt_s);CHKERRQ(ierr);
+          ierr = VecGetValues(M->xi_b,1,&ind_cmb,&xi_cmb);CHKERRQ(ierr);
+          ierr = VecGetValues(M->xi_b,1,&ind_abv,&xi_abv);CHKERRQ(ierr);
+
+          rhs_cmb = -E_cmb * fac;
+          rhs_cmb -= dSdt_s;
+          rhs_cmb *= 2.0 / ( xi_cmb - xi_abv );
+          break;
+        case 2:
+        // heat flux
+          rhs_cmb = 0.0;
+          break;
+        case 3:
+        // entropy
+          rhs_cmb = 0.0;
+          break;
+      }
+
+      ierr = VecSetValue(rhs,ind_cmb,rhs_cmb,INSERT_VALUES);CHKERRQ(ierr);
+      ierr = VecAssemblyBegin( rhs );CHKERRQ(ierr);
+      ierr = VecAssemblyEnd( rhs );CHKERRQ(ierr);
+    }
+
+    PetscFunctionReturn(0);
+
+} 
+
+static PetscScalar get_core_cooling_factor( const Ctx *E )
+{
+    PetscErrorCode ierr;
+    PetscInt       ind_cmb, numpts_b;
+    PetscScalar    cp_cmb, temp_cmb, fac;
+
+    Parameters const P = E->parameters;
+    Solution const *S = &E->solution;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ind_cmb  = numpts_b-1; // index of last basic node (i.e., cmb)
+
+    ierr = VecGetValues(S->cp,1,&ind_cmb,&cp_cmb);CHKERRQ(ierr);
+    ierr = VecGetValues(S->temp,1,&ind_cmb,&temp_cmb);CHKERRQ(ierr);
+
+    fac = cp_cmb / P->cp_core;
+    fac /= temp_cmb * P->tfac_core_avg;
+    fac /= 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
+    fac /= P->rho_core;
+
+    return fac;
+}
+
 PetscErrorCode set_core_mantle_flux_legacy( Ctx *E )
 {
     /* computes the necessary core flux such that the lowermost staggered node approximates
@@ -190,7 +271,7 @@ PetscErrorCode set_core_mantle_flux_legacy( Ctx *E )
       switch( P->CORE_BC ){
         case 1:
           // core cooling
-          fac = get_core_cooling_factor( E );
+          fac = get_core_cooling_factor_legacy( E );
           Qin = isothermal_or_cooling_cmb( E, fac );
           break;
         case 2:
@@ -221,7 +302,7 @@ PetscErrorCode set_core_mantle_flux_legacy( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscScalar get_core_cooling_factor( const Ctx *E )
+static PetscScalar get_core_cooling_factor_legacy( const Ctx *E )
 {
     PetscErrorCode ierr;
     PetscInt ix2,numpts_b;

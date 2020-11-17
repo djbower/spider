@@ -110,15 +110,13 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     arr_S_s[ihi_b-2] += S0; // add at end to try and retain precision
     arr_S_b[ihi_b-2] += S0; // add at end to try and retain precision
 
-    /* conform to boundary conditions */ 
-
-    /* legacy extrapolation for the uppermost basic node */
-    /* extrapolate to surface using gradient */
+    /* surface entropy */
+    /* extrapolate to surface using dS/dr below */
     arr_S_b[0] = arr_S_s[0];
     arr_S_b[0] += -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
 
-    /* legacy extrapolation for the lowermost basic node */
-    /* extrapolate to CMB using gradient */
+    /* cmb entropy */
+    /* use dS/dr at the cmb which is constrained by the core boundary condition */
     arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-1] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
     arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
 
@@ -130,6 +128,7 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     /* below can be activated for testing here, and eventually a switch included
        that also checks for mixing_length=2 to adequately resolve the boundary layer? */
+    /* this sets dS/dr at the surface, but need a d/dt form for the timestepper ideally */
     if(0){
         /* else solve for surface using flux balance */
         ierr = solve_surface_entropy( E );CHKERRQ(ierr);

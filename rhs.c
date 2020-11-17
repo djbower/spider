@@ -18,11 +18,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   Atmosphere           *A = &E->atmosphere;
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
-  PetscScalar          *arr_dSdt_s, *arr_rhs_b;
+  PetscScalar          *arr_dSdt_s, *arr_rhs_b, fac_cmb;
   const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_temp_b, *arr_cp_s, *arr_cp_b, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
   PetscMPIInt          rank,size;
   DM                   da_s = E->da_s, da_b=E->da_b;
-  PetscInt             i,v,ihi_s,ilo_s,w_s,numpts_b;
+  PetscInt             i,v,ihi_s,ilo_s,w_s,numpts_b,ind_cmb;
   Vec                  rhs_b, *subVecs;
 
   PetscFunctionBeginUser;
@@ -34,6 +34,8 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* for looping over basic nodes */
   ierr = DMDAGetCorners(E->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
   ihi_s = ilo_s + w_s;
+
+  ind_cmb = numpts_b-1; // index of last basic node (i.e., cmb)
 
   /* allocate memory for RHS vector */
   ierr = VecCreate( PETSC_COMM_WORLD, &rhs_b );
@@ -78,6 +80,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   arr_dSdt_s[0] = ( arr_Etot[1] - arr_Etot[0] ) / arr_capacitance_s[0];
   arr_dSdt_s[0] += arr_Htot_s[0] / arr_temp_s[0];
 
+  /* dSdt at staggered nodes and d/dt(dS/dr) at internal basic nodes */
   for(i=ilo_s+1; i<ihi_s; ++i){
     /* dSdt at staggered nodes */
     /* need this quantity for coupling to atmosphere evolution */
@@ -88,6 +91,18 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
     arr_rhs_b[i] /= arr_xi_s[i] - arr_xi_s[i-1]; // note dxi is negative
   }
 
+  /* d/dt(dS/dr) at core mantle boundary */
+  /* Jcmb/Ecmb were previously updated to adhere to bc */
+  fac_cmb = arr_cp_b[ind_cmb] / P->cp_core;
+  fac_cmb /= arr_temp_b[ind_cmb] * P->tfac_core_avg;
+  fac_cmb /= 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
+  fac_cmb /= P->rho_core;
+  arr_rhs_b[ind_cmb] = -arr_Etot[ind_cmb] * fac_cmb;
+  arr_rhs_b[ind_cmb] -= arr_dSdt_s[ihi_s-1];
+  arr_rhs_b[ind_cmb] *= 2.0 / (arr_xi_b[ind_cmb] - arr_xi_b[ind_cmb-1] );
+
+// TODO: TO REMOVE
+#if 0
   if(1){
     /* TODO: testing new CMB boundary condition */
     /* must comment out legacy formulation above */
@@ -100,6 +115,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
     arr_rhs_b[ihi_s] *= 2.0;
     arr_rhs_b[ihi_s] /= arr_xi_b[ihi_s] - arr_xi_b[ihi_s-1];
   }
+#endif
 
   /* dTsurf/dr */
   /* A->dtsurfdt already contains contribution of dTsurf/dT */
@@ -119,6 +135,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecRestoreArrayRead(da_b,S->temp,&arr_temp_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,S->cp,&arr_cp_b);CHKERRQ(ierr);
+
+// TODO: TO REMOVE
+  /* now conform to core mantle boundary condition */
+ //  ierr = set_core_mantle_boundary_condition( E, rhs_b );CHKERRQ(ierr);
 
   /* must be here since must be after dS/dt computation */
 
