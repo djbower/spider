@@ -79,8 +79,8 @@ This is easily demonstrated by calculating the net flux predicted by mixing leng
 %%%
 %%%
 \subsection{Core-mantle boundary}
-\subsubsection{Simple core cooling}
-Energy balance for the core, where internal heat sources for the core are excluded:
+\subsubsection{Legacy: Simple core cooling}
+This approach was initially adopted and documented in \cite{BSW18}, but has since been superseded by the approach in Sect.~\ref{sec:corecool2}.  Energy balance for the core, where internal heat sources for the core are excluded:
 \begin{equation}
 \frac{dQ_c}{dt} = m_c c_c \frac{dT_{core}}{dt} = -A_{cmb} J_{cmb} = -E_{cmb}
 \label{eq:core_energy_balance}
@@ -114,8 +114,23 @@ Equivalently, in terms of fluxes:
 J_{cmb} = \left( \frac{1}{A_{cmb}} \right) \frac{J_1A_1 - V \rho H}{\left(1+\frac{V \rho c}{\hat{T}_{core} m_c c_c}\right)} = \left( \frac{1}{A_{cmb}} \right) (J_1A_1 - V \rho H)\left(1+\frac{V \rho c}{\hat{T}_{core} m_c c_c}\right)^{-1}
 \end{equation}
 %%%
-\subsubsection{Simple core cooling II}
-An issue with the simple core cooling model is that we are considering the element that neighbours the core.  If the heat out of this element (say, due to gravitational separation) is large (because the basic node is in the mixed phase region), this can result in unrealistic cooling of the element.  Hence it is preferred to instead consider the actual boundary of the CMB (the lowermost basic node) when constructing the boundary condition.  Similar to before, but we now consider an optional energy input $E_{in}$:
+\subsubsection{Legacy: Isothermal (constant entropy)}
+This approach was initially adopted and documented in \cite{BSW18}, but has since been superseded by the approach in Sect.~\ref{sec:corecool2}.  To apply this boundary condition in terms of fluxes, the heat leaving the lowermost cell must balance the heat entering the cell plus any internal heat generation:
+\begin{equation}
+\frac{dQ}{dt} = E_{cmb} - E_1 + V \rho H = 0
+\end{equation}
+Rearrange to find $E_{cmb}$:
+\begin{equation}
+E_{cmb} = E_1 - V \rho H
+\end{equation}
+Equivalently, in terms of fluxes:
+\begin{equation}
+J_{cmb} = \frac{1}{A_{cmb}} \left( J_1A_1 - V \rho H \right)
+\end{equation}
+%%%
+\subsubsection{Universal boundary condition}
+\label{sec:corecool2}
+An issue with the simple core cooling model is that we are considering the element that neighbours the core.  If the heat out of this element (say, due to gravitational separation) is large (because the basic node is in the mixed phase region), this can result in unrealistic cooling of the element.  Hence it is preferred to instead consider the actual boundary of the CMB (the lowermost basic node) when constructing the boundary condition.  Similar to before, but we now consider an (optional) energy input $E_{in}$ for completeness (this is not required for this approach):
 \begin{equation}
 \frac{dQ_c}{dt} = m_c c_c \frac{dT_{core}}{dt} = -A_{cmb} J_{cmb} + E_{in} = -E_{cmb} + E_{in}
 \label{eq:core_energy_balanceII}
@@ -136,21 +151,9 @@ Rearranging:
 \begin{equation}
 \left( \frac{dS_{-1}}{dt} + \frac{\Delta r}{2} \frac{d}{dt} \left( \left. \frac{dS}{dr} \right |_{cmb} \right)  \right) = (-E_{cmb}+E_{in}) \left( \frac{c_{cmb}}{c_c} \right) \left( \frac{1}{m_c \hat{T}_{core} T_{cmb}} \right)
 \end{equation}
+So the time update for the entropy gradient at the CMB, where $E_{cmb}$ conforms to the desired boundary condition, is:
 \begin{equation}
 \frac{\Delta r}{2} \frac{d}{dt} \left( \left. \frac{dS}{dr} \right |_{cmb} \right) = (-E_{cmb}+E_{in}) \left( \frac{c_{cmb}}{c_c} \right) \left( \frac{1}{m_c \hat{T}_{core} T_{cmb}} \right) - \frac{dS_{-1}}{dt}
 \end{equation}
-Now, $dS_{-1}/dt$ is the change in entropy of the last staggered node, which is given by the ``master'' equation since it depends on fluxes in and out of the volume as well as interior heat sources.
+Now, $dS_{-1}/dt$ is the change in entropy of the last staggered node, which is given by the ``master'' equation since it depends on fluxes in and out of the volume as well as interior heat sources.  $E_{cmb}$ can be computed based on the heat flux at the CMB in the mantle or set to a fixed value.  If $E_{cmb}=0$ then an isothermal boundary condition is naturally recovered.  Hence this one equation is now implemented in SPIDER.
 %%%
-\subsubsection{Isothermal (constant entropy)}
-To apply this boundary condition in terms of fluxes, the heat leaving the lowermost cell must balance the heat entering the cell plus any internal heat generation:
-\begin{equation}
-\frac{dQ}{dt} = E_{cmb} - E_1 + V \rho H = 0
-\end{equation}
-Rearrange to find $E_{cmb}$:
-\begin{equation}
-E_{cmb} = E_1 - V \rho H
-\end{equation}
-Equivalently, in terms of fluxes:
-\begin{equation}
-J_{cmb} = \frac{1}{A_{cmb}} \left( J_1A_1 - V \rho H \right)
-\end{equation}

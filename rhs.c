@@ -53,12 +53,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* boundary conditions must be after all arrays are set */
   ierr = set_surface_flux( E );CHKERRQ(ierr);
 
-  /* legacy function for core mantle boundary sets Jtot and Etot
-     at the CMB to adhere to boundary condition */
-  if(0){
-    ierr = set_core_mantle_flux_legacy( E );CHKERRQ(ierr);
-  }
-
   /* now we compute the time-dependent quantities */
 
   /* loop over basic nodes except last node */
@@ -101,27 +95,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   arr_rhs_b[ind_cmb] -= arr_dSdt_s[ihi_s-1];
   arr_rhs_b[ind_cmb] *= 2.0 / (arr_xi_b[ind_cmb] - arr_xi_b[ind_cmb-1] );
 
-// TODO: TO REMOVE
-#if 0
-  if(1){
-    /* TODO: testing new CMB boundary condition */
-    /* must comment out legacy formulation above */
-    arr_rhs_b[ihi_s] = -arr_Etot[ihi_s];
-    arr_rhs_b[ihi_s] *= arr_cp_b[ihi_s] / P->cp_core;
-    arr_rhs_b[ihi_s] /= arr_temp_b[ihi_s] * P->tfac_core_avg;
-    arr_rhs_b[ihi_s] /= 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
-    arr_rhs_b[ihi_s] /= P->rho_core;
-    arr_rhs_b[ihi_s] -= arr_dSdt_s[ihi_s-1];
-    arr_rhs_b[ihi_s] *= 2.0;
-    arr_rhs_b[ihi_s] /= arr_xi_b[ihi_s] - arr_xi_b[ihi_s-1];
-  }
-#endif
-
   /* dTsurf/dr */
   /* A->dtsurfdt already contains contribution of dTsurf/dT */
   /* By chain rule, just need dT/dt */
   A->dtsurfdt *= arr_dSdt_s[0] * arr_temp_s[0] / arr_cp_s[0];
-  /* TODO, add effect of gradient to above 0.5*d/dt (dS/dxi) */
+  /* add effect of gradient to above 0.5*d/dt (dS/dxi) */
   /* but this should be a minor effect */
 
   ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
@@ -135,10 +113,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecRestoreArrayRead(da_b,S->temp,&arr_temp_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,S->cp,&arr_cp_b);CHKERRQ(ierr);
-
-// TODO: TO REMOVE
-  /* now conform to core mantle boundary condition */
- //  ierr = set_core_mantle_boundary_condition( E, rhs_b );CHKERRQ(ierr);
 
   /* must be here since must be after dS/dt computation */
 
@@ -154,7 +128,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMCompositeGetAccessArray(E->dm_sol,rhs,E->numFields,NULL,subVecs);CHKERRQ(ierr);
   ierr = VecCopy(rhs_b,subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]]);CHKERRQ(ierr);
 
-  /* S0, TODO: I think this breaks for parallel */
+  /* S0 */
   ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,arr_dSdt_s[0],INSERT_VALUES);CHKERRQ(ierr);
 
   /* volatiles and reactions */
