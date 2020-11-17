@@ -697,7 +697,7 @@ static PetscScalar GetMixingLength( const Parameters P, PetscScalar radius )
        enabling this single expression to work for both a single and double
        layered mantle */
 
-    if( radius > P->radius * P->layer_interface_radius ){
+    if( radius >= P->radius * P->layer_interface_radius ){
         outer_radius = P->radius;
         inner_radius = P->radius * P->layer_interface_radius;
     }   
