@@ -9,6 +9,7 @@
 
 /* heat fluxes */
 static PetscScalar GetConductiveHeatFlux( Ctx *, PetscInt *);
+static PetscScalar GetConvectiveHeatFlux( Ctx *, PetscInt *);
 
 static PetscErrorCode set_Jtot( Ctx * );
 static PetscErrorCode append_Jcond( Ctx * );
@@ -211,26 +212,48 @@ static PetscErrorCode set_Jtot( Ctx *E )
 static PetscErrorCode append_Jconv( Ctx *E )
 {
     PetscErrorCode ierr;
+    PetscScalar    Jconv;
+    PetscInt       i,ilo_b,ihi_b,w_b;
     Solution       *S = &E->solution;
-    Mesh     const *M = &E->mesh;
 
     PetscFunctionBeginUser;
 
-    /* convective heat flux */
-    //   arr_Jconv[i] = -arr_dSdr[i] * arr_kappah[i] * arr_rho[i] * arr_temp[i];
+    /* loop over all basic internal nodes */
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
 
-    /* line below converts mass coordinate to physical dS/dr */
-    ierr = VecPointwiseMult(S->Jconv, S->dSdxi, M->dxidr_b );CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jconv,S->Jconv, S->kappah);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jconv,S->Jconv, S->rho);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jconv, S->Jconv, S->temp);CHKERRQ(ierr);
-    ierr = VecScale(S->Jconv, -1.0);CHKERRQ(ierr);
+    for(i=ilo_b; i<ihi_b; ++i){
+        Jconv = GetConvectiveHeatFlux( E, &i );
+        ierr = VecSetValue(S->Jconv,i,Jconv,INSERT_VALUES);CHKERRQ(ierr);
+    }
+
+    ierr = VecAssemblyBegin(S->Jconv);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jconv);CHKERRQ(ierr);
 
     ierr = VecAXPY( S->Jtot, 1.0, S->Jconv ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
 }
+
+static PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
+{
+    PetscErrorCode ierr;
+    PetscScalar    dSdxi,dxidr,temp,rho,kappah,Jconv;
+    Solution const *S = &E->solution;
+    Mesh const     *M = &E->mesh;
+
+    ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
+    ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
+    ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
+    ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
+    ierr = VecGetValues(S->kappah,1,ind_ptr,&kappah);CHKERRQ(ierr);
+
+    Jconv = -dSdxi * dxidr * kappah * rho * temp;
+
+    return Jconv;
+}
+
 
 /* mixing heat flux (latent heat transport) at basic nodes */
 static PetscErrorCode append_Jmix( Ctx *E )
@@ -311,6 +334,8 @@ static PetscErrorCode append_Jcond( Ctx *E )
     PetscScalar    Jcond;
     PetscInt       i,ilo_b,ihi_b,w_b;
     Solution       *S = &E->solution;
+
+    PetscFunctionBeginUser;
 
     /* loop over all basic internal nodes */
     ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
