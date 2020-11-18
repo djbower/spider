@@ -7,6 +7,9 @@
 #include "util.h"
 #include "monitor.h"
 
+/* heat fluxes */
+static PetscScalar GetConductiveHeatFlux( Ctx *, PetscInt *);
+
 static PetscErrorCode set_Jtot( Ctx * );
 static PetscErrorCode append_Jcond( Ctx * );
 static PetscErrorCode append_Jconv( Ctx * );
@@ -305,34 +308,46 @@ static PetscErrorCode append_Jmix( Ctx *E )
 static PetscErrorCode append_Jcond( Ctx *E )
 {
     PetscErrorCode ierr;
-    Solution *S = &E->solution;
-    Mesh const *M = &E->mesh;
-    Vec adiabat;
+    PetscScalar    Jcond;
+    PetscInt       i,ilo_b,ihi_b,w_b;
+    Solution       *S = &E->solution;
 
-    PetscFunctionBeginUser;
+    /* loop over all basic internal nodes */
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
 
-    /* create work vector */
-    ierr = VecDuplicate(M->dxidr_b,&adiabat);CHKERRQ(ierr);
-    ierr = VecCopy(M->dxidr_b,adiabat);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(adiabat,adiabat,S->dTdxis);CHKERRQ(ierr);
+    for(i=ilo_b; i<ihi_b; ++i){
+        Jcond = GetConductiveHeatFlux( E, &i );
+        ierr = VecSetValue(S->Jcond,i,Jcond,INSERT_VALUES);CHKERRQ(ierr);
+    }
 
-    /* conductive heat flux */
-    //   arr_Jcond[i] = arr_temp[i] / arr_cp[i] * arr_dSdr[i] + arr_dTdrs[i];
-    //   arr_Jcond[i] *= -arr_cond[i];
-
-    ierr = VecPointwiseDivide(S->Jcond, S->temp, S->cp);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jcond, S->Jcond, S->dSdxi);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jcond, S->Jcond, M->dxidr_b);CHKERRQ(ierr);
-    ierr = VecAYPX(S->Jcond, 1.0, adiabat);CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->Jcond, S->Jcond, S->cond);CHKERRQ(ierr);
-    ierr = VecScale(S->Jcond, -1.0);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->Jcond);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jcond);CHKERRQ(ierr);
 
     ierr = VecAXPY( S->Jtot, 1.0, S->Jcond ); CHKERRQ(ierr);
 
-    ierr = VecDestroy(&adiabat);
-
     PetscFunctionReturn(0);
 
+}
+
+static PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
+{
+    PetscErrorCode ierr;
+    PetscScalar    dSdxi,dxidr,temp,cp,dTdxis,cond,Jcond;
+    Solution const *S = &E->solution;
+    Mesh const     *M = &E->mesh;
+
+    ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
+    ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
+    ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
+    ierr = VecGetValues(S->cp,1,ind_ptr,&cp);CHKERRQ(ierr);
+    ierr = VecGetValues(S->dTdxis,1,ind_ptr,&dTdxis);CHKERRQ(ierr);
+    ierr = VecGetValues(S->cond,1,ind_ptr,&cond);CHKERRQ(ierr);
+
+    Jcond = ( temp / cp ) * dSdxi * dxidr + dTdxis * dxidr;
+    Jcond *= -cond;
+
+    return Jcond;
 }
 
 /* gravitational separation heat flux at basic nodes */
