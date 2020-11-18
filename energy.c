@@ -11,6 +11,7 @@
 static PetscScalar GetConductiveHeatFlux( Ctx *, PetscInt *);
 static PetscScalar GetConvectiveHeatFlux( Ctx *, PetscInt *);
 static PetscScalar GetMixingHeatFlux( Ctx *, PetscInt *);
+static PetscScalar GetGravitationalHeatFlux( Ctx *, PetscInt * );
 
 static PetscErrorCode set_Jtot( Ctx * );
 static PetscErrorCode append_Jcond( Ctx * );
@@ -383,121 +384,23 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 {
 
     PetscErrorCode ierr;
-    Mesh *M = &E->mesh;
-    Solution *S = &E->solution;
-    Parameters P = E->parameters;
-    PetscScalar *arr_Jgrav, F, cond1, cond2, Sliq, Ssol, dv;
-    PetscInt i,ilo_b,ihi_b,w_b,numpts_b, should_be_two;
-    DM da_b = E->da_b;
-    const PetscScalar *arr_phi, *arr_pres, *arr_rho, *arr_temp;
-    EOS *sub_eos;
-
-    /* Jgrav requires two phases */
-    ierr = EOSCompositeGetSubEOS(P->eos, &sub_eos, &should_be_two);CHKERRQ(ierr);
-    if (should_be_two!=2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Expecting two sub-EOSs");
-    const EOS Ep0 = sub_eos[0];
-    const EOS Ep1 = sub_eos[1];
+    PetscScalar    Jgrav;
+    PetscInt       i,ilo_b,ihi_b,w_b;
+    Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
 
-    ierr = DMDAGetInfo(da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-
     /* loop over all basic internal nodes */
-    ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
 
-    ierr = DMDAVecGetArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->Jgrav,&arr_Jgrav);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
-
     for(i=ilo_b; i<ihi_b; ++i){
-        EOSEvalData eval_liq, eval_sol;
-        PetscScalar porosity;
-
-        ierr = EOSGetPhaseBoundary( Ep0, arr_pres[i], &Sliq, NULL );CHKERRQ(ierr);
-        ierr = EOSGetPhaseBoundary( Ep1, arr_pres[i], &Ssol, NULL );CHKERRQ(ierr);
-
-        ierr = EOSEval(Ep0, arr_pres[i], Sliq, &eval_liq);CHKERRQ(ierr);
-        ierr = EOSEval(Ep1, arr_pres[i], Ssol, &eval_sol);CHKERRQ(ierr);
-
-        porosity = (eval_sol.rho - arr_rho[i]) / ( eval_sol.rho - eval_liq.rho );
-
-        switch( P->SEPARATION ){
-            case 1:
-                /* Abe formulation */
-                /* these switches depend on the functions below, and are constructed to
-                   ensure F is a smooth function of porosity.  They are given in Abe in
-                   terms of the volume fraction of solid, hence the 1.0 minus in the if
-                   statement.  They depend on the choice of constants to the flow laws */
-                /* See Eq. 44 in Abe (1995).  But below we use permeability directly to
-                   stay connected to the physics */
-                cond1 = 0.7714620383592684;
-                cond2 = 0.0769618;
-
-                /* solid_volume < cond1 (Abe) is porosity > 1-cond1 (here) */
-                if(porosity > cond1){
-                    /* Stokes settling factor with grainsize squared */
-                    F = (2.0/9.0) * PetscPowScalar( P->grain, 2.0);
-                }
-                else if(porosity < cond2){
-                    /* permeability includes grainsize squared */
-                    F = GetPermeabilityBlakeKozenyCarman( P->grain, porosity, 1.0E-3 );
-                    F /= porosity;
-                }
-                else{
-                    /* permeability includes grainsize squared */
-                    F = GetPermeabilityRumpfGupte( P->grain, porosity, 5.0/7.0 );
-                    F /= porosity;
-                }
-                break;
-            case 2:
-                /* numerically it seems problematic to have no separation and then
-                   try and turn it on for low melt fraction.  Hence this seems
-                   to work less well than the Abe smooth approach above */
-                /* apply separation below 40% melt volume fraction */
-                //if( porosity < 0.4 ){
-                    /* large permeability from Rudge (2018) */
-                F = GetPermeabilityRudge( P->grain, porosity, 1.0/75 );
-                F /= porosity;
-                //}
-                //else{
-                //    F = 0.0;
-                //}
-                {
-                    PetscScalar matprop_smooth_width;
-                    ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
-                    F *= 1.0 - tanh_weight( porosity, 0.3, 1.0E-2 );
-                }
-                break;
-            default:
-                SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SEPARATION value %d provided",P->SEPARATION);
-                break;
-        }
-
-        /* relative velocity: velocity_melt - velocity_solid */
-        /* works for Stokes and permeability since F is different above */
-        /* e.g. Abe (1995) Eq. 39 and 40 */
-        dv = ( eval_liq.rho - eval_sol.rho ) * P->gravity * F;
-        dv /= PetscPowScalar(10.0, P->eos_phases[0]->log10visc);
-
-        /* mass flux, e.g. Abe (1995) Eq. 8 */
-        /* here, clear that Jgrav is zero when phi is single phase (phi=0
-           or phi=1) */
-        arr_Jgrav[i] = arr_rho[i] * arr_phi[i] * ( 1.0-arr_phi[i] ) * dv;
-
-        /* energy flux */
-        arr_Jgrav[i] *= Sliq - Ssol; // entropy of fusion
-        arr_Jgrav[i] *= arr_temp[i];
-
+        Jgrav = GetGravitationalHeatFlux( E, &i );
+        ierr = VecSetValue(S->Jgrav,i,Jgrav,INSERT_VALUES);CHKERRQ(ierr);
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_b, S->phi, &arr_phi);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, M->pressure_b, &arr_pres);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, S->Jgrav, &arr_Jgrav);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, S->rho, &arr_rho);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, S->temp, &arr_temp);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->Jgrav);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jgrav);CHKERRQ(ierr);
 
     ierr = VecAXPY( S->Jtot, 1.0, S->Jgrav ); CHKERRQ(ierr);
 
@@ -505,11 +408,109 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 
 }
 
+static PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
+{
+    PetscErrorCode  ierr;
+    PetscScalar     porosity,cond1,cond2,F,dv,pres,rho,Sliq,Ssol,phi,Jgrav,temp;
+    PetscInt        should_be_two;
+    Solution const  *S = &E->solution;
+    Mesh const      *M = &E->mesh;
+    Parameters const P = E->parameters;
+    EOS              *sub_eos;
+    EOSEvalData     eval_liq, eval_sol;
+
+    /* Jgrav requires two phases */
+    ierr = EOSCompositeGetSubEOS(P->eos, &sub_eos, &should_be_two);CHKERRQ(ierr);
+    if (should_be_two!=2) SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Expecting two sub-EOSs");
+    const EOS Ep0 = sub_eos[0];
+    const EOS Ep1 = sub_eos[1];
+
+    ierr = VecGetValues(M->pressure_b,1,ind_ptr,&pres);CHKERRQ(ierr);
+    ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
+    ierr = VecGetValues(S->phi,1,ind_ptr,&phi);CHKERRQ(ierr);
+    ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
+
+    ierr = EOSGetPhaseBoundary( Ep0, pres, &Sliq, NULL );CHKERRQ(ierr);
+    ierr = EOSEval(Ep0, pres, Sliq, &eval_liq);CHKERRQ(ierr);
+    ierr = EOSGetPhaseBoundary( Ep1, pres, &Ssol, NULL );CHKERRQ(ierr);
+    ierr = EOSEval(Ep1, pres, Ssol, &eval_sol);CHKERRQ(ierr);
+
+    porosity = (eval_sol.rho - rho) / ( eval_sol.rho - eval_liq.rho );
+
+    switch( P->SEPARATION ){
+        case 1:
+            /* Abe formulation */
+            /* these switches depend on the functions below, and are constructed to
+               ensure F is a smooth function of porosity.  They are given in Abe in
+               terms of the volume fraction of solid, hence the 1.0 minus in the if
+               statement.  They depend on the choice of constants to the flow laws */
+            /* See Eq. 44 in Abe (1995).  But below we use permeability directly to
+               stay connected to the physics */
+            cond1 = 0.7714620383592684;
+            cond2 = 0.0769618;
+
+            /* solid_volume < cond1 (Abe) is porosity > 1-cond1 (here) */
+            if(porosity > cond1){
+                /* Stokes settling factor with grainsize squared */
+                F = (2.0/9.0) * PetscPowScalar( P->grain, 2.0);
+            }
+            else if(porosity < cond2){
+                /* permeability includes grainsize squared */
+                F = GetPermeabilityBlakeKozenyCarman( P->grain, porosity, 1.0E-3 );
+                F /= porosity;
+            }
+            else{
+                /* permeability includes grainsize squared */
+                F = GetPermeabilityRumpfGupte( P->grain, porosity, 5.0/7.0 );
+                F /= porosity;
+            }
+            break;
+        case 2:
+            /* numerically it seems problematic to have no separation and then
+               try and turn it on for low melt fraction.  Hence this seems
+               to work less well than the Abe smooth approach above */
+            /* apply separation below 40% melt volume fraction */
+            //if( porosity < 0.4 ){
+                /* large permeability from Rudge (2018) */
+            F = GetPermeabilityRudge( P->grain, porosity, 1.0/75 );
+            F /= porosity;
+            //}
+            //else{
+            //    F = 0.0;
+            //}
+            {
+                PetscScalar matprop_smooth_width;
+                ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
+                F *= 1.0 - tanh_weight( porosity, 0.3, 1.0E-2 );
+            }
+            break;
+        default:
+            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SEPARATION value %d provided",P->SEPARATION);
+            break;
+    }
+
+    /* relative velocity: velocity_melt - velocity_solid */
+    /* works for Stokes and permeability since F is different above */
+    /* e.g. Abe (1995) Eq. 39 and 40 */
+    dv = ( eval_liq.rho - eval_sol.rho ) * P->gravity * F;
+    dv /= PetscPowScalar(10.0, P->eos_phases[0]->log10visc);
+
+    /* mass flux, e.g. Abe (1995) Eq. 8 */
+    /* here, clear that Jgrav is zero when phi is single phase (phi=0
+       or phi=1) */
+    Jgrav = rho * phi * ( 1.0 - phi ) * dv;
+
+    /* energy flux */
+    Jgrav *= temp * ( Sliq - Ssol ); // enthalpy
+
+    return Jgrav;
+}
+
 PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec sol_in )
 {
 
     /* set all possible quantities for a given entropy structure (i.e. top staggered 
-       value S0 and dS/dxi at all basic nodes).  This one function ensure that 
+       value S0 and dS/dxi at all basic nodes).  This one function ensures that 
        everything is set self-consistently. */
 
     PetscErrorCode       ierr;
