@@ -10,6 +10,7 @@
 /* heat fluxes */
 static PetscScalar GetConductiveHeatFlux( Ctx *, PetscInt *);
 static PetscScalar GetConvectiveHeatFlux( Ctx *, PetscInt *);
+static PetscScalar GetMixingHeatFlux( Ctx *, PetscInt *);
 
 static PetscErrorCode set_Jtot( Ctx * );
 static PetscErrorCode append_Jcond( Ctx * );
@@ -259,14 +260,37 @@ static PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
 static PetscErrorCode append_Jmix( Ctx *E )
 {
     PetscErrorCode ierr;
-    DM             da_b = E->da_b;
-    Mesh           *M = &E->mesh;
+    PetscScalar    Jmix;
     Solution       *S = &E->solution;
+    PetscInt       i,ilo_b,ihi_b,w_b;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+
+    for(i=ilo_b; i<ihi_b; ++i){
+        Jmix = GetMixingHeatFlux( E, &i );
+        ierr = VecSetValue(S->Jmix,i,Jmix,INSERT_VALUES);CHKERRQ(ierr);
+    }
+
+    ierr = VecAssemblyBegin(S->Jmix);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jmix);CHKERRQ(ierr);
+
+    ierr = VecAXPY( S->Jtot, 1.0, S->Jmix ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscScalar GetMixingHeatFlux( Ctx *E, PetscInt * ind_ptr )
+{
+    PetscErrorCode  ierr;
+    PetscScalar     dSdxi,dxidr,temp,rho,kappac,phi,pres,Sval,Jmix,dPdr,dSliqdP,dSsoldP,gphi,smth;
+    PetscInt        should_be_two;
+    Mesh const      *M = &E->mesh;
+    Solution const  *S = &E->solution;
     Parameters const P = E->parameters;
-    PetscInt       i, ilo, ihi, w, should_be_two;
-    PetscScalar    *arr_Jmix;
-    PetscScalar    dSliqdP, dSsoldP, smth, gphi;
-    const PetscScalar *arr_phi, *arr_dSdxi, *arr_kappac, *arr_rho, *arr_temp, *arr_pres, *arr_S, *arr_dPdr, *arr_dxidr;
     EOS *sub_eos;
 
     /* Jmix requires two phases */
@@ -275,56 +299,35 @@ static PetscErrorCode append_Jmix( Ctx *E )
     const EOS Ep0 = sub_eos[0];
     const EOS Ep1 = sub_eos[1];
 
-    PetscFunctionBeginUser;
+    ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
+    ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
+    ierr = VecGetValues(M->pressure_b,1,ind_ptr,&pres);CHKERRQ(ierr);
+    ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
+    ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
+    ierr = VecGetValues(S->kappac,1,ind_ptr,&kappac);CHKERRQ(ierr);
+    ierr = VecGetValues(S->phi,1,ind_ptr,&phi);CHKERRQ(ierr);
+    ierr = VecGetValues(M->dPdr_b,1,ind_ptr,&dPdr);CHKERRQ(ierr);
+    ierr = VecGetValues(S->S,1,ind_ptr,&Sval);CHKERRQ(ierr);
 
-    ierr = DMDAGetCorners(da_b,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
-    ihi = ilo + w;
+    ierr = EOSGetPhaseBoundary( Ep0, pres, NULL, &dSliqdP );CHKERRQ(ierr);
+    ierr = EOSGetPhaseBoundary( Ep1, pres, NULL, &dSsoldP );CHKERRQ(ierr);
 
-    ierr = DMDAVecGetArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->S,&arr_S);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->dxidr_b,&arr_dxidr);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
+    Jmix = dSdxi * dxidr - phi * dSliqdP * dPdr;
+    Jmix += (phi-1.0) * dSsoldP * dPdr;
+    Jmix *= -kappac * rho * temp;
 
-    for(i=ilo; i<ihi; ++i){
-        ierr = EOSGetPhaseBoundary( Ep0, arr_pres[i], NULL, &dSliqdP );CHKERRQ(ierr);
-        ierr = EOSGetPhaseBoundary( Ep1, arr_pres[i], NULL, &dSsoldP );CHKERRQ(ierr);
-        arr_Jmix[i] = arr_dSdxi[i] * arr_dxidr[i] - arr_phi[i] * dSliqdP * arr_dPdr[i];
-        arr_Jmix[i] += (arr_phi[i]-1.0) * dSsoldP * arr_dPdr[i];
-        arr_Jmix[i] *= -arr_kappac[i] * arr_rho[i] * arr_temp[i];
-
-        /* (optional) smoothing across phase boundaries for two phase composite */
-        ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, arr_pres[i], arr_S[i], &gphi);CHKERRQ(ierr);
-        {
-          PetscScalar matprop_smooth_width;
-
-          ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
-          smth = get_smoothing(matprop_smooth_width, gphi );
-        }
-        arr_Jmix[i] *= smth;
-
+    /* (optional) smoothing across phase boundaries for two phase composite */
+    ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres, Sval, &gphi);CHKERRQ(ierr);
+    { 
+      PetscScalar matprop_smooth_width;
+      
+      ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
+      smth = get_smoothing(matprop_smooth_width, gphi );
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_b,S->phi,&arr_phi);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->kappac,&arr_kappac);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->rho,&arr_rho);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->temp,&arr_temp);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->S,&arr_S);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->dxidr_b,&arr_dxidr);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_b,S->Jmix,&arr_Jmix);CHKERRQ(ierr);
+    Jmix *= smth;
 
-    ierr = VecAXPY( S->Jtot, 1.0, S->Jmix ); CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-
+    return Jmix;
 }
 
 /* conductive heat flux at basic nodes */
