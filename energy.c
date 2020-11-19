@@ -9,8 +9,6 @@
 #include "monitor.h"
 
 /* heat fluxes */
-static PetscScalar GetConductiveHeatFlux( Ctx *, PetscInt *);
-static PetscScalar GetConvectiveHeatFlux( Ctx *, PetscInt *);
 static PetscScalar GetMixingHeatFlux( Ctx *, PetscInt *);
 static PetscScalar GetGravitationalHeatFlux( Ctx *, PetscInt * );
 
@@ -169,7 +167,7 @@ static PetscErrorCode set_Jtot( Ctx *E )
       ierr = append_Jgrav( E );
     }
 
-    ierr = SetCoreMantleFluxBC( E );CHKERRQ(ierr);
+    //ierr = SetCoreMantleFluxBC( E );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
@@ -203,7 +201,7 @@ static PetscErrorCode append_Jconv( Ctx *E )
 
 }
 
-static PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
+PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
 {
     PetscErrorCode ierr;
     PetscScalar    dSdxi,dxidr,temp,rho,kappah,Jconv;
@@ -324,7 +322,7 @@ static PetscErrorCode append_Jcond( Ctx *E )
 
 }
 
-static PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
+PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
 {
     PetscErrorCode ierr;
     PetscScalar    dSdxi,dxidr,temp,cp,dTdxis,cond,Jcond;

@@ -2,6 +2,7 @@
 #include "energy.h"
 #include "eos.h"
 #include "ic.h"
+#include "matprop.h"
 #include "monitor.h"
 #include "parameters.h"
 #include "reaction.h"
@@ -15,6 +16,7 @@ static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx * );
 static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * );
+static PetscErrorCode ObjectiveFunctionCMBdSdxiFromFlux( SNES, Vec, Vec, void * );
 /* atmosphere ic */
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_default( Ctx *, Vec );
@@ -88,9 +90,9 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
 
     /* set surface and core entropy for the IC (if set), but then can
        evolve (not necessarily isothermal).  Updates the Vecs in E */
-    if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
-        ierr = set_ic_interior_conform_to_bcs( E ); CHKERRQ(ierr);
-    }
+    //if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
+    ierr = set_ic_interior_conform_to_bcs( E ); CHKERRQ(ierr);
+  //  }
 
     /* Now the Vecs in E are set and consistent, clone them
        to the sol Vec which is what is actually used by the
@@ -423,7 +425,6 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E )
 
     /* prototyping.  If flux is constrained by CMB condition, ensure that initial
        dS/dr at the CMB adheres to this flux */
-
     if( (P->CORE_BC==2) || (P->CORE_BC==3) ){
         ierr = SetInitialCMBdSdxiFromFlux( E );CHKERRQ(ierr);
     }
@@ -783,13 +784,15 @@ static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * E )
     PetscErrorCode ierr;
     SNES           snes;
     Vec            x,r;
-    PetscScalar    *xx, dSdxi;
+    PetscScalar    dSdxi;
     PetscInt       numpts_b, ind0, ind_cmb;
     Solution       *S = &E->solution;
 
     PetscFunctionBeginUser;
+
     ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
     ind_cmb = numpts_b-1; // index of last basic node (i.e., cmb)
+    ind0 = 0;
 
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
     ierr = SNESSetOptionsPrefix(snes,"cmbic_");CHKERRQ(ierr);
@@ -797,13 +800,12 @@ static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * E )
     ierr = VecSetSizes( x, PETSC_DECIDE, 1 );CHKERRQ(ierr);
     ierr = VecSetFromOptions(x);CHKERRQ(ierr);
     ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
-    /* FIXME: update objective function */
-    ierr = SNESSetFunction(snes,r,NULL,E);CHKERRQ(ierr);
+    ierr = SNESSetFunction(snes,r,ObjectiveFunctionCMBdSdxiFromFlux,E);CHKERRQ(ierr);
 
     /* initial guess for cmb dS/dxi */
-    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    xx[0] = -1.E-4;
-    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+    ierr = VecSetValue(x,ind0,-1.0E-1,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(x);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(x);CHKERRQ(ierr);
 
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
@@ -811,11 +813,11 @@ static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * E )
 
     /* Turn off convergence based on step size and trust region tolerance */
     ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_stol","0");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-cmbicc_snes_trtol","0");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_rtol","1.0e-9");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_atol","1.0e-9");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_rtol","1.0e-9");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_atol","1.0e-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_trtol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_rtol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_atol","1.0E0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_rtol","1.0e-6");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_atol","1.0e-6");CHKERRQ(ierr);
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
     {
@@ -846,6 +848,59 @@ static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * E )
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);
     ierr = SNESDestroy(&snes);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
+}
+
+static PetscErrorCode ObjectiveFunctionCMBdSdxiFromFlux( SNES snes, Vec x, Vec f, void *ptr )
+{
+    PetscErrorCode    ierr;
+    PetscScalar       res,dSdxi,S_cmb,S_abv,xi_cmb,xi_abv,Jcond,Jconv,target;
+    PetscInt          numpts_b,ind0, ind_cmb, ind_abv;
+    Ctx               *E = (Ctx*) ptr;
+    Parameters        const P = E->parameters;
+    ScalingConstants  const SC = P->scaling_constants;
+    Mesh              const *M = &E->mesh;
+    Solution          *S = &E->solution;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ind_cmb = numpts_b-1; // index of last basic node (i.e., cmb)
+    ind_abv = ind_cmb-1;
+    ind0 = 0;
+
+    /* gradient we are solving for */
+    ierr = VecGetValues(x,1,&ind0,&dSdxi);CHKERRQ(ierr);
+    ierr = VecGetValues(S->S_s,1,&ind_abv,&S_abv);CHKERRQ(ierr);
+    ierr = VecGetValues(M->xi_b,1,&ind_cmb,&xi_cmb);CHKERRQ(ierr);
+    ierr = VecGetValues(M->xi_b,1,&ind_abv,&xi_abv);CHKERRQ(ierr);
+
+    /* CMB entropy */
+    S_cmb = S_abv + dSdxi * 0.5 * (xi_cmb-xi_abv);
+
+    /* write dSdxi and S at CMB to Vecs in S */
+    ierr = VecSetValue(S->S,ind_cmb,S_cmb,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecSetValue(S->dSdxi,ind_cmb,dSdxi,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->S);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->S);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->dSdxi);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->dSdxi);CHKERRQ(ierr);
+
+    /* update material properties at CMB */
+    ierr = set_matprop_basic( E );CHKERRQ(ierr);
+
+    Jcond = GetConductiveHeatFlux( E, &ind_cmb );
+    Jconv = GetConvectiveHeatFlux( E, &ind_cmb );
+    target = P->core_bc_value;
+
+    /* res is fractional difference of flux to target */
+    res = Jcond * SC->FLUX + Jconv * SC->FLUX - target * SC->FLUX;
+
+    ierr = VecSetValue(f,ind0,res,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(f);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(f);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
