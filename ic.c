@@ -813,6 +813,7 @@ static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * E )
     /* Turn off convergence based on step size and trust region tolerance */
     ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_stol","0");CHKERRQ(ierr);
     /* atol to solve within 1 W/m^2 */
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_rtol","0");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_atol","1.0E0");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_rtol","1.0e-6");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_atol","1.0e-6");CHKERRQ(ierr);
