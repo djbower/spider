@@ -14,6 +14,7 @@ static PetscErrorCode set_ic_interior_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx * );
+static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * );
 /* atmosphere ic */
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_default( Ctx *, Vec );
@@ -420,6 +421,13 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E )
         arr_dSdxi_b[ihi_b-2] /= arr_xi_s[ihi_b-2] - arr_xi_s[ihi_b-3];
     }
 
+    /* prototyping.  If flux is constrained by CMB condition, ensure that initial
+       dS/dr at the CMB adheres to this flux */
+
+    if( (P->CORE_BC==2) || (P->CORE_BC==3) ){
+        ierr = SetInitialCMBdSdxiFromFlux( E );CHKERRQ(ierr);
+    }
+
     ierr = DMDAVecRestoreArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(E->da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
@@ -768,6 +776,79 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
     ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
+}
+
+static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * E )
+{
+    PetscErrorCode ierr;
+    SNES           snes;
+    Vec            x,r;
+    PetscScalar    *xx, dSdxi;
+    PetscInt       numpts_b, ind0, ind_cmb;
+    Solution       *S = &E->solution;
+
+    PetscFunctionBeginUser;
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ind_cmb = numpts_b-1; // index of last basic node (i.e., cmb)
+
+    ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
+    ierr = SNESSetOptionsPrefix(snes,"cmbic_");CHKERRQ(ierr);
+    ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, 1 );CHKERRQ(ierr);
+    ierr = VecSetFromOptions(x);CHKERRQ(ierr);
+    ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
+    /* FIXME: update objective function */
+    ierr = SNESSetFunction(snes,r,NULL,E);CHKERRQ(ierr);
+
+    /* initial guess for cmb dS/dxi */
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    xx[0] = -1.E-4;
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+
+    /* Inform the nonlinear solver to generate a finite-difference approximation
+       to the Jacobian */
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_mf",NULL);CHKERRQ(ierr);
+
+    /* Turn off convergence based on step size and trust region tolerance */
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_stol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-cmbicc_snes_trtol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_rtol","1.0e-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_atol","1.0e-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_rtol","1.0e-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_atol","1.0e-9");CHKERRQ(ierr);
+
+    /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
+    {
+      PetscBool flg = PETSC_FALSE;
+
+      ierr = PetscOptionsGetBool(NULL,NULL,"-cmbic_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      if (flg) {
+        ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
+      }
+    }
+
+    /* Solve */
+    ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
+    ierr = SNESSolve(snes,NULL,x);CHKERRQ(ierr);
+    {
+      SNESConvergedReason reason;
+      ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
+      if (reason < 0) SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+          "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
+    }
+
+    /* store solution */
+    ierr = VecGetValues(x,1,&ind0,&dSdxi);
+    ierr = VecSetValue(S->dSdxi,ind_cmb,dSdxi,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->dSdxi);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->dSdxi);CHKERRQ(ierr);
+
+    ierr = VecDestroy(&x);CHKERRQ(ierr);
+    ierr = VecDestroy(&r);CHKERRQ(ierr);
+    ierr = SNESDestroy(&snes);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+
 }
 
 static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
