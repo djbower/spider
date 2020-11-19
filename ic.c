@@ -810,11 +810,9 @@ static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * E )
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
     ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_mf",NULL);CHKERRQ(ierr);
-
     /* Turn off convergence based on step size and trust region tolerance */
     ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_stol","0");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_trtol","0");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_rtol","0");CHKERRQ(ierr);
+    /* atol to solve within 1 W/m^2 */
     ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_atol","1.0E0");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_rtol","1.0e-6");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_atol","1.0e-6");CHKERRQ(ierr);
@@ -877,7 +875,7 @@ static PetscErrorCode ObjectiveFunctionCMBdSdxiFromFlux( SNES snes, Vec x, Vec f
     ierr = VecGetValues(M->xi_b,1,&ind_cmb,&xi_cmb);CHKERRQ(ierr);
     ierr = VecGetValues(M->xi_b,1,&ind_abv,&xi_abv);CHKERRQ(ierr);
 
-    /* CMB entropy */
+    /* CMB entropy using standard reconstruction */
     S_cmb = S_abv + dSdxi * 0.5 * (xi_cmb-xi_abv);
 
     /* write dSdxi and S at CMB to Vecs in S */
@@ -891,11 +889,15 @@ static PetscErrorCode ObjectiveFunctionCMBdSdxiFromFlux( SNES snes, Vec x, Vec f
     /* update material properties at CMB */
     ierr = set_matprop_basic( E );CHKERRQ(ierr);
 
+    /* compute energy flux */
     Jcond = GetConductiveHeatFlux( E, &ind_cmb );
     Jconv = GetConvectiveHeatFlux( E, &ind_cmb );
+
+    /* value we want to recover */
     target = P->core_bc_value;
 
-    /* res is fractional difference of flux to target */
+    /* residual is difference of CMB flux to target in W/m^2 */
+    /* scaled to W/m^2 to guide solver tolerance selection */
     res = Jcond * SC->FLUX + Jconv * SC->FLUX - target * SC->FLUX;
 
     ierr = VecSetValue(f,ind0,res,INSERT_VALUES);CHKERRQ(ierr);
