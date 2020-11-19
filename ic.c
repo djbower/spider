@@ -855,7 +855,7 @@ static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * E )
 static PetscErrorCode ObjectiveFunctionCMBdSdxiFromFlux( SNES snes, Vec x, Vec f, void *ptr )
 {
     PetscErrorCode    ierr;
-    PetscScalar       res,dSdxi,S_cmb,S_abv,xi_cmb,xi_abv,Jcond,Jconv,target;
+    PetscScalar       res,dSdxi,S_cmb,S_abv,xi_cmb,xi_abv,Jcond,Jconv,Jmix,Jgrav,target;
     PetscInt          numpts_b,ind0, ind_cmb, ind_abv;
     Ctx               *E = (Ctx*) ptr;
     Parameters        const P = E->parameters;
@@ -893,13 +893,15 @@ static PetscErrorCode ObjectiveFunctionCMBdSdxiFromFlux( SNES snes, Vec x, Vec f
     /* compute energy flux */
     Jcond = GetConductiveHeatFlux( E, &ind_cmb );
     Jconv = GetConvectiveHeatFlux( E, &ind_cmb );
+    Jmix = GetMixingHeatFlux( E, &ind_cmb );
+    Jgrav = GetGravitationalHeatFlux( E, &ind_cmb );
 
     /* value we want to recover */
     target = P->core_bc_value;
 
     /* residual is difference of CMB flux to target in W/m^2 */
     /* scaled to W/m^2 to guide solver tolerance selection */
-    res = Jcond * SC->FLUX + Jconv * SC->FLUX - target * SC->FLUX;
+    res = Jcond * SC->FLUX + Jconv * SC->FLUX + Jmix * SC->FLUX + Jgrav * SC->FLUX - target * SC->FLUX;
 
     ierr = VecSetValue(f,ind0,res,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecAssemblyBegin(f);CHKERRQ(ierr);

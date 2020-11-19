@@ -9,9 +9,6 @@
 #include "monitor.h"
 
 /* heat fluxes */
-static PetscScalar GetMixingHeatFlux( Ctx *, PetscInt *);
-static PetscScalar GetGravitationalHeatFlux( Ctx *, PetscInt * );
-
 static PetscErrorCode set_Jtot( Ctx * );
 static PetscErrorCode append_Jcond( Ctx * );
 static PetscErrorCode append_Jconv( Ctx * );
@@ -247,7 +244,7 @@ static PetscErrorCode append_Jmix( Ctx *E )
 
 }
 
-static PetscScalar GetMixingHeatFlux( Ctx *E, PetscInt * ind_ptr )
+PetscScalar GetMixingHeatFlux( Ctx *E, PetscInt * ind_ptr )
 {
     PetscErrorCode  ierr;
     PetscScalar     dSdxi,dxidr,temp,rho,kappac,phi,pres,Sval,Jmix,dPdr,dSliqdP,dSsoldP,gphi,smth;
@@ -371,7 +368,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 
 }
 
-static PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
+PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
 {
     PetscErrorCode  ierr;
     PetscScalar     porosity,cond1,cond2,F,dv,pres,rho,Sliq,Ssol,phi,Jgrav,temp;
