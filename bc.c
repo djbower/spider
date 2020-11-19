@@ -104,6 +104,56 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode SetCoreMantleFluxBC( Ctx *E )
+{
+    PetscErrorCode ierr;
+    PetscInt       ind_cmb, numpts_b;
+    PetscMPIInt    rank, size;
+    Parameters     const P = E->parameters;
+    Solution       *S = &E->solution;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+    ind_cmb  = numpts_b-1; // index of last basic node (i.e., cmb)
+
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
+
+    /* conform heat flux at the core mantle boundary to the
+       imposed boundary condition */
+
+    /* assume that the last rank contains the last basic node */
+    if (rank == size-1){
+
+        /* conform basal mantle flux to core mantle boundary condition */
+        switch( P->CORE_BC ){
+            case 1:
+                // core cooling
+                /* do nothing since core cools by mantle heat flux
+                   as determined above */
+                break;
+            case 2:
+                // constant heat flux
+                ierr = VecSetValue( S->Jtot, ind_cmb, P->core_bc_value, INSERT_VALUES);CHKERRQ(ierr);
+                break;
+            case 3:
+                // isothermal core, i.e. CMB entropy/temperature fixed
+                ierr = VecSetValue( S->Jtot, ind_cmb, 0.0, INSERT_VALUES);CHKERRQ(ierr);
+                break;
+            default:
+                SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported CORE_BC value %d provided",P->CORE_BC);
+        }
+
+        ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+        ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+
+    }
+
+    PetscFunctionReturn(0);
+
+}
+
 static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qin )
 {
     PetscErrorCode ierr;
