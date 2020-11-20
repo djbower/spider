@@ -18,7 +18,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   Atmosphere           *A = &E->atmosphere;
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
-  PetscScalar          *arr_dSdt_s, *arr_rhs_b, fac_cmb, Ecore;
+  PetscScalar          *arr_dSdt_s, *arr_rhs_b, fac_cmb, area_cmb, Ecore;
   const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_temp_b, *arr_cp_s, *arr_cp_b, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
   PetscMPIInt          rank,size;
   DM                   da_s = E->da_s, da_b=E->da_b;
@@ -65,10 +65,10 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecGetArray    (da_s,S->dSdt_s,&arr_dSdt_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->capacitance_s,&arr_capacitance_s);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_s,S->temp_s,&arr_temp_s); CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp_b); CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_s,S->cp_s,&arr_cp_s); CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_b,S->cp,&arr_cp_b); CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp_b);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_b,S->cp,&arr_cp_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
@@ -88,13 +88,14 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   }
 
   /* d/dt(dS/dr) at core mantle boundary */
+  ierr = VecGetValues(M->area_b,1,&ind_cmb,&area_cmb);CHKERRQ(ierr);
   /* isothermal */
   if( P->CORE_BC==3 ){
       Ecore = arr_Etot[ind_cmb];
   }
-  /* flux from core */
+  /* prescribed flux from core */
   else{
-      Ecore = P->core_bc_value;
+      Ecore = P->core_bc_value * area_cmb;
   }
 
   fac_cmb = arr_cp_b[ind_cmb] / P->cp_core;
@@ -102,7 +103,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* recall factors of 4 pi are not included in SPIDER (only used for output) */
   fac_cmb /= 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
   fac_cmb /= P->rho_core;
-
   arr_rhs_b[ind_cmb] = -arr_Etot[ind_cmb] + Ecore;
   arr_rhs_b[ind_cmb] *= fac_cmb;
   arr_rhs_b[ind_cmb] -= arr_dSdt_s[ihi_s-1];
