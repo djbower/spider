@@ -470,6 +470,11 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   }
   P->core_bc_value = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-core_bc_value",&P->core_bc_value,NULL);CHKERRQ(ierr);
+  /* this switch is kept for legacy purposes, but the universal boundary condition for the CMB
+     could in principle (in the future) be controlled by a single parameter:
+         P->core_bc_value = -1 would be isothermal (Ecmb = Ecore)
+         P->core_bc_value = 0 would be simple core cooling (no core heat flux)
+         P->core_bc_value > 0 would be prescribed heat flux from core into mantle */
   switch( P->CORE_BC ){
     case 1:
       // CORE_BC = MO_CORE_TYPE_COOLING: simple core cooling
