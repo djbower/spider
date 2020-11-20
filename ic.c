@@ -423,15 +423,15 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E )
         arr_dSdxi_b[ihi_b-2] /= arr_xi_s[ihi_b-2] - arr_xi_s[ihi_b-3];
     }
 
-    /* prototyping.  If flux is constrained by CMB condition, ensure that initial
+    ierr = DMDAVecRestoreArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(E->da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
+
+    /* if flux out of the core is fixed, ensure that initial
        dS/dr at the CMB adheres to this flux */
     if( (P->CORE_BC==2) || (P->CORE_BC==3) ){
         ierr = SetInitialCMBdSdxiFromFlux( E );CHKERRQ(ierr);
     }
-
-    ierr = DMDAVecRestoreArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(E->da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

@@ -4,9 +4,9 @@
 #include "eos.h"
 #include "eos_composite.h"
 #include "matprop.h"
+#include "monitor.h"
 #include "twophase.h"
 #include "util.h"
-#include "monitor.h"
 
 /* heat fluxes */
 static PetscErrorCode set_Jtot( Ctx * );
@@ -164,7 +164,8 @@ static PetscErrorCode set_Jtot( Ctx *E )
       ierr = append_Jgrav( E );
     }
 
-    //ierr = SetCoreMantleFluxBC( E );CHKERRQ(ierr);
+    /* this needs to be included otherwise Ecmb is not correct */
+    ierr = SetCoreMantleFluxBC( E );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 

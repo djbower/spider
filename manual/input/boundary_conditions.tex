@@ -130,12 +130,16 @@ J_{cmb} = \frac{1}{A_{cmb}} \left( J_1A_1 - V \rho H \right)
 %%%
 \subsubsection{Universal boundary condition}
 \label{sec:corecool2}
-An issue with the simple core cooling model is that we are considering the element that neighbours the core.  If the heat out of this element (say, due to gravitational separation) is large (because the basic node is in the mixed phase region), this can result in unrealistic cooling of the element.  Hence it is preferred to instead consider the actual boundary of the CMB (the lowermost basic node) when constructing the boundary condition.  Similar to before, but we now consider an (optional) energy input $E_{in}$ for completeness (this is not required for this approach):
+An issue with the simple core cooling model is that we are considering the element that neighbours the core.  If the heat out of this element (say, due to gravitational separation) is large (because the basic node is in the mixed phase region), this can result in unrealistic cooling of the element.  Hence it is preferred to instead consider the actual boundary of the CMB (the lowermost basic node) when constructing the boundary condition.  Similar to before, the core energy balance, where we now consider an energy input $E_{in}$, is:
 \begin{equation}
 \frac{dQ_c}{dt} = m_c c_c \frac{dT_{core}}{dt} = -A_{cmb} J_{cmb} + E_{in} = -E_{cmb} + E_{in}
 \label{eq:core_energy_balanceII}
 \end{equation}
-But now express in terms of the entropy change at the CMB.  It's probably better to think of this as the entropy change in the mantle some small distance from the CMB on the mantle side:
+where $E_{in}$ can be related to a heat source in the core which can be represented as an effective heat flux at the CMB:
+\begin{equation}
+E_{in} = H_c m_c = J_{in} A_{cmb}
+\end{equation}
+where $H_c$ is the internal heating rate per unit mass (W/kg).  Now express in terms of the entropy change at the CMB.  It's probably better to think of this as the entropy change in the mantle some small distance from the CMB on the mantle side:
 \begin{equation}
 \frac{dQ_c}{dt} = m_c c_c \hat{T}_{core} \frac{T_{cmb}}{c_{cmb}} \left( \frac{dS_{cmb}}{dt} \right) = -A_{cmb} J_{cmb} + E_{in} = -E_{cmb} + E_{in}
 \end{equation}
@@ -155,5 +159,10 @@ So the time update for the entropy gradient at the CMB, where $E_{cmb}$ conforms
 \begin{equation}
 \frac{\Delta r}{2} \frac{d}{dt} \left( \left. \frac{dS}{dr} \right |_{cmb} \right) = (-E_{cmb}+E_{in}) \left( \frac{c_{cmb}}{c_c} \right) \left( \frac{1}{m_c \hat{T}_{core} T_{cmb}} \right) - \frac{dS_{-1}}{dt}
 \end{equation}
-Now, $dS_{-1}/dt$ is the change in entropy of the last staggered node, which is given by the ``master'' equation since it depends on fluxes in and out of the volume as well as interior heat sources.  $E_{cmb}$ can be computed based on the heat flux at the CMB in the mantle or set to a fixed value.  If $E_{cmb}=0$ then an isothermal boundary condition is naturally recovered.  Hence this one equation is now implemented in SPIDER.
+Now, $dS_{-1}/dt$ is the change in entropy of the last staggered node, which is given by the ``master'' equation since it depends on fluxes in and out of the volume as well as interior heat sources.  Similarly, $E_{cmb}$ can be computed based on the heat flux at the CMB in the mantle.  Therefore, we can use $E_{in}$ (heat flux from the core) to control the nature of the boundary condition:
+\begin{enumerate}
+\item $E_{in}=0$.  CMB (core) cools entirely according to the flux removed at the base of the mantle by the magma ocean.
+\item $E_{in}=\text{constant}$.  \textbf{Constant heat flux} delivered to the CMB from the core, which will buffer cooling of the CMB by the magma ocean.
+\item $E_{in}=E_{cmb}$.  Cooling of the CMB by the magma ocean is exactly balanced by the flux from the core.  Hence this is an \textbf{isothermal} boundary condition.
+\end{enumerate}
 %%%
