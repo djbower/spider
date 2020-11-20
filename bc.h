@@ -3,7 +3,8 @@
 
 #include "ctx.h"
 
-PetscErrorCode SetCoreMantleFluxBC( Ctx * );
+// TODO: possibly remove below
+//PetscErrorCode SetCoreMantleFluxBC( Ctx * );
 PetscErrorCode set_surface_flux( Ctx * );
 PetscErrorCode solve_dpdts( Ctx * );
 

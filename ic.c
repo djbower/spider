@@ -429,9 +429,9 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E )
 
     /* if flux out of the core is fixed, ensure that initial
        dS/dr at the CMB adheres to this flux */
-    if( (P->CORE_BC==2) || (P->CORE_BC==3) ){
-        ierr = SetInitialCMBdSdxiFromFlux( E );CHKERRQ(ierr);
-    }
+    //if( (P->CORE_BC==2) || (P->CORE_BC==3) ){
+    //    ierr = SetInitialCMBdSdxiFromFlux( E );CHKERRQ(ierr);
+   // }
 
     PetscFunctionReturn(0);
 }

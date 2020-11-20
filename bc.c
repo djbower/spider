@@ -104,6 +104,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+#if 0
 PetscErrorCode SetCoreMantleFluxBC( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -153,6 +154,7 @@ PetscErrorCode SetCoreMantleFluxBC( Ctx *E )
     PetscFunctionReturn(0);
 
 }
+#endif
 
 static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qin )
 {

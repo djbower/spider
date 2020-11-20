@@ -164,8 +164,9 @@ static PetscErrorCode set_Jtot( Ctx *E )
       ierr = append_Jgrav( E );
     }
 
+    /* CMB flux should always be computed by MO model */
     /* this needs to be included otherwise Ecmb is not correct */
-    ierr = SetCoreMantleFluxBC( E );CHKERRQ(ierr);
+    //ierr = SetCoreMantleFluxBC( E );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 

@@ -18,7 +18,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   Atmosphere           *A = &E->atmosphere;
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
-  PetscScalar          *arr_dSdt_s, *arr_rhs_b, fac_cmb;
+  PetscScalar          *arr_dSdt_s, *arr_rhs_b, fac_cmb, Ecore;
   const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_temp_b, *arr_cp_s, *arr_cp_b, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
   PetscMPIInt          rank,size;
   DM                   da_s = E->da_s, da_b=E->da_b;
@@ -88,13 +88,23 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   }
 
   /* d/dt(dS/dr) at core mantle boundary */
-  /* Jcmb/Ecmb were previously updated to adhere to bc */
+  /* isothermal */
+  if( P->CORE_BC==3 ){
+      Ecore = arr_Etot[ind_cmb];
+  }
+  /* flux from core */
+  else{
+      Ecore = P->core_bc_value;
+  }
+
   fac_cmb = arr_cp_b[ind_cmb] / P->cp_core;
   fac_cmb /= arr_temp_b[ind_cmb] * P->tfac_core_avg;
   /* recall factors of 4 pi are not included in SPIDER (only used for output) */
   fac_cmb /= 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
   fac_cmb /= P->rho_core;
-  arr_rhs_b[ind_cmb] = -arr_Etot[ind_cmb] * fac_cmb;
+
+  arr_rhs_b[ind_cmb] = -arr_Etot[ind_cmb] + Ecore;
+  arr_rhs_b[ind_cmb] *= fac_cmb;
   arr_rhs_b[ind_cmb] -= arr_dSdt_s[ihi_s-1];
   arr_rhs_b[ind_cmb] *= 2.0 / (arr_xi_b[ind_cmb] - arr_xi_b[ind_cmb-1] );
 
