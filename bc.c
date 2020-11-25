@@ -57,7 +57,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
           break;
         case 5:
           // isothermal (constant entropy)
-          // TODO: is this consistent with A->tsurf?
+          // check this is consistent with A->tsurf
           Qout = get_isothermal_surface( E );
           A->emissivity = get_emissivity_from_flux( A, Ap, FC, Qout );
           break;
@@ -85,7 +85,7 @@ PetscErrorCode set_surface_flux( Ctx *E )
          and emissivity */
       ierr = set_surface_temperature_from_flux( A, Ap, FC ); CHKERRQ(ierr);
 
-      /* FIXME: if we want atmospheric escape with VISCOUS_MANTLE_COOLING_RATE,
+      /* if we want atmospheric escape with VISCOUS_MANTLE_COOLING_RATE,
          we would need to now update the escape parameters since the surface
          temperature would have changed */
 
