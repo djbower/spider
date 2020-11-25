@@ -1,5 +1,62 @@
 \subsection{Surface}
-\subsubsection{Isothermal (constant entropy)}
+\subsubsection{New approach}
+The surface boundary condition is more challenging that the CMB to implement formally ``correctly''.  For the initial condition, we can solve the balance of radiative flux and interior fluxes to solve for $dS/dr|_0$ at the surface for known $S_{1/2}$.  Recall the reconstruction:
+\begin{equation}
+S_0 = S_{1/2} - \frac{\Delta r}{2} \left.\frac{dS}{dr}\right|_0
+\end{equation}
+where subscript 0 is the surface and subscript $1/2$ is the uppermost staggered node.  We can also take the time derivative:
+\begin{equation}
+\frac{\partial S_0}{\partial t} = \frac{\partial S_{1/2}}{\partial t} - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{dS}{dr}\right|_0 \right)
+\end{equation}
+For the time update (time integrator), we ultimately want to compute the final term on the RHS (perhaps by solving a non-linear problem within the time integrator), i.e. $\frac{\partial}{\partial t} \left( \left. \frac{dS}{dr}\right|_0 \right)$.  First let's take a look at the radiative flux:
+\begin{equation}
+J_{rad} = \epsilon \sigma (T_0^4 - T_{eqm}^4)
+\end{equation}
+\begin{equation}
+\frac{\partial J_{rad}}{\partial t} = \frac{\partial T}{\partial t} \frac{\partial}{\partial T} \epsilon \sigma (T_0^4 - T_{eqm}^4)
+\end{equation}
+\begin{equation}
+\frac{\partial J_{rad}}{\partial t} = \frac{\partial T_0}{\partial t} (\epsilon \sigma 4 T_0^3)
+\end{equation}
+and by substitution:
+\begin{equation}
+\frac{\partial J_{rad}}{\partial t} = \frac{T_0}{c_0} \frac{\partial S_0}{\partial t} (\epsilon \sigma 4 T_0^3)
+\end{equation}
+Collecting terms:
+\begin{equation}
+\frac{\partial J_{rad}}{\partial t} = \frac{\partial S_0}{\partial t} \left( \frac{4 \epsilon \sigma T_0^4}{c_0} \right)
+\end{equation}
+$T_0$ is determined from $S_0$, where $S_0$ relates to solution quantities through the reconstruction.  Since $\partial S_{1/2} / \partial t$ depends on $J_{tot}$, we probably have to solve for $\partial S_{1/2} / \partial t$ and $\partial / \partial t (\partial S/\partial r)|_0$ simultaneously.  Now let's look at the convective flux, since this is the simplest energy balance with the radiative flux:
+\begin{equation}
+F_{conv} = -\rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
+\end{equation}
+\begin{equation}
+\frac{\partial F_{conv}}{\partial t} = - \frac{\partial}{\partial t} \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
+\end{equation}
+\begin{equation}
+\frac{\partial F_{conv}}{\partial t} = -  \frac{\partial (\partial S/\partial r)}{\partial t} \frac{\partial}{\partial (\partial S/\partial r)} \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
+\end{equation}
+The first term on the RHS is what we want to compute, i.e. an update to the entropy gradient evaluated at the surface.  So now we must process the second term:
+\begin{equation}
+\frac{\partial}{\partial (\partial S/\partial r)} \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
+\end{equation}
+We now that $\kappa_h$ is a strong function of $dS/dr$, so substitute in the expression for the viscous limit:
+\begin{equation}
+\frac{\partial}{\partial (\partial S/\partial r)} \rho T \left[\frac{\alpha g l^4 T}{18 \nu c} \left( \frac{\partial S}{\partial r} \right) \right] \left( \frac{\partial S}{\partial r} \right)
+\end{equation}
+Collecting terms:
+\begin{equation}
+\frac{\partial}{\partial (\partial S/\partial r)} \left[\frac{\alpha \rho g l^4 T^2}{18 \nu c} \left( \frac{\partial S}{\partial r} \right)^2 \right]
+\end{equation}
+\textbf{Alternative approach}.  Actually simpler to just evaluate the flux at two different $dS/dr$ and then compute the numerical (finite difference) derivative:
+\begin{equation}
+\frac{\partial F_{conv}}{\partial t} = \frac{\partial (\partial S/\partial r)}{\partial t} \frac{\partial F_{conv}}{\partial (\partial S/\partial r)}
+\end{equation}
+Since then $F_{conv}$ can be an arbitrarily nasty function and there's no need to compute analytical derivatives.  But this requires 
+%%%%
+%%%%
+%%%%
+\subsubsection{Legacy: Isothermal (constant entropy)}
 To apply this boundary condition in terms of fluxes, the heat leaving the uppermost cell must balance the heat entering the cell plus any internal heat generation:
 \begin{equation}
 \frac{dQ}{dt} = E_{1} - E_{top} + V \rho H = 0
@@ -55,6 +112,8 @@ rearrange:
 \Delta T = c T_s^3
 \end{equation}
 which gives an estimate of the temperature drop across the thin ($\sim$cm) boundary layer using mixing length theory as a function of the surface temperature.  This scaling agrees with \cite{RS06} \dbnote{but they derive from boundary layer theory?}.  We can fit a curve to the model to determine that the constant of proportionality is $c=8.05154344{\rm E-08}$.  \dbnote{Paul Tackley calculates $c=1\rm{e}-7$ which is comparable.}
+%%%%
+%%%%
 %%%%
 \subsubsection{Formation of a viscous lid with conventional mixing length}
 In 1-D we can technically resolve the ultra-thin thermal boundary layer, but this has its own challenges at least for cases that use the conventional definition of the mixing length as distance from the nearest boundary.  Test cases show that near the surface the temperature gradient is much larger than the slope of the liquidus.  Therefore, the surface always cools through the mixed phase region at earlier time than the region below.  This forms a high viscosity lid at the surface with thickness comparable to the smallest mesh spacing ($\sim$ 1 mm).  The lid insulates the magma ocean because the eddy diffusivity in the high viscosity lid is orders of magnitude smaller than the eddy diffusivity in the melt-dominated region below it.  This behaviour is not physically reasonable since it is expected that the surface of a magma ocean remains largely molten during crystallisation except when a buoyant crust forms.  In addition, lid formation greatly increases the number of internal time steps taken by the numerical solver and thus the time integration becomes prohibitively expensive.
@@ -113,7 +172,7 @@ Equivalently, in terms of fluxes:
 \begin{equation}
 J_{cmb} = \left( \frac{1}{A_{cmb}} \right) \frac{J_1A_1 - V \rho H}{\left(1+\frac{V \rho c}{\hat{T}_{core} m_c c_c}\right)} = \left( \frac{1}{A_{cmb}} \right) (J_1A_1 - V \rho H)\left(1+\frac{V \rho c}{\hat{T}_{core} m_c c_c}\right)^{-1}
 \end{equation}
-%%%
+%%%%
 \subsubsection{Legacy: Isothermal (constant entropy)}
 This approach was initially adopted and documented in \cite{BSW18}, but has since been superseded by the approach in Sect.~\ref{sec:corecool2}.  To apply this boundary condition in terms of fluxes, the heat leaving the lowermost cell must balance the heat entering the cell plus any internal heat generation:
 \begin{equation}
