@@ -811,15 +811,21 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_type","newtontr");CHKERRQ(ierr);
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_mf",NULL);CHKERRQ(ierr);
-
     /* Turn off convergence based on step size */
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_stol","0");CHKERRQ(ierr);
-
     /* Turn off convergenced based on trust region tolerance */
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_trtol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_rtol","1.0e-6");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_atol","1.0e-6");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_ksp_rtol","1.0e-6");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_ksp_rtol","1.0e-6");CHKERRQ(ierr);
+    /* below previously suggested by PS, but not currently used */
+    //ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_linesearch_damping","0.01");CHKERRQ(ierr);
+    //ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_max_it","10000");CHKERRQ(ierr);
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
     {
