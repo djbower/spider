@@ -15,8 +15,6 @@ static PetscErrorCode set_ic_interior_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx * );
-static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * );
-static PetscErrorCode ObjectiveFunctionCMBdSdxiFromFlux( SNES, Vec, Vec, void * );
 /* atmosphere ic */
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_default( Ctx *, Vec );
@@ -427,12 +425,6 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E )
     ierr = DMDAVecRestoreArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(E->da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
-    /* if flux out of the core is fixed, ensure that initial
-       dS/dr at the CMB adheres to this flux */
-    //if( (P->CORE_BC==2) || (P->CORE_BC==3) ){
-    //    ierr = SetInitialCMBdSdxiFromFlux( E );CHKERRQ(ierr);
-   // }
-
     PetscFunctionReturn(0);
 }
 
@@ -510,7 +502,7 @@ static PetscErrorCode set_ic_atmosphere_default( Ctx *E, Vec sol )
 static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
 {
 
-    /* FIXME: this function has authorisation to update the parameters struct
+    /* this function has authorisation to update the parameters struct
        to ensure that parameters obey constraints imposed by the
        initial condition */
 
@@ -530,7 +522,6 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
     /* conform initial_total_abundance */
     for (i=0; i<Ap->n_volatiles; ++i){
         if( Ap->IC_ATMOSPHERE==1 ){
-            /* TODO: check comment below, not sure it is actually the same */
             /* this is equivalent to the operation below for Ap->IC_ATMOSPHERE==3, but a shortcut since
                we do not need to sum all reservoirs to get to the initial total abundance */
             /* below we correct with -= */
@@ -542,7 +533,6 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
 
         else if( Ap->IC_ATMOSPHERE==3 ){
             mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos + A->volatiles[i].mass_reaction;
-            /* below we set with = */
             Ap->volatile_parameters[i]->initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
         }
     }
@@ -554,8 +544,8 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
 
     /* Ap_>IC_ATMOSPHERE==1 will also set mass reactions close to (but not exactly)
        to zero.  Explicitly zero the entries here */
-    /* FIXME: add tolerance check to ensure that mass reactions are
-       actually close to zero before overwriting them here */
+    /* add tolerance check to ensure that mass reactions are
+       actually close to zero before overwriting them here? */
     for(i=0; i<Ap->n_reactions; ++i){
         A->mass_reaction[i] = 0.0;
     }
@@ -580,14 +570,14 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
            1.4E21 kg of H2O (Olson and Sharp, 2018)
            1.55E20 kg of H2 (Olson and Sharp, 2018) */
 
-    /* FIXME: this is not general, and will break if other species contain H2,
+    /* this is not general, and will break if other species contain H2,
        e.g., CH4.  Ideally, we should loop over all volatiles and identify
        those that include H2 */
 
     PetscErrorCode ierr;
 
     PetscInt i;
-    /* TODO: for an arbitrary number of volatile species, would be better to somehow
+    /* for an arbitrary number of volatile species, would be better to somehow
        automate this output, rather than making it specific to reduced and oxidised
        phases of hydrogen and oxygen */
     PetscBool   FLAG_H2 = PETSC_FALSE;
@@ -766,149 +756,13 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
         A->volatiles[i].p = Ap->volatile_parameters[i]->initial_atmos_pressure;
     }
 
-    /* TODO: remove: not required anymore */
-    /* compute initial volatile abundance in melt */
-    //ierr = set_volatile_abundances_from_partial_pressure( A, Ap );CHKERRQ(ierr);
-
     /* mass reaction has not been updated, so should still be zero */
-    /* TODO: this initial condition is not compatible with reactions,
+    /* this initial condition is not compatible with reactions,
        but nor does it need to be, since this initial condition is
        used when codes are coupled (e.g. to VULCAN) */
     ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-}
-
-static PetscErrorCode SetInitialCMBdSdxiFromFlux( Ctx * E )
-{
-    PetscErrorCode ierr;
-    SNES           snes;
-    Vec            x,r;
-    PetscScalar    dSdxi;
-    PetscInt       numpts_b, ind0, ind_cmb;
-    Solution       *S = &E->solution;
-
-    PetscFunctionBeginUser;
-
-    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ind_cmb = numpts_b-1; // index of last basic node (i.e., cmb)
-    ind0 = 0;
-
-    ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
-    ierr = SNESSetOptionsPrefix(snes,"cmbic_");CHKERRQ(ierr);
-    ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
-    ierr = VecSetSizes( x, PETSC_DECIDE, 1 );CHKERRQ(ierr);
-    ierr = VecSetFromOptions(x);CHKERRQ(ierr);
-    ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
-    ierr = SNESSetFunction(snes,r,ObjectiveFunctionCMBdSdxiFromFlux,E);CHKERRQ(ierr);
-
-    /* initial guess for cmb dS/dxi */
-    ierr = VecSetValue(x,ind0,-1.0E-1,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(x);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(x);CHKERRQ(ierr);
-
-    /* Inform the nonlinear solver to generate a finite-difference approximation
-       to the Jacobian */
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_mf",NULL);CHKERRQ(ierr);
-    /* Turn off convergence based on step size and trust region tolerance */
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_stol","0");CHKERRQ(ierr);
-    /* atol to solve within 1 W/m^2 */
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_rtol","0");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_snes_atol","1.0E0");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_rtol","1.0e-6");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-cmbic_ksp_atol","1.0e-6");CHKERRQ(ierr);
-
-    /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
-    {
-      PetscBool flg = PETSC_FALSE;
-
-      ierr = PetscOptionsGetBool(NULL,NULL,"-cmbic_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
-      if (flg) {
-        ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
-      }
-    }
-
-    /* Solve */
-    ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
-    ierr = SNESSolve(snes,NULL,x);CHKERRQ(ierr);
-    {
-      SNESConvergedReason reason;
-      ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
-      if (reason < 0) SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
-          "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
-    }
-
-    /* store solution */
-    ierr = VecGetValues(x,1,&ind0,&dSdxi);
-    ierr = VecSetValue(S->dSdxi,ind_cmb,dSdxi,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(S->dSdxi);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(S->dSdxi);CHKERRQ(ierr);
-
-    ierr = VecDestroy(&x);CHKERRQ(ierr);
-    ierr = VecDestroy(&r);CHKERRQ(ierr);
-    ierr = SNESDestroy(&snes);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-
-}
-
-static PetscErrorCode ObjectiveFunctionCMBdSdxiFromFlux( SNES snes, Vec x, Vec f, void *ptr )
-{
-    PetscErrorCode    ierr;
-    PetscScalar       res,dSdxi,S_cmb,S_abv,xi_cmb,xi_abv,Jcond,Jconv,Jmix,Jgrav,target;
-    PetscInt          numpts_b,ind0, ind_cmb, ind_abv;
-    Ctx               *E = (Ctx*) ptr;
-    Parameters        const P = E->parameters;
-    ScalingConstants  const SC = P->scaling_constants;
-    Mesh              const *M = &E->mesh;
-    Solution          *S = &E->solution;
-
-    PetscFunctionBeginUser;
-
-    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
-    ind_cmb = numpts_b-1; // index of last basic node (i.e., cmb)
-    ind_abv = ind_cmb-1;
-    ind0 = 0;
-
-    /* gradient we are solving for */
-    ierr = VecGetValues(x,1,&ind0,&dSdxi);CHKERRQ(ierr);
-    ierr = VecGetValues(S->S_s,1,&ind_abv,&S_abv);CHKERRQ(ierr);
-    ierr = VecGetValues(M->xi_b,1,&ind_cmb,&xi_cmb);CHKERRQ(ierr);
-    ierr = VecGetValues(M->xi_b,1,&ind_abv,&xi_abv);CHKERRQ(ierr);
-
-    /* CMB entropy using standard reconstruction */
-    S_cmb = S_abv + dSdxi * 0.5 * (xi_cmb-xi_abv);
-
-    /* write dSdxi and S at CMB to Vecs in S */
-    ierr = VecSetValue(S->S,ind_cmb,S_cmb,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecSetValue(S->dSdxi,ind_cmb,dSdxi,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(S->S);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(S->S);CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(S->dSdxi);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(S->dSdxi);CHKERRQ(ierr);
-
-    /* update material properties at CMB */
-    ierr = set_matprop_basic( E );CHKERRQ(ierr);
-
-    /* compute energy flux */
-    Jcond = GetConductiveHeatFlux( E, &ind_cmb );
-    Jconv = GetConvectiveHeatFlux( E, &ind_cmb );
-    Jmix = GetMixingHeatFlux( E, &ind_cmb );
-    Jgrav = GetGravitationalHeatFlux( E, &ind_cmb );
-
-    /* value we want to recover */
-    target = P->core_bc_value;
-
-    /* residual is difference of CMB flux to target in W/m^2 */
-    /* scaled to W/m^2 to guide solver tolerance selection */
-    res = Jcond * SC->FLUX + Jconv * SC->FLUX + Jmix * SC->FLUX + Jgrav * SC->FLUX - target * SC->FLUX;
-
-    ierr = VecSetValue(f,ind0,res,INSERT_VALUES);CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(f);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(f);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-
 }
 
 static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
@@ -946,7 +800,7 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        // FIXME: guess is arbitrary, but solver breaks if this is zero!
+        // guess is arbitrary, but solver breaks if this is zero!
         /* this is physically motivated, since the PRESSURE scaling is typically set around 1 bar,
            such that the volatile partial pressure will be some fraction of 1 */
         xx[i] = 1.0E-1; /* typically around 1/10 bar for usual PRESSURE scaling */
