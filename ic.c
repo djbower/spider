@@ -846,6 +846,7 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_atol","1.0e-6");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-atmosic_ksp_rtol","1.0e-6");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-atmosic_ksp_rtol","1.0e-6");CHKERRQ(ierr);
+
     /* below previously suggested by PS, but not currently used */
     //ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_linesearch_damping","0.01");CHKERRQ(ierr);
     //ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_max_it","10000");CHKERRQ(ierr);

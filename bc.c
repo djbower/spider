@@ -187,7 +187,8 @@ PetscErrorCode solve_dpdts( Ctx *E )
     PetscErrorCode             ierr;
     SNES                       snes;
     Vec                        x,r;
-    PetscScalar                *xx;
+    PetscScalar                *xx,atol,rtol;
+    char                       atolstr[20], rtolstr[20];
     PetscInt                   i;
     Atmosphere                 *A  = &E->atmosphere;
     Parameters const           P  = E->parameters;
@@ -227,6 +228,15 @@ PetscErrorCode solve_dpdts( Ctx *E )
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
     ierr = PetscOptionsSetValue(NULL,"-atmosts_snes_mf",NULL);CHKERRQ(ierr);
+    /* get the accuracy from the time stepper and use for atmosts */
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-ts_sundials_atol",&atol,NULL);CHKERRQ(ierr);
+    sprintf( atolstr, "%e", atol );
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-ts_sundaisl_rtol",&rtol,NULL);CHKERRQ(ierr);
+    sprintf( rtolstr, "%e", rtol );
+    ierr = PetscOptionsSetValue(NULL,"-atmosts_snes_atol",atolstr);CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosts_snes_rtol",rtolstr);CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosts_ksp_atol",atolstr);CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosts_ksp_rtol",rtolstr);CHKERRQ(ierr);
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
     {   
