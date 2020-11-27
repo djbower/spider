@@ -17,6 +17,7 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx * );
 /* atmosphere ic */
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
+static PetscErrorCode set_ic_atmosphere_from_ocean_moles( Ctx *E, Vec sol );
 static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Vec sol );
 static PetscErrorCode set_ic_atmosphere_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *, Vec );
@@ -442,6 +443,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     if(Ap->n_volatiles){
 
+        /* set atmosphere IC from initial total abundance */
         if(Ap->IC_ATMOSPHERE==1){
             ierr = set_ic_atmosphere_from_initial_total_abundance( E, sol );CHKERRQ(ierr);
         }
@@ -456,6 +458,11 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
         /* set IC from partial pressure in the atmosphere */
         else if (Ap->IC_ATMOSPHERE==3){
             ierr = set_ic_atmosphere_from_partial_pressure( E, sol );CHKERRQ(ierr);
+        }
+
+        /* set IC from number of ocean moles */
+        else if (Ap->IC_ATMOSPHERE==4){
+            ierr = set_ic_atmosphere_from_ocean_moles( E, sol );CHKERRQ(ierr);
         }
 
         else{
@@ -506,7 +513,7 @@ static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
 
     /* conform initial_total_abundance */
     for (i=0; i<Ap->n_volatiles; ++i){
-        if( Ap->IC_ATMOSPHERE==1 ){
+        if( (Ap->IC_ATMOSPHERE==1) || (Ap->IC_ATMOSPHERE==4) ){
             /* this is equivalent to the operation below for Ap->IC_ATMOSPHERE==3, but a shortcut since
                we do not need to sum all reservoirs to get to the initial total abundance */
             /* below we correct with -= */
@@ -709,6 +716,33 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode set_ic_atmosphere_from_ocean_moles( Ctx *E, Vec sol )
+{
+    PetscErrorCode       ierr;
+    PetscInt             i;
+    PetscScalar          abund;
+    AtmosphereParameters Ap = E->parameters->atmosphere_parameters;
+    Parameters const     P = E->parameters;
+    FundamentalConstants const FC = P->fundamental_constants;
+    ScalingConstants     const SC = P->scaling_constants;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_ocean_moles()\n");CHKERRQ(ierr);
+
+    /* convert from ocean moles to mass and update total abundance */
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        /* mass of volatile */
+        abund = Ap->volatile_parameters[i]->initial_ocean_moles * FC->OCEAN_MOLES;
+        abund *= Ap->volatile_parameters[i]->molar_mass;
+        abund /= (*Ap->mantle_mass_ptr) * SC->VOLATILE * 4.0 * PETSC_PI;
+        Ap->volatile_parameters[i]->initial_total_abundance = abund;
+    }
+
+    ierr = set_ic_atmosphere_from_initial_total_abundance( E, sol );CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Vec sol )
 {
     PetscErrorCode       ierr;
@@ -785,17 +819,18 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        // guess is arbitrary, but solver breaks if this is zero!
-        /* this is physically motivated, since the PRESSURE scaling is typically set around 1 bar,
-           such that the volatile partial pressure will be some fraction of 1 */
-        xx[i] = Ap->volatile_parameters[i]->initial_atmos_pressure; /* typically around 1/10 bar for usual PRESSURE scaling */
+        xx[i] = Ap->volatile_parameters[i]->initial_atmos_pressure;
     }
     /* Initial guesses for reaction masses */
     for (i=Ap->n_volatiles; i<Ap->n_volatiles + Ap->n_reactions; ++i) {
-      xx[i] = 0.0; /* assume we are at equilibrium */
+      xx[i] = 0.0; /* assume we close to equilibrium */
     }
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
+    /* it's often tricky for the user to know how the mass is partitioned between
+       species, and the solver fails if the initial guess of the mass distribution
+       is way off.  The newtontr seems to help, and particularly increasing the size
+       of delta0 to 10.0.  But I'm sure further optimisations are possible */
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_type","newtontr");CHKERRQ(ierr);
     /* Inform the nonlinear solver to generate a finite-difference approximation
        to the Jacobian */
@@ -804,6 +839,9 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_stol","0");CHKERRQ(ierr);
     /* Turn off convergenced based on trust region tolerance */
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_trtol","0");CHKERRQ(ierr);
+    /* https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/SNES/SNESNEWTONTR.html */
+    /* initial size of the trust region is delta0*norm2(x) */
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_tr_delta0","10.0");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_rtol","1.0e-6");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_atol","1.0e-6");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-atmosic_ksp_rtol","1.0e-6");CHKERRQ(ierr);

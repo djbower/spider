@@ -23,6 +23,7 @@ typedef struct {
     /* next three (initial_) are not mutually exclusive */
     PetscScalar initial_total_abundance;
     PetscScalar initial_atmos_pressure;
+    PetscScalar initial_ocean_moles;
     PetscScalar kdist;
     PetscScalar kabs; // note this is without pressure-dependence
     PetscInt    SOLUBILITY;

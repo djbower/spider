@@ -128,6 +128,9 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     ierr = PetscOptionsGetPositiveScalar(buf,&vp->initial_total_abundance,0.0,NULL);CHKERRQ(ierr);
     vp->initial_total_abundance /= 1.0E6 * SC->VOLATILE;
 
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_initial_ocean_moles");CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->initial_ocean_moles,0.0,NULL);CHKERRQ(ierr);
+
     /* used either to set the pressure to this value for the ic, or alternatively
        used as the initial guess to solve for the pressure to match the initial
        total abundance accounting for reactions */
