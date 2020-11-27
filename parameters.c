@@ -262,7 +262,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
   /* this allows backward compatibility with older versions of the code
      that worked directly with radius coordinates, rather than mass coordinates */
-  P->MASS_COORDINATES = PETSC_FALSE;
+  P->MASS_COORDINATES = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL,NULL,"-MASS_COORDINATES",&P->MASS_COORDINATES,NULL);CHKERRQ(ierr);
 
   /* RollBack and PostStep options */
