@@ -18,7 +18,7 @@ static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
 static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
 static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, ScalingConstants );
 
-static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal DENSITY, PetscReal VOLATILE )
+static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal PRESSURE, PetscReal VOLATILE )
 {
     /* constants used to scale the physical problem are largely chosen based on numerical considerations.
        Factors of 4 pi associated with spherical geometry are excluded, but are reintroduced in output
@@ -35,18 +35,18 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
     SC->RADIUS    = RADIUS; // m
     SC->TEMP      = TEMPERATURE; // K
     SC->ENTROPY   = ENTROPY; // (specific) J/kg/K
-    SC->DENSITY   = DENSITY; // kg/m^3
+    SC->PRESSURE  = PRESSURE; // Pa
     SC->VOLATILE  = VOLATILE;
     /* below are derived from above */
     /* note: factors of 4 pi are excluded */
     SC->AREA      = PetscSqr( SC->RADIUS ); // m^2
     SC->VOLUME    = SC->AREA * SC->RADIUS; // m^3
+    SC->DENSITY   = SC->PRESSURE / ( SC->ENTROPY * SC->TEMP ); // kg/m^3
     SC->MASS      = SC->DENSITY * SC->VOLUME; // kg
     SC->TIME      = SC->RADIUS / SQRTST; // s
     SC->TIMEYRS   = SC->TIME / (60.0*60.0*24.0*365.25); // years
     SC->SENERGY   = SC->ENTROPY * SC->TEMP; // J/kg
     SC->ENERGY    = SC->SENERGY * SC->MASS; // J
-    SC->PRESSURE  = SC->ENTROPY * SC->TEMP * SC->DENSITY; // Pa
     SC->POWER     = SC->ENERGY / SC->TIME; // W
     SC->FLUX      = SC->POWER / SC->AREA; // W/m^2
     SC->DPDR      = SC->PRESSURE / SC->RADIUS; // Pa/m
@@ -70,16 +70,16 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
 static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
 {
     PetscErrorCode ierr;
-    PetscScalar RADIUS0, ENTROPY0, TEMPERATURE0, DENSITY0, VOLATILE0;
+    PetscScalar RADIUS0, ENTROPY0, TEMPERATURE0, PRESSURE0, VOLATILE0;
 
     PetscFunctionBeginUser;
 
     ierr = PetscOptionsGetPositiveScalar("-radius0",&RADIUS0,6371000.0,NULL);CHKERRQ(ierr); // m
     ierr = PetscOptionsGetPositiveScalar("-entropy0",&ENTROPY0,2993.025100070677,NULL);CHKERRQ(ierr); // J/kg/K
     ierr = PetscOptionsGetPositiveScalar("-temperature0",&TEMPERATURE0,4033.6070755893948,NULL);CHKERRQ(ierr); // K
-    ierr = PetscOptionsGetPositiveScalar("-density0",&DENSITY0,4613.109568155063,NULL);CHKERRQ(ierr); // kg/m^3
+    ierr = PetscOptionsGetPositiveScalar("-pressure0",&PRESSURE0,1E5,NULL);CHKERRQ(ierr); // Pa
     ierr = PetscOptionsGetPositiveScalar("-volatile0",&VOLATILE0,1.0,NULL);CHKERRQ(ierr);
-    ierr = ScalingConstantsSet(SC,RADIUS0,TEMPERATURE0,ENTROPY0,DENSITY0,VOLATILE0);CHKERRQ(ierr);
+    ierr = ScalingConstantsSet(SC,RADIUS0,TEMPERATURE0,ENTROPY0,PRESSURE0,VOLATILE0);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
