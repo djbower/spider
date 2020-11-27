@@ -56,6 +56,7 @@ typedef struct {
     PetscScalar GAS;
     PetscScalar GRAVITATIONAL;
     PetscScalar STEFAN_BOLTZMANN;
+    PetscScalar OCEAN_MOLES;
 } data_FundamentalConstants;
 typedef data_FundamentalConstants* FundamentalConstants;
 

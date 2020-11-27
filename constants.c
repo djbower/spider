@@ -22,6 +22,11 @@ PetscErrorCode FundamentalConstantsSet( FundamentalConstants FC, ScalingConstant
     FC->STEFAN_BOLTZMANN = 5.670367e-08; /* W/m^2/K^4 */
     FC->STEFAN_BOLTZMANN /= SC->SIGMA;
 
+    /* this is not really a fundamental constant, but is close
+       enough for our global modelling purposes */
+    /* computed from 1.385185824553049e+21 / 0.01801528 */
+    FC->OCEAN_MOLES = 7.68894973907177e+22; /* moles of H2O (or H2) in ocean */
+
     PetscFunctionReturn(0);
 
 }

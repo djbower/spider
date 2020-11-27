@@ -17,7 +17,6 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx * );
 /* atmosphere ic */
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
-static PetscErrorCode set_ic_atmosphere_default( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Vec sol );
 static PetscErrorCode set_ic_atmosphere_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *, Vec );
@@ -88,9 +87,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
 
     /* set surface and core entropy for the IC (if set), but then can
        evolve (not necessarily isothermal).  Updates the Vecs in E */
-    //if( (P->ic_surface_entropy > 0.0) || (P->ic_core_entropy > 0.0) ){
     ierr = set_ic_interior_conform_to_bcs( E ); CHKERRQ(ierr);
-  //  }
 
     /* Now the Vecs in E are set and consistent, clone them
        to the sol Vec which is what is actually used by the
@@ -446,7 +443,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     if(Ap->n_volatiles){
 
         if(Ap->IC_ATMOSPHERE==1){
-            ierr = set_ic_atmosphere_default( E, sol );CHKERRQ(ierr);
+            ierr = set_ic_atmosphere_from_initial_total_abundance( E, sol );CHKERRQ(ierr);
         }
 
         /* read atmosphere IC from file (could be a different file to
@@ -483,18 +480,6 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     /* with Ap->n_volatiles=0 there are no entries in
        the solution vector to initialise to zero */
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode set_ic_atmosphere_default( Ctx *E, Vec sol )
-{
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_default()\n");CHKERRQ(ierr);
-
-    ierr = set_ic_atmosphere_from_initial_total_abundance( E, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

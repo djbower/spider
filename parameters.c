@@ -176,11 +176,11 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,NULL);CHKERRQ(ierr); // TODO: check units and scaling
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_R_thermal_escape_value");CHKERRQ(ierr);
-    ierr = PetscOptionsGetPositiveScalar(buf,&vp->R_thermal_escape_value,0.0,NULL);CHKERRQ(ierr); // TODO: check units and scaling
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->R_thermal_escape_value,0.0,NULL);CHKERRQ(ierr);
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_constant_escape_value");CHKERRQ(ierr);
-    /* TODO: in principle, could have negative escape to add atmospheric material (e.g. from an external source) */
-    ierr = PetscOptionsGetPositiveScalar(buf,&vp->constant_escape_value,0.0,NULL);CHKERRQ(ierr); // TODO: check units and sclaing
+    /* in principle, could have negative escape to add atmospheric material (e.g. from an external source) */
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->constant_escape_value,0.0,NULL);CHKERRQ(ierr);
     vp->constant_escape_value *= SC->TIME / (SC->VOLATILE * SC->MASS);
     /* recall that the code ignores the 4.0*pi prefactor, and it is reintroduced for output only */
     vp->constant_escape_value /= 4.0 * PETSC_PI;
@@ -210,8 +210,7 @@ custom command-line parameters (those not defined by PETSc) should be accessed.
 
 Parameters are specified by the user in dimensional (unscaled) form,
 but they are all stored in non-dimensional (scaled) form.
-
- */
+*/
 
 PetscErrorCode ParametersSetFromOptions(Parameters P)
 {
@@ -323,13 +322,13 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   /* initial condition for interior */
   ierr = PetscOptionsGetPositiveInt("-IC_INTERIOR",&P->IC_INTERIOR,1,NULL);CHKERRQ(ierr);
 
-  ierr = PetscStrcpy(P->ic_interior_filename,"restart.json"); CHKERRQ(ierr);
+  ierr = PetscStrcpy(P->ic_interior_filename,"restart.json");CHKERRQ(ierr);
   if ( P->IC_INTERIOR==2 ){
-    ierr = PetscOptionsGetString(NULL,NULL,"-ic_interior_filename",P->ic_interior_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
+    ierr = PetscOptionsGetString(NULL,NULL,"-ic_interior_filename",P->ic_interior_filename,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
     /* set start time from restart file */
     /* TODO: get time from interior restart file, but could add
        other options to get time from e.g. atmosphere restart file */
-    ierr = set_start_time_from_file( P, P->ic_interior_filename ); CHKERRQ(ierr);
+    ierr = set_start_time_from_file( P, P->ic_interior_filename );CHKERRQ(ierr);
   }
   else{
     PetscScalar t0 = 0.0;
@@ -341,7 +340,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
 
   P->ic_melt_pressure = 30.0; // GPa
   if ( P->IC_INTERIOR==3 ){
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_melt_pressure",&P->ic_melt_pressure,NULL); CHKERRQ(ierr);
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_melt_pressure",&P->ic_melt_pressure,NULL);CHKERRQ(ierr);
   }
 
   /* initial entropy at top of adiabat (J/kg/K) */
@@ -689,7 +688,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
     /* Look for command-line option to determine number of volatiles
        and options prefix for each, e.g -volatile_names CO2,H2O */
     Ap->n_volatiles = 0;
-   {
+    {
       char      *prefixes[SPIDER_MAX_VOLATILE_SPECIES];
       PetscInt  n_volatiles = SPIDER_MAX_VOLATILE_SPECIES;
       PetscBool set;
@@ -703,7 +702,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
             ierr = PetscStrncpy(Ap->volatile_parameters[v]->prefix,prefixes[v],sizeof(Ap->volatile_parameters[v]->prefix));CHKERRQ(ierr);
             ierr = PetscFree(prefixes[v]);CHKERRQ(ierr);
           }
-       }
+      }
     }
 
     /* Get command-line values for all volatiles species */
