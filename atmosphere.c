@@ -42,7 +42,7 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     ierr = DMSetUp(A->da_atm);CHKERRQ(ierr);
 
     /* create dimensionalisable fields for outputting atmosphere structure */
-    /* TODO: this does not really need to be a DimensionalisableField, and PS
+    /* this does not really need to be a DimensionalisableField, and PS
        proposed creating a new structure call a DimenisonalisableValue instead */
     scaling = 1.0;
     ierr = DimensionalisableFieldCreate(&A->atm_struct[0],A->da_atm,&scaling,PETSC_FALSE);CHKERRQ(ierr);
@@ -200,8 +200,6 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmospherePa
     PetscFunctionBeginUser;
 
     /* effective absorption coefficient */
-    /* TODO: this was formulated for 2 species, and presumably extends for n species as follows,
-       but should check */
     kabs_tot = 0.0;
     for( i=0; i<Ap->n_volatiles; ++i) {
         kabs = get_pressure_dependent_kabs( Ap, i );
