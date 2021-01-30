@@ -242,4 +242,4 @@ This example is a prototype, because the transition from melt to solid at the su
 
 ## Note on Python scripts
 
-Python scripts are in `py3/` and can be used as templates for building your own analysis and plotting scripts.  Do not modify the scripts that are already in `py3/` unless you are fixing bugs or retaining backwards compatibility.  Instead, copy one of the existing scripts, rename, and then modify as you require.  You can of course check your plotting scripts into the repository, if you wish.
+Python scripts are in `py3/` and can be used as templates for building your own analysis and plotting scripts.  Do not modify the scripts that are already in `py3/` unless you are fixing bugs or retaining backwards compatibility.  Instead, copy one of the existing scripts, rename, and then modify as you require.  You can of course check your plotting scripts into the repository if you wish.
