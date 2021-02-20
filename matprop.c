@@ -40,7 +40,7 @@ PetscErrorCode set_phase_fraction_staggered( Ctx *E )
 
     ierr = DMDAVecGetArrayRead(da_s,M->pressure_s,&arr_pres);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s,S->phi_s,&arr_phi);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->phi_s,&arr_phi);CHKERRQ(ierr);
 
     for(i=ilo_s; i<ihi_s; ++i){
         PP = arr_pres[i];
@@ -48,6 +48,10 @@ PetscErrorCode set_phase_fraction_staggered( Ctx *E )
         ierr = EOSEval(P->eos, PP, SS, &eos_eval );CHKERRQ(ierr);
         arr_phi[i] = eos_eval.phase_fraction;
     }
+
+    ierr = DMDAVecRestoreArrayRead(da_s,M->pressure_s,&arr_pres);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,S->phi_s,&arr_phi);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
