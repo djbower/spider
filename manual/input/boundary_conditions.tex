@@ -1,58 +1,90 @@
 \subsection{Surface}
-\subsubsection{New approach}
-The surface boundary condition is more challenging that the CMB to implement formally ``correctly''.  For the initial condition, we can solve the balance of radiative flux and interior fluxes to solve for $dS/dr|_0$ at the surface for known $S_{1/2}$.  Recall the reconstruction:
+\subsubsection{Current issue}
+The formation of a viscous lid at the surface occurs because the upward moving rheological front decreases the flux entering the top cell, whilst the surface continues to cool radiatively as T$^4$.  Unavoidably, this means the top cell temperature decreases quickly, and can initiate an oscillatory pattern where heat arriving from the mantle below bounces the surface temperature back-and-forth around the rheological transition.  Instead, we'd prefer to maintain some level of monotonic decrease in temperature, particularly since our inherent ``model'' of lid formation isn't really geared for the task.
+\subsubsection{Radiative---interior flux balance}
+From energy balance, we should balance the interior and geothermal heat flux at the surface.  Recall the standard reconstruction used throughout SPIDER:
 \begin{equation}
-S_0 = S_{1/2} - \frac{\Delta r}{2} \left.\frac{dS}{dr}\right|_0
+S_0 = S_{1/2} - \frac{\Delta r}{2} \left.\frac{\partial S}{\partial r}\right|_0
 \end{equation}
 where subscript 0 is the surface and subscript $1/2$ is the uppermost staggered node.  We can also take the time derivative:
 \begin{equation}
-\frac{\partial S_0}{\partial t} = \frac{\partial S_{1/2}}{\partial t} - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{dS}{dr}\right|_0 \right)
+\frac{\partial S_0}{\partial t} = \frac{\partial S_{1/2}}{\partial t} - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right)
 \end{equation}
-For the time update (time integrator), we ultimately want to compute the final term on the RHS (perhaps by solving a non-linear problem within the time integrator), i.e. $\frac{\partial}{\partial t} \left( \left. \frac{dS}{dr}\right|_0 \right)$.  First let's take a look at the radiative flux:
+For the time update (time integrator), we ultimately want to compute the final term on the RHS (perhaps by solving a non-linear problem within the time integrator), i.e. $\frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right)$.  First let's take a look at the radiative flux:
 \begin{equation}
 J_{rad} = \epsilon \sigma (T_0^4 - T_{eqm}^4)
 \end{equation}
+$T_0$ is determined from $S_0$, where $S_0$ relates to solution quantities through the reconstruction.  This is useful for the initial condition.  Now we also want to determine a time derivative for the time stepper:
 \begin{equation}
-\frac{\partial J_{rad}}{\partial t} = \frac{\partial T}{\partial t} \frac{\partial}{\partial T} \epsilon \sigma (T_0^4 - T_{eqm}^4)
+\frac{\partial J_{rad}}{\partial t} = \left(\frac{\partial T_0}{\partial t}\right) \frac{\partial}{\partial T_0} \epsilon \sigma (T_0^4 - T_{eqm}^4)
 \end{equation}
 \begin{equation}
-\frac{\partial J_{rad}}{\partial t} = \frac{\partial T_0}{\partial t} (\epsilon \sigma 4 T_0^3)
-\end{equation}
-and by substitution:
-\begin{equation}
-\frac{\partial J_{rad}}{\partial t} = \frac{T_0}{c_0} \frac{\partial S_0}{\partial t} (\epsilon \sigma 4 T_0^3)
+\frac{\partial J_{rad}}{\partial t} = \left(\frac{\partial T_0}{\partial t}\right) \left(4 \epsilon \sigma T_0^3\right) = \left( \frac{T_0}{c_0} \frac{\partial S_0}{\partial t} \right) (4 \epsilon \sigma T_0^3)
 \end{equation}
 Collecting terms:
 \begin{equation}
-\frac{\partial J_{rad}}{\partial t} = \frac{\partial S_0}{\partial t} \left( \frac{4 \epsilon \sigma T_0^4}{c_0} \right)
+\frac{\partial J_{rad}}{\partial t} = \left( \frac{4 \epsilon \sigma T_0^4}{c_0} \right) \left(\frac{\partial S_0}{\partial t} \right)
 \end{equation}
-$T_0$ is determined from $S_0$, where $S_0$ relates to solution quantities through the reconstruction.  Since $\partial S_{1/2} / \partial t$ depends on $J_{tot}$, we probably have to solve for $\partial S_{1/2} / \partial t$ and $\partial / \partial t (\partial S/\partial r)|_0$ simultaneously.  Now let's look at the convective flux, since this is the simplest energy balance with the radiative flux:
+Since $\partial S_{1/2} / \partial t$ depends on $J_{tot}$, we probably have to solve for $\partial S_{1/2} / \partial t$ and $\partial / \partial t (\partial S/\partial r)|_0$ simultaneously.  Now let's look at the convective flux, since this is the simplest energy balance with the radiative flux.  It strictly is not true when the mixing length depends on the distance from the boundaries.  But for constant mixing length this likely works OK:
 \begin{equation}
-F_{conv} = -\rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
-\end{equation}
-\begin{equation}
-\frac{\partial F_{conv}}{\partial t} = - \frac{\partial}{\partial t} \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
+J_{conv} = -\rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
 \end{equation}
 \begin{equation}
-\frac{\partial F_{conv}}{\partial t} = -  \frac{\partial (\partial S/\partial r)}{\partial t} \frac{\partial}{\partial (\partial S/\partial r)} \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
+\frac{\partial J_{conv}}{\partial t} = - \frac{\partial}{\partial t} \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
 \end{equation}
-The first term on the RHS is what we want to compute, i.e. an update to the entropy gradient evaluated at the surface.  So now we must process the second term:
+We already know that $\kappa_h$ is a nasty function of a bunch of $T$-dependent material properties, as well as the entropy gradient.  We don't want to differentiate it with respect to time of choice, but we could approximate it using the value at the basic node below.  So basically, once the lowermost boundary of the uppermost cell feels the effect of the rheological transition, the surface will similarly respond.  Since $\rho$ is also not highly variable, use this value at the basic node below as well (denote by `1' subscript).
 \begin{equation}
-\frac{\partial}{\partial (\partial S/\partial r)} \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
+\frac{\partial J_{conv}}{\partial t} = - \rho_1 \kappa_{h_1} \left[ \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial T_0}{\partial t} \right) + T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
 \end{equation}
-We now that $\kappa_h$ is a strong function of $dS/dr$, so substitute in the expression for the viscous limit:
 \begin{equation}
-\frac{\partial}{\partial (\partial S/\partial r)} \rho T \left[\frac{\alpha g l^4 T}{18 \nu c} \left( \frac{\partial S}{\partial r} \right) \right] \left( \frac{\partial S}{\partial r} \right)
+\frac{\partial J_{conv}}{\partial t} = - \rho_1 \kappa_{h_1} \left[ \frac{T_0}{c_0} \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_0}{\partial t} \right) + T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
 \end{equation}
-Collecting terms:
+To enable cancellation of some terms with the LHS:
 \begin{equation}
-\frac{\partial}{\partial (\partial S/\partial r)} \left[\frac{\alpha \rho g l^4 T^2}{18 \nu c} \left( \frac{\partial S}{\partial r} \right)^2 \right]
+\frac{\partial J_{conv}}{\partial t} = - \frac{\rho_1 \kappa_{h_1} T_0}{c_0} \left[ \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_0}{\partial t} \right) + c_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
 \end{equation}
-\textbf{Alternative approach}.  Actually simpler to just evaluate the flux at two different $dS/dr$ and then compute the numerical (finite difference) derivative:
+Now combine LHS and RHS to derive equation:
 \begin{equation}
-\frac{\partial F_{conv}}{\partial t} = \frac{\partial (\partial S/\partial r)}{\partial t} \frac{\partial F_{conv}}{\partial (\partial S/\partial r)}
+\left( \frac{4 \epsilon \sigma T_0^4}{c_0} \right) \left(\frac{\partial S_0}{\partial t} \right) = - \frac{\rho_1 \kappa_{h_1} T_0}{c_0} \left[ \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_0}{\partial t} \right) + c_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
 \end{equation}
-Since then $F_{conv}$ can be an arbitrarily nasty function and there's no need to compute analytical derivatives.  But this requires 
+\begin{equation}
+\left( \frac{-4 \epsilon \sigma T_0^3}{\rho_1 \kappa_{h_1}} \right) \left(\frac{\partial S_0}{\partial t} \right) = \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_0}{\partial t} \right) + c_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0
+\end{equation}
+Collect terms:
+\begin{equation}
+-\frac{1}{c_0} \left[ \left( \frac{4 \epsilon \sigma T_0^3}{\rho_1 \kappa_{h_1}} \right) + \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \right] \left(\frac{\partial S_0}{\partial t} \right) = \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0
+\end{equation}
+This is perhaps a reasonable way to start, since the following factor can be easily evaluated from the current solution:
+\begin{equation}
+\xi = -\frac{1}{c_0} \left[ \left( \frac{4 \epsilon \sigma T_0^3}{\rho_1 \kappa_{h_1}} \right) + \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \right] 
+\end{equation}
+The first ratio of terms is similar (but not the same as) $J_{rad}/J_{conv}$.  We can express as:
+\begin{equation}
+\xi \left(\frac{\partial S_0}{\partial t} \right) = \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0
+\end{equation}
+We don't actually solve for $S_0$, but rather $S_{1/2}$.  So by substituting the reconstruction:
+\begin{equation}
+\xi \frac{\partial S_{1/2}}{\partial t} - \frac{\xi \Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right) = \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0
+\end{equation}
+More rearranging:
+\begin{equation}
+\xi \frac{\partial S_{1/2}}{\partial t} = \left(1 + \frac{\xi \Delta r}{2} \right) \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right)
+\end{equation}
+And more:
+\begin{equation}
+\frac{\partial S_{1/2}}{\partial t} = \left(\frac{2 + \xi \Delta r}{2 \xi} \right) \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right)
+\label{eq:surfbc}
+\end{equation}
+The first factor on the RHS is known from the current distribution, as is the LHS.  For the initial condition:
+\begin{equation}
+\epsilon \sigma (T_0^4 - T_{eqm}^4) = -\rho_1 \kappa_{h1} T_0 \left. \left( \frac{\partial S}{\partial r} \right|_0 \right)
+\end{equation}
+% below probably doesn't help, since taking quotients seems problematic for the solver
+%Therefore:
+%\begin{equation}
+%\frac{\epsilon \sigma (T_0^4 - T_{eqm}^4)}{\rho_1 \kappa_{h1} T_0} = - \left. \left( \frac{\partial S}{\partial r} \right|_0 \right)
+%\end{equation}
+
 %%%%
 %%%%
 %%%%
