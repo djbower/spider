@@ -111,7 +111,7 @@ static PetscErrorCode SetMeshRegular( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-#if 1
+#if 0
 static PetscErrorCode SetMeshGeometricRefineUpper( Ctx *E )
 {
 
