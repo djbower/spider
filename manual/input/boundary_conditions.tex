@@ -1,20 +1,32 @@
-\subsection{Surface}
-\subsubsection{Current issue}
-The formation of a viscous lid at the surface occurs because the upward moving rheological front decreases the flux entering the top cell, whilst the surface continues to cool radiatively as T$^4$.  Unavoidably, this means the top cell temperature decreases quickly, and can initiate an oscillatory pattern where heat arriving from the mantle below bounces the surface temperature back-and-forth around the rheological transition.  Instead, we'd prefer to maintain some level of monotonic decrease in temperature, particularly since our inherent ``model'' of lid formation isn't really geared for the task.
-\subsubsection{Radiative---interior flux balance}
+%\subsubsection{Current issue}
+%The formation of a viscous lid at the surface occurs because the upward moving rheological front decreases the flux entering the top cell, whilst the surface continues to cool radiatively as T$^4$.  Unavoidably, this means the top cell temperature decreases quickly, and can initiate an oscillatory pattern where heat arriving from the mantle below bounces the surface temperature back-and-forth around the rheological transition.  Instead, we'd prefer to maintain some level of monotonic decrease in temperature, particularly since our inherent ``model'' of lid formation isn't really geared for the task.
+\subsection{Surface radiative---interior flux balance}
+\subsubsection{Algebraic approach (preferred, therefore implemented)}
 From energy balance, we should balance the interior and geothermal heat flux at the surface.  Recall the standard reconstruction used throughout SPIDER:
 \begin{equation}
 S_0 = S_{1/2} - \frac{\Delta r}{2} \left.\frac{\partial S}{\partial r}\right|_0
 \end{equation}
-where subscript 0 is the surface and subscript $1/2$ is the uppermost staggered node.  We can also take the time derivative:
+where subscript 0 is the surface and subscript $1/2$ is the uppermost staggered node.  The energy balance at the surface is:
+\begin{equation}
+J_{rad} = \epsilon \sigma (T_0^4 - T_{eqm}^4) = J_{tot} = J_{conv} + J_{cond}
+\end{equation}
+$T_0$ is determined from $S_0$, where $S_0$ relates to solution quantities through the reconstruction.  Now let's look at the convective flux, since this is the simplest energy balance with the radiative flux.  It strictly is not true when the mixing length depends on the distance from the boundaries, since then $J_{conv}=0$ at the surface.  But for constant mixing length this likely works OK because $J_{conv} > 0$.  Importantly, we don't usually resolve the ultra-thin thermal boundary layer at the surface, so balancing with the convective flux is reasonable:
+\begin{equation}
+J_{conv} = -\rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
+\end{equation}
+We already know that $\kappa_h$ is a nasty function of a bunch of $T$-dependent material properties, as well as the entropy gradient.  So let's just approximate its value at the surface using the value at the basic node below.  So basically, once the lowermost boundary of the uppermost cell feels the effect of the rheological transition, the surface will similarly respond.  Since $\rho$ is also not highly variable, use this value at the basic node below as well (denote by `1' subscript).  Therefore (and $J_{cond}$ could be similarly included):
+\begin{equation}
+\epsilon \sigma (T_0^4 - T_{eqm}^4) = -\rho_1 \kappa_{h1} T_0 \left. \left( \frac{\partial S}{\partial r} \right|_0 \right)
+\label{eq:radintbalance}
+\end{equation}
+The implementation approach is as follows.  At a given time, we construct the entropy profile at the internal basic nodes using the current solution.  We then solve Eq.~\ref{eq:radintbalance} iteratively to determine the surface entropy gradient and hence the surface entropy that satisfies the surface boundary condition.  This then provides the full distribution of properties and energy fluxes for all basic nodes, self-consistently.  An advantage of this approach is that $J_{rad}$ (heat flux out) can be imposed by any arbitrary black box because we do not require derivatives to impose the boundary condition.  A disadvantage is that we must solve a non-linear problem within the timestepper.  But given that we only use one rank, and the problem is still small (1-D), this isn't an issue.
+%%%%
+\subsubsection{Derivative approach (not implemented)}
+We can also take the time derivative:
 \begin{equation}
 \frac{\partial S_0}{\partial t} = \frac{\partial S_{1/2}}{\partial t} - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right)
 \end{equation}
-For the time update (time integrator), we ultimately want to compute the final term on the RHS (perhaps by solving a non-linear problem within the time integrator), i.e. $\frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right)$.  First let's take a look at the radiative flux:
-\begin{equation}
-J_{rad} = \epsilon \sigma (T_0^4 - T_{eqm}^4)
-\end{equation}
-$T_0$ is determined from $S_0$, where $S_0$ relates to solution quantities through the reconstruction.  This is useful for the initial condition.  Now we also want to determine a time derivative for the time stepper:
+Now we also want to determine a time derivative for the time stepper:
 \begin{equation}
 \frac{\partial J_{rad}}{\partial t} = \left(\frac{\partial T_0}{\partial t}\right) \frac{\partial}{\partial T_0} \epsilon \sigma (T_0^4 - T_{eqm}^4)
 \end{equation}
@@ -25,14 +37,9 @@ Collecting terms:
 \begin{equation}
 \frac{\partial J_{rad}}{\partial t} = \left( \frac{4 \epsilon \sigma T_0^4}{c_0} \right) \left(\frac{\partial S_0}{\partial t} \right)
 \end{equation}
-Since $\partial S_{1/2} / \partial t$ depends on $J_{tot}$, we probably have to solve for $\partial S_{1/2} / \partial t$ and $\partial / \partial t (\partial S/\partial r)|_0$ simultaneously.  Now let's look at the convective flux, since this is the simplest energy balance with the radiative flux.  It strictly is not true when the mixing length depends on the distance from the boundaries.  But for constant mixing length this likely works OK:
-\begin{equation}
-J_{conv} = -\rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
-\end{equation}
 \begin{equation}
 \frac{\partial J_{conv}}{\partial t} = - \frac{\partial}{\partial t} \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
 \end{equation}
-We already know that $\kappa_h$ is a nasty function of a bunch of $T$-dependent material properties, as well as the entropy gradient.  We don't want to differentiate it with respect to time of choice, but we could approximate it using the value at the basic node below.  So basically, once the lowermost boundary of the uppermost cell feels the effect of the rheological transition, the surface will similarly respond.  Since $\rho$ is also not highly variable, use this value at the basic node below as well (denote by `1' subscript).
 \begin{equation}
 \frac{\partial J_{conv}}{\partial t} = - \rho_1 \kappa_{h_1} \left[ \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial T_0}{\partial t} \right) + T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
 \end{equation}
@@ -75,15 +82,7 @@ And more:
 \frac{\partial S_{1/2}}{\partial t} = \left(\frac{2 + \xi \Delta r}{2 \xi} \right) \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right)
 \label{eq:surfbc}
 \end{equation}
-The first factor on the RHS is known from the current distribution, as is the LHS.  For the initial condition:
-\begin{equation}
-\epsilon \sigma (T_0^4 - T_{eqm}^4) = -\rho_1 \kappa_{h1} T_0 \left. \left( \frac{\partial S}{\partial r} \right|_0 \right)
-\end{equation}
-% below probably doesn't help, since taking quotients seems problematic for the solver
-%Therefore:
-%\begin{equation}
-%\frac{\epsilon \sigma (T_0^4 - T_{eqm}^4)}{\rho_1 \kappa_{h1} T_0} = - \left. \left( \frac{\partial S}{\partial r} \right|_0 \right)
-%\end{equation}
+So from the current solution we can compute $\partial S_{1/2}/\partial t$, and hence the time update to the surface entropy gradient.  We could therefore set $\partial S/\partial r|_0$ to be consistent with the flux balance for the initial condition, and then update it using the derivative to ensure the flux balance is maintained.  Since this is linear, the update would be trivial to include in the time-stepper (no extra solve required within the time-stepper, unlike the algebraic approach above).  However, a major disadvantage is necessarily needing to know the rate of change of flux (hence surface temperature), which might not be available (e.g., if a flux is imposed, and we don't know the algebraic relationship between the imposed flux and temperature).
 
 %%%%
 %%%%
