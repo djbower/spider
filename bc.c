@@ -188,7 +188,6 @@ PetscErrorCode solve_dpdts( Ctx *E )
     SNES                       snes;
     Vec                        x,r;
     PetscScalar                *xx,atol,rtol;
-    //char                       atolstr[20], rtolstr[20];
     PetscInt                   i;
     Atmosphere                 *A  = &E->atmosphere;
     Parameters const           P  = E->parameters;
@@ -230,14 +229,9 @@ PetscErrorCode solve_dpdts( Ctx *E )
     ierr = PetscOptionsSetValue(NULL,"-atmosts_snes_mf",NULL);CHKERRQ(ierr);
     /* get the accuracy from the time stepper and use for atmosts */
     ierr = PetscOptionsGetScalar(NULL,NULL,"-ts_sundials_atol",&atol,NULL);CHKERRQ(ierr);
-    //sprintf( atolstr, "%e", atol );
-    ierr = PetscOptionsGetScalar(NULL,NULL,"-ts_sundaisl_rtol",&rtol,NULL);CHKERRQ(ierr);
-    //sprintf( rtolstr, "%e", rtol );
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-ts_sundials_rtol",&rtol,NULL);CHKERRQ(ierr);
     ierr = SNESSetTolerances(snes, atol, rtol, 0.0, PETSC_DEFAULT, PETSC_DEFAULT );CHKERRQ(ierr);
-    //ierr = PetscOptionsSetValue(NULL,"-atmosts_snes_atol",atolstr);CHKERRQ(ierr);
-    //ierr = PetscOptionsSetValue(NULL,"-atmosts_snes_rtol",rtolstr);CHKERRQ(ierr);
-    //ierr = PetscOptionsSetValue(NULL,"-atmosts_ksp_atol",atolstr);CHKERRQ(ierr);
-    //ierr = PetscOptionsSetValue(NULL,"-atmosts_ksp_rtol",rtolstr);CHKERRQ(ierr);
+    /* FIXME: need to adjust KSP tolerances to match above? Or allow to auto-determine? */
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
     {   
