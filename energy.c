@@ -529,7 +529,6 @@ PetscErrorCode solve_for_current_state( Ctx *E, PetscReal t )
     Vec                        x,r;
     PetscScalar                *xx, *arr_xi_b, *arr_S_b, *arr_S_s, *arr_dSdxi_b;
     DM                         da_b=E->da_b,da_s=E->da_s;
-    Atmosphere                 *A = &E->atmosphere;
     Mesh                       *M = &E->mesh;
     Solution                   *S = &E->solution;
 
@@ -626,7 +625,6 @@ static PetscErrorCode objective_function_current_state( SNES snes, Vec x, Vec f,
     Parameters            const P  = E->parameters;
     Mesh                 const *M = &E->mesh;
     Atmosphere           const *A = &E->atmosphere;
-    FundamentalConstants  const FC = P->fundamental_constants;
     ScalingConstants      const SC = P->scaling_constants;
     Solution                   *S = &E->solution;
     DM                         da_b = E->da_b;

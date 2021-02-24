@@ -3,7 +3,7 @@
 
 #include "ctx.h"
 
-PetscErrorCode set_surface_flux( Ctx * );
+//PetscErrorCode set_surface_flux( Ctx * );
 PetscErrorCode solve_dpdts( Ctx * );
 
 #endif

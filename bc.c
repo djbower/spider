@@ -3,9 +3,11 @@
 #include "monitor.h"
 #include "util.h"
 
-static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
-static PetscScalar get_isothermal_surface( const Ctx * );
+//static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *, PetscScalar );
+//static PetscScalar get_isothermal_surface( const Ctx * );
 
+/* superseded by new surface bc approach */
+#if 0
 PetscErrorCode set_surface_flux( Ctx *E )
 {
 
@@ -103,7 +105,10 @@ PetscErrorCode set_surface_flux( Ctx *E )
 
     PetscFunctionReturn(0);
 }
+#endif
 
+/* to improve with shallow ocean layer */
+#if 0
 static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qin )
 {
     PetscErrorCode ierr;
@@ -156,7 +161,9 @@ static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qi
 
     return Qout;
 }
+#endif
 
+#if 0
 static PetscScalar get_isothermal_surface( const Ctx *E )
 {
     PetscErrorCode ierr;
@@ -181,6 +188,7 @@ static PetscScalar get_isothermal_surface( const Ctx *E )
 
     return Qout;
 }
+#endif
 
 PetscErrorCode solve_dpdts( Ctx *E )
 {

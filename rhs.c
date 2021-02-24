@@ -46,7 +46,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* sets everything possible (and consistently) from entropy */
   ierr = set_current_state_from_solution( E, t, sol_in );CHKERRQ(ierr);
 
-  /* FIXME: I don't think this is required anymore, since everything
+  /* TODO: I don't think this is required anymore, since everything
      set above */
   /* boundary conditions must be after all arrays are set */
   /* cmb boundary condition is set when the energy fluxes
