@@ -221,6 +221,9 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
         ierr = VecGetValues(S->kappah,1,ind_ptr,&kappah);CHKERRQ(ierr);
     }
 
+    /* FIXME: for core-mantle boundary, also use properties slightly
+       inset of boundary */
+
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
     ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
@@ -358,10 +361,13 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b; // this is one more than last index of basic array
 
+/* test with conduction at surface */
+#if 0
     /* surface boundary condition, no conduction assumed */
     if(!*ind_ptr){
         return 0.0;
     }
+#endif
 
     /* core-mantle boundary condition, no conduction assumed */
     if(*ind_ptr == ihi_b-1){
