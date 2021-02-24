@@ -56,40 +56,6 @@ PetscInt get_crossover_index( DM dm, const Vec vec, PetscScalar value, PetscInt 
 
 }
 
-// to remove soon
-#if 0
-PetscErrorCode set_rheological_front_mask( DM dm, PetscInt index, Vec mask )
-{
-    PetscErrorCode    ierr;
-    PetscInt          i,ilo,ihi,w;
-    const PetscScalar one=1.0, zero=0.0;
-
-    PetscFunctionBeginUser;
-
-    /* assume all mantle is solid */
-    ierr = VecSet( mask, 0.0 ); CHKERRQ(ierr);
-
-    ierr = DMDAGetCorners(dm,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
-    ihi = ilo + w;
-
-    for(i=ilo; i<ihi; ++i){
-        if( i < index ){
-            ierr = VecSetValues( mask, 1, &i, &one, INSERT_VALUES ); CHKERRQ(ierr);
-        }
-        else{
-            ierr = VecSetValues( mask, 1, &i, &zero, INSERT_VALUES ); CHKERRQ(ierr);
-            break;
-        }
-    }
-
-    ierr = VecAssemblyBegin(mask);CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(mask);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-
-}
-#endif
-
 PetscErrorCode JSON_add_rheological_front( DM dm, ScalingConstants C, RheologicalFront *Rf, const char *name, cJSON *json )
 {
     PetscErrorCode  ierr;
