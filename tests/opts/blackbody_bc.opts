@@ -7,7 +7,7 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 100
+-nstepsmacro 1000
 
 # macro step size in years
 -dtmacro 100
@@ -17,15 +17,16 @@
 -activate_poststep 1
 
 # tolerances
--ts_sundials_atol 1.0e-6
--ts_sundials_rtol 1.0e-6
+-ts_sundials_atol 1.0e-9
+-ts_sundials_rtol 1.0e-9
 
 # number of basic nodes
 -n 100
 
-# all units are SI unless indicated otherwise
+#-state_snes_verbose_monitor
+#-state_snes_converged_reason
 
-#-surfacebc_snes_verbose_monitor
+# all units are SI unless indicated otherwise
 
 # primary scaling parameters
 # - these are used to non-dimensionalise (scale) the numerical problem
@@ -119,7 +120,7 @@
 # eddy diffusivity
 # if negative, this value is adopted (units m^2/s)
 # if positive, this value is used to scale the internally calculated eddy diffusivity
--eddy_diffusivity_thermal 1.0
+-eddy_diffusivity_thermal 1.0 #-2.0E5
 -eddy_diffusivity_chemical 1.0
 
 # material properties
@@ -137,7 +138,7 @@
 # [1] core-cooling
 # [2] heat flux (prescribe value using core_bc_value)
 # [3] entropy
--CORE_BC 1
+-CORE_BC 2
 -core_bc_value 0.0
 
 # core parameters for CORE_BC=1

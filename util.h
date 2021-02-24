@@ -22,5 +22,4 @@ PetscErrorCode PetscOptionsGetPositiveScalar( const char *, PetscScalar *, Petsc
 PetscErrorCode PetscOptionsGetPositiveInt( const char *, PetscInt *, PetscInt, PetscBool * );
 PetscErrorCode apply_log10visc_cutoff( Parameters const, PetscScalar * );
 PetscErrorCode GetEddyDiffusivity( const EOSEvalData, const Parameters, PetscScalar, PetscScalar, PetscScalar, PetscScalar *, PetscScalar *, PetscScalar * );
-
 #endif

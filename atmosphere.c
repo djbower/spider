@@ -71,17 +71,18 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     /* initialise volatiles */
     ierr = initialise_volatiles( A, Ap );
 
+    /* FIXME: remove setting to arbitrary and wrong values during initialisation */
     /* other variables in struct that otherwise might not get set */
     /* below is only for Abe and Matsui atmosphere model */
-    A->tau = 0.0;
+    //A->tau = 0.0;
     /* Ensure that A->tsurf is non-zero so that the escape-related
        functions do not return an uninitialised value warning
        (valgrind).  During the time loop, A->tsurf is updated to a
        meaningful value before it is actually used (as is A->psurf) */
-    A->tsurf = 1.0;
-    A->dtsurfdt = 0.0;
-    A->psurf = 0.0;
-    A->dpsurfdt = 0.0;
+    //A->tsurf = 1.0;
+    //A->dtsurfdt = 0.0;
+    //A->psurf = 0.0;
+    //A->dpsurfdt = 0.0;
 
     /* initialise mass reaction terms to zero */
     {
@@ -330,15 +331,7 @@ static PetscErrorCode set_total_surface_pressure( Atmosphere *A, const Atmospher
         A->psurf += V->p;
     }
 
-    /* Oxygen is often treated as a trace species from the
-       perspective of computing the total atmospheric pressure, but
-       it is trivial to include: */
-    /* Actually, for oxidised meteorite material this is almost
-       certainly required, since O2 could be a dominant species */
-    /* fO2 is set in set_interior_structure_from_solution */
-    /* Oxygen fugacity must be set, otherwise A->log10f02 is 
-       zero due to initialisation and hence this results in
-       infinite A->psurf (TODO: still true?) */
+    /* contribution from O2 */
     if( Ap->OXYGEN_FUGACITY ){
         A->psurf /= (1.0 - PetscPowScalar(10.0,A->log10fO2) );
     }
@@ -577,6 +570,44 @@ static PetscErrorCode set_escape( Atmosphere *A, const AtmosphereParameters Ap, 
         ierr = set_R_thermal_escape( A, Ap, i ); CHKERRQ(ierr);
 
         ierr = set_f_thermal_escape( A, i ); CHKERRQ(ierr);
+    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode set_atmosphere_emissivity_and_flux( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC, const ScalingConstants SC )
+{
+    PetscFunctionBeginUser;
+
+    switch( Ap->SURFACE_BC ){
+        case 1:
+            /* constant emissivity (greybody/blackbody) */
+            A->emissivity = Ap->emissivity0;
+            A->Fatm = get_grey_body_flux( A, Ap, FC );
+            break;
+        case 2:
+            /* Zahnle steam atmosphere parameterisation */
+            A->Fatm = get_steam_atmosphere_zahnle_1988_flux( A, SC );
+            A->emissivity = get_emissivity_from_flux( A, Ap, FC, A->Fatm );
+            break;
+        case 3:
+            /* Abe and Matsui (1985) */
+            A->emissivity = get_emissivity_abe_matsui( A, Ap );
+            A->Fatm = get_grey_body_flux( A, Ap, FC );
+            break;
+        case 4:
+            /* constant heat flux */
+            A->Fatm = Ap->surface_bc_value;
+            A->emissivity = get_emissivity_from_flux( A, Ap, FC, A->Fatm );
+            break;
+        case 5:
+            /* isothermal */
+            /* FIXME: Etot not updated yet, but need for this? */
+            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC); 
+            break;
+        default:
+            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
+            break;
     }
 
     PetscFunctionReturn(0);

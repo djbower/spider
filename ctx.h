@@ -72,6 +72,9 @@ typedef struct Ctx_ {
   /* "local" work vectors */
   Vec work_local_s,work_local_b;
 
+  /* for passing current solver time to objective_function_current_state */
+  PetscReal t;
+
   /* Pointer for PostStep reference data */
   void *postStepData;
 

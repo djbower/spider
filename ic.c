@@ -25,13 +25,18 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx * );
 /* general */
 static PetscErrorCode set_ic_from_file( Ctx *, Vec, const char *, const PetscInt *, PetscInt );
 static PetscErrorCode objective_function_initial_partial_pressure( SNES, Vec, Vec, void *);
-static PetscErrorCode conform_parameters_to_initial_condition( Ctx * );
+static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx * );
 static PetscErrorCode print_ocean_masses( Ctx * );
 
 /* main function to set initial condition */
 PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
+    Parameters const P = E->parameters;
+    Atmosphere      *A = &E->atmosphere;
+    AtmosphereParameters Ap = P->atmosphere_parameters;
+    FundamentalConstants FC = P->fundamental_constants;
+    ScalingConstants     SC = P->scaling_constants;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition()\n");CHKERRQ(ierr);
@@ -39,15 +44,20 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     /* interior initial condition */
     ierr = set_ic_interior( E, sol ); CHKERRQ(ierr);
 
+    /* need some interface quantities for setting atmosphere ic */
+    ierr = set_interior_atmosphere_interface_from_surface_entropy( E ); CHKERRQ(ierr);
+
     /* atmosphere initial condition */
     /* must be after interior initial condition */
     ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
 
-    /* conform parameters structs to initial condition */
-    ierr = conform_parameters_to_initial_condition( E );CHKERRQ(ierr);
+    /* for surface bc, need an estimate of A->Fatm */
+    /* FIXME: will break for isothermal bcs */
+    ierr = set_atmosphere_emissivity_and_flux( A, Ap, FC, SC );
 
-    /* this also updates mass reaction terms */
-    ierr = set_solution_from_partial_pressures( E, sol ); CHKERRQ(ierr);
+    /* P->t0 is set in parameters.c */
+    /* time is needed for the radiogenic energy input */
+    ierr = set_current_state_from_solution( E, P->t0, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -94,12 +104,6 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
        to the sol Vec which is what is actually used by the
        time-stepper */
     ierr = set_solution_from_entropy(E, sol);CHKERRQ(ierr);
-
-    /* P->t0 is set in parameters.c */
-    /* time is needed for the radiogenic energy input */
-    /* below sets interior structure, since possibly required for
-       atmosphere initial condition */
-    ierr = set_interior_structure_from_solution( E, P->t0, sol ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -402,7 +406,7 @@ static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E )
 
     /* below adjust the initial entropy (temperature) of the surface and
        the core mantle boundary */
-
+    /* TODO: these only set staggered nodes - extrapolate to boundaries? */
     /* surface */
     if( P->ic_surface_entropy > 0.0 ){
         arr_S_s[0] = P->ic_surface_entropy;
@@ -480,8 +484,9 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
            solution */
         ierr = set_reservoir_volatile_content( A, Ap, FC, SC );CHKERRQ(ierr);
 
-        /* again, note that mass reaction terms are not yet
-           (necessarily) zero! */
+        ierr = conform_atmosphere_parameters_to_ic( E );CHKERRQ(ierr);
+
+        ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
 
     }
 
@@ -491,7 +496,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode conform_parameters_to_initial_condition( Ctx *E )
+static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
 {
 
     /* this function has authorisation to update the parameters struct

@@ -44,16 +44,14 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = VecSetUp( rhs_b );CHKERRQ(ierr);
 
   /* sets everything possible (and consistently) from entropy */
-  ierr = set_interior_structure_from_solution( E, t, sol_in );CHKERRQ(ierr);
+  ierr = set_current_state_from_solution( E, t, sol_in );CHKERRQ(ierr);
 
-  /* below also sets reaction masses in Atmosphere struct (required
-     for time-stepping) */
-  ierr = set_partial_pressures_from_solution( E, sol_in );CHKERRQ(ierr);
-
+  /* FIXME: I don't think this is required anymore, since everything
+     set above */
   /* boundary conditions must be after all arrays are set */
   /* cmb boundary condition is set when the energy fluxes
      are calculated (prior to here) */
-  ierr = set_surface_flux( E );CHKERRQ(ierr);
+  //ierr = set_surface_flux( E );CHKERRQ(ierr);
 
   /* now we compute the time-dependent quantities */
 

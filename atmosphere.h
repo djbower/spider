@@ -38,13 +38,15 @@ typedef struct Atmosphere_ {
     /* TODO: some of these quantities are not really strictly
        related to the atmosphere, and should perhaps live
        elsewhere */
+    /* interface quantities */
     PetscScalar Mliq; // mass of liquid (kg)
     PetscScalar Msol; // mass of solid (kg)
-    PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar tsurf; // surface temperature
     PetscScalar dtsurfdt; // time derivative of surface temperature
     PetscScalar log10fO2; // oxygen fugacity (non-dimensional)
     PetscScalar dlog10fO2dT; // temp derivative of fO2
+    /* other */
+    PetscScalar dMliqdt; // dMliq/dt (kg/yr)
     PetscScalar psurf; // surface pressure
     PetscScalar dpsurfdt; // time derivative of surface pressure
     PetscScalar tau; // aggregate optical depth at surface (non-dimensional)
@@ -65,6 +67,8 @@ typedef struct Atmosphere_ {
 PetscErrorCode initialise_atmosphere( Atmosphere *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode destroy_atmosphere( Atmosphere * );
 
+/* FIXME: probably some of these can be eventually be made static */
+PetscErrorCode set_atmosphere_emissivity_and_flux( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, const ScalingConstants );
 PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
 PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const ScalingConstants );
 PetscScalar get_emissivity_abe_matsui( Atmosphere *, const AtmosphereParameters);

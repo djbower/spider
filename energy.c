@@ -16,6 +16,8 @@ static PetscErrorCode append_Jmix( Ctx * );
 static PetscErrorCode append_Jgrav( Ctx * );
 static PetscErrorCode append_Hradio( Ctx *, PetscReal );
 static PetscErrorCode append_Htidal( Ctx *, PetscReal );
+static PetscErrorCode set_current_state( Ctx *, PetscReal );
+static PetscErrorCode objective_function_current_state( SNES, Vec, Vec, void *);
 static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const, PetscReal );
 static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
 static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
@@ -206,12 +208,22 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     PetscScalar    dSdxi,dxidr,temp,rho,kappah,Jconv;
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
+    //PetscInt       i,ilo_b,ihi_b,w_b;
+    PetscInt const ind1=1;
+
+    /* easier to use kappah at node below to impose surface bc */
+    if(!*ind_ptr){
+        ierr = VecGetValues(S->rho,1,&ind1,&rho);CHKERRQ(ierr);
+        ierr = VecGetValues(S->kappah,1,&ind1,&kappah);CHKERRQ(ierr);
+    }
+    else{
+        ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
+        ierr = VecGetValues(S->kappah,1,ind_ptr,&kappah);CHKERRQ(ierr);
+    }
 
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
     ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
-    ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
-    ierr = VecGetValues(S->kappah,1,ind_ptr,&kappah);CHKERRQ(ierr);
 
     Jconv = -dSdxi * dxidr * kappah * rho * temp;
 
@@ -255,6 +267,20 @@ PetscScalar GetMixingHeatFlux( Ctx *E, PetscInt * ind_ptr )
     Solution const  *S = &E->solution;
     Parameters const P = E->parameters;
     EOS *sub_eos;
+    PetscInt        ilo_b,ihi_b,w_b;
+
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b; // this is one more than last index of basic array
+
+    /* surface boundary condition, no mixing */
+    if(!*ind_ptr){
+        return 0.0;
+    }
+
+    /* core-mantle boundary condition, no mixing */
+    if(*ind_ptr == ihi_b-1){
+        return 0.0;
+    }
 
     /* Jmix requires two phases */
     ierr = EOSCompositeGetSubEOS(P->eos, &sub_eos, &should_be_two);CHKERRQ(ierr);
@@ -327,6 +353,20 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     PetscScalar    dSdxi,dxidr,temp,cp,dTdxis,cond,Jcond;
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
+    PetscInt       ilo_b,ihi_b,w_b;
+
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b; // this is one more than last index of basic array
+
+    /* surface boundary condition, no conduction assumed */
+    if(!*ind_ptr){
+        return 0.0;
+    }
+
+    /* core-mantle boundary condition, no conduction assumed */
+    if(*ind_ptr == ihi_b-1){
+        return 0.0;
+    }
 
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
@@ -380,6 +420,20 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     Parameters const P = E->parameters;
     EOS              *sub_eos;
     EOSEvalData     eval_liq, eval_sol;
+    PetscInt        ilo_b,ihi_b,w_b;
+
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b; // this is one more than last index of basic array
+
+    /* surface boundary condition, no gravitational separation */
+    if(!*ind_ptr){
+        return 0.0;
+    }
+
+    /* core-mantle boundary condition, no gravitational separation */
+    if(*ind_ptr == ihi_b-1){
+        return 0.0;
+    }
 
     /* Jgrav requires two phases */
     ierr = EOSCompositeGetSubEOS(P->eos, &sub_eos, &should_be_two);CHKERRQ(ierr);
@@ -468,67 +522,260 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     return Jgrav;
 }
 
-PetscErrorCode set_interior_structure_from_solution( Ctx *E, PetscReal t, Vec sol_in )
+PetscErrorCode solve_for_current_state( Ctx *E, PetscReal t )
 {
+    PetscErrorCode             ierr;
+    SNES                       snes;
+    Vec                        x,r;
+    PetscScalar                *xx, *arr_xi_b, *arr_S_b, *arr_S_s, *arr_dSdxi_b;
+    DM                         da_b=E->da_b,da_s=E->da_s;
+    Atmosphere                 *A = &E->atmosphere;
+    Mesh                       *M = &E->mesh;
+    Solution                   *S = &E->solution;
 
-    /* set all possible quantities for a given entropy structure (i.e. top staggered 
-       value S0 and dS/dxi at all basic nodes).  This one function ensures that 
-       everything is set self-consistently. */
+    PetscFunctionBeginUser;
 
-    PetscErrorCode       ierr;
-    PetscMPIInt          rank;
-    PetscScalar          temp0;
+    ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
+
+    /* Use this to address this specific SNES (nonlinear solver) from the command
+       line or options file, e.g. -surfacebc_snes_view */
+    ierr = SNESSetOptionsPrefix(snes,"state_");CHKERRQ(ierr);
+
+    ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, 1 );CHKERRQ(ierr);
+    ierr = VecSetFromOptions(x);CHKERRQ(ierr);
+    ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
+
+    /* set current time to Ctx, since the Ctx is passed to the
+       objective function with t updated */
+    E->t = t;
+
+    ierr = SNESSetFunction(snes,r,objective_function_current_state,E);CHKERRQ(ierr);
+
+    /* initial guess of surface entropy gradient is gradient at basic node below surface */
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    xx[0] = arr_dSdxi_b[1];
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+
+    ierr = PetscOptionsSetValue(NULL,"-state_snes_mf",NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-state_snes_stol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-state_snes_rtol","1.0E-9");CHKERRQ(ierr);
+    /* atol will give accurate result to within 0.001 W/m^2.  Could
+       likely relax this further, at least for the magma ocean stage */
+    ierr = PetscOptionsSetValue(NULL,"-state_snes_atol","1.0E-3");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-state_ksp_rtol","1.0E-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-state_ksp_atol","1.0E-9");CHKERRQ(ierr);
+
+    /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
+    {
+      PetscBool flg = PETSC_FALSE;
+
+      ierr = PetscOptionsGetBool(NULL,NULL,"-state_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      if (flg) {
+        ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
+      }
+    }
+
+    /* Solve */
+    ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
+    ierr = SNESSolve(snes,NULL,x);CHKERRQ(ierr);
+    {
+      SNESConvergedReason reason;
+      ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
+      if (reason < 0) SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+          "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
+    }
+
+    ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    /* set entropy gradient at surface */
+    ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    arr_dSdxi_b[0] = xx[0];
+    ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+
+    /* set entropy at surface */
+    arr_S_b[0] = -arr_dSdxi_b[0] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
+    arr_S_b[0] += arr_S_s[0];
+
+    ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    ierr = VecDestroy(&x);CHKERRQ(ierr);
+    ierr = VecDestroy(&r);CHKERRQ(ierr);
+    ierr = SNESDestroy(&snes);CHKERRQ(ierr);
+    
+    PetscFunctionReturn(0);
+}   
+
+static PetscErrorCode objective_function_current_state( SNES snes, Vec x, Vec f, void *ptr)
+{
+    PetscErrorCode             ierr;
+    PetscMPIInt                rank;
+    const PetscScalar          *xx;
+    PetscScalar                *ff;
+    PetscScalar                Ss0, Sb0, dSdxi0, Jtot0, res;
+    const PetscScalar          *arr_xi_b;
+    Ctx                        *E = (Ctx*) ptr;
+    Parameters            const P  = E->parameters;
+    Mesh                 const *M = &E->mesh;
+    Atmosphere           const *A = &E->atmosphere;
+    FundamentalConstants  const FC = P->fundamental_constants;
+    ScalingConstants      const SC = P->scaling_constants;
+    Solution                   *S = &E->solution;
+    DM                         da_b = E->da_b;
     PetscInt             const ind0 = 0;
-    Atmosphere           *A  = &E->atmosphere;
-    Parameters           const P  = E->parameters;
-    Solution             const *S  = &E->solution;
-    ScalingConstants     const SC  = P->scaling_constants;
-    AtmosphereParameters const Ap = P->atmosphere_parameters;
+    PetscInt             const ind1 = 1;
+    PetscReal                  t;
 
     PetscFunctionBeginUser;
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
 
-    /* set solution in the relevant structs */
-    ierr = set_entropy_from_solution( E, sol_in );CHKERRQ(ierr);
+    /* set current time from Ctx, since the Ctx is passed to the
+       objective function */
+    t = E->t;
 
-    /* set material properties and energy fluxes and sources */
-    ierr = set_phase_fraction_staggered( E ); CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b); CHKERRQ(ierr);
+    ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
+    ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
+
+    /* conform entropy Vecs in struct to our current guess of the 
+       entropy gradient at the surface */
+    dSdxi0 = xx[ind0];
+    ierr = VecSetValue( S->dSdxi, ind0, dSdxi0, INSERT_VALUES );CHKERRQ(ierr);
+    ierr = VecAssemblyBegin( S->dSdxi );CHKERRQ(ierr);
+    ierr = VecAssemblyEnd( S->dSdxi );CHKERRQ(ierr);
+
+    /* compute surface entropy using the reconstruction */
+    ierr = VecGetValues(S->S_s,1,&ind0,&Ss0);CHKERRQ(ierr);
+    Sb0 = -dSdxi0 * 0.5 * (arr_xi_b[ind1] - arr_xi_b[ind0]) + Ss0;
+    ierr = VecSetValue( S->S, ind0, Sb0, INSERT_VALUES );CHKERRQ(ierr);
+    ierr = VecAssemblyBegin( S->S );CHKERRQ(ierr);
+    ierr = VecAssemblyEnd( S->S );CHKERRQ(ierr);
+
+    ierr = set_current_state( E, t );CHKERRQ(ierr);
+
+    /* compute residual */
+    ierr = VecGetValues(S->Jtot,1,&ind0,&Jtot0);CHKERRQ(ierr);
+    res = A->Fatm - Jtot0;
+
+    /* scale residual to physical flux (W/m^2), so the solver
+       tolerances effectively enforce a minimum flux difference
+       in W/m^2 */
+    res *= SC->FLUX;
+
+    /* set residual of fluxes */
+    ff[ind0] = res;
+
+    ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
+    ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode set_current_state( Ctx *E, PetscReal t )
+{
+    PetscErrorCode        ierr;
+    PetscMPIInt           rank;
+    Atmosphere            *A  = &E->atmosphere;
+    Parameters            const P  = E->parameters;
+    FundamentalConstants  const FC = P->fundamental_constants;
+    ScalingConstants      const SC  = P->scaling_constants;
+    AtmosphereParameters  const Ap = P->atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+
     ierr = set_capacitance_staggered( E );CHKERRQ(ierr);
+
     ierr = set_matprop_basic( E );CHKERRQ(ierr);
+
+    /* update surface temperature, fO2 */
+    ierr = set_interior_atmosphere_interface_from_surface_entropy( E );CHKERRQ(ierr);
+
+    /* update all volatile reservoirs */
+    ierr = set_reservoir_volatile_content( A, Ap, FC, SC ); CHKERRQ(ierr);
+
+    /* compute A->emissivity and A->Fatm */
+    ierr = set_atmosphere_emissivity_and_flux( A, Ap, FC, SC );CHKERRQ(ierr);
+
     ierr = set_Etot( E );CHKERRQ(ierr);
     ierr = set_Htot( E, t );CHKERRQ(ierr);
 
-    ierr = set_Mliq( E );CHKERRQ(ierr);
-    ierr = set_Msol( E );CHKERRQ(ierr);
-    /* NOTE: we cannot set_dMliqdt, since it must be after dS/dt computation */
-
     ierr = set_rheological_front( E ); CHKERRQ(ierr);
 
-    /* set surface temperature */
-    if (!rank) {
-        /* temperature (potential temperature if coarse mesh is used) */
-        ierr = VecGetValues(S->temp,1,&ind0,&temp0); CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
 
-        /* correct for ultra-thin thermal boundary layer at the surface */
-        if( Ap->PARAM_UTBL ){
-            A->tsurf = get_tsurf_using_parameterised_boundary_layer( temp0, Ap); // parameterised boundary layer
-            A->dtsurfdt = get_dtsurf_using_parameterised_boundary_layer( temp0, Ap); // dTsurf/dT
-        }
-        else{
-            A->tsurf = temp0; // surface temperature is potential temperature
-            A->dtsurfdt = 1.0; // dTsurf/dT
-        }
+PetscErrorCode set_interior_atmosphere_interface_from_surface_entropy( Ctx *E )
+{
+    PetscErrorCode       ierr;
+    Parameters           const P = E->parameters;
+    Mesh                 const *M  = &E->mesh;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
+    ScalingConstants     const SC = P->scaling_constants;
+    Atmosphere           *A = &E->atmosphere;
+    Solution             const *S  = &E->solution;
+    PetscScalar          T0, Sb0, Pres0;
+    EOSEvalData          eos_eval;
+    PetscInt             const ind0 = 0;
+
+    PetscFunctionBeginUser;
+
+    ierr = set_phase_fraction_staggered( E ); CHKERRQ(ierr);
+    /* to set atmosphere. we need to know A->Mliq and A->Msol */
+    ierr = set_Mliq( E );CHKERRQ(ierr);
+    ierr = set_Msol( E );CHKERRQ(ierr);
+
+    ierr = VecGetValues( S->S, 1, &ind0, &Sb0 );
+    ierr = VecGetValues( M->pressure_b, 1, &ind0, &Pres0 );
+    ierr = EOSEval( P->eos, Pres0, Sb0, &eos_eval );
+    T0 = eos_eval.T;
+
+    /* correct for ultra-thin thermal boundary layer at the surface */
+    if( Ap->PARAM_UTBL ){
+        A->tsurf = get_tsurf_using_parameterised_boundary_layer( T0, Ap); // parameterised boundary layer
+        A->dtsurfdt = get_dtsurf_using_parameterised_boundary_layer( T0, Ap); // dTsurf/dT
+    }
+    else{
+        A->tsurf = T0;
+        A->dtsurfdt = 1.0; // dTsurf/dT
     }
 
     /* must be after A->tsurf is set for fO2 calculation */
     if( Ap->OXYGEN_FUGACITY ){
         ierr = set_oxygen_fugacity( A, Ap, SC );CHKERRQ(ierr);
     }
-    else{
-        /* TODO: maybe initialise these variables elsewhere? */
-        A->log10fO2 = 0;
-        A->dlog10fO2dT = 0;
-    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in )
+{
+
+    /* set all possible quantities for a given sol Vev.  This one
+       function ensures that everything is set self-consistently. */
+
+    PetscErrorCode        ierr;
+    PetscMPIInt           rank;
+
+    PetscFunctionBeginUser;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+
+    /* set solution in the relevant structs */
+    /* entropy */
+    ierr = set_entropy_from_solution( E, sol_in );CHKERRQ(ierr);
+    /* atmosphere */
+    ierr = set_partial_pressures_from_solution( E, sol_in );CHKERRQ(ierr);
+
+    ierr = solve_for_current_state( E, t ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 
