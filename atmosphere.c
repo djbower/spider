@@ -74,15 +74,15 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     /* FIXME: remove setting to arbitrary and wrong values during initialisation */
     /* other variables in struct that otherwise might not get set */
     /* below is only for Abe and Matsui atmosphere model */
-    //A->tau = 0.0;
+    A->tau = 0.0;
     /* Ensure that A->tsurf is non-zero so that the escape-related
        functions do not return an uninitialised value warning
        (valgrind).  During the time loop, A->tsurf is updated to a
        meaningful value before it is actually used (as is A->psurf) */
-    //A->tsurf = 1.0;
-    //A->dtsurfdt = 0.0;
-    //A->psurf = 0.0;
-    //A->dpsurfdt = 0.0;
+    A->tsurf = 1.0;
+    A->dtsurfdt = 0.0;
+    A->psurf = 0.0;
+    A->dpsurfdt = 0.0;
 
     /* initialise mass reaction terms to zero */
     {
