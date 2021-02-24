@@ -37,23 +37,17 @@ PetscInt get_crossover_index( DM dm, const Vec vec, PetscScalar value, PetscInt 
     }
 
     /* end-members:
-         1. i = 0 if surface is below rheological transition
-         2. i = ihi-1 if all mantle is above rheological transition
+         1. i = 1 if surface is below rheological transition
+         2. i = ihi-offset if all mantle is above rheological transition
 
-       set_rheological_front_mask sets (staggered) mask to 0 for
-       i_staggered < index, and 1 for i_staggered >= 0.  Hence we
-       need to adjust the index for end-member 2 to ensure that
-       if the rheological front is not located, all of the mantle
-       is assumed to be above the rheological front.  This is only
-       necessary when a staggered mesh is being processed, which is
-       identified by the 'offset' argument */
+       offset is 0 for staggered (so maximum index is no. of staggered nodes)
+       offset is 1 for basic (so maximum index is no. of staggered nodes)
 
-    /* end-member 1 automatically works */
+       mask set to 0 for i_staggered < index, and 1 for i_staggered >= 0. */
 
     /* end-member 2 */
-    /* only actually required for staggered mesh calculation */
-    if( i == ihi-1){
-        i += offset;
+    if( i == ihi){
+        i -= offset;
     }
 
     ierr = DMDAVecRestoreArrayRead(dm,vec,&arr_vec);CHKERRQ(ierr);

@@ -156,13 +156,13 @@ PetscErrorCode set_rheological_front( Ctx *E )
     ierr = DMDAGetInfo(da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 
     /* critical melt fraction */
-    index = get_crossover_index( da_s, S->phi_s, P->phi_critical, 1 );
+    index = get_crossover_index( da_s, S->phi_s, P->phi_critical, 0 );
     ierr = make_vec_mask( da_s, index, &mask_s );CHKERRQ(ierr);
     ierr = set_rheological_front_mantle_properties( E, Rfp, index, &mask_s );CHKERRQ(ierr);
     ierr = VecDestroy( &mask_s );CHKERRQ(ierr);
 
     /* inviscid to viscous regime crossover */
-    index = get_crossover_index( da_b, S->regime, 1.5, 0 );
+    index = get_crossover_index( da_b, S->regime, 1.5, 1 );
     ierr = make_vec_mask( da_s, index, &mask_s );CHKERRQ(ierr);
     ierr = set_rheological_front_mantle_properties( E, Rfd, index, &mask_s );CHKERRQ(ierr);
     ierr = VecDestroy( &mask_s );CHKERRQ(ierr);
