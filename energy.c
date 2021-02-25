@@ -208,21 +208,30 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     PetscScalar    dSdxi,dxidr,temp,rho,kappah,Jconv;
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
-    //PetscInt       i,ilo_b,ihi_b,w_b;
+    PetscInt       ind_cmb,ind_abv_cmb,ilo_b,ihi_b,w_b;
     PetscInt const ind1=1;
 
-    /* easier to use kappah at node below to impose surface bc */
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b; /* total number of basic nodes */
+    ind_cmb = ihi_b-1;
+    ind_abv_cmb = ind_cmb-1;
+
+    /* for bcs, the nasty functional dependence of kappah can cause
+       problems, so just use value of the nearby node instead */
+     /* for surface */
     if(!*ind_ptr){
         ierr = VecGetValues(S->rho,1,&ind1,&rho);CHKERRQ(ierr);
         ierr = VecGetValues(S->kappah,1,&ind1,&kappah);CHKERRQ(ierr);
+    }
+    /* for cmb */
+    else if(*ind_ptr == ind_cmb){
+        ierr = VecGetValues(S->rho,1,&ind_abv_cmb,&rho);CHKERRQ(ierr);
+        ierr = VecGetValues(S->kappah,1,&ind_abv_cmb,&kappah);CHKERRQ(ierr);
     }
     else{
         ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
         ierr = VecGetValues(S->kappah,1,ind_ptr,&kappah);CHKERRQ(ierr);
     }
-
-    /* FIXME: for core-mantle boundary, also use properties slightly
-       inset of boundary */
 
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
@@ -362,17 +371,17 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     ihi_b = ilo_b + w_b; // this is one more than last index of basic array
 
 /* test with conduction at surface */
-#if 0
+#if 1
     /* surface boundary condition, no conduction assumed */
     if(!*ind_ptr){
         return 0.0;
     }
-#endif
 
     /* core-mantle boundary condition, no conduction assumed */
     if(*ind_ptr == ihi_b-1){
         return 0.0;
     }
+#endif
 
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);

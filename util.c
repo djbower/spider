@@ -119,6 +119,10 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     /* cmb entropy */
     /* use dS/dr at the cmb which is constrained by the core boundary condition */
+    /* unlike for the surface bc, for the cmb bc we can simply timestep the cmb
+       entropy gradient to, by construction, adhere to the boundary condition.  We
+       cannot do this for the surface, since we do not know dFlux_surface/dt in all
+       cases */
     arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-1] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
     arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
 
@@ -136,6 +140,9 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
 PetscErrorCode set_partial_pressures_from_solution( Ctx *E, Vec sol )
 {
+    /* clone the current atmosphere solution (volatile partial
+       pressures and reaction masses) into the atmos struct */
+
     PetscErrorCode             ierr;
     Atmosphere                 *A = &E->atmosphere;
     Parameters                 P = E->parameters;
@@ -170,6 +177,8 @@ PetscErrorCode set_partial_pressures_from_solution( Ctx *E, Vec sol )
 
 PetscErrorCode set_solution_from_partial_pressures( Ctx *E, Vec sol )
 {
+    /* clone the values in the atmos struct to the solution Vec */
+
     PetscErrorCode             ierr;
     Parameters                 P = E->parameters;
     Atmosphere                 *A = &E->atmosphere;
