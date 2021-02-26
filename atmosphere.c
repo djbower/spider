@@ -602,8 +602,6 @@ PetscErrorCode set_atmosphere_emissivity_and_flux( Atmosphere *A, const Atmosphe
             break;
         case 5:
             /* isothermal */
-            /* FIXME: Etot not updated yet, but need for this? */
-            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC); 
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);

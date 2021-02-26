@@ -13,4 +13,5 @@ PetscErrorCode set_Htot( Ctx *, PetscReal t );
 PetscErrorCode set_current_state_from_solution( Ctx *, PetscScalar, Vec );
 PetscScalar tsurf_param( PetscScalar, const AtmosphereParameters * );
 PetscErrorCode set_interior_atmosphere_interface_from_surface_entropy( Ctx * );
+PetscErrorCode set_boundary_entropy_constant( Ctx * );
 #endif

@@ -778,6 +778,8 @@ PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in 
 
     PetscErrorCode        ierr;
     PetscMPIInt           rank;
+    Parameters           const P  = E->parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
@@ -788,10 +790,65 @@ PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in 
     /* atmosphere */
     ierr = set_partial_pressures_from_solution( E, sol_in );CHKERRQ(ierr);
 
-    ierr = solve_for_current_state( E, t ); CHKERRQ(ierr);
+    /* isothermal bc */
+    if( Ap->SURFACE_BC == 5 ){
+        ierr = set_boundary_entropy_constant( E );CHKERRQ(ierr);
+        ierr = set_current_state( E, t);CHKERRQ(ierr);
+    }
+    else{
+        ierr = solve_for_current_state( E, t );CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 
+}
+
+PetscErrorCode set_boundary_entropy_constant( Ctx *E )
+{
+    /* ensure that the interior ic is compatible with boundary
+       conditions, and that the entropy vecs in the solution
+       struct are consistent with the sol Vec (and vice-versa) */
+
+    PetscErrorCode   ierr;
+    Mesh             *M = &E->mesh;
+    Solution         *S = &E->solution;
+    PetscScalar      *arr_S_s, *arr_dSdxi_b, *arr_xi_b, *arr_S_b;
+    PetscInt         ihi_b, ilo_b, w_b;
+    Parameters const P = E->parameters;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+
+    ierr = DMDAVecGetArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    /* below adjust the initial entropy (temperature) of the surface and
+       the core mantle boundary */
+    if( P->ic_surface_entropy > 0.0 ){
+        arr_S_b[0] = P->ic_surface_entropy;
+        /* basic node gradient should be consistent */
+        arr_dSdxi_b[0] = arr_S_b[0] - arr_S_s[0];
+        arr_dSdxi_b[0] /= -0.5 * (arr_xi_b[1] - arr_xi_b[0]);
+    }   
+
+    /* core-mantle boundary */
+    if( P->ic_core_entropy > 0.0 ){
+        arr_S_b[ihi_b-1] = P->ic_core_entropy;
+        /* basic node gradient should be consistent */
+        arr_dSdxi_b[ihi_b-1] = arr_S_b[ihi_b-1] - arr_S_s[ihi_b-2];
+        arr_dSdxi_b[ihi_b-1] /= 0.5 * (arr_xi_b[ihi_b-1] - arr_xi_b[ihi_b-2]);
+    }   
+
+    ierr = DMDAVecRestoreArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
 }
 
 static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters Ap )

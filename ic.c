@@ -14,7 +14,6 @@ static PetscErrorCode set_ic_interior_default( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *, Vec );
-static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx * );
 /* atmosphere ic */
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_ocean_moles( Ctx *E, Vec sol );
@@ -98,7 +97,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
 
     /* set surface and core entropy for the IC (if set), but then can
        evolve (not necessarily isothermal).  Updates the Vecs in E */
-    ierr = set_ic_interior_conform_to_bcs( E ); CHKERRQ(ierr);
+    ierr = set_boundary_entropy_constant( E ); CHKERRQ(ierr);
 
     /* Now the Vecs in E are set and consistent, clone them
        to the sol Vec which is what is actually used by the
@@ -382,54 +381,6 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_ic_interior_conform_to_bcs( Ctx *E )
-{
-    /* ensure that the interior ic is compatible with boundary
-       conditions, and that the entropy vecs in the solution
-       struct are consistent with the sol Vec (and vice-versa) */
-
-    PetscErrorCode   ierr;
-    Mesh             *M = &E->mesh;
-    Solution         *S = &E->solution;
-    PetscScalar      *arr_S_s, *arr_dSdxi_b, *arr_xi_b, *arr_S_b;
-    PetscInt         ihi_b, ilo_b, w_b;
-    Parameters const P = E->parameters;
-
-    PetscFunctionBeginUser;
-
-    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b;
-
-    ierr = DMDAVecGetArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
-
-    /* below adjust the initial entropy (temperature) of the surface and
-       the core mantle boundary */
-    if( P->ic_surface_entropy > 0.0 ){
-        arr_S_b[0] = P->ic_surface_entropy;
-        /* basic node gradient should be consistent */
-        arr_dSdxi_b[0] = arr_S_b[0] - arr_S_s[0];
-        arr_dSdxi_b[0] /= -0.5 * (arr_xi_b[1] - arr_xi_b[0]);
-    }
-
-    /* core-mantle boundary */
-    if( P->ic_core_entropy > 0.0 ){
-        arr_S_b[ihi_b-1] = P->ic_core_entropy;
-        /* basic node gradient should be consistent */
-        arr_dSdxi_b[ihi_b-1] = arr_S_b[ihi_b-1] - arr_S_s[ihi_b-2];
-        arr_dSdxi_b[ihi_b-1] /= 0.5 * (arr_xi_b[ihi_b-1] - arr_xi_b[ihi_b-2]);
-    }
-
-    ierr = DMDAVecRestoreArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
 /* initial condition of atmosphere */
 
 static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
@@ -511,7 +462,7 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
     AtmosphereParameters Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"conform_parameters_to_initial_condition()\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"conform_atmosphere_parameters_to_ic()\n");CHKERRQ(ierr);
 
     /* prior to this function, A->volatiles[i].x and A->mass_reaction[i]
        are updated */
