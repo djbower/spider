@@ -41,7 +41,7 @@
 -radius0 63710000.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
--density0 1.0E-1
+-pressure0 1207268.722106174
 -volatile0 1.0E-6
 
 # energy fluxes and sources to include

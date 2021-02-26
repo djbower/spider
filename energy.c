@@ -206,8 +206,10 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
 {
     PetscErrorCode ierr;
     PetscScalar    dSdxi,dxidr,temp,rho,kappah,Jconv;
+    Parameters const P = E->parameters;
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
     PetscInt       ind_cmb,ind_abv_cmb,ilo_b,ihi_b,w_b;
     PetscInt const ind1=1;
 
@@ -216,17 +218,25 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     ind_cmb = ihi_b-1;
     ind_abv_cmb = ind_cmb-1;
 
-    /* for bcs, the nasty functional dependence of kappah can cause
-       problems, so just use value of the nearby node instead */
-     /* for surface */
-    if(!*ind_ptr){
-        ierr = VecGetValues(S->rho,1,&ind1,&rho);CHKERRQ(ierr);
-        ierr = VecGetValues(S->kappah,1,&ind1,&kappah);CHKERRQ(ierr);
-    }
-    /* for cmb */
-    else if(*ind_ptr == ind_cmb){
-        ierr = VecGetValues(S->rho,1,&ind_abv_cmb,&rho);CHKERRQ(ierr);
-        ierr = VecGetValues(S->kappah,1,&ind_abv_cmb,&kappah);CHKERRQ(ierr);
+    /* for isothermal, OK to compute.  For other bcs that involve
+       solving an inverse problem, instead simplify */
+    if( Ap->SURFACE_BC != 5 ){
+        /* for bcs, the nasty functional dependence of kappah can cause
+           problems, so just use value of the nearby node instead */
+         /* for surface */
+        if(!*ind_ptr){
+            ierr = VecGetValues(S->rho,1,&ind1,&rho);CHKERRQ(ierr);
+            ierr = VecGetValues(S->kappah,1,&ind1,&kappah);CHKERRQ(ierr);
+        }
+        /* for cmb */
+        else if(*ind_ptr == ind_cmb){
+            ierr = VecGetValues(S->rho,1,&ind_abv_cmb,&rho);CHKERRQ(ierr);
+            ierr = VecGetValues(S->kappah,1,&ind_abv_cmb,&kappah);CHKERRQ(ierr);
+        }
+        else{
+            ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
+            ierr = VecGetValues(S->kappah,1,ind_ptr,&kappah);CHKERRQ(ierr);
+        }
     }
     else{
         ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
@@ -358,6 +368,8 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
 {
     PetscErrorCode ierr;
     PetscScalar    dSdxi,dxidr,temp,cp,dTdxis,cond,Jcond;
+    Parameters const P = E->parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
     PetscInt       ilo_b,ihi_b,w_b;
@@ -365,18 +377,15 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b; // this is one more than last index of basic array
 
-/* test with conduction at surface */
-#if 1
-    /* surface boundary condition, no conduction assumed */
-    if(!*ind_ptr){
-        return 0.0;
+    /* for isothermal surface bc can determine flux at surface with
+       all dependences, since do not need to solve for dS/dxi at the surface */
+    /* FIXME: should allow conduction at the surface for all cases.  To test */
+    if( Ap->SURFACE_BC != 5){
+        /* surface boundary condition, no conduction assumed for other cases */
+        if( (!*ind_ptr) || (*ind_ptr == ihi_b-1) ){
+            return 0.0;
+        }
     }
-
-    /* core-mantle boundary condition, no conduction assumed */
-    if(*ind_ptr == ihi_b-1){
-        return 0.0;
-    }
-#endif
 
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
@@ -782,10 +791,15 @@ PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in 
 
     /* isothermal bc */
     if( Ap->SURFACE_BC == 5 ){
+        /* can compute surface entropy and entropy gradient directly */
         ierr = set_boundary_entropy_constant( E );CHKERRQ(ierr);
+        /* with the entropy profiles known directly from above, can
+           immediately compute current state */
         ierr = set_current_state( E, t);CHKERRQ(ierr);
     }
     else{
+        /* must solve for entropy and entropy gradient at surface
+           to adhere to the radiation-interior flux balance */
         ierr = solve_for_current_state( E, t );CHKERRQ(ierr);
     }
 
