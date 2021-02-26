@@ -284,15 +284,10 @@ PetscScalar GetMixingHeatFlux( Ctx *E, PetscInt * ind_ptr )
     ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b; // this is one more than last index of basic array
 
-    /* surface boundary condition, no mixing */
-    if(!*ind_ptr){
-        return 0.0;
-    }
-
-    /* core-mantle boundary condition, no mixing */
-    if(*ind_ptr == ihi_b-1){
-        return 0.0;
-    }
+    /* no mixing at boundaries since no mass transfer */
+    if( (!*ind_ptr) || (*ind_ptr == ihi_b-1) ){
+        return 0.0; 
+    }   
 
     /* Jmix requires two phases */
     ierr = EOSCompositeGetSubEOS(P->eos, &sub_eos, &should_be_two);CHKERRQ(ierr);
@@ -440,13 +435,8 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b; // this is one more than last index of basic array
 
-    /* surface boundary condition, no gravitational separation */
-    if(!*ind_ptr){
-        return 0.0;
-    }
-
-    /* core-mantle boundary condition, no gravitational separation */
-    if(*ind_ptr == ihi_b-1){
+    /* no gravitational separation at boundaries (since no mass transfer possible) */
+    if( (!*ind_ptr) || (*ind_ptr == ihi_b-1) ){
         return 0.0;
     }
 
