@@ -789,6 +789,8 @@ PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in 
     /* atmosphere */
     ierr = set_partial_pressures_from_solution( E, sol_in );CHKERRQ(ierr);
 
+    /* FIXME: allow one of core or surface to be isothermal, and
+      the other something else */
     /* isothermal bc */
     if( Ap->SURFACE_BC == 5 ){
         /* can compute surface entropy and entropy gradient directly */
@@ -812,6 +814,9 @@ PetscErrorCode set_boundary_entropy_constant( Ctx *E )
     /* ensure that the interior ic is compatible with boundary
        conditions, and that the entropy vecs in the solution
        struct are consistent with the sol Vec (and vice-versa) */
+
+    /* FIXME: allow one of core or surface to be isothermal, and
+      the other something else */
 
     PetscErrorCode   ierr;
     Mesh             *M = &E->mesh;
