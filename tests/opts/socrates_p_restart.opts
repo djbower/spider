@@ -8,34 +8,9 @@
 # macro step size in years
 -dtmacro 50000
 
-# for double precision, tolerances should not be tighter than
-# 1.0e-11
-# you may also be able to relax the tolerances to less than
-# 1.0E-10
-
 # tolerances for master timestepper
 -ts_sundials_atol 1.0e-10
 -ts_sundials_rtol 1.0e-10
-
-# tolerances for volatile evolution
-# these are used to solve for dp/dt for each volatile species during the
-# timestepping
-# rule of thumb: should be around same magnitude as master timestepper
--atmosts_snes_atol 1.0E-10
--atmosts_snes_rtol 1.0E-10
--atmosts_ksp_atol 1.0E-10
--atmosts_ksp_rtol 1.0E-10
-
-# solve for initial partial pressure of volatile(s)
-# next two lines provide information about the convergence behaviour
--atmosic_snes_verbose_monitor
--atmosic_snes_converged_reason
-# we use a Newton trust region solver, since sometimes the initial
-# estimate for volatile abundance(s) is sub-optimal
--atmosic_snes_type newtontr
--atmosic_trtol 1e-10
--atmosic_ksp_rtol 1e-10
--atmosic_ksp_atol 1e-10
 
 # below are only relevant if we use a linesearch
 #-atmosic_snes_linesearch_damping 0.01
