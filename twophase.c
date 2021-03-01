@@ -132,11 +132,10 @@ PetscErrorCode set_dMliqdt( Ctx *E )
 
 }
 
-/* FIXME: the next two functions relating to the rheological front
+/* the next two functions relating to the rheological front
    require Ctx, but this is outside of the scope of rheologicalfront.h.
    Since ctx.h must know about rheologicalfront.h, to avoid a circular 
-   dependency these two functions live here.  Ask PS about the best
-   coding practice for dealing with this situation */
+   dependency these two functions live here */
 
 PetscErrorCode set_rheological_front( Ctx *E )
 {

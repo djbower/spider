@@ -1,4 +1,5 @@
 #include "atmosphere.h"
+#include "bc.h"
 #include "energy.h"
 #include "eos.h"
 #include "ic.h"
@@ -89,7 +90,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
         SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported IC_INTERIOR value %d provided",P->IC_INTERIOR);
     }
 
-    /* this copies the sol Vecs to E and applies relevant bcs */
+    /* this copies the sol Vecs to E */
     /* the reason we set sol above, rather than Vecs in struct, is
        because the function below is called by the RHS and must take
        sol as the input.  This now sets the Vecs in E */

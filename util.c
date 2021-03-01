@@ -1,9 +1,6 @@
+#include "bc.h"
 #include "monitor.h"
 #include "util.h"
-
-static PetscScalar GetModifiedMixingLength( PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar );
-static PetscScalar GetConstantMixingLength( PetscScalar outer_radius, PetscScalar inner_radius );
-static PetscScalar GetMixingLength( const Parameters, PetscScalar );
 
 /* Helper routine to prepend the root directory to a relative path */
 /* https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html */
@@ -108,15 +105,6 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     arr_S_s[ihi_b-2] += S0; // add at end to try and retain precision
     arr_S_b[ihi_b-2] += S0; // add at end to try and retain precision
 
-    /* surface entropy 
-       extrapolate to surface using dS/dr below
-       in practice, this is only used to give an estimate of the
-       surface temperature for computing the atmosphere initial
-       condition.  The surface entropy is then updated to adhere
-       to the radiation balance at the surface */
-    arr_S_b[0] = arr_S_s[0];
-    arr_S_b[0] += -arr_dSdxi_b[1] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
-
     /* cmb entropy */
     /* use dS/dr at the cmb which is constrained by the core boundary condition */
     /* unlike for the surface bc, for the cmb bc we can simply timestep the cmb
@@ -131,6 +119,12 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
+
+    /* default behaviour is to extrapolate to give surface entropy and gradient */
+    /* this could be subsequently overwritten depending on the users choice of
+       the surface boundary conditions.  However, an initial estimate of surface
+       entropy is useful for setting the atmosphere initial condition */
+    ierr = set_surface_entropy_extrapolate( E );CHKERRQ(ierr);
 
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     PetscFree(subVecs);
@@ -430,150 +424,5 @@ PetscErrorCode PetscOptionsGetPositiveInt( const char *value_string, PetscInt *v
       ierr = PetscIntCheckPositive(*value_ptr,value_string);CHKERRQ(ierr);
     }
 
-    PetscFunctionReturn(0);
-}
-
-/* to avoid circular references with headers, the eddy diffusivity function and associated functions live here */
-PetscErrorCode GetEddyDiffusivity( const EOSEvalData eos_eval, const Parameters P, PetscScalar radius, PetscScalar dSdxi, PetscScalar dxidr, PetscScalar *kappah_ptr, PetscScalar *kappac_ptr, PetscScalar *regime_ptr )
-{
-    PetscErrorCode ierr;
-    PetscScalar    visc, kvisc, gsuper, kh, crit, mix, kappah, kappac, regime;
-
-    PetscFunctionBeginUser;
-
-    visc = eos_eval.log10visc;
-    ierr = apply_log10visc_cutoff( P, &visc );CHKERRQ(ierr);
-    visc = PetscPowScalar( 10.0, visc );
-    kvisc = visc / eos_eval.rho; // kinematic viscosity
-    gsuper = P->gravity * eos_eval.T / eos_eval.Cp * dSdxi * dxidr; // g * super adiabatic gradient
-
-    crit = 81.0 * PetscPowScalar(kvisc,2);
-    mix = GetMixingLength( P, radius);
-    crit /= 4.0 * eos_eval.alpha * PetscPowScalar(mix,4);
-
-    if( gsuper <= 0.0 ){
-      /* no convection, subadiabatic */
-      kh = 0.0;
-      regime = 0.0;
-    } else if( gsuper > crit ){
-      /* inviscid scaling from Vitense (1953) */
-      kh = 0.25 * PetscPowScalar(mix,2) * PetscSqrtScalar(eos_eval.alpha * gsuper);
-      regime = 2.0;
-    } else{
-      /* viscous scaling */
-      kh = eos_eval.alpha * gsuper * PetscPowScalar(mix,4) / ( 18.0 * kvisc );
-      regime = 1.0;
-    }   
-
-    /* thermal eddy diffusivity */
-    if (P->eddy_diffusivity_thermal > 0.0){
-      /* scale */
-      kappah = P->eddy_diffusivity_thermal * kh; 
-    }   
-    else{
-      /* else set (and negate to account for sign flag) */
-      kappah = -P->eddy_diffusivity_thermal;
-    }   
-
-    /* chemical eddy diffusivity */
-    if (P->eddy_diffusivity_chemical > 0.0){
-      /* scale */
-      kappac = P->eddy_diffusivity_chemical * kh; 
-    }   
-    else{
-      /* else set (and negate to account for sign flag) */
-      kappac = -P->eddy_diffusivity_chemical;
-    }   
-
-    /* update pointers with data */
-    if(kappah_ptr != NULL){
-        *kappah_ptr = kappah;
-    }   
-    if(kappac_ptr != NULL){
-        *kappac_ptr = kappac;
-    }   
-    if(regime_ptr != NULL){
-        *regime_ptr = regime;
-    }   
-
-    PetscFunctionReturn(0);
-}
-
-static PetscScalar GetModifiedMixingLength( PetscScalar a, PetscScalar b, PetscScalar outer_radius, PetscScalar inner_radius, PetscScalar radius )
-{
-    /* See Kamata, 2018, JGR */
-    /* conventional mixing length theory has a = b = 0.5 */
-    /* a is location of peak in depth/radius space,
-       b is amplitude of the peak */
-
-    PetscScalar mix_length1, mix_length2, mix_length;
-
-    mix_length1 = (radius - inner_radius) * b / (1.0 - a); 
-    mix_length2 = (outer_radius - radius) * b / a;
-
-    mix_length = PetscMin( mix_length1, mix_length2 );
-
-    return mix_length;
-}
-
-static PetscScalar GetConstantMixingLength( PetscScalar outer_radius, PetscScalar inner_radius )
-{
-    PetscScalar mix_length;
-
-    mix_length = 0.25 * (outer_radius - inner_radius );
-
-    return mix_length;
-}
-
-static PetscScalar GetMixingLength( const Parameters P, PetscScalar radius )
-{
-    PetscScalar outer_radius, inner_radius;
-    PetscScalar mix_length = 0.0;
-    PetscScalar eps = 1.0E-10;
-
-    /* for a single layer, P->layer_interface_radius = P->coresize (parameters.c),
-       enabling this single expression to work for both a single and double
-       layered mantle */
-    /* due to floating points, sometimes the radius at the innermost boundary is slightly
-       less than P->layer_interface_radius, so account for this with a small offset (eps) */
-    /* if we try to resolve the ultra-thin boundary layer, eps might not be smaller enough? */
-
-    if( radius >= P->radius * P->layer_interface_radius - eps ){
-        outer_radius = P->radius;
-        inner_radius = P->radius * P->layer_interface_radius;
-    }   
-    else{
-        outer_radius = P->radius * P->layer_interface_radius;
-        inner_radius = P->radius * P->coresize;
-    }   
-
-    if( P->mixing_length == 1){ 
-        mix_length = GetModifiedMixingLength( P->mixing_length_a, P->mixing_length_b, outer_radius, inner_radius, radius );
-    }   
-    else if( P->mixing_length == 2){ 
-        mix_length = GetConstantMixingLength( outer_radius, inner_radius );
-    }   
-
-    /* parameters.c ensures that P->mixing_length must be 1 or 2, so we cannot
-       fall outside this if statement */
-
-    return mix_length;
-}
-
-PetscErrorCode apply_log10visc_cutoff( Parameters const P, PetscScalar *viscosity )
-{   
-    PetscFunctionBeginUser;
-    
-    if(P->log10visc_min > 0.0){
-        if(*viscosity < P->log10visc_min){
-            *viscosity = P->log10visc_min;
-        }
-    }
-    if(P->log10visc_max > 0.0){
-        if(*viscosity > P->log10visc_max){
-            *viscosity = P->log10visc_max;
-        }
-    }
-    
     PetscFunctionReturn(0);
 }

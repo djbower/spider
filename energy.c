@@ -1,4 +1,3 @@
-#include "atmosphere.h"
 #include "bc.h"
 #include "energy.h"
 #include "eos.h"
@@ -16,22 +15,21 @@ static PetscErrorCode append_Jmix( Ctx * );
 static PetscErrorCode append_Jgrav( Ctx * );
 static PetscErrorCode append_Hradio( Ctx *, PetscReal );
 static PetscErrorCode append_Htidal( Ctx *, PetscReal );
+/* next enforces a boundary condition, but to avoid circular
+   dependencies it lives here and not in bc.c */
+static PetscErrorCode solve_for_surface_radiation_balance( Ctx *, PetscReal );
+static PetscErrorCode objective_function_surface_radiation_balance( SNES, Vec, Vec, void *);
 static PetscErrorCode set_current_state( Ctx *, PetscReal );
-static PetscErrorCode objective_function_current_state( SNES, Vec, Vec, void *);
 static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const, PetscReal );
-static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
-static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
-/* permeability laws */
+/* permeability laws control efficiency of gravitational separation */
 static PetscScalar GetPermeabilityBlakeKozenyCarman( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
 static PetscScalar GetPermeabilityRumpfGupte( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
 static PetscScalar GetPermeabilityRudge( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
 
-///////////////////////////
-/* internal heat sources */
-///////////////////////////
-/* total internal heat generation */
 PetscErrorCode set_Htot( Ctx *E, PetscReal time )
 {
+    /* total internal heat generation */
+
     PetscErrorCode ierr;
     Parameters     const P = E->parameters;
     Solution       *S = &E->solution;
@@ -55,9 +53,9 @@ PetscErrorCode set_Htot( Ctx *E, PetscReal time )
     PetscFunctionReturn(0);
 }
 
-/* radiogenic heat generation */
 static PetscErrorCode append_Hradio( Ctx *E, PetscReal time )
 {
+    /* radiogenic heat generation */
 
     PetscErrorCode ierr;
     PetscInt i;
@@ -81,9 +79,10 @@ static PetscErrorCode append_Hradio( Ctx *E, PetscReal time )
     PetscFunctionReturn(0);
 }
 
-/* tidal heat generation */
 static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
 {
+    /* tidal heat generation */
+
     /* TODO: template code snippets below, but tidal heating is
        currently not implemented */
 
@@ -113,16 +112,12 @@ static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const 
     H *= Rp->heat_production * Rp->abundance * Rp->concentration;
 
     return H;
-
 }
 
-///////////////////
-/* energy fluxes */
-///////////////////
-
-/* total energy flow (flux*area) at basic nodes */
 PetscErrorCode set_Etot( Ctx *E )
 {
+    /* total energy flow (flux*area) at basic nodes */
+
     PetscErrorCode ierr;
     Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
@@ -133,12 +128,11 @@ PetscErrorCode set_Etot( Ctx *E )
     ierr = VecPointwiseMult(S->Etot,S->Jtot,M->area_b); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
-/* total heat flux at basic nodes */
 static PetscErrorCode set_Jtot( Ctx *E )
 {
+    /* total heat flux at basic nodes */
 
     /* also ensures the core mantle boundary flux adheres to the
        imposed boundary condition */
@@ -166,17 +160,13 @@ static PetscErrorCode set_Jtot( Ctx *E )
       ierr = append_Jgrav( E );
     }
 
-    /* CMB flux should always be computed by MO model */
-    /* this needs to be included otherwise Ecmb is not correct */
-    //ierr = SetCoreMantleFluxBC( E );CHKERRQ(ierr);
-
     PetscFunctionReturn(0);
-
 }
 
-/* convective heat flux at basic nodes */
 static PetscErrorCode append_Jconv( Ctx *E )
 {
+    /* convective heat flux at basic nodes */
+
     PetscErrorCode ierr;
     PetscScalar    Jconv;
     PetscInt       i,ilo_b,ihi_b,w_b;
@@ -199,7 +189,6 @@ static PetscErrorCode append_Jconv( Ctx *E )
     ierr = VecAXPY( S->Jtot, 1.0, S->Jconv ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
@@ -218,6 +207,7 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     ind_cmb = ihi_b-1;
     ind_abv_cmb = ind_cmb-1;
 
+    /* FIXME */
     /* for isothermal, OK to compute.  For other bcs that involve
        solving an inverse problem, instead simplify */
     if( Ap->SURFACE_BC != 5 ){
@@ -252,10 +242,10 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     return Jconv;
 }
 
-
-/* mixing heat flux (latent heat transport) at basic nodes */
 static PetscErrorCode append_Jmix( Ctx *E )
 {
+    /* mixing heat flux (latent heat transport) at basic nodes */
+
     PetscErrorCode ierr;
     PetscScalar    Jmix;
     Solution       *S = &E->solution;
@@ -277,7 +267,6 @@ static PetscErrorCode append_Jmix( Ctx *E )
     ierr = VecAXPY( S->Jtot, 1.0, S->Jmix ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 PetscScalar GetMixingHeatFlux( Ctx *E, PetscInt * ind_ptr )
@@ -294,7 +283,7 @@ PetscScalar GetMixingHeatFlux( Ctx *E, PetscInt * ind_ptr )
     ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b; // this is one more than last index of basic array
 
-    /* no mixing at boundaries since no mass transfer */
+    /* no energy transport by mixing at boundaries since no mass transfer */
     if( (!*ind_ptr) || (*ind_ptr == ihi_b-1) ){
         return 0.0; 
     }   
@@ -336,9 +325,10 @@ PetscScalar GetMixingHeatFlux( Ctx *E, PetscInt * ind_ptr )
     return Jmix;
 }
 
-/* conductive heat flux at basic nodes */
 static PetscErrorCode append_Jcond( Ctx *E )
 {
+    /* conductive heat flux at basic nodes */
+
     PetscErrorCode ierr;
     PetscScalar    Jcond;
     PetscInt       i,ilo_b,ihi_b,w_b;
@@ -361,7 +351,6 @@ static PetscErrorCode append_Jcond( Ctx *E )
     ierr = VecAXPY( S->Jtot, 1.0, S->Jcond ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
@@ -400,9 +389,9 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     return Jcond;
 }
 
-/* gravitational separation heat flux at basic nodes */
 static PetscErrorCode append_Jgrav( Ctx *E )
 {
+    /* gravitational separation heat flux at basic nodes */
 
     PetscErrorCode ierr;
     PetscScalar    Jgrav;
@@ -426,7 +415,6 @@ static PetscErrorCode append_Jgrav( Ctx *E )
     ierr = VecAXPY( S->Jtot, 1.0, S->Jgrav ); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
@@ -536,8 +524,12 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     return Jgrav;
 }
 
-PetscErrorCode solve_for_current_state( Ctx *E, PetscReal t )
+static PetscErrorCode solve_for_surface_radiation_balance( Ctx *E, PetscReal t ) 
 {
+    /* to formally balance radiation with the interior heat flux at the surface,
+       we must solve a coupled system for the surface entropy gradient and
+       surface entropy */
+
     PetscErrorCode             ierr;
     SNES                       snes;
     Vec                        x,r;
@@ -551,8 +543,8 @@ PetscErrorCode solve_for_current_state( Ctx *E, PetscReal t )
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
 
     /* Use this to address this specific SNES (nonlinear solver) from the command
-       line or options file, e.g. -surfacebc_snes_view */
-    ierr = SNESSetOptionsPrefix(snes,"state_");CHKERRQ(ierr);
+       line or options file, e.g. -surfrad_snes_view */
+    ierr = SNESSetOptionsPrefix(snes,"surfrad_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
     ierr = VecSetSizes( x, PETSC_DECIDE, 1 );CHKERRQ(ierr);
@@ -563,7 +555,7 @@ PetscErrorCode solve_for_current_state( Ctx *E, PetscReal t )
        objective function with t updated */
     E->t = t;
 
-    ierr = SNESSetFunction(snes,r,objective_function_current_state,E);CHKERRQ(ierr);
+    ierr = SNESSetFunction(snes,r,objective_function_surface_radiation_balance,E);CHKERRQ(ierr);
 
     /* initial guess of surface entropy gradient is gradient at basic node below surface */
     ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
@@ -572,24 +564,24 @@ PetscErrorCode solve_for_current_state( Ctx *E, PetscReal t )
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
 
-    ierr = PetscOptionsSetValue(NULL,"-state_snes_mf",NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-state_snes_stol","0");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-state_snes_rtol","1.0E-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfrad_snes_mf",NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfrad_snes_stol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfrad_snes_rtol","1.0E-9");CHKERRQ(ierr);
     /* atol will give accurate result to within 0.001 W/m^2.  Could
        likely relax this further, at least for the magma ocean stage */
-    ierr = PetscOptionsSetValue(NULL,"-state_snes_atol","1.0E-3");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-state_ksp_rtol","1.0E-9");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-state_ksp_atol","1.0E-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfrad_snes_atol","1.0E-3");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfrad_ksp_rtol","1.0E-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfrad_ksp_atol","1.0E-9");CHKERRQ(ierr);
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
-    {
+    {   
       PetscBool flg = PETSC_FALSE;
 
-      ierr = PetscOptionsGetBool(NULL,NULL,"-state_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      ierr = PetscOptionsGetBool(NULL,NULL,"-surfrad_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
       if (flg) {
         ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
-      }
-    }
+      }   
+    }   
 
     /* Solve */
     ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
@@ -602,8 +594,8 @@ PetscErrorCode solve_for_current_state( Ctx *E, PetscReal t )
     }
 
     ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
 
     /* set entropy gradient at surface */
@@ -616,18 +608,18 @@ PetscErrorCode solve_for_current_state( Ctx *E, PetscReal t )
     arr_S_b[0] += arr_S_s[0];
 
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
 
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);
     ierr = SNESDestroy(&snes);CHKERRQ(ierr);
-    
-    PetscFunctionReturn(0);
-}   
 
-static PetscErrorCode objective_function_current_state( SNES snes, Vec x, Vec f, void *ptr)
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode objective_function_surface_radiation_balance( SNES snes, Vec x, Vec f, void *ptr)
 {
     PetscErrorCode             ierr;
     PetscMPIInt                rank;
@@ -694,6 +686,10 @@ static PetscErrorCode objective_function_current_state( SNES snes, Vec x, Vec f,
 
 static PetscErrorCode set_current_state( Ctx *E, PetscReal t )
 {
+    /* for a given entropy profile (all basic and staggered nodes),
+       set the current state of the system for the interior and
+       atmosphere */
+
     PetscErrorCode        ierr;
     PetscMPIInt           rank;
     Atmosphere            *A  = &E->atmosphere;
@@ -705,8 +701,8 @@ static PetscErrorCode set_current_state( Ctx *E, PetscReal t )
     PetscFunctionBeginUser;
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
 
+    /* material properties at basic and staggered nodes */
     ierr = set_capacitance_staggered( E );CHKERRQ(ierr);
-
     ierr = set_matprop_basic( E );CHKERRQ(ierr);
 
     /* update surface temperature, fO2 */
@@ -771,17 +767,14 @@ PetscErrorCode set_interior_atmosphere_interface_from_surface_entropy( Ctx *E )
 
 PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in )
 {
-
-    /* set all possible quantities for a given sol Vev.  This one
+    /* set all possible quantities for a given sol Vec.  This one
        function ensures that everything is set self-consistently. */
 
-    PetscErrorCode        ierr;
-    PetscMPIInt           rank;
+    PetscErrorCode       ierr;
     Parameters           const P  = E->parameters;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
 
     /* set solution in the relevant structs */
     /* entropy */
@@ -789,121 +782,24 @@ PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in 
     /* atmosphere */
     ierr = set_partial_pressures_from_solution( E, sol_in );CHKERRQ(ierr);
 
-    /* FIXME: allow one of core or surface to be isothermal, and
-      the other something else */
-    /* isothermal bc */
+    /* set_entropy_from_solution has already extrapolated to get an
+       estimate of the surface entropy and entropy gradient.  This
+       might be overwritten below */
+
+    /* we ensure consistency with the surface boundary condition here */
+    /* for an isothermal surface, we can simply impose the surface
+       entropy and entropy gradient */
     if( Ap->SURFACE_BC == 5 ){
-        /* can compute surface entropy and entropy gradient directly */
-        ierr = set_boundary_entropy_constant( E );CHKERRQ(ierr);
-        /* with the entropy profiles known directly from above, can
-           immediately compute current state */
+        ierr = set_surface_entropy_constant( E );CHKERRQ(ierr);
         ierr = set_current_state( E, t);CHKERRQ(ierr);
     }
     else{
         /* must solve for entropy and entropy gradient at surface
            to adhere to the radiation-interior flux balance */
-        ierr = solve_for_current_state( E, t );CHKERRQ(ierr);
+        ierr = solve_for_surface_radiation_balance( E, t );CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
-
-}
-
-PetscErrorCode set_boundary_entropy_constant( Ctx *E )
-{
-    /* ensure that the interior ic is compatible with boundary
-       conditions, and that the entropy vecs in the solution
-       struct are consistent with the sol Vec (and vice-versa) */
-
-    /* FIXME: allow one of core or surface to be isothermal, and
-      the other something else */
-
-    PetscErrorCode   ierr;
-    Mesh             *M = &E->mesh;
-    Solution         *S = &E->solution;
-    PetscScalar      *arr_S_s, *arr_dSdxi_b, *arr_xi_b, *arr_S_b;
-    PetscInt         ihi_b, ilo_b, w_b;
-    Parameters const P = E->parameters;
-
-    PetscFunctionBeginUser;
-
-    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b;
-
-    ierr = DMDAVecGetArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
-
-    /* below adjust the initial entropy (temperature) of the surface and
-       the core mantle boundary */
-    if( P->ic_surface_entropy > 0.0 ){
-        arr_S_b[0] = P->ic_surface_entropy;
-        /* basic node gradient should be consistent */
-        arr_dSdxi_b[0] = arr_S_b[0] - arr_S_s[0];
-        arr_dSdxi_b[0] /= -0.5 * (arr_xi_b[1] - arr_xi_b[0]);
-    }   
-
-    /* core-mantle boundary */
-    if( P->ic_core_entropy > 0.0 ){
-        arr_S_b[ihi_b-1] = P->ic_core_entropy;
-        /* basic node gradient should be consistent */
-        arr_dSdxi_b[ihi_b-1] = arr_S_b[ihi_b-1] - arr_S_s[ihi_b-2];
-        arr_dSdxi_b[ihi_b-1] /= 0.5 * (arr_xi_b[ihi_b-1] - arr_xi_b[ihi_b-2]);
-    }   
-
-    ierr = DMDAVecRestoreArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters Ap )
-{
-    PetscScalar Ts, c, fac, num, den;
-    c = Ap->param_utbl_const;
-
-    fac = 3.0*PetscPowScalar(c,3.0)*(27.0*PetscPowScalar(temp,2.0)*c+4.0);
-    fac = PetscPowScalar( fac, 1.0/2.0 );
-    fac += 9.0*temp*PetscPowScalar(c,2.0);
-    // numerator
-    num = PetscPowScalar(2.0,1.0/3)*PetscPowScalar(fac,2.0/3)-2.0*PetscPowScalar(3.0,1.0/3)*c;
-    // denominator
-    den = PetscPowScalar(6.0,2.0/3)*c*PetscPowScalar(fac,1.0/3);
-    // surface temperature
-    Ts = num / den;
-
-    return Ts; 
-}
-
-static PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters Ap )
-{
-    PetscScalar dTsdT, c, fac1, fac2, fac3, num1, den1, num2, den2, part1, part2;
-    c = Ap->param_utbl_const;
-
-    fac1 = 27*PetscSqrtScalar(3) * PetscPowScalar(c,3) * temp;
-    fac2 = PetscSqrtScalar( PetscPowScalar(c,3) * (4.0 + 27.0 * PetscSqr(temp) ) );
-    fac3 = PetscSqrtScalar( PetscPowScalar(c,3) * (4.0 + 27.0 * PetscSqr(temp) * c ) );
-
-    num1 = PetscPowScalar(2.0/3.0,2.0/3.0) * (9 * PetscSqr(c) + fac1/fac2);
-    den1 = PetscPowScalar( 9.0*PetscSqr(c)*temp + PetscSqrtScalar(3) * fac2, 1.0/3.0 );
-    den1 *= PetscPowScalar( 9.0*PetscSqr(c)*temp + PetscSqrtScalar(3) * fac3, 1.0/3.0);
-    den1 *= 3.0 * c;
-
-    part1 = num1 / den1;
-
-    num2 = 9.0*PetscSqr(c);
-    num2 += (fac1*c) / fac3;
-    num2 *= (-2.0*PetscPowScalar(3,1.0/3.0)*c + PetscPowScalar(2.0,1.0/3.0) * PetscPowScalar(9.0*PetscSqr(c)*temp + PetscSqrtScalar(3)*fac2,2.0/3.0));
-    den2 = 3.0 * PetscPowScalar(6.0,2.0/3.0)*c * PetscPowScalar(9.0*PetscSqr(c)*temp + PetscSqrtScalar(3)*fac3,4.0/3.0);
-
-    part2 = num2 / den2;
-
-    dTsdT = part1 - part2;
-
-    return dTsdT;
 
 }
 
