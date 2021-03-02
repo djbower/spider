@@ -5,6 +5,10 @@
 #include "reaction.h"
 #include "util.h"
 
+static PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
+static PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const ScalingConstants );
+static PetscScalar get_emissivity_abe_matsui( Atmosphere *, const AtmosphereParameters);
+static PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscScalar );
 static PetscErrorCode initialise_volatiles( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_total_surface_pressure( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters );
@@ -37,7 +41,7 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     // pointer to da, so we can easily access it within the atmosphere structure
     const PetscInt stencilWidth = 1;
     const PetscInt dof = 1;
-    const PetscInt numpts = 500; // FIXME hard-coded for atmosphere structure output
+    const PetscInt numpts = 500; // hard-coded for atmosphere structure output
     ierr = DMDACreate1d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,numpts,dof,stencilWidth,NULL,&A->da_atm);CHKERRQ(ierr);
     ierr = DMSetUp(A->da_atm);CHKERRQ(ierr);
 
@@ -145,7 +149,7 @@ static PetscErrorCode set_atm_struct_tau( Atmosphere *A )
        the top to the surface value */
 
     PetscErrorCode    ierr;
-    PetscScalar const logtau_min = -6; // FIXME hard-coded here
+    PetscScalar const logtau_min = -6; // hard-coded here
     PetscScalar const logtau_max = PetscLog10Real(A->tau); // surface optical depth
     PetscScalar       tau,logdtau;
     PetscInt          i,ilo,w,ihi,numpts;
@@ -611,7 +615,7 @@ PetscErrorCode set_atmosphere_emissivity_and_flux( Atmosphere *A, const Atmosphe
     PetscFunctionReturn(0);
 }
 
-PetscScalar get_grey_body_flux( const Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
+static PetscScalar get_grey_body_flux( const Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
 {
     PetscScalar Fsurf;
 
@@ -621,7 +625,7 @@ PetscScalar get_grey_body_flux( const Atmosphere *A, const AtmosphereParameters 
     return Fsurf;
 }
 
-PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const ScalingConstants SC )
+static PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const ScalingConstants SC )
 {
     PetscScalar       Tsurf, Fsurf;
 
@@ -637,7 +641,7 @@ PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *A, const Sc
 
 }
 
-PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC, PetscScalar flux )
+static PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC, PetscScalar flux )
 {
     PetscScalar emissivity;
 
@@ -648,22 +652,7 @@ PetscScalar get_emissivity_from_flux( const Atmosphere *A, const AtmosphereParam
 
 }
 
-PetscErrorCode set_surface_temperature_from_flux( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
-{
-    PetscScalar tsurf;
-
-    PetscFunctionBeginUser;
-
-    tsurf = A->Fatm / ( FC->STEFAN_BOLTZMANN * A->emissivity );
-    tsurf += PetscPowScalar( Ap->teqm, 4.0 );
-    tsurf = PetscPowScalar( tsurf, 1.0/4.0 );
-    A->tsurf = tsurf;
-
-    PetscFunctionReturn(0);
-
-}
-
-PetscScalar get_emissivity_abe_matsui( Atmosphere *A, const AtmosphereParameters Ap )
+static PetscScalar get_emissivity_abe_matsui( Atmosphere *A, const AtmosphereParameters Ap )
 {
     PetscInt    i;
     PetscScalar emissivity;
@@ -862,11 +851,6 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const P, VolatilePara
     /* other */
     scaling = SC->VOLATILE / SC->TIME;
     ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dt", "mass fraction/s", V->dxdt, data);CHKERRQ(ierr);
-
-    /* below is only relevant for the simplest solubility power law */
-
-    //scaling = SC->VOLATILE / SC->PRESSURE;
-    //ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dp", "mass fraction/Pa", V->dxdp, data);CHKERRQ(ierr);
 
     cJSON_AddItemToObject(json,name,data);
 

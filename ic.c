@@ -15,6 +15,7 @@ static PetscErrorCode set_ic_interior_default( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *, Vec );
+static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 /* atmosphere ic */
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_ocean_moles( Ctx *E, Vec sol );
@@ -52,7 +53,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     ierr = set_ic_atmosphere( E, sol ); CHKERRQ(ierr);
 
     /* for surface bc, need an estimate of A->Fatm */
-    /* FIXME: will break for isothermal bcs */
     ierr = set_atmosphere_emissivity_and_flux( A, Ap, FC, SC );
 
     /* P->t0 is set in parameters.c */
@@ -80,8 +80,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     }
     else if (IC==2){
         ierr = set_ic_interior_from_file( E, sol ); CHKERRQ(ierr);
-        /* in parameters.c, IC==2 also sets the start time
-           P->t0 from the interior file */
+        ierr = set_start_time_from_file( P, P->ic_interior_filename );CHKERRQ(ierr);
     }
     else if (IC==3){
         ierr = set_ic_interior_from_phase_boundary( E, sol ); CHKERRQ(ierr);
@@ -188,6 +187,28 @@ static PetscErrorCode set_ic_interior_entropy( Ctx *E, Vec sol )
     ierr = PetscFree(subVecs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
+}
+
+static PetscErrorCode set_start_time_from_file( Parameters P , const char * filename )
+{
+
+    PetscErrorCode   ierr;
+    cJSON            *json=NULL, *time;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_start_time_from_file()\n");CHKERRQ(ierr);
+
+    ierr = read_JSON_file_to_JSON_object( filename, &json );
+
+    /* time from this restart JSON must be passed to the time stepper
+       to continue the integration and keep track of absolute time */
+    time = cJSON_GetObjectItem(json,"time");
+    P->t0 = time->valuedouble;
+
+    cJSON_Delete( json );
+
+    PetscFunctionReturn(0);
+
 }
 
 PetscErrorCode read_JSON_file_to_JSON_object( const char * filename, cJSON ** json )

@@ -8,12 +8,10 @@ Custom PETSc command line options should only ever be parsed during the populate
 
 #include "parameters.h"
 #include "ctx.h"
-#include "ic.h"
 #include "eos.h"
 #include "eos_composite.h"
 #include "util.h"
 
-static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
 static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
 static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, ScalingConstants );
@@ -326,20 +324,18 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetPositiveInt("-IC_INTERIOR",&P->IC_INTERIOR,1,NULL);CHKERRQ(ierr);
 
   ierr = PetscStrcpy(P->ic_interior_filename,"restart.json");CHKERRQ(ierr);
+
   if ( P->IC_INTERIOR==2 ){
     ierr = PetscOptionsGetString(NULL,NULL,"-ic_interior_filename",P->ic_interior_filename,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
-    /* set start time from restart file */
-    /* TODO: get time from interior restart file, but could add
-       other options to get time from e.g. atmosphere restart file */
-    ierr = set_start_time_from_file( P, P->ic_interior_filename );CHKERRQ(ierr);
   }
-  else{
-    PetscScalar t0 = 0.0;
-    PetscBool t0_set = PETSC_FALSE;
-    ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&t0,&t0_set);CHKERRQ(ierr);
-    if( t0_set ) P->t0 = t0;
-    P->t0 /= SC->TIMEYRS; // non-dimensional for time stepping
-  }
+
+  PetscScalar t0 = 0.0;
+  PetscBool t0_set = PETSC_FALSE;
+  ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&t0,&t0_set);CHKERRQ(ierr);
+  if( t0_set ) P->t0 = t0;
+  P->t0 /= SC->TIMEYRS; // non-dimensional for time stepping
+
+  /* P->t0 could be subsequently overwritten by set_ic_interior() */
 
   P->ic_melt_pressure = 30.0; // GPa
   if ( P->IC_INTERIOR==3 ){
@@ -356,14 +352,14 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_dsdr",&P->ic_dsdr,NULL);CHKERRQ(ierr);
   P->ic_dsdr /= SC->DSDR;
 
-  /* initial entropy at the surface, or set to P->ic_adiabat_entropy if P->ic_surface_entropy < 0.0 */
+  /* initial entropy at the surface */
   P->ic_surface_entropy = -1;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_surface_entropy",&P->ic_surface_entropy,NULL);CHKERRQ(ierr);
   if( P->ic_surface_entropy > 0.0 ){
     P->ic_surface_entropy /= SC->ENTROPY;
   }
 
-  /* initial entropy at the core-mantle boundary, or leave as value at base of adiabat if P->ic_core_entropy < 0.0 */
+  /* initial entropy at the core-mantle boundary */
   P->ic_core_entropy = -1;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_core_entropy",&P->ic_core_entropy,NULL);CHKERRQ(ierr);
   if( P->ic_core_entropy > 0.0 ){
@@ -373,17 +369,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   /* eos for determining mapping between radius and mass coordinate */
   ierr = EOSCreate(&P->eos_mesh, SPIDER_EOS_ADAMSWILLIAMSON);CHKERRQ(ierr);
   ierr = EOSSetUpFromOptions( P->eos_mesh, "adams_williamson", FC, SC );CHKERRQ(ierr);
-
-  /* TODO: remove, moved elsewhere in EOS object */
-  /* surface density (kg/m^3) for Adams-Williamson EOS for pressure */
-  P->rhos = 4078.95095544;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-rhos",&P->rhos,NULL);CHKERRQ(ierr);
-  P->rhos /= SC->DENSITY;
-
-  /* parameter (1/m) for Adams-Williamson EOS for pressure */
-  P->beta = 1.1115348931000002e-07;
-  ierr = PetscOptionsGetScalar(NULL,NULL,"-beta",&P->beta,NULL);CHKERRQ(ierr);
-  P->beta *= SC->RADIUS;
 
   /* grain size (m) */
   P->grain = 1.0E-3;
@@ -399,10 +384,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->phi_critical = 0.4; // non dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_critical",&P->phi_critical,NULL);CHKERRQ(ierr);
   /* melt fraction transition width for rheology */
-  /* when PHI_WIDTH = 0.15, oscillations appear in the volatile contents
-     due to a rigid crust forming at the top of the model.  Reducing the value
-     to 0.2 helps to alleviate this problem.  So evidently the viscosity contrast
-     across nodes matters. */
   P->phi_width = 0.15; // non dimensional
   ierr = PetscOptionsGetScalar(NULL,NULL,"-phi_width",&P->phi_width,NULL);CHKERRQ(ierr);
 
@@ -626,12 +607,11 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
         break;
     case 3:
         /* SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
-           with CO2 and H2O volatile using plane-parallel radiative equilibrium model
-           of Abe and Matsui (1985)
+           using plane-parallel radiative equilibrium model of Abe and Matsui (1985)
            do nothing */
         break;
     case 4:
-        // MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed)
+        /* MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed) */
         Ap->surface_bc_value /= SC->FLUX;
         break;
     case 5:
@@ -643,6 +623,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
         break;
     }
 
+    /* TODO: this should be superseded by a shallow ocean layer treatment */
     Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
 
@@ -780,28 +761,6 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
   }
 
   PetscFunctionReturn(0);
-}
-
-static PetscErrorCode set_start_time_from_file( Parameters P , const char * filename )
-{
-
-    PetscErrorCode   ierr;
-    cJSON            *json=NULL, *time;
-
-    PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_start_time_from_file()\n");CHKERRQ(ierr);
-
-    ierr = read_JSON_file_to_JSON_object( filename, &json );
-
-    /* time from this restart JSON must be passed to the time stepper
-       to continue the integration and keep track of absolute time */
-    time = cJSON_GetObjectItem(json,"time");
-    P->t0 = time->valuedouble;
-
-    cJSON_Delete( json );
-
-    PetscFunctionReturn(0);
-
 }
 
 PetscErrorCode PrintParameters(Parameters const P)

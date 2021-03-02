@@ -108,6 +108,9 @@ static PetscScalar per_atom_to_specific( PetscScalar per_atom_value, PetscScalar
     return specific_value;
 }
 
+/* below are currently not used, but will likely be required when rtpress
+   is fully implemented */
+#if 0
 static PetscScalar specific_to_per_atom( PetscScalar specific_value, PetscScalar mavg, PetscScalar Avogadro )
 {
     /* convert from specific to per atom */
@@ -122,6 +125,7 @@ static PetscScalar joule_to_eV( PetscScalar joule )
     /* convert from joules to eV */
     return joule * 6.242E18;
 }
+#endif
 
 static PetscScalar eV_to_joule( PetscScalar eV )
 {
