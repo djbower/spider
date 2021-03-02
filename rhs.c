@@ -46,15 +46,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* sets everything possible (and consistently) from entropy */
   ierr = set_current_state_from_solution( E, t, sol_in );CHKERRQ(ierr);
 
-  /* TODO: I don't think this is required anymore, since everything
-     set above */
-  /* boundary conditions must be after all arrays are set */
-  /* cmb boundary condition is set when the energy fluxes
-     are calculated (prior to here) */
-  //ierr = set_surface_flux( E );CHKERRQ(ierr);
-
-  /* now we compute the time-dependent quantities */
-
   /* loop over basic nodes except last node */
   ierr = DMDAVecGetArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(E->da_b,S->Etot,INSERT_VALUES,E->work_local_b);CHKERRQ(ierr);
@@ -92,6 +83,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
       Ecore = arr_Etot[ind_cmb];
   }
   /* prescribed flux from core */
+  /* P->core_bc_value is already set to zero if simple core cooling */
   else{
       Ecore = P->core_bc_value * area_cmb;
   }

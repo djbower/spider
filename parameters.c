@@ -586,6 +586,9 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
         ierr = PetscOptionsGetString(NULL,NULL,"-ic_atmosphere_filename",Ap->ic_atmosphere_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
     }
 
+    Ap->SURFACE_BC_ACC = PETSC_FALSE;
+    ierr = PetscOptionsGetBool(NULL,NULL,"-SURFACE_BC_ACC",&Ap->SURFACE_BC_ACC,NULL);CHKERRQ(ierr);
+
     /* (top) surface boundary condition */
     Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
     {

@@ -198,7 +198,6 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     Parameters const P = E->parameters;
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
-    AtmosphereParameters const Ap = P->atmosphere_parameters;
     PetscInt       ind_cmb,ind_abv_cmb,ilo_b,ihi_b,w_b;
     PetscInt const ind1=1;
 
@@ -207,32 +206,24 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     ind_cmb = ihi_b-1;
     ind_abv_cmb = ind_cmb-1;
 
-    /* FIXME */
-    /* for isothermal, OK to compute.  For other bcs that involve
-       solving an inverse problem, instead simplify */
-    if( Ap->SURFACE_BC != 5 ){
-        /* for bcs, the nasty functional dependence of kappah can cause
-           problems, so just use value of the nearby node instead */
-         /* for surface */
-        if(!*ind_ptr){
-            ierr = VecGetValues(S->rho,1,&ind1,&rho);CHKERRQ(ierr);
-            ierr = VecGetValues(S->kappah,1,&ind1,&kappah);CHKERRQ(ierr);
-        }
-        /* for cmb */
-        else if(*ind_ptr == ind_cmb){
-            ierr = VecGetValues(S->rho,1,&ind_abv_cmb,&rho);CHKERRQ(ierr);
-            ierr = VecGetValues(S->kappah,1,&ind_abv_cmb,&kappah);CHKERRQ(ierr);
-        }
-        else{
-            ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
-            ierr = VecGetValues(S->kappah,1,ind_ptr,&kappah);CHKERRQ(ierr);
-        }
+    /* for surface and cmb, use kappah at the next basic node in to avoid
+       numerical issues.  kappah is a nasty non-linear function of the entropy
+       gradient and other material properties */
+
+    /* surface, use kappah at node below */
+    if(!*ind_ptr){
+        ierr = VecGetValues(S->kappah,1,&ind1,&kappah);CHKERRQ(ierr);
     }
+    /* cmb, use kappah at node above */
+    else if(*ind_ptr == ind_cmb){
+        ierr = VecGetValues(S->kappah,1,&ind_abv_cmb,&kappah);CHKERRQ(ierr);
+    }
+    /* otherwise use kappah at this node */
     else{
-        ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
         ierr = VecGetValues(S->kappah,1,ind_ptr,&kappah);CHKERRQ(ierr);
     }
 
+    ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
     ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
@@ -357,8 +348,6 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
 {
     PetscErrorCode ierr;
     PetscScalar    dSdxi,dxidr,temp,cp,dTdxis,cond,Jcond;
-    Parameters const P = E->parameters;
-    AtmosphereParameters const Ap = P->atmosphere_parameters;
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
     PetscInt       ilo_b,ihi_b,w_b;
@@ -366,21 +355,13 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b; // this is one more than last index of basic array
 
-    /* for isothermal surface bc can determine flux at surface with
-       all dependences, since do not need to solve for dS/dxi at the surface */
-    /* FIXME: should allow conduction at the surface for all cases.  To test */
-    if( Ap->SURFACE_BC != 5){
-        /* surface boundary condition, no conduction assumed for other cases */
-        if( (!*ind_ptr) || (*ind_ptr == ihi_b-1) ){
-            return 0.0;
-        }
-    }
-
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
     ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
     ierr = VecGetValues(S->cp,1,ind_ptr,&cp);CHKERRQ(ierr);
     ierr = VecGetValues(S->dTdxis,1,ind_ptr,&dTdxis);CHKERRQ(ierr);
+    /* conductivity is constant, so this is OK for the boundary nodes
+       which also take kappah from the nodes inset */
     ierr = VecGetValues(S->cond,1,ind_ptr,&cond);CHKERRQ(ierr);
 
     Jcond = ( temp / cp ) * dSdxi * dxidr + dTdxis * dxidr;
@@ -783,24 +764,27 @@ PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in 
     ierr = set_partial_pressures_from_solution( E, sol_in );CHKERRQ(ierr);
 
     /* set_entropy_from_solution has already extrapolated to get an
-       estimate of the surface entropy and entropy gradient.  This
-       might be overwritten below */
+       estimate of the surface entropy and entropy gradient. */
 
     /* we ensure consistency with the surface boundary condition here */
+
     /* for an isothermal surface, we can simply impose the surface
        entropy and entropy gradient */
     if( Ap->SURFACE_BC == 5 ){
         ierr = set_surface_entropy_constant( E );CHKERRQ(ierr);
         ierr = set_current_state( E, t);CHKERRQ(ierr);
     }
-    else{
+
+    if( Ap->SURFACE_BC_ACC ){
         /* must solve for entropy and entropy gradient at surface
            to adhere to the radiation-interior flux balance */
         ierr = solve_for_surface_radiation_balance( E, t );CHKERRQ(ierr);
     }
+    else{
+        ierr = set_current_state( E, t);CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
-
 }
 
 static PetscScalar GetPermeabilityBlakeKozenyCarman( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant )
