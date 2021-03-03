@@ -8,6 +8,7 @@ PetscErrorCode set_surface_entropy_extrapolate( Ctx * );
 PetscErrorCode set_boundary_entropy_constant( Ctx * );
 PetscErrorCode set_surface_entropy_constant( Ctx * );
 PetscErrorCode set_cmb_entropy_constant( Ctx * );
+PetscErrorCode set_surface_flux_from_atmosphere( Ctx * );
 PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
 PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar, const AtmosphereParameters );
 

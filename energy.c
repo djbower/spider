@@ -140,6 +140,7 @@ static PetscErrorCode set_Jtot( Ctx *E )
     PetscErrorCode ierr;
     Parameters     const P = E->parameters;
     Solution       *S = &E->solution;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
 
@@ -158,6 +159,14 @@ static PetscErrorCode set_Jtot( Ctx *E )
     }
     if (P->SEPARATION){
       ierr = append_Jgrav( E );
+    }
+
+    /* if we are using the simple (less accurate) surface boundary
+       condition, then we need to impose the atmospheric flux at the
+       top of the interior */
+    /* TODO: need an exception for the isothermal bcs? */
+    if( !Ap->SURFACE_BC_ACC ){
+        ierr = set_surface_flux_from_atmosphere( E );CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
@@ -195,7 +204,6 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
 {
     PetscErrorCode ierr;
     PetscScalar    dSdxi,dxidr,temp,rho,kappah,Jconv;
-    Parameters const P = E->parameters;
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
     PetscInt       ind_cmb,ind_abv_cmb,ilo_b,ihi_b,w_b;

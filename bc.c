@@ -2,6 +2,22 @@
 #include "bc.h"
 #include "monitor.h"
 
+PetscErrorCode set_surface_flux_from_atmosphere( Ctx *E )
+{
+    PetscErrorCode ierr;
+    Atmosphere *A = &E->atmosphere;
+    Solution *S = &E->solution;
+    PetscInt const ind0 = 0;
+
+    PetscFunctionBeginUser;
+
+    ierr = VecSetValue(S->Jtot,ind0,A->Fatm,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(S->Jtot);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(S->Jtot);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 PetscScalar get_tsurf_using_parameterised_boundary_layer( PetscScalar temp, const AtmosphereParameters Ap )
 {
     /* parameterisation for the ultra-thin thermal boundary layer at the surface
