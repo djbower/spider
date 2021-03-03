@@ -761,13 +761,15 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
     ierr = JSON_add_single_value_to_object(dm, scaling, "pressure_surface", "bar", A->psurf, data);CHKERRQ(ierr);
 
     /* oxygen fugacity */
-    /* the value itself is the non-dimensional oxygen fugacity, a la Schaefer and Fegley (2017) */
-    scaling = 1.0;
-    ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "None", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
+    if(Ap->OXYGEN_FUGACITY){
+        /* the value itself is the non-dimensional oxygen fugacity, a la Schaefer and Fegley (2017) */
+        scaling = 1.0;
+        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "None", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
 
-    /* multiplying by the scaling gives the oxygen fugacity (partial pressure) in bar */
-    scaling = A->psurf * SC->PRESSURE / 1.0E5; /* bar */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
+        /* multiplying by the scaling gives the oxygen fugacity (partial pressure) in bar */
+        scaling = A->psurf * SC->PRESSURE / 1.0E5; /* bar */
+        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
+    }
 
     /* optical depth, non-dimensional */
     scaling = 1.0;
