@@ -1,9 +1,3 @@
-###########################################################################
-# This serves as a template file to describe all available input parameters
-# even though this example is actually very basic and does not demonstrate
-# many of the features of SPIDER
-###########################################################################
-
 # time stepping
 
 # number of macro steps
@@ -13,12 +7,12 @@
 -dtmacro 100
 
 # for coupling to other codes
--activate_rollback 1
--activate_poststep 1
+#-activate_rollback 1
+#-activate_poststep 1
 
 # tolerances
--ts_sundials_atol 1.0e-6
--ts_sundials_rtol 1.0e-6
+-ts_sundials_atol 1.0e-10
+-ts_sundials_rtol 1.0e-10
 
 # number of basic nodes
 -n 100
@@ -100,7 +94,7 @@
 #     of conventional theory.  This can help to prevent a rigid
 #     lid from forming at the surface
 
--mixing_length 1
+-mixing_length 2
 #-mixing_length_layer_radius 0.0 # non-dimensional radius
 
 # physical parameters

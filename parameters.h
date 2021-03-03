@@ -92,7 +92,8 @@ typedef struct {
     MagmaOceanAtmosphereType SURFACE_BC;
     OxygenFugacityType OXYGEN_FUGACITY; // for chemical reactions
     PetscBool SURFACE_BC_ACC;
-    PetscBool VISCOUS_MANTLE_COOLING_RATE;
+    /* below to replace with shallow ocean layer */
+    //PetscBool VISCOUS_MANTLE_COOLING_RATE;
     PetscBool THERMAL_ESCAPE;
     PetscBool CONSTANT_ESCAPE;
     PetscScalar surface_bc_value;

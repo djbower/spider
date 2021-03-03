@@ -627,8 +627,8 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
     }
 
     /* TODO: this should be superseded by a shallow ocean layer treatment */
-    Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
-    ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
+    //Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
+    //ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
 
     /* emissivity is constant for SURFACE_BC != MO_ATMOSPHERE_TYPE_VOLATILES */
     Ap->emissivity0 = 1.0; // non-dimensional

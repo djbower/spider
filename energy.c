@@ -134,9 +134,6 @@ static PetscErrorCode set_Jtot( Ctx *E )
 {
     /* total heat flux at basic nodes */
 
-    /* also ensures the core mantle boundary flux adheres to the
-       imposed boundary condition */
-
     PetscErrorCode ierr;
     Parameters     const P = E->parameters;
     Solution       *S = &E->solution;
@@ -161,11 +158,12 @@ static PetscErrorCode set_Jtot( Ctx *E )
       ierr = append_Jgrav( E );
     }
 
-    /* if we are using the simple (less accurate) surface boundary
-       condition, then we need to impose the atmospheric flux at the
-       top of the interior */
-    /* TODO: need an exception for the isothermal bcs? */
-    if( !Ap->SURFACE_BC_ACC ){
+    /* for the simple (legacy) surface bc, we need to impose the
+       atmospheric flux at the top of the interior.  This is because
+       the computed flux at the surface based on interior fluxes will
+       be inaccurate, since we have not solved to ensure the surface
+       entropy and gradient are consistent with A->Fatm */
+    if( (!Ap->SURFACE_BC_ACC) && (Ap->SURFACE_BC!=5) ){
         ierr = set_surface_flux_from_atmosphere( E );CHKERRQ(ierr);
     }
 
@@ -777,17 +775,25 @@ PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in 
     /* we ensure consistency with the surface boundary condition here */
 
     /* for an isothermal surface, we can simply impose the surface
-       entropy and entropy gradient */
+       entropy and entropy gradient.  Then, the heat flux at the surface
+       is computed by the surface conditions using the interior fluxes.
+       Hence, A->Fatm is not directy used.  This applies independent
+       of SURFACE_BC_ACC */
     if( Ap->SURFACE_BC == 5 ){
         ierr = set_surface_entropy_constant( E );CHKERRQ(ierr);
         ierr = set_current_state( E, t);CHKERRQ(ierr);
     }
-
-    if( Ap->SURFACE_BC_ACC ){
-        /* must solve for entropy and entropy gradient at surface
-           to adhere to the radiation-interior flux balance */
+    /* for more accurate surface bc, must balance the atmospheric flux
+       A->Fatm with the interior flux at the surface.  This sets the
+       entropy and entropy gradient at the surface to match the
+       fluxes, hence Jtot at the surface should be close to A->Fatm */
+    else if( Ap->SURFACE_BC_ACC ){
         ierr = solve_for_surface_radiation_balance( E, t );CHKERRQ(ierr);
     }
+    /* for simple (legacy) surface bc, we use the extrapolated surface
+       conditions to determine A->Fatm, which is then later imposed
+       as the flux at the surface.  Hence here we can directly compute
+       the current state without the need to solve */
     else{
         ierr = set_current_state( E, t);CHKERRQ(ierr);
     }

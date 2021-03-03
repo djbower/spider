@@ -14,28 +14,6 @@
 # number of basic nodes
 -n 100
 
-#-atmosts_snes_view
-#-atmosts_snes_converged_reason
-#-atmos_snes_monitor
-
-# tolerances for volatile initial condition
-#-atmosic_snes_verbose_monitor
-#-atmosic_snes_view
-#-atmosic_snes_converged_reason
-
-# suggested by PS
-#-atmosic_ksp_rtol 1e-10
-#-atmosic_ksp_atol 1e-10
-#-atmosic_snes_linesearch_damping 0.01
-#-atmosic_snes_max_it 10000
-#-snes_linesearch_max_it 1000
-
-# tolerances for volatile evolution
-#-atmosts_snes_atol 1.0E-10
-#-atmosts_snes_rtol 1.0E-10
-#-atmosts_ksp_atol 1.0E-10
-#-atmosts_ksp_rtol 1.0E-10
-
 # all units are SI unless indicated otherwise
 
 # primary scaling parameters
@@ -46,7 +24,6 @@
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
 -pressure0 1207268.722106174
-# volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
 -volatile0 1.0E-6
 
 # energy fluxes and sources to include
@@ -166,7 +143,7 @@
 # dT = param_utbl_const * [Surface temperature]**3.0
 # this is useful for high melt fraction dynamics where the ultra-thin thermal boundary layer
 # (often only a few cms thick) cannot be resolved by the choice of mesh
--PARAM_UTBL 1 # flag to turn on parameterisation
+-PARAM_UTBL 0 # flag to turn on parameterisation
 -param_utbl_const 1.0E-7 # value of parameterisation
 
 -IC_ATMOSPHERE 1
