@@ -137,13 +137,9 @@ PetscErrorCode set_surface_entropy_constant( Ctx *E )
     Mesh             *M = &E->mesh;
     Solution         *S = &E->solution;
     PetscScalar      *arr_S_s, *arr_dSdxi_b, *arr_xi_b, *arr_S_b;
-    PetscInt         ihi_b, ilo_b, w_b; 
     Parameters const P = E->parameters;
 
     PetscFunctionBeginUser;
-
-    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b; 
 
     ierr = DMDAVecGetArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
@@ -168,12 +164,8 @@ PetscErrorCode set_surface_entropy_extrapolate( Ctx *E )
     Mesh             *M = &E->mesh;
     Solution         *S = &E->solution;
     PetscScalar      *arr_S_s, *arr_dSdxi_b, *arr_xi_b, *arr_S_b;
-    PetscInt         ihi_b, ilo_b, w_b;
 
     PetscFunctionBeginUser;
-
-    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b; /* number of basic nodes */
 
     ierr = DMDAVecGetArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);

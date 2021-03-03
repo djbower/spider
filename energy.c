@@ -356,10 +356,6 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     PetscScalar    dSdxi,dxidr,temp,cp,dTdxis,cond,Jcond;
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
-    PetscInt       ilo_b,ihi_b,w_b;
-
-    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b; // this is one more than last index of basic array
 
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
