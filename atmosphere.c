@@ -89,26 +89,27 @@ static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParam
     PetscInt i;
 
     PetscFunctionBeginUser;
-
+#if 0
     for (i=0; i<Ap->n_volatiles; ++i) {
         /* these entries should match those in atmosphere.h */
-        A->volatiles[i].x = 0.0;
-        A->volatiles[i].p = 0.0;
-        A->volatiles[i].dpdt = 0.0;
-        A->volatiles[i].dxdp = 0.0;
-        A->volatiles[i].dxdt = 0.0;
-        A->volatiles[i].mass_atmos = 0.0;
-        A->volatiles[i].mass_liquid = 0.0;
-        A->volatiles[i].mass_solid = 0.0;
-        A->volatiles[i].mass_reaction = 0.0;
-        A->volatiles[i].tau = 0.0;
-        A->volatiles[i].mixing_ratio = 0.0;
-        A->volatiles[i].column_density = 0.0;
-        A->volatiles[i].Knudsen = 0.0;
-        A->volatiles[i].jeans = 0.0;
-        A->volatiles[i].f_thermal_escape = 0.0;
-        A->volatiles[i].R_thermal_escape = 0.0;
+        //A->volatiles[i].x = 0.0;
+        //A->volatiles[i].p = 0.0;
+        //A->volatiles[i].dpdt = 0.0;
+        //A->volatiles[i].dxdp = 0.0;
+        //A->volatiles[i].dxdt = 0.0;
+        //A->volatiles[i].mass_atmos = 0.0;
+        //A->volatiles[i].mass_liquid = 0.0;
+        //A->volatiles[i].mass_solid = 0.0;
+        //A->volatiles[i].mass_reaction = 0.0;
+        //A->volatiles[i].tau = 0.0;
+        //A->volatiles[i].mixing_ratio = 0.0;
+        //A->volatiles[i].column_density = 0.0;
+        //A->volatiles[i].Knudsen = 0.0;
+        //A->volatiles[i].jeans = 0.0;
+        //A->volatiles[i].f_thermal_escape = 0.0;
+        //A->volatiles[i].R_thermal_escape = 0.0;
     }
+#endif
 
     PetscFunctionReturn(0);
 }
