@@ -9,7 +9,6 @@ static PetscScalar get_grey_body_flux( const Atmosphere *, const AtmosphereParam
 static PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, const ScalingConstants );
 static PetscScalar get_emissivity_abe_matsui( Atmosphere *, const AtmosphereParameters);
 static PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscScalar );
-static PetscErrorCode initialise_volatiles( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_total_surface_pressure( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters );
@@ -72,44 +71,11 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     ierr = DimensionalisableFieldSetName(A->atm_struct[3],"atm_struct_depth");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[3],"m");CHKERRQ(ierr);
 
-    /* initialise volatiles */
-    ierr = initialise_volatiles( A, Ap );
-
     /* initialise mass reaction terms to zero */
     {
       PetscInt i;
       for (i=0; i<SPIDER_MAX_REACTIONS; ++i) A->mass_reaction[i] = 0.0;
     }
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode initialise_volatiles( Atmosphere *A, const AtmosphereParameters Ap)
-{
-    PetscInt i;
-
-    PetscFunctionBeginUser;
-#if 0
-    for (i=0; i<Ap->n_volatiles; ++i) {
-        /* these entries should match those in atmosphere.h */
-        //A->volatiles[i].x = 0.0;
-        //A->volatiles[i].p = 0.0;
-        //A->volatiles[i].dpdt = 0.0;
-        //A->volatiles[i].dxdp = 0.0;
-        //A->volatiles[i].dxdt = 0.0;
-        //A->volatiles[i].mass_atmos = 0.0;
-        //A->volatiles[i].mass_liquid = 0.0;
-        //A->volatiles[i].mass_solid = 0.0;
-        //A->volatiles[i].mass_reaction = 0.0;
-        //A->volatiles[i].tau = 0.0;
-        //A->volatiles[i].mixing_ratio = 0.0;
-        //A->volatiles[i].column_density = 0.0;
-        //A->volatiles[i].Knudsen = 0.0;
-        //A->volatiles[i].jeans = 0.0;
-        //A->volatiles[i].f_thermal_escape = 0.0;
-        //A->volatiles[i].R_thermal_escape = 0.0;
-    }
-#endif
 
     PetscFunctionReturn(0);
 }
