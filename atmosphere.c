@@ -75,19 +75,6 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     /* initialise volatiles */
     ierr = initialise_volatiles( A, Ap );
 
-    /* FIXME: remove setting to arbitrary and wrong values during initialisation */
-    /* other variables in struct that otherwise might not get set */
-    /* below is only for Abe and Matsui atmosphere model */
-    A->tau = 0.0;
-    /* Ensure that A->tsurf is non-zero so that the escape-related
-       functions do not return an uninitialised value warning
-       (valgrind).  During the time loop, A->tsurf is updated to a
-       meaningful value before it is actually used (as is A->psurf) */
-    A->tsurf = 1.0;
-    A->dtsurfdt = 0.0;
-    A->psurf = 0.0;
-    A->dpsurfdt = 0.0;
-
     /* initialise mass reaction terms to zero */
     {
       PetscInt i;
@@ -606,6 +593,8 @@ PetscErrorCode set_atmosphere_emissivity_and_flux( Atmosphere *A, const Atmosphe
             break;
         case 5:
             /* isothermal */
+            /* nothing to do, since bcs constrain the surface entropy
+               and entropy gradient directly */
             break;
         default:
             SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
@@ -684,8 +673,6 @@ static PetscErrorCode JSON_add_atm_struct( Atmosphere *A, const AtmosphereParame
     PetscFunctionBeginUser;
 
     /* only compute 1-D atmosphere structure for output */
-    /* TODO: if this feedsback into the equations, e.g. through
-       atmospheric escape, it will need moving */
     ierr = set_atm_struct_tau( A );CHKERRQ(ierr);
     ierr = set_atm_struct_temp( A, Ap, FC );CHKERRQ(ierr);
     ierr = set_atm_struct_pressure( A, Ap );CHKERRQ(ierr);
@@ -733,9 +720,22 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
 
     data = cJSON_CreateObject();
 
-    /* atmosphere structure relevant for case Abe and Matsui (1985) */
-    if (Ap->SURFACE_BC==3){
+    /* atmosphere properties only used by Abe and Matsui atmosphere model (1985) */
+    if(Ap->SURFACE_BC==3){
+        /* atmospheric structure */
         ierr = JSON_add_atm_struct( A, Ap, FC, data );CHKERRQ(ierr);
+        /* optical depth, non-dimensional */
+        scaling = 1.0;
+        ierr = JSON_add_single_value_to_object(dm, scaling, "optical_depth", "None", A->tau, data);CHKERRQ(ierr);
+    }
+
+    if(Ap->SURFACE_BC!=5){
+        /* (effective) emissivity, non-dimensional */
+        scaling = 1.0;
+        ierr = JSON_add_single_value_to_object(dm, scaling, "emissivity", "None", A->emissivity, data);CHKERRQ(ierr);
+        /* net upward atmospheric flux */
+        scaling = SC->FLUX;
+        ierr = JSON_add_single_value_to_object(dm, scaling, "Fatm", "W m$^{-2}$", A->Fatm, data);CHKERRQ(ierr);
     }
 
     /* total liquid mass of mantle, kg */
@@ -770,16 +770,6 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
         scaling = A->psurf * SC->PRESSURE / 1.0E5; /* bar */
         ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
     }
-
-    /* optical depth, non-dimensional */
-    scaling = 1.0;
-    ierr = JSON_add_single_value_to_object(dm, scaling, "optical_depth", "None", A->tau, data);CHKERRQ(ierr);
-    /* (effective) emissivity, non-dimensional */
-    ierr = JSON_add_single_value_to_object(dm, scaling, "emissivity", "None", A->emissivity, data);CHKERRQ(ierr);
-
-    /* net upward atmospheric flux */
-    scaling = SC->FLUX;
-    ierr = JSON_add_single_value_to_object(dm, scaling, "Fatm", "W m$^{-2}$", A->Fatm, data);CHKERRQ(ierr);
 
     /* Volatiles */
     for (v=0; v<Ap->n_volatiles; ++v) {
