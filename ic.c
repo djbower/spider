@@ -489,6 +489,8 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
     Parameters           P = E->parameters;
     Atmosphere           *A = &E->atmosphere;
     AtmosphereParameters Ap = P->atmosphere_parameters;
+    FundamentalConstants const FC = P->fundamental_constants;
+    ScalingConstants     const SC = P->scaling_constants;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"conform_atmosphere_parameters_to_ic()\n");CHKERRQ(ierr);
@@ -498,17 +500,17 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
 
     for (i=0; i<Ap->n_volatiles; ++i){
 
-       /* to this point, we have solved for A->volatiles[i].p.
-          we must now ensure that other parameters are self-consistent
-          with this pressure.  This might over-write some parameters
-          that were previously used to determine p. */
+        /* to this point, we have solved for A->volatiles[i].p.
+           we must now ensure that other parameters are self-consistent
+           with this pressure.  This might over-write some parameters
+           that were previously used to determine p. */
 
         /* initial_total_abundance is used by some ICs to compute p,
            but with reactions mass can transfer between chemically
            reacting species.  Hence the initial prescribed total
            abundance is only honoured through conservation of the
            total number of moles of something (H/C/etc.).  In essence,
-           A->volatiles[i].mass_reaction tells us how 'wrong" our initial
+           A->volatiles[i].mass_reaction tells us how 'wrong' our initial
            prescribed total abundance was, and we can use this to instead
            compute the initial_total_abundance that obeys reactions */
         mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos + A->volatiles[i].mass_reaction;
@@ -517,8 +519,11 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
         /* initial partial pressure */
         Ap->volatile_parameters[i]->initial_atmos_pressure = A->volatiles[i].p;
 
-        /* TODO: conform initial_ocean_moles */
-        /* Ap->volatile_parameters[i]->initial_ocean_moles */
+        /* initial_ocean_moles */
+        Ap->volatile_parameters[i]->initial_ocean_moles = Ap->volatile_parameters[i]->initial_total_abundance;
+        Ap->volatile_parameters[i]->initial_ocean_moles *= (*Ap->mantle_mass_ptr) * SC->VOLATILE * 4.0 * PETSC_PI;
+        Ap->volatile_parameters[i]->initial_ocean_moles /= Ap->volatile_parameters[i]->molar_mass;
+        Ap->volatile_parameters[i]->initial_ocean_moles /= FC->OCEAN_MOLES;
 
     }
 

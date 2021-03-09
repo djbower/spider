@@ -765,6 +765,10 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const P, VolatilePara
     /* volatile in solid mantle (ppmw) */
     ierr = JSON_add_single_value_to_object(dm, scaling, "solid_ppmw", "ppmw", V->x*VP->kdist, data);CHKERRQ(ierr);
 
+    /* ocean moles */
+    scaling = 1.0;
+    ierr = JSON_add_single_value_to_object(dm, scaling, "initial_ocean_moles", "ocean moles", VP->initial_ocean_moles, data);CHKERRQ(ierr);
+
     /* kilograms (kg) */
     scaling = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS;
     /* initial volatile (kg) */
@@ -1003,7 +1007,6 @@ static PetscScalar get_dzdtau( PetscScalar tau, const AtmosphereParameters Ap, c
     dzdt /= (*Ap->gravity_ptr) * A->molar_mass / FC->GAS;
 
     return dzdt;
-
 }
 
 static PetscScalar get_z_from_simpson(PetscScalar x, PetscScalar dx, const AtmosphereParameters Ap, const Atmosphere *A, const FundamentalConstants FC)
@@ -1018,7 +1021,6 @@ static PetscScalar get_z_from_simpson(PetscScalar x, PetscScalar dx, const Atmos
     fm = get_dzdtau( x + 0.5*dx, Ap, A, FC ); // midpoint
 
     return dx/6.0 * (fa + 4.0*fm + fb );
-
 }
 
 static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
@@ -1049,7 +1051,6 @@ static PetscErrorCode set_atm_struct_depth( Atmosphere *A, const AtmosphereParam
     ierr = DMDAVecRestoreArray(A->da_atm,A->atm_struct_depth,&arr_depth);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
 
 PetscScalar get_residual_volatile_mass( Atmosphere *A, const AtmosphereParameters Ap, const VolatileParameters Vp, const Volatile *V)
@@ -1164,5 +1165,4 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
     A->dlog10fO2dT = dfuncdT * SC->TEMP;
 
     PetscFunctionReturn(0);
-
 }
