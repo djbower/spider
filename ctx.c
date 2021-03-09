@@ -139,10 +139,6 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   /* Populate vectors (initial condition is set in main.c) */
   set_mesh(ctx);
 
-  // below no longer needed, since gradient of melting curve computed on the fly
-  // using the new EOS methods
-  //set_d_dxi( ctx );
-
   ierr = initialise_atmosphere( &ctx->atmosphere, ctx->parameters->atmosphere_parameters, ctx->parameters->scaling_constants );CHKERRQ(ierr);
 
   /* Initialize PostStep reference data */

@@ -493,48 +493,44 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"conform_atmosphere_parameters_to_ic()\n");CHKERRQ(ierr);
 
-    /* prior to this function, A->volatiles[i].x and A->mass_reaction[i]
+    /* prior to this function, A->volatiles[i].p and A->mass_reaction[i]
        are updated */
 
-    /* conform initial_total_abundance */
     for (i=0; i<Ap->n_volatiles; ++i){
-        if( (Ap->IC_ATMOSPHERE==1) || (Ap->IC_ATMOSPHERE==4) ){
-            /* this is equivalent to the operation below for Ap->IC_ATMOSPHERE==3, but a shortcut since
-               we do not need to sum all reservoirs to get to the initial total abundance */
-            /* below we correct with -= */
-            Ap->volatile_parameters[i]->initial_total_abundance -= A->volatiles[i].mass_reaction / (*Ap->mantle_mass_ptr);
-        }
 
-        /* do not conform if Ap->IC_ATMOSPHERE==2, since we assume the user wants to resume from the exact state as
-           defined in the restart file */
+       /* to this point, we have solved for A->volatiles[i].p.
+          we must now ensure that other parameters are self-consistent
+          with this pressure.  This might over-write some parameters
+          that were previously used to determine p. */
 
-        else if( Ap->IC_ATMOSPHERE==3 ){
-            mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos + A->volatiles[i].mass_reaction;
-            Ap->volatile_parameters[i]->initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
-        }
+        /* initial_total_abundance is used by some ICs to compute p,
+           but with reactions mass can transfer between chemically
+           reacting species.  Hence the initial prescribed total
+           abundance is only honoured through conservation of the
+           total number of moles of something (H/C/etc.).  In essence,
+           A->volatiles[i].mass_reaction tells us how 'wrong" our initial
+           prescribed total abundance was, and we can use this to instead
+           compute the initial_total_abundance that obeys reactions */
+        mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos + A->volatiles[i].mass_reaction;
+        Ap->volatile_parameters[i]->initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
+
+        /* initial partial pressure */
+        Ap->volatile_parameters[i]->initial_atmos_pressure = A->volatiles[i].p;
+
+        /* TODO: conform initial_ocean_moles */
+        /* Ap->volatile_parameters[i]->initial_ocean_moles */
+
     }
 
-    /* re-solve to get volatile partial pressures (A->volatiles[i].p) */
-    /* TODO: is this required?  I think so for Ap->IC_ATMOSPHERE==1 above */
-    /* FIXME: if no atmosphere is chosen, this is not a necessary step */
-    ierr = solve_for_initial_partial_pressure( E ); CHKERRQ(ierr);
-
-    /* Ap_>IC_ATMOSPHERE==1 will also set mass reactions close to (but not exactly)
-       to zero.  Explicitly zero the entries here */
-    /* add tolerance check to ensure that mass reactions are
-       actually close to zero before overwriting them here? */
+    /* since we updated the parameters above to adhere to the equilibrium
+       state, we reset the mass_reaction to zero since our initial
+       abundances are referenced to equilibrium at the initial
+       interior and surface conditions (e.g., A->tsurf) */
     for(i=0; i<Ap->n_reactions; ++i){
         A->mass_reaction[i] = 0.0;
     }
 
-    for(i=0; i<Ap->n_volatiles; ++i){
-        Ap->volatile_parameters[i]->initial_atmos_pressure = A->volatiles[i].p;
-    }
-
     ierr = print_ocean_masses( E );CHKERRQ(ierr);
-
-    /* the relevant updated values in the structs are mapped back to the sol
-       Vec in the next function call following this return */
 
     PetscFunctionReturn(0);
 
@@ -738,8 +734,7 @@ static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Ve
     ierr = solve_for_initial_partial_pressure( E );CHKERRQ(ierr);
 
     /* below will also update mass reaction terms, which can be
-       non-zero.  We "correct" the mass reaction to be zero in
-       conform_parameters_to_initial_condition() */
+       non-zero */
     ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -806,7 +801,7 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     for (i=0; i<Ap->n_volatiles; ++i) {
         xx[i] = Ap->volatile_parameters[i]->initial_atmos_pressure;
     }
-    /* Initial guesses for reaction masses */
+    /* initial guesses for reaction masses */
     for (i=Ap->n_volatiles; i<Ap->n_volatiles + Ap->n_reactions; ++i) {
       xx[i] = 0.0; /* assume we close to equilibrium */
     }
@@ -867,9 +862,9 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
             A->volatiles[i].p = xx[i];
         }
     }
-    /* Save mass offset to reset initial volatile */
+
     for (i=0; i<Ap->n_reactions; ++i) {
-      A->mass_reaction[i] = xx[Ap->n_volatiles + i ];
+      A->mass_reaction[i] = xx[Ap->n_volatiles+i];
     }
 
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);

@@ -71,12 +71,6 @@ PetscErrorCode initialise_atmosphere( Atmosphere *A, const AtmosphereParameters 
     ierr = DimensionalisableFieldSetName(A->atm_struct[3],"atm_struct_depth");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(A->atm_struct[3],"m");CHKERRQ(ierr);
 
-    /* initialise mass reaction terms to zero */
-    {
-      PetscInt i;
-      for (i=0; i<SPIDER_MAX_REACTIONS; ++i) A->mass_reaction[i] = 0.0;
-    }
-
     PetscFunctionReturn(0);
 }
 
@@ -435,6 +429,8 @@ static PetscErrorCode set_volatile_masses_reactions( Atmosphere *A, const Atmosp
     PetscFunctionBeginUser;
 
     /* initialise mass_reactions to zero for each volatile */
+    /* this is required, since these entries must be zero
+       without reactions to correctly compute volatile reservoirs */
     for (i=0; i<Ap->n_volatiles; ++i) {
         A->volatiles[i].mass_reaction = 0.0;
     }
@@ -443,7 +439,7 @@ static PetscErrorCode set_volatile_masses_reactions( Atmosphere *A, const Atmosp
         const PetscInt v0 = Ap->reaction_parameters[i]->volatiles[0];
         /* by convention, first volatile is a reactant, so stoichiometry (hence factor) will be -ve */
         /* introduce scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-        /* TODO: swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
+        /* swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
         factor = Ap->reaction_parameters[i]->stoichiometry[0] * Ap->volatile_parameters[v0]->molar_mass;
         for (j=0; j<Ap->reaction_parameters[i]->n_volatiles; ++j) {
             const PetscInt v = Ap->reaction_parameters[i]->volatiles[j];

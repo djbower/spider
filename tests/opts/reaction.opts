@@ -166,7 +166,7 @@
 #-CO2_molar_mass 0.04401 # kg/mol
 
 -H2O_SOLUBILITY 2
-#-H2O_initial_total_abundance 330.0
+-H2O_initial_total_abundance 330.0
 -H2O_initial_ocean_moles 1.0
 -H2O_kdist 0.0
 -H2O_kabs 0.01
@@ -186,7 +186,7 @@
 #-CO_molar_mass 0.02801 # kg/mol
 
 -H2_SOLUBILITY 1
-#-H2_initial_total_abundance 0.0
+-H2_initial_total_abundance 0.0
 -H2_initial_ocean_moles 0.0
 -H2_kdist 0.0
 -H2_kabs 5.0E-5 # absorption (m^2/kg)
