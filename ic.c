@@ -140,12 +140,19 @@ static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
     Parameters const P = E->parameters;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
     /* subdomains to use, i.e. volatile abundances */
-    PetscInt const arr[2] = {2, 3};
+    PetscInt const arr1[1] = {2};
+    PetscInt const arr2[1] = {3};
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_file()\n");CHKERRQ(ierr);
 
-    ierr = set_ic_from_file( E, sol, Ap->ic_atmosphere_filename, arr, 2 ); CHKERRQ(ierr);
+    if(Ap->n_volatiles){
+        ierr = set_ic_from_file( E, sol, Ap->ic_atmosphere_filename, arr1, 1 ); CHKERRQ(ierr);
+    }
+
+    if(Ap->n_reactions){
+        ierr = set_ic_from_file( E, sol, Ap->ic_atmosphere_filename, arr2, 1 ); CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
