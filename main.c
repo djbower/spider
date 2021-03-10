@@ -125,7 +125,7 @@ int main(int argc, char ** argv)
     time = P->t0;
     ierr = TSSetTime(ts,time);CHKERRQ(ierr);
     nexttime = P->t0 + P->dtmacro;
-    stepmacro = 0; /* Macro steps always start from 0, regardless of physical starting time */
+    stepmacro = P->stepmacro;
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
 
     /* Final setup logic (needs to be here because some things, like TSSetTime(),
@@ -148,9 +148,10 @@ int main(int argc, char ** argv)
       ierr = TSSetPostStep(ts,PostStep);CHKERRQ(ierr);
     }
 
-    for (stepmacro=1; stepmacro<=P->nstepsmacro; ++stepmacro){
+    for (stepmacro=P->stepmacro+1; stepmacro<=P->nstepsmacro; ++stepmacro){
       ierr = TSSolve(ts,sol);CHKERRQ(ierr);
-      if (stepmacro == 1) {
+      /* view the timestepper parameters once */
+      if (stepmacro == P->stepmacro+1) {
         ierr = TSView(ts,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
       }
       ierr = TSGetSolveTime(ts,&time);CHKERRQ(ierr);

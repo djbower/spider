@@ -243,6 +243,10 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->nstepsmacro = 2;
   ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,NULL);CHKERRQ(ierr);
 
+  /* initial macro step (starting) */
+  P->stepmacro = 0;
+  ierr = PetscOptionsGetInt(NULL,NULL,"-stepmacro",&P->stepmacro,NULL);CHKERRQ(ierr);
+
   /* start time (years) P->t0 is set further down, since it may
      acquire a value from a restart value */
 
@@ -317,9 +321,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   P->Mg_Si1 = 0.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-Mg_Si1",&P->Mg_Si1,NULL);CHKERRQ(ierr);
 
-  /* start time (years) */
-  P->t0 = 0.0;
-
   /* initial condition for interior */
   ierr = PetscOptionsGetPositiveInt("-IC_INTERIOR",&P->IC_INTERIOR,1,NULL);CHKERRQ(ierr);
 
@@ -329,6 +330,8 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     ierr = PetscOptionsGetString(NULL,NULL,"-ic_interior_filename",P->ic_interior_filename,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
   }
 
+  /* start time (years) */
+  P->t0 = 0.0;
   PetscScalar t0 = 0.0;
   PetscBool t0_set = PETSC_FALSE;
   ierr = PetscOptionsGetReal(NULL,NULL,"-t0",&t0,&t0_set);CHKERRQ(ierr);

@@ -16,6 +16,7 @@ static PetscErrorCode set_ic_interior_entropy( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_file( Ctx *, Vec );
 static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *, Vec );
 static PetscErrorCode set_start_time_from_file( Parameters , const char * );
+static PetscErrorCode set_start_stepmacro_from_file( Parameters , const char * );
 /* atmosphere ic */
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_ocean_moles( Ctx *E, Vec sol );
@@ -81,6 +82,7 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     else if (IC==2){
         ierr = set_ic_interior_from_file( E, sol ); CHKERRQ(ierr);
         ierr = set_start_time_from_file( P, P->ic_interior_filename );CHKERRQ(ierr);
+        ierr = set_start_stepmacro_from_file( P, P->ic_interior_filename );CHKERRQ(ierr);
     }
     else if (IC==3){
         ierr = set_ic_interior_from_phase_boundary( E, sol ); CHKERRQ(ierr);
@@ -215,7 +217,26 @@ static PetscErrorCode set_start_time_from_file( Parameters P , const char * file
     cJSON_Delete( json );
 
     PetscFunctionReturn(0);
+}
 
+static PetscErrorCode set_start_stepmacro_from_file( Parameters P, const char * filename )
+{
+    PetscErrorCode   ierr;
+    cJSON            *json=NULL, *stepmacro;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_stepmacro_from_file()\n");CHKERRQ(ierr);
+
+    ierr = read_JSON_file_to_JSON_object( filename, &json );
+
+    /* stepmacro from this restart JSON must be passed to the time stepper
+       to continue the integration */
+    stepmacro = cJSON_GetObjectItem(json,"step");
+    P->stepmacro = stepmacro->valueint;
+
+    cJSON_Delete( json );
+
+    PetscFunctionReturn(0);
 }
 
 PetscErrorCode read_JSON_file_to_JSON_object( const char * filename, cJSON ** json )
@@ -464,6 +485,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
            solution */
         ierr = set_reservoir_volatile_content( A, Ap, FC, SC );CHKERRQ(ierr);
 
+        /* TODO: do not conform if restarting? */
         ierr = conform_atmosphere_parameters_to_ic( E );CHKERRQ(ierr);
 
         ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);

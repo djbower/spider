@@ -151,6 +151,7 @@ typedef struct {
     PetscInt    nstepsmacro,maxsteps;
     PetscReal   dtmacro;
     PetscReal   t0; /* initial time */
+    PetscInt    stepmacro; /* used for restarting */
     PetscInt    numpts_b,numpts_s;
 
     // Rollback / Post-step logic parameters
