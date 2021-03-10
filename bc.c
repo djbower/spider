@@ -158,6 +158,40 @@ PetscErrorCode set_surface_entropy_constant( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode set_cmb_entropy_extrapolate( Ctx *E )
+{
+    PetscErrorCode   ierr;
+    Mesh             *M = &E->mesh;
+    Solution         *S = &E->solution;
+    PetscScalar      *arr_S_s, *arr_dSdxi_b, *arr_xi_b, *arr_S_b;
+    PetscInt         ihi_b, ilo_b, w_b;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b;
+
+    ierr = DMDAVecGetArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    /* use dS/dr at the cmb which is constrained by the core boundary condition */
+    /* unlike for the surface bc, for the cmb bc we can simply timestep the cmb
+       entropy gradient to, by construction, adhere to the boundary condition.  We
+       cannot do this for the surface, since we do not know dFlux_surface/dt in all
+       cases */
+    arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-1] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
+    arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
+
+    ierr = DMDAVecRestoreArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode set_surface_entropy_extrapolate( Ctx *E )
 {
     PetscErrorCode  ierr;

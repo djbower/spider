@@ -105,20 +105,14 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     arr_S_s[ihi_b-2] += S0; // add at end to try and retain precision
     arr_S_b[ihi_b-2] += S0; // add at end to try and retain precision
 
-    /* cmb entropy */
-    /* use dS/dr at the cmb which is constrained by the core boundary condition */
-    /* unlike for the surface bc, for the cmb bc we can simply timestep the cmb
-       entropy gradient to, by construction, adhere to the boundary condition.  We
-       cannot do this for the surface, since we do not know dFlux_surface/dt in all
-       cases */
-    arr_S_b[ihi_b-1] = arr_dSdxi_b[ihi_b-1] * 0.5 * (arr_xi_b[ihi_b-1]-arr_xi_b[ihi_b-2]);
-    arr_S_b[ihi_b-1] += arr_S_s[ihi_b-2];
-
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
+
+    /* core-mantle boundary */
+    ierr = set_cmb_entropy_extrapolate( E );CHKERRQ(ierr);
 
     /* default behaviour is to extrapolate to give surface entropy and gradient */
     /* this could be subsequently overwritten depending on the users choice of
