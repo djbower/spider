@@ -109,11 +109,14 @@
 -radius 6371000.0 # Earth radius
 
 # initial condition
--ic_adiabat_entropy 1920
+#-ic_adiabat_entropy 1920
+-ic_adiabat_entropy 1320
 -ic_dsdr -4.6978890285209187e-05 # initial dS/dr everywhere
 # for Earth scalings, above is -1.0E-3 in non-dimensional units
--ic_surface_entropy 403.0
--ic_core_entropy 2091.6144510705185
+#-ic_surface_entropy 403.0
+#-ic_core_entropy 2091.6144510705185
+-ic_surface_entropy 1.0
+-ic_core_entropy 1591.6144510705185
 
 # static pressure profile derived from Adams-Williamson equation of state
 # these parameters are from fitting PREM in the lower mantle (for Earth)
