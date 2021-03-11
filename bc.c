@@ -2,6 +2,9 @@
 #include "bc.h"
 #include "monitor.h"
 
+static PetscErrorCode set_surface_entropy_constant( Ctx * );
+static PetscErrorCode set_cmb_entropy_constant( Ctx * );
+
 PetscErrorCode set_surface_flux_from_atmosphere( Ctx *E )
 {
     PetscErrorCode ierr;
@@ -68,7 +71,6 @@ PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar temp, con
     dTsdT = part1 - part2;
 
     return dTsdT;
-
 }
 
 PetscErrorCode set_boundary_entropy_constant( Ctx *E )
@@ -94,7 +96,7 @@ PetscErrorCode set_boundary_entropy_constant( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_cmb_entropy_constant( Ctx *E ) 
+static PetscErrorCode set_cmb_entropy_constant( Ctx *E ) 
 {
     /* set entropy at core-mantle boundary */
     /* an isothermal bc is naturally accommodated by the cmb bcs, so this
@@ -129,7 +131,7 @@ PetscErrorCode set_cmb_entropy_constant( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_surface_entropy_constant( Ctx *E ) 
+static PetscErrorCode set_surface_entropy_constant( Ctx *E ) 
 {
     /* set entropy at surface */
 
