@@ -5,15 +5,54 @@
 static PetscErrorCode set_surface_entropy_constant( Ctx * );
 static PetscErrorCode set_cmb_entropy_constant( Ctx * );
 
+PetscErrorCode set_surface_entropy_gradient_update( Ctx *E, Vec rhs )
+{
+    /* apply surface boundary condition in time-stepper.  This is the
+       update for d/dt(dS/dr) at the surface */
+
+    PetscErrorCode ierr;
+    Mesh const        *M = &E->mesh;
+    Parameters const P = E->parameters; 
+    Solution const    *S = &E->solution;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
+    PetscScalar    rhs_surf, dSdt_s_surf, rhs_below_surf;
+    const PetscScalar *arr_xi_b;
+    const PetscInt ind0=0, ind1=1;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    ierr = VecGetValues(S->dSdt_s,1,&ind0,&dSdt_s_surf);CHKERRQ(ierr);
+    ierr = VecGetValues(rhs,1,&ind1,&rhs_below_surf);CHKERRQ(ierr);
+
+    /* isothermal */
+    if( Ap->SURFACE_BC == 5){
+        rhs_surf = -1.0 / (-0.5 * (arr_xi_b[1] - arr_xi_b[0]));
+        rhs_surf *= dSdt_s_surf;
+    }
+    else{
+        rhs_surf = rhs_below_surf;
+    }
+
+    ierr = VecSetValue(rhs,ind0,rhs_surf,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(rhs);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(rhs);CHKERRQ(ierr);
+
+    ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode set_cmb_entropy_gradient_update( Ctx *E, Vec rhs )
 {
     /* apply core-mantle boundary condition in time-stepper.  This is the
        update for d/dt(dS/dr) at the cmb */
 
     PetscErrorCode    ierr;
-    Mesh              *M = &E->mesh;
-    Parameters        P = E->parameters;
-    Solution          *S = &E->solution;
+    Mesh const        *M = &E->mesh;
+    Parameters const  P = E->parameters;
+    Solution const    *S = &E->solution;
     PetscInt          numpts_b, ind_cmb, ind_s_cmb;
     const PetscScalar *arr_xi_b;
     PetscScalar       Ecore, Etot_cmb, area_cmb, fac_cmb, rhs_cmb, dSdt_s_cmb, temp_cmb, cp_cmb;

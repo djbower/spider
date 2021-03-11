@@ -19,7 +19,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
   PetscScalar          *arr_dSdt_s, *arr_rhs_b;
-  const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_cp_s, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
+  const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_cp_s, *arr_Htot_s, *arr_xi_s;
   PetscMPIInt          rank,size;
   DM                   da_s = E->da_s, da_b=E->da_b;
   PetscInt             i,v,ihi_s,ilo_s,w_s,numpts_b;
@@ -54,7 +54,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecGetArrayRead(da_s,S->capacitance_s,&arr_capacitance_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
   /* first staggered node */
@@ -72,26 +71,12 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
     arr_rhs_b[i] /= arr_xi_s[i] - arr_xi_s[i-1]; // note dxi is negative
   }
 
-  /* for some choices of the surface boundary condition, we can
-     compute the update for d/dt(dS/dr) at the surface */
-  /* d/dt(dS/dr) at surface */
-  /* isothermal */
-  if( Ap->SURFACE_BC == 5){
-      arr_rhs_b[0] = -1.0 / (-0.5 * (arr_xi_b[1] - arr_xi_b[0]));
-      arr_rhs_b[0] *= arr_dSdt_s[0];
-  }
-  else{
-      arr_rhs_b[0] = arr_rhs_b[1];
-  }
-
   /* dTsurf/dr */
   /* A->dtsurfdt already contains contribution of dTsurf/dT */
   /* By chain rule, just need dT/dt */
   A->dtsurfdt *= arr_dSdt_s[0] * arr_temp_s[0] / arr_cp_s[0];
-  /* add effect of gradient to above 0.5*d/dt (dS/dxi) */
-  /* but this should be a minor effect */
+  /* add effect of gradient to above 0.5*d/dt (dS/dxi)? */
 
-  ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(da_b,rhs_b,&arr_rhs_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_b,E->work_local_b,&arr_Etot);CHKERRQ(ierr);
@@ -100,6 +85,9 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecRestoreArrayRead(da_s,S->capacitance_s,&arr_capacitance_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
+
+  /* apply surface boundary condition to rhs */
+  ierr = set_surface_entropy_gradient_update( E, rhs_b );CHKERRQ(ierr);
 
   /* apply cmb boundary condition to rhs */
   ierr = set_cmb_entropy_gradient_update( E, rhs_b );CHKERRQ(ierr);
