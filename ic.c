@@ -182,6 +182,12 @@ static PetscErrorCode set_ic_interior_entropy( Ctx *E, Vec sol )
     ierr = VecSet(dSdxi_b, P->ic_dsdr );CHKERRQ(ierr);
     ierr = VecPointwiseDivide(dSdxi_b,dSdxi_b,M->dxidr_b);
 
+    /* code to test surface bc (not required other than for debugging) */
+    //PetscInt const ind0=0,ind1=1;
+    //PetscScalar val1;
+    //ierr = VecGetValues(dSdxi_b,1,&ind1,&val1);CHKERRQ(ierr);
+    //ierr = VecSetValue(dSdxi_b,ind0,val1,INSERT_VALUES);CHKERRQ(ierr);
+
     /* set entropy at top of adiabat */
     S0 = P->ic_adiabat_entropy;
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],0,S0,INSERT_VALUES);CHKERRQ(ierr);
