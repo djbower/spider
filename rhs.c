@@ -18,11 +18,11 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   Atmosphere           *A = &E->atmosphere;
   Mesh                 *M = &E->mesh;
   Solution             *S = &E->solution;
-  PetscScalar          *arr_dSdt_s, *arr_rhs_b, fac_cmb, area_cmb, Ecore;
-  const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_temp_b, *arr_cp_s, *arr_cp_b, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
+  PetscScalar          *arr_dSdt_s, *arr_rhs_b;
+  const PetscScalar    *arr_Etot, *arr_capacitance_s, *arr_temp_s, *arr_cp_s, *arr_Htot_s, *arr_xi_s, *arr_xi_b;
   PetscMPIInt          rank,size;
   DM                   da_s = E->da_s, da_b=E->da_b;
-  PetscInt             i,v,ihi_s,ilo_s,w_s,numpts_b,ind_cmb;
+  PetscInt             i,v,ihi_s,ilo_s,w_s,numpts_b;
   Vec                  rhs_b, *subVecs;
 
   PetscFunctionBeginUser;
@@ -34,8 +34,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* for looping over basic nodes */
   ierr = DMDAGetCorners(E->da_s,&ilo_s,0,0,&w_s,0,0);CHKERRQ(ierr);
   ihi_s = ilo_s + w_s;
-
-  ind_cmb = numpts_b-1; // index of last basic node (i.e., cmb)
 
   /* allocate memory for RHS vector */
   ierr = VecCreate( PETSC_COMM_WORLD, &rhs_b );
@@ -55,9 +53,7 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecGetArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->capacitance_s,&arr_capacitance_s);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_b,S->temp,&arr_temp_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayRead(da_b,S->cp,&arr_cp_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
@@ -88,28 +84,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
       arr_rhs_b[0] = arr_rhs_b[1];
   }
 
-  /* d/dt(dS/dr) at core mantle boundary */
-  ierr = VecGetValues(M->area_b,1,&ind_cmb,&area_cmb);CHKERRQ(ierr);
-  /* isothermal */
-  if( P->CORE_BC==3 ){
-      Ecore = arr_Etot[ind_cmb];
-  }
-  /* prescribed flux from core */
-  /* P->core_bc_value is already set to zero if simple core cooling */
-  else{
-      Ecore = P->core_bc_value * area_cmb;
-  }
-
-  fac_cmb = arr_cp_b[ind_cmb] / P->cp_core;
-  fac_cmb /= arr_temp_b[ind_cmb] * P->tfac_core_avg;
-  /* recall factors of 4 pi are not included in SPIDER (only used for output) */
-  fac_cmb /= 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
-  fac_cmb /= P->rho_core;
-  arr_rhs_b[ind_cmb] = -arr_Etot[ind_cmb] + Ecore;
-  arr_rhs_b[ind_cmb] *= fac_cmb;
-  arr_rhs_b[ind_cmb] -= arr_dSdt_s[ihi_s-1];
-  arr_rhs_b[ind_cmb] *= 2.0 / (arr_xi_b[ind_cmb] - arr_xi_b[ind_cmb-1] );
-
   /* dTsurf/dr */
   /* A->dtsurfdt already contains contribution of dTsurf/dT */
   /* By chain rule, just need dT/dt */
@@ -125,13 +99,13 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   ierr = DMDAVecRestoreArrayRead(da_s,S->Htot_s,&arr_Htot_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->capacitance_s,&arr_capacitance_s);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->temp_s,&arr_temp_s);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArrayRead(da_b,S->temp,&arr_temp_b);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s,S->cp_s,&arr_cp_s);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArrayRead(da_b,S->cp,&arr_cp_b);CHKERRQ(ierr);
 
-  /* must be here since must be after dS/dt computation */
+  /* apply cmb boundary condition to rhs */
+  ierr = set_cmb_entropy_gradient_update( E, rhs_b );CHKERRQ(ierr);
 
-  /* TODO: only relevant for 2 phases.  Perhaps need to tidy up similar
+  /* must be here since must be after dS/dt computation 
+     only relevant for 2 phases.  Perhaps need to tidy up similar
      functionality, like output of rheological front, etc. */
   if( P->n_phases == 2 ){
       ierr = set_dMliqdt( E );CHKERRQ(ierr);

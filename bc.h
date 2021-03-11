@@ -3,6 +3,7 @@
 
 #include "ctx.h"
 
+PetscErrorCode set_cmb_entropy_gradient_update( Ctx *, Vec );
 PetscErrorCode solve_dpdts( Ctx * );
 PetscErrorCode set_surface_entropy_from_surface_gradient( Ctx * );
 PetscErrorCode set_boundary_entropy_constant( Ctx * );

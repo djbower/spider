@@ -5,6 +5,63 @@
 static PetscErrorCode set_surface_entropy_constant( Ctx * );
 static PetscErrorCode set_cmb_entropy_constant( Ctx * );
 
+PetscErrorCode set_cmb_entropy_gradient_update( Ctx *E, Vec rhs )
+{
+    /* apply core-mantle boundary condition in time-stepper.  This is the
+       update for d/dt(dS/dr) at the cmb */
+
+    PetscErrorCode    ierr;
+    Mesh              *M = &E->mesh;
+    Parameters        P = E->parameters;
+    Solution          *S = &E->solution;
+    PetscInt          numpts_b, ind_cmb, ind_s_cmb;
+    const PetscScalar *arr_xi_b;
+    PetscScalar       Ecore, Etot_cmb, area_cmb, fac_cmb, rhs_cmb, dSdt_s_cmb, temp_cmb, cp_cmb;
+
+    PetscFunctionBeginUser;
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    ind_cmb = numpts_b-1; // index of last basic node (i.e., cmb)
+    ind_s_cmb = ind_cmb-1; // index of last staggered node above cmb
+
+    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    ierr = VecGetValues(M->area_b,1,&ind_cmb,&area_cmb);CHKERRQ(ierr);
+    ierr = VecGetValues(S->Etot,1,&ind_cmb,&Etot_cmb);CHKERRQ(ierr);
+    ierr = VecGetValues(S->dSdt_s,1,&ind_s_cmb,&dSdt_s_cmb);CHKERRQ(ierr);
+    ierr = VecGetValues(S->temp,1,&ind_cmb,&temp_cmb);CHKERRQ(ierr);
+    ierr = VecGetValues(S->cp,1,&ind_cmb,&cp_cmb);CHKERRQ(ierr);
+
+    /* isothermal */
+    if( P->CORE_BC==3 ){
+        Ecore = Etot_cmb;
+    }
+    /* prescribed flux from core */
+    /* P->core_bc_value is set to zero if simple core cooling */
+    else{
+        Ecore = P->core_bc_value * area_cmb;
+    }
+
+    fac_cmb = cp_cmb / P->cp_core;
+    fac_cmb /= temp_cmb * P->tfac_core_avg;
+    /* recall factors of 4 pi are not included in SPIDER (only used for output) */
+    fac_cmb /= 1.0/3.0 * PetscPowScalar(P->coresize,3.0) * PetscPowScalar(P->radius,3.0);
+    fac_cmb /= P->rho_core;
+
+    rhs_cmb = -Etot_cmb + Ecore;
+    rhs_cmb *= fac_cmb;
+    rhs_cmb -= dSdt_s_cmb;
+    rhs_cmb *= 2.0 / (arr_xi_b[ind_cmb] - arr_xi_b[ind_cmb-1] );
+
+    ierr = VecSetValue(rhs,ind_cmb,rhs_cmb,INSERT_VALUES);CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(rhs);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(rhs);CHKERRQ(ierr);
+
+    ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode set_surface_flux_from_atmosphere( Ctx *E )
 {
     PetscErrorCode ierr;
