@@ -29,7 +29,7 @@ PetscErrorCode set_solution_from_entropy( Ctx *E, Vec sol )
     Solution       *S = &E->solution;
     PetscScalar    S0;
     PetscInt       ind0 = 0;
-    Vec            *subVecs
+    Vec            *subVecs;
 
     PetscFunctionBeginUser;
 
