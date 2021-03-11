@@ -22,34 +22,62 @@ We already know that $\kappa_h$ is a nasty function of a bunch of $T$-dependent 
 The implementation approach is as follows.  At a given time, we construct the entropy profile at the internal basic nodes using the current solution.  We then solve Eq.~\ref{eq:radintbalance} iteratively to determine the surface entropy gradient and hence the surface entropy that satisfies the surface boundary condition.  This then provides the full distribution of properties and energy fluxes for all basic nodes, self-consistently.  An advantage of this approach is that $J_{rad}$ (heat flux out) can be imposed by any arbitrary black box because we do not require derivatives to impose the boundary condition.  A disadvantage is that we must solve a non-linear problem within the timestepper.  But given that we only use one rank, and the problem is still small (1-D), this isn't an issue.
 %%%%
 \subsubsection{Derivative approach (not implemented)}
-We can also take the time derivative:
+We can also take the time derivative of the linear reconstruction:
 \begin{equation}
 \frac{\partial S_0}{\partial t} = \frac{\partial S_{1/2}}{\partial t} - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right)
 \end{equation}
-Now we also want to determine a time derivative for the time stepper:
+Now we also want to determine a time derivative of the surface entropy gradient to use in the time stepper.  The LHS is the radiative or outgoing flux, which depends on the choice of the boundary condition.  First focus on the RHS, which is the geothermal flux.
+
+%%% RHS
+\textbf{RHS: geothermal flux.}
+For the convective term:
 \begin{equation}
-\frac{\partial J_{rad}}{\partial t} = \left(\frac{\partial T_0}{\partial t}\right) \frac{\partial}{\partial T_0} \epsilon \sigma (T_0^4 - T_{eqm}^4)
+\frac{\partial J_{conv}}{\partial t} = - \frac{\partial}{\partial t} \left[ \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right) \right]
 \end{equation}
-\begin{equation}
-\frac{\partial J_{rad}}{\partial t} = \left(\frac{\partial T_0}{\partial t}\right) \left(4 \epsilon \sigma T_0^3\right) = \left( \frac{T_0}{c_0} \frac{\partial S_0}{\partial t} \right) (4 \epsilon \sigma T_0^3)
-\end{equation}
-Collecting terms:
-\begin{equation}
-\frac{\partial J_{rad}}{\partial t} = \left( \frac{4 \epsilon \sigma T_0^4}{c_0} \right) \left(\frac{\partial S_0}{\partial t} \right)
-\end{equation}
-\begin{equation}
-\frac{\partial J_{conv}}{\partial t} = - \frac{\partial}{\partial t} \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right)
-\end{equation}
+Particularly due to the functional dependences of $\kappa_h$, it could be quite nasty to take the time derivative.  So instead assume that $\kappa_h$ and $\rho$ can be approximated from the basic node below the surface (subscript 1).  \dbnote{TODO: in reality, these can probably be any appropriately chosen constant values based on the current state.}
 \begin{equation}
 \frac{\partial J_{conv}}{\partial t} = - \rho_1 \kappa_{h_1} \left[ \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial T_0}{\partial t} \right) + T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
 \end{equation}
 \begin{equation}
 \frac{\partial J_{conv}}{\partial t} = - \rho_1 \kappa_{h_1} \left[ \frac{T_0}{c_0} \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_0}{\partial t} \right) + T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
 \end{equation}
-To enable cancellation of some terms with the LHS:
+Substituting in the reconstruction:
 \begin{equation}
-\frac{\partial J_{conv}}{\partial t} = - \frac{\rho_1 \kappa_{h_1} T_0}{c_0} \left[ \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_0}{\partial t} \right) + c_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
+\frac{\partial J_{conv}}{\partial t} = - \rho_1 \kappa_{h_1} \left[ \frac{T_0}{c_0} \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_{1/2}}{\partial t} - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right) \right) + T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
 \end{equation}
+The above couples the updates for the top staggered node $S_{1/2}$ and the surface entropy gradient.  We can similarly simplify the time derivative of the conductive heat contribution to also include on the RHS as a contribution to the geothermal flux \dbnote{TODO}.
+
+%%% LHS
+\textbf{LHS: outgoing or radiative flux}.  This depends on our choice of boundary condition, but let's assume that we know the LHS to be $\dot{J}_{rad}$.  Then:
+\begin{equation}
+\dot{J}_{rad} = - \rho_1 \kappa_{h_1} \left[ \frac{T_0}{c_0} \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_{1/2}}{\partial t} - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right) \right) + T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
+\end{equation}
+\textbf{Constant surface flux}.  If the radiative flux is time independent (zero or a constant value), then the LHS is simply zero.  Therefore:
+\begin{equation}
+0 = \frac{T_0}{c_0} \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_{1/2}}{\partial t} - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right) \right) + T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0
+\end{equation}
+\begin{equation}
+- T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0 = \frac{T_0}{c_0} \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_{1/2}}{\partial t} \right) + \frac{T_0}{c_0} \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right) \right)
+\end{equation}
+\begin{equation}
+- c_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0 = \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_{1/2}}{\partial t} \right) + \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right) \right)
+\end{equation}
+Tedious to shuffle around the math in LateX, but the update for the surface entropy gradient is just a factor of known stuff multiplied by the update of the top staggered node entropy.
+%%% OLD BELOW %%%
+%To enable cancellation of some terms with the LHS:
+%\begin{equation}
+%\frac{\partial J_{conv}}{\partial t} = - \frac{\rho_1 \kappa_{h_1} T_0}{c_0} \left[ \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_0}{\partial t} \right) + c_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
+%\end{equation}
+%\begin{equation}
+%\frac{\partial J_{rad}}{\partial t} = \left(\frac{\partial T_0}{\partial t}\right) \frac{\partial}{\partial T_0} \epsilon \sigma (T_0^4 - T_{eqm}^4)
+%\end{equation}
+%\begin{equation}
+%\frac{\partial J_{rad}}{\partial t} = \left(\frac{\partial T_0}{\partial t}\right) \left(4 \epsilon \sigma T_0^3\right) = \left( \frac{T_0}{c_0} \frac{\partial S_0}{\partial t} \right) (4 \epsilon \sigma T_0^3)
+%\end{equation}
+%Collecting terms:
+%\begin{equation}
+%\frac{\partial J_{rad}}{\partial t} = \left( \frac{4 \epsilon \sigma T_0^4}{c_0} \right) \left(\frac{\partial S_0}{\partial t} \right)
+%\end{equation}
 Now combine LHS and RHS to derive equation:
 \begin{equation}
 \left( \frac{4 \epsilon \sigma T_0^4}{c_0} \right) \left(\frac{\partial S_0}{\partial t} \right) = - \frac{\rho_1 \kappa_{h_1} T_0}{c_0} \left[ \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_0}{\partial t} \right) + c_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
@@ -83,23 +111,6 @@ And more:
 \label{eq:surfbc}
 \end{equation}
 So from the current solution we can compute $\partial S_{1/2}/\partial t$, and hence the time update to the surface entropy gradient.  We could therefore set $\partial S/\partial r|_0$ to be consistent with the flux balance for the initial condition, and then update it using the derivative to ensure the flux balance is maintained.  Since this is linear, the update would be trivial to include in the time-stepper (no extra solve required within the time-stepper, unlike the algebraic approach above).  However, a major disadvantage is necessarily needing to know the rate of change of flux (hence surface temperature), which might not be available (e.g., if a flux is imposed, and we don't know the algebraic relationship between the imposed flux and temperature).
-
-%%%%
-%%%%
-%%%%
-\subsubsection{Legacy: Isothermal (constant entropy)}
-To apply this boundary condition in terms of fluxes, the heat leaving the uppermost cell must balance the heat entering the cell plus any internal heat generation:
-\begin{equation}
-\frac{dQ}{dt} = E_{1} - E_{top} + V \rho H = 0
-\end{equation}
-Rearrange to find $E_{top}$:
-\begin{equation}
-E_{top} = E_1 + V \rho H
-\end{equation}
-Equivalently, in terms of fluxes:
-\begin{equation}
-J_{top} = \frac{1}{A_{top}} \left( J_1A_1 + V \rho H \right)
-\end{equation}
 %%%
 \subsubsection{Ultra-thin thermal boundary layer parameterisation}
 The thermal boundary layer at the surface of a magma ocean is expected to be very thin (a few cms) with a temperature drop of several hundred kelvin.  A mesh with 1 mm spacing is typically required to resolve the boundary layer which is only practical for a 1-D numerical model such as the one we are presenting.  However, it is computationally inefficient and unnecessary to retain such high resolution in the boundary layer when the magma ocean is solidifying and growing a much thicker thermal boundary layer (eventual thickness around 100 km) due to solid-state convection.  Therefore, even for 1-D models there is an advantage in parameterising the temperature drop across the ultra-thin thermal boundary layer such that a coarse mesh can be used.  Parameterising the boundary layer is the only practical option for 2-D dynamic models \citep[e.g.,][]{LT16}.  From mixing length theory, heat flux is:
@@ -202,20 +213,6 @@ E_{cmb} = \frac{E_1 - V \rho H}{\left(1+\frac{V \rho c}{\hat{T}_{core} m_c c_c}\
 Equivalently, in terms of fluxes:
 \begin{equation}
 J_{cmb} = \left( \frac{1}{A_{cmb}} \right) \frac{J_1A_1 - V \rho H}{\left(1+\frac{V \rho c}{\hat{T}_{core} m_c c_c}\right)} = \left( \frac{1}{A_{cmb}} \right) (J_1A_1 - V \rho H)\left(1+\frac{V \rho c}{\hat{T}_{core} m_c c_c}\right)^{-1}
-\end{equation}
-%%%%
-\subsubsection{Legacy: Isothermal (constant entropy)}
-This approach was initially adopted and documented in \cite{BSW18}, but has since been superseded by the approach in Sect.~\ref{sec:corecool2}.  To apply this boundary condition in terms of fluxes, the heat leaving the lowermost cell must balance the heat entering the cell plus any internal heat generation:
-\begin{equation}
-\frac{dQ}{dt} = E_{cmb} - E_1 + V \rho H = 0
-\end{equation}
-Rearrange to find $E_{cmb}$:
-\begin{equation}
-E_{cmb} = E_1 - V \rho H
-\end{equation}
-Equivalently, in terms of fluxes:
-\begin{equation}
-J_{cmb} = \frac{1}{A_{cmb}} \left( J_1A_1 - V \rho H \right)
 \end{equation}
 %%%
 \subsubsection{Universal boundary condition}
