@@ -540,10 +540,10 @@ static PetscErrorCode solve_for_surface_radiation_balance( Ctx *E, PetscReal t )
 
     ierr = SNESSetFunction(snes,r,objective_function_surface_radiation_balance,E);CHKERRQ(ierr);
 
-    /* initial guess of surface entropy gradient is gradient at basic node below surface */
+    /* initial guess of surface entropy gradient */
     ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    xx[0] = arr_dSdxi_b[1];
+    xx[0] = arr_dSdxi_b[0];
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
 
@@ -586,11 +586,6 @@ static PetscErrorCode solve_for_surface_radiation_balance( Ctx *E, PetscReal t )
     arr_dSdxi_b[0] = xx[0];
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
-    // REMOVE BELOW
-    /* set entropy at surface */
-    //arr_S_b[0] = -arr_dSdxi_b[0] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
-    //arr_S_b[0] += arr_S_s[0];
-
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
@@ -611,17 +606,13 @@ static PetscErrorCode objective_function_surface_radiation_balance( SNES snes, V
     PetscMPIInt                rank;
     const PetscScalar          *xx;
     PetscScalar                *ff;
-    PetscScalar                Ss0, Sb0, dSdxi0, Jtot0, res;
-    const PetscScalar          *arr_xi_b;
+    PetscScalar                dSdxi0, Jtot0, res;
     Ctx                        *E = (Ctx*) ptr;
     Parameters            const P  = E->parameters;
-    Mesh                 const *M = &E->mesh;
     Atmosphere           const *A = &E->atmosphere;
     ScalingConstants      const SC = P->scaling_constants;
     Solution                   *S = &E->solution;
-    DM                         da_b = E->da_b;
     PetscInt             const ind0 = 0;
-    PetscInt             const ind1 = 1;
     PetscReal                  t;
 
     PetscFunctionBeginUser;
@@ -631,7 +622,6 @@ static PetscErrorCode objective_function_surface_radiation_balance( SNES snes, V
        objective function */
     t = E->t;
 
-    ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b); CHKERRQ(ierr);
     ierr = VecGetArrayRead(x,&xx);CHKERRQ(ierr);
     ierr = VecGetArray(f,&ff);CHKERRQ(ierr);
 
@@ -642,12 +632,7 @@ static PetscErrorCode objective_function_surface_radiation_balance( SNES snes, V
     ierr = VecAssemblyBegin( S->dSdxi );CHKERRQ(ierr);
     ierr = VecAssemblyEnd( S->dSdxi );CHKERRQ(ierr);
 
-    /* compute surface entropy using the reconstruction */
-    ierr = VecGetValues(S->S_s,1,&ind0,&Ss0);CHKERRQ(ierr);
-    Sb0 = -dSdxi0 * 0.5 * (arr_xi_b[ind1] - arr_xi_b[ind0]) + Ss0;
-    ierr = VecSetValue( S->S, ind0, Sb0, INSERT_VALUES );CHKERRQ(ierr);
-    ierr = VecAssemblyBegin( S->S );CHKERRQ(ierr);
-    ierr = VecAssemblyEnd( S->S );CHKERRQ(ierr);
+    ierr = set_surface_entropy_from_surface_gradient( E );CHKERRQ(ierr);
 
     ierr = set_current_state( E, t );CHKERRQ(ierr);
 
@@ -665,7 +650,6 @@ static PetscErrorCode objective_function_surface_radiation_balance( SNES snes, V
 
     ierr = VecRestoreArrayRead(x,&xx);CHKERRQ(ierr);
     ierr = VecRestoreArray(f,&ff);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
