@@ -112,13 +112,10 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     ierr = DMDAVecRestoreArrayRead(da_s,M->xi_s,&arr_xi_s);CHKERRQ(ierr);
 
     /* core-mantle boundary */
-    ierr = set_cmb_entropy_extrapolate( E );CHKERRQ(ierr);
+    ierr = set_cmb_entropy_from_cmb_gradient( E );CHKERRQ(ierr);
 
-    /* default behaviour is to extrapolate to give surface entropy and gradient */
-    /* this could be subsequently overwritten depending on the users choice of
-       the surface boundary conditions.  However, an initial estimate of surface
-       entropy is useful for setting the atmosphere initial condition */
-    ierr = set_surface_entropy_extrapolate( E );CHKERRQ(ierr);
+    /* surface boundary */
+    ierr = set_surface_entropy_from_surface_gradient( E );CHKERRQ(ierr);
 
     ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
     PetscFree(subVecs);
