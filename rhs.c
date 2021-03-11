@@ -76,6 +76,18 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
     arr_rhs_b[i] /= arr_xi_s[i] - arr_xi_s[i-1]; // note dxi is negative
   }
 
+  /* for some choices of the surface boundary condition, we can
+     compute the update for d/dt(dS/dr) at the surface */
+  /* d/dt(dS/dr) at surface */
+  /* isothermal */
+  if( Ap->SURFACE_BC == 5){
+      arr_rhs_b[0] = -1.0 / (-0.5 * (arr_xi_b[1] - arr_xi_b[0]));
+      arr_rhs_b[0] *= arr_dSdt_s[0];
+  }
+  else{
+      arr_rhs_b[0] = arr_rhs_b[1];
+  }
+
   /* d/dt(dS/dr) at core mantle boundary */
   ierr = VecGetValues(M->area_b,1,&ind_cmb,&area_cmb);CHKERRQ(ierr);
   /* isothermal */

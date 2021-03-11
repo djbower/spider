@@ -752,31 +752,20 @@ PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in 
     /* atmosphere */
     ierr = set_partial_pressures_from_solution( E, sol_in );CHKERRQ(ierr);
 
-    /* set_entropy_from_solution has already extrapolated to get an
-       estimate of the surface entropy and entropy gradient. */
+    /* We can enforce an isothermal surface easily within the time-stepper
+       For the simple bc, we keep with the estimate of surface entropy
+       from the reconstruction */
 
-    /* we ensure consistency with the surface boundary condition here */
-
-    /* for an isothermal surface, we can simply impose the surface
-       entropy and entropy gradient.  Then, the heat flux at the surface
-       is computed by the surface conditions using the interior fluxes.
-       Hence, A->Fatm is not directy used.  This applies independent
-       of SURFACE_BC_ACC */
-    if( Ap->SURFACE_BC == 5 ){
-        ierr = set_surface_entropy_constant( E );CHKERRQ(ierr);
-        ierr = set_current_state( E, t);CHKERRQ(ierr);
-    }
     /* for more accurate surface bc, must balance the atmospheric flux
        A->Fatm with the interior flux at the surface.  This sets the
-       entropy and entropy gradient at the surface to match the
-       fluxes, hence Jtot at the surface should be close to A->Fatm */
-    else if( Ap->SURFACE_BC_ACC ){
+       entropy and entropy gradient at the surface to balance the fluxes */
+    if( (Ap->SURFACE_BC_ACC) && (Ap->SURFACE_BC!=5) ){
         ierr = solve_for_surface_radiation_balance( E, t );CHKERRQ(ierr);
     }
-    /* for simple (legacy) surface bc, we use the extrapolated surface
-       conditions to determine A->Fatm, which is then later imposed
-       as the flux at the surface.  Hence here we can directly compute
-       the current state without the need to solve */
+    /* otherwise, use the extrapolated surface conditions to determine
+       A->Fatm, which is then later imposed as the flux at the surface.
+       Hence here we can directly compute the current state without 
+       the need to solve */
     else{
         ierr = set_current_state( E, t);CHKERRQ(ierr);
     }
