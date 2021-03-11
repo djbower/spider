@@ -141,7 +141,6 @@ static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
     PetscErrorCode ierr;
     Parameters const P = E->parameters;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
-    /* subdomains to use, i.e. volatile abundances */
     PetscInt const arr1[1] = {2};
     PetscInt const arr2[1] = {3};
 

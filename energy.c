@@ -586,14 +586,17 @@ static PetscErrorCode solve_for_surface_radiation_balance( Ctx *E, PetscReal t )
     arr_dSdxi_b[0] = xx[0];
     ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
 
+    // REMOVE BELOW
     /* set entropy at surface */
-    arr_S_b[0] = -arr_dSdxi_b[0] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
-    arr_S_b[0] += arr_S_s[0];
+    //arr_S_b[0] = -arr_dSdxi_b[0] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
+    //arr_S_b[0] += arr_S_s[0];
 
     ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    ierr = set_surface_entropy_from_surface_gradient( E );CHKERRQ(ierr);
 
     ierr = VecDestroy(&x);CHKERRQ(ierr);
     ierr = VecDestroy(&r);CHKERRQ(ierr);

@@ -219,6 +219,31 @@ PetscErrorCode set_surface_entropy_extrapolate( Ctx *E )
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode set_surface_entropy_from_surface_gradient( Ctx *E )
+{
+    PetscErrorCode  ierr;
+    Mesh             *M = &E->mesh;
+    Solution         *S = &E->solution;
+    PetscScalar      *arr_S_s, *arr_dSdxi_b, *arr_xi_b, *arr_S_b;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAVecGetArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    arr_S_b[0] = -arr_dSdxi_b[0] * 0.5 * (arr_xi_b[1] - arr_xi_b[0]);
+    arr_S_b[0] += arr_S_s[0];
+
+    ierr = DMDAVecRestoreArray(E->da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(E->da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(E->da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 /* to improve with shallow ocean layer */
 #if 0
 static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qin )
