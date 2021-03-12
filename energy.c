@@ -17,7 +17,6 @@ static PetscErrorCode append_Hradio( Ctx *, PetscReal );
 static PetscErrorCode append_Htidal( Ctx *, PetscReal );
 /* next enforces a boundary condition, but to avoid circular
    dependencies it lives here and not in bc.c */
-static PetscErrorCode solve_for_surface_radiation_balance( Ctx *, PetscReal );
 static PetscErrorCode objective_function_surface_radiation_balance( SNES, Vec, Vec, void *);
 static PetscErrorCode set_current_state( Ctx *, PetscReal );
 static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const, PetscReal );
@@ -357,6 +356,25 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
 
+    /* block below was for testing bcs, where we can turn off
+       conduction at the surface and cmb */
+#if 0
+    PetscInt       ind_cmb,ind_abv_cmb,ilo_b,ihi_b,w_b;
+
+    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
+    ihi_b = ilo_b + w_b; /* total number of basic nodes */
+    ind_cmb = ihi_b-1;
+    ind_abv_cmb = ind_cmb-1;
+
+    if(!*ind_ptr){
+        return 0.0;
+    }
+
+    if(*ind_ptr == ind_cmb){
+        return 0.0;
+    }
+#endif
+
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
     ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
@@ -507,7 +525,7 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     return Jgrav;
 }
 
-static PetscErrorCode solve_for_surface_radiation_balance( Ctx *E, PetscReal t ) 
+PetscErrorCode solve_for_surface_radiation_balance( Ctx *E, PetscReal t ) 
 {
     /* to formally balance radiation with the interior heat flux at the surface,
        we must solve a coupled system for the surface entropy gradient and
@@ -754,7 +772,7 @@ PetscErrorCode set_current_state_from_solution( Ctx *E, PetscReal t, Vec sol_in 
 
     /* We can enforce an isothermal surface easily within the time-stepper
        For the simple bc, we keep with the estimate of surface entropy
-       from the reconstruction */
+       from the reconstruction based on the surface entropy gradient */
 
     /* for more accurate surface bc, must balance the atmospheric flux
        A->Fatm with the interior flux at the surface.  This sets the
