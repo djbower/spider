@@ -157,7 +157,7 @@ static PetscErrorCode set_Jtot( Ctx *E )
       ierr = append_Jgrav( E );
     }
 
-    /* for the simple (legacy) surface bc, we need to impose the
+    /* for the simple surface bc, we need to impose the
        atmospheric flux at the top of the interior.  This is because
        the computed flux at the surface based on interior fluxes will
        be inaccurate, since we have not solved to ensure the surface
