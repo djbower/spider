@@ -16,9 +16,9 @@
 
 -MASS_COORDINATES
 
--activate_poststep
--activate_rollback
--tsurf_poststep_change 1050
+#-activate_poststep
+#-activate_rollback
+#-tsurf_poststep_change 1050
 
 # primary scaling parameters
 # - these are used to non-dimensionalise (scale) the numerical problem

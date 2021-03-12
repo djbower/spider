@@ -65,7 +65,7 @@
 -solid_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_solid.dat
 -solid_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_solid.dat
 -solid_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_solid.dat
--solid_log10visc 21.0
+-solid_log10visc 22.0
 -solid_activation_energy 0.0
 -solid_activation_volume 0.0
 -solid_visc_ref_temp -1
@@ -145,6 +145,8 @@
 # [5] entropy
 -SURFACE_BC 1
 -surface_bc_value 0.0
+
+-SURFACE_BC_ACC 1
 
 # if SURFACE_BC=1 or 2, the following constant emissivity is used
 -emissivity0 1.0
