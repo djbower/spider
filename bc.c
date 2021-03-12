@@ -7,28 +7,59 @@ PetscErrorCode set_surface_entropy_gradient_update( Ctx *E, Vec rhs )
     /* apply surface boundary condition in time-stepper.  This is the
        update for d/dt(dS/dr) at the surface */
 
+    /* due to the non-linear and functional dependences of kappah,
+       an update cannot be computed for most cases,  But formally
+       this is the preferred approach, and cases below could be
+       used in the future */
+
     PetscErrorCode ierr;
     Mesh const        *M = &E->mesh;
     Parameters const P = E->parameters; 
     Solution const    *S = &E->solution;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
-    PetscScalar    rhs_surf, dSdt_s_surf, rhs_below_surf;
+    PetscScalar    rhs_surf, rhs_below_surf, dSdt_s_surf, cp0, dSdxi0;
     const PetscScalar *arr_xi_b;
     const PetscInt ind0=0, ind1=1;
+    PetscBool BC_SET = PETSC_FALSE;
 
     PetscFunctionBeginUser;
 
     ierr = DMDAVecGetArrayRead(E->da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
 
     ierr = VecGetValues(S->dSdt_s,1,&ind0,&dSdt_s_surf);CHKERRQ(ierr);
+    ierr = VecGetValues(S->dSdxi,1,&ind0,&dSdxi0);CHKERRQ(ierr);
+    ierr = VecGetValues(S->cp,1,&ind0,&cp0);CHKERRQ(ierr);
     ierr = VecGetValues(rhs,1,&ind1,&rhs_below_surf);CHKERRQ(ierr);
 
-    /* isothermal */
-    if( Ap->SURFACE_BC == 5){
+    switch( Ap->SURFACE_BC ){
+    case 1:
+        /* SURFACE_BC = MO_ATMOSPHERE_TYPE_GREY_BODY: grey-body */
+        break;
+    case 2:
+        /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ZAHNLE: steam atmosphere */
+        break;
+    case 3:
+        /* SURFACE_BC = MO_ATMOSPHERE_TYPE_VOLATILES: self-consistent atmosphere evolution
+           using plane-parallel radiative equilibrium model of Abe and Matsui (1985) */
+        break;
+    case 4:
+        /* MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed) */
+        break;
+    case 5:
+        /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy */
         rhs_surf = -1.0 / (-0.5 * (arr_xi_b[1] - arr_xi_b[0]));
         rhs_surf *= dSdt_s_surf;
+        BC_SET = PETSC_TRUE;
+        break;
+    default:
+        SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SURFACE_BC value %d provided",Ap->SURFACE_BC);
+        break;
     }
-    else{
+
+    /* for most cases, we can only approximate the surface gradient update
+       in absence of a better approach, assume the update at the surface
+       is the same as the update at the node below */
+    if( !BC_SET ){
         rhs_surf = rhs_below_surf;
     }
 
