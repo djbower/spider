@@ -67,24 +67,21 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 
 static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
 {
-    /* these functions generally work on the Vec sol directly */
-
     PetscErrorCode ierr;
     Parameters const P = E->parameters;
-    PetscInt IC = P->IC_INTERIOR;
 
     PetscFunctionBeginUser;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior()\n");CHKERRQ(ierr);
 
-    if (IC==1){
+    if (P->IC_INTERIOR==1){
         ierr = set_ic_interior_default( E, sol ); CHKERRQ(ierr);
     }
-    else if (IC==2){
+    else if (P->IC_INTERIOR==2){
         ierr = set_ic_interior_from_file( E, sol ); CHKERRQ(ierr);
         ierr = set_start_time_from_file( P, P->ic_interior_filename );CHKERRQ(ierr);
         ierr = set_start_stepmacro_from_file( P, P->ic_interior_filename );CHKERRQ(ierr);
     }
-    else if (IC==3){
+    else if (P->IC_INTERIOR==3){
         ierr = set_ic_interior_from_phase_boundary( E, sol ); CHKERRQ(ierr);
     }
     else{
@@ -97,9 +94,19 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
        sol as the input.  This now sets the Vecs in E */
     ierr = set_entropy_from_solution(E, sol); CHKERRQ(ierr);
 
-    /* set surface and core entropy for the IC (if set), but then can
-       evolve (not necessarily isothermal).  Updates the Vecs in E */
-    ierr = set_boundary_entropy_constant( E ); CHKERRQ(ierr);
+    /* option to set initial core-mantle boundary entropy */
+    if( P->ic_core_entropy > 0.0 ){
+        ierr = set_cmb_entropy_constant( E );CHKERRQ(ierr);
+    }
+
+    /* option to set initial surface entropy */
+    if( P->ic_surface_entropy > 0.0 ){
+        ierr = set_surface_entropy_constant( E );CHKERRQ(ierr);
+    }
+    else{
+        /* otherwise balance flux at surface with chosen surface flux bc */
+        ierr = solve_for_surface_radiation_balance( E, P->t0 );CHKERRQ(ierr);
+    }
 
     /* Now the Vecs in E are set and consistent, clone them
        to the sol Vec which is what is actually used by the

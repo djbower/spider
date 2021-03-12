@@ -2,9 +2,6 @@
 #include "bc.h"
 #include "monitor.h"
 
-static PetscErrorCode set_surface_entropy_constant( Ctx * );
-static PetscErrorCode set_cmb_entropy_constant( Ctx * );
-
 PetscErrorCode set_surface_entropy_gradient_update( Ctx *E, Vec rhs )
 {
     /* apply surface boundary condition in time-stepper.  This is the
@@ -169,30 +166,7 @@ PetscScalar get_dtsurf_using_parameterised_boundary_layer( PetscScalar temp, con
     return dTsdT;
 }
 
-PetscErrorCode set_boundary_entropy_constant( Ctx *E )
-{
-    /* ensure that the interior ic is compatible with initial entropy
-       at the boundaries (if set) */
-
-    PetscErrorCode   ierr;
-    Parameters const P = E->parameters;
-
-    PetscFunctionBeginUser;
-
-    /* surface */
-    if( P->ic_surface_entropy > 0.0 ){
-        ierr = set_surface_entropy_constant( E );CHKERRQ(ierr);
-    }   
-
-    /* core-mantle boundary */
-    if( P->ic_core_entropy > 0.0 ){
-        ierr = set_cmb_entropy_constant( E );CHKERRQ(ierr);
-    }   
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode set_cmb_entropy_constant( Ctx *E ) 
+PetscErrorCode set_cmb_entropy_constant( Ctx *E ) 
 {
     /* set entropy at core-mantle boundary */
     /* an isothermal bc is naturally accommodated by the cmb bcs, so this
@@ -227,7 +201,7 @@ static PetscErrorCode set_cmb_entropy_constant( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_surface_entropy_constant( Ctx *E ) 
+PetscErrorCode set_surface_entropy_constant( Ctx *E ) 
 {
     /* set entropy at surface */
 
