@@ -422,8 +422,8 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
         arr_dSdxi_b[i] /= arr_xi_s[i] - arr_xi_s[i-1];
     }
 
-    /* for last point */
-    /* TODO: update gradient for last point */
+    /* for last point, assume same gradient as basic node above */
+    arr_dSdxi_b[ihi_b-1] = arr_dSdxi_b[ihi_b-2];
 
     /* set entropy at top staggered node */
     ierr = EOSGetPhaseBoundary( E->parameters->eos_phases[0], arr_pres_s[0], &S0, NULL);CHKERRQ(ierr);
@@ -497,7 +497,6 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
            solution */
         ierr = set_reservoir_volatile_content( A, Ap, FC, SC );CHKERRQ(ierr);
 
-        /* TODO: do not conform if restarting? */
         ierr = conform_atmosphere_parameters_to_ic( E );CHKERRQ(ierr);
 
         ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
@@ -543,12 +542,14 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
            but with reactions mass can transfer between chemically
            reacting species.  Hence the initial prescribed total
            abundance is only honoured through conservation of the
-           total number of moles of something (H/C/etc.).  In essence,
-           A->volatiles[i].mass_reaction tells us how 'wrong' our initial
-           prescribed total abundance was, and we can use this to instead
-           compute the initial_total_abundance that obeys reactions */
-        mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos + A->volatiles[i].mass_reaction;
-        Ap->volatile_parameters[i]->initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
+           total number of moles of something (H/C/etc.).  Unless we
+           are restarting a model, we now reset the baseline so that
+           the initial_total_abundance is defined at equilibrium defined
+           by the current conditions */
+        if( Ap->IC_ATMOSPHERE != 2 ){
+            mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos + A->volatiles[i].mass_reaction;
+            Ap->volatile_parameters[i]->initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
+        }
 
         /* initial partial pressure */
         Ap->volatile_parameters[i]->initial_atmos_pressure = A->volatiles[i].p;
