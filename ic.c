@@ -547,7 +547,11 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
            the initial_total_abundance is defined at equilibrium defined
            by the current conditions */
         if( Ap->IC_ATMOSPHERE != 2 ){
-            mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos + A->volatiles[i].mass_reaction;
+            /* previously, volatile mass_reaction was included in below, but this does not then
+               reset the initial_total_abundance relative to the equilibrium state */
+            /* the current mass (and hence revised initial_total_abundance) is only
+               determined by the physical reservoir mass */
+            mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos; // + A->volatiles[i].mass_reaction;
             Ap->volatile_parameters[i]->initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
         }
 
@@ -562,12 +566,15 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
 
     }
 
-    /* since we updated the parameters above to adhere to the equilibrium
-       state, we reset the mass_reaction to zero since our initial
-       abundances are referenced to equilibrium at the initial
-       interior and surface conditions (e.g., A->tsurf) */
-    for(i=0; i<Ap->n_reactions; ++i){
-        A->mass_reaction[i] = 0.0;
+    /* if not restarting */
+    if( Ap->IC_ATMOSPHERE != 2 ){
+        /* since we updated the parameters above to adhere to the equilibrium
+           state, we reset the mass_reaction to zero since our initial
+           abundances are referenced to equilibrium at the initial
+           interior and surface conditions (e.g., A->tsurf) */
+        for(i=0; i<Ap->n_reactions; ++i){
+            A->mass_reaction[i] = 0.0;
+        }
     }
 
     ierr = print_ocean_masses( E );CHKERRQ(ierr);
