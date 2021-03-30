@@ -555,6 +555,8 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
             Ap->volatile_parameters[i]->initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
         }
 
+        /* even if we restart, we can conform these parameters */
+
         /* initial partial pressure */
         Ap->volatile_parameters[i]->initial_atmos_pressure = A->volatiles[i].p;
 
