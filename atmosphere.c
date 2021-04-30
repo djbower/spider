@@ -833,10 +833,6 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const P, VolatilePara
     ierr = JSON_add_single_value_to_object(dm, scaling, "R_thermal_escape", "None", V->R_thermal_escape, data);CHKERRQ(ierr);
     ierr = JSON_add_single_value_to_object(dm, scaling, "f_thermal_escape", "None", V->f_thermal_escape, data);CHKERRQ(ierr);
 
-    /* other */
-    scaling = SC->VOLATILE / SC->TIME;
-    ierr = JSON_add_single_value_to_object(dm, scaling, "dx/dt", "mass fraction/s", V->dxdt, data);CHKERRQ(ierr);
-
     cJSON_AddItemToObject(json,name,data);
 
     PetscFunctionReturn(0);
