@@ -449,13 +449,12 @@ This cannot be separated into the form of the time derivative equal to a RHS, so
 Basically, any prescribed relationship between $X_v$ and $p_v$ can be used in this equation, whether it's Henry's law or a more sophisticated formulation.  This offers opportunity to investigate ``fugacity crisis'' scenarios \citep{KFS19,KFS20}
 %%%%
 \subsubsection{Atmospheric escape formulation}
-%But remember that the reservoir of escaped volatile is not defined per se, but rather the rate at which volatiles escape (see subsequent sections).
-The expression for escape due to surface heating is \citep{JOY15}: % Eq. 2b 
-\dbnote{Perhaps a bit confusing, since the first term is ultimately multiplied by a non-dimensional source (outgassing) term, where the $4 \pi$ factor has already been omitted.  But for the second term $\Phi$ we still need to scale (divide) by $4 \pi$.}
+\textbf{Jeans and constant}\\~\\
+The expression for escape due to surface heating is \citep[e.g.,][]{JOY15} is as follows.  Note that the source term already relates to \textbf{scaled mass} which excludes the $4 \pi$ contribution, but this is not the case for $\Phi$
 \begin{equation}
-\frac{d m_v^e}{dt} = \left( \frac{d m_{\rm v}^{\rm g}}{dt} \right) \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) + \Phi
+\frac{d m_v^e}{dt} = \left( \frac{d m_{\rm v}^{\rm g}}{dt} \right) \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) + \frac{\Phi}{4 \pi}
 \end{equation}
-The first term relates to Jean's escape and $\Phi$ enables us to assign a constant escape rate (a non-Jean's escape contribution).  $\mathcal{R}$ is a fitting parameter based on molecular kinetic simulations of N$_2$ \citep{VJT11,VTE11} and $\lambda_s$ is the surface value of the Jean's parameter $\lambda_s$.  For us, $\lambda_s$ and $\mathcal{R}$ may just be treated as a constant scaling for simplicity.  If $\mathcal{R}=0$ then clearly the Jean's escape is by definition zero (not included).  From dimensional analysis we can see that the terms following the mass derivative must be non-dimensional constants.
+The first term relates to Jean's escape and $\Phi$ enables us to assign an escape rate (a non-Jean's escape contribution).  $\mathcal{R}$ is a fitting parameter based on molecular kinetic simulations of N$_2$ \citep{VJT11,VTE11} and $\lambda_s$ is the surface value of the Jean's parameter $\lambda_s$.  For us, $\lambda_s$ and $\mathcal{R}$ may just be treated as a constant scaling for simplicity.  If $\mathcal{R}=0$ then clearly the Jean's escape is by definition zero (not included).  From dimensional analysis we can see that the terms following the mass derivative must be non-dimensional constants.
 \begin{equation}
 \lambda_s =  \frac{G M_p^{\rm p} \mu_{\rm v}}{R_p k_b T_s N_A} = \frac{g R_p \mu_{\rm v}}{k_b T_s N_A}
 \end{equation}
@@ -465,17 +464,49 @@ where $G$ is the gravitational constant, $g$ surface gravity, $M_p$ mass of the 
 \end{equation}
 We already computed the growth rate of the atmosphere, i.e. the source rate, and therefore:
 \begin{align}
-\frac{d \hat{m}_{\rm v}^{\rm esc}}{d\hat{t}} &= \frac{10^6}{V_0} \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{\hat{g}}
+\frac{d \hat{m}_{\rm v}^{\rm esc}}{d\hat{t}} &= \frac{\hat{R}_{\rm p}^2 \hat{\mu}_{\rm v}^{\rm g}}{V_0\hat{g}}
 \left[
 -\frac{\hat{p}(\hat{X}^{\rm l})}{\hat{\mu}_{\rm t}^2} \sum_i^n \hat{\mu}_i \left[ \frac{1}{P_s} \frac{d \hat{p}_i}{d \hat{t}} - \frac{\hat{p}_i}{P_s} \frac{1}{P_s} \frac{d P_s}{d \hat{t}} \right] + \frac{1}{\hat{\mu}_{\rm t}} \left( \frac{d \hat{p}}{d \hat{X}^{\rm l}} \frac{d \hat{X}^{\rm l}}{d \hat{t}} \right)
 \right]\\
-& \times \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) + \frac{10^6}{V_0} \frac{\tau_0}{M_0} \frac{\Phi}{4 \pi}
+& \times \mathcal{R} (1 + \lambda_s) \exp(-\lambda_s) + \frac{\tau_0}{V_0 M_0} \frac{\Phi}{4 \pi}
 \end{align}
-\dbnote{Explicitly introduced $4\pi$ back into the scaling of $\phi$}.  It is now obvious that we can scale the source time in the evolution equation by a factor to account for atmospheric escape due to Jean's escape:
+It is now obvious that we can scale the source time in the evolution equation by a factor to account for atmospheric escape due to Jean's escape:
 \begin{equation}
 \mathcal{F}_e = 1+\mathcal{R} (1 + \lambda_s) \exp(-\lambda_s)
 \end{equation}
 But we must additionally include the second term with $\Phi$ in the evolution equation (separate to $\mathcal{F}_e$ above) to enable a non-Jean's escape contribution.
+
+%%%
+% Zahnle model
+~\\ \textbf{\cite{ZGC19}}\\~\\
+For H$_2$, an escape rate accounting for diffusion limited escape and energy limited escape is given by \citep[Eq. 3,][]{ZGC19}:
+\begin{equation}
+\phi_{H_2} \approx \Gamma \frac{(1 \times 10^{12}) f_{H_2} S}{\sqrt{1+0.006S^2}} \qquad \rm{molecules}\ {\rm cm}^{-2}\ {\rm s}^{-1}
+\end{equation}
+\begin{equation}
+\phi_{H_2} \approx \Gamma \frac{(1 \times 10^{12}) f_{H_2} S}{N_A \sqrt{1+0.006S^2}} \qquad \rm{moles}\ {\rm cm}^{-2}\ {\rm s}^{-1}
+\end{equation}
+where $N_A$ is Advogadro's number.  See the aforementioned paper for details, but $S$ is non-dimensional and $f_{H_2}$ is non-dimensional, and $\Gamma$ is a non-dimensional constant I introduced to scale the whole expression.  Hence all the dimensionality is wrapped up in the constant.  Therefore the escape rate of mass (using the definition of $\phi_{H_2}$ with units of moles), is:
+\begin{equation}
+\frac{dm_{\rm v}^{\rm esc}}{dt} = 4\pi R_p^2 \phi_{H_2} \mu_{H_2}
+\end{equation}
+where $\mu_{H_2}$ is the molar mass of H$_2$.  Now non-dimensionalise the constant:
+\begin{equation}
+\frac{10^{12} \cdot 10^{4}}{N_A} \qquad \rm{moles}\ {\rm m}^{-2}\ {\rm s}^{-1}
+\end{equation}
+Using the non-dimensional scheme of SPIDER:
+\begin{equation}
+\hat{\phi}_{H_2} = \frac{10^{12} \cdot 10^{4}}{N_A} \times R_0^2 \cdot \tau_0 \qquad \rm{moles}
+\end{equation}
+Recall that non-dimensional $\mu$ in SPIDER has units of mol$^{-1}$ which will cancel with the moles above.  Hence the non-dimensional escape rate is:
+\begin{equation}
+\frac{d\hat{m}_{\rm v}^{\rm esc}}{d\hat{t}} = 4\pi \hat{R}_p^2 \hat{\phi}_{H_2} \hat{\mu}_{H_2}
+\end{equation}
+Still need the extra factors associated with SPIDER:
+\begin{equation}
+\frac{d\hat{m}_{\rm v}^{\rm esc}}{d\hat{t}} = \frac{10^6}{V_0} \frac{1}{4\pi} 4\pi \hat{R}_p^2 \hat{\phi}_{H_2} \hat{\mu}_{H_2}
+\end{equation}
+
 %%%%
 \subsubsection{Chemical reactions}
 \paragraph{Overview}

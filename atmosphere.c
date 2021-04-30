@@ -15,7 +15,7 @@ static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const Atm
 static PetscErrorCode set_volatile_masses_in_liquid( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volatile_masses_in_solid( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volatile_masses_reactions( Atmosphere *, const AtmosphereParameters );
-static PetscErrorCode set_escape( Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
+static PetscErrorCode set_jeans_escape( Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters, PetscInt );
 static PetscErrorCode set_jeans( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscInt );
 static PetscErrorCode set_column_density_volatile( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscInt );
@@ -497,15 +497,15 @@ PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmospherePa
 
     ierr = set_volatile_masses_reactions( A, Ap );CHKERRQ(ierr);
 
-    /* escape is always set, since then we can easily see the
+    /* jeans escape is always set, since then we can easily see the
        variables, regardless of whether the feedback is actually
        included for the volatile evolution */
-    ierr = set_escape( A, Ap, FC );CHKERRQ(ierr);
+    ierr = set_jeans_escape( A, Ap, FC );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_escape( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
+static PetscErrorCode set_jeans_escape( Atmosphere *A, const AtmosphereParameters Ap, const FundamentalConstants FC )
 {
     PetscErrorCode ierr;
     PetscInt       i;
@@ -879,11 +879,14 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
     PetscScalar               log10G, G, dGdt, dlog10GdT, pbar=0, Tkel=0;
 
     /* remember that to this point, V->f_thermal_escape is always
-       computed but not necessarily used in the calculation */
+       computed so we can see the (potential) role of thermal escape,
+       but it is not necessarily used in the calculation */
     if(Ap->THERMAL_ESCAPE){
         f_thermal_escape = V->f_thermal_escape;
     }
     else{
+        /* thermal escape of unity is necessary to scale the source (outgassing) rate,
+           but the other modifiers due to Jean's escape are not included */
         f_thermal_escape = 1.0;
     }
 
