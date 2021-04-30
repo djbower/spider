@@ -32,8 +32,9 @@ typedef struct {
     PetscScalar henry2;
     PetscScalar henry_pow2;
     PetscScalar jeans_value; // for thermal escape
-    PetscScalar R_thermal_escape_value; // for thermal (Jean's) escape
+    PetscScalar R_thermal_escape_value; // prefactor for thermal (Jean's) escape
     PetscScalar constant_escape_value; // for constant escape
+    PetscScalar R_zahnle_escape_value; // prefactor for zahnle escape
     PetscScalar molar_mass;
     PetscScalar cross_section;
     PetscReal   poststep_change; // allowable fractional change (only for -activate_poststep)

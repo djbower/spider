@@ -14,7 +14,7 @@ Custom PETSc command line options should only ever be parsed during the populate
 
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
 static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
-static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, ScalingConstants );
+static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, const ScalingConstants, const FundamentalConstants );
 
 static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal PRESSURE, PetscReal VOLATILE )
 {
@@ -113,7 +113,7 @@ static PetscErrorCode RadionuclideParametersSetFromOptions(RadionuclideParameter
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, const ScalingConstants SC)
+static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, const AtmosphereParameters Ap, const ScalingConstants SC, const FundamentalConstants FC)
 {
     PetscErrorCode ierr;
     char           buf[1024]; /* max size */
@@ -172,6 +172,14 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     vp->henry2 /= 1.0E6 * SC->VOLATILE * PetscPowScalar(SC->PRESSURE, -1.0/vp->henry_pow2);
     /* end of Paolo Sossi prototype */
 
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->molar_mass,0.0,&set);CHKERRQ(ierr);
+    /* there is no way to pick a suitable default, so force the user to specify */
+    if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument: %s",buf);
+    /* in principle, we could fully non-dimensionalise using Avogadro's constant, but then
+       the per-particle value would be 23 orders of magnitude less than this value */
+    vp->molar_mass /= SC->MASS;
+
     /* escape related */
     vp->jeans_value = 0.0;
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
@@ -187,13 +195,30 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     /* recall that the code ignores the 4.0*pi prefactor, and it is reintroduced for output only */
     vp->constant_escape_value /= 4.0 * PETSC_PI;
 
-    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
-    ierr = PetscOptionsGetPositiveScalar(buf,&vp->molar_mass,0.0,&set);CHKERRQ(ierr);
-    /* there is no way to pick a suitable default, so force the user to specify */
-    if (!set) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,"Missing argument: %s",buf);
-    /* in principle, we could fully non-dimensionalise using Avogadro's constant, but then
-       the per-particle value would be 23 orders of magnitude less than this value */
-    vp->molar_mass /= SC->MASS;
+    /* for Zahnle et al. (2019), Eqn. 3, can precompute many factors to then multiply by
+       the volume mixing ratio (of H2) which evolves during the evolution */
+    /* get prefactor */
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_R_zahnle_escape_value");CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar(buf,&vp->R_zahnle_escape_value,0.0,NULL);CHKERRQ(ierr);
+    /* the value provided by the user is a non-dimensional multipler (must be
+       unity to recover the original expression, and zero will turn it off for this
+       volatile) */
+    /* non-dimensional scaling */
+    vp->R_zahnle_escape_value *= PetscSqr(SC->RADIUS) * SC->TIME / SC->VOLATILE;
+    /* Zahnle et al. (2019), factors from Eqn 3 */
+    /* 10^16 since need units of m^-2 and not cm^-2 */
+   /* if solar_xuv_factor eventually time dependent, will need to move calculation
+      into the time-stepper */
+    vp->R_zahnle_escape_value *= PetscPowScalar(10.0,16) * Ap->solar_xuv_factor;
+    vp->R_zahnle_escape_value /= PetscSqrtScalar( 1.0 + 0.006*PetscSqr(Ap->solar_xuv_factor) );
+    /* units of above are MOLECULES OF H2 */
+    vp->R_zahnle_escape_value /= FC->AVOGADRO; /* moles of H2 */
+    /* finally convert to mass flux */
+    vp->R_zahnle_escape_value *= vp->molar_mass;
+    /* at planetary radius */
+    vp->R_zahnle_escape_value *= PetscSqr(*Ap->radius_ptr);
+    /* to compute escape flux, just need to multiply above by mixing ratio (of H2),
+       which evolves during the evolution */
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_cross_section");CHKERRQ(ierr);
     ierr = PetscOptionsGetPositiveScalar(buf,&vp->cross_section,1.0E-18,NULL);CHKERRQ(ierr); // m^2, Johnson et al. (2015), N2+N2 collisions
@@ -567,13 +592,13 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
       P->SEPARATION = 0;
   }
 
-  ierr = AtmosphereParametersSetFromOptions( P, SC ); CHKERRQ(ierr);
+  ierr = AtmosphereParametersSetFromOptions( P, SC, FC ); CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 
 }
 
-static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingConstants SC )
+static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const ScalingConstants SC, const FundamentalConstants FC )
 {
     PetscErrorCode       ierr;
     AtmosphereParameters Ap = P->atmosphere_parameters;
@@ -707,7 +732,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
 
     /* Get command-line values for all volatiles species */
     for (v=0; v<Ap->n_volatiles; ++v) {
-        ierr = VolatileParametersSetFromOptions(Ap->volatile_parameters[v], SC);CHKERRQ(ierr);
+        ierr = VolatileParametersSetFromOptions(Ap->volatile_parameters[v], Ap, SC, FC);CHKERRQ(ierr);
     }
 
     /* Reactions: look for command-line options to determine the number of reactions

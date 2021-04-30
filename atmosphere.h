@@ -27,6 +27,7 @@ typedef struct Volatile_ {
     PetscScalar jeans; // surface Jeans parameter
     PetscScalar f_thermal_escape;
     PetscScalar R_thermal_escape;
+    PetscScalar f_zahnle_escape;
 } Volatile;
 
 typedef struct Reaction_ {

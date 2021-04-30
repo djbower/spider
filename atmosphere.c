@@ -16,6 +16,7 @@ static PetscErrorCode set_volatile_masses_in_liquid( Atmosphere *, const Atmosph
 static PetscErrorCode set_volatile_masses_in_solid( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volatile_masses_reactions( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_jeans_escape( Atmosphere *, const AtmosphereParameters, const FundamentalConstants );
+static PetscErrorCode set_zahnle_escape( Atmosphere *, const AtmosphereParameters );
 static PetscScalar get_pressure_dependent_kabs( const AtmosphereParameters, PetscInt );
 static PetscErrorCode set_jeans( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscInt );
 static PetscErrorCode set_column_density_volatile( Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscInt );
@@ -497,10 +498,12 @@ PetscErrorCode set_reservoir_volatile_content( Atmosphere *A, const AtmospherePa
 
     ierr = set_volatile_masses_reactions( A, Ap );CHKERRQ(ierr);
 
-    /* jeans escape is always set, since then we can easily see the
-       variables, regardless of whether the feedback is actually
-       included for the volatile evolution */
+    /* always set some escape terms, since then we can easily see the
+       magnitude of the effect, regardless of whether the feedback is
+       actually included for the volatile evolution */
     ierr = set_jeans_escape( A, Ap, FC );CHKERRQ(ierr);
+
+    ierr = set_zahnle_escape( A, Ap );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -521,6 +524,33 @@ static PetscErrorCode set_jeans_escape( Atmosphere *A, const AtmosphereParameter
         ierr = set_R_thermal_escape( A, Ap, i ); CHKERRQ(ierr);
 
         ierr = set_f_thermal_escape( A, i ); CHKERRQ(ierr);
+    }
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode set_f_zahnle_escape( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i )
+{
+
+    Volatile           *V = &A->volatiles[i];
+    VolatileParameters const Vp = Ap->volatile_parameters[i];
+
+    PetscFunctionBeginUser;
+
+    V->f_zahnle_escape = Vp->R_zahnle_escape_value * V->mixing_ratio;
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode set_zahnle_escape( Atmosphere *A, const AtmosphereParameters Ap )
+{
+    PetscErrorCode ierr;
+    PetscInt       i;
+
+    for (i=0; i<Ap->n_volatiles; ++i) {
+
+        ierr = set_f_zahnle_escape( A, Ap, i );CHKERRQ(ierr);
+
     }
 
     PetscFunctionReturn(0);
@@ -872,7 +902,7 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
 PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, const PetscScalar *dmrdt, const ScalingConstants SC )
 {
 
-    PetscScalar               out, out2, massv, f_thermal_escape, f_constant_escape;
+    PetscScalar               out, out2, massv, f_thermal_escape, f_constant_escape, f_zahnle_escape;
     PetscInt                  j,k;
     VolatileParameters  const Vp = Ap->volatile_parameters[i];
     Volatile                  *V = &A->volatiles[i];
@@ -896,6 +926,15 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
     }
     else{
         f_constant_escape = 0.0;
+    }
+
+    /* Zahnle et al. (2019, Eqn 3 escape */
+    if(Ap->ZAHNLE_ESCAPE){
+        /* FIXME */
+        f_zahnle_escape = V->f_zahnle_escape;
+    }
+    else{
+        f_zahnle_escape = 0.0;
     }
 
     out2 = 0.0;
@@ -927,6 +966,9 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
 
     /* non-thermal escape contribution */
     out2 += f_constant_escape;
+
+    /* Zahnle et al. (2019) escape contribution */
+    out2 += f_zahnle_escape;
 
     /* chemical reactions. Loop through all reactions, check if they involve
        this volatile, and if so, add a term */
