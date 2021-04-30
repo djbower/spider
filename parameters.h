@@ -96,6 +96,8 @@ typedef struct {
     //PetscBool VISCOUS_MANTLE_COOLING_RATE;
     PetscBool THERMAL_ESCAPE;
     PetscBool CONSTANT_ESCAPE;
+    PetscBool ZAHNLE_ESCAPE;
+    PetscScalar solar_xuv_factor;
     PetscScalar surface_bc_value;
     // below are standard, also used for grey-body atmosphere
     PetscScalar emissivity0;

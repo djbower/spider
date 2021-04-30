@@ -172,6 +172,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     vp->henry2 /= 1.0E6 * SC->VOLATILE * PetscPowScalar(SC->PRESSURE, -1.0/vp->henry_pow2);
     /* end of Paolo Sossi prototype */
 
+    /* escape related */
     vp->jeans_value = 0.0;
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_jeans_value");CHKERRQ(ierr);
     ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->jeans_value,NULL);CHKERRQ(ierr);
@@ -642,6 +643,15 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, ScalingC
 
     Ap->CONSTANT_ESCAPE = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-CONSTANT_ESCAPE",&Ap->CONSTANT_ESCAPE,NULL);CHKERRQ(ierr);
+
+    /* Zahnle et al. (2019), Eqn 3, accounting for both diffusion limited and
+       energy limited flux */
+    Ap->ZAHNLE_ESCAPE = PETSC_FALSE;
+    ierr = PetscOptionsGetBool(NULL,NULL,"-ZAHNLE_ESCAPE",&Ap->ZAHNLE_ESCAPE,NULL);CHKERRQ(ierr);
+
+    /* for Zahnle et al. (2019), Eqn. 3, need S(t) = F_xuv / F_xuv_present (see Eqn 2) */
+    Ap->solar_xuv_factor = 1.0;
+    ierr = PetscOptionsGetScalar(NULL,NULL,"-solar_xuv_factor",&Ap->solar_xuv_factor,NULL);CHKERRQ(ierr);
 
     /* equilibrium temperature of the planet (K) */
     Ap->teqm = 273.0;
