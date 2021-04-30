@@ -204,19 +204,15 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
        unity to recover the original expression, and zero will turn it off for this
        volatile) */
     /* non-dimensional scaling */
-    vp->R_zahnle_escape_value *= PetscSqr(SC->RADIUS) * SC->TIME / SC->VOLATILE;
+    vp->R_zahnle_escape_value *= PetscSqr(SC->RADIUS) * SC->TIME / ( SC->VOLATILE * FC->AVOGADRO );
     /* Zahnle et al. (2019), factors from Eqn 3 */
-    /* 10^16 since need units of m^-2 and not cm^-2 */
-   /* if solar_xuv_factor eventually time dependent, will need to move calculation
-      into the time-stepper */
-    vp->R_zahnle_escape_value *= PetscPowScalar(10.0,16) * Ap->solar_xuv_factor;
+    /* if solar_xuv_factor eventually time dependent, will need to move calculation
+       into the time-stepper */
+    vp->R_zahnle_escape_value *= Ap->solar_xuv_factor;
     vp->R_zahnle_escape_value /= PetscSqrtScalar( 1.0 + 0.006*PetscSqr(Ap->solar_xuv_factor) );
-    /* units of above are MOLECULES OF H2 */
-    vp->R_zahnle_escape_value /= FC->AVOGADRO; /* moles of H2 */
-    /* finally convert to mass flux */
-    vp->R_zahnle_escape_value *= vp->molar_mass;
-    /* at planetary radius */
-    vp->R_zahnle_escape_value *= PetscSqr(*Ap->radius_ptr);
+    vp->R_zahnle_escape_value *= PetscSqr(*Ap->radius_ptr); /* at planetary radius (approx) */
+    /* 10^16 since need units of m^-2 and not cm^-2 */
+    vp->R_zahnle_escape_value *= PetscPowScalar(10.0,16) * vp->molar_mass; /* mass flux */
     /* to compute escape flux, just need to multiply above by mixing ratio (of H2),
        which evolves during the evolution */
 

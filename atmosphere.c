@@ -550,7 +550,6 @@ static PetscErrorCode set_zahnle_escape( Atmosphere *A, const AtmosphereParamete
     for (i=0; i<Ap->n_volatiles; ++i) {
 
         ierr = set_f_zahnle_escape( A, Ap, i );CHKERRQ(ierr);
-
     }
 
     PetscFunctionReturn(0);
