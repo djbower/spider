@@ -486,27 +486,35 @@ For H$_2$, an escape rate accounting for diffusion limited escape and energy lim
 \begin{equation}
 \phi_{H_2} \approx \Gamma \frac{(1 \times 10^{12}) f_{H_2} S}{N_A \sqrt{1+0.006S^2}} \qquad \rm{moles}\ {\rm cm}^{-2}\ {\rm s}^{-1}
 \end{equation}
-where $N_A$ is Advogadro's number.  See the aforementioned paper for details, but $S$ is non-dimensional and $f_{H_2}$ is non-dimensional, and $\Gamma$ is a non-dimensional constant I introduced to scale the whole expression.  Hence all the dimensionality is wrapped up in the constant.  Therefore the escape rate of mass (using the definition of $\phi_{H_2}$ with units of moles), is:
+where $N_A$ is Advogadro's number.
+\begin{equation}
+\phi_{H_2} \approx \Gamma \frac{(10^{16}) f_{H_2} S}{N_A \sqrt{1+0.006S^2}} \qquad \rm{moles}\ {\rm m}^{-2}\ {\rm s}^{-1}
+\end{equation}
+See the aforementioned paper for details, but $S$ is non-dimensional and $f_{H_2}$ is non-dimensional, and $\Gamma$ is a non-dimensional constant I introduced to scale the whole expression.  Hence all the dimensionality is wrapped up in the constant:
+\begin{equation}
+\frac{10^{16}}{N_A} \qquad \rm{moles}\ {\rm m}^{-2}\ {\rm s}^{-1}
+\end{equation}
+The physical escape rate of mass (using the definition of $\phi_{H_2}$ with units of moles and metres), is:
 \begin{equation}
 \frac{dm_{\rm v}^{\rm esc}}{dt} = 4\pi R_p^2 \phi_{H_2} \mu_{H_2}
 \end{equation}
-where $\mu_{H_2}$ is the molar mass of H$_2$.  Now non-dimensionalise the constant:
+Now non-dimensionalise using the scheme of SPIDER:
 \begin{equation}
-\frac{10^{12} \cdot 10^{4}}{N_A} \qquad \rm{moles}\ {\rm m}^{-2}\ {\rm s}^{-1}
+\frac{d\hat{m}_{\rm v}^{\rm esc}}{dt} = \frac{\tau_0}{V_0 M_0} \frac{4\pi}{4\pi} R_p^2 \phi_{H_2} \mu_{H_2}
 \end{equation}
-Using the non-dimensional scheme of SPIDER:
 \begin{equation}
-\hat{\phi}_{H_2} = \frac{10^{12} \cdot 10^{4}}{N_A} \times R_0^2 \cdot \tau_0 \qquad \rm{moles}
+\frac{d\hat{m}_{\rm v}^{\rm esc}}{dt} = \frac{\tau_0}{V_0} R_0^2 \hat{R}_p^2 \phi_{H_2} \hat{\mu}_{H_2}
 \end{equation}
-Recall that non-dimensional $\mu$ in SPIDER has units of mol$^{-1}$ which will cancel with the moles above.  Hence the non-dimensional escape rate is:
+Note in SPIDER $\hat{\mu}$ still has the units of moles included (but non-dimensional according to mass (kg) due to $M_0$, as done above).  Finally, we can wrap up the dimensional terms within a dimensionless $\hat{\phi}_{H_2}$
 \begin{equation}
-\frac{d\hat{m}_{\rm v}^{\rm esc}}{d\hat{t}} = 4\pi \hat{R}_p^2 \hat{\phi}_{H_2} \hat{\mu}_{H_2}
+\hat{\phi}_{H_2} \approx \Gamma \frac{R_0^2 \tau_0 (10^{16}) f_{H_2} S}{V_0 N_A \sqrt{1+0.006S^2}} \qquad \rm{moles}
 \end{equation}
-Still need the extra factors associated with SPIDER:
+Recall that non-dimensional $\mu$ in SPIDER has units of mol$^{-1}$ which will cancel with the moles above.  Hence the non-dimensional escape rate for the \cite{ZGC19} model is:
 \begin{equation}
-\frac{d\hat{m}_{\rm v}^{\rm esc}}{d\hat{t}} = \frac{10^6}{V_0} \frac{1}{4\pi} 4\pi \hat{R}_p^2 \hat{\phi}_{H_2} \hat{\mu}_{H_2}
+\frac{d\hat{m}_{\rm v}^{\rm esc}}{d\hat{t}} = \hat{R}_p^2 \hat{\phi}_{H_2} \hat{\mu}_{H_2}
 \end{equation}
-
+%%%%
+%%%%
 %%%%
 \subsubsection{Chemical reactions}
 \paragraph{Overview}
