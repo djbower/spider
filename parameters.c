@@ -107,7 +107,7 @@ static PetscErrorCode RadionuclideParametersSetFromOptions(RadionuclideParameter
     Rp->heat_production /= SC->HEATGEN;
 
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",Rp->prefix,"_half_life");CHKERRQ(ierr);
-    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->half_life,0.0,NULL);CHKERRQ(ierr); // years /* TODO: undefined problem with zero? */
+    ierr = PetscOptionsGetPositiveScalar(buf,&Rp->half_life,0.0,NULL);CHKERRQ(ierr); // years /* undefined problem with zero? */
     Rp->half_life /= SC->TIMEYRS;
 
     PetscFunctionReturn(0);
@@ -825,7 +825,6 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-28s %-2s %-15.6g %-6s\n"             ,"S     (surface entropy)"     ,"",(double)SC->ENTROPY,"J/kg/K"      );CHKERRQ(ierr);
   PetscScalar const PRESSUREBAR = SC->PRESSURE * 1.0E-5; // bar usual units for atmosphere
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-28s %-2s %-15.6g %-6s (%.6g bar)\n"  ,"Pv    (atmospheric pressure)","",(double)SC->PRESSURE,"Pa",(double)PRESSUREBAR);CHKERRQ(ierr);
-  /* TODO: is it necessary to include the 4 * pi scaling for the physical reservoir scaling? */
   PetscScalar const VOLMASS = SC->VOLATILE * SC->MASS; // volatile reservoir mass scaling
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-28s %-2s %-15.6g %-6s\n"             ,"Mv    (volatile mass)"       ,"",(double)VOLMASS,"kg"              );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);

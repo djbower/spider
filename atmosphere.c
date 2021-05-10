@@ -537,6 +537,8 @@ static PetscErrorCode set_f_zahnle_escape( Atmosphere *A, const AtmosphereParame
 
     PetscFunctionBeginUser;
 
+    /* Vp->R_zahnle_escape_value is set in parameters.c and contains all the
+       prefactors that are time-independent */
     V->f_zahnle_escape = Vp->R_zahnle_escape_value * V->mixing_ratio;
 
     PetscFunctionReturn(0);
@@ -548,7 +550,6 @@ static PetscErrorCode set_zahnle_escape( Atmosphere *A, const AtmosphereParamete
     PetscInt       i;
 
     for (i=0; i<Ap->n_volatiles; ++i) {
-
         ierr = set_f_zahnle_escape( A, Ap, i );CHKERRQ(ierr);
     }
 
@@ -923,9 +924,8 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
         f_constant_escape = 0.0;
     }
 
-    /* Zahnle et al. (2019, Eqn 3 escape */
+    /* Zahnle et al. (2019, Eqn 3, Fig 5), escape */
     if(Ap->ZAHNLE_ESCAPE){
-        /* FIXME */
         f_zahnle_escape = V->f_zahnle_escape;
     }
     else{
