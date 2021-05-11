@@ -447,7 +447,8 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     ierr = VecGetValues(M->pressure_b,1,ind_ptr,&pres);CHKERRQ(ierr);
     ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
     ierr = VecGetValues(S->phi,1,ind_ptr,&phi);CHKERRQ(ierr);
-    ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
+    // remove, now use Tfus instead (which is "more" correct)
+    //ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
 
     ierr = EOSGetPhaseBoundary( Ep0, pres, &Sliq, NULL );CHKERRQ(ierr);
     ierr = EOSEval(Ep0, pres, Sliq, &eval_liq);CHKERRQ(ierr);
@@ -518,6 +519,9 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     /* here, clear that Jgrav is zero when phi is single phase (phi=0
        or phi=1) */
     Jgrav = rho * phi * ( 1.0 - phi ) * dv;
+
+    /* temperature of the fusion curve */
+    temp = eval_sol.T + 0.5 * (eval_liq.T - eval_sol.T);
 
     /* energy flux */
     Jgrav *= temp * ( Sliq - Ssol ); // enthalpy
