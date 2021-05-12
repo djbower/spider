@@ -294,8 +294,6 @@ PetscScalar GetMixingHeatFlux( Ctx *E, PetscInt * ind_ptr )
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
     ierr = VecGetValues(M->pressure_b,1,ind_ptr,&pres);CHKERRQ(ierr);
-    // remove, now use Tfus instead (which is "more" correct)
-    //ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
     ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
     ierr = VecGetValues(S->kappac,1,ind_ptr,&kappac);CHKERRQ(ierr);
     ierr = VecGetValues(S->phi,1,ind_ptr,&phi);CHKERRQ(ierr);
@@ -456,8 +454,6 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     ierr = VecGetValues(M->pressure_b,1,ind_ptr,&pres);CHKERRQ(ierr);
     ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
     ierr = VecGetValues(S->phi,1,ind_ptr,&phi);CHKERRQ(ierr);
-    // remove, now use Tfus instead (which is "more" correct)
-    //ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
 
     ierr = EOSGetPhaseBoundary( Ep0, pres, &Sliq, NULL );CHKERRQ(ierr);
     ierr = EOSEval(Ep0, pres, Sliq, &eval_liq);CHKERRQ(ierr);
