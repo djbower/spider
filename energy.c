@@ -221,6 +221,8 @@ PetscScalar GetConvectiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     }
     /* cmb, use kappah at node above */
     else if(*ind_ptr == ind_cmb){
+        /* use zero */
+        //kappah = 0.0;
         ierr = VecGetValues(S->kappah,1,&ind_abv_cmb,&kappah);CHKERRQ(ierr);
     }
     /* otherwise use kappah at this node */
@@ -428,7 +430,7 @@ static PetscErrorCode append_Jgrav( Ctx *E )
 PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
 {
     PetscErrorCode  ierr;
-    PetscScalar     porosity,cond1,cond2,F,dv,pres,rho,Sliq,Ssol,phi,Jgrav,temp;
+    PetscScalar     porosity,cond1,cond2,F,dv,pres,rho,Sliq,Ssol,phi,Jgrav,temp,phi_s,pres_s,Sval,gphi,smth;
     PetscInt        should_be_two;
     Solution const  *S = &E->solution;
     Mesh const      *M = &E->mesh;
@@ -454,6 +456,12 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     ierr = VecGetValues(M->pressure_b,1,ind_ptr,&pres);CHKERRQ(ierr);
     ierr = VecGetValues(S->rho,1,ind_ptr,&rho);CHKERRQ(ierr);
     ierr = VecGetValues(S->phi,1,ind_ptr,&phi);CHKERRQ(ierr);
+
+    /* smoothing based on whether cell (staggered node below) actually has
+       melt.  Otherwise, non-physical cooling results */
+    ierr = VecGetValues(M->pressure_s,1,ind_ptr,&pres_s);CHKERRQ(ierr);
+    ierr = VecGetValues(S->phi_s,1,ind_ptr,&phi_s);CHKERRQ(ierr);
+    ierr = VecGetValues(S->S_s,1,ind_ptr,&Sval);CHKERRQ(ierr);
 
     ierr = EOSGetPhaseBoundary( Ep0, pres, &Sliq, NULL );CHKERRQ(ierr);
     ierr = EOSEval(Ep0, pres, Sliq, &eval_liq);CHKERRQ(ierr);
@@ -530,6 +538,20 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
 
     /* energy flux */
     Jgrav *= temp * ( Sliq - Ssol ); // enthalpy
+
+    /* smoothing across phase boundaries for two phase composite */
+    /* TODO: this smooths based on the value of the melt fraction in the cell below
+       the interface, but this is only appropriate for bottom-up crystallisation.
+       Need to generalise, or at least make a switch to choose */
+    ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres_s, Sval, &gphi);CHKERRQ(ierr);
+    {
+      PetscScalar matprop_smooth_width;
+
+      ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
+      smth = get_smoothing(matprop_smooth_width, gphi );
+    }
+
+    Jgrav *= smth;
 
     return Jgrav;
 }
