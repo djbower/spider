@@ -1188,9 +1188,9 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
     }
     /* O'Neill and Eggins, 2002 for IW + 0.5 */
     else{
-        /* 0.5 added here at end, to give IW+0.5 */
-        func = a * ( b + c * temp + d * temp * PetscLogReal(temp) ) / (PetscLogReal(10) * f * temp ) + 0.5;
-        dfuncdT = a * (d * temp - b) / ( f * PetscPowScalar(temp,2.0) * PetscLogReal(10) );
+        /* OXYEN_FUGACITY_offset added here at end, to give IW+offset */
+        func = a * ( b + c * temp + d * temp * PetscLogReal(temp) ) / (PetscLogReal(10) * f * temp ) + Ap->OXYGEN_FUGACITY_offset;
+        dfuncdT = a * (d * temp - b) / ( f * PetscPowScalar(temp,2.0) * PetscLogReal(10) ); /* offset irrelevant for derivative */
     }
 
     /* Remember that oxygen_fugacity is equivalent to a volume

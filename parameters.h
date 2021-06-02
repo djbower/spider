@@ -92,6 +92,7 @@ typedef struct {
     char ic_atmosphere_filename[PETSC_MAX_PATH_LEN];
     MagmaOceanAtmosphereType SURFACE_BC;
     OxygenFugacityType OXYGEN_FUGACITY; // for chemical reactions
+    PetscScalar OXYGEN_FUGACITY_offset; // offset in log units from IW buffer
     PetscBool SURFACE_BC_ACC;
     /* below to replace with shallow ocean layer */
     //PetscBool VISCOUS_MANTLE_COOLING_RATE;

@@ -797,6 +797,10 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const Sc
     if( OXYGEN_FUGACITYset && Ap->n_reactions ) Ap->OXYGEN_FUGACITY = OXYGEN_FUGACITY;
   }
 
+  /* default offset, assuming IW buffer is 0.5 from Sossi et al. (2020) */
+  Ap->OXYGEN_FUGACITY_offset = 0.5;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-OXYGEN_FUGACITY_offset",&Ap->OXYGEN_FUGACITY_offset,NULL);CHKERRQ(ierr);
+
   PetscFunctionReturn(0);
 }
 
