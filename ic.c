@@ -871,10 +871,10 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     /* https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/SNES/SNESNEWTONTR.html */
     /* initial size of the trust region is delta0*norm2(x) */
     ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_tr_delta0","10.0");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_rtol","1.0e-6");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_atol","1.0e-6");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-atmosic_ksp_rtol","1.0e-6");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-atmosic_ksp_rtol","1.0e-6");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_rtol","1.0e-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_atol","1.0e-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_ksp_rtol","1.0e-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-atmosic_ksp_rtol","1.0e-9");CHKERRQ(ierr);
 
     /* below previously suggested by PS, but not currently used */
     //ierr = PetscOptionsSetValue(NULL,"-atmosic_snes_linesearch_damping","0.01");CHKERRQ(ierr);
