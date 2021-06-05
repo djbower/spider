@@ -468,6 +468,14 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
         A->molar_mass += Ap->volatile_parameters[i]->molar_mass * A->volatiles[i].mixing_ratio;
     }
 
+    /* below not implemented, since need to implement similar in timestepper where dmean_mass/dt
+       is required */
+    /* so currently, fO2 is used for reactions, psurf, and dpsurf/dt */
+    /* contribution from O2 */
+    //if( Ap->OXYGEN_FUGACITY ){
+    //    A->molar_mass += A->psurf * PetscPowScalar(10.0,A->log10fO2) * Ap->O2_molar_mass;
+    //}
+
     PetscFunctionReturn(0);
 
 }
@@ -938,6 +946,22 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
     A->dpsurfdt = 0.0;
     for (k=0; k<Ap->n_volatiles; ++k) {
         A->dpsurfdt += A->volatiles[k].dpdt;
+    }
+
+    /* dfO2/dt also plays into A->dpsurfdt */
+    if(Ap->OXYGEN_FUGACITY){
+        PetscScalar fO2, var;
+        fO2 = PetscPowScalar(10.0,A->log10fO2);
+        A->dpsurfdt *= 1.0 / (1.0 - fO2);
+        /* second term */
+        var = 0.0;
+        for (k=0; k<Ap->n_volatiles; ++k) {
+            var += A->volatiles[k].p;
+        }
+        var *= -1.0; /* cancels below, but kept for easy cross-checking with chain rule */
+        var *= 1.0 / PetscPowScalar( (1.0-fO2), 2.0);
+        var *= -fO2 * PetscLogReal(10.0) * A->dlog10fO2dT * A->dtsurfdt; /* note negative */
+        A->dpsurfdt += var;
     }
 
     for (j=0; j<Ap->n_volatiles; ++j) {
