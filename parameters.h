@@ -94,6 +94,7 @@ typedef struct {
     OxygenFugacityType OXYGEN_FUGACITY; // for chemical reactions
     PetscScalar OXYGEN_FUGACITY_offset; // offset in log units from IW buffer
     PetscScalar O2_molar_mass;
+    PetscScalar O2_kabs;
     PetscBool SURFACE_BC_ACC;
     /* below to replace with shallow ocean layer */
     //PetscBool VISCOUS_MANTLE_COOLING_RATE;

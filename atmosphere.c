@@ -160,6 +160,11 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmospherePa
         kabs = get_pressure_dependent_kabs( Ap, i );
         kabs_tot += A->volatiles[i].mixing_ratio * kabs;
     }
+    /* contribution from O2 */
+    if( Ap->OXYGEN_FUGACITY ){
+        kabs = PetscSqrtScalar( Ap->O2_kabs * -(*Ap->gravity_ptr) / (3.0*Ap->P0) );
+        kabs_tot += A->fO2 * kabs;
+    }
 
     ierr = VecCopy( A->atm_struct_tau, A->atm_struct_pressure ); CHKERRQ(ierr);
     ierr = VecScale( A->atm_struct_pressure, -(*Ap->gravity_ptr) ); CHKERRQ(ierr); // note negative gravity
@@ -676,7 +681,6 @@ static PetscScalar get_emissivity_abe_matsui( Atmosphere *A, const AtmospherePar
 
     A->tau = 0.0; // total surface optical depth
 
-    /* now compute mixing ratios */
     for (i=0; i<Ap->n_volatiles; ++i) {
         Volatile                 *V = &A->volatiles[i];
         /* optical depth at surface for this volatile */
@@ -684,7 +688,14 @@ static PetscScalar get_emissivity_abe_matsui( Atmosphere *A, const AtmospherePar
         V->tau *= get_pressure_dependent_kabs( Ap, i );
         /* total optical depth at surface */
         A->tau += V->tau;
+    }
 
+    /* contribution from O2 */
+    if( Ap->OXYGEN_FUGACITY ){
+        PetscScalar tau;
+        tau = (3.0/2.0) * A->psurf * A->fO2 / -(*Ap->gravity_ptr);
+        tau *= PetscSqrtScalar( Ap->O2_kabs * -(*Ap->gravity_ptr) / (3.0*Ap->P0) );
+        A->tau += tau;
     }
 
     emissivity = 2.0 / (A->tau + 2.0);
