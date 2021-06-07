@@ -286,7 +286,7 @@ static PetscErrorCode set_total_surface_pressure( Atmosphere *A, const Atmospher
 
     /* contribution from O2 */
     if( Ap->OXYGEN_FUGACITY ){
-        A->psurf /= (1.0 - PetscPowScalar(10.0,A->log10fO2) );
+        A->psurf /= (1.0 - A->fO2);
     }
 
     PetscFunctionReturn(0);
@@ -762,11 +762,11 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
     if(Ap->OXYGEN_FUGACITY){
         /* the value itself is the non-dimensional oxygen fugacity, a la Schaefer and Fegley (2017) */
         scaling = 1.0;
-        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "None", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
+        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "None", A->fO2, data);CHKERRQ(ierr);
 
         /* multiplying by the scaling gives the oxygen fugacity (partial pressure) in bar */
         scaling = A->psurf * SC->PRESSURE / 1.0E5; /* bar */
-        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", PetscPowScalar(10.0, A->log10fO2), data);CHKERRQ(ierr);
+        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", A->fO2, data);CHKERRQ(ierr);
     }
 
     /* Volatiles */
@@ -950,17 +950,16 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
 
     /* dfO2/dt also plays into A->dpsurfdt */
     if(Ap->OXYGEN_FUGACITY){
-        PetscScalar fO2, var;
-        fO2 = PetscPowScalar(10.0,A->log10fO2);
-        A->dpsurfdt *= 1.0 / (1.0 - fO2);
+        PetscScalar var;
+        A->dpsurfdt *= 1.0 / (1.0 - A->fO2);
         /* second term */
         var = 0.0;
         for (k=0; k<Ap->n_volatiles; ++k) {
             var += A->volatiles[k].p;
         }
         var *= -1.0; /* cancels below, but kept for easy cross-checking with chain rule */
-        var *= 1.0 / PetscPowScalar( (1.0-fO2), 2.0);
-        var *= -fO2 * PetscLogReal(10.0) * A->dlog10fO2dT * A->dtsurfdt; /* note negative */
+        var *= 1.0 / PetscPowScalar( (1.0-A->fO2), 2.0);
+        var *= -A->fO2 * PetscLogReal(10.0) * A->dlog10fO2dT * A->dtsurfdt; /* note negative */
         A->dpsurfdt += var;
     }
 
@@ -1220,6 +1219,9 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
     /* Remember that oxygen_fugacity is equivalent to a volume
        mixing ratio, and therefore does not need scaling */
     A->log10fO2 = func;
+
+    /* fO2 is often needed directly */
+    A->fO2 = PetscPowScalar(10.0,A->log10fO2);
 
     /* must non-dimensionalise, because we used a scaled
       (dimensional) temperature to compute the derivative */
