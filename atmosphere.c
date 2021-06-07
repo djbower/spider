@@ -10,6 +10,7 @@ static PetscScalar get_steam_atmosphere_zahnle_1988_flux( const Atmosphere *, co
 static PetscScalar get_emissivity_abe_matsui( Atmosphere *, const AtmosphereParameters);
 static PetscScalar get_emissivity_from_flux( const Atmosphere *, const AtmosphereParameters, const FundamentalConstants, PetscScalar );
 static PetscErrorCode set_total_surface_pressure( Atmosphere *, const AtmosphereParameters );
+static PetscErrorCode set_total_surface_pressure_time_derivative( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volume_mixing_ratios( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volatile_masses_in_atmosphere( Atmosphere *, const AtmosphereParameters );
 static PetscErrorCode set_volatile_masses_in_liquid( Atmosphere *, const AtmosphereParameters );
@@ -292,6 +293,38 @@ static PetscErrorCode set_total_surface_pressure( Atmosphere *A, const Atmospher
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode set_total_surface_pressure_time_derivative( Atmosphere *A, const AtmosphereParameters Ap )
+{
+    /* dpsurf/dt */
+
+    PetscInt k;
+
+    PetscFunctionBeginUser;
+
+    /* total surface pressure time derivative */
+    A->dpsurfdt = 0.0;
+
+    for (k=0; k<Ap->n_volatiles; ++k) {
+        A->dpsurfdt += A->volatiles[k].dpdt;
+    }
+    /* dfO2/dt also plays into A->dpsurfdt */
+    if(Ap->OXYGEN_FUGACITY){
+        PetscScalar var;
+        A->dpsurfdt *= 1.0 / (1.0 - A->fO2);
+        /* second term */
+        var = 0.0;
+        for (k=0; k<Ap->n_volatiles; ++k) {
+            var += A->volatiles[k].p;
+        }
+        var *= -1.0; /* cancels below, but kept for easy cross-checking with chain rule */
+        var *= 1.0 / PetscPowScalar( (1.0-A->fO2), 2.0);
+        var *= -A->fO2 * PetscLogReal(10.0) * A->dlog10fO2dT * A->dtsurfdt; /* note negative */
+        A->dpsurfdt += var;
+    }
+
+    PetscFunctionReturn(0);
+}
+
 static PetscScalar get_x_from_solubility_power_law( PetscScalar partialp, PetscScalar henry, PetscScalar henry_pow )
 {
     /* Solubility power law (Henry-like with exponent) */
@@ -468,13 +501,10 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
         A->molar_mass += Ap->volatile_parameters[i]->molar_mass * A->volatiles[i].mixing_ratio;
     }
 
-    /* below not implemented, since need to implement similar in timestepper where dmean_mass/dt
-       is required */
-    /* so currently, fO2 is used for reactions, psurf, and dpsurf/dt */
     /* contribution from O2 */
-    //if( Ap->OXYGEN_FUGACITY ){
-    //    A->molar_mass += A->psurf * PetscPowScalar(10.0,A->log10fO2) * Ap->O2_molar_mass;
-    //}
+    if( Ap->OXYGEN_FUGACITY ){
+        A->molar_mass += Ap->O2_molar_mass * A->fO2;
+    }
 
     PetscFunctionReturn(0);
 
@@ -906,6 +936,7 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
 PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, const PetscScalar *dmrdt, const ScalingConstants SC )
 {
 
+    PetscErrorCode            ierr;
     PetscScalar               out, out2, massv, f_thermal_escape, f_constant_escape, f_zahnle_escape;
     PetscInt                  j,k;
     VolatileParameters  const Vp = Ap->volatile_parameters[i];
@@ -942,32 +973,22 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
 
     out2 = 0.0;
 
-    /* compute and store dpsurf/dt here to avoid recomputation elsewhere */
-    A->dpsurfdt = 0.0;
-    for (k=0; k<Ap->n_volatiles; ++k) {
-        A->dpsurfdt += A->volatiles[k].dpdt;
-    }
+    ierr = set_total_surface_pressure_time_derivative( A, Ap );CHKERRQ(ierr);
 
-    /* dfO2/dt also plays into A->dpsurfdt */
-    if(Ap->OXYGEN_FUGACITY){
-        PetscScalar var;
-        A->dpsurfdt *= 1.0 / (1.0 - A->fO2);
-        /* second term */
-        var = 0.0;
-        for (k=0; k<Ap->n_volatiles; ++k) {
-            var += A->volatiles[k].p;
-        }
-        var *= -1.0; /* cancels below, but kept for easy cross-checking with chain rule */
-        var *= 1.0 / PetscPowScalar( (1.0-A->fO2), 2.0);
-        var *= -A->fO2 * PetscLogReal(10.0) * A->dlog10fO2dT * A->dtsurfdt; /* note negative */
-        A->dpsurfdt += var;
-    }
-
+    /* next part concerns d/dt relating to the mean molar mass of the atmosphere */
     for (j=0; j<Ap->n_volatiles; ++j) {
-        out = 0.0;
         out = -A->dpsurfdt * A->volatiles[j].p / A->psurf;
         out += A->volatiles[j].dpdt;
         out *= Ap->volatile_parameters[j]->molar_mass;
+        out2 += out;
+    }
+    if(Ap->OXYGEN_FUGACITY){
+        /* terms commented out are simply to remind that they cancel exactly */
+        //out = -A->dpsurfdt * A->fO2; /* recall fO2 by definition is already normalised by A->psurf */
+        /* d/dt (fO2*Ptot) = fO2 d/dt(Ptot) + Ptot d/dt(fO2) */
+        //out += A->fO2 * A->dpsurfdt; /* first term of product rule */
+        out = A->psurf * A->fO2 * PetscLogReal(10.0) * A->dlog10fO2dT * A->dtsurfdt; /* second term of product rule */
+        out *= Ap->O2_molar_mass;
         out2 += out;
     }
 
