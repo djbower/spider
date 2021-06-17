@@ -801,7 +801,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
 
     /* oxygen fugacity */
     if(Ap->OXYGEN_FUGACITY){
-        /* the value itself is the non-dimensional oxygen fugacity, a la Schaefer and Fegley (2017) */
+        /* non-dimensional oxygen fugacity is pO2/psurf = volume mixing ratio of O2 */
         scaling = 1.0;
         ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "None", A->fO2, data);CHKERRQ(ierr);
 
@@ -1223,8 +1223,7 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
             f = 0.0;
             break;
         case 7:
-            /* O'Neill and Eggins, 2002 for IW+0.5 */
-            /* note that the 0.5 is added below, not included here as a constant */
+            /* O'Neill and Eggins, 2002 for IW */
             a = 2;
             b = -244118;
             c = 115.559;
@@ -1243,20 +1242,29 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
     }
     /* O'Neill and Eggins, 2002 for IW + 0.5 */
     else{
-        /* OXYEN_FUGACITY_offset added here at end, to give IW+offset */
+        /* OXYGEN_FUGACITY_offset added here at end, to give IW+offset */
         func = a * ( b + c * temp + d * temp * PetscLogReal(temp) ) / (PetscLogReal(10) * f * temp ) + Ap->OXYGEN_FUGACITY_offset;
         dfuncdT = a * (d * temp - b) / ( f * PetscPowScalar(temp,2.0) * PetscLogReal(10) ); /* offset irrelevant for derivative */
     }
 
-    /* Remember that oxygen_fugacity is equivalent to a volume
-       mixing ratio, and therefore does not need scaling */
+    /* oxygen_fugacity is equivalent to a volume mixing ratio at 1 bar total pressure */
+    /* only used for reactions */
     A->log10fO2 = func;
 
-    /* fO2 is often needed directly */
+    /* fO2 is needed for O2 contribution to total pressure */
     A->fO2 = PetscPowScalar(10.0,A->log10fO2);
+    /* scale from per bar to per Pa */
+    A->fO2 /= 1.0E5;
+    /* now PO2 (non-dim) * P0 (Pa) = A->fO2 * P0 (Pa) * Psurf (non-dim), so no other scalings required */
+    /* hence P02 (non-dim) = A->fO2 * Psurf (non-dim) */
+    /* this is the way A->fO2 is used subsequently in the code to
+       include the pressure contribution of O2 to the atmos */
 
     /* must non-dimensionalise, because we used a scaled
       (dimensional) temperature to compute the derivative */
+    /* for reactions can use directly, and also for the pressure calculations
+       since the constant offset in log space introduced by the scale from per bar
+       to per Pa does not introduce a T dependence (so d/dT of this term is zero) */
     A->dlog10fO2dT = dfuncdT * SC->TEMP;
 
     PetscFunctionReturn(0);
