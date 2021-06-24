@@ -205,6 +205,7 @@ PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reacti
   reaction_parameters->stoichiometry[0] = -1.0;  // CO2
   reaction_parameters->stoichiometry[1] = 1.0;  // CO
   /* equilibrium constant coefficients */
+  /* from Schaefer and Fegley (2017) */
   reaction_parameters->Keq_coeffs[0] = -14787; // K
   reaction_parameters->Keq_coeffs[0] /= SC->TEMP; // non-dimensional
   reaction_parameters->Keq_coeffs[1] = 4.5472;
