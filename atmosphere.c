@@ -160,11 +160,6 @@ static PetscErrorCode set_atm_struct_pressure( Atmosphere *A, const AtmospherePa
         kabs = get_pressure_dependent_kabs( Ap, i );
         kabs_tot += A->volatiles[i].mixing_ratio * kabs;
     }
-    /* contribution from O2 */
-    if( Ap->OXYGEN_FUGACITY ){
-        kabs = PetscSqrtScalar( Ap->O2_kabs * -(*Ap->gravity_ptr) / (3.0*Ap->P0) );
-        kabs_tot += A->fO2 * kabs;
-    }
 
     ierr = VecCopy( A->atm_struct_tau, A->atm_struct_pressure ); CHKERRQ(ierr);
     ierr = VecScale( A->atm_struct_pressure, -(*Ap->gravity_ptr) ); CHKERRQ(ierr); // note negative gravity
@@ -290,11 +285,6 @@ static PetscErrorCode set_total_surface_pressure( Atmosphere *A, const Atmospher
         A->psurf += V->p;
     }
 
-    /* contribution from O2 */
-    if( Ap->OXYGEN_FUGACITY ){
-        A->psurf /= (1.0 - A->fO2);
-    }
-
     PetscFunctionReturn(0);
 }
 
@@ -311,20 +301,6 @@ static PetscErrorCode set_total_surface_pressure_time_derivative( Atmosphere *A,
 
     for (k=0; k<Ap->n_volatiles; ++k) {
         A->dpsurfdt += A->volatiles[k].dpdt;
-    }
-    /* dfO2/dt also plays into A->dpsurfdt */
-    if(Ap->OXYGEN_FUGACITY){
-        PetscScalar var;
-        A->dpsurfdt *= 1.0 / (1.0 - A->fO2);
-        /* second term */
-        var = 0.0;
-        for (k=0; k<Ap->n_volatiles; ++k) {
-            var += A->volatiles[k].p;
-        }
-        var *= -1.0; /* cancels below, but kept for easy cross-checking with chain rule */
-        var *= 1.0 / PetscPowScalar( (1.0-A->fO2), 2.0);
-        var *= -A->fO2 * PetscLogReal(10.0) * A->dlog10fO2dT * A->dtsurfdt; /* note negative */
-        A->dpsurfdt += var;
     }
 
     PetscFunctionReturn(0);
@@ -506,11 +482,6 @@ static PetscErrorCode set_volume_mixing_ratios( Atmosphere *A, const AtmosphereP
         A->molar_mass += Ap->volatile_parameters[i]->molar_mass * A->volatiles[i].mixing_ratio;
     }
 
-    /* contribution from O2 */
-    if( Ap->OXYGEN_FUGACITY ){
-        A->molar_mass += Ap->O2_molar_mass * A->fO2;
-    }
-
     PetscFunctionReturn(0);
 
 }
@@ -690,14 +661,6 @@ static PetscScalar get_emissivity_abe_matsui( Atmosphere *A, const AtmospherePar
         A->tau += V->tau;
     }
 
-    /* contribution from O2 */
-    if( Ap->OXYGEN_FUGACITY ){
-        PetscScalar tau;
-        tau = (3.0/2.0) * A->psurf * A->fO2 / -(*Ap->gravity_ptr);
-        tau *= PetscSqrtScalar( Ap->O2_kabs * -(*Ap->gravity_ptr) / (3.0*Ap->P0) );
-        A->tau += tau;
-    }
-
     emissivity = 2.0 / (A->tau + 2.0);
 
     return emissivity;
@@ -803,11 +766,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
     if(Ap->OXYGEN_FUGACITY){
         /* non-dimensional oxygen fugacity is pO2/psurf = volume mixing ratio of O2 */
         scaling = 1.0;
-        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "per bar", A->fO2*1.0E5, data);CHKERRQ(ierr);
-
-        /* multiplying by the scaling gives the oxygen fugacity (partial pressure) in bar */
-        scaling = A->psurf * SC->PRESSURE / 1.0E5; /* bar */
-        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", A->fO2*1.0E5, data);CHKERRQ(ierr);
+        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "bar", A->fO2, data);CHKERRQ(ierr);
     }
 
     /* Volatiles */
@@ -991,15 +950,6 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
         out = -A->dpsurfdt * A->volatiles[j].p / A->psurf;
         out += A->volatiles[j].dpdt;
         out *= Ap->volatile_parameters[j]->molar_mass;
-        out2 += out;
-    }
-    if(Ap->OXYGEN_FUGACITY){
-        /* terms commented out are simply to remind that they cancel exactly */
-        //out = -A->dpsurfdt * A->fO2; /* recall fO2 by definition is already normalised by A->psurf */
-        /* d/dt (fO2*Ptot) = fO2 d/dt(Ptot) + Ptot d/dt(fO2) */
-        //out += A->fO2 * A->dpsurfdt; /* first term of product rule */
-        out = A->psurf * A->fO2 * PetscLogReal(10.0) * A->dlog10fO2dT * A->dtsurfdt; /* second term of product rule */
-        out *= Ap->O2_molar_mass;
         out2 += out;
     }
 
@@ -1189,7 +1139,6 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
             break;
         case 3:
             /* Schaefer and Fegley (2017), H meteorite */
-            /* note: below IW buffer */
             a = 5.0743;
             b = -22.906;
             c = -5.6610;
@@ -1198,7 +1147,6 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
             break;
         case 4:
             /* Schaefer and Fegley (2017), EH meteorite */
-            /* note: below IW buffer */
             a = 4.9495;
             b = -24.024;
             c = -4.6236;
@@ -1207,7 +1155,6 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
             break;
         case 5:
             /* Schaefer and Fegley (2017), Eucrite meteorite */
-           /* note: below IW buffer */
             a = 5.4856;
             b = -25.127;
             c = -3.6580;
@@ -1215,15 +1162,15 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
             f = -0.1650;
             break;
         case 6:
-            /* Fischer et al. (2011), IW+0.5 at 0 GPa */
-            a = 6.94059; // was 6.44059 for IW
+            /* Fischer et al. (2011), IW at 0 GPa */
+            a = 6.44059;
             b = -28.1808;
             c = 0.0;
             d = 0.0;
             f = 0.0;
             break;
         case 7:
-            /* O'Neill and Eggins, 2002 for IW */
+            /* O'Neill and Eggins (2002), IW at 1 bar */
             a = 2;
             b = -244118;
             c = 115.559;
@@ -1237,34 +1184,23 @@ PetscErrorCode set_oxygen_fugacity( Atmosphere *A, const AtmosphereParameters Ap
 
     /* Schaefer and Fegley (2017) or Fischer et al. (2011) */
     if( Ap->OXYGEN_FUGACITY <= 6 ){
-        func = a + b*1E3/temp + c*1E6/PetscPowScalar(temp,2.0) + d*1E9/PetscPowScalar(temp,3.0) + f*1E12/PetscPowScalar(temp,4.0);
+        func = a + b*1E3/temp + c*1E6/PetscPowScalar(temp,2.0) + d*1E9/PetscPowScalar(temp,3.0) + f*1E12/PetscPowScalar(temp,4.0) + Ap->OXYGEN_FUGACITY_offset;
         dfuncdT = -b*1E3/PetscPowScalar(temp,2.0) - 2*c*1E6/PetscPowScalar(temp,3.0) - 3*d*1E9/PetscPowScalar(temp,4.0) - 4*f*1E12/PetscPowScalar(temp,5.0);
     }
-    /* O'Neill and Eggins, 2002 for IW + 0.5 */
+    /* O'Neill and Eggins, 2002 for IW */
     else{
         /* OXYGEN_FUGACITY_offset added here at end, to give IW+offset */
         func = a * ( b + c * temp + d * temp * PetscLogReal(temp) ) / (PetscLogReal(10) * f * temp ) + Ap->OXYGEN_FUGACITY_offset;
         dfuncdT = a * (d * temp - b) / ( f * PetscPowScalar(temp,2.0) * PetscLogReal(10) ); /* offset irrelevant for derivative */
     }
 
-    /* oxygen_fugacity is equivalent to a volume mixing ratio at 1 bar total pressure */
-    /* only used for reactions */
     A->log10fO2 = func;
 
-    /* fO2 is needed for O2 contribution to total pressure */
+    /* fO2 in bar/non-dimensional */
     A->fO2 = PetscPowScalar(10.0,A->log10fO2);
-    /* scale from per bar to per Pa */
-    A->fO2 /= 1.0E5;
-    /* now PO2 (non-dim) * P0 (Pa) = A->fO2 * P0 (Pa) * Psurf (non-dim), so no other scalings required */
-    /* hence P02 (non-dim) = A->fO2 * Psurf (non-dim) */
-    /* this is the way A->fO2 is used subsequently in the code to
-       include the pressure contribution of O2 to the atmos */
 
     /* must non-dimensionalise, because we used a scaled
       (dimensional) temperature to compute the derivative */
-    /* for reactions can use directly, and also for the pressure calculations
-       since the constant offset in log space introduced by the scale from per bar
-       to per Pa does not introduce a T dependence (so d/dT of this term is zero) */
     A->dlog10fO2dT = dfuncdT * SC->TEMP;
 
     PetscFunctionReturn(0);

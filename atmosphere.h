@@ -42,7 +42,7 @@ typedef struct Atmosphere_ {
     PetscScalar tsurf; // surface temperature
     PetscScalar dtsurfdt; // time derivative of surface temperature
     PetscScalar log10fO2; // oxygen fugacity (non-dimensional)
-    PetscScalar fO2; // oxygen fugacity (non-dimensional)
+    PetscScalar fO2; // oxygen fugacity (bar/non-dimensional)
     PetscScalar dlog10fO2dT; // temp derivative of fO2
     /* other */
     PetscScalar dMliqdt; // dMliq/dt (kg/yr)

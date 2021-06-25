@@ -85,7 +85,7 @@ typedef data_ReactionParameters* ReactionParameters;
  */
 
 typedef enum {MO_ATMOSPHERE_TYPE_GREY_BODY=1,MO_ATMOSPHERE_TYPE_ZAHNLE,MO_ATMOSPHERE_TYPE_VOLATILES,MO_ATMOSPHERE_TYPE_HEAT_FLUX,MO_ATMOSPHERE_TYPE_ENTROPY} MagmaOceanAtmosphereType;
-typedef enum {OXYGEN_FUGACITY_NONE=0,OXYGEN_FUGACITY_CI,OXYGEN_FUGACITY_CV,OXYGEN_FUGACITY_H,OXYGEN_FUGACITY_EH,OXYGEN_FUGACITY_EUCRITE,OXYGEN_FUGACITY_FISCHER_IW_PLUS_HALF,OXYGEN_FUGACITY_ONEILL_IW_PLUS_HALF} OxygenFugacityType;
+typedef enum {OXYGEN_FUGACITY_NONE=0,OXYGEN_FUGACITY_CI,OXYGEN_FUGACITY_CV,OXYGEN_FUGACITY_H,OXYGEN_FUGACITY_EH,OXYGEN_FUGACITY_EUCRITE,OXYGEN_FUGACITY_FISCHER_IW,OXYGEN_FUGACITY_ONEILL_IW} OxygenFugacityType;
 typedef struct {
     // input parameters
     PetscInt IC_ATMOSPHERE;
@@ -244,10 +244,10 @@ PetscErrorCode PrintParameters( Parameters const );
 
 /* ReactionParameters Methods */
 PetscErrorCode ReactionParametersCreateAmmonia1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
-PetscErrorCode ReactionParametersCreateCarbonDioxide1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
+PetscErrorCode ReactionParametersCreateCarbonDioxideIVTANTHERMO( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersCreateCarbonDioxideJANAF( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersCreateMethane1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
-PetscErrorCode ReactionParametersCreateWaterSchaefer( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
+PetscErrorCode ReactionParametersCreateWaterIVTANTHERMO( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersCreateWaterJANAF( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersDestroy( ReactionParameters *);
 

@@ -81,7 +81,7 @@ PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters* reaction_par
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode ReactionParametersCreateWaterSchaefer(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
+PetscErrorCode ReactionParametersCreateWaterIVTANTHERMO(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -91,12 +91,13 @@ PetscErrorCode ReactionParametersCreateWaterSchaefer(ReactionParameters* reactio
   PetscFunctionBeginUser;
   ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
   reaction_parameters = *reaction_parameters_ptr;
-  reaction_parameters->type = "waterschaefer";
+  reaction_parameters->type = "waterIVTANTHERMO";
   reaction_parameters->n_volatiles = 2;
   ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
 
   /* H2O = H2 + 0.5 fO2 */
   /* Keq from IVTANTHERMO for 298.15 < T < 2000 K */
+  /* see Schaefer and Fegley (2017) */
   reaction_parameters->stoichiometry[0] = -1.0;  // H2O
   reaction_parameters->stoichiometry[1] = 1.0;  // H2
   /* equilibrium constant coefficients */
@@ -189,7 +190,7 @@ PetscErrorCode ReactionParametersCreateCarbonDioxideJANAF(ReactionParameters* re
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
+PetscErrorCode ReactionParametersCreateCarbonDioxideIVTANTHERMO(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -199,13 +200,14 @@ PetscErrorCode ReactionParametersCreateCarbonDioxide1(ReactionParameters* reacti
   PetscFunctionBeginUser;
   ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
   reaction_parameters = *reaction_parameters_ptr;
-  reaction_parameters->type = "carbondioxide1";
+  reaction_parameters->type = "carbondioxideIVTANTHERMO";
   reaction_parameters->n_volatiles = 2;
   ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
   reaction_parameters->stoichiometry[0] = -1.0;  // CO2
   reaction_parameters->stoichiometry[1] = 1.0;  // CO
   /* equilibrium constant coefficients */
-  /* from Schaefer and Fegley (2017) */
+  /* Keq from IVTANTHERMO for 298.15 to 2000 K */
+  /* see Schaefer and Fegley (2017) */
   reaction_parameters->Keq_coeffs[0] = -14787; // K
   reaction_parameters->Keq_coeffs[0] /= SC->TEMP; // non-dimensional
   reaction_parameters->Keq_coeffs[1] = 4.5472;
@@ -332,17 +334,14 @@ static PetscScalar get_reaction_quotient( const ReactionParameters reaction_para
         const PetscInt v = reaction_parameters->volatiles[j];
 
         if( SIGN * reaction_parameters->stoichiometry[j] > 0.0 ){
-            /* NOTE: introduced scaling by A->psurf to improve scaling for numerical solver (FD Jacobian) */
-            /* TODO: if this works, swap out A->volatiles[v0].p/A->psurf for the volume mixing ratio? */
+            /* swap out A->volatiles[v].p/A->psurf for the volume mixing ratio? */
             Q *= PetscPowScalar( (A->volatiles[v].p/A->psurf), SIGN * reaction_parameters->stoichiometry[j] );
         }
 
     }
 
     /* since we are using the volume mixing ratio (i.e. scaling by A->psurf),
-       we must account for the extra factors of A->psurf to ensure that
-       Q=Qp/Qr is non-dimensional */
-    /* TODO: keep here for the time being, but could maybe move this elsewhere */
+       we must account for the extra factors of A->psurf */
     expon = get_psurf_exponent( reaction_parameters );
     if( SIGN * expon > 0.0 ){
         Q *= PetscPowScalar( A->psurf, SIGN * expon );
@@ -377,7 +376,7 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
     PetscBool          INCLUDE_PSURF = PETSC_FALSE;
 
     /* this is a bit ugly, because I decide whether to include the scaling of surface pressure in the
-       numerator if the stoichiometry is positive (otherwise it is included in the denominator */
+       numerator if the stoichiometry is positive (otherwise it is included in the denominator) */
     expon = get_psurf_exponent( reaction_parameters );
     if( SIGN * expon > 0.0 ){
         INCLUDE_PSURF = PETSC_TRUE;
@@ -409,7 +408,7 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
                 prefactor *= PetscPowScalar( A->psurf, SIGN * expon );
             }
             /* compute the derivative of this volatile */
-            /* TODO: this is also a generic formula for the time derivative of the
+            /* this is a generic formula for the time derivative of the
                volume mixing ratio and appears elsewhere in the code */
             dvdt = (1.0/A->psurf) * A->volatiles[v].dpdt;
             dvdt -= (A->volatiles[v].p / PetscPowScalar( A->psurf, 2.0 )) * A->dpsurfdt;
@@ -441,5 +440,4 @@ static PetscScalar get_reaction_quotient_time_derivative( const ReactionParamete
     }
 
     return dQdt;
-
 }
