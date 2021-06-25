@@ -803,11 +803,11 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
     if(Ap->OXYGEN_FUGACITY){
         /* non-dimensional oxygen fugacity is pO2/psurf = volume mixing ratio of O2 */
         scaling = 1.0;
-        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "per Pa", A->fO2, data);CHKERRQ(ierr);
+        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2", "per bar", A->fO2*1.0E5, data);CHKERRQ(ierr);
 
         /* multiplying by the scaling gives the oxygen fugacity (partial pressure) in bar */
         scaling = A->psurf * SC->PRESSURE / 1.0E5; /* bar */
-        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", A->fO2, data);CHKERRQ(ierr);
+        ierr = JSON_add_single_value_to_object(dm, scaling, "fO2_bar", "bar", A->fO2*1.0E5, data);CHKERRQ(ierr);
     }
 
     /* Volatiles */
