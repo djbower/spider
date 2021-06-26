@@ -801,13 +801,6 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const Sc
   Ap->OXYGEN_FUGACITY_offset = 0.5;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-OXYGEN_FUGACITY_offset",&Ap->OXYGEN_FUGACITY_offset,NULL);CHKERRQ(ierr);
 
-  Ap->O2_molar_mass = 32.0E-3; // kg/mol
-  Ap->O2_molar_mass /= SC->MASS;
-
-  /* mass absorption coefficient */
-  ierr = PetscOptionsGetPositiveScalar("-O2_kabs",&Ap->O2_kabs,0.0,NULL);CHKERRQ(ierr);
-  Ap->O2_kabs *= SC->DENSITY * SC->RADIUS;
-
   PetscFunctionReturn(0);
 }
 
