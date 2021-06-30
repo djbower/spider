@@ -37,7 +37,7 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
     /* note: factors of 4 pi are excluded */
     SC->AREA      = PetscSqr( SC->RADIUS ); // m^2
     SC->VOLUME    = SC->AREA * SC->RADIUS; // m^3
-    SC->TEMP      = SC->VOLATILE * SC->PRESSURE * SC->VOLUME / ( SC->ENTROPY * SC->MASS ); // K
+    SC->TEMP      = SC->PRESSURE * SC->VOLUME / ( SC->ENTROPY * SC->MASS ); // K
     SQRTST = PetscSqrtScalar( SC->ENTROPY * SC->TEMP );
     SC->DENSITY   = SC->PRESSURE / ( SC->ENTROPY * SC->TEMP ); // kg/m^3
     SC->TIME      = SC->RADIUS / SQRTST; // s
