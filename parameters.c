@@ -75,7 +75,11 @@ static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
     ierr = PetscOptionsGetPositiveScalar("-entropy0",&ENTROPY0,1.0E3,NULL);CHKERRQ(ierr); // J/kg/K
     ierr = PetscOptionsGetPositiveScalar("-mass0",&MASS0,1.0E17,NULL);CHKERRQ(ierr); // K
     ierr = PetscOptionsGetPositiveScalar("-pressure0",&PRESSURE0,1.0E7,NULL);CHKERRQ(ierr); // Pa
-    ierr = PetscOptionsGetPositiveScalar("-volatile0",&VOLATILE0,1.0,NULL);CHKERRQ(ierr);
+    /* volatile0 can be set a priori, since it scales the abundance by mass of a volatile
+       to its scaled partial pressure.  Since most Henry coefficients are around 1E-6 to 1E-1
+       this value can usually be assumed to be around 1.0E-10 when acccounting for the conversion
+       from mass fraction to ppmw (which introduces an extra factor of 1E6) */
+    ierr = PetscOptionsGetPositiveScalar("-volatile0",&VOLATILE0,1.0E-10,NULL);CHKERRQ(ierr);
     ierr = ScalingConstantsSet(SC,RADIUS0,MASS0,ENTROPY0,PRESSURE0,VOLATILE0);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
