@@ -40,7 +40,6 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
     SC->TEMP      = SC->PRESSURE * SC->VOLUME / ( SC->ENTROPY * SC->MASS ); // K
     SQRTST = PetscSqrtScalar( SC->ENTROPY * SC->TEMP );
     SC->DENSITY   = SC->PRESSURE / ( SC->ENTROPY * SC->TEMP ); // kg/m^3
-    SC->MASS      = SC->DENSITY * SC->VOLUME; // kg
     SC->TIME      = SC->RADIUS / SQRTST; // s
     SC->TIMEYRS   = SC->TIME / (60.0*60.0*24.0*365.25); // years
     SC->SENERGY   = SC->ENTROPY * SC->TEMP; // J/kg
