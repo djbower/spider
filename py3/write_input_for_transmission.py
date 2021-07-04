@@ -9,8 +9,8 @@ def main():
     #casenum = '1m'
     #casenum = '9m'
     # for Mercury models
-    #casenum = 'SV'
-    casenum = 'LV'
+    casenum = 'SV'
+    #casenum = 'LV'
     strcase = 'case' + str(casenum)
 
     # this is for short-cutting to generate data for transmission
@@ -29,8 +29,9 @@ def main():
         # for Mercury models
         # 2400 K, 2000 K, 1600 K
         elif casenum == 'SV':
+            time_l = [14,930,2760]
             # old
-            time_l = [30,1302,3550]
+            #time_l = [30,1302,3550]
         elif casenum == 'LV':
             # LV_EH_PS21
             #time_l = [50,2600,7000]
@@ -38,8 +39,8 @@ def main():
             #time_l = [50,2600,7100]
             # LV_IWM1_PS21
             #time_l = [50,2300,6499]
-            # LV_IWM1_SF17
-            time_l = [50,2400,6700]
+            # LV_IWM1_JANAF
+            time_l = [50,2310,6510]
             # old
             #time_l = [50,2609,7100]
 
@@ -89,7 +90,7 @@ def main():
         write_value_to_file( myjson_o, outfile, ['atmosphere','H2O','atmosphere_kg'], time, 'H2O mass (kg)' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','CO','atmosphere_kg'], time, 'CO mass (kg)' )
         write_value_to_file( myjson_o, outfile, ['atmosphere','H2','atmosphere_kg'], time, 'H2 mass (kg)' )
-        write_value_to_file( myjson_o, outfile, ['atmosphere','fO2_bar'], time, 'O2_bar' )
+        write_value_to_file( myjson_o, outfile, ['atmosphere','fO2'], time, 'O2_bar' )
 
         outfile.write('Temp (K), Pressure (bar), Optical depth, Height above surface (m)\n')
 

@@ -16,7 +16,7 @@ static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
 static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
 static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, const ScalingConstants, const FundamentalConstants );
 
-static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal TEMPERATURE, PetscReal ENTROPY, PetscReal PRESSURE, PetscReal VOLATILE )
+static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal MASS, PetscReal ENTROPY, PetscReal PRESSURE, PetscReal VOLATILE )
 {
     /* constants used to scale the physical problem are largely chosen based on numerical considerations.
        Factors of 4 pi associated with spherical geometry are excluded, but are reintroduced in output
@@ -26,12 +26,10 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
 
     PetscFunctionBeginUser;
 
-    SQRTST = PetscSqrtScalar( ENTROPY * TEMPERATURE );
-
     /* these 5 scaling constants can be set by the user, and the others
        subsequently derived */
     SC->RADIUS    = RADIUS; // m
-    SC->TEMP      = TEMPERATURE; // K
+    SC->MASS      = MASS; // kg
     SC->ENTROPY   = ENTROPY; // (specific) J/kg/K
     SC->PRESSURE  = PRESSURE; // Pa
     SC->VOLATILE  = VOLATILE;
@@ -39,8 +37,9 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
     /* note: factors of 4 pi are excluded */
     SC->AREA      = PetscSqr( SC->RADIUS ); // m^2
     SC->VOLUME    = SC->AREA * SC->RADIUS; // m^3
+    SC->TEMP      = SC->PRESSURE * SC->VOLUME / ( SC->ENTROPY * SC->MASS ); // K
+    SQRTST = PetscSqrtScalar( SC->ENTROPY * SC->TEMP );
     SC->DENSITY   = SC->PRESSURE / ( SC->ENTROPY * SC->TEMP ); // kg/m^3
-    SC->MASS      = SC->DENSITY * SC->VOLUME; // kg
     SC->TIME      = SC->RADIUS / SQRTST; // s
     SC->TIMEYRS   = SC->TIME / (60.0*60.0*24.0*365.25); // years
     SC->SENERGY   = SC->ENTROPY * SC->TEMP; // J/kg
@@ -68,16 +67,20 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
 static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
 {
     PetscErrorCode ierr;
-    PetscScalar RADIUS0, ENTROPY0, TEMPERATURE0, PRESSURE0, VOLATILE0;
+    PetscScalar RADIUS0, ENTROPY0, MASS0, PRESSURE0, VOLATILE0;
 
     PetscFunctionBeginUser;
 
-    ierr = PetscOptionsGetPositiveScalar("-radius0",&RADIUS0,6371000.0,NULL);CHKERRQ(ierr); // m
-    ierr = PetscOptionsGetPositiveScalar("-entropy0",&ENTROPY0,2993.025100070677,NULL);CHKERRQ(ierr); // J/kg/K
-    ierr = PetscOptionsGetPositiveScalar("-temperature0",&TEMPERATURE0,4033.6070755893948,NULL);CHKERRQ(ierr); // K
-    ierr = PetscOptionsGetPositiveScalar("-pressure0",&PRESSURE0,1E5,NULL);CHKERRQ(ierr); // Pa
-    ierr = PetscOptionsGetPositiveScalar("-volatile0",&VOLATILE0,1.0,NULL);CHKERRQ(ierr);
-    ierr = ScalingConstantsSet(SC,RADIUS0,TEMPERATURE0,ENTROPY0,PRESSURE0,VOLATILE0);CHKERRQ(ierr);
+    ierr = PetscOptionsGetPositiveScalar("-radius0",&RADIUS0,1.0E7,NULL);CHKERRQ(ierr); // m
+    ierr = PetscOptionsGetPositiveScalar("-entropy0",&ENTROPY0,1.0E3,NULL);CHKERRQ(ierr); // J/kg/K
+    ierr = PetscOptionsGetPositiveScalar("-mass0",&MASS0,1.0E17,NULL);CHKERRQ(ierr); // K
+    ierr = PetscOptionsGetPositiveScalar("-pressure0",&PRESSURE0,1.0E7,NULL);CHKERRQ(ierr); // Pa
+    /* volatile0 can be set a priori, since it scales the abundance by mass of a volatile
+       to its scaled partial pressure.  Since most Henry coefficients are around 1E-6 to 1E-1
+       this value can usually be assumed to be around 1.0E-10 when acccounting for the conversion
+       from mass fraction to ppmw (which introduces an extra factor of 1E6) */
+    ierr = PetscOptionsGetPositiveScalar("-volatile0",&VOLATILE0,1.0E-10,NULL);CHKERRQ(ierr);
+    ierr = ScalingConstantsSet(SC,RADIUS0,MASS0,ENTROPY0,PRESSURE0,VOLATILE0);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -822,6 +825,7 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Entropy"    ,"",(double)SC->ENTROPY            ,"J/kg/K"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Pressure"    ,"",(double)SC->PRESSURE            ,"Pa"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Mass"    ,"",(double)SC->MASS            ,"kg"      );CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s\n"             ,"Volatile"    ,"",(double)SC->VOLATILE            ,"mass fraction"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15s %-15.6g %-6s (%.6g years)\n","Time"       ,"",(double)SC->TIME               ,"s",(double)SC->TIMEYRS);CHKERRQ(ierr);
   /* next are derived from primary scalings and are useful for analysing the 
      scaling of the numerical system of equations */
