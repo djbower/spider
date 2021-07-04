@@ -11,8 +11,8 @@
 #-activate_poststep 1
 
 # tolerances
--ts_sundials_atol 1.0e-10
--ts_sundials_rtol 1.0e-10
+-ts_sundials_atol 1.0e-6
+-ts_sundials_rtol 1.0e-6
 
 # number of basic nodes
 -n 100
@@ -23,10 +23,10 @@
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
--radius0 63710000.0 # Earth radius
--entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
--temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
--pressure0 55692628932.82327
+-radius0 1.0E6
+-entropy0 1.0E3
+#-mass0 1.0E24
+-pressure0 1.0E0 #E6 #10
 # volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
 #-volatile0 1.0E2
 
