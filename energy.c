@@ -21,7 +21,7 @@ static PetscErrorCode objective_function_surface_radiation_balance( SNES, Vec, V
 static PetscErrorCode set_current_state( Ctx *, PetscReal );
 static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const, PetscReal );
 /* steady-state mantle flux for IC */
-static PetscErrorCode objective_function_mantle_flux_balance( SNES, Vec, Vec, void *);
+static PetscErrorCode objective_function_steady_state_energy_interior( SNES, Vec, Vec, void *);
 /* permeability laws control efficiency of gravitational separation */
 static PetscScalar GetPermeabilityBlakeKozenyCarman( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
 static PetscScalar GetPermeabilityRumpfGupte( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
@@ -705,16 +705,17 @@ static PetscErrorCode objective_function_surface_radiation_balance( SNES snes, V
     PetscFunctionReturn(0);
 }
 
-#if 1
-PetscErrorCode solve_for_mantle_flux_balance( Ctx *E, PetscReal t ) 
+PetscErrorCode solve_for_steady_state_energy_interior( Ctx *E, PetscReal t ) 
 {
+    /* solve for dS/dxi in the interior to adhere to a constant flow of energy,
+       based on the energy leaving from the top surface.  This solves for the
+       steady-state solution, which should then enable the time-stepper to
+       spin up more quickly.  Only used for the initial condition */ 
+
     PetscErrorCode             ierr;
     SNES                       snes;
     Vec                        x,r;
-    //PetscScalar                *xx, *arr_xi_b, *arr_S_b, *arr_S_s, *arr_dSdxi_b;
     PetscInt                   numpts_b;
-    //DM                         da_b=E->da_b; // REMOVE ,da_s=E->da_s;
-    //Mesh                       *M = &E->mesh;
     Solution                   *S = &E->solution;
 
     PetscFunctionBeginUser;
@@ -724,8 +725,8 @@ PetscErrorCode solve_for_mantle_flux_balance( Ctx *E, PetscReal t )
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
 
     /* Use this to address this specific SNES (nonlinear solver) from the command
-       line or options file, e.g. -surfrad_snes_view */
-    ierr = SNESSetOptionsPrefix(snes,"mantleflux_");CHKERRQ(ierr);
+       line or options file, e.g. -steadyint_snes_view */
+    ierr = SNESSetOptionsPrefix(snes,"steadyint_");CHKERRQ(ierr);
 
     ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
     ierr = VecSetSizes( x, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
@@ -736,32 +737,25 @@ PetscErrorCode solve_for_mantle_flux_balance( Ctx *E, PetscReal t )
        objective function with t updated */
     E->t = t;
 
-    ierr = SNESSetFunction(snes,r,objective_function_mantle_flux_balance,E);CHKERRQ(ierr);
-
-    /* initial guess of surface entropy gradient */
-    //ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
-    //ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    //xx[0] = arr_dSdxi_b[0];
-    //ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
-    //ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    ierr = SNESSetFunction(snes,r,objective_function_steady_state_energy_interior,E);CHKERRQ(ierr);
 
     /* initial guess */
     ierr = VecCopy( S->dSdxi, x );CHKERRQ(ierr);
 
-    ierr = PetscOptionsSetValue(NULL,"-mantleflux_snes_mf",NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-mantleflux_snes_stol","0");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-mantleflux_snes_rtol","1.0E-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-steadyint_snes_mf",NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-steadyint_snes_stol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-steadyint_snes_rtol","1.0E-9");CHKERRQ(ierr);
     /* atol will give accurate result to within 0.001 W/m^2.  Could
        likely relax this further, at least for the magma ocean stage */
-    ierr = PetscOptionsSetValue(NULL,"-mantleflux_snes_atol","1.0E-3");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-mantleflux_ksp_rtol","1.0E-9");CHKERRQ(ierr);
-    ierr = PetscOptionsSetValue(NULL,"-mantleflux_ksp_atol","1.0E-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-steadyint_snes_atol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-steadyint_ksp_rtol","1.0E-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-steadyint_ksp_atol","1.0E-9");CHKERRQ(ierr);
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
     {   
       PetscBool flg = PETSC_FALSE;
 
-      ierr = PetscOptionsGetBool(NULL,NULL,"-mantleflux_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      ierr = PetscOptionsGetBool(NULL,NULL,"-steadyint_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
       if (flg) {
         ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
       }   
@@ -777,23 +771,6 @@ PetscErrorCode solve_for_mantle_flux_balance( Ctx *E, PetscReal t )
           "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
     }
 
-    //ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
-    //ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    //ierr = DMDAVecGetArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
-    //ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
-
-    /* set entropy gradient at surface */
-    //ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
-    //arr_dSdxi_b[0] = xx[0];
-    //ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
-
-    //ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
-    //ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
-    //ierr = DMDAVecRestoreArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
-    //ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
-
-    //ierr = set_surface_entropy_from_surface_gradient( E );CHKERRQ(ierr);
-
     /* copy solution back to E */
     ierr = VecCopy( x, S->dSdxi );CHKERRQ(ierr);
 
@@ -804,16 +781,16 @@ PetscErrorCode solve_for_mantle_flux_balance( Ctx *E, PetscReal t )
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode objective_function_mantle_flux_balance( SNES snes, Vec x, Vec f, void *ptr)
+static PetscErrorCode objective_function_steady_state_energy_interior( SNES snes, Vec x, Vec f, void *ptr)
 {
     PetscErrorCode             ierr;
     PetscMPIInt                rank;
     Ctx                        *E = (Ctx*) ptr;
-    Parameters            const P  = E->parameters;
-    Atmosphere           const *A = &E->atmosphere;
-    ScalingConstants      const SC = P->scaling_constants;
+    //Parameters            const P  = E->parameters;
+    //Atmosphere           const *A = &E->atmosphere;
+    //ScalingConstants      const SC = P->scaling_constants;
     Solution                   *S = &E->solution;
-    PetscScalar                S0;
+    PetscScalar                S0, E0;
     PetscInt             const ind0 = 0;
     PetscReal                  t;
 
@@ -825,9 +802,6 @@ static PetscErrorCode objective_function_mantle_flux_balance( SNES snes, Vec x, 
     t = E->t;
 
     ierr = VecCopy( x, S->dSdxi );CHKERRQ(ierr);
-    // I think not required?
-    //ierr = VecAssemblyBegin( S->dSdxi );CHKERRQ(ierr);
-    //ierr = VecAssemblyEnd( S->dSdxi );CHKERRQ(ierr);
 
     /* top staggered node value is assumed set and consistent */
     ierr = VecGetValues( S->S_s,1,&ind0,&S0);CHKERRQ(ierr);
@@ -838,20 +812,23 @@ static PetscErrorCode objective_function_mantle_flux_balance( SNES snes, Vec x, 
     /* assume already adheres to surface bc but check after */
     ierr = set_current_state( E, t );CHKERRQ(ierr);
 
+    /* outgoing energy at surface */
+    ierr = VecGetValues( S->Etot,1,&ind0,&E0);CHKERRQ(ierr);
+
     /* compute residual vector */
-    ierr = VecShift( S->Jtot, -A->Fatm );CHKERRQ(ierr);
+    ierr = VecShift( S->Etot, -E0 );CHKERRQ(ierr);
+    ierr = VecScale( S->Etot, 1.0/E0 );CHKERRQ(ierr);
 
     /* scale residual to physical flux (W/m^2), so the solver
        tolerances effectively enforce a minimum flux difference
        in W/m^2 */
-    ierr = VecScale( S->Jtot, SC->FLUX );CHKERRQ(ierr);
+    //ierr = VecScale( S->Jtot, SC->FLUX );CHKERRQ(ierr);
 
     /* set residual of fluxes */
-    ierr = VecCopy( S->Jtot, f );CHKERRQ(ierr);
+    ierr = VecCopy( S->Etot, f );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
-#endif
 
 static PetscErrorCode set_current_state( Ctx *E, PetscReal t )
 {

@@ -614,8 +614,13 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const Sc
         ierr = PetscOptionsGetString(NULL,NULL,"-ic_atmosphere_filename",Ap->ic_atmosphere_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
     }
 
+    /* solve for surface radiative balance during time-stepping */
     Ap->SURFACE_BC_ACC = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-SURFACE_BC_ACC",&Ap->SURFACE_BC_ACC,NULL);CHKERRQ(ierr);
+
+    /* solve for surface radiative balance once for initial condition */
+    Ap->SURFACE_BC_ACC_IC = PETSC_FALSE;
+    ierr = PetscOptionsGetBool(NULL,NULL,"-SURFACE_BC_ACC_IC",&Ap->SURFACE_BC_ACC_IC,NULL);CHKERRQ(ierr);
 
     /* (top) surface boundary condition */
     Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;

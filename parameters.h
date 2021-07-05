@@ -95,7 +95,8 @@ typedef struct {
     PetscScalar OXYGEN_FUGACITY_offset; // offset in log units from IW buffer
     PetscScalar O2_molar_mass;
     PetscScalar O2_kabs;
-    PetscBool SURFACE_BC_ACC;
+    PetscBool SURFACE_BC_ACC; // solve for surface radiative balance during time-stepping
+    PetscBool SURFACE_BC_ACC_IC; // solve for surface radiative balance once for initial condition
     /* below to replace with shallow ocean layer */
     //PetscBool VISCOUS_MANTLE_COOLING_RATE;
     PetscBool THERMAL_ESCAPE;
