@@ -58,11 +58,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 
     /* P->t0 is set in parameters.c */
     /* time is needed for the radiogenic energy input */
-    //ierr = set_current_state_from_solution( E, P->t0, sol ); CHKERRQ(ierr);
-    /* the above also set the entropy from the solution and the partial pressures
-       from solution, but I believe this are already consistently set */
-
-
 
     /* if Ap->SURFACE_BC_ACC is set, then the surface radiation is solved
        for every time step.  But sometimes we just want to solve the balance
