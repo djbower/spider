@@ -601,9 +601,7 @@ PetscErrorCode solve_for_surface_radiation_balance( Ctx *E, PetscReal t )
     ierr = PetscOptionsSetValue(NULL,"-surfrad_snes_mf",NULL);CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-surfrad_snes_stol","0");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-surfrad_snes_rtol","1.0E-9");CHKERRQ(ierr);
-    /* atol will give accurate result to within 0.001 W/m^2.  Could
-       likely relax this further, at least for the magma ocean stage */
-    ierr = PetscOptionsSetValue(NULL,"-surfrad_snes_atol","1.0E-3");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-surfrad_snes_atol","1.0");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-surfrad_ksp_rtol","1.0E-9");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-surfrad_ksp_atol","1.0E-9");CHKERRQ(ierr);
 
@@ -688,13 +686,12 @@ static PetscErrorCode objective_function_surface_radiation_balance( SNES snes, V
     ierr = set_current_state( E, t );CHKERRQ(ierr);
 
     /* compute residual */
+    /* scale residual to physical flux (W/m^2) and recall that
+       we prescribe a minimum agreeement of atol=1.0 W/m^2 in
+       the solver settings */
     ierr = VecGetValues(S->Jtot,1,&ind0,&Jtot0);CHKERRQ(ierr);
     res = A->Fatm - Jtot0;
-
-    /* scale residual to physical flux (W/m^2), so the solver
-       tolerances effectively enforce a minimum flux difference
-       in W/m^2 */
-    res *= SC->FLUX;
+    res *= SC->FLUX; /* W/m^2 */
 
     /* set residual of fluxes */
     ff[ind0] = res;
@@ -745,8 +742,6 @@ PetscErrorCode solve_for_steady_state_energy_interior( Ctx *E, PetscReal t )
     ierr = PetscOptionsSetValue(NULL,"-steadyint_snes_mf",NULL);CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-steadyint_snes_stol","0");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-steadyint_snes_rtol","1.0E-9");CHKERRQ(ierr);
-    /* atol will give accurate result to within 0.001 W/m^2.  Could
-       likely relax this further, at least for the magma ocean stage */
     ierr = PetscOptionsSetValue(NULL,"-steadyint_snes_atol","0");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-steadyint_ksp_rtol","1.0E-9");CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL,"-steadyint_ksp_atol","1.0E-9");CHKERRQ(ierr);
@@ -786,9 +781,6 @@ static PetscErrorCode objective_function_steady_state_energy_interior( SNES snes
     PetscErrorCode             ierr;
     PetscMPIInt                rank;
     Ctx                        *E = (Ctx*) ptr;
-    //Parameters            const P  = E->parameters;
-    //Atmosphere           const *A = &E->atmosphere;
-    //ScalingConstants      const SC = P->scaling_constants;
     Solution                   *S = &E->solution;
     PetscScalar                S0, E0;
     PetscInt             const ind0 = 0;
@@ -818,11 +810,6 @@ static PetscErrorCode objective_function_steady_state_energy_interior( SNES snes
     /* compute residual vector */
     ierr = VecShift( S->Etot, -E0 );CHKERRQ(ierr);
     ierr = VecScale( S->Etot, 1.0/E0 );CHKERRQ(ierr);
-
-    /* scale residual to physical flux (W/m^2), so the solver
-       tolerances effectively enforce a minimum flux difference
-       in W/m^2 */
-    //ierr = VecScale( S->Jtot, SC->FLUX );CHKERRQ(ierr);
 
     /* set residual of fluxes */
     ierr = VecCopy( S->Etot, f );CHKERRQ(ierr);
