@@ -621,6 +621,10 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const Sc
     /* solve for surface radiative balance once for initial condition */
     Ap->SURFACE_BC_ACC_IC = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-SURFACE_BC_ACC_IC",&Ap->SURFACE_BC_ACC_IC,NULL);CHKERRQ(ierr);
+    /* also turn on for IC if selected during time stepping */
+    if( Ap->SURFACE_BC_ACC ){
+        Ap->SURFACE_BC_ACC_IC = PETSC_TRUE;
+    }
 
     /* (top) surface boundary condition */
     Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
