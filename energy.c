@@ -20,6 +20,8 @@ static PetscErrorCode append_Htidal( Ctx *, PetscReal );
 static PetscErrorCode objective_function_surface_radiation_balance( SNES, Vec, Vec, void *);
 static PetscErrorCode set_current_state( Ctx *, PetscReal );
 static PetscScalar get_radiogenic_heat_production( RadionuclideParameters const, PetscReal );
+/* steady-state mantle flux for IC */
+static PetscErrorCode objective_function_mantle_flux_balance( SNES, Vec, Vec, void *);
 /* permeability laws control efficiency of gravitational separation */
 static PetscScalar GetPermeabilityBlakeKozenyCarman( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
 static PetscScalar GetPermeabilityRumpfGupte( PetscScalar grainsize, PetscScalar porosity, PetscScalar constant );
@@ -702,6 +704,154 @@ static PetscErrorCode objective_function_surface_radiation_balance( SNES snes, V
 
     PetscFunctionReturn(0);
 }
+
+#if 1
+PetscErrorCode solve_for_mantle_flux_balance( Ctx *E, PetscReal t ) 
+{
+    PetscErrorCode             ierr;
+    SNES                       snes;
+    Vec                        x,r;
+    //PetscScalar                *xx, *arr_xi_b, *arr_S_b, *arr_S_s, *arr_dSdxi_b;
+    PetscInt                   numpts_b;
+    //DM                         da_b=E->da_b; // REMOVE ,da_s=E->da_s;
+    //Mesh                       *M = &E->mesh;
+    Solution                   *S = &E->solution;
+
+    PetscFunctionBeginUser;
+
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
+
+    /* Use this to address this specific SNES (nonlinear solver) from the command
+       line or options file, e.g. -surfrad_snes_view */
+    ierr = SNESSetOptionsPrefix(snes,"mantleflux_");CHKERRQ(ierr);
+
+    ierr = VecCreate( PETSC_COMM_WORLD, &x );CHKERRQ(ierr);
+    ierr = VecSetSizes( x, PETSC_DECIDE, numpts_b );CHKERRQ(ierr);
+    ierr = VecSetFromOptions(x);CHKERRQ(ierr);
+    ierr = VecDuplicate(x,&r);CHKERRQ(ierr);
+
+    /* set current time to Ctx, since the Ctx is passed to the
+       objective function with t updated */
+    E->t = t;
+
+    ierr = SNESSetFunction(snes,r,objective_function_mantle_flux_balance,E);CHKERRQ(ierr);
+
+    /* initial guess of surface entropy gradient */
+    //ierr = DMDAVecGetArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    //ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    //xx[0] = arr_dSdxi_b[0];
+    //ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+    //ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+
+    /* initial guess */
+    ierr = VecCopy( S->dSdxi, x );CHKERRQ(ierr);
+
+    ierr = PetscOptionsSetValue(NULL,"-mantleflux_snes_mf",NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-mantleflux_snes_stol","0");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-mantleflux_snes_rtol","1.0E-9");CHKERRQ(ierr);
+    /* atol will give accurate result to within 0.001 W/m^2.  Could
+       likely relax this further, at least for the magma ocean stage */
+    ierr = PetscOptionsSetValue(NULL,"-mantleflux_snes_atol","1.0E-3");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-mantleflux_ksp_rtol","1.0E-9");CHKERRQ(ierr);
+    ierr = PetscOptionsSetValue(NULL,"-mantleflux_ksp_atol","1.0E-9");CHKERRQ(ierr);
+
+    /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
+    {   
+      PetscBool flg = PETSC_FALSE;
+
+      ierr = PetscOptionsGetBool(NULL,NULL,"-mantleflux_snes_verbose_monitor",&flg,NULL);CHKERRQ(ierr);
+      if (flg) {
+        ierr = SNESMonitorSet(snes,SNESMonitorVerbose,NULL,NULL);CHKERRQ(ierr);
+      }   
+    }   
+
+    /* Solve */
+    ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); /* Picks up any additional options (note prefix) */
+    ierr = SNESSolve(snes,NULL,x);CHKERRQ(ierr);
+    {
+      SNESConvergedReason reason;
+      ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
+      if (reason < 0) SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+          "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
+    }
+
+    //ierr = DMDAVecGetArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    //ierr = DMDAVecGetArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    //ierr = DMDAVecGetArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    //ierr = DMDAVecGetArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    /* set entropy gradient at surface */
+    //ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
+    //arr_dSdxi_b[0] = xx[0];
+    //ierr = VecRestoreArray(x,&xx);CHKERRQ(ierr);
+
+    //ierr = DMDAVecRestoreArray(da_b,S->S,&arr_S_b);CHKERRQ(ierr);
+    //ierr = DMDAVecRestoreArrayRead(da_s,S->S_s,&arr_S_s);CHKERRQ(ierr);
+    //ierr = DMDAVecRestoreArray(da_b,S->dSdxi,&arr_dSdxi_b);CHKERRQ(ierr);
+    //ierr = DMDAVecRestoreArrayRead(da_b,M->xi_b,&arr_xi_b);CHKERRQ(ierr);
+
+    //ierr = set_surface_entropy_from_surface_gradient( E );CHKERRQ(ierr);
+
+    /* copy solution back to E */
+    ierr = VecCopy( x, S->dSdxi );CHKERRQ(ierr);
+
+    ierr = VecDestroy(&x);CHKERRQ(ierr);
+    ierr = VecDestroy(&r);CHKERRQ(ierr);
+    ierr = SNESDestroy(&snes);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode objective_function_mantle_flux_balance( SNES snes, Vec x, Vec f, void *ptr)
+{
+    PetscErrorCode             ierr;
+    PetscMPIInt                rank;
+    Ctx                        *E = (Ctx*) ptr;
+    Parameters            const P  = E->parameters;
+    Atmosphere           const *A = &E->atmosphere;
+    ScalingConstants      const SC = P->scaling_constants;
+    Solution                   *S = &E->solution;
+    PetscScalar                S0;
+    PetscInt             const ind0 = 0;
+    PetscReal                  t;
+
+    PetscFunctionBeginUser;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+
+    /* set current time from Ctx, since the Ctx is passed to the
+       objective function */
+    t = E->t;
+
+    ierr = VecCopy( x, S->dSdxi );CHKERRQ(ierr);
+    // I think not required?
+    //ierr = VecAssemblyBegin( S->dSdxi );CHKERRQ(ierr);
+    //ierr = VecAssemblyEnd( S->dSdxi );CHKERRQ(ierr);
+
+    /* top staggered node value is assumed set and consistent */
+    ierr = VecGetValues( S->S_s,1,&ind0,&S0);CHKERRQ(ierr);
+
+    /* now we have the gradient and S0, set for everything else */
+    ierr = set_entropy_reconstruction_from_ctx( E, S0 );CHKERRQ(ierr);
+
+    /* assume already adheres to surface bc but check after */
+    ierr = set_current_state( E, t );CHKERRQ(ierr);
+
+    /* compute residual vector */
+    ierr = VecShift( S->Jtot, -A->Fatm );CHKERRQ(ierr);
+
+    /* scale residual to physical flux (W/m^2), so the solver
+       tolerances effectively enforce a minimum flux difference
+       in W/m^2 */
+    ierr = VecScale( S->Jtot, SC->FLUX );CHKERRQ(ierr);
+
+    /* set residual of fluxes */
+    ierr = VecCopy( S->Jtot, f );CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+#endif
 
 static PetscErrorCode set_current_state( Ctx *E, PetscReal t )
 {

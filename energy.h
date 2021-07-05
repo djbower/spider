@@ -12,5 +12,6 @@ PetscErrorCode set_Htot( Ctx *, PetscReal t );
 PetscErrorCode set_current_state_from_solution( Ctx *, PetscScalar, Vec );
 PetscErrorCode set_interior_atmosphere_interface_from_surface_entropy( Ctx * );
 PetscErrorCode solve_for_surface_radiation_balance( Ctx *, PetscReal );
+PetscErrorCode solve_for_mantle_flux_balance( Ctx*, PetscReal );
 
 #endif

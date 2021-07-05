@@ -106,6 +106,8 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     else{
         /* otherwise balance flux at surface with chosen surface flux bc */
         ierr = solve_for_surface_radiation_balance( E, P->t0 );CHKERRQ(ierr);
+        /* TODO: this might move elsewhere */
+        ierr = solve_for_mantle_flux_balance( E, P->t0 );CHKERRQ(ierr);
     }
 
     /* Now the Vecs in E are set and consistent, clone them
