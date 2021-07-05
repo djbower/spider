@@ -56,13 +56,9 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
        outer boundaries of the basic mesh */
 
     PetscErrorCode ierr;
-    Mesh           *M = &E->mesh;
     Solution       *S = &E->solution;
     PetscScalar    S0;
-    PetscScalar    *arr_S_b, *arr_S_s, *arr_dSdxi_b, *arr_xi_s, *arr_xi_b;
-    PetscInt       i, ihi_b, ilo_b, w_b;
     PetscMPIInt    size;
-    DM             da_s = E->da_s, da_b=E->da_b;
     Vec            *subVecs;
 
     const PetscInt ind0 = 0;
@@ -77,6 +73,25 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
     ierr = VecCopy( subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]], S->dSdxi );CHKERRQ(ierr);
     /* get first staggered node value (store as S0) */
     ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]],1,&ind0,&S0);CHKERRQ(ierr);
+
+    ierr = set_entropy_reconstruction_from_ctx( E, S0 );CHKERRQ(ierr);
+
+    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
+    PetscFree(subVecs);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode set_entropy_reconstruction_from_ctx( Ctx *E, PetscScalar S0 )
+{
+    PetscErrorCode ierr;
+    Mesh           *M = &E->mesh;
+    Solution       *S = &E->solution;
+    PetscScalar    *arr_S_b, *arr_S_s, *arr_dSdxi_b, *arr_xi_s, *arr_xi_b;
+    PetscInt       i, ihi_b, ilo_b, w_b;
+    DM             da_s = E->da_s, da_b=E->da_b;
+
+    PetscFunctionBeginUser;
 
     /* for looping over basic nodes */
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
@@ -116,9 +131,6 @@ PetscErrorCode set_entropy_from_solution( Ctx *E, Vec sol )
 
     /* surface boundary */
     ierr = set_surface_entropy_from_surface_gradient( E );CHKERRQ(ierr);
-
-    ierr = DMCompositeRestoreAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
-    PetscFree(subVecs);
 
     PetscFunctionReturn(0);
 }
