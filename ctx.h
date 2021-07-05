@@ -51,8 +51,9 @@ typedef enum {
   SPIDER_SOLUTION_FIELD_MO_VOLATILES  = 3,
   SPIDER_SOLUTION_FIELD_MO_REACTIONS  = 4,
 } SpiderSolutionFieldID;
-static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dxi","S at surface","Volatile partial pressure","Reaction total mass"}; /* Order must match the enum! */
+static const char * const SpiderSolutionFieldDescriptions[] = { "Undefined! Error!", "dS/dxi","S at top staggered node","Volatile partial pressure","Reaction mass"}; /* Order must match the enum! */
 static const char * const SpiderSolutionFieldUnits[]        = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$", "J kg$^{-1}$ K$^{-1}$", "Pa", "kg"}; /* Order must match the enum! */
+static const char * const SpiderRhsFieldUnits[]             = { "Undefined! Error!", "J kg$^{-1}$ K$^{-1}$ m$^{-1}$ s$^{-1}$", "J kg$^{-1}$ K$^{-1}$ s$^{-1}$", "Pa s$^{-1}$", "kg s$^{-1}$"}; /* Order must match the enum! */
 
 /* A Context for the Solver */
 typedef struct Ctx_ {
@@ -65,7 +66,7 @@ typedef struct Ctx_ {
   PetscInt               *solutionSlots;    /* The inverse map */
   Atmosphere             atmosphere;
   Parameters             parameters;
-  DimensionalisableField solDF; /* The solution and attached scalings */
+  DimensionalisableField solDF, rhsDF; /* The solution and attached scalings */
   RheologicalFront       rheological_front_phi;
   RheologicalFront       rheological_front_dynamic;
 

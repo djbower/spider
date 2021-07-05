@@ -120,16 +120,12 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
 
       /* Re-evaluate rhs and add to file */
       {
-        DimensionalisableField rhsDF;
         Vec                    rhs;
         cJSON                  *rhsJSON;
-        ierr = DimensionalisableFieldDuplicate(ctx->solDF,&rhsDF);CHKERRQ(ierr);
-        ierr = DimensionalisableFieldSetName(rhsDF,"SPIDER rhs");CHKERRQ(ierr);
-        ierr = DimensionalisableFieldGetGlobalVec(rhsDF,&rhs);CHKERRQ(ierr);
+        ierr = DimensionalisableFieldGetGlobalVec(ctx->rhsDF,&rhs);CHKERRQ(ierr);
         ierr = RHSFunction(ts,time,sol,rhs,ctx);CHKERRQ(ierr);
-        ierr = DimensionalisableFieldToJSON(rhsDF,&rhsJSON);CHKERRQ(ierr);
+        ierr = DimensionalisableFieldToJSON(ctx->rhsDF,&rhsJSON);CHKERRQ(ierr);
         cJSON_AddItemToObject(json,"rhs",rhsJSON);CHKERRQ(ierr);
-        ierr = DimensionalisableFieldDestroy(&rhsDF);CHKERRQ(ierr);
       }
 
 
