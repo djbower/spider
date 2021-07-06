@@ -62,7 +62,7 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     /* if Ap->SURFACE_BC_ACC is set, then the surface radiation is solved
        for every time step.  But sometimes we just want to solve the balance
        once for the IC, so define Ap->SURFACE_BC_ACC_IC for this purpose */
-    if( Ap->SURFACE_BC_ACC_IC ){
+    if( (P->ic_steady_state_energy) || (Ap->SURFACE_BC_ACC)){
         ierr = solve_for_surface_radiation_balance( E, P->t0 );CHKERRQ(ierr);
         /* we also solve for the steady-state initially, by ensuring the energy
            flows in the interior are pretty much equal to the surface energy

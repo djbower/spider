@@ -380,6 +380,9 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_dsdr",&P->ic_dsdr,NULL);CHKERRQ(ierr);
   P->ic_dsdr /= SC->DSDR;
 
+  P->ic_steady_state_energy = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-ic_steady_state_energy",&P->ic_steady_state_energy,NULL);CHKERRQ(ierr);
+
   /* initial entropy at the surface */
   P->ic_surface_entropy = -1;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_surface_entropy",&P->ic_surface_entropy,NULL);CHKERRQ(ierr);
@@ -617,14 +620,6 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const Sc
     /* solve for surface radiative balance during time-stepping */
     Ap->SURFACE_BC_ACC = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-SURFACE_BC_ACC",&Ap->SURFACE_BC_ACC,NULL);CHKERRQ(ierr);
-
-    /* solve for surface radiative balance once for initial condition */
-    Ap->SURFACE_BC_ACC_IC = PETSC_FALSE;
-    ierr = PetscOptionsGetBool(NULL,NULL,"-SURFACE_BC_ACC_IC",&Ap->SURFACE_BC_ACC_IC,NULL);CHKERRQ(ierr);
-    /* also turn on for IC if selected during time stepping */
-    if( Ap->SURFACE_BC_ACC ){
-        Ap->SURFACE_BC_ACC_IC = PETSC_TRUE;
-    }
 
     /* (top) surface boundary condition */
     Ap->SURFACE_BC=MO_ATMOSPHERE_TYPE_GREY_BODY;
