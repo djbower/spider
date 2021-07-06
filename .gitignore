@@ -29,7 +29,9 @@ spider
 output/
 
 # test working directory (should agree with SPIDER_TEST_DIR in Makefile)
-test_dir/
+tests/*_output
+tests/sciath_test_report.txt 
+
 manual/manual.aux
 manual/manual.bbl
 manual/manual.blg
