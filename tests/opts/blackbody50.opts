@@ -16,8 +16,6 @@
 -ts_sundials_atol 1.0e-6
 -ts_sundials_rtol 1.0e-6
 
-#-ts_sundials_monitor_steps 1
-
 # number of basic nodes
 -n 50
 
