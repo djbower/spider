@@ -1,6 +1,6 @@
 tests:
     -
-      name: blackbody
+      name: blackbody50
       groups:
         - basic
       commands:
