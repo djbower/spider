@@ -28,7 +28,7 @@
 
 -entropy0 2.60E3 # J/kg/K
 -radius0 1.0E8 # m
--time0 3.154E7 #7 # s
+-time0 3.154E6 #7 # s
 
 # output directory
 -outputDirectory output
