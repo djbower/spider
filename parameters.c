@@ -16,7 +16,7 @@ static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
 static PetscErrorCode RadionuclideParametersCreate( RadionuclideParameters * );
 static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters, const ScalingConstants, const FundamentalConstants );
 
-static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS, PetscReal MASS, PetscReal ENTROPY, PetscReal PRESSURE, PetscReal VOLATILE )
+static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal ENTROPY, PetscReal RADIUS, PetscReal TIME, PetscReal PRESSURE, PetscReal VOLATILE )
 {
     /* constants used to scale the physical problem are largely chosen based on numerical considerations.
        Factors of 4 pi associated with spherical geometry are excluded, but are reintroduced in output
@@ -28,19 +28,19 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
 
     /* these 5 scaling constants can be set by the user, and the others
        subsequently derived */
-    SC->RADIUS    = RADIUS; // m
-    SC->MASS      = MASS; // kg
     SC->ENTROPY   = ENTROPY; // (specific) J/kg/K
+    SC->RADIUS    = RADIUS; // m
+    SC->TIME      = TIME; // s
     SC->PRESSURE  = PRESSURE; // Pa
     SC->VOLATILE  = VOLATILE;
     /* below are derived from above */
     /* note: factors of 4 pi are excluded */
     SC->AREA      = PetscSqr( SC->RADIUS ); // m^2
     SC->VOLUME    = SC->AREA * SC->RADIUS; // m^3
-    SC->TEMP      = SC->PRESSURE * SC->VOLUME / ( SC->ENTROPY * SC->MASS ); // K
+    SC->TEMP      = PetscSqr( SC->RADIUS / SC->TIME ) / SC->ENTROPY;
     SQRTST = PetscSqrtScalar( SC->ENTROPY * SC->TEMP );
+    SC->MASS      = SC->PRESSURE * SC->VOLUME / ( SC->ENTROPY * SC->TEMP ); // kg
     SC->DENSITY   = SC->PRESSURE / ( SC->ENTROPY * SC->TEMP ); // kg/m^3
-    SC->TIME      = SC->RADIUS / SQRTST; // s
     SC->TIMEYRS   = SC->TIME / (60.0*60.0*24.0*365.25); // years
     SC->SENERGY   = SC->ENTROPY * SC->TEMP; // J/kg
     SC->ENERGY    = SC->SENERGY * SC->MASS; // J
@@ -67,20 +67,20 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal RADIUS
 static PetscErrorCode ScalingConstantsSetFromOptions( ScalingConstants SC )
 {
     PetscErrorCode ierr;
-    PetscScalar RADIUS0, ENTROPY0, MASS0, PRESSURE0, VOLATILE0;
+    PetscScalar ENTROPY0, RADIUS0, TIME0, PRESSURE0, VOLATILE0;
 
     PetscFunctionBeginUser;
 
-    ierr = PetscOptionsGetPositiveScalar("-radius0",&RADIUS0,1.0E7,NULL);CHKERRQ(ierr); // m
     ierr = PetscOptionsGetPositiveScalar("-entropy0",&ENTROPY0,1.0E3,NULL);CHKERRQ(ierr); // J/kg/K
-    ierr = PetscOptionsGetPositiveScalar("-mass0",&MASS0,1.0E17,NULL);CHKERRQ(ierr); // K
+    ierr = PetscOptionsGetPositiveScalar("-radius0",&RADIUS0,1.0E6,NULL);CHKERRQ(ierr); // m
+    ierr = PetscOptionsGetPositiveScalar("-time0",&TIME0,3.154E7,NULL);CHKERRQ(ierr); // s
     ierr = PetscOptionsGetPositiveScalar("-pressure0",&PRESSURE0,1.0E7,NULL);CHKERRQ(ierr); // Pa
     /* volatile0 can be set a priori, since it scales the abundance by mass of a volatile
        to its scaled partial pressure.  Since most Henry coefficients are around 1E-6 to 1E-1
        this value can usually be assumed to be around 1.0E-10 when acccounting for the conversion
        from mass fraction to ppmw (which introduces an extra factor of 1E6) */
     ierr = PetscOptionsGetPositiveScalar("-volatile0",&VOLATILE0,1.0E-10,NULL);CHKERRQ(ierr);
-    ierr = ScalingConstantsSet(SC,RADIUS0,MASS0,ENTROPY0,PRESSURE0,VOLATILE0);CHKERRQ(ierr);
+    ierr = ScalingConstantsSet(SC,ENTROPY0,RADIUS0,TIME0,PRESSURE0,VOLATILE0);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -380,6 +380,9 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_dsdr",&P->ic_dsdr,NULL);CHKERRQ(ierr);
   P->ic_dsdr /= SC->DSDR;
 
+  P->ic_steady_state_energy = PETSC_FALSE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-ic_steady_state_energy",&P->ic_steady_state_energy,NULL);CHKERRQ(ierr);
+
   /* initial entropy at the surface */
   P->ic_surface_entropy = -1;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-ic_surface_entropy",&P->ic_surface_entropy,NULL);CHKERRQ(ierr);
@@ -614,6 +617,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const Sc
         ierr = PetscOptionsGetString(NULL,NULL,"-ic_atmosphere_filename",Ap->ic_atmosphere_filename,PETSC_MAX_PATH_LEN,NULL); CHKERRQ(ierr);
     }
 
+    /* solve for surface radiative balance during time-stepping */
     Ap->SURFACE_BC_ACC = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-SURFACE_BC_ACC",&Ap->SURFACE_BC_ACC,NULL);CHKERRQ(ierr);
 

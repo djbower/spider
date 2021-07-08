@@ -95,7 +95,7 @@ typedef struct {
     PetscScalar OXYGEN_FUGACITY_offset; // offset in log units from IW buffer
     PetscScalar O2_molar_mass;
     PetscScalar O2_kabs;
-    PetscBool SURFACE_BC_ACC;
+    PetscBool SURFACE_BC_ACC; // solve for surface radiative balance during time-stepping
     /* below to replace with shallow ocean layer */
     //PetscBool VISCOUS_MANTLE_COOLING_RATE;
     PetscBool THERMAL_ESCAPE;
@@ -189,6 +189,7 @@ typedef struct {
     PetscScalar ic_surface_entropy; // initial entropy at surface
     PetscScalar ic_core_entropy; // initial entropy at core-mantle boundary
     PetscScalar ic_dsdr;
+    PetscBool   ic_steady_state_energy;
     PetscScalar radius;
     PetscScalar coresize;
     PetscScalar coremass;

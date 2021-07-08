@@ -34,7 +34,7 @@ int main(int argc, char ** argv)
   /* Print options file(s) being used. If no options file is specified, use a default */
   {
     PetscBool options_file_provided = PETSC_FALSE;
-    char      default_options_filename[PETSC_MAX_PATH_LEN] = "tests/opts/blackbody.opts";
+    char      default_options_filename[PETSC_MAX_PATH_LEN] = "tests/opts/blackbody50.opts";
 
     for (int i=0; i<argc; ++i) {
       PetscBool detected;

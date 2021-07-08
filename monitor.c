@@ -52,8 +52,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
     days = (elapsedSeconds - 24*60*hours - 60*minutes - seconds)/(24*60*60);
 
     /* actual and desired time in integer number of years */
-    time_years_actual = (long long) ( time * SC->TIMEYRS );
-    time_years_desired = (long long) ( step * dtmacro * SC->TIMEYRS );
+    time_years_actual = llround( time * SC->TIMEYRS );
+    time_years_desired = llround( step * dtmacro * SC->TIMEYRS );
 
     /* Print */
     ierr = PetscPrintf(PETSC_COMM_WORLD,"***  Writing output at macro Step %D, t=%f. [%lld:%02d:%02d:%02d]\n",step,(double)time,days,hours,minutes,seconds);CHKERRQ(ierr);
@@ -93,7 +93,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       PetscInt      i;
 
       /* current age in integer number of years */
-      time_years_actual = (long long) ( time * SC->TIMEYRS );
+      time_years_actual = llround( time * SC->TIMEYRS );
 
       ierr = PetscSNPrintf(filename,PETSC_MAX_PATH_LEN,"%s/%lld.json",P->outputDirectory,time_years_actual);CHKERRQ(ierr);
 
@@ -120,16 +120,12 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
 
       /* Re-evaluate rhs and add to file */
       {
-        DimensionalisableField rhsDF;
         Vec                    rhs;
         cJSON                  *rhsJSON;
-        ierr = DimensionalisableFieldDuplicate(ctx->solDF,&rhsDF);CHKERRQ(ierr);
-        ierr = DimensionalisableFieldSetName(rhsDF,"SPIDER rhs");CHKERRQ(ierr);
-        ierr = DimensionalisableFieldGetGlobalVec(rhsDF,&rhs);CHKERRQ(ierr);
+        ierr = DimensionalisableFieldGetGlobalVec(ctx->rhsDF,&rhs);CHKERRQ(ierr);
         ierr = RHSFunction(ts,time,sol,rhs,ctx);CHKERRQ(ierr);
-        ierr = DimensionalisableFieldToJSON(rhsDF,&rhsJSON);CHKERRQ(ierr);
+        ierr = DimensionalisableFieldToJSON(ctx->rhsDF,&rhsJSON);CHKERRQ(ierr);
         cJSON_AddItemToObject(json,"rhs",rhsJSON);CHKERRQ(ierr);
-        ierr = DimensionalisableFieldDestroy(&rhsDF);CHKERRQ(ierr);
       }
 
 

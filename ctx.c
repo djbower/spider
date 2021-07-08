@@ -77,7 +77,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
   {
     ScalingConstants const SC = ctx->parameters->scaling_constants;
     PetscInt i,f;
-    PetscScalar *sol_scalings;
+    PetscScalar *sol_scalings, *rhs_scalings;
 
     /* We (over)allocate assuming a maximum of SPIDER_NUM_FIELD_IDS fields, that is that
        you will never have more than one copy of the same field.
@@ -85,6 +85,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
        "undefined" entry in SpiderSolutionFieldID */
     ierr = PetscMalloc2(SPIDER_NUM_FIELD_IDS,&ctx->solutionFieldIDs,SPIDER_NUM_FIELD_IDS+1,&ctx->solutionSlots);CHKERRQ(ierr);
     ierr = PetscMalloc1(SPIDER_NUM_FIELD_IDS,&sol_scalings);CHKERRQ(ierr);
+    ierr = PetscMalloc1(SPIDER_NUM_FIELD_IDS,&rhs_scalings);CHKERRQ(ierr);
     for (i=0; i<SPIDER_NUM_FIELD_IDS; ++i) ctx->solutionSlots[i] = -1;
     f = 0;
 
@@ -92,12 +93,14 @@ PetscErrorCode SetupCtx(Ctx* ctx)
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_DSDXI_B;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
     sol_scalings[f] = SC->DSDR;
+    rhs_scalings[f] = SC->DSDR / SC->TIME;
     ++f;
 
     ierr = DMCompositeAddDM(ctx->dm_sol,(DM)ctx->da_point);CHKERRQ(ierr);
     ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_S0;
     ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
     sol_scalings[f] = SC->ENTROPY;
+    rhs_scalings[f] = SC->ENTROPY / SC->TIME;
     ++f;
 
     if (ctx->da_volatiles) {
@@ -105,6 +108,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
       ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_VOLATILES;
       ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
       sol_scalings[f] = SC->PRESSURE;
+      rhs_scalings[f] = SC->PRESSURE / SC->TIME;
       ++f;
     }
 
@@ -113,6 +117,7 @@ PetscErrorCode SetupCtx(Ctx* ctx)
       ctx->solutionFieldIDs[f] = SPIDER_SOLUTION_FIELD_MO_REACTIONS;
       ctx->solutionSlots[ctx->solutionFieldIDs[f]] = f;
       sol_scalings[f] = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS; // physical volatile reservoir mass scaling
+      rhs_scalings[f] = SC->VOLATILE * 4.0 * PETSC_PI * SC->MASS / SC->TIME;
       ++f;
     }
 
@@ -127,7 +132,17 @@ PetscErrorCode SetupCtx(Ctx* ctx)
       ierr = DimensionalisableFieldSetSubdomainName(ctx->solDF,f,SpiderSolutionFieldDescriptions[ctx->solutionFieldIDs[f]]);CHKERRQ(ierr);
       ierr = DimensionalisableFieldSetSubdomainUnits(ctx->solDF,f,SpiderSolutionFieldUnits[ctx->solutionFieldIDs[f]]);CHKERRQ(ierr);
     }
+
+    /* for rhs */
+    ierr = DimensionalisableFieldCreate(&ctx->rhsDF,ctx->dm_sol,rhs_scalings,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetName(ctx->rhsDF,"SPIDER rhs");CHKERRQ(ierr);
+    for (f=0; f<ctx->numFields; ++f) {
+      ierr = DimensionalisableFieldSetSubdomainName(ctx->rhsDF,f,SpiderSolutionFieldDescriptions[ctx->solutionFieldIDs[f]]);CHKERRQ(ierr);
+      ierr = DimensionalisableFieldSetSubdomainUnits(ctx->rhsDF,f,SpiderRhsFieldUnits[ctx->solutionFieldIDs[f]]);CHKERRQ(ierr);
+    }
+
     ierr = PetscFree(sol_scalings);CHKERRQ(ierr);
+    ierr = PetscFree(rhs_scalings);CHKERRQ(ierr);
   }
 
   /* Continue to initialize context with distributed data */
@@ -159,6 +174,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
 
   /* Destroy data allocated in Ctx */
   ierr = DimensionalisableFieldDestroy(&ctx->solDF);CHKERRQ(ierr);
+  ierr = DimensionalisableFieldDestroy(&ctx->rhsDF);CHKERRQ(ierr);
   for (i=0;i<NUMMESHVECS_B;++i){
     ierr = DimensionalisableFieldDestroy(&ctx->mesh.meshFields_b[i]);CHKERRQ(ierr);
   }
@@ -244,7 +260,7 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     ierr = DimensionalisableFieldCreate(&ctx->solution.solutionFields_b[5],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
     ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_b[5],&ctx->solution.Etot); // Just for convenience - can always get this vector out when you need it
     ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_b[5],"Etot_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[5],"W$");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_b[5],"W");CHKERRQ(ierr);
   }
   {
     PetscScalar scaling = SC->GSUPER;

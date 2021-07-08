@@ -58,7 +58,20 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
 
     /* P->t0 is set in parameters.c */
     /* time is needed for the radiogenic energy input */
-    ierr = set_current_state_from_solution( E, P->t0, sol ); CHKERRQ(ierr);
+
+    /* if Ap->SURFACE_BC_ACC is set, then the surface radiation is solved
+       for every time step.  But sometimes we just want to solve the balance
+       once for the IC, so define Ap->SURFACE_BC_ACC_IC for this purpose */
+    if( (P->ic_steady_state_energy) || (Ap->SURFACE_BC_ACC)){
+        ierr = solve_for_surface_radiation_balance( E, P->t0 );CHKERRQ(ierr);
+        /* we also solve for the steady-state initially, by ensuring the energy
+           flows in the interior are pretty much equal to the surface energy
+           flow.  This should help the time-stepper to get going a bit faster
+           and avoid some clunky spurious values from applying an unphysical
+           initial condition */
+        ierr = solve_for_steady_state_energy_interior( E, P->t0 );CHKERRQ(ierr);
+        ierr = set_solution_from_entropy( E, sol );CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
@@ -102,10 +115,6 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     /* option to set initial surface entropy */
     if( P->ic_surface_entropy > 0.0 ){
         ierr = set_surface_entropy_constant( E );CHKERRQ(ierr);
-    }
-    else{
-        /* otherwise balance flux at surface with chosen surface flux bc */
-        ierr = solve_for_surface_radiation_balance( E, P->t0 );CHKERRQ(ierr);
     }
 
     /* Now the Vecs in E are set and consistent, clone them
