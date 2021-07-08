@@ -174,6 +174,7 @@ PetscErrorCode DestroyCtx(Ctx* ctx)
 
   /* Destroy data allocated in Ctx */
   ierr = DimensionalisableFieldDestroy(&ctx->solDF);CHKERRQ(ierr);
+  ierr = DimensionalisableFieldDestroy(&ctx->rhsDF);CHKERRQ(ierr);
   for (i=0;i<NUMMESHVECS_B;++i){
     ierr = DimensionalisableFieldDestroy(&ctx->mesh.meshFields_b[i]);CHKERRQ(ierr);
   }
