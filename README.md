@@ -212,7 +212,7 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc"):
 8. Configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change /somewhere/to/install to the place that you installed SUNDIALS):
 
     ```
-    ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc-mp-8 --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/somewhere/to/install/sundials-quad/install --download-mpich --download-f2cblaslapack --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+    ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/somewhere/to/install/sundials-quad/install --download-mpich --download-f2cblaslapack --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
     ```
 
 9. Follow the terminal instructions to complete the installation of PETSc.  You can copy-paste the commands returned to you in the terminal window.  Make note of `PETSC_DIR` and `PETSC_ARCH`, which are also reported in the terminal window.
