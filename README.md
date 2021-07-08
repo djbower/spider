@@ -96,13 +96,10 @@ Here we provide a short installation guide to get you up and running with SPIDER
 
 13. [Requires SciATH] You can also run all available tests by navigating to the `tests/` directory and running:
 
-<<<<<<< HEAD
     ```
     python -m sciath tests.yml
     ```
 
-=======
->>>>>>> djbower/time
 You should now be ready to use the code.  Proceed to *Running a Model* to learn how to run a basic model and use SPIDER options files.
 
 ## 3. Running a Model
