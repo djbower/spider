@@ -13,8 +13,8 @@
 -dtmacro 100
 
 # timestepper tolerances
--ts_sundials_atol 1.0e-6
--ts_sundials_rtol 1.0e-6
+-ts_sundials_atol 1.0e-8
+-ts_sundials_rtol 1.0e-8
 
 # number of basic nodes
 -n 50
@@ -28,7 +28,7 @@
 
 -entropy0 2.60E3 # J/kg/K
 -radius0 1.0E8 # m
--time0 3.154E9 # s
+-time0 3.154E7 #7 # s
 
 # output directory
 -outputDirectory output
@@ -80,12 +80,12 @@
 -IC_INTERIOR 1
 -ic_adiabat_entropy 2600.0
 # next serves as an initial guess for the entropy gradient
--ic_dsdr -1.0e-6
+-ic_dsdr -1.0e-5
 
 # for IC, start from steady-state mantle where the energy flux
 # at each level in the mantle balances the energy radiating
 # from the planetary surface
--ic_steady_state_energy 1
+#-ic_steady_state_energy 1
 
 
 #====================
