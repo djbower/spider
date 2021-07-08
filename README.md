@@ -6,20 +6,20 @@ A 1-D parameterised interior dynamics code for rocky planets with molten and/or 
 ## 1. References
 
 #### 1. SPIDER code (interior dynamics)
-Bower, D.J., P. Sanan, and A.S. Wolf (2018), Numerical solution of a non-linear conservation law applicable to the interior dynamics of partially molten planets, Phys. Earth Planet. Inter., 274, 49-62, doi: 10.1016/j.pepi.2017.11.004, arXiv: https://arxiv.org/abs/1711.07303, EarthArXiv: https://eartharxiv.org/k6tgf
+Bower, D.J., P. Sanan, and A.S. Wolf (2018), Numerical solution of a non-linear conservation law applicable to the interior dynamics of partially molten planets, Phys. Earth Planet. Inter., 274, 49-62, doi: 10.1016/j.pepi.2017.11.004, arXiv: <https://arxiv.org/abs/1711.07303>, EarthArXiv: <https://eartharxiv.org/k6tgf>
 
 #### 2. MgSiO3 melt data tables (RTpress) within SPIDER
-Wolf, A.S. and D.J. Bower (2018), An equation of state for high pressure-temperature liquids (RTpress) with application to MgSiO3 melt, Phys. Earth Planet. Inter., 278, 59-74, doi: 10.1016/j.pepi.2018.02.004, EarthArXiv: https://eartharxiv.org/4c2s5
+Wolf, A.S. and D.J. Bower (2018), An equation of state for high pressure-temperature liquids (RTpress) with application to MgSiO3 melt, Phys. Earth Planet. Inter., 278, 59-74, doi: 10.1016/j.pepi.2018.02.004, EarthArXiv: <https://eartharxiv.org/4c2s5>
 
 #### 3. Volatile and atmosphere coupling
-Bower, D.J., Kitzmann, D., Wolf, A.S., Sanan, P., Dorn, C., and Oza, A.V. (2019), Linking the evolution of terrestrial interiors and an early outgassed atmosphere to astrophysical observations, Astron. Astrophys., 631, A103, doi: 10.1051/0004-6361/201935710, arXiv: https://arxiv.org/abs/1904.08300
+Bower, D.J., Kitzmann, D., Wolf, A.S., Sanan, P., Dorn, C., and Oza, A.V. (2019), Linking the evolution of terrestrial interiors and an early outgassed atmosphere to astrophysical observations, Astron. Astrophys., 631, A103, doi: 10.1051/0004-6361/201935710, arXiv: <https://arxiv.org/abs/1904.08300>
 
 #### 4. Redox reactions
 Bower, D.J., Hakim, K., Sossi, P.A., and Sanan, P. (2021), Retention of water in terrestrial magma oceans and carbon-rich early atmospheres, Planet. Sci. J., in review
 
 ## 2. Quick Installation
 
-Here we provide a ten point installation guide to get you up and running with SPIDER.  First, we install PETSc which provides the solver library and then we install SPIDER.
+Here we provide a short installation guide to get you up and running with SPIDER.  First, we install PETSc which provides the solver library and then we install SPIDER.  Finally, we can (optionally) install a test harness.
 
 1. Test you have a valid C compiler installed by running the following command in a terminal window (install a C compiler if this command fails):
 
@@ -72,11 +72,32 @@ Here we provide a ten point installation guide to get you up and running with SP
     make clean
     make -j
     ```
+    
+    Spider is now installed and you can in principle skip to *Running a Model* below.  However, you are advised to install the test harness as follows:
 
-10. Test basic functionality:
+10. [Optional] Get SciATH (Scientific Application Test Harness), which is a python module:
+
+    ```
+    cd /somewhere/to/install
+    git clone https://github.com/sciath/sciath -b dev
+    ```
+    
+11. [Requires SciATH] Add the resulting module to your Python path (for example):
+
+    ```
+    export PYTHONPATH=$PYTHONPATH:$PWD/sciath
+    ```
+
+12. [Requires SciATH] Now return to the root SPIDER directory and test basic functionality:
 
     ```
     make test
+    ```
+
+13. [Requires SciATH] You can also run all available tests by navigating to the `tests/` directory and running:
+
+    ```
+    python -m sciath tests.yml
     ```
 
 You should now be ready to use the code.  Proceed to *Running a Model* to learn how to run a basic model and use SPIDER options files.
@@ -90,7 +111,7 @@ You should now be ready to use the code.  Proceed to *Running a Model* to learn 
     spider
     ```
         
-3. However, in general you will add an argument to use the parameters specified in an options file:
+3. However, in general you will add an argument to use the parameters specified in an options file.  For example, from the root SPIDER directory:
 
     ```
     spider -options_file tests/opts/blackbody50.opts
@@ -100,13 +121,15 @@ You should now be ready to use the code.  Proceed to *Running a Model* to learn 
 
 ## 4. Detailed Installation
 
+The following section provides more general information about the installation process, and in particular provides the steps for installing SPIDER with support for quadruple precision calculations.
+
 Installation of SPIDER and its dependencies requires:
 
 1. A working C compiler
 2. Build dependencies (double or quadruple precision)
 3. Build SPIDER
 
-#### 4.1. C Compiler
+#### 4.1 C Compiler
 
 Any C compiler can be used if you want to build SPIDER for double precision calculations.  However, for quadruple precision calculations you will need a "pure" GCC compiler.  Unfortunately on a Mac, "`gcc`" is a wrapper for the default Apple compiler ("`clang`") which is not a pure GCC compiler package and hence does not support quadruple precision math.  Particularly for Mac OSX you may choose to install GCC to support both double and quadruple precision calculations using a single compiler.
 
@@ -140,7 +163,7 @@ If you see a message about "Apple LLVM" then your compiler will not support quad
 echo '#include<stdio.h>' > t.c && echo '#include<quadmath.h>' >> t.c && echo 'int main(){printf("It seems to work!\n");}' >> t.c && gcc t.c && ./a.out && rm -f t.c a.out
 ```
 
-#### 4.2. Build Dependencies (Quadruple Precision)
+#### 4.2 Build Dependencies (Quadruple Precision)
 
 **For double precision, you can follow *Quick Installation* to install PETSc, which will also install SUNDIALs.**
 
@@ -252,9 +275,9 @@ You should now be ready to use the code!
 ## 5. Other
 
 
-#### 5.1 SPIDER extended notes
+#### 5.1 Extended notes
 
-There are extended notes located in `manual/` that are useful for understanding the source code.
+There are extended notes located in `manual/` that are useful for understanding the methodology and source code of SPIDER.
 
 #### 5.2 Python scripts
 
