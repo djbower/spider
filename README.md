@@ -18,7 +18,7 @@ Bower, D.J., Kitzmann, D., Wolf, A.S., Sanan, P., Dorn, C., and Oza, A.V. (2019)
 Bower, D.J., Hakim, K., Sossi, P.A., and Sanan, P. (2021), Retention of water in terrestrial magma oceans and carbon-rich early atmospheres, Planet. Sci. J., in review
 
 ## 2. Quick Installation
-<a name="quick"></a>
+
 Here we provide a ten point installation guide to get you up and running with SPIDER.  First, we install PETSc which provides the solver library and then we install SPIDER.
 
 1. Test you have a valid C compiler installed by running the following command in a terminal window (install a C compiler if this command fails):
@@ -63,10 +63,9 @@ Here we provide a ten point installation guide to get you up and running with SP
 
         make test
 
-You should now be ready to use the code.  Proceed to [Running a Model](#run) to learn how to run a basic model and use SPIDER options files.
+You should now be ready to use the code.  Proceed to *Running a Model* to learn how to run a basic model and use SPIDER options files.
 
 ## 3. Running a Model
-<a name="run"></a>
 
 1. [Optional] Add the installation directory of SPIDER to your `$PATH` so you can call the `spider` binary without requiring the absolute path. 
 2. You can run `spider` without an argument and standard parameters will be used to run a basic interior model with output stored in ```output/```:
@@ -116,7 +115,7 @@ If you see a message about "Apple LLVM" then your compiler will not support quad
 
 #### 4.2. Build Dependencies (Quadruple Precision)
 
-**For double precision, you can follow [Quick Installation](#quick) to install PETSc, which will also install SUNDIALs.**
+**For double precision, you can follow *Quick Installation* to install PETSc, which will also install SUNDIALs.**
 
 Before you begin, comment out any existing references to `PETSC_DIR` and `PETSC_ARCH` in your
 `.profile`, `.bash_profile`,`.bashrc`, etc. and clear these variables from your current terminal session.
