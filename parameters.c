@@ -38,7 +38,8 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal ENTROP
        is usually around 1-100 bar */
     SC->PRESSURE  = PRESSURE; // Pa
     /* volatile scales the volatile mass balance, since mass is already
-       defined by the four quantities above */
+       defined by the four quantities above we must specify an extra
+       scaling to scale the numerical problem appropriately */
     SC->VOLATILE  = VOLATILE;
     /* below are derived from above */
     /* note: factors of 4 pi are excluded */
