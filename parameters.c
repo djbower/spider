@@ -28,10 +28,17 @@ static PetscErrorCode ScalingConstantsSet( ScalingConstants SC, PetscReal ENTROP
 
     /* these 5 scaling constants can be set by the user, and the others
        subsequently derived */
+    /* the first four are used to non-dimensionalise the problem, but
+       should be chosen to scale solution quantities and their time
+       derivatives to around unit */
     SC->ENTROPY   = ENTROPY; // (specific) J/kg/K
     SC->RADIUS    = RADIUS; // m
     SC->TIME      = TIME; // s
+    /* pressure is only relevant if solving for the atmosphere, and
+       is usually around 1-100 bar */
     SC->PRESSURE  = PRESSURE; // Pa
+    /* volatile scales the volatile mass balance, since mass is already
+       defined by the four quantities above */
     SC->VOLATILE  = VOLATILE;
     /* below are derived from above */
     /* note: factors of 4 pi are excluded */
