@@ -82,11 +82,6 @@
 # next serves as an initial guess for the entropy gradient
 -ic_dsdr -1.0e-5
 
-# for IC, start from steady-state mantle where the energy flux
-# at each level in the mantle balances the energy radiating
-# from the planetary surface
-#-ic_steady_state_energy 1
-
 
 #====================
 # PHYSICAL PARAMETERS
