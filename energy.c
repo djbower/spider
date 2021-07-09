@@ -706,8 +706,8 @@ PetscErrorCode solve_for_steady_state_energy_interior( Ctx *E, PetscReal t )
 {
     /* solve for dS/dxi in the interior to adhere to a constant flow of energy,
        based on the energy leaving from the top surface.  This solves for the
-       steady-state solution, which should then enable the time-stepper to
-       spin up more quickly.  Only used for the initial condition */ 
+       steady-state solution, but can often result in noise blowing up when
+       the RHS is computed.  Only used for the initial condition */ 
 
     PetscErrorCode             ierr;
     SNES                       snes;
@@ -781,13 +781,23 @@ static PetscErrorCode objective_function_steady_state_energy_interior( SNES snes
     PetscErrorCode             ierr;
     PetscMPIInt                rank;
     Ctx                        *E = (Ctx*) ptr;
+    Mesh                       const *M = &E->mesh;
     Solution                   *S = &E->solution;
-    PetscScalar                S0, E0;
-    PetscInt             const ind0 = 0;
+    PetscScalar                S0, E0, R0, R1, dR, fac, fac2;
+    PetscInt                   const ind0 = 0;
+    PetscInt                   ind1, numpts_b;
     PetscReal                  t;
+    Vec                        scale_b;
 
     PetscFunctionBeginUser;
+
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
+    ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+
+    ind1 = numpts_b-1;
+
+    ierr = VecDuplicate( M->radius_b, &scale_b );CHKERRQ(ierr);
+    ierr = VecCopy( M->radius_b, scale_b );CHKERRQ(ierr);
 
     /* set current time from Ctx, since the Ctx is passed to the
        objective function */
@@ -800,19 +810,36 @@ static PetscErrorCode objective_function_steady_state_energy_interior( SNES snes
 
     /* now we have the gradient and S0, set for everything else */
     ierr = set_entropy_reconstruction_from_ctx( E, S0 );CHKERRQ(ierr);
-
-    /* assume already adheres to surface bc but check after */
     ierr = set_current_state( E, t );CHKERRQ(ierr);
 
     /* outgoing energy at surface */
     ierr = VecGetValues( S->Etot,1,&ind0,&E0);CHKERRQ(ierr);
 
     /* compute residual vector */
+    /* first part imposes an exact energy balance throughout the mantle */
     ierr = VecShift( S->Etot, -E0 );CHKERRQ(ierr);
     ierr = VecScale( S->Etot, 1.0/E0 );CHKERRQ(ierr);
+    /* but second part adds a perturbation, otherwise the calculation
+       of the RHS blows up noise since we are at steady-state */
+    /* add a linear decrease in energy of 10% (arbitrary choice) 
+       from 1 at the surface to 0.9 at the CMB */
+    fac = 0.0; /* 10% decrease across mantle */
+    fac2 = 1.0-fac;
+    ierr = VecGetValues( M->radius_b,1,&ind0,&R0);CHKERRQ(ierr);
+    ierr = VecGetValues( M->radius_b,1,&ind1,&R1);CHKERRQ(ierr);
+    dR = R0-R1;
+
+    ierr = VecShift( scale_b, -R1 );CHKERRQ(ierr);
+    ierr = VecScale( scale_b, 1.0/dR );CHKERRQ(ierr);
+    ierr = VecScale( scale_b, fac );CHKERRQ(ierr);
+    ierr = VecShift( scale_b, fac2 );CHKERRQ(ierr);
+
+    ierr = VecPointwiseMult( S->Etot, S->Etot, scale_b );CHKERRQ(ierr); 
 
     /* set residual of fluxes */
     ierr = VecCopy( S->Etot, f );CHKERRQ(ierr);
+
+    ierr = VecDestroy( &scale_b );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
