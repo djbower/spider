@@ -38,6 +38,9 @@ typedef struct {
     PetscScalar molar_mass;
     PetscScalar cross_section;
     PetscReal   poststep_change; // allowable fractional change (only for -activate_poststep)
+    /* below are for pseudo-volatile option */
+    char        TP_filename[PETSC_MAX_PATH_LEN];
+    Interp1d    TP_interp;
 } data_VolatileParameters;
 typedef data_VolatileParameters* VolatileParameters;
 
@@ -119,6 +122,8 @@ typedef struct {
     PetscScalar const * radius_ptr;
     PetscScalar const * VOLATILE_ptr;
     PetscScalar const * mantle_mass_ptr;
+    // for pseudo volatiles
+    PetscBool           PSEUDO_VOLATILES;
 } data_AtmosphereParameters;
 typedef data_AtmosphereParameters* AtmosphereParameters;
 

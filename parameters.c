@@ -10,6 +10,7 @@ Custom PETSc command line options should only ever be parsed during the populate
 #include "ctx.h"
 #include "eos.h"
 #include "eos_composite.h"
+#include "interp.h"
 #include "util.h"
 
 static PetscErrorCode VolatileParametersCreate( VolatileParameters * );
@@ -234,6 +235,17 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_poststep_change");CHKERRQ(ierr);
     vp->poststep_change = -1; // fractional (negative value is OFF)
     ierr = PetscOptionsGetScalar(NULL,NULL,buf,&vp->poststep_change,&set);CHKERRQ(ierr);
+
+    /* if volatile is a pseudo-volatile, we just prescribe the evolution of its pressure
+       as a function of surface temperature, using column data from a file */
+    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_TP_filename");CHKERRQ(ierr);
+    ierr = PetscStrcpy(vp->TP_filename,"TP_file.json");CHKERRQ(ierr);
+    if(Ap->PSEUDO_VOLATILES){
+        /* get filename */
+        ierr = PetscOptionsGetString(NULL,NULL,buf,vp->TP_filename,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
+        /* create interp1d */
+        ierr = Interp1dCreateAndSet( vp->TP_filename, &vp->TP_interp, SC->TEMP, SC->PRESSURE );CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
@@ -666,6 +678,10 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const Sc
         break;
     }
 
+    /* use psuedo volatiles */
+    Ap->PSEUDO_VOLATILES = PETSC_FALSE;
+    ierr = PetscOptionsGetBool(NULL,NULL,"-PSEUDO_VOLATILES",&Ap->PSEUDO_VOLATILES,NULL);CHKERRQ(ierr);
+
     /* TODO: this should be superseded by a shallow ocean layer treatment */
     //Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
     //ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
@@ -972,6 +988,10 @@ static PetscErrorCode AtmosphereParametersDestroy( AtmosphereParameters* atmosph
     Ap->n_reactions = 0;
 
     for (i=0; i<Ap->n_volatiles; ++i) {
+        /* if pseudo-volatile, destroy Interp1d */
+        if( Ap->PSEUDO_VOLATILES ){
+            ierr = Interp1dDestroy(&Ap->volatile_parameters[i]->TP_interp);CHKERRQ(ierr);
+        }
         ierr = VolatileParametersDestroy(&Ap->volatile_parameters[i]);CHKERRQ(ierr);
     }
     Ap->n_volatiles = 0;

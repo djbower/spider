@@ -111,7 +111,14 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
   /* volatiles and reactions */
 
   if (Ap->n_volatiles){
-    ierr = solve_dpdts( E );CHKERRQ(ierr);
+    if( Ap->PSEUDO_VOLATILES ){
+        /* impose pressure at surface based on input PT file */
+        ierr = get_dpdts_from_lookup( E );CHKERRQ(ierr);
+    }
+    else{
+        /* solve for volatile mass balance based on partitioning between reservoirs */
+        ierr = solve_dpdts( E );CHKERRQ(ierr);
+    }
     for (v=0; v<Ap->n_volatiles; ++v) {
       ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],v,A->volatiles[v].dpdt,INSERT_VALUES);CHKERRQ(ierr);
     }

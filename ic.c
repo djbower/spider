@@ -19,6 +19,7 @@ static PetscErrorCode set_start_time_from_file( Parameters , const char * );
 static PetscErrorCode set_start_stepmacro_from_file( Parameters , const char * );
 /* atmosphere ic */
 static PetscErrorCode set_ic_atmosphere( Ctx *, Vec );
+static PetscErrorCode set_ic_atmosphere_pseudo_volatiles( Ctx *, Vec );
 static PetscErrorCode set_ic_atmosphere_from_ocean_moles( Ctx *E, Vec sol );
 static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Vec sol );
 static PetscErrorCode set_ic_atmosphere_from_file( Ctx *, Vec );
@@ -469,8 +470,14 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
 
     if(Ap->n_volatiles){
 
+        /* for pseudo-volatiles we get the atmospheric partial pressures from
+           lookup, based on the surface temperature */
+        if(Ap->PSEUDO_VOLATILES){
+            ierr = set_ic_atmosphere_pseudo_volatiles( E, sol );CHKERRQ(ierr);
+        }
+
         /* set atmosphere IC from initial total abundance */
-        if(Ap->IC_ATMOSPHERE==1){
+        else if(Ap->IC_ATMOSPHERE==1){
             ierr = set_ic_atmosphere_from_initial_total_abundance( E, sol );CHKERRQ(ierr);
         }
 
@@ -506,6 +513,7 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
            solution */
         ierr = set_reservoir_volatile_content( A, Ap, FC, SC );CHKERRQ(ierr);
 
+        /* might mess up pseudo-volatiles? */
         ierr = conform_atmosphere_parameters_to_ic( E );CHKERRQ(ierr);
 
         ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
@@ -751,6 +759,26 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     if( FLAG_H2 || FLAG_H2O || FLAG_CO || FLAG_CO2 ){
          ierr = PetscPrintf(PETSC_COMM_WORLD,"************************************************\n\n");CHKERRQ(ierr);
     }
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode set_ic_atmosphere_pseudo_volatiles( Ctx *E, Vec sol )
+{
+    PetscErrorCode       ierr;
+    PetscInt             i;
+    Parameters const     P = E->parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
+    Atmosphere           *A = &E->atmosphere;
+
+    PetscFunctionBeginUser;
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_pseudo_volatiles()\n");CHKERRQ(ierr);
+
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        SetInterp1dValue( Ap->volatile_parameters[i]->TP_interp, A->tsurf, &A->volatiles[i].p, NULL );CHKERRQ(ierr);
+    }
+
+    ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

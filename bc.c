@@ -1,5 +1,6 @@
 #include "atmosphere.h"
 #include "bc.h"
+#include "interp.h"
 #include "monitor.h"
 
 PetscErrorCode set_surface_entropy_gradient_update( Ctx *E, Vec rhs )
@@ -371,6 +372,31 @@ static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qi
     return Qout;
 }
 #endif
+
+PetscErrorCode get_dpdts_from_lookup( Ctx *E )
+{
+    PetscErrorCode             ierr;
+    PetscInt                   i;
+    Atmosphere                 *A  = &E->atmosphere;
+    Parameters const           P  = E->parameters;
+    AtmosphereParameters const Ap = P->atmosphere_parameters;
+
+    PetscFunctionBeginUser;
+
+    for (i=0; i<Ap->n_volatiles; ++i) {
+        /* first, get dP/dT from lookup */
+        ierr = SetInterp1dValue( Ap->volatile_parameters[i]->TP_interp, A->tsurf, NULL, &A->volatiles[i].dpdt );CHKERRQ(ierr);
+        /* second, product rule dP/dt = dP/dT * dTsurf/dt */
+        A->volatiles[i].dpdt *= A->dtsurfdt;
+    }
+
+    /* reactions are not compatible with pseudo-volatiles */
+    for (i=0; i<Ap->n_reactions; ++i) {
+        A->reactions[i].dmrdt = 0;
+    }
+
+    PetscFunctionReturn(0);
+}
 
 PetscErrorCode solve_dpdts( Ctx *E )
 {
