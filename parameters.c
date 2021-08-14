@@ -244,7 +244,8 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
         /* get filename */
         ierr = PetscOptionsGetString(NULL,NULL,buf,vp->TP_filename,PETSC_MAX_PATH_LEN,NULL);CHKERRQ(ierr);
         /* create interp1d */
-        ierr = Interp1dCreateAndSet( vp->TP_filename, &vp->TP_interp, SC->TEMP, SC->PRESSURE );CHKERRQ(ierr);
+        /* note: second column is log10 of pressure in Pa, so do not scale by SC->PRESSURE */
+        ierr = Interp1dCreateAndSet( vp->TP_filename, &vp->TP_interp, SC->TEMP, 1.0 );CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
