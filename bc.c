@@ -388,6 +388,9 @@ PetscErrorCode get_dpdts_from_lookup( Ctx *E )
         ierr = SetInterp1dValue( Ap->volatile_parameters[i]->TP_interp, A->tsurf, NULL, &A->volatiles[i].dpdt );CHKERRQ(ierr);
         /* second, product rule dP/dt = dP/dT * dTsurf/dt */
         A->volatiles[i].dpdt *= A->dtsurfdt;
+        /* note that the non-dimensionalisation does not affect the derivative */
+        /* dlog10(P(Pa))/dT = dlog10(Phat)/dT + dlog10(P0)/dT */
+        /* because the second term on the RHS is zero */
     }
 
     /* reactions are not compatible with pseudo-volatiles */

@@ -768,6 +768,7 @@ static PetscErrorCode set_ic_atmosphere_pseudo_volatiles( Ctx *E, Vec sol )
     PetscErrorCode       ierr;
     PetscInt             i;
     Parameters const     P = E->parameters;
+    ScalingConstants     const SC = P->scaling_constants;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
     Atmosphere           *A = &E->atmosphere;
 
@@ -775,7 +776,11 @@ static PetscErrorCode set_ic_atmosphere_pseudo_volatiles( Ctx *E, Vec sol )
     ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_pseudo_volatiles()\n");CHKERRQ(ierr);
 
     for (i=0; i<Ap->n_volatiles; ++i) {
+        /* recall that here A->volatiles[i].p is log10(P(Pa)) from lookup */
         SetInterp1dValue( Ap->volatile_parameters[i]->TP_interp, A->tsurf, &A->volatiles[i].p, NULL );CHKERRQ(ierr);
+        /* convert to non-dimensional (scaled) pressure */
+        A->volatiles[i].p -= PetscLog10Real( SC->PRESSURE );
+        A->volatiles[i].p = PetscPowScalar( 10.0, A->volatiles[i].p );
     }
 
     ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);

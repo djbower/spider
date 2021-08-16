@@ -142,7 +142,7 @@ PetscErrorCode set_partial_pressures_from_solution( Ctx *E, Vec sol )
 
     PetscErrorCode             ierr;
     Atmosphere                 *A = &E->atmosphere;
-    Parameters                 P = E->parameters;
+    Parameters           const P = E->parameters;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
     PetscInt                    i;
     PetscMPIInt                 size;
@@ -159,6 +159,10 @@ PetscErrorCode set_partial_pressures_from_solution( Ctx *E, Vec sol )
     /* partial pressures */
     for( i=0; i<Ap->n_volatiles; ++i) {
         ierr = VecGetValues(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],1,&i,&A->volatiles[i].p);CHKERRQ(ierr);
+        /* pseudo-volatiles track log10(P(Pa)), so convert to actual non-dimensional pressure */
+        if( Ap->PSEUDO_VOLATILES ){
+            A->volatiles[i].p = PetscPowScalar( 10.0, A->volatiles[i].p );
+        }
     }
 
     /* mass reaction terms */
@@ -190,6 +194,9 @@ PetscErrorCode set_solution_from_partial_pressures( Ctx *E, Vec sol )
 
     /* partial pressures */
     for( i=0; i<Ap->n_volatiles; ++i) {
+        if( Ap->PSEUDO_VOLATILES ){
+            A->volatiles[i].p = PetscLog10Real( A->volatiles[i].p );
+        }
         ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_MO_VOLATILES]],i,A->volatiles[i].p,INSERT_VALUES);CHKERRQ(ierr);
     }
 
