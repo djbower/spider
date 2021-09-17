@@ -252,7 +252,7 @@ PetscErrorCode PrintParameters( Parameters const );
 PetscErrorCode ReactionParametersCreateAmmonia1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersCreateCarbonDioxideIVTANTHERMO( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersCreateCarbonDioxideJANAF( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
-PetscErrorCode ReactionParametersCreateMethane1( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
+PetscErrorCode ReactionParametersCreateMethaneIVTANTHERMO( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersCreateWaterIVTANTHERMO( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersCreateWaterJANAF( ReactionParameters *, const AtmosphereParameters, const ScalingConstants );
 PetscErrorCode ReactionParametersDestroy( ReactionParameters *);

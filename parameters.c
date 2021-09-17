@@ -795,10 +795,10 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const Sc
         ++Ap->n_reactions;
     }
 
-    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_methane1",NULL,&flg);CHKERRQ(ierr);
+    ierr = PetscOptionsGetBool(NULL,NULL,"-reaction_methane_IVTANTHERMO",NULL,&flg);CHKERRQ(ierr);
     if (flg) {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS) SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source",SPIDER_MAX_REACTIONS);
-        ierr = ReactionParametersCreateMethane1(&Ap->reaction_parameters[Ap->n_reactions],Ap,SC);CHKERRQ(ierr);
+        ierr = ReactionParametersCreateMethaneIVTANTHERMO(&Ap->reaction_parameters[Ap->n_reactions],Ap,SC);CHKERRQ(ierr);
         ++Ap->n_reactions;
     }
 

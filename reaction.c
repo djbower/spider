@@ -9,7 +9,7 @@ static PetscScalar get_dlog10KdT( const ReactionParameters, PetscScalar );
 /* Note: this could logically be included in parameters.c, but that file was getting crowded */
 
 /* A named reaction */
-PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
+PetscErrorCode ReactionParametersCreateMethaneIVTANTHERMO(ReactionParameters* reaction_parameters_ptr, const AtmosphereParameters Ap, const ScalingConstants SC )
 {
   PetscErrorCode     ierr;
   PetscInt           i,v;
@@ -19,7 +19,7 @@ PetscErrorCode ReactionParametersCreateMethane1(ReactionParameters* reaction_par
   PetscFunctionBeginUser;
   ierr = PetscMalloc1(1,reaction_parameters_ptr);CHKERRQ(ierr);
   reaction_parameters = *reaction_parameters_ptr;
-  reaction_parameters->type = "methane1";
+  reaction_parameters->type = "methaneIVTANTHERMO";
   reaction_parameters->n_volatiles = 3;
   ierr = PetscMalloc3(2,&reaction_parameters->Keq_coeffs,reaction_parameters->n_volatiles,&reaction_parameters->stoichiometry,reaction_parameters->n_volatiles,&reaction_parameters->volatiles);CHKERRQ(ierr);
   reaction_parameters->stoichiometry[0] = -1.0;  // CO2
