@@ -732,12 +732,22 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
     }
 
     if(Ap->SURFACE_BC!=5){
+        PetscScalar Teff, Tskin;
         /* (effective) emissivity, non-dimensional */
         scaling = 1.0;
         ierr = JSON_add_single_value_to_object(dm, scaling, "emissivity", "None", A->emissivity, data);CHKERRQ(ierr);
         /* net upward atmospheric flux */
         scaling = SC->FLUX;
         ierr = JSON_add_single_value_to_object(dm, scaling, "Fatm", "W m$^{-2}$", A->Fatm, data);CHKERRQ(ierr);
+        /* effective temperature, TODO: check -> what about (Fatm/sigma)**(1/4)? */
+        /* below is temperature equation with optical depth set to unity */
+        Teff = A->Fatm / FC->STEFAN_BOLTZMANN + PetscPowScalar( Ap->teqm, 4.0 );
+        Teff = PetscPowScalar( Teff, 1.0/4.0 );
+        scaling = SC->TEMP;
+        ierr = JSON_add_single_value_to_object(dm, scaling, "Teff", "K", Teff, data);CHKERRQ(ierr);
+        Tskin = A->Fatm / (2*FC->STEFAN_BOLTZMANN) + PetscPowScalar( Ap->teqm, 4.0 );
+        Tskin = PetscPowScalar( Tskin, 1.0/4.0 );
+        ierr = JSON_add_single_value_to_object(dm, scaling, "Tskin", "K", Tskin, data);CHKERRQ(ierr);
     }
 
     /* total liquid mass of mantle, kg */
