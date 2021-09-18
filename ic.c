@@ -623,10 +623,12 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
     PetscBool   FLAG_H2O = PETSC_FALSE;
     PetscBool   FLAG_CO = PETSC_FALSE;
     PetscBool   FLAG_CO2 = PETSC_FALSE;
+    PetscBool   FLAG_CH4 = PETSC_FALSE;
     PetscScalar mass_H2 = 0.0, molar_mass_H2 = 0.0, tmass_H2 = 0.0, p_H2 = 0.0;
     PetscScalar mass_H2O = 0.0, molar_mass_H2O = 0.0, tmass_H2O = 0.0, p_H2O = 0.0;
     PetscScalar mass_CO = 0.0, molar_mass_CO = 0.0, tmass_CO = 0.0, p_CO = 0.0;
     PetscScalar mass_CO2 = 0.0, molar_mass_CO2 = 0.0, tmass_CO2 = 0.0, p_CO2 = 0.0;
+    PetscScalar mass_CH4 = 0.0, molar_mass_CH4 = 0.0; //, tmass_CH4 = 0.0, p_CH4 = 0.0;
 
     Parameters P = E->parameters;
     AtmosphereParameters Ap = P->atmosphere_parameters;
@@ -675,7 +677,17 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
         }
     }
 
-    if( FLAG_H2 || FLAG_H2O || FLAG_CO || FLAG_CO2 ){
+    for(i=0; i<Ap->n_volatiles; ++i){
+        PetscStrcmp( Ap->volatile_parameters[i]->prefix, "CH4", &FLAG_CH4 );
+        if ( FLAG_CH4 ){
+            mass_CH4 = Ap->volatile_parameters[i]->initial_total_abundance;
+            molar_mass_CH4 = Ap->volatile_parameters[i]->molar_mass;
+            break;
+        }
+    }
+
+
+    if( FLAG_H2 || FLAG_H2O || FLAG_CO || FLAG_CO2 || FLAG_CH4 ){
          ierr = PetscPrintf(PETSC_COMM_WORLD,"\n**************** Volatile content **************\n");CHKERRQ(ierr);
     }
 
@@ -688,6 +700,10 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
         if ( FLAG_H2O ){
             /* equivalent mass of H2 in H2O */
             tmass_H2 += mass_H2O * (molar_mass_H2 / molar_mass_H2O );
+        }
+        if ( FLAG_CH4 ){
+            /* equivalent mass of H2 in CH4 */
+            tmass_H2 += mass_CH4 * (2 * molar_mass_H2 / molar_mass_CH4 );
         }
         tmass_H2 *= (*Ap->mantle_mass_ptr); /* total non-dimensional mass */
         p_H2 = tmass_H2 / scaling2; /* equivalent surface pressure */
@@ -705,6 +721,10 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
         if ( FLAG_H2 ){
             /* equivalent mass of H2O in H2 */
             tmass_H2O += mass_H2 * (molar_mass_H2O / molar_mass_H2 );
+        }
+        if ( FLAG_CH4 ){
+            /* equivalent mass of H2 in CH4 */
+            tmass_H2O += mass_CH4 * (2 * molar_mass_H2O / molar_mass_CH4 );
         }
         tmass_H2O *= (*Ap->mantle_mass_ptr); /* total non-dimensional mass */
         p_H2O = tmass_H2O / scaling2; /* equivalent surface pressure */
@@ -726,6 +746,10 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
             /* equivalent mass of CO in CO2 */
             tmass_CO += mass_CO2 * (molar_mass_CO / molar_mass_CO2 );
         }
+        if ( FLAG_CH4 ){
+            /* equivalent mass of CO in CH4 */
+            tmass_CO += mass_CH4 * (molar_mass_CO / molar_mass_CH4 );
+        }
         tmass_CO *= (*Ap->mantle_mass_ptr); /* total non-dimensional mass */
         p_CO = tmass_CO / scaling2; /* equivalent surface pressure */
         tmass_CO *= scaling; /* total physical mass */
@@ -743,6 +767,10 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
             /* equivalent mass of H2O in H2 */
             tmass_CO2 += mass_CO * (molar_mass_CO2 / molar_mass_CO );
         }
+        if ( FLAG_CH4 ){
+            /* equivalent mass of CO in CH4 */
+            tmass_CO2 += mass_CH4 * (molar_mass_CO2 / molar_mass_CH4 );
+        }
         tmass_CO2 *= (*Ap->mantle_mass_ptr); /* total non-dimensional mass */
         p_CO2 = tmass_CO2 / scaling2; /* equivalent surface pressure */
         tmass_CO2 *= scaling; /* total physical mass */
@@ -756,7 +784,7 @@ static PetscErrorCode print_ocean_masses( Ctx *E )
         ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %-15.6g\n","Equivalent atmospheric pressure of CO2 (bar)",(double)p_CO2);CHKERRQ(ierr);
     }
 
-    if( FLAG_H2 || FLAG_H2O || FLAG_CO || FLAG_CO2 ){
+    if( FLAG_H2 || FLAG_H2O || FLAG_CO || FLAG_CO2 || FLAG_CH4 ){
          ierr = PetscPrintf(PETSC_COMM_WORLD,"************************************************\n\n");CHKERRQ(ierr);
     }
 
