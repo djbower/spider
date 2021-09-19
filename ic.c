@@ -860,10 +860,8 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
         A->volatiles[i].p = Ap->volatile_parameters[i]->initial_atmos_pressure;
     }
 
-    /* mass reaction has not been updated, so should still be zero */
-    /* this initial condition is not compatible with reactions,
-       but nor does it need to be, since this initial condition is
-       used when codes are coupled (e.g. to VULCAN) */
+    /* mass reaction has not been updated, so the imposed pressures must already adhere to
+       any imposed chemical equilibrium */
     ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
