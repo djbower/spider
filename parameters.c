@@ -290,6 +290,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetInt(NULL,NULL,"-nstepsmacro",&P->nstepsmacro,NULL);CHKERRQ(ierr);
 
   /* initial macro step (starting) */
+  /* can also be over-written later if restarting from file */
   P->stepmacro = 0;
   ierr = PetscOptionsGetInt(NULL,NULL,"-stepmacro",&P->stepmacro,NULL);CHKERRQ(ierr);
 

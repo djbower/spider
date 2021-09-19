@@ -9,7 +9,7 @@
 #include "atmosphere.h"
 #include "twophase.h"
 
-PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscReal time, Vec sol, void *ptr, MonitorCtx *mctx)
+PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec sol, void *ptr, MonitorCtx *mctx)
 {
   PetscErrorCode ierr;
   Ctx            *ctx = (Ctx*)ptr;
@@ -53,7 +53,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
 
     /* actual and desired time in integer number of years */
     time_years_actual = llround( time * SC->TIMEYRS );
-    time_years_desired = llround( step * dtmacro * SC->TIMEYRS );
+    time_years_desired = llround( (P->t0 + ((step-P->stepmacro) * P->dtmacro)) * SC->TIMEYRS );
 
     /* Print */
     ierr = PetscPrintf(PETSC_COMM_WORLD,"***  Writing output at macro Step %D, t=%f. [%lld:%02d:%02d:%02d]\n",step,(double)time,days,hours,minutes,seconds);CHKERRQ(ierr);
@@ -105,8 +105,8 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscReal dtmacro, PetscInt step, PetscRea
       cJSON_AddItemToObject(json,"SPIDER minor version",cJSON_CreateString(SPIDER_MINOR_VERSION));
       cJSON_AddItemToObject(json,"SPIDER patch version",cJSON_CreateString(SPIDER_PATCH_VERSION));
       cJSON_AddItemToObject(json,"step",cJSON_CreateNumber(step));
-      cJSON_AddItemToObject(json,"dtmacro",cJSON_CreateNumber(dtmacro));
-      cJSON_AddItemToObject(json,"dtmacro_years",cJSON_CreateNumber(dtmacro*SC->TIMEYRS));
+      cJSON_AddItemToObject(json,"dtmacro",cJSON_CreateNumber(P->dtmacro));
+      cJSON_AddItemToObject(json,"dtmacro_years",cJSON_CreateNumber(P->dtmacro*SC->TIMEYRS));
       cJSON_AddItemToObject(json,"time",cJSON_CreateNumber(time));
       cJSON_AddItemToObject(json,"time_years",cJSON_CreateNumber(time*SC->TIMEYRS));
       // TODO : add other stuff we might like in the header

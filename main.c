@@ -126,7 +126,7 @@ int main(int argc, char ** argv)
     time = P->t0;
     ierr = TSSetTime(ts,time);CHKERRQ(ierr);
     nexttime = P->t0 + P->dtmacro;
-    stepmacro = P->stepmacro;
+    stepmacro = P->stepmacro; /* start macrostep */
     ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
 
     /* Final setup logic (needs to be here because some things, like TSSetTime(),
@@ -136,7 +136,7 @@ int main(int argc, char ** argv)
     /* output first time step (initial condition) */
     /* need this here to update quantities to make poststep data */
     if (P->monitor) {
-      ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
+      ierr = TSCustomMonitor(ts,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
     }
 
     /* Activate rollback capability and PostStep logic (needs to happen post-SetUp()) */
@@ -157,14 +157,14 @@ int main(int argc, char ** argv)
       }
       ierr = TSGetSolveTime(ts,&time);CHKERRQ(ierr);
       if (P->monitor) {
-        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
       }
       if (ctx.stopEarly) {
         ierr = PetscPrintf(PETSC_COMM_WORLD,"Stopping macro timestepping loop early!\n");CHKERRQ(ierr);
-        ierr = TSCustomMonitor(ts,P->dtmacro,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
+        ierr = TSCustomMonitor(ts,stepmacro,time,sol,&ctx,&mctx);CHKERRQ(ierr);
         break;
       }
-      nexttime = P->t0 + ((stepmacro + 1) * P->dtmacro);
+      nexttime = P->t0 + ((stepmacro - P->stepmacro + 1) * P->dtmacro);
       ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
     }
   }
