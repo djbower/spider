@@ -555,24 +555,10 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
            with this pressure.  This might over-write some parameters
            that were previously used to determine p. */
 
-        /* initial_total_abundance is used by some ICs to compute p,
-           but with reactions mass can transfer between chemically
-           reacting species.  Hence the initial prescribed total
-           abundance is only honoured through conservation of the
-           total number of moles of something (H/C/etc.).  Unless we
-           are restarting a model, we now reset the baseline so that
-           the initial_total_abundance is defined at equilibrium defined
-           by the current conditions */
-        if( Ap->IC_ATMOSPHERE != 2 ){
-            /* previously, volatile mass_reaction was included in below, but this does not then
-               reset the initial_total_abundance relative to the equilibrium state */
-            /* the current mass (and hence revised initial_total_abundance) is only
-               determined by the physical reservoir mass */
-            mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos; // + A->volatiles[i].mass_reaction;
-            Ap->volatile_parameters[i]->initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
-        }
-
         /* even if we restart, we can conform these parameters */
+
+        mass = A->volatiles[i].mass_liquid + A->volatiles[i].mass_solid + A->volatiles[i].mass_atmos + A->volatiles[i].mass_reaction;
+        Ap->volatile_parameters[i]->initial_total_abundance = mass / (*Ap->mantle_mass_ptr);
 
         /* initial partial pressure */
         Ap->volatile_parameters[i]->initial_atmos_pressure = A->volatiles[i].p;
