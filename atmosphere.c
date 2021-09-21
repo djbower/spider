@@ -994,7 +994,6 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
       for (k=0; k<Ap->reaction_parameters[j]->n_volatiles; ++k) {
           const PetscInt v = Ap->reaction_parameters[j]->volatiles[k];
           /* i is the current volatile of interest */
-          /* TODO: below should be v or k?, I think v is correct (was previously k) */
           if (v==i) {
               massv = dmrdt[j];
               massv *= Ap->reaction_parameters[j]->stoichiometry[k] / Ap->reaction_parameters[j]->stoichiometry[0];
