@@ -896,15 +896,21 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
         log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[i], A->tsurf, A );
         dlog10GdT = get_dlog10GdT( Ap->reaction_parameters[i], A->tsurf, A );
 
-        ff[Ap->n_volatiles + i] = -Qp/PetscPowScalar(Qr,2.0) * dQrdt;
-        ff[Ap->n_volatiles + i] += 1.0/Qr * dQpdt;
+        /* deriv of Qp/Qr - G */
+        //ff[Ap->n_volatiles + i] = -Qp/PetscPowScalar(Qr,2.0) * dQrdt;
+        //ff[Ap->n_volatiles + i] += 1.0/Qr * dQpdt;
+
+        /* instead, multiply by Qr to avoid division.  This simplifies
+           the evaluation of the derivative, and is fine if p's are
+           scaled to around unity */
+        ff[Ap->n_volatiles + i] = dQpdt;
 
         /* Modified equilibrium constant */
         G = PetscPowScalar( 10.0, log10G );
         /* dG/dlog10G * dlog10G/dT * dT/dt */
         dGdt = G * PetscLogReal( 10.0 ) * dlog10GdT * A->dtsurfdt;
 
-        ff[Ap->n_volatiles + i] -= dGdt;
+        ff[Ap->n_volatiles + i] -= dGdt*Qr + G*dQrdt;
 
     }
 
