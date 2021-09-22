@@ -353,7 +353,7 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                    FIXME: the H2-H2O reaction might not always be in the first slot
                    (Modified) equilibrium constant that accommodates fO2 is G */
                 /* x = henry * partialp ** (1/beta) + G * henry2 * partialp ** (1/beta2) */
-                log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, A );
+                log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, A, SC );
                 G = PetscPowScalar( 10.0, log10G );
                 V->x = get_x_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
                 V->x += G * get_x_from_solubility_power_law( V->p, Vp->henry2, Vp->henry_pow2 );
@@ -893,7 +893,7 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
         Qp = get_reaction_quotient_products( Ap->reaction_parameters[i], A );
         dQpdt = get_reaction_quotient_products_time_derivative( Ap->reaction_parameters[i], A, Ap );
         dQrdt = get_reaction_quotient_reactants_time_derivative( Ap->reaction_parameters[i], A, Ap );
-        log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[i], A->tsurf, A );
+        log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[i], A->tsurf, A, SC );
         dlog10GdT = get_dlog10GdT( Ap->reaction_parameters[i], A->tsurf, A );
 
         /* deriv of Qp/Qr - G */
@@ -1015,7 +1015,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
             /* FIXME: need modified equilibrium constant, and we can easily get this assuming
                the H2-H2O reaction is in the first slot (but in general it might not be) */
             /* Recall that (modified) equilibrium constant accommodates fO2 */
-            log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, A );
+            log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, A, SC );
             dlog10GdT = get_dlog10GdT( Ap->reaction_parameters[0], A->tsurf, A );
             G = PetscPowScalar( 10.0, log10G );
             /* dG/dlog10G * dlog10G/dT * dT/dt */

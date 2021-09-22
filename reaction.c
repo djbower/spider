@@ -1,5 +1,6 @@
 #include "reaction.h"
 
+static PetscScalar get_psurf_exponent( const ReactionParameters );
 static PetscScalar get_reaction_quotient( const ReactionParameters, const Atmosphere *, PetscInt );
 static PetscScalar get_reaction_quotient_time_derivative( const ReactionParameters, const Atmosphere *, const AtmosphereParameters, PetscInt );
 static PetscScalar get_log10_equilibrium_constant( const ReactionParameters, PetscScalar );
@@ -263,13 +264,18 @@ PetscScalar get_dlog10KdT( const ReactionParameters reaction_parameters, PetscSc
 
 /* Compute modified equilibrium constant */
 /* This includes fO2, which helps numerically since the total quantity is better scaled */
-PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters reaction_parameters, PetscScalar temp, const Atmosphere *A )
+PetscScalar get_log10_modified_equilibrium_constant( const ReactionParameters reaction_parameters, PetscScalar temp, const Atmosphere *A, const ScalingConstants SC )
 {
     PetscScalar        log10G, log10K; 
 
     log10K = get_log10_equilibrium_constant( reaction_parameters, temp );
 
     log10G = log10K - reaction_parameters->fO2_stoichiometry * A->log10fO2;
+
+    /* account for scaling, since equilibrium constants are defined
+       for quantities normalised to 1 bar */
+    PetscScalar expon = get_psurf_exponent( reaction_parameters );
+    log10G += expon * ( 5- PetscLog10Real(SC->PRESSURE) );
 
     return log10G;
 
@@ -285,6 +291,20 @@ PetscScalar get_dlog10GdT( const  ReactionParameters reaction_parameters, PetscS
     dlog10GdT = dlog10KdT - reaction_parameters->fO2_stoichiometry * A->dlog10fO2dT;
 
     return dlog10GdT;
+
+}
+
+/* Exponent of extra factor of psurf to ensure reaction quotient is scaled correctly */
+static PetscScalar get_psurf_exponent( const ReactionParameters reaction_parameters )
+{
+    PetscInt    j;
+    PetscScalar expon = 0;
+
+    for( j=0; j<reaction_parameters->n_volatiles; ++j) {
+        expon += reaction_parameters->stoichiometry[j];
+    }
+
+    return expon;
 
 }
 
