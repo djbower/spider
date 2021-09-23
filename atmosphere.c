@@ -838,6 +838,8 @@ static PetscErrorCode JSON_add_volatile( DM dm, Parameters const P, VolatilePara
     /* volatile in atmosphere (bar) */
     scaling = SC->PRESSURE / 1.0E5; /* bar */
     ierr = JSON_add_single_value_to_object(dm, scaling, "atmosphere_bar", "bar", V->p, data);CHKERRQ(ierr);
+    scaling = SC->PRESSURE / 1.0E5 / SC->TIMEYRS; /* bar / year */
+    ierr = JSON_add_single_value_to_object(dm, scaling, "dpdt", "bar/yr", V->dpdt, data);CHKERRQ(ierr);
 
     /* area */
     scaling = 1.0 / (SC->AREA * 1.0E4); // 1/cm^2
