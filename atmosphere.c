@@ -889,10 +889,10 @@ PetscErrorCode objective_function_volatile_evolution( SNES snes, Vec x, Vec f, v
 
     /* chemical equilibrium constraints */
     for (i=0; i<Ap->n_reactions; ++i) {
-        PetscScalar dQpdt, dQrdt, Qr, Qp, dGdt, G, log10G, dlog10GdT;
+        PetscScalar dQpdt, dQrdt, Qr, dGdt, G, log10G, dlog10GdT;
 
         Qr = get_reaction_quotient_reactants( Ap->reaction_parameters[i], A );
-        Qp = get_reaction_quotient_products( Ap->reaction_parameters[i], A );
+        //Qp = get_reaction_quotient_products( Ap->reaction_parameters[i], A );
         dQpdt = get_reaction_quotient_products_time_derivative( Ap->reaction_parameters[i], A, Ap );
         dQrdt = get_reaction_quotient_reactants_time_derivative( Ap->reaction_parameters[i], A, Ap );
         log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[i], A->tsurf, A, SC );
