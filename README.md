@@ -34,7 +34,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
 
     ```
     cd /somewhere/to/install
-    git clone https://bitbucket.org/psanan/petsc --depth=1 -b psanan/ts-sundials-quad-hack petsc-double-direct
+    git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-double-direct
     ```
 
 4. Change directories:
@@ -46,7 +46,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
 5. Configure PETSc:
 
     ```
-    ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+    ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials2 --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
     ```
 
 6. Follow the terminal instructions to complete the installation of PETSc.  You can copy-paste the commands returned to you in the terminal window.  Make note of `PETSC_DIR` and `PETSC_ARCH`, which are also reported in the terminal window.
@@ -223,7 +223,7 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc"):
 
     ```
     cd /somewhere/to/install
-    git clone https://bitbucket.org/psanan/petsc --depth=1 -b psanan/ts-sundials-quad-hack petsc-quad-direct
+    git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-quad-direct
     ```
         
 7. Change directories:

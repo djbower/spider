@@ -53,8 +53,8 @@ int main(int argc, char ** argv)
     }
   }
 
-  /* We don't want to take the time to debug things in MPI (though the
-     problems are likely minor), aso don't allow multi-rank runs */
+  /* We haven't debugged in parallel, and usually use a serial, dense
+     solver within the timestepper, so don't allow multi-rank runs */
   {
     PetscMPIInt size;
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
