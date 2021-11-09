@@ -54,7 +54,7 @@ int main(int argc, char ** argv)
   }
 
   /* We don't want to take the time to debug things in MPI (though the
-     problems are likely minor), so don't allow multi-rank runs */
+     problems are likely minor), aso don't allow multi-rank runs */
   {
     PetscMPIInt size;
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
@@ -82,9 +82,9 @@ int main(int argc, char ** argv)
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
   ierr = TSSetSolution(ts,sol);CHKERRQ(ierr);
 
-  /* always use SUNDIALS CVODE (BDF) */
-  /* must use direct solver, so requires Patrick's hacks */
+  /* always use SUNDIALS CVODE (BDF) with a dense (serial) inner linear solver */
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
+  ierr = TSSundialsSetUseDense(ts,PETSC_TRUE);CHKERRQ(ierr);
   ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_INTERPOLATE);CHKERRQ(ierr);
 
