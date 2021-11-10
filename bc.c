@@ -317,62 +317,6 @@ PetscErrorCode set_surface_entropy_from_surface_gradient( Ctx *E )
     PetscFunctionReturn(0);
 }
 
-/* to improve with shallow ocean layer */
-#if 0
-static PetscScalar get_viscous_mantle_cooling_rate( const Ctx *E, PetscScalar Qin )
-{
-    PetscErrorCode ierr;
-    PetscScalar    Qout;
-    PetscScalar    G0, R0, R1, R2, E0, E1, E2, Q2, fwt, phi0;
-    PetscInt       ind;
-    Mesh           const *M = &E->mesh;
-    Parameters     const P = E->parameters;
-    Solution       const *S = &E->solution;
-
-    /* below the rheological transition, the mantle cooling rate is
-       not dictated by the atmosphere, since
-           interior flux (100 mW) << stellar flux (1000 W)
-       instead, the cooling rate of the mantle is restricted by the
-       ability of the near surface lid to conduct heat to the surface,
-       where it is then ``instantaneously'' radiated away. */
-
-    /* this function helps to account for this, by only allowing the mantle
-       to cool at a rate dictated by the near-surface lid.  But in doing so,
-       the surface temperature is clearly wrong, because it assumes that the
-       surface temperature is only "cooled" by the mantle, when in reality
-       it is the atmosphere that determines the surface temperature.  And
-       this should tend very quickly to the equilibrium temperature */
-
-    /* So the surface temperature output by the model during this stage of
-       evolution is not representative of the true surface temperature */
-
-    /* for weight of different fluxes */
-    ind = 0;
-    ierr = VecGetValues(S->phi,1,&ind,&phi0); CHKERRQ(ierr);
-    /* TODO: SWIDTH or PHI_WIDTH most appropriate choice here? */
-    /* FIXME width of 1.0E-2 is hard-coded here */
-    fwt = tanh_weight( phi0, P->phi_critical, 1.0E-2 );
-
-    // energy flux from energy gradient
-    ierr = VecGetValues(M->area_b,1,&ind,&G0); CHKERRQ(ierr);
-    ierr = VecGetValues(M->radius_b,1,&ind,&R0); CHKERRQ(ierr);
-    ind = 1;
-    ierr = VecGetValues(M->radius_b,1,&ind,&R1); CHKERRQ(ierr);
-    ierr = VecGetValues(S->Etot,1,&ind,&E1); CHKERRQ(ierr);
-    ind = 2;
-    ierr = VecGetValues(M->radius_b,1,&ind,&R2); CHKERRQ(ierr);
-    ierr = VecGetValues(S->Etot,1,&ind,&E2); CHKERRQ(ierr);
-    /* TODO: does not account for spherical geometry, but should
-       not make a noticable difference */
-    E0 = E1 - (E2-E1)*(R2-R1)/(R1-R0); // energy at surface
-    Q2 = E0 / G0;
-    // weight Q1 and Q2 to give total flux
-    Qout = Qin * fwt + Q2 * (1.0 - fwt);
-
-    return Qout;
-}
-#endif
-
 PetscErrorCode get_dpdts_from_lookup( Ctx *E )
 {
     PetscErrorCode             ierr;
@@ -431,11 +375,7 @@ PetscErrorCode solve_dpdts( Ctx *E )
     /* initialise vector x with initial guess */
     ierr = VecGetArray(x,&xx);CHKERRQ(ierr);
     for (i=0; i<Ap->n_volatiles; ++i) {
-        /* initial guess of dp/dt, which we solve for.  TODO: currently must be non-zero
-           otherwise the time stepper results in NaN for Paolo Sossi solubility */
-        /* FIXME: for "standard" power law this value works well as zero (not 0.1) */
-        /* FIXME: but for Sossi solubility, this cannot be zero otherwise it gives
-           NaNs in the time-stepper */
+        /* initial guess of dp/dt, which we solve for */
         xx[i] = 0.0;
     }
     for (i=0; i<Ap->n_reactions; ++i) {
@@ -450,7 +390,7 @@ PetscErrorCode solve_dpdts( Ctx *E )
     ierr = PetscOptionsGetScalar(NULL,NULL,"-ts_sundials_atol",&atol,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetScalar(NULL,NULL,"-ts_sundials_rtol",&rtol,NULL);CHKERRQ(ierr);
     ierr = SNESSetTolerances(snes, atol, rtol, 0.0, PETSC_DEFAULT, PETSC_DEFAULT );CHKERRQ(ierr);
-    /* FIXME: need to adjust KSP tolerances to match above? Or allow to auto-determine? */
+    /* need to adjust KSP tolerances to match above? Or allow to auto-determine? */
 
     /* For solver analysis/debugging/tuning, activate a custom monitor with a flag */
     {   

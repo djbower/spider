@@ -127,9 +127,6 @@ PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec sol_in,Vec rhs,void *ptr)
     }
   }
 
-  /* TODO: check, but with Ap->n_volatiles=0 there are no entries in
-     the rhs vector to initialise to zero */
-
   for (i=1; i<E->numFields; ++i) {
     ierr = VecAssemblyBegin(subVecs[i]);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(subVecs[i]);CHKERRQ(ierr);

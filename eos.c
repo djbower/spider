@@ -32,10 +32,12 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
     ierr = EOSCreate_Lookup(eos);CHKERRQ(ierr);
   }
   ierr = PetscStrcmp(type, SPIDER_EOS_RTPRESS, &flg);CHKERRQ(ierr);
+  /* analytical RTpress never fully tested or debugged, now in dev/ */
+  /* 
   if (flg) {
     ierr = EOSCreate_RTpress(eos);CHKERRQ(ierr);
   }
-  ierr = PetscStrcmp(type, SPIDER_EOS_COMPOSITE, &flg);CHKERRQ(ierr);
+  ierr = PetscStrcmp(type, SPIDER_EOS_COMPOSITE, &flg);CHKERRQ(ierr);*/
   if (flg) {
     ierr = EOSCreate_Composite(eos);CHKERRQ(ierr);
   }
@@ -229,9 +231,9 @@ PetscErrorCode EOSEvalSetViscosity(EOS eos, EOSEvalData *eval)
         eval->log10visc += log10C;
     }
 
-    /* TODO: add viscous lid */
+    /* add viscous lid */
 
-    /* TODO: add viscosity cutoff */
+    /* add viscosity cutoff */
 
     PetscFunctionReturn(0);
 }
@@ -294,8 +296,6 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
        with _rel_to_src indicate a path relative to the source code. In this 
        case we prepend a string, SPIDER_ROOT_DIR_STR, and /. The corresponding
        option without this overrides. */     
-
-    /* TODO: add default file location */
 
     /* check for relative path name */
     ierr = PetscSNPrintf(buf1,sizeof(buf1),"%s%s%s%s","-",prefix,property,"_filename_rel_to_src");CHKERRQ(ierr);

@@ -19,7 +19,6 @@ SRC_C = \
         eos_composite.c \
         eos_lookup.c \
         eos_output.c \
-        eos_rtpress.c \
         ic.c \
         interp.c \
         main.c \

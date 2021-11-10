@@ -219,7 +219,7 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
     ierr = average_by_mass_staggered( E, M->pressure_s, mask_ptr_s, &Rf->above_mass_avg.pressure); CHKERRQ(ierr);
     ierr = average_by_mass_staggered( E, S->temp_s, mask_ptr_s, &Rf->above_mass_avg.temperature); CHKERRQ(ierr);
 
-    // TODO: need to initialise values?
+    // need to initialise values?
     /* middle of layer */
     index_below = (numpts_s - index)/2 + index;
     ierr = VecGetValues(S->phi,1,&index_below,&phi);CHKERRQ(ierr);

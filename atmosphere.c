@@ -260,8 +260,7 @@ static PetscErrorCode set_f_thermal_escape( Atmosphere *A, PetscInt i )
 
     V->f_thermal_escape = 1.0 + V->R_thermal_escape * (1.0+V->jeans) * PetscExpReal(-V->jeans);
 
-    /* TODO: do we need any extra checks to ensure that the asymptotic behaviour
-       of escape is reasonable?  As jeans-->infty the limit looks OK, but what about
+    /* As jeans-->infty the limit looks OK, but what about
        as jeans-->0?  In reality, this would denote a switch to hydrodynamic
        escape */
 

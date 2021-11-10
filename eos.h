@@ -76,7 +76,8 @@ PetscErrorCode EOSEvalSetViscosity(EOS,EOSEvalData*);
 #define SPIDER_EOS_ADAMSWILLIAMSON "adamswilliamson"
 
 PetscErrorCode EOSCreate_Lookup(EOS);
-PetscErrorCode EOSCreate_RTpress(EOS);
+// never fully tested or debugged.  Now in dev/
+//PetscErrorCode EOSCreate_RTpress(EOS);
 PetscErrorCode EOSCreate_Composite(EOS);
 PetscErrorCode EOSCreate_AdamsWilliamson(EOS);
 

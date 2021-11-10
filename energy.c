@@ -84,7 +84,7 @@ static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
 {
     /* tidal heat generation */
 
-    /* TODO: template code snippets below, but tidal heating is
+    /* template code snippets below, but tidal heating is
        currently not implemented */
 
     //PetscErrorCode ierr;

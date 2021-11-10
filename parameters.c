@@ -684,10 +684,6 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const Sc
     Ap->PSEUDO_VOLATILES = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-PSEUDO_VOLATILES",&Ap->PSEUDO_VOLATILES,NULL);CHKERRQ(ierr);
 
-    /* TODO: this should be superseded by a shallow ocean layer treatment */
-    //Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
-    //ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
-
     /* emissivity is constant for SURFACE_BC != MO_ATMOSPHERE_TYPE_VOLATILES */
     Ap->emissivity0 = 1.0; // non-dimensional
     ierr = PetscOptionsGetScalar(NULL,NULL,"-emissivity0",&Ap->emissivity0,NULL);CHKERRQ(ierr);
@@ -876,21 +872,6 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"numpts_s"   ,P->numpts_s                                                  );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","ic_adiabat_entropy"     ,(double)P->ic_adiabat_entropy       ,(double)(P->ic_adiabat_entropy*SC->ENTROPY) ,"J/kg/K"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
-  /* TODO: liquidus and solidus data is duplicated in the melt and solid eos parameters struct */
-#if 0
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"liquidus data file"         ,P->eos1_parameters->lookup->liquidus_filename          );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"solidus data file"          ,P->eos1_parameters->lookup->solidus_filename           );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaSol data file"         ,P->eos2_parameters->lookup->alpha_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaMel data file"         ,P->eos1_parameters->lookup->alpha_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpSol data file"            ,P->eos2_parameters->lookup->cp_filename        );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpMel data file"            ,P->eos1_parameters->lookup->cp_filename        );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsSol data file"         ,P->eos2_parameters->lookup->dTdPs_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsMel data file"         ,P->eos1_parameters->lookup->dTdPs_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoSol data file"           ,P->eos2_parameters->lookup->rho_filename       );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"           ,P->eos1_parameters->lookup->rho_filename       );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"          ,P->eos2_parameters->lookup->temp_filename      );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"          ,P->eos1_parameters->lookup->temp_filename      );CHKERRQ(ierr);
-#endif
   if (Ap->n_volatiles > 0) {
     ierr = PetscPrintf(PETSC_COMM_WORLD,"\n[Volatile] prefix/name\n");CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);

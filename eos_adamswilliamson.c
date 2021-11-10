@@ -298,7 +298,7 @@ PetscErrorCode EOSAdamsWilliamson_ObjectiveFunctionRadius( SNES snes, Vec x, Vec
 
   PetscFunctionBeginUser;
 
-  /* TODO: replace with composite DM */
+  /* replace with composite DM? */
   /* below is simple loop over all nodes (basic and staggered), but will clearly break for parallel */
   ierr = DMDAGetInfo(E->da_b,NULL,&numpts_b,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
   ierr = DMDAGetInfo(E->da_s,NULL,&numpts_s,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);CHKERRQ(ierr);

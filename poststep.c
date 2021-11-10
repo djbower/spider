@@ -59,11 +59,6 @@ PetscErrorCode PostStep(TS ts)
 
   ierr = TSGetSolution(ts,&sol_in);CHKERRQ(ierr);
 
-  // TODO: is this required?
-  // TODO: this function now replaced by set_partial_pressures_from_solution
-  /* update the volatile abundances in the atmosphere struct */
-  //ierr = set_volatile_abundances_from_solution( E, sol_in );CHKERRQ(ierr);
-
   for( i=0; i<Ap->n_volatiles; ++i) {
      Volatile *V = &A->volatiles[i];
      maxx = P->atmosphere_parameters->volatile_parameters[i]->poststep_change;

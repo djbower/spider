@@ -32,10 +32,10 @@ typedef struct Solution_ {
     DimensionalisableField solutionFields_b[NUMSOLUTIONVECS_B];
     DimensionalisableField solutionFields_s[NUMSOLUTIONVECS_S];
 
-    // TODO: eventually get rid of these
+    // eventually get rid of these?
     Vec alpha, cond, cp, dSdxi, dTdxis, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, Ra, regime, rho, S, temp, visc;
 
-    // TODO: eventually get rid of these
+    // eventually get rid of these?
     Vec cp_s, dSdt_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, phi_s, rho_s, S_s, temp_s;
 
 } Solution;
@@ -82,10 +82,10 @@ typedef struct Ctx_ {
   /* Control flags */
   PetscBool stopEarly;
 
-  // TODO: there is no real reason that we have some data here and some in Solution and some in Mesh.
+  //       there is no real reason that we have some data here and some in Solution and some in Mesh.
   //       it could all be flattened out (and probably would be in a re-implementation)
 } Ctx;
-// TODO: would be cleaner if Ctx were a pointer to _p_Ctx, as with PETSc objects.
+//         would be cleaner if Ctx were a pointer to _p_Ctx, as with PETSc objects.
 
 PetscErrorCode SetupCtx(Ctx *);
 PetscErrorCode DestroyCtx(Ctx *);
