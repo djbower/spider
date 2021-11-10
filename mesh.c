@@ -7,8 +7,6 @@ static PetscErrorCode SetMeshPressureFromRadius( EOS, DM, Vec, Vec );
 static PetscErrorCode SetMeshPressureGradientFromRadius( EOS, DM, Vec, Vec );
 static PetscErrorCode SetMeshSphericalArea( DM, Vec, Vec );
 static PetscErrorCode SetMeshSphericalVolume( Ctx *, Vec, Vec );
-// FIXME: last component(?) to merge from Rob's branch
-//static PetscScalar get_layer( DM, Vec, Vec, Parameters const );
 static PetscErrorCode SetMeshMass( EOS, Ctx * );
 static PetscErrorCode GetRadiusFromMassCoordinate( Ctx * );
 static PetscErrorCode RadiusIsMassCoordinate( Ctx * );
@@ -48,12 +46,6 @@ PetscErrorCode set_mesh( Ctx *E)
     ierr = SetMeshSphericalArea( da_b, M->radius_b, M->area_b);CHKERRQ(ierr);
     ierr = SetMeshSphericalArea( da_s, M->radius_s, M->area_s );CHKERRQ(ierr);
     ierr = SetMeshSphericalVolume( E, M->radius_b, M->volume_s);CHKERRQ(ierr);
-
-    /* FIXME: this is to be REMOVED, once migrated into the new EOS object approach */
-    /* layer id.  0 everywhere for single layer (as determined by
-       P->mixing_length), and 0 for upper and 1 for lower layer
-       when P->mixing_length==3 */
-    //get_layer( da_b, M->radius_b, M->layer_b, P );
 
     /* mantle mass also needed for atmosphere calculations */
     P->atmosphere_parameters->mantle_mass_ptr = &M->mantle_mass;
@@ -154,41 +146,6 @@ static PetscErrorCode SetMeshSphericalVolume(Ctx * E, Vec radius, Vec volume )
     ierr = DMDAVecRestoreArray(da_s,volume,&arr_volume);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-
-/* to merge from Rob's branch */
-#if 0
-/* need to have some notion of a layer ID, but should it be within mesh.c? */
-static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
-{
-    PetscErrorCode ierr;
-    PetscScalar *arr_layer;
-    const PetscScalar *arr_r;
-    PetscInt i,ilo,ihi,w;
-
-    PetscFunctionBeginUser;
-    ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
-    ihi = ilo + w;
-    ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da,layer,&arr_layer);CHKERRQ(ierr);
-
-    for(i=ilo; i<ihi; ++i){
-        if( P->mixing_length==3){
-            if( arr_r[i] > P->mixing_length_layer_radius ){
-                arr_layer[i] = 0;
-            }
-            else{
-                arr_layer[i] = 1;
-            }
-        }
-        else{
-            arr_layer[i] = 0;
-        }
-    }
-    ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da,layer,&arr_layer);CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
-#endif
 
 static PetscErrorCode SetMeshPressureFromRadius( const EOS eos, DM da, Vec radius, Vec pressure )
 {
@@ -423,4 +380,3 @@ static PetscErrorCode GetRadiusFromMassCoordinate( Ctx *E )
     PetscFunctionReturn(0);
 
 }
-

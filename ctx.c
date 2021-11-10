@@ -467,26 +467,19 @@ static PetscErrorCode CtxCreateFields(Ctx* ctx)
     ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_b[3],"radius_b");CHKERRQ(ierr);
     ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_b[3],"m");CHKERRQ(ierr);
   }
-  { // layer_b
-    PetscScalar scaling = 1.0;
-    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_b[4],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_b[4],&ctx->mesh.layer_b); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_b[4],"layer_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_b[4],"None");CHKERRQ(ierr);
-  }
   { // xi_b (mass coordinate)
     PetscScalar scaling = SC->RADIUS;
-    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_b[5],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_b[5],&ctx->mesh.xi_b); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_b[5],"xi_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_b[5],"m");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_b[4],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_b[4],&ctx->mesh.xi_b); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_b[4],"xi_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_b[4],"m");CHKERRQ(ierr);
   }
   { // dxidr_b (derivative of mass coordinate)
     PetscScalar scaling = 1.0;
-    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_b[6],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
-    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_b[6],&ctx->mesh.dxidr_b); // Just for convenience - can always get this vector out when you need it
-    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_b[6],"dxidr_b");CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_b[6],"None");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldCreate(&ctx->mesh.meshFields_b[5],ctx->da_b,&scaling,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = DimensionalisableFieldGetGlobalVec(ctx->mesh.meshFields_b[5],&ctx->mesh.dxidr_b); // Just for convenience - can always get this vector out when you need it
+    ierr = DimensionalisableFieldSetName(ctx->mesh.meshFields_b[5],"dxidr_b");CHKERRQ(ierr);
+    ierr = DimensionalisableFieldSetUnits(ctx->mesh.meshFields_b[5],"None");CHKERRQ(ierr);
   }
   /* mesh staggered nodes */
   { // pressure_s

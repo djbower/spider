@@ -167,3 +167,40 @@ static PetscErrorCode SetMeshGeometricRefineLower( Ctx *E )
     PetscFunctionReturn(0);
 
 }
+
+/* to merge from Rob's branch */
+#if 0
+/* need to have some notion of a layer ID, but should it be within mesh.c? */
+static PetscScalar get_layer( DM da, Vec radius, Vec layer, const Parameters P )
+{
+    PetscErrorCode ierr;
+    PetscScalar *arr_layer;
+    const PetscScalar *arr_r;
+    PetscInt i,ilo,ihi,w;
+
+    PetscFunctionBeginUser;
+    ierr = DMDAGetCorners(da,&ilo,0,0,&w,0,0);CHKERRQ(ierr);
+    ihi = ilo + w;
+    ierr = DMDAVecGetArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da,layer,&arr_layer);CHKERRQ(ierr);
+
+    for(i=ilo; i<ihi; ++i){
+        if( P->mixing_length==3){
+            if( arr_r[i] > P->mixing_length_layer_radius ){
+                arr_layer[i] = 0;
+            }
+            else{
+                arr_layer[i] = 1;
+            }
+        }
+        else{
+            arr_layer[i] = 0;
+        }
+    }
+    ierr = DMDAVecRestoreArrayRead(da,radius,&arr_r);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da,layer,&arr_layer);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+#endif
+
+

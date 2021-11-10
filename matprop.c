@@ -107,7 +107,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     DM                da_b=E->da_b;
     PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdxis, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
     const PetscScalar *arr_dSdxi, *arr_S_b, *arr_pres, *arr_dPdr_b, *arr_radius_b, *arr_dxidr_b;
-    const PetscInt    *arr_layer_b;
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
@@ -125,7 +124,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     /* mesh quantities */
     ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->dxidr_b,&arr_dxidr_b); CHKERRQ(ierr);
     /* material properties */
@@ -175,7 +173,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     /* mesh quantities */
     ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->dxidr_b,&arr_dxidr_b); CHKERRQ(ierr);
     /* material properties */
     ierr = DMDAVecRestoreArray(    da_b,S->alpha,&arr_alpha); CHKERRQ(ierr);

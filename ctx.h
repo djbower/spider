@@ -10,7 +10,7 @@
 
 /* common structures */
 
-#define NUMMESHVECS_B 7
+#define NUMMESHVECS_B 6
 #define NUMMESHVECS_S 7
 typedef struct Mesh_ {
 
@@ -18,7 +18,7 @@ typedef struct Mesh_ {
     DimensionalisableField meshFields_s[NUMMESHVECS_S];
 
     // eventually get rid of these (though think about how to better name the DimensionalisableFields..)
-    Vec area_b,dPdr_b,pressure_b,radius_b,mix_b,layer_b,xi_b,dxidr_b;
+    Vec area_b,dPdr_b,pressure_b,radius_b,xi_b,dxidr_b;
     Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,mass_s,xi_s;
 
     PetscScalar mantle_mass;
