@@ -47,7 +47,7 @@ PetscErrorCode PostStep(TS ts)
   PetscBool            EVENT = PETSC_FALSE;
 
   PetscFunctionBeginUser;
-  ierr = TSGetTimeStepNumber(ts,&stepNumber);CHKERRQ(ierr);
+  ierr = TSGetStepNumber(ts,&stepNumber);CHKERRQ(ierr);
   ierr = TSGetApplicationContext(ts,&E);CHKERRQ(ierr);
   A = &E->atmosphere;
   P = E->parameters;
