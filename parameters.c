@@ -580,9 +580,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
           case 1:
             ierr = EOSCreate(&P->eos_phases[r], SPIDER_EOS_LOOKUP);CHKERRQ(ierr);
             break;
-          case 2:
-            ierr = EOSCreate(&P->eos_phases[r], SPIDER_EOS_RTPRESS);CHKERRQ(ierr);
-            break;
           default: SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unrecognized type code %D", type);
         }
         ierr = EOSSetUpFromOptions(P->eos_phases[r], prefixes[r], FC, SC);CHKERRQ(ierr);

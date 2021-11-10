@@ -31,13 +31,7 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
   if (flg) {
     ierr = EOSCreate_Lookup(eos);CHKERRQ(ierr);
   }
-  ierr = PetscStrcmp(type, SPIDER_EOS_RTPRESS, &flg);CHKERRQ(ierr);
-  /* analytical RTpress never fully tested or debugged, now in dev/ */
-  /* 
-  if (flg) {
-    ierr = EOSCreate_RTpress(eos);CHKERRQ(ierr);
-  }
-  ierr = PetscStrcmp(type, SPIDER_EOS_COMPOSITE, &flg);CHKERRQ(ierr);*/
+  ierr = PetscStrcmp(type, SPIDER_EOS_COMPOSITE, &flg);CHKERRQ(ierr);
   if (flg) {
     ierr = EOSCreate_Composite(eos);CHKERRQ(ierr);
   }
