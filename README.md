@@ -278,3 +278,8 @@ You should now be ready to use the code!
 #### 5.1 Extended notes
 
 There are extended notes located in `notes/` that are useful for understanding the methodology and source code of SPIDER.  You can compile `notes.tex` using `pdflatexmk` or `pdflatex`.
+
+## Copyright
+
+See [The included license](COPYING).
+Copyright 2021 Daniel J. Bower and Patrick Sanan
