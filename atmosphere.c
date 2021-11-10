@@ -921,7 +921,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
     PetscInt                  j,k;
     VolatileParameters  const Vp = Ap->volatile_parameters[i];
     Volatile                  *V = &A->volatiles[i];
-    PetscScalar               log10G, G, dGdt, dlog10GdT, pbar=0, Tkel=0;
+    PetscScalar               pbar=0, Tkel=0;
 
     /* remember that to this point, V->f_thermal_escape is always
        computed so we can see the (potential) role of thermal escape,
