@@ -127,7 +127,8 @@ int main(int argc, char ** argv)
     ierr = TSSetTime(ts,time);CHKERRQ(ierr);
     nexttime = P->t0 + P->dtmacro;
     stepmacro = P->stepmacro; /* start macrostep */
-    ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
+    ierr = TSSetMaxSteps(ts,P->maxsteps);CHKERRQ(ierr);
+    ierr = TSSetMaxTime(ts,nexttime);CHKERRQ(ierr);
 
     /* Final setup logic (needs to be here because some things, like TSSetTime(),
        won't work properly for the SUNDIALS implementation if called after TSSetUp()) */
@@ -165,7 +166,8 @@ int main(int argc, char ** argv)
         break;
       }
       nexttime = P->t0 + ((stepmacro - P->stepmacro + 1) * P->dtmacro);
-      ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
+      ierr = TSSetMaxSteps(ts,P->maxsteps);CHKERRQ(ierr);
+      ierr = TSSetMaxTime(ts,nexttime);CHKERRQ(ierr);
     }
   }
 
