@@ -331,7 +331,7 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
     PetscInt i;
     Volatile                 *V;
     VolatileParameters       Vp;
-    PetscScalar              log10G, G, pbar=0, Tkel=0;
+    PetscScalar              pbar=0, Tkel=0;
 
     PetscFunctionBeginUser;
 
@@ -348,14 +348,7 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure( Atmosphere *A, con
                 break;
 
             case 2:
-                /* Linear combination of power laws (Paolo Sossi)
-                   FIXME: the H2-H2O reaction might not always be in the first slot
-                   (Modified) equilibrium constant that accommodates fO2 is G */
-                /* x = henry * partialp ** (1/beta) + G * henry2 * partialp ** (1/beta2) */
-                log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, A, SC );
-                G = PetscPowScalar( 10.0, log10G );
-                V->x = get_x_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
-                V->x += G * get_x_from_solubility_power_law( V->p, Vp->henry2, Vp->henry_pow2 );
+                SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLUBILITY value %d provided",Vp->SOLUBILITY);
                 break;
 
             case 3:
@@ -1013,18 +1006,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
             break;
 
         case 2:
-            /* FIXME: need modified equilibrium constant, and we can easily get this assuming
-               the H2-H2O reaction is in the first slot (but in general it might not be) */
-            /* Recall that (modified) equilibrium constant accommodates fO2 */
-            log10G = get_log10_modified_equilibrium_constant( Ap->reaction_parameters[0], A->tsurf, A, SC );
-            dlog10GdT = get_dlog10GdT( Ap->reaction_parameters[0], A->tsurf, A );
-            G = PetscPowScalar( 10.0, log10G );
-            /* dG/dlog10G * dlog10G/dT * dT/dt */
-            dGdt = G * PetscLogReal( 10.0 ) * dlog10GdT * A->dtsurfdt;
-            V->dxdp = get_dxdp_from_solubility_power_law( V->p, Vp->henry, Vp->henry_pow );
-            V->dxdp += G * get_dxdp_from_solubility_power_law( V->p, Vp->henry2, Vp->henry_pow2 );
-            V->dxdt = V->dxdp * V->dpdt;
-            V->dxdt += dGdt *  Vp->henry2 * PetscPowScalar( V->p, 1.0/Vp->henry_pow2);
+            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLUBILITY value %d provided",Vp->SOLUBILITY);
             break;
 
         case 3:
@@ -1042,7 +1024,7 @@ PetscScalar get_dpdt( Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, 
             break;
 
         default:
-            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"dx/dt (dx/dp) not defined for this solubility law");
+            SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unsupported SOLUBILITY value %d provided",Vp->SOLUBILITY);
             break;
     }
 
