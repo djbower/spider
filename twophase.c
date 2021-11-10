@@ -96,18 +96,15 @@ PetscErrorCode set_dMliqdt( Ctx *E )
         arr_result_s[i] /= eos_eval.fusion;
 
         /* with smoothing */
-#if 0
-        if (arr_phi_s[i] > 0.5){
-            arr_result_s[i] *= ( 1.0 - arr_fwtl_s[i] );
-        }
+        //if (arr_phi_s[i] > 0.5){
+        //    arr_result_s[i] *= ( 1.0 - arr_fwtl_s[i] );
+        //}
 
-        else if (arr_phi_s[i] <=0.5){
-            arr_result_s[i] *= arr_fwts_s[i];
-        }
-#endif
+        //else if (arr_phi_s[i] <=0.5){
+        //    arr_result_s[i] *= arr_fwts_s[i];
+        //}
 
-// generally had more luck without smoothing
-#if 1
+        // generally had more luck without smoothing
         /* no smoothing approach */
         if (arr_phi_s[i] <= 0.0){
             arr_result_s[i] = 0.0;
@@ -115,7 +112,6 @@ PetscErrorCode set_dMliqdt( Ctx *E )
         else if (arr_phi_s[i] >=1.0){
             arr_result_s[i] = 0.0;
         }   
-#endif
 
     }   
 

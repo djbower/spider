@@ -122,22 +122,6 @@ static PetscErrorCode EOSAdamsWilliamson_GetRho( const data_EOSAdamsWilliamson *
 
 /* Mass coordinate mapping and static structure */
 
-/* below currently not used */
-#if 0
-static PetscErrorCode EOSAdamsWilliamson_GetRadiusFromPressure( const data_EOSAdamsWilliamson *adams, PetscScalar P, PetscScalar *R_ptr )
-{
-    PetscScalar R;
-
-    PetscFunctionBeginUser;
-
-    R = adams->radius - (1.0/adams->beta)*PetscLogScalar(1.0-(P*adams->beta)/(adams->density_surface*adams->gravity));
-
-    *R_ptr = R;
-
-    PetscFunctionReturn(0);
-}
-#endif
-
 static PetscErrorCode EOSAdamsWilliamson_GetPressureFromRadius( const data_EOSAdamsWilliamson *adams, PetscScalar R, PetscScalar *P_ptr )
 {
     PetscScalar P;

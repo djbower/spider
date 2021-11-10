@@ -367,25 +367,6 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
 
-    /* block below was for testing bcs, where we can turn off
-       conduction at the surface and cmb */
-#if 0
-    PetscInt       ind_cmb,ind_abv_cmb,ilo_b,ihi_b,w_b;
-
-    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b; /* total number of basic nodes */
-    ind_cmb = ihi_b-1;
-    ind_abv_cmb = ind_cmb-1;
-
-    if(!*ind_ptr){
-        return 0.0;
-    }
-
-    if(*ind_ptr == ind_cmb){
-        return 0.0;
-    }
-#endif
-
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
     ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
