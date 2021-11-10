@@ -99,7 +99,7 @@ PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix, const Fundamenta
 
   /* viscosity-related, may eventually move into their own struct */
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_log10visc");CHKERRQ(ierr);
-  eos->log10visc = 21.0; // FIXME: default is for solid only
+  eos->log10visc = 21.0; // note default is for solid only
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->log10visc,NULL);CHKERRQ(ierr);
   eos->log10visc -= SC->LOG10VISC;
 

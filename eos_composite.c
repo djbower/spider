@@ -193,7 +193,7 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
 
   /* these are strictly only valid for the mixed phase region, and not for general P and S
      conditions */
-  /* FIXME: unsure what the best approach is here.  The following functions are highly modular,
+  /* unsure what the best approach is here.  The following functions are highly modular,
      but I think it slows the code down a lot since many of the functions repeat the same lookups
      It would reduce the modularity, but for speed the better option would be to have an
      aggregate function that only evaluates things once.  This would be trivial to implement. */
