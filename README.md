@@ -282,3 +282,8 @@ There are extended notes located in `notes/` that are useful for understanding t
 #### 5.2 Python scripts
 
 There are python scripts in `py3/` that can be used and adapted to interrogate and plot SPIDER output.
+
+## Copyright
+
+See [The included license](COPYING).
+Copyright 2021 Daniel J. Bower and Patrick Sanan
