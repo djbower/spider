@@ -797,6 +797,12 @@ static PetscErrorCode set_ic_atmosphere_pseudo_volatiles( Ctx *E, Vec sol )
         A->volatiles[i].p = PetscPowScalar( 10.0, A->volatiles[i].p );
     }
 
+    /* mass reaction has not been updated, so the imposed pressures must already adhere to
+       any imposed chemical equilibrium */
+    for (i=0; i<Ap->n_reactions; ++i) {
+      A->mass_reaction[i] = 0.0;
+    }
+
     ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -862,6 +868,10 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
 
     /* mass reaction has not been updated, so the imposed pressures must already adhere to
        any imposed chemical equilibrium */
+    for (i=0; i<Ap->n_reactions; ++i) {
+      A->mass_reaction[i] = 0.0;
+    }
+
     ierr = set_solution_from_partial_pressures( E, sol );CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
