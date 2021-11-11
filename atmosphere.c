@@ -731,8 +731,7 @@ PetscErrorCode JSON_add_atmosphere( DM dm, Parameters const P, Atmosphere *A, co
         /* net upward atmospheric flux */
         scaling = SC->FLUX;
         ierr = JSON_add_single_value_to_object(dm, scaling, "Fatm", "W m$^{-2}$", A->Fatm, data);CHKERRQ(ierr);
-        /* effective temperature, TODO: check -> what about (Fatm/sigma)**(1/4)? */
-        /* below is temperature equation with optical depth set to unity */
+        /* effective emitting temperature (T profile with scaled optical depth set to unity) */
         Teff = A->Fatm / FC->STEFAN_BOLTZMANN + PetscPowScalar( Ap->teqm, 4.0 );
         Teff = PetscPowScalar( Teff, 1.0/4.0 );
         scaling = SC->TEMP;
