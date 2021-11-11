@@ -199,6 +199,7 @@ typedef struct {
     PetscScalar rhos;
     PetscScalar beta;
     PetscScalar grain;
+    PetscBool JGRAV_BOTTOM_UP;
     PetscScalar gravity;
     PetscScalar phi_critical;
     PetscScalar phi_width;

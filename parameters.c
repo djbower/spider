@@ -415,6 +415,23 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-grain",&P->grain,NULL);CHKERRQ(ierr);
   P->grain /= SC->RADIUS;
 
+  /* only allow energy transport upwards due to melt/solid separation if the cell below
+     the cell interface contains melt/solid.  Otherwise, you can (unphysically) cool
+     a cell due to melt migration even though it contains no melt.  For middle-out or
+     more general scenarios, this requires more thought */
+  P->JGRAV_BOTTOM_UP = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-JGRAV_BOTTOM_UP",&P->JGRAV_BOTTOM_UP,NULL);CHKERRQ(ierr);
+
+  {
+    PetscInt  CORE_BC = 0;
+    PetscBool CORE_BCset = PETSC_FALSE;
+    ierr = PetscOptionsGetInt(NULL,NULL,"-CORE_BC",&CORE_BC,&CORE_BCset);CHKERRQ(ierr);
+    if( CORE_BCset ) P->CORE_BC = CORE_BC;
+  }
+  P->core_bc_value = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-core_bc_value",&P->core_bc_value,NULL);CHKERRQ(ierr);
+
+
   /* gravity (m/s^2), must be negative */
   P->gravity = -10.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-gravity",&P->gravity,NULL);CHKERRQ(ierr);

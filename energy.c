@@ -523,18 +523,19 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     Jgrav *= temp * ( Sliq - Ssol ); // enthalpy
 
     /* smoothing across phase boundaries for two phase composite */
-    /* TODO: this smooths based on the value of the melt fraction in the cell below
-       the interface, but this is only appropriate for bottom-up crystallisation.
-       Need to generalise, or at least make a switch to choose */
-    ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres_s, Sval, &gphi);CHKERRQ(ierr);
-    {
-      PetscScalar matprop_smooth_width;
+    /* this smooths based on the value of the melt fraction in the cell below
+       the interface, but this is only appropriate for bottom-up crystallisation */
+    if( P->JGRAV_BOTTOM_UP){
+        ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres_s, Sval, &gphi);CHKERRQ(ierr);
+        {
+          PetscScalar matprop_smooth_width;
 
-      ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
-      smth = get_smoothing(matprop_smooth_width, gphi );
+          ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
+          smth = get_smoothing(matprop_smooth_width, gphi );
+        }
+
+        Jgrav *= smth;
     }
-
-    Jgrav *= smth;
 
     return Jgrav;
 }
