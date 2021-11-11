@@ -34,7 +34,7 @@ For the convective term:
 \begin{equation}
 \frac{\partial J_{conv}}{\partial t} = - \frac{\partial}{\partial t} \left[ \rho T \kappa_h \left( \frac{\partial S}{\partial r} \right) \right]
 \end{equation}
-Particularly due to the functional dependences of $\kappa_h$, it could be quite nasty to take the time derivative.  So instead assume that $\kappa_h$ and $\rho$ can be approximated from the basic node below the surface (subscript 1).  \dbnote{TODO: in reality, these can probably be any appropriately chosen constant values based on the current state.}
+Particularly due to the functional dependences of $\kappa_h$, it could be quite nasty to take the time derivative.  So instead assume that $\kappa_h$ and $\rho$ can be approximated from the basic node below the surface (subscript 1).
 \begin{equation}
 \frac{\partial J_{conv}}{\partial t} = - \rho_1 \kappa_{h_1} \left[ \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial T_0}{\partial t} \right) + T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
 \end{equation}
@@ -45,7 +45,7 @@ Substituting in the reconstruction:
 \begin{equation}
 \frac{\partial J_{conv}}{\partial t} = - \rho_1 \kappa_{h_1} \left[ \frac{T_0}{c_0} \left(\left.\frac{\partial S}{\partial r}\right|_0 \right) \left( \frac{\partial S_{1/2}}{\partial t} - \frac{\Delta r}{2} \frac{\partial}{\partial t} \left( \left. \frac{\partial S}{\partial r}\right|_0 \right) \right) + T_0 \frac{\partial}{\partial t} \left. \left(\frac{\partial S}{\partial r}\right) \right|_0  \right]
 \end{equation}
-The above couples the updates for the top staggered node $S_{1/2}$ and the surface entropy gradient.  We can similarly simplify the time derivative of the conductive heat contribution to also include on the RHS as a contribution to the geothermal flux \dbnote{TODO}.
+The above couples the updates for the top staggered node $S_{1/2}$ and the surface entropy gradient.  We can similarly simplify the time derivative of the conductive heat contribution to also include on the RHS as a contribution to the geothermal flux
 
 %%% LHS
 \textbf{LHS: outgoing or radiative flux}.  This depends on our choice of boundary condition, but let's assume that we know the LHS to be $\dot{J}_{rad}$.  Then:
@@ -145,7 +145,7 @@ We use the following parameters: $c_p=1000$ J/kg K, $\alpha=3 \times 10^{-5}$ K$
 \begin{equation}
 \log(\Delta T) = A \log( F_{\rm top} ) + B
 \end{equation}
-with best fit parameters $A=0.75834686$, $B=-1.71695869$.  Note that the intercept ($B$) is essentially the origin which physically is reasonable.  Also note that $A \approx 3/4$ \dbnote{Is this scaling the same/similar to boundary layer theory?}.  Therefore:
+with best fit parameters $A=0.75834686$, $B=-1.71695869$.  Note that the intercept ($B$) is essentially the origin which physically is reasonable.  Also note that $A \approx 3/4$ .  Therefore:
 \begin{equation}
 q_s \propto T_s^4 \propto (\Delta T)^{4/3}
 \end{equation}
@@ -153,7 +153,7 @@ rearrange:
 \begin{equation}
 \Delta T = c T_s^3
 \end{equation}
-which gives an estimate of the temperature drop across the thin ($\sim$cm) boundary layer using mixing length theory as a function of the surface temperature.  This scaling agrees with \cite{RS06} \dbnote{but they derive from boundary layer theory?}.  We can fit a curve to the model to determine that the constant of proportionality is $c=8.05154344{\rm E-08}$.  \dbnote{Paul Tackley calculates $c=1\rm{e}-7$ which is comparable.}
+which gives an estimate of the temperature drop across the thin ($\sim$cm) boundary layer using mixing length theory as a function of the surface temperature.  This scaling agrees with \cite{RS06}.  We can fit a curve to the model to determine that the constant of proportionality is $c=8.05154344{\rm E-08}$.
 %%%%
 %%%%
 %%%%
@@ -162,10 +162,9 @@ In 1-D we can technically resolve the ultra-thin thermal boundary layer, but thi
 
 Choosing to parameterise the ultra-thin thermal boundary (following the theory above) and thus forgo a high resolution mesh near the surface unfortunately does not result in more physically reasonable evolution.  The cooling trajectory from model initialisation until about 3.7 kyr (for a black body boundary condition) is acceptable but after this time the energy flow near the surface (at the second basic node) decreases because energy transport in the mixed-phase region is less efficient than in the melt region.  The reduction in flux limits energy transfer to the surface and because the surface cools efficiently by radiation the temperature near the surface (first staggered node) drops precipitously towards the equilibrium temperature of the planet.  Furthermore, the reduction in flux (at the second basic node) causes energy to build up beneath the bottleneck which reheats the region immediately below.  Therefore in both cases (resolved or parameterised ultra-thin thermal boundary layer), a lid forms at the surface that prevents the large energy flow in the melt-dominated region below from reaching the surface to radiate.
 
-The (slightly ad-hoc) solution so far is to use a constant mixing length such as in case ``BUM'' in \cite{BSW18}.  Relative to the convention mixing length definition, a constant mixing length allows more transport near the surface which prevents (or at least mitigates) the formation of a very thin and highly viscous lid.  \dbnote{Also working on a foundering boundary layer scaling.}
+The (slightly ad-hoc) solution so far is to use a constant mixing length such as in case ``BUM'' in \cite{BSW18}.  Relative to the convention mixing length definition, a constant mixing length allows more transport near the surface which prevents (or at least mitigates) the formation of a very thin and highly viscous lid.
 
 \subsubsection{Foundering Upper Boundary Layer}
-\dbnote{Still need to discuss with Aaron about this}
 Magma ocean cooling proceeds all the way through the mixed phase region up to the rheological transition in the upper boundary layer.  At this point, the heat flux drops precipitously, as the stiff surface region forces the thermal diffusivity way down, throwing an insulating blanket over the magma ocean.  This introduces unphysical cycles into the evolution, where the total heat content of the mantle oscillates up and down as the UBL locks up, releases, and locks up again.  This behavior reveals an important piece of missing physics in standard mixing length theory, which fails to account for all the effects of phase transitions, and the role they play in a foundering solid crust.
 
 Standard mixing length theory adequately captures the continuous foundering of a thin skin of cooler material at the upper boundary.

@@ -114,11 +114,9 @@ To separate melt and solid in this half layer, assuming a (representative) mass 
 \begin{equation}
 \tau = \frac{\rho L}{2 J_m} \min (\phi_0, 1-\phi_0 )
 \end{equation}
-\dbnote{Still not 100\% why this is called an e-folding time.  You can derive the characteristic timescale by simply calculating the mass of melt or solid in the volume and a mass flux.  You don't need to solve an equation of the form dA/dt=A which I usually think of as necessary to call it an ``e-folding time''}
 Presumably this is referred to as an e-folding time due to the form of the PDE and/or assumed form of the solution (expected exponential decay).  But the timescale is simply a separation time over half the layer thickness.
 
 \subsection{Impact Stirring}
-\awnote{Many of the details from this section are missing from Abe (1993), and some of the equations reported there have large errors. This derivation is inferred by combining personal derivation with Abe (1993) and the source papers sited there (e.g. Kieffer(1980), Davies(1985), Holsapple(1982))}
 
 Earth accreted through a series of planetesimal impacts, which had an important effect on magma ocean mixing since each impact stirred the mantle below the impact site.
 To gain a first order handle on impact stirring, a simple model is developed assuming a roughly linear accretion rate:
@@ -143,7 +141,6 @@ This impactor mass distribution can now be used to determine the effectiveness o
 
 Each impactor is able to stir a region of the Earth's mantle below the impact site, which depends on impact size and velocity.
 We consider two overlapping stirred regions: the deep narrow region corresponding to the initial penetration of the impactor itself and the shallow broad region reflecting the resulting impact crater.
-\awnote{In reality, this is more complicated since we also consider impacts into a magma ocean. Though this type of impact creates a temporary cavity rather than a semi-permanent crater, the physics of the cavity size are similar to gravity-dominated craters, for which the effect of rock-strength is negligible. Thus, hopefully, we can use the same crater-scaling laws to approximate the dimensions of the transient crater cavity, even for a predominantly molten Earth target.}
 By assuming a (simplified) constant accretion rate (Equation \ref{eq:abe1993_accrate}), we can evaluate the depth-dependent impact stirring timescale as a fraction of the total accretion timescale:
 \begin{equation}
   \tau_{s}(d) = \frac{\tau_{acc}}{N_{s}(d)}
@@ -155,7 +152,6 @@ The number of stirring events can be approximated as:
   N_{s}(d) = \frac{S_s(d)}{4\pi(R_E - d)^2}
 \end{equation}
 representing simply the ratio of the total stirred area (throughout accretion), $S_s(d)$, to the total planetary area at depth $d$.
-\awnote{This is similar to Equation 18 of Abe(1993), but that expression has numerous typos, inverting numerator and denominator and missing a needed factor of 4.}
 This neglects the fact that the Earth grows as it accretes, and thus early impacts collide with a smaller planet, effectively stirring to greater depths.
 This expression thus produces only a rough stirring timescale that is actually an upper-bound, when combined with Equation \ref{eq:abe1993_taustir}.
 The two stirred regions can be evaluated from impact physics. 
@@ -188,11 +184,9 @@ The total stirred area is calculated as an integral over the impactor mass distr
 where $m_c(d)$ is the critical mass below which craters are unable to stir to beyond depth $d$, and $\Theta()$ is a step function ensuring that only sufficiently large impactors able to stir to great enough depth contribute to the total stirred area.
 When evaluating the total stirred area, Abe (1993) calculated separately for crater and penetration stirring, and used only the shortest timescale.
 In reality, we should use the large crater footprint for the shallow regime and the narrow penetration footprint for the deep regime, which is accomplished by splitting this into two separate integrals.
-\awnote{Need to finish this!}
 
 Examination of impact stirring timescales is that they all exceed the timescale for gravitational separation for melt fractions above $\sim$13\%.
 Thus, if the melt fraction remains above 0.2 due to suppression from vigorous convective mixing, then impacts play a negligible role.
-\awnote{Need to justify this argument based on python runs and include in section above}
 
 %K_{max} = \frac{(2-q)M_E}{M_{max}^2}
 
@@ -202,7 +196,6 @@ Begin with the energy (enthalpy) balance equation for a spherically symmetric pl
   \frac{\partial H}{\partial t} = - \frac{1}{\rho}\nabla \cdot \vec{J_{tot}} + \Delta V_m|g|\vec{J_m} \cdot \hat{r} + q_{heat}
 \end{equation}
 where this accounts for the imbalance of energy flows into/out-of a spherical shell at constant pressure, combined with the change in potential energy due to melting density differences, and internal heating (units are energy per unit mass per unit time).
-\awnote{I think this neglects changes in Press due to mass redistribution, but that is fine since they are small for magma ocean\dots but not so if core formation is also being considered}
 Here  $J_{tot}$ is the total heat flux, $J_m$ is the total mass flux of melt, and $q_{heat}$ is the total heat generated at this depth.  $\hat{r}$ is the radial unit vector.
 Note that this total heat generation represents a sum over all sources including radioactive and tidal heating.
 Similarly, the total melt mass flux results from both gravitational separation and convective mixing, ${J_m = J_{gm} + J_{cm}}$.
@@ -212,9 +205,6 @@ We can expand the divergence in spherical coordinates, dropping non-symmetric te
   \frac{\partial H}{\partial t} = - \frac{1}{4\pi r^2 \rho} \frac{\partial L_{tot}}{\partial r} + \Delta V_m|g|J_{m\hat{r}} + q_{heat}
 \end{equation}
 where $L_{tot} = 4 \pi r^2 J_{tot}$ is the total luminosity (energy transported upwards per unit time) carried upward past the current depth. 
-\awnote{Abe(1993) converted this equation from depth to mass coordinates, ${\partial m /\partial r = 4 \pi r^2 \rho}$, though this is somewhat nonintuitive for Earth Science audiences.}
-
-\dbnote{ $\Delta V_m = \frac{1}{\rho_m} - \frac{1}{\rho_s} >0$ right? (for the simple case of a typical solid more dense than its melt).  So with more melt flux radially outward the gravitational potential energy is becoming less negative, hence the $+$ sign in the energy balance - correct?}
 
 The total heat flux is a combination of the sensible and latent heat components:
 \begin{equation}
@@ -224,17 +214,13 @@ Here $\Delta S_m$ and $\Delta V_m$ are the entropy and volumes of melting (fusio
 The enthalpy and volumes of melting ${\Delta H_m = T(P, [\phi])\Delta S_m(P)}$ and ${\Delta V_m = \Delta V_m(P)}$ are both pressure-dependent quantities (although the entropy change on melting $\Delta S_m$ is often reasonably approximated as constant).
 
 The enthalpy conservation equation implicitly depends on the melt fraction $\phi$ in many places: the convective heat flux $J_q$ depends strongly on the melt-fraction dependent viscosity $\eta(\phi)$, both convective mixing and gravitational separation ${J_m = J_{gm}(\phi) + J_{cm}(\phi)}$, and total density $\rho(\phi)$.
-\awnote{something weird happening with highlighting here\dots}
 Also, if tidal heating is being considered, tidal dissipation depends very strongly on viscosity, and is thus $\phi$ dependent.
 Also note that the melt flux $J_m$ is formerly equal to zero if $\phi=1$ or $\phi=0$.
-\awnote{I am not sure that this is explicitly stated in Abe 1993 anywhere, though it is clearly true!}
 
 The form of the energy balance equation used by Abe1993 was in terms of temperature instead of enthalpy (though I think this is less useful, since it makes evolution of a single component system needlessly difficult).
 \begin{equation}
   [C_p  + \Delta h (\frac{\partial \phi}{\partial T})_P] \frac{\partial T}{\partial t}= - 4\pi \frac{\partial}{\partial m} r^2[J_q + \Delta h J_m] + \frac{1}{\rho}(\Delta \rho/\rho)|g|J_m + q_{heat}
 \end{equation}
-
-\awnote{This form also relies on the constancy of the heat capacity during partial melting and the LHS is not applicable if the system is either fully molten or fully solid}
 
 We can employ a good approximate expression for the melt fraction:
 \begin{equation}
@@ -244,8 +230,6 @@ for $H_{sol} < H < H_{liq}$ and otherwise $\phi = 1$ above the liquidus (or 0 be
 This expression is exact for single component systems and reasonably accurate for multi-component systems to the extent that the entropy change on melting $\Delta S_m$ has similar values for all solid phases.
 This expression replaces the less accurate version in terms of temperature used by Abe 1993 (that further requires equal heat capacities for all solid phases), which is not useful for single component systems where partial melt is pinned to the melting curve.
 
-%\awnote{
-%This provides us a way forward considering only a single component bridgmanite mantle:
 \begin{itemize}
   \item Use a single component melting curve roughly corresponding to the 50\% solidus line for a realistic mantle chemistry. 
   \item Entropy of melting can be adjusted to ensure solidus and liquidus enthalpy bounds that match the true mantle system. 
@@ -260,15 +244,10 @@ This expression replaces the less accurate version in terms of temperature used 
 \end{itemize}
 %}
 
-The melting curve used by Abe 1993 is from Ohtani (1983). \awnote{though it may be slightly adjusted?}
+The melting curve used by Abe 1993 is from Ohtani (1983).
 Ohtani appears to assume a constant entropy change on melting (fairly reasonable assumption) of 8.03 cal/mol/K for MgSiO3 melt.
 The enthalpy change in Abe 1993 is likely calculated from this value, $\Delta h = T \Delta S$.
 Also, the heat capacity and thermal expansion of the melt are assumed constant (probably less accurate)
-
-\awnote{
-  The next step is thus to read through Ohtani to obtain equations, or at least a table, for the melting curve values.
-  We also need to use the EOS formulas for the solid phases to obtain the density and entropy changes for melt and solid.
-}
 
 \subsection{Gravitational potential energy}
 The gravitational potential energy per unit mass is:

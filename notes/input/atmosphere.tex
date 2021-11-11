@@ -1,6 +1,5 @@
 \fbox{\parbox{\textwidth}{Dimensional and non-dimensional equation for the mass balance and evolution of mass balance of a volatile.}}
 
-\noindent \dbnote{TODO: throughout this section the gravity is assumed to be positive, but in SPIDER it is actually negative!  So be aware of sign differences between these notes and the code.}
 %%%%
 %%%%
 %%%%
@@ -269,7 +268,7 @@ For the case of no chemical reactions, $\hat{m}_v^r=0$ for all volatiles and hen
 \frac{\hat{X}_v}{\hat{M}^m} (k_v \hat{M}^s + \hat{M}^l) + \frac{1}{V_0 \hat{M}^m} \frac{\hat{R}_p^2}{\hat{g}} \left( \frac{\hat{\mu}_v^g}{\hat{\bar{\mu}}} \right)\hat{p}_v = \hat{X}_v^{\rm init} - \frac{\hat{m}_v^r}{\hat{M}^m} \equiv \hat{X}_v^{\rm new\ init} 
 \label{eq:volinit3}
 \end{equation}
-Effectively, this initialises the mass reaction term $\hat{m}^r_v$ to zero at the start of the model run, and computes both the new total initial volatile concentration $\hat{X}_v^{\rm new\ init}$ as well as the initial volatile abundance in the melt $\hat{X}_v$.  \dbnote{TODO: this implicitly assumes that the escape reservoir is initially zero, which it may not be if we are resuming from a previous output.}
+Effectively, this initialises the mass reaction term $\hat{m}^r_v$ to zero at the start of the model run, and computes both the new total initial volatile concentration $\hat{X}_v^{\rm new\ init}$ as well as the initial volatile abundance in the melt $\hat{X}_v$.  
 %%%%
 %%%%
 %%%%
@@ -334,7 +333,6 @@ where again we can use Eq.~\ref{eq:equilibrium_constant} as the extra equation, 
 %%%%
 %%%%
 \subsection{Evolution Equation}
-\dbnote{I need to make the notation here consistent with that above, but for the sake of time I will continue regardless to add in the chemical reaction terms.}
 Remember that we compute a RHS in SPIDER that represents the time-derivative (update) of a solution quantity.  We are going to solve the volatile evolution equations within the system of equations that include the update to entropy, etc.  \textbf{Strictly speaking, it is not necessary to integrate to find the equilibrium volatile abundance in the melt in the simplest situations.  You could save computations (and accumulated error) by instead solving Eq.~\ref{eq:volevo}, but this would not allow you to introduce time-dependent atmospheric escape for example.}  Therefore, we define a non-dimensional time (which is given by the existing parameters in the system by dimensional analysis) as:
 \begin{equation}
 t = \tau_0 \hat{t}
@@ -359,7 +357,6 @@ The second term can be calculated using the chain rule:
 \end{equation}
 %%% two species only %%%
 \subsubsection{Two volatile species}
-\dbnote{To update notation from this point}
 To deal with the first term, recall that for two species (Eq.~\ref{eq:atmosphere_molar_mass}):
 \begin{equation}
 \hat{\mu}_{\rm t} = \left( \frac{\hat{p}_C}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_C + \left( \frac{\hat{p}_H}{\hat{p}_C+\hat{p}_H} \right) \hat{\mu}_H
@@ -419,7 +416,7 @@ Recall that:
 \hat{M}^{\rm s} + \hat{M}^{\rm l} = \hat{M}^{\rm m} \equiv \text{constant}
 \label{eq:mantle_mass}
 \end{equation}
-Therefore, we can now just express in terms of the total mantle mass and the mass of liquid (melt) and its time derivative.  \myemph{The evolution equation is, therefore:} \dbnote{Note that here the terms such as escape $m_v^e$ are still omitting the $4 \pi$ factor}
+Therefore, we can now just express in terms of the total mantle mass and the mass of liquid (melt) and its time derivative.  \myemph{The evolution equation is, therefore:} 
 \begin{align}
 &\frac{d \hat{X}_v}{d\hat{t}} \left(k_v \hat{M}^m + (1-k_v) \hat{M}^l \right)
 + \hat{X}_v (1-k_v) \frac{d \hat{M}^l}{d\hat{t}} + \nonumber \\
@@ -600,7 +597,7 @@ And similarly:
 \frac{\partial K}{\partial t} = \frac{\partial K}{\partial T} \frac{\partial T}{\partial t}
 \end{equation}
 \paragraph{Surface temperature derivative}
-Therefore the final derivative that we need is $\partial T/\partial t$, where $T$ here is taken as the surface temperature.  Unfortunately this isn't an easy term to get at, since temperature for us is a lookup quantity since entropy $S$ is the primitive (solution) variable.  Furthermore, application of the parameterised ultra-thin thermal boundary at the surface will further complicate obtaining the surface temperature derivative.  \dbnote{Get an estimate of this quantity numerically, or perhaps can linearise around the current surface temperature to obtain an estimate?}.  Actually, I think we can get at the temperature change (without accounting for the parameterised boundary layer) using the following:
+Therefore the final derivative that we need is $\partial T/\partial t$, where $T$ here is taken as the surface temperature.  Unfortunately this isn't an easy term to get at, since temperature for us is a lookup quantity since entropy $S$ is the primitive (solution) variable.  Furthermore, application of the parameterised ultra-thin thermal boundary at the surface will further complicate obtaining the surface temperature derivative.  Actually, I think we can get at the temperature change (without accounting for the parameterised boundary layer) using the following:
 \begin{equation}
 dS = \left( \frac{\partial S}{\partial T} \right)_P dT + \left( \frac{\partial S}{\partial P} \right)_T dP
 \end{equation}
@@ -675,7 +672,7 @@ F_{atm} = F_{\uparrow} - F_{\downarrow} = const, \qquad F_{\downarrow}=F_\infty,
 The incoming short wave irradiation is $F_\infty$ in \cite{AM85} and $F_0$ in \cite{AND10}.  And $F_{\uparrow}^s=0$ since reflection is not considered (by either author).
 
 \subsubsection{Optical depth}
-For a given volatile we compute the optical depth (and remember that optical depth is a non-dimensional quantity) \dbnote{TODO: clean up code with absolute value of gravity, since gravity is negative in SPIDER?} \citep[Eq. A18,][]{AM85}:
+For a given volatile we compute the optical depth (and remember that optical depth is a non-dimensional quantity) \citep[Eq. A18,][]{AM85}:
 \begin{equation}
 \tau^\ast = \frac{3 \kappa^\prime p(\tau^\ast)}{2g}
 %\tau^\ast = \frac{3 m_{\rm v}^{\rm g}}{8 \pi R_{\rm p} ^2} \sqrt{\frac{k_{\rm abs} g}{3 p_0}} = \frac{3p}{2g} \sqrt{\frac{k_{\rm abs} g}{3 p_0}} = \frac{3 p k_{\rm abs}^\prime}{2g}
@@ -736,7 +733,6 @@ Everything on the RHS (except $\tau$) is known.  The \myemph{combined optical de
 \end{equation}
 We can take $\mu$ as the mean molecular weight of the atmosphere, i.e. molecular weights of H$_2$O and CO$_2$, weighted by the mixing ratio of each species in the atmosphere.  We can now solve for $z(\tau^\ast)$ using Eqs.~\ref{eq:dzdtau} and \ref{eq:dzdtau2}, and thus provide a mapping from the (aggregate scaled) optical depth to the vertical height coordinate above the planetary surface.  We (PS and I) attempted to solve the equations analytically using Mathematica, but we have thus far been unable to obtain a Real valued function only.  But testing with Mathematica and Python reveal that the equation is trivial to integrate numerically, so I instead implemented a RK4 algorithm (actually, Simpson's rule, since the ODE is only a function of $\tau$) in SPIDER.
 \subsubsection{Flux and $T_{eqm}$}
-\dbnote{TODO: implement this (and check equations)}
 The formulation in SPIDER involves specifying (or calculating) an effective temperature $T_{eqm}$, but this relates to the incoming stellar flux:
 \begin{equation}
 F_{sun} = \sigma T_{eqm}^4 = (1-\alpha) \frac{F_0^\prime}{D^2}

@@ -1,21 +1,3 @@
-%[\textbf{Notation: Uppercase quantities ($U$, $J$) represents quantities relative to a fixed reference frame.  Lower case quantities are relative to a moving reference frame.}]\\
-%\begin{table}[!h]
-%\begin{center}
-%\begin{tabular}{|l|l|}
-%\hline
-%Symbol & Description\\
-%\hline
-%$\vec{J}^\ast$ & Mass flux relative to a fixed reference frame\\
-%$\vec{J}$ & Mass flux relative to the barycentric velocity\\
-%$\vec{U}$ & Velocity of barycentre (relative to a fixed reference frame)\\
-%$\vec{u}$ & Velocity relative to the barycentric velocity\\
-%\hline
-%\end{tabular}
-%\end{center}
-%\end{table}
-%\noindent
-\awnote{Subtle, is the fact that we should be able to relate the change in melt fraction to the divergence of the melt flux:
-$\frac{\partial \phi}{\partial t} \sim \frac{1}{\rho} \nabla \cdot \vec{J_m} + {\rm heating\ terms}$.  It may be that this is fully adequately accounted for by the divergence of total heat term, which includes latent heat, but I am not sure.}
 
 \subsection{Conservation of mass}
 
@@ -200,7 +182,6 @@ Following \cite{ABE95}, we now introduce $i$ components, which are chemical spec
 \label{eq:cons_omega_si}
 \end{equation}
 where $\omega_{mi}$, $\omega_{si}$, $\vec{J}_{mi}$, and $\vec{J}_{si}$ are the mass fraction and mass flux of component $i$ in melt and solid phases, respectively, and $M_i$ is the mass melting rate of chemical component $i$ per unit mass.  From the definition of mass flux relative to the barycentre (e.g., analogous to Eqs.~\ref{eq:Jm} and \ref{eq:Js}), $\vec{J}_{mi}$ and $\vec{J}_{si}$ are:
-\dbnote{some of this included further up now}
 %%%
 \begin{subequations}
 \begin{align}
@@ -226,7 +207,7 @@ where:
 \begin{equation}
 \vec{j}_{mi} \equiv \rho \phi \omega_{mi} ( \vec{U}_{mi}-\vec{U}_m ), \qquad \vec{j}_{si} \equiv \rho (1-\phi) \omega_{mi} (\vec{U}_{si}-\vec{U}_s)
 \end{equation}
-$\vec{j}_{mi}$ and $\vec{j}_{si}$ are the mass fluxes of component $i$ in melt and solid phases, respectively, \textbf{caused by mechanisms other than melt--solid relative motion}.  Now add Eq.~\ref{eq:cons_omega_mi} and Eq.~\ref{eq:cons_omega_si}, and using Eq.~\ref{eq:J_mi} and Eq.~\ref{eq:J_si} and additionally introducing the mass fraction of component $i$ in the mixture, $\omega_i$ gives: \dbnote{Note that $j_{mi}$ and $j_{si}$ are zero for a one component system!  So at this stage we must be assuming at least two components.  And this formulation in terms of component transport is confusing since it hides the origin of the phase mixing that results in the convective mixing term.}
+$\vec{j}_{mi}$ and $\vec{j}_{si}$ are the mass fluxes of component $i$ in melt and solid phases, respectively, \textbf{caused by mechanisms other than melt--solid relative motion}.  Now add Eq.~\ref{eq:cons_omega_mi} and Eq.~\ref{eq:cons_omega_si}, and using Eq.~\ref{eq:J_mi} and Eq.~\ref{eq:J_si} and additionally introducing the mass fraction of component $i$ in the mixture, $\omega_i$ gives:
 \begin{equation}
 \rho \frac{D\omega_i}{Dt} = -\nabla \cdot \left[ (\omega_{mi}-\omega_{si}) \vec{J}_m + \vec{j}_{mi} + \vec{j}_{si} \right]
 \label{eq:Domegai}
@@ -243,7 +224,7 @@ Can now rewrite Eq.~\ref{eq:Domegai} using $K_{ei}$:
 \rho \frac{D \omega_i}{D t} = - \nabla \cdot \left[ \frac{1-K_{ei}}{\phi_e+(1-\phi_e)K_{ei}} \omega_i \vec{J}_{m} + \vec{j}_{mi} + \vec{j}_{si} \right]
 \label{eq:Domegai2}
 \end{equation}
-where $\phi_e$ is the melt fraction at the equilibrium.  We can approximate the convective mass transport by turbulent diffusion in a vigorously convecting layer.  Then vertical mass flux of component $i$ due to convection is given by Fick's law \dbnote{flux of component $i$ in the melt relative to the melt, and similarly for the solid.  Again, breaks for one component!  Only makes sense if components have a velocity relative to the bulk motion of melt and solid.  Here Abe is really talking about the diffusion of chemical species.}:
+where $\phi_e$ is the melt fraction at the equilibrium.  We can approximate the convective mass transport by turbulent diffusion in a vigorously convecting layer.  Then vertical mass flux of component $i$ due to convection is given by Fick's law:
 \begin{equation}
 \vec{j}_{mi} = -\kappa_c \rho \frac{\partial \phi \omega_{mi}}{\partial r}, \qquad \vec{j}_{si} = -\kappa_c \rho \frac{\partial (1-\phi) \omega_{si}}{\partial r}
 \end{equation}
@@ -270,7 +251,6 @@ Analyse the last term on the RHS:
 &= -\kappa_c \rho \sum_{i=1}^n \left[ (h_{mi} \omega_{mi} - h_{si} \omega_{si})\frac{\partial \phi}{\partial r} \right]\\
 &= -\kappa_c \rho \Delta h \frac{\partial \phi}{\partial r} \equiv \Delta h \vec{J}_{cm}
 \end{align}
- \dbnote{Above includes approximations, which Abe eludes to at the beginning of the section in his 1995 paper.  He's also jumped from thinking about diffusion of chemical species to diffusion of melt (i.e., phase) fraction.  It's interesting that by taking the definition of $j_{mi}$ and $j_{si}$ you end up with a derivative for phase fraction, and one for chemical species diffusion.  Abe must ignore the effect of chemical species transport in order to ignore the second term!  That is, the phase enthalpy is independent of composition.}
 
 \textbf{The convective (phase) mixing term can probably be incorporated into the heat flux(?) if we modify the form of $\kappa_h$.  Or maybe if we decompose the velocities relative to the barycentre differently.  So rather than considering a term associated with melt--solid separation and another, we wrap them both up in the same formulation.  But combining with the convective heat flux seems to make the most sense since these are two terms, opposite in sign for $dS_{liq}/dr<0$ that nearly cancel.  The precision issue arises because this cancellation goes away for $dS_{liq}/dr>0$ and hence $dS/dr$ is driven to a tiny value.}
 \boxedeq{}{\rho T \frac{Ds}{Dt} = -\nabla \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]}

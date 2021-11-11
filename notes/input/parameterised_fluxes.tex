@@ -1,5 +1,4 @@
 \subsection{Mixing length theory}
-\dbnote{The sign convention needs checking, and may be different to what is actually used in the code.}
 Heat (and mass) transport for both the viscous (solid-state) and inviscid regime is parameterised using \textbf{mixing length theory}.  1-D thermal evolution can be effectively modelled using mixing length theory to approximate the radially averaged results of full 3-D convective simulations.  The physical picture is that convective heat transport at a distance $l$ from the nearest boundary is dominated by fluid parcels of size $l$, which transport heat vertically over a distance equal to their size before they dissipate.  The sensible heat flux is expressed as a sum of conductive and convective terms:
 \begin{equation}
 J_q = -\rho C_p \kappa \left( \frac{\partial T}{\partial r} \right)_S - \rho C_p \kappa_{\rm h}\Delta (\delta_r T)_S
@@ -29,7 +28,7 @@ The convective velocities are given by a balance of the buoyancy force on each f
 \begin{equation}
   v_{\rm invis} = \sqrt{\frac{\alpha |g| l^2}{16}  \Delta(\delta_z T)_S} \\
 \end{equation}
-For viscous convection, the parcel velocity is given by Stokes settling for a sphere of diameter $l$. The inviscid case can be determined up to a constant by equating the dynamic pressure force $\sim$$\rho v^2$ with the buoyancy force \awnote{though the exact source of the proportionality constant is unknown}.
+For viscous convection, the parcel velocity is given by Stokes settling for a sphere of diameter $l$. The inviscid case can be determined up to a constant by equating the dynamic pressure force $\sim$$\rho v^2$ with the buoyancy force.
 
 
 
@@ -59,8 +58,6 @@ which enables evaluation of the heat flux directly in pressure-entropy space.
 \subsection{Mixing Length Theory}
 \label{sec:mixinglenth}
 
-\awnote{ The primary difference between this formulation of mixing length theory and Abe's is that Abe allows convection to ``turn on'' instantly, where it contributes to the total heat transport as soon as the temperature goes super adiabatic. I believe this is WRONG, because it includes additional heat transport due to convection even within a thermal boundary layer (where only conduction operates). Instead, this slight modification ensures that only conduction operates within both stably stratified regions (low thermal gradient) and thermal boundary layers (high thermal gradient), reflecting the fact that convection is inhibited in both these regions, though for different reasons. This formulation also allows interior thermal boundary layers to arise naturally, without crossing any discontinuities in terms of the heat flux. }
-
 The heat-transport diffusivity (formerly called the eddy diffusivity according to Abe 1993) is a piecewise function depending on the heat-transport regime:
 \begin{subnumcases}{\kappa_h=}
   \kappa & $\kappa_{\rm vis} \le \kappa \label{eqn:convdiff_a}$ \\
@@ -70,7 +67,6 @@ The heat-transport diffusivity (formerly called the eddy diffusivity according t
 Viscous diffusive heat transport is the norm for planetary convection, where the rise and fall of convective parcels is primarily resisted by viscous drag (corresponding to Stokes settling).
 Within both thermal boundary layers and stably stratified regions, thermal diffusion dominates, where conduction transports heat faster than convection ($\kappa_{\rm vis} \le \kappa$), thereby damping the growth of convective instabilities.
 In highly turbulent systems, viscous diffusivity can exceed the viscosity ($\nu \le \kappa_{\rm vis}$), implying that dynamic pressure (not viscous drag) is the dominant force resisting the vertical transport of convective parcels, and thus the system adopts the inviscid diffusivity.
-\awnote{Abe 1993 places the boundary between viscous and inviscid convection at $9/8 \cdot \nu$ rather than at $1 \cdot \nu$, but I see no strong justification for this.}
 
 
 In either convective regime, we estimate the appropriate diffusivity using the average mean-free-path of convective parcels:
@@ -112,11 +108,11 @@ where $g$ is gravitational acceleration, and $\rho_{\rm S}$ is density of the sp
 \begin{equation}
 U = \frac{gdl}{18 \nu} \left( \frac{\rho_{\rm S} - \rho_{\rm F}}{\rho_{\rm F}} \right)
 \end{equation}
-The fractional density difference due to thermal effects can be expressed as: \dbnote{TODO: this should have factor of 1/2 I think}
+The fractional density difference due to thermal effects can be expressed as:
 \begin{equation}
 \frac{\rho_{\rm S} - \rho_{\rm F}}{\rho_{\rm F}} = \alpha \Delta T = \alpha l \left( \frac{dT}{dz} - \left( \frac{dT}{dz} \right)_{\rm s} \right)
 \end{equation}
-And finally, set the particle diameter equal to the length-scale parameter $l$, which is the mixing length: \dbnote{TODO: also need to introduce factor of 1/2 from averaging over mixing length}
+And finally, set the particle diameter equal to the length-scale parameter $l$, which is the mixing length:
 \begin{equation}
 U = \frac{\alpha g l^3}{18 \nu} \left( \frac{dT}{dz} - \left( \frac{dT}{dz} \right)_{\rm s} \right)
 \end{equation}
