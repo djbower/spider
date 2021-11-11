@@ -1,6 +1,9 @@
 # SPIDER
 **Simulating Planetary Interior Dynamics with Extreme Rheology**
 
+[![Build](https://github.com/psanan/spider/actions/workflows/ci.yml/badge.svg)](https://github.com/psanan/spider/actions)
+
+
 A 1-D parameterised interior dynamics code for rocky planets with molten and/or solid interiors and support for volatile cycling, redox reactions, and radiative transfer in the atmosphere.
 
 ## 1. References
@@ -72,7 +75,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
     make clean
     make -j
     ```
-    
+
     Spider is now installed and you can in principle skip to *Running a Model* below.  However, you are advised to install the test harness as follows:
 
 10. [Optional] Get SciATH (Scientific Application Test Harness), which is a python module:
@@ -81,7 +84,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
     cd /somewhere/to/install
     git clone https://github.com/sciath/sciath -b dev
     ```
-    
+
 11. [Requires SciATH] Add the resulting module to your Python path (for example):
 
     ```
@@ -104,19 +107,19 @@ You should now be ready to use the code.  Proceed to *Running a Model* to learn 
 
 ## 3. Running a Model
 
-1. [Optional] Add the installation directory of SPIDER to your `$PATH` so you can call the `spider` binary without requiring the absolute path. 
+1. [Optional] Add the installation directory of SPIDER to your `$PATH` so you can call the `spider` binary without requiring the absolute path.
 2. You can run `spider` without an argument and standard parameters will be used to run a basic interior model with output stored in ```output/```:
 
     ```
     spider
     ```
-        
+
 3. However, in general you will add an argument to use the parameters specified in an options file.  For example, from the root SPIDER directory:
 
     ```
     spider -options_file tests/opts/blackbody50.opts
     ```
-        
+
 4. There are example options files in ```tests/opts/```.  Also see ```parameters.c``` for more parameter options.
 
 ## 4. Detailed Installation
@@ -138,7 +141,7 @@ A basic test to ensure you have a working compiler is (note you can swap out "`g
 ```
 echo '#include<stdio.h>' > t.c && echo 'int main(){printf("It seems to work!\n");}' >> t.c && gcc t.c && ./a.out && rm -f t.c a.out
 ```
-    
+
 For Mac OSX, the easiest way to install GCC is from <http://hpc.sourceforge.net>
 
 If you use MacPorts, Homebrew, or apt, these can also be used to install GCC.  *Unfortunately, the GCC compiler from Macports seems to be frequently broken*.  Nevertheless, for example, using MacPorts:
@@ -225,7 +228,7 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc"):
     cd /somewhere/to/install
     git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-quad-direct
     ```
-        
+
 7. Change directories:
 
     ```
