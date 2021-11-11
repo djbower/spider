@@ -1,12 +1,17 @@
+# Example input file from a case in Bower et al. (2021)
+# 3 Earth oceans of H
+# C/H = 0.1 wt %
+# Note that initial volatile pressures are known to adhere to
+# the equilibrium chemistry constraints since they were pre-computed
+# by an external script
+
 # time stepping
 
 # number of macro steps
-#-nstepsmacro 2000000
 -nstepsmacro 10
 
 # macro step size in years
--dtmacro 100
-#-dtmacro 100000
+-dtmacro 1000
 
 # tolerances
 -ts_sundials_atol 1.0e-10
@@ -14,6 +19,8 @@
 
 # mesh
 # number of basic nodes
+#-n 500
+# reduced mesh size for simple testing
 -n 100
 
 -MASS_COORDINATES
@@ -31,11 +38,7 @@
 -radius0 63710000.0 # Earth radius
 -entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
 -time0 1.0E5
-#-temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
-#-pressure0 362180.6166318522
 -pressure0 10.0E5
-#-density0 1.0E-2 #4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
-# volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
 -volatile0 1.0E-6
 
 # energy fluxes and sources to include
@@ -45,7 +48,7 @@
 -CONVECTION 1 # convection
 -MIXING 1 # mixing (latent heat transport)
 -SEPARATION 1 # gravitational separation of solid and melt phase
--HTIDAL 0 # tidal heating (TODO: not currently implemented)
+-HTIDAL 0 # tidal heating (not currently implemented)
 
 # output directory
 -outputDirectory output
@@ -54,7 +57,6 @@
 
 -melt_TYPE 1
 -melt_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
-#-melt_alpha_filename /Users/dan/Programs/spider-dev/lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
 -melt_cp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_melt.dat
 -melt_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_melt.dat
 -melt_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_melt.dat
@@ -78,10 +80,8 @@
 # [2] is restart from file
 -IC_INTERIOR 1
 #-ic_interior_filename output/dSdr_b_aug_0.m
-# this next value is computed as the entropy at the base of the mantle for the liquidus
--ic_adiabat_entropy 2600.0 # 2593.133034435059 #2600.0 #3052.885602072091 # initial specific entropy at top of domain (top cell)
--ic_dsdr -1.0E-5 # -4.6978890285209187e-07 # initial dS/dr everywhere
-# for Earth scalings, above is -1.0E-3 in non-dimensional units
+-ic_adiabat_entropy 2600.0
+-ic_dsdr -1.0E-5
 # set surface and core entropy (-1 is a flag to ignore, positive values are used)
 -ic_surface_entropy -1
 -ic_core_entropy -1
@@ -141,13 +141,11 @@
 # surface boundary condition
 # [1] grey-body, i.e. sigma*emiss*(T^4-Teqm^4), with constant emissivity
 # [2] steam atmosphere parameterisation (Zahnle et al., 1988)
-# [3] self-consistent volatile evolution (Abe and Matsui, 1985, Lebrun et al., 2013)
+# [3] self-consistent volatile evolution (Bower et al., 2019, Bower et al., 2021)
 # [4] heat flux (prescribe value using surface_bc_value)
 # [5] entropy
 -SURFACE_BC 3
 -surface_bc_value 0.0
-
-#-SURFACE_BC_ACC 1
 
 # if SURFACE_BC=1 or 2, the following constant emissivity is used
 -emissivity0 1.0
@@ -166,10 +164,10 @@
 -P0 101325.0 # Pa (= 1 atm)
 
 # Define the volatiles
--volatile_names H2O,H2,CO2,CO,N2
+-volatile_names H2O,H2,CO2,CO
 
 -CO2_SOLUBILITY 3
--CO2_initial_atmos_pressure 1.8707003643761821E5
+-CO2_initial_atmos_pressure 1.8412864823803783E5
 -CO2_kdist 0.0
 -CO2_kabs 1E-4
 -CO2_henry 0.0
@@ -177,7 +175,7 @@
 -CO2_molar_mass 0.04401 # kg/mol
 
 -H2O_SOLUBILITY 1
--H2O_initial_atmos_pressure 3.3711195265768183E5
+-H2O_initial_atmos_pressure 3.3703436080366105E5
 -H2O_kdist 0.0
 -H2O_kabs 0.01
 -H2O_henry 1.6886562705299146
@@ -185,30 +183,27 @@
 -H2O_molar_mass 0.01801528 # kg/mol
 
 -CO_SOLUBILITY 1
--CO_initial_atmos_pressure 15.804329802734387E5
+-CO_initial_atmos_pressure 15.555831058257253E5
 -CO_kdist 0.0
 -CO_kabs 1.0E-5
--CO_henry 0.0 # ppm/Pa (Yoshioka et al., 2019)
--CO_henry_pow 1.0 # power for Henry's law (Yoshioka et al., 2019)
+-CO_henry 0.0
+-CO_henry_pow 1.0
 -CO_molar_mass 0.02801 # kg/mol
 
 -H2_SOLUBILITY 1
--H2_initial_atmos_pressure 4.27186171145561E5
+-H2_initial_atmos_pressure 4.27087847230405E5
 -H2_kdist 0.0
 -H2_kabs 5.0E-5 # absorption (m^2/kg)
--H2_henry 0.0 # ppm/Pa (fit to H2 data from T. Lichtenberg)
--H2_henry_pow 1.0 # Power for Henry's law (fit to H2 data from T. Lichtenberg)
+-H2_henry 0.0
+-H2_henry_pow 1.0
 -H2_molar_mass 0.00201588 # kg/mol
 
--N2_SOLUBILITY 1
--N2_initial_atmos_pressure 1.8812534438236406E5
--N2_kdist 0.0
--N2_kabs 0.0 # absorption (m^2/kg)
--N2_henry 6.11E-7 # ppm/Pa (fit to H2 data from T. Lichtenberg)
--N2_henry_pow 1.0 # Power for Henry's law (fit to H2 data from T. Lichtenberg)
--N2_molar_mass 0.0280134 # kg/mol
-
+# IW buffer
 -OXYGEN_FUGACITY 7
+
+# note that an offset of 0.5 is also the default, following
+# Sossi et al., 2020
+-OXYGEN_FUGACITY_offset 0.5
 
 -reaction_water_JANAF
 -reaction_carbondioxide_JANAF
