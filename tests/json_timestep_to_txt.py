@@ -5,7 +5,6 @@ from __future__ import print_function # maybe this will work with Python 2
 import os
 import sys
 import json
-import numpy as np
 
 # Interpret the first argument as a JSON file to look for
 if len(sys.argv) < 2 :
@@ -39,7 +38,7 @@ with open(filename) as json_data:
             if e['description'] == 'dS/dxi':
                 scale = data_d['data']['dxidr_b']['values']
             else:
-                scale = np.ones_like( data_d['data']['dxidr_b'] )
+                scale = [1] * len(data_d['data']['dxidr_b'])
 
             print( scale )
 
