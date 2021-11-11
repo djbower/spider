@@ -1,20 +1,26 @@
 # time stepping
 
 # number of macro steps
--nstepsmacro 20
+#-nstepsmacro 2000000
+-nstepsmacro 10
 
 # macro step size in years
--dtmacro 50000
+-dtmacro 100
+#-dtmacro 100000
 
 # tolerances
--ts_sundials_atol 1.0e-8
--ts_sundials_rtol 1.0e-8
-
-#-atmosts_snes_verbose_monitor
+-ts_sundials_atol 1.0e-10
+-ts_sundials_rtol 1.0e-10
 
 # mesh
 # number of basic nodes
 -n 100
+
+-MASS_COORDINATES
+
+-activate_poststep
+-activate_rollback
+-tsurf_poststep_change 1050
 
 # all units are SI unless indicated otherwise
 
@@ -22,10 +28,15 @@
 # - these are used to non-dimensionalise (scale) the numerical problem
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
--radius0 1.0E6
--entropy0 1.0E3
-#-mass0 1.0E21
--pressure0 1.0E6
+-radius0 63710000.0 # Earth radius
+-entropy0 2993.025100070677 # overturn of liquidus in Stixrude et al. (2009)
+-time0 1.0E5
+#-temperature0 4033.6070755893948 # overturn of liquidus in Stixrude et al. (2009)
+#-pressure0 362180.6166318522
+-pressure0 10.0E5
+#-density0 1.0E-2 #4613.109568155063 # overturn of liquidus in Stixrude et al. (2009)
+# volatile0 is only used if SOLVE_FOR_VOLATILES=1 or SURFACE_BC=3
+-volatile0 1.0E-6
 
 # energy fluxes and sources to include
 # [0] is off
@@ -49,7 +60,7 @@
 -melt_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_melt.dat
 -melt_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_melt.dat
 -melt_log10visc 2.0 
--melt_cond # conductivity of melt
+-melt_cond 4.0 # conductivity of melt
 -melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/liquidus_A11_H13.dat
 
 -solid_TYPE 1
@@ -58,7 +69,7 @@
 -solid_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_solid.dat
 -solid_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_solid.dat
 -solid_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_solid.dat
--solid_log10visc 21.0
+-solid_log10visc 22.0
 -solid_cond 4.0 # conductivity of solid
 -solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/melting_curves/A11_H13_fit2/solidus_A11_H13.dat
 
@@ -105,7 +116,7 @@
 -eddy_diffusivity_chemical 1.0
 
 # material properties
--grain 1.0E-3 # grain size (m)
+-grain 1.0E-1 # grain size (m)
 
 # smoothing of material properties across liquidus and solidus
 # units of melt fraction (non-dimensional)
@@ -136,6 +147,8 @@
 -SURFACE_BC 3
 -surface_bc_value 0.0
 
+#-SURFACE_BC_ACC 1
+
 # if SURFACE_BC=1 or 2, the following constant emissivity is used
 -emissivity0 1.0
 # equilibrium temperature of the planet
@@ -147,24 +160,55 @@
 -PARAM_UTBL 0 # flag to turn on parameterisation
 -param_utbl_const 1.0E-7 # value of parameterisation
 
--IC_ATMOSPHERE 1
+-IC_ATMOSPHERE 3
 
 # atmosphere reference pressure (Pa)
 -P0 101325.0 # Pa (= 1 atm)
 
 # Define the volatiles
--volatile_names CO2,H2O
+-volatile_names H2O,H2,CO2,CO,N2
 
--CO2_initial_total_abundance 125.0
--CO2_kdist 5.0E-4
--CO2_kabs 0.05
--CO2_henry 4.4E-6
+-CO2_SOLUBILITY 3
+-CO2_initial_atmos_pressure 1.8707003643761821E5
+-CO2_kdist 0.0
+-CO2_kabs 1E-4
+-CO2_henry 0.0
 -CO2_henry_pow 1.0
 -CO2_molar_mass 0.04401 # kg/mol
 
--H2O_initial_total_abundance 300.0
--H2O_kdist 1.0E-4
+-H2O_SOLUBILITY 2
+-H2O_initial_atmos_pressure 3.3711195265768183E5
+-H2O_kdist 0.0
 -H2O_kabs 0.01
--H2O_henry 6.8E-2
--H2O_henry_pow 1.4285714285714286
+-H2O_henry 1.6886562705299146
+-H2O_henry_pow 2.0
 -H2O_molar_mass 0.01801528 # kg/mol
+
+-CO_SOLUBILITY 1
+-CO_initial_atmos_pressure 15.804329802734387E5
+-CO_kdist 0.0
+-CO_kabs 1.0E-5
+-CO_henry 0.0 # ppm/Pa (Yoshioka et al., 2019)
+-CO_henry_pow 1.0 # power for Henry's law (Yoshioka et al., 2019)
+-CO_molar_mass 0.02801 # kg/mol
+
+-H2_SOLUBILITY 1
+-H2_initial_atmos_pressure 4.27186171145561E5
+-H2_kdist 0.0
+-H2_kabs 5.0E-5 # absorption (m^2/kg)
+-H2_henry 0.0 # ppm/Pa (fit to H2 data from T. Lichtenberg)
+-H2_henry_pow 1.0 # Power for Henry's law (fit to H2 data from T. Lichtenberg)
+-H2_molar_mass 0.00201588 # kg/mol
+
+-N2_SOLUBILITY 1
+-N2_initial_atmos_pressure 1.8812534438236406E5
+-N2_kdist 0.0
+-N2_kabs 0.0 # absorption (m^2/kg)
+-N2_henry 6.11E-7 # ppm/Pa (fit to H2 data from T. Lichtenberg)
+-N2_henry_pow 1.0 # Power for Henry's law (fit to H2 data from T. Lichtenberg)
+-N2_molar_mass 0.0280134 # kg/mol
+
+-OXYGEN_FUGACITY 7
+
+-reaction_water_JANAF
+-reaction_carbondioxide_JANAF
