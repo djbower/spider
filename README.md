@@ -15,7 +15,7 @@ Wolf, A.S. and D.J. Bower (2018), An equation of state for high pressure-tempera
 Bower, D.J., Kitzmann, D., Wolf, A.S., Sanan, P., Dorn, C., and Oza, A.V. (2019), Linking the evolution of terrestrial interiors and an early outgassed atmosphere to astrophysical observations, Astron. Astrophys., 631, A103, doi: 10.1051/0004-6361/201935710, arXiv: <https://arxiv.org/abs/1904.08300>
 
 #### 4. Redox reactions
-Bower, D.J., Hakim, K., Sossi, P.A., and Sanan, P. (2021), Retention of water in terrestrial magma oceans and carbon-rich early atmospheres, Planet. Sci. J., in review
+Bower, D.J., Hakim, K., Sossi, P.A., and Sanan, P. (2021), Retention of water in terrestrial magma oceans and carbon-rich early atmospheres, Planet. Sci. J., arXiv: <https://arxiv.org/abs/2110.08029>
 
 ## 2. Quick Installation
 
@@ -278,7 +278,3 @@ You should now be ready to use the code!
 #### 5.1 Extended notes
 
 There are extended notes located in `notes/` that are useful for understanding the methodology and source code of SPIDER.  You can compile `notes.tex` using `pdflatexmk` or `pdflatex`.
-
-#### 5.2 Python scripts
-
-There are python scripts in `py3/` that can be used and adapted to interrogate and plot SPIDER output.
