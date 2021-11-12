@@ -36,35 +36,30 @@ Here we provide a short installation guide to get you up and running with SPIDER
 2. If you are already a user of PETSc, comment out any existing references to `PETSC_DIR` and `PETSC_ARCH` in your`.profile`, `.bash_profile`,`.bashrc`, etc. and clear these variables from your current terminal session.
 
 
-3. Download PETSc.  It must be this specific version as given below:
+3. Download PETSc.  Use this specific version as given below if interested in reproducing previous results, though any version of PETSc greater than or equal to 3.17 is expected to work just as well.
 
     ```
     cd /somewhere/to/install
-    git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-double
+    git clone https://gitlab.com/petsc/petsc -b main petsc-double
+    cd petsc-double
+    git checkout 63b725033a15f75ded7183cf5f88ec748e60783b
     ```
-
-4. Change directories:
-
-    ```
-    cd petsc-double/
-    ```
-
-5. Configure PETSc:
+4. Configure PETSc:
 
     ```
     ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials2 --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
     ```
 
-6. Follow the terminal instructions to complete the installation of PETSc.  You can copy-paste the commands returned to you in the terminal window.  Make note of `PETSC_DIR` and `PETSC_ARCH`, which are also reported in the terminal window.
+5. Follow the terminal instructions to complete the installation of PETSc.  You can copy-paste the commands returned to you in the terminal window.  Make note of `PETSC_DIR` and `PETSC_ARCH`, which are also reported in the terminal window.
 
-7. In your environment, set `PETSC_DIR` and `PETSC_ARCH` to the PETSc installation.  `PETSC_ARCH` will look something like arch-xxx-yyy (e.g. arch-darwin-c-opt).  This completes the setup of PETSc:
+6. In your environment, set `PETSC_DIR` and `PETSC_ARCH` to the PETSc installation.  `PETSC_ARCH` will look something like arch-xxx-yyy (e.g. arch-darwin-c-opt).  This completes the setup of PETSc:
 
     ```
     export PETSC_DIR=/somewhere/to/install/petsc-double
     export PETSC_ARCH=arch-xxx-yyy
     ```
 
-8. Now download SPIDER:
+7. Now download SPIDER:
 
     ```
     cd /somewhere/to/install
@@ -72,7 +67,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
     cd spider
     ```
 
-9. Make SPIDER:
+8. Make SPIDER:
 
     ```
     make clean
@@ -81,26 +76,26 @@ Here we provide a short installation guide to get you up and running with SPIDER
 
     SPIDER is now installed and you can in principle skip to *Running a Model* below.  However, you are advised to install the test harness as follows:
 
-10. [Optional] Get SciATH (Scientific Application Test Harness), which is a Python module:
+9. [Optional] Get SciATH (Scientific Application Test Harness), which is a Python module:
 
     ```
     cd /somewhere/to/install
     git clone https://github.com/sciath/sciath -b dev
     ```
 
-11. [Requires SciATH] Add the resulting module to your Python path (for example):
+10. [Requires SciATH] Add the resulting module to your Python path (for example):
 
     ```
     export PYTHONPATH=$PYTHONPATH:$PWD/sciath
     ```
 
-12. [Requires SciATH] Now return to the root SPIDER directory and test basic functionality:
+11. [Requires SciATH] Now return to the root SPIDER directory and test basic functionality:
 
     ```
     make test
     ```
 
-13. [Requires SciATH] You can also run all available tests by navigating to the `tests/` directory and running:
+12. [Requires SciATH] You can also run all available tests by navigating to the `tests/` directory and running:
 
     ```
     python -m sciath tests.yml
@@ -229,28 +224,24 @@ Note: specify the same C compiler you used to install PETSc (probably `gcc`):
 #### 4.2.2 Install PETSc with quadruple precision
 
 
-6. Download PETSc. It must be this specific version as given below::
+6. Download PETSc.  Use this specific version as given below if interested in reproducing previous results, though any version of PETSc greater than or equal to 3.17 is expected to work just as well.
 
     ```
     cd /somewhere/to/install
-    git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-quad
-    ```
-
-7. Change directories:
-
-    ```
+    git clone https://gitlab.com/petsc/petsc -b main petsc-quad
     cd petsc-quad
+    git checkout 63b725033a15f75ded7183cf5f88ec748e60783b
     ```
 
-8. Configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change `/somewhere/to/install` to the place that you installed SUNDIALS):
+7. Configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change `/somewhere/to/install` to the place that you installed SUNDIALS):
 
     ```
     ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/somewhere/to/install/sundials-quad/install --download-mpich --download-f2cblaslapack --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
     ```
 
-9. Follow the terminal instructions to complete the installation of PETSc.  You can copy-paste the commands returned to you in the terminal window.  Make note of `PETSC_DIR` and `PETSC_ARCH`, which are also reported in the terminal window.
+8. Follow the terminal instructions to complete the installation of PETSc.  You can copy-paste the commands returned to you in the terminal window.  Make note of `PETSC_DIR` and `PETSC_ARCH`, which are also reported in the terminal window.
 
-10. In your environment, set `PETSC_DIR` and `PETSC_ARCH` to the PETSc installation.  `PETSC_ARCH` will look something like arch-xxx-yyy (e.g. arch-darwin-c-opt).  This completes the setup of PETSc:
+9. In your environment, set `PETSC_DIR` and `PETSC_ARCH` to the PETSc installation.  `PETSC_ARCH` will look something like arch-xxx-yyy (e.g. arch-darwin-c-opt).  This completes the setup of PETSc:
 
     ```
     export PETSC_DIR=/somewhere/to/install/petsc-quad
@@ -259,7 +250,7 @@ Note: specify the same C compiler you used to install PETSc (probably `gcc`):
 
 #### 4.2.3 Install SPIDER
 
-11. Now download SPIDER:
+10. Now download SPIDER:
 
     ```
     cd /somewhere/to/install
@@ -267,14 +258,14 @@ Note: specify the same C compiler you used to install PETSc (probably `gcc`):
     cd spider
     ```
 
-12. Make SPIDER:
+11. Make SPIDER:
 
     ```
     make clean
     make -j
     ```
 
-13. Test basic functionality:
+12. Test basic functionality:
 
     ```
     make test
