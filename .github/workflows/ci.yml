@@ -18,7 +18,7 @@ jobs:
     - name: Install Python requirements
       run: |
         pip install -r py/requirements.txt
-        sudo apt-get install latex
+        sudo apt-get install texlive-fonts-recommended
     - name: PETSc cache
       id: petsc-cache
       uses: actions/cache@v2
