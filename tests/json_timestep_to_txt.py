@@ -20,33 +20,20 @@ with open(filename) as json_data:
     subdomain_data_array = data_d['solution']['subdomain data']
     with open(outfilename,'w') as outfile :
         for e in subdomain_data_array:
-            # DJB: no need to compare values if they do not exist
+            # only compare values that exist
             # for example, if atmosphere and reactions are turned off then
-            # some values are not solved for 
+            # some values are not available to compare 
             val_l = e['values']
             if len(val_l) == 0:
                 continue
-            # DJB: description could change, but shouldn't change the numerical result
             outfile.write('description: ')
             outfile.write(e['description'])
             outfile.write('\n')
-            # DJB: scaling could change, but shouldn't change the (physical) numerical result
             outfile.write('scaling: ')
             outfile.write(e['scaling'])
             outfile.write('\n')
 
-            if e['description'] == 'dS/dxi':
-                scale = data_d['data']['dxidr_b']['values']
-            else:
-                scale = [1] * len(data_d['data']['dxidr_b'])
-
-            print( scale )
-
             for nn, ee in enumerate(e['values']) :
-
                 outfile.write('val: ')
-                if e['description'] == 'dS/dxi':
-                    outfile.write(str(float(ee)*float(scale[nn])))
-                else:
-                    outfile.write(ee)
+                outfile.write(ee)
                 outfile.write('\n')
