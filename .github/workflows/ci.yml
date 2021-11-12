@@ -34,4 +34,6 @@ jobs:
       run: cd tests && git clone https://github.com/sciath/sciath --depth=1
     - name: make test
       run: |
-          cd tests && export PYTHONPATH=$PYTHONPATH:$PWD/sciath && python -m sciath -d -w pth.conf && cd .. && PETSC_DIR=petsc PETSC_ARCH=arch-test make test
+          export PYTHONPATH=$PYTHONPATH:$PWD/tests/sciath
+          cd test_dir && python -m sciath -d -w pth.conf && cd -
+          PETSC_DIR=petsc PETSC_ARCH=arch-test make test

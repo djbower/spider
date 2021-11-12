@@ -76,7 +76,7 @@ ${EXNAME} : ${SRC_O}
 	#${RM} $^
 
 ### Tests ######################################################################
-SPIDER_TEST_DIR=${SPIDER_ROOT_DIR}/tests
+SPIDER_TEST_DIR=${SPIDER_ROOT_DIR}/test_dir
 SPIDER_TEST_SCRIPT=PYTHONPATH=${PYTHONPATH}:${SPIDER_ROOT_DIR}/tests/sciath python -m sciath ${SPIDER_ROOT_DIR}/tests/tests.yml
 SPIDER_TEST_CONF=${SPIDER_TEST_DIR}/pth.conf
 

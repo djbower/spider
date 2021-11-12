@@ -17,7 +17,7 @@ spider
 *.d
 
 # Vim swap files
-.*.swp
+.*.sw[omp]
 
 # OS X debugging symbols
 *.dSYM
@@ -29,8 +29,7 @@ spider
 output/
 
 # test working directory (should agree with SPIDER_TEST_DIR in Makefile)
-tests/*_output
-tests/sciath_test_report.txt 
+test_dir
 
 # LaTeX related
 *.aux
