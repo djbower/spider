@@ -3,7 +3,6 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from matplotlib import rc
 import argparse, json, logging, os, sys
 from bisect import bisect_left
 import numpy as np
@@ -20,8 +19,6 @@ class MyFigure(Figure):
 
     def __init__(self, *args, **kwargs):
         kwargs['dpi'] = 100
-        rc('font', **{'family':'serif','serif':['Computer Modern Roman'],'size':8})
-        rc( 'text', usetex=True )
         mpl.rcParams['axes.titlesize'] = 8
         mpl.rcParams['axes.labelsize'] = 8
         mpl.rcParams['xtick.labelsize'] = 8
@@ -192,6 +189,8 @@ class MyJSON( object ):
         scaled_values_a = scaling * values_a
         return scaled_values_a
 
+    # not used here, since it needs LaTeX support and we do not
+    # want LaTeX as a dependency
     def get_units( self, keys ):
         '''get the units (SI) of a particular field'''
         # units do not change with time, so can just access units
@@ -259,13 +258,12 @@ def plot_entropy( ax, myjson_o ):
         ax.plot( myjson_o.xdata, entropy_b[:,nn], label=time )
 
     title = 'Entropy'
-    units = myjson_o.get_units( ['data','S_b'] )
-    set_standard_title( ax, title, units )
+    set_standard_title( ax, title, 'J/kg/K' )
 
     yticks = range(1200,2801,400)
     ax.set_yticks( yticks )
-    ax.set_ylabel( '$S$', rotation=0 )
-    ax.yaxis.set_label_coords(-0.075,0.59)
+    ax.set_ylabel( 'S', rotation=0 )
+    ax.yaxis.set_label_coords(-0.15,0.59)
 
 #===================================================================
 def plot_temperature( ax, myjson_o ):
@@ -288,14 +286,13 @@ def plot_temperature( ax, myjson_o ):
         ax.plot( myjson_o.xdata, temp_b[:,nn], label=time )
 
     title = 'Temperature'
-    units = myjson_o.get_units( ['data','temp_b'] )
-    set_standard_title( ax, title, units )
+    set_standard_title( ax, title, 'K' )
 
     yticks = range(1000,5001,1000)
     yticks_minor = range(1000,5001,500)
     ax.set_yticks( yticks )
     ax.set_yticks( yticks_minor, minor=True )
-    ax.set_ylabel( '$T$ (' + units + ')', rotation=0 )
+    ax.set_ylabel( 'T', rotation=0 )
     ax.yaxis.set_label_coords(-0.15,0.59)
 
 #===================================================================
@@ -311,13 +308,12 @@ def plot_melt_fraction( ax, myjson_o ):
         ax.plot( myjson_o.xdata, phi[:,nn], label=time )
 
     title = 'Melt fraction'
-    units = myjson_o.get_units( ['data','phi_b'] )
-    set_standard_title( ax, title, units )
+    set_standard_title( ax, title )
 
     yticks = np.arange(0,1.1,0.2)
     ax.set_ylim( 0, 1 )
     ax.set_yticks( yticks )
-    ax.set_ylabel( '$\phi$', rotation=0 )
+    ax.set_ylabel( 'Phi', rotation=0 )
     ax.yaxis.set_label_coords(-0.125,0.475)
 
 #===================================================================
@@ -334,14 +330,13 @@ def plot_viscosity( ax, myjson_o ):
         ax.plot( myjson_o.xdata, visc_b[:,nn], label=time )
 
     title = 'Viscosity'
-    units = myjson_o.get_units( ['data','visc_b'] )
-    set_standard_title( ax, title, units )
+    set_standard_title( ax, title, 'Pa s' )
 
     yticks = (1E2,1E6,1E12,1E18,1E21)
     ax.set_yscale('log')
     ax.set_yticks( yticks )
-    ax.set_ylabel( '$\eta$', rotation=0 )
-    ax.yaxis.set_label_coords(-0.075,0.67)
+    ax.set_ylabel( 'Visc', rotation=0 )
+    ax.yaxis.set_label_coords(-0.125,0.67)
 
 #====================================================================
 def set_standard_title( ax, title, units=None ):
@@ -368,7 +363,7 @@ def set_xaxis_from_kwargs( ax, myjson_o=None, **kwargs ):
         ax.xaxis.set_major_locator( ticker.LogLocator(base=10, numticks=15) )
         ax.xaxis.set_minor_locator( ticker.LogLocator(base=10, subs=[2,4,6,8] ) )
         ax.xaxis.set_major_formatter( ticker.LogFormatterSciNotation() )
-        ax.set_xlabel( r'Time (yr)' )
+        ax.set_xlabel( 'Time (yr)' )
 
     elif xaxis == 'pressure':
         if myjson_o is not None:
@@ -377,7 +372,7 @@ def set_xaxis_from_kwargs( ax, myjson_o=None, **kwargs ):
         xticks = (0,50,100,135)
         ax.set_xticks( xticks )
         ax.set_xlim( 0, 138 )
-        ax.set_xlabel( r'$P$ (GPa)' )
+        ax.set_xlabel( 'P (GPa)' )
 
     elif xaxis == 'pressure_s':
         if myjson_o is not None:
@@ -386,7 +381,7 @@ def set_xaxis_from_kwargs( ax, myjson_o=None, **kwargs ):
         xticks = (0,50,100,135)
         ax.set_xticks( xticks )
         ax.set_xlim( 0, 138 )
-        ax.set_xlabel( r'$P$ (GPa)' )
+        ax.set_xlabel( 'P (GPa)' )
 
     elif xaxis == 'temperature':
         if myjson_o is not None:
@@ -395,7 +390,7 @@ def set_xaxis_from_kwargs( ax, myjson_o=None, **kwargs ):
         min_temp = 1500
         ticks_temp_major = np.arange( min_temp, max_temp+1, 250 )
         ticks_temp_minor = np.arange( min_temp, max_temp+1, 125 )
-        xlabel = r'Surface temperature (K)'
+        xlabel = 'Surface temperature (K)'
         ax.set_xlabel( xlabel )
         ax.set_xlim( (max_temp,min_temp) )
         ax.set_xticks( ticks_temp_minor, minor=True)
@@ -408,7 +403,7 @@ def set_xaxis_from_kwargs( ax, myjson_o=None, **kwargs ):
         ax.set_xlim( np.min(xticks), np.max(xticks) )
         ax.invert_xaxis()
         ax.xaxis.set_major_locator( ticker.FixedLocator(xticks) )
-        ax.set_xlabel(r'$\phi_g$')
+        ax.set_xlabel('Melt fraction')
 
     elif xaxis == 'phi_percent':
         if myjson_o is not None:
@@ -418,7 +413,7 @@ def set_xaxis_from_kwargs( ax, myjson_o=None, **kwargs ):
         ax.set_xlim( np.min(xticks), np.max(xticks) )
         ax.invert_xaxis()
         ax.xaxis.set_major_locator( ticker.FixedLocator(xticks) )
-        ax.set_xlabel(r'Melt (\%)')
+        ax.set_xlabel('Melt fraction (\%)')
 
 #====================================================================
 def recursive_get( dict_d, keys=None ):
