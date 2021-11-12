@@ -81,7 +81,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
 
     SPIDER is now installed and you can in principle skip to *Running a Model* below.  However, you are advised to install the test harness as follows:
 
-10. [Optional] Get SciATH (Scientific Application Test Harness), which is a python module:
+10. [Optional] Get SciATH (Scientific Application Test Harness), which is a Python module:
 
     ```
     cd /somewhere/to/install
@@ -125,7 +125,7 @@ You should now be ready to use the code.  Proceed to *Running a Model* to learn 
 
 4. There are example options files in ```tests/opts/```.  Also see ```parameters.c``` for more parameter options.
 
-5. A python script ```py/plot_spider_lite.py``` can be used to generate a basic figure of the interior profiles.  Run ```py/plot_spider_lite.py -h``` to see the optional arguments.
+5. A Python script ```py/plot_spider_lite.py``` can be used to generate a basic figure of the interior profiles.  Run ```py/plot_spider_lite.py -h``` to see the optional arguments.
 
 ## 4. Detailed Installation
 
