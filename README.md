@@ -25,7 +25,7 @@ Bower, D.J., Hakim, K., Sossi, P.A., and Sanan, P. (2021), Retention of water in
 
 ## 2. Quick Installation
 
-Here we provide a short installation guide to get you up and running with SPIDER.  First, we install PETSc which provides the solver library and then we install SPIDER.  Finally, we can (optionally) install a test harness.
+Here we provide a short installation guide to get you up and running with SPIDER.  First, we install PETSc which provides the solver library and then we install SPIDER.  Finally, we can (optionally) install a [test harness](https://github.com/sciath/sciath).
 
 1. Test you have a valid C compiler installed by running the following command in a terminal window (install a C compiler if this command fails):
 
