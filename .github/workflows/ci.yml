@@ -38,3 +38,8 @@ jobs:
           mkdir -p test_dir && cd test_dir
           python -m sciath -d -w pth.conf
           python -m sciath -f -w pth.conf ../tests/tests.yml
+      - name: Archive test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: spider-sciath-test-dir
+          path: test_dir
