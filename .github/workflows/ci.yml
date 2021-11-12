@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches:
-      - psanan/gitlab-actions
       - main
   pull_request:
     branches:
