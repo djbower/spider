@@ -28,12 +28,12 @@ PetscErrorCode Interp1dCreateAndSet( const char *filename, Interp1d *interp_ptr,
     while(fgets(string, sizeof(string), fp) != NULL) {
 
         /* first header contains size of arrays to create */
-        /* FIXME: if the header information is incorrect it can lead
+        /* if the header information is incorrect it can lead
            to various memory errors.  Add some safety checks? */
         if( i==0 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
-            /* TODO: will break for 64 bit integers (but presumably
+            /* will break for 64 bit integers (but presumably
                elsewhere in the code will also break) */
             sscanf( string, "%d %d", &HEAD, &NX );
             /* make arrays based on the sizes in the header */
@@ -132,12 +132,12 @@ PetscErrorCode Interp2dCreateAndSet( const char * filename, Interp2d *interp_ptr
     while(fgets(string, sizeof(string), fp) != NULL) {
 
         /* first header contains size of arrays to create */
-        /* FIXME: if the header information is incorrect it can lead
+        /* if the header information is incorrect it can lead
            to various memory errors.  Add some safety checks? */
         if( i==0 ){
             /* remove # at start of line */
             memmove( string, string+1, strlen(string) );
-            /* TODO: will break for 64 bit integers (but presumably
+            /* will break for 64 bit integers (but presumably
                elsewhere in the code will also break) */
             sscanf( string, "%d %d %d", &HEAD, &NX, &NY );
             /* make arrays based on the sizes in the header */

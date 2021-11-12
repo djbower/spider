@@ -2,13 +2,12 @@
 \fbox{\parbox{\textwidth}{Understand the origin of the energy transport associated with the enthalpy of chemical/phase components.  This derives the energy equation for a multi-component system that appears in the appendix of \cite{ABE95}.}}\\
 
 \noindent
-\dbnote{After re-reading the literature referenced in this section, I am content that both of the referenced works are talking about thermodynamic components --- but it remains to be determined how Abe then switches to talking about phases.}
 In the following section, I combine the notation from \cite{DM62} and \cite{ABE95} so beware of notation changes compared to the original papers.  Where a choice can be made, I typically stick to the notation of \cite{ABE95}.  Conservation of mass fraction \cite[Eq.~II.13,][]{DM62}, \cite[also Eq.~A2,][]{ABE95}, \myemph{where $i$ is a thermodynamic (chemical) component and $j$ refers to a reaction}:
 \begin{equation}
 \rho \frac{D \omega_i}{Dt} = -\nabla \cdot \vec{J}_i + \rho \sum_{j=1}^r \nu_{ij} \mathcal{J}_j \qquad (i=1,\ n)
 \label{eq:ABE95_A2}
 \end{equation}
-Here I define \myemph{$\mathcal{J}_j$ as the rate of reaction $j$ per unit mass} (same as $w_j$ in \cite{ABE95} but this notation may be confused with mass fraction $\omega$ which is why I change the symbol).  \cite{ABE95} defines \myemph{$\nu_{ij}$ as the mass of component $i$ formed by reaction $j$}.  Note that \cite{DM62} use slightly different definitions of these quantities, since they define $\mathcal{J}$ as a mass per unit volume and unit time and omit the leading $\rho$ term.  \dbnote{Note that this equation does not provide information about how the component is partitioned between phases!  Rather, it is just a mass balance for the component.  So whilst it is correct, it's perhaps not the best starting point since ultimately Abe derives equations assuming a single component but two phase system.}  Entropy balance \cite[Eq.~III.12,][]{DM62}, \cite[also Eq.~A4,][]{ABE95}:
+Here I define \myemph{$\mathcal{J}_j$ as the rate of reaction $j$ per unit mass} (same as $w_j$ in \cite{ABE95} but this notation may be confused with mass fraction $\omega$ which is why I change the symbol).  \cite{ABE95} defines \myemph{$\nu_{ij}$ as the mass of component $i$ formed by reaction $j$}.  Note that \cite{DM62} use slightly different definitions of these quantities, since they define $\mathcal{J}$ as a mass per unit volume and unit time and omit the leading $\rho$ term.  Entropy balance \cite[Eq.~III.12,][]{DM62}, \cite[also Eq.~A4,][]{ABE95}:
 \begin{equation}
 \rho \frac{Ds}{Dt} = - \nabla \cdot \vec{J}_s + \sigma
 \label{DM62_ch3_eq12}
@@ -39,7 +38,7 @@ We can define a new flux as \cite[Eq.~III.24,][]{DM62}:
 \vec{J}_q^\prime = \vec{J}_q - \sum_{i=1}^n h_i \vec{J}_i
 \label{eq:Jqprime}
 \end{equation}
-\myemph{Eq.~\ref{eq:Jqprime} is the definition of heat flux used by \cite{ABE95} and therefore it removes the energetic contribution associated with the transport of enthalpy by the components.  This term then reappears as an entropy source term, since of course the physics must remain the same!}. \dbnote{This might be in part because Abe uses a mixing length scaling for the heat flux, and the scaling doesn't include.a consideration of enthalpy transport?}
+\myemph{Eq.~\ref{eq:Jqprime} is the definition of heat flux used by \cite{ABE95} and therefore it removes the energetic contribution associated with the transport of enthalpy by the components.  This term then reappears as an entropy source term, since of course the physics must remain the same!}.
 Then entropy flow is \cite[Eq.~III.26,][]{DM62}, \cite[also Eq.~A5,][]{ABE95}:
 \begin{equation}
 \vec{J}_s = \frac{1}{T} \vec{J}_q^\prime + \sum_{i=1}^n s_i \vec{J}_i
@@ -117,7 +116,6 @@ and collect terms:
 \end{align}
 This is helpful because the gravitational separation term (first term) can be parameterised simply based on Stokes' law.  The second term within the summation ultimately becomes the ``mixing term'' (see below), which represents energy transport due to mechanisms other than relative melt--solid separation.
 
-\dbnote{Cannot just switch from components to phases here!}
 For two phases ($n=2$) and $J_m=-J_s$, \myemph{\cite[Eq.~4,][]{ABE95} missing $\rho$}:
 \boxedeq{eq:entropy_twophase}{\rho \frac{Ds}{Dt} = - \frac{1}{T} \nabla \cdot \left( \vec{J}_q^\prime + (h_m-h_s) \vec{J}_m \right) - \frac{\rho}{T} (\mu_m-\mu_s) \frac{D\phi}{Dt}}
 Note this contains a latent heat ($\Delta h$) associated with melt--solid separation ($\vec{J}_m$).  At chemical equilibrium, which we always assume, $\mu_m=\mu_s$ and hence the last term is zero.  Now, for multi-component systems, energy transport due to mass transport must be taken into account \myemph{\cite[Eq.~20,][]{ABE95} missing $\rho$}:
@@ -135,6 +133,3 @@ Under the assumption of chemical equilibrium, the final term of Eq.~\ref{eq:entr
 \item Recast the velocities in terms of relative velocities, often relative to the centre of mass (barycentric velocity).
 \item Parameterise the resulting fluxes that originate from considering relative velocities.
 \end{enumerate}
-
-
-% In the multi-component case, terms relating to $\mu_{mi}$ and $\mu_{si}$ go away under the assumption of chemical equilibrium \dbnote{Although not obvious to me why the term involving derivatives goes away.}

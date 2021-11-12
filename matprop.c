@@ -105,9 +105,8 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     PetscErrorCode    ierr;
     PetscInt          i,ilo_b,ihi_b,w_b,numpts_b;
     DM                da_b=E->da_b;
-    PetscScalar       *arr_Ra, *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdxis, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
+    PetscScalar       *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdxis, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
     const PetscScalar *arr_dSdxi, *arr_S_b, *arr_pres, *arr_dPdr_b, *arr_radius_b, *arr_dxidr_b;
-    const PetscInt    *arr_layer_b;
     Mesh              *M = &E->mesh;
     Parameters const  P = E->parameters;
     Solution          *S = &E->solution;
@@ -125,7 +124,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     /* mesh quantities */
     ierr = DMDAVecGetArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->radius_b,&arr_radius_b); CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b,M->dxidr_b,&arr_dxidr_b); CHKERRQ(ierr);
     /* material properties */
@@ -138,7 +136,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecGetArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->nu,&arr_nu); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->phi,&arr_phi); CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(    da_b,S->Ra,&arr_Ra); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->rho,&arr_rho); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->temp,&arr_temp); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(    da_b,S->visc,&arr_visc); CHKERRQ(ierr);
@@ -169,16 +166,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
 
       ierr = GetEddyDiffusivity( eos_eval, P, arr_radius_b[i], arr_dSdxi[i], arr_dxidr_b[i], &arr_kappah[i], &arr_kappac[i], &arr_regime[i] );CHKERRQ(ierr);
 
-      /* FIXME: below */
-#if 0
-      /* Rayleigh number */
-      /* FIXME: should use domain size not mixing length */
-      arr_Ra[i] = arr_gsuper[i];
-      arr_Ra[i] *= arr_alpha[i] * PetscPowScalar(arr_mix_b[i],4) * arr_rho[i] * arr_cp[i];
-      arr_Ra[i] /= arr_nu[i] * arr_cond[i];
-#endif
-      arr_Ra[i] = 0.0; // placeholder, to update
-
     }
 
     ierr = DMDAVecRestoreArrayRead(da_b,S->dSdxi,&arr_dSdxi); CHKERRQ(ierr);
@@ -186,7 +173,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     /* mesh quantities */
     ierr = DMDAVecRestoreArrayRead(da_b,M->dPdr_b,&arr_dPdr_b); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->pressure_b,&arr_pres); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b,M->layer_b,&arr_layer_b); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b,M->dxidr_b,&arr_dxidr_b); CHKERRQ(ierr);
     /* material properties */
     ierr = DMDAVecRestoreArray(    da_b,S->alpha,&arr_alpha); CHKERRQ(ierr);
@@ -198,7 +184,6 @@ PetscErrorCode set_matprop_basic( Ctx *E )
     ierr = DMDAVecRestoreArray(    da_b,S->kappah,&arr_kappah); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->nu,&arr_nu); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->phi,&arr_phi); CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(    da_b,S->Ra,&arr_Ra); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->rho,&arr_rho); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->temp,&arr_temp); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(    da_b,S->visc,&arr_visc); CHKERRQ(ierr);

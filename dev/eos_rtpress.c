@@ -65,12 +65,12 @@ PetscErrorCode EOSCreate_RTpress(EOS eos) {
   /* for unit conversion */
   rtp->PV_UNIT = 160.21766208; /* GPa*Ang^3/eV */
   /* first value is KBOLTZ in units of eV/K */
-  /* TODO: use BOLTZMANN from FundamentalConstants */
+  /* could use BOLTZMANN from FundamentalConstants */
   rtp->KBOLTZ = 8.617333262145e-5 * rtp->PV_UNIT; /* GPa*Ang^3/K, this is energy / temperature */
-  /* TODO: check with ASW: is 3000=T0 and 0.6=m? */
+  /* check with ASW: is 3000=T0 and 0.6=m? */
   /* 0.6 could instead be a reference compression? (V/V0) */
   /* still seems likely that T0 is a reference temperature scale */
-  rtp->bscale = 0.6/3000 * rtp->PV_UNIT / rtp->KBOLTZ; /* K/eV, FIXME: if leading constant are unitless */
+  rtp->bscale = 0.6/3000 * rtp->PV_UNIT / rtp->KBOLTZ; /* K/eV, are leading constants unitless? */
 
   rtp->V0 = 14.74; /* Ang^3/atom */
   rtp->T0 = 3000.0; /* K */

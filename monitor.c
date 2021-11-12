@@ -109,7 +109,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec sol, vo
       cJSON_AddItemToObject(json,"dtmacro_years",cJSON_CreateNumber(P->dtmacro*SC->TIMEYRS));
       cJSON_AddItemToObject(json,"time",cJSON_CreateNumber(time));
       cJSON_AddItemToObject(json,"time_years",cJSON_CreateNumber(time*SC->TIMEYRS));
-      // TODO : add other stuff we might like in the header
+      // add other stuff we might like in the header
 
       /* Add solution to file */
       {

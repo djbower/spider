@@ -84,7 +84,7 @@ static PetscErrorCode append_Htidal( Ctx *E, PetscReal tyrs )
 {
     /* tidal heat generation */
 
-    /* TODO: template code snippets below, but tidal heating is
+    /* template code snippets below, but tidal heating is
        currently not implemented */
 
     //PetscErrorCode ierr;
@@ -367,25 +367,6 @@ PetscScalar GetConductiveHeatFlux( Ctx *E, PetscInt * ind_ptr)
     Solution const *S = &E->solution;
     Mesh const     *M = &E->mesh;
 
-    /* block below was for testing bcs, where we can turn off
-       conduction at the surface and cmb */
-#if 0
-    PetscInt       ind_cmb,ind_abv_cmb,ilo_b,ihi_b,w_b;
-
-    ierr = DMDAGetCorners(E->da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
-    ihi_b = ilo_b + w_b; /* total number of basic nodes */
-    ind_cmb = ihi_b-1;
-    ind_abv_cmb = ind_cmb-1;
-
-    if(!*ind_ptr){
-        return 0.0;
-    }
-
-    if(*ind_ptr == ind_cmb){
-        return 0.0;
-    }
-#endif
-
     ierr = VecGetValues(S->dSdxi,1,ind_ptr,&dSdxi);CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b,1,ind_ptr,&dxidr);CHKERRQ(ierr);
     ierr = VecGetValues(S->temp,1,ind_ptr,&temp);CHKERRQ(ierr);
@@ -542,18 +523,19 @@ PetscScalar GetGravitationalHeatFlux( Ctx *E, PetscInt * ind_ptr )
     Jgrav *= temp * ( Sliq - Ssol ); // enthalpy
 
     /* smoothing across phase boundaries for two phase composite */
-    /* TODO: this smooths based on the value of the melt fraction in the cell below
-       the interface, but this is only appropriate for bottom-up crystallisation.
-       Need to generalise, or at least make a switch to choose */
-    ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres_s, Sval, &gphi);CHKERRQ(ierr);
-    {
-      PetscScalar matprop_smooth_width;
+    /* this smooths based on the value of the melt fraction in the cell below
+       the interface, but this is only appropriate for bottom-up crystallisation */
+    if( P->JGRAV_BOTTOM_UP){
+        ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres_s, Sval, &gphi);CHKERRQ(ierr);
+        {
+          PetscScalar matprop_smooth_width;
 
-      ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
-      smth = get_smoothing(matprop_smooth_width, gphi );
+          ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);CHKERRQ(ierr);
+          smth = get_smoothing(matprop_smooth_width, gphi );
+        }
+
+        Jgrav *= smth;
     }
-
-    Jgrav *= smth;
 
     return Jgrav;
 }

@@ -99,8 +99,6 @@ typedef struct {
     PetscScalar O2_molar_mass;
     PetscScalar O2_kabs;
     PetscBool SURFACE_BC_ACC; // solve for surface radiative balance during time-stepping
-    /* below to replace with shallow ocean layer */
-    //PetscBool VISCOUS_MANTLE_COOLING_RATE;
     PetscBool THERMAL_ESCAPE;
     PetscBool CONSTANT_ESCAPE;
     PetscBool ZAHNLE_ESCAPE;
@@ -201,6 +199,7 @@ typedef struct {
     PetscScalar rhos;
     PetscScalar beta;
     PetscScalar grain;
+    PetscBool JGRAV_BOTTOM_UP;
     PetscScalar gravity;
     PetscScalar phi_critical;
     PetscScalar phi_width;

@@ -47,7 +47,7 @@ PetscErrorCode PostStep(TS ts)
   PetscBool            EVENT = PETSC_FALSE;
 
   PetscFunctionBeginUser;
-  ierr = TSGetTimeStepNumber(ts,&stepNumber);CHKERRQ(ierr);
+  ierr = TSGetStepNumber(ts,&stepNumber);CHKERRQ(ierr);
   ierr = TSGetApplicationContext(ts,&E);CHKERRQ(ierr);
   A = &E->atmosphere;
   P = E->parameters;
@@ -58,11 +58,6 @@ PetscErrorCode PostStep(TS ts)
   //ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"PLACEHOLDER I'm %s in %s:%d, x_H2O is %g\n",__func__,__FILE__,__LINE__,data->x_H2O);
 
   ierr = TSGetSolution(ts,&sol_in);CHKERRQ(ierr);
-
-  // TODO: is this required?
-  // TODO: this function now replaced by set_partial_pressures_from_solution
-  /* update the volatile abundances in the atmosphere struct */
-  //ierr = set_volatile_abundances_from_solution( E, sol_in );CHKERRQ(ierr);
 
   for( i=0; i<Ap->n_volatiles; ++i) {
      Volatile *V = &A->volatiles[i];

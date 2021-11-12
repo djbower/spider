@@ -53,8 +53,8 @@ int main(int argc, char ** argv)
     }
   }
 
-  /* We don't want to take the time to debug things in MPI (though the
-     problems are likely minor), so don't allow multi-rank runs */
+  /* We haven't debugged in parallel, and usually use a serial, dense
+     solver within the timestepper, so don't allow multi-rank runs */
   {
     PetscMPIInt size;
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRQ(ierr);
@@ -82,9 +82,9 @@ int main(int argc, char ** argv)
   ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
   ierr = TSSetSolution(ts,sol);CHKERRQ(ierr);
 
-  /* always use SUNDIALS CVODE (BDF) */
-  /* must use direct solver, so requires Patrick's hacks */
+  /* always use SUNDIALS CVODE (BDF) with a dense (serial) inner linear solver */
   ierr = TSSetType(ts,TSSUNDIALS);CHKERRQ(ierr);
+  ierr = TSSundialsSetUseDense(ts,PETSC_TRUE);CHKERRQ(ierr);
   ierr = TSSundialsSetType(ts,SUNDIALS_BDF);CHKERRQ(ierr);
   ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_INTERPOLATE);CHKERRQ(ierr);
 
@@ -127,7 +127,8 @@ int main(int argc, char ** argv)
     ierr = TSSetTime(ts,time);CHKERRQ(ierr);
     nexttime = P->t0 + P->dtmacro;
     stepmacro = P->stepmacro; /* start macrostep */
-    ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
+    ierr = TSSetMaxSteps(ts,P->maxsteps);CHKERRQ(ierr);
+    ierr = TSSetMaxTime(ts,nexttime);CHKERRQ(ierr);
 
     /* Final setup logic (needs to be here because some things, like TSSetTime(),
        won't work properly for the SUNDIALS implementation if called after TSSetUp()) */
@@ -165,7 +166,8 @@ int main(int argc, char ** argv)
         break;
       }
       nexttime = P->t0 + ((stepmacro - P->stepmacro + 1) * P->dtmacro);
-      ierr = TSSetDuration(ts,P->maxsteps,nexttime);CHKERRQ(ierr);
+      ierr = TSSetMaxSteps(ts,P->maxsteps);CHKERRQ(ierr);
+      ierr = TSSetMaxTime(ts,nexttime);CHKERRQ(ierr);
     }
   }
 

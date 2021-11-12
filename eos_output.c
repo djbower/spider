@@ -23,7 +23,7 @@ PetscErrorCode JSON_add_phase_boundary( const Ctx *E, const EOS Ep, const char *
     ierr = DMDAGetCorners(da_b,&ilo_b,0,0,&w_b,0,0);CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
 
-    /* TODO: not sure on portability of strcat?  Petsc equivalent? */
+    /* not sure on portability of strcat?  Petsc equivalent? */
 
     /* phase boundary defined by entropy */
     strcat(strcpy(namestr1,name),"_b"); // phase boundary defined by entropy

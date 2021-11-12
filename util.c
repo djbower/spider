@@ -358,14 +358,12 @@ PetscErrorCode average_by_mass_staggered( Ctx *E, Vec in_vec, Vec * in_mask_ptr,
     /* this block would prevent 'nans' from being returned, but 'nans'
        are helpful because it indicates the rheological front is not
        yet moving */
-#if 0
-    if (mass > 0.0){
-        *out = *out / mass;
-    }
-    else{
-        *out = 0.0;
-    }
-#endif
+    //if (mass > 0.0){
+    //    *out = *out / mass;
+    //}
+    //else{
+    //    *out = 0.0;
+    //}
 
     ierr = VecDestroy( &qty_s ); CHKERRQ(ierr);
     ierr = VecDestroy( &mass_s ); CHKERRQ(ierr);

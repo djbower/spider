@@ -1,6 +1,9 @@
 # SPIDER
 **Simulating Planetary Interior Dynamics with Extreme Rheology**
 
+[![Build](https://github.com/psanan/spider/actions/workflows/ci.yml/badge.svg)](https://github.com/psanan/spider/actions)
+
+
 A 1-D parameterised interior dynamics code for rocky planets with molten and/or solid interiors and support for volatile cycling, redox reactions, and radiative transfer in the atmosphere.
 
 ## 1. References
@@ -15,7 +18,7 @@ Wolf, A.S. and D.J. Bower (2018), An equation of state for high pressure-tempera
 Bower, D.J., Kitzmann, D., Wolf, A.S., Sanan, P., Dorn, C., and Oza, A.V. (2019), Linking the evolution of terrestrial interiors and an early outgassed atmosphere to astrophysical observations, Astron. Astrophys., 631, A103, doi: 10.1051/0004-6361/201935710, arXiv: <https://arxiv.org/abs/1904.08300>
 
 #### 4. Redox reactions
-Bower, D.J., Hakim, K., Sossi, P.A., and Sanan, P. (2021), Retention of water in terrestrial magma oceans and carbon-rich early atmospheres, Planet. Sci. J., in review
+Bower, D.J., Hakim, K., Sossi, P.A., and Sanan, P. (2021), Retention of water in terrestrial magma oceans and carbon-rich early atmospheres, Planet. Sci. J., arXiv: <https://arxiv.org/abs/2110.08029>
 
 ## 2. Quick Installation
 
@@ -34,7 +37,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
 
     ```
     cd /somewhere/to/install
-    git clone https://bitbucket.org/psanan/petsc --depth=1 -b psanan/ts-sundials-quad-hack petsc-double-direct
+    git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-double-direct
     ```
 
 4. Change directories:
@@ -46,7 +49,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
 5. Configure PETSc:
 
     ```
-    ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
+    ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials2 --download-mpich --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
     ```
 
 6. Follow the terminal instructions to complete the installation of PETSc.  You can copy-paste the commands returned to you in the terminal window.  Make note of `PETSC_DIR` and `PETSC_ARCH`, which are also reported in the terminal window.
@@ -72,7 +75,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
     make clean
     make -j
     ```
-    
+
     Spider is now installed and you can in principle skip to *Running a Model* below.  However, you are advised to install the test harness as follows:
 
 10. [Optional] Get SciATH (Scientific Application Test Harness), which is a python module:
@@ -81,7 +84,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
     cd /somewhere/to/install
     git clone https://github.com/sciath/sciath -b dev
     ```
-    
+
 11. [Requires SciATH] Add the resulting module to your Python path (for example):
 
     ```
@@ -104,19 +107,19 @@ You should now be ready to use the code.  Proceed to *Running a Model* to learn 
 
 ## 3. Running a Model
 
-1. [Optional] Add the installation directory of SPIDER to your `$PATH` so you can call the `spider` binary without requiring the absolute path. 
+1. [Optional] Add the installation directory of SPIDER to your `$PATH` so you can call the `spider` binary without requiring the absolute path.
 2. You can run `spider` without an argument and standard parameters will be used to run a basic interior model with output stored in ```output/```:
 
     ```
     spider
     ```
-        
+
 3. However, in general you will add an argument to use the parameters specified in an options file.  For example, from the root SPIDER directory:
 
     ```
     spider -options_file tests/opts/blackbody50.opts
     ```
-        
+
 4. There are example options files in ```tests/opts/```.  Also see ```parameters.c``` for more parameter options.
 
 ## 4. Detailed Installation
@@ -138,7 +141,7 @@ A basic test to ensure you have a working compiler is (note you can swap out "`g
 ```
 echo '#include<stdio.h>' > t.c && echo 'int main(){printf("It seems to work!\n");}' >> t.c && gcc t.c && ./a.out && rm -f t.c a.out
 ```
-    
+
 For Mac OSX, the easiest way to install GCC is from <http://hpc.sourceforge.net>
 
 If you use MacPorts, Homebrew, or apt, these can also be used to install GCC.  *Unfortunately, the GCC compiler from Macports seems to be frequently broken*.  Nevertheless, for example, using MacPorts:
@@ -223,9 +226,9 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc"):
 
     ```
     cd /somewhere/to/install
-    git clone https://bitbucket.org/psanan/petsc --depth=1 -b psanan/ts-sundials-quad-hack petsc-quad-direct
+    git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-quad-direct
     ```
-        
+
 7. Change directories:
 
     ```
@@ -278,10 +281,6 @@ You should now be ready to use the code!
 #### 5.1 Extended notes
 
 There are extended notes located in `notes/` that are useful for understanding the methodology and source code of SPIDER.  You can compile `notes.tex` using `pdflatexmk` or `pdflatex`.
-
-#### 5.2 Python scripts
-
-There are python scripts in `py3/` that can be used and adapted to interrogate and plot SPIDER output.
 
 ## Copyright
 

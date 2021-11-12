@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - psanan/gitlab-actions
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: PETSc cache
+      id: petsc-cache
+      uses: actions/cache@v2
+      with:
+        path: petsc
+        key: ${{ runner.os }}-petsc
+    - name: Build PETSc
+      if: steps.petsc-cache.outputs.cache-hit != 'true'
+      run: |
+          git clone https://gitlab.com/petsc/petsc.git --depth=1 -b psanan/ts-sundials-dense-2  # FIXME update
+          cd petsc
+          ./configure --with-fc=0 --with-cxx=0 --with-cc=gcc --download-sundials2 --download-mpich PETSC_ARCH=arch-test
+          make all
+    - name: make
+      run: PETSC_DIR=petsc PETSC_ARCH=arch-test make
+    - name: install SCiATH
+      run: cd tests && git clone https://github.com/sciath/sciath --depth=1
+    - name: make test
+      run: |
+          cd tests && export PYTHONPATH=$PYTHONPATH:$PWD/sciath && python -m sciath -d -w pth.conf && cd .. && PETSC_DIR=petsc PETSC_ARCH=arch-test make test

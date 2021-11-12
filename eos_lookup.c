@@ -95,8 +95,6 @@ static PetscErrorCode EOSLookup_FilenameSet( const char* property, const char* p
        case we prepend a string, SPIDER_ROOT_DIR_STR, and /. The corresponding
        option without this overrides. */     
 
-    /* TODO: add default file location */
-
     /* check for relative path name */
     ierr = PetscSNPrintf(buf1,sizeof(buf1),"%s%s%s%s","-",prefix,property,"_filename_rel_to_src");CHKERRQ(ierr);
     ierr = PetscOptionsGetString(NULL,NULL,buf1,lookup_filename,PETSC_MAX_PATH_LEN,&set_rel_to_src);CHKERRQ(ierr);

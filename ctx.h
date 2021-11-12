@@ -10,7 +10,7 @@
 
 /* common structures */
 
-#define NUMMESHVECS_B 7
+#define NUMMESHVECS_B 6
 #define NUMMESHVECS_S 7
 typedef struct Mesh_ {
 
@@ -18,24 +18,24 @@ typedef struct Mesh_ {
     DimensionalisableField meshFields_s[NUMMESHVECS_S];
 
     // eventually get rid of these (though think about how to better name the DimensionalisableFields..)
-    Vec area_b,dPdr_b,pressure_b,radius_b,mix_b,layer_b,xi_b,dxidr_b;
+    Vec area_b,dPdr_b,pressure_b,radius_b,xi_b,dxidr_b;
     Vec pressure_s,radius_s,volume_s,dPdr_s,area_s,mass_s,xi_s;
 
     PetscScalar mantle_mass;
 
 } Mesh;
 
-#define NUMSOLUTIONVECS_B 22
+#define NUMSOLUTIONVECS_B 21
 #define NUMSOLUTIONVECS_S 10
 typedef struct Solution_ {
 
     DimensionalisableField solutionFields_b[NUMSOLUTIONVECS_B];
     DimensionalisableField solutionFields_s[NUMSOLUTIONVECS_S];
 
-    // TODO: eventually get rid of these
-    Vec alpha, cond, cp, dSdxi, dTdxis, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, Ra, regime, rho, S, temp, visc;
+    // eventually get rid of these?
+    Vec alpha, cond, cp, dSdxi, dTdxis, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, regime, rho, S, temp, visc;
 
-    // TODO: eventually get rid of these
+    // eventually get rid of these?
     Vec cp_s, dSdt_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, phi_s, rho_s, S_s, temp_s;
 
 } Solution;
@@ -82,10 +82,10 @@ typedef struct Ctx_ {
   /* Control flags */
   PetscBool stopEarly;
 
-  // TODO: there is no real reason that we have some data here and some in Solution and some in Mesh.
+  //       there is no real reason that we have some data here and some in Solution and some in Mesh.
   //       it could all be flattened out (and probably would be in a re-implementation)
 } Ctx;
-// TODO: would be cleaner if Ctx were a pointer to _p_Ctx, as with PETSc objects.
+//         would be cleaner if Ctx were a pointer to _p_Ctx, as with PETSc objects.
 
 PetscErrorCode SetupCtx(Ctx *);
 PetscErrorCode DestroyCtx(Ctx *);

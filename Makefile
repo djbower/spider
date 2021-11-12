@@ -10,7 +10,7 @@ SRC_C = \
         atmosphere.c \
         bc.c \
         cJSON.c \
-				constants.c \
+	constants.c \
         ctx.c \
         dimensionalisablefield.c \
         energy.c \
@@ -19,7 +19,6 @@ SRC_C = \
         eos_composite.c \
         eos_lookup.c \
         eos_output.c \
-        eos_rtpress.c \
         ic.c \
         interp.c \
         main.c \
@@ -91,50 +90,13 @@ test_create_output_dir :
 test : test_create_output_dir check_sciath
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -g basic  && cd -
 	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
-	@printf "To run more tests\n"
-	@printf "  make test_all\n"
 	@printf "If on a batch system, wait until jobs complete and then\n"
 	@printf "  make test_check\n"
 
 test_check : test_create_output_dir check_sciath
 	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -g basic && cd -
 
-# below are legacy tests to sort out
-# Atmosphere tests
-#test_atmos : test_create_output_dir check_sciath
-#	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -g atmos && cd -
-#	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
-#	@printf "To run more tests\n"
-#	@printf "  make test_all\n"
-#	@printf "If on a batch system, wait until jobs complete and then\n"
-#	@printf "  make testatmoscheck\n"
-
-#test_atmos_check : test_create_output_dir check_sciath
-#	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -g atmos && cd -
-
-# Sossi solubility test
-#test_sossi : test_create_output_dir check_sciath
-#	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -g sossi && cd -
-#	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
-#	@printf "To run more tests\n"
-#	@printf "  make test_all\n"
-#	@printf "If on a batch system, wait until jobs complete and then\n"
-#	@printf "  make testatmoscheck\n"
-
-#test_sossi_check : test_create_output_dir check_sciath
-#	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v -g sossi && cd -
-
-# All Tests
-#test_all : test_create_output_dir check_sciath
-#	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} && cd -
-#	@printf "Test output lives in ${SPIDER_TEST_DIR}\n"
-#	@printf "If on a batch system, wait until jobs complete and then\n"
-#	@printf "  make test_all_check\n"
-
-#test_all_check : test_create_output_dir check_sciath
-#	cd ${SPIDER_TEST_DIR} && ${SPIDER_TEST_SCRIPT} -w ${SPIDER_TEST_CONF} -v && cd -
-
-.PHONY: test test_create_output_dir # testatmos testall test_create_output_dir
+.PHONY: test test_create_output_dir
 
 ### Dependencies ###############################################################
 SRC_D = ${SRC_C:%.c=%.d}

@@ -26,7 +26,7 @@ The objective is to determine $S$ (or $\nabla S$ if it helps us to retain precis
 \end{equation}
 
 \subsubsection{Weak form}
-\dbnote{I hadn't noticed until doing this analysis that there is an example in the fenics tutorial that is similar to what we want (and indeed gives the same answer that I derive).  See fenics tutorial, 4.4.2 ``PDE problem''}
+I hadn't noticed until doing this analysis that there is an example in the fenics tutorial that is similar to what we want (and indeed gives the same answer that I derive).  See fenics tutorial, 4.4.2 ``PDE problem''
 Note that I retain a source function $f$ for direct comparison with the examples in the fenics tutorial, but in our case $f=0$.  Multiply our equation by a test function $v$:
 \begin{equation}
 - \nabla \cdot \vec{F}\ v = f\ v
@@ -47,7 +47,7 @@ Or equivalently:
 \begin{equation}
 \int_\Omega (\vec{F} \cdot \nabla v - f\ v) dx = \int_{\partial \Omega} \vec{F} \cdot \hat{n}\ v\ ds
 \end{equation}
-\dbnote{I think this is as far as we can go without saying something about the form of $\vec{F}$?  The weak form above implies we are looking for a solution to $F$, when in fact we want to solve for a variable that is used to determine $F$.}
+I think this is as far as we can go without saying something about the form of $\vec{F}$?  The weak form above implies we are looking for a solution to $F$, when in fact we want to solve for a variable that is used to determine $F$.
 
 \subsubsection{Form of the flux}
 Let's slightly reformulate the equation using different variable choices:
@@ -110,7 +110,7 @@ Or equivalently:
 \end{equation}
 Brackets are used to easily identify the flux $\vec{F}= -\kappa_h \nabla \tilde{S}$ and I've shifted the boundary condition part to the RHS in the later equation because that requires some additional work.  This is because we cannot eliminate the boundary integral because we need to prescribe a flux boundary condition (Neumann condition) rather than a Dirichlet condition.  Note again that $f$ is included for comparison with the fenics examples but is zero in our case.
 \subsubsection{Boundary conditions}
-The test function $v$ is required to vanish on the parts of the boundary where the solution $\tilde{S}$ is known.  In our case, this corresponds to prescribing constant entropy boundary conditions.  However, we want to prescribe a known flux on the boundary so we cannot eliminate the term involving $\partial \Omega$ as we could have if we implemented Dirichlet conditions.  Express the Neumann condition as \dbnote{Following the example in the fenics tutorial and keeping the same sign convention, but I'm not sure why they choose to define the term as negative}:
+The test function $v$ is required to vanish on the parts of the boundary where the solution $\tilde{S}$ is known.  In our case, this corresponds to prescribing constant entropy boundary conditions.  However, we want to prescribe a known flux on the boundary so we cannot eliminate the term involving $\partial \Omega$ as we could have if we implemented Dirichlet conditions.  Express the Neumann condition as:
 \begin{equation}
 \kappa_h \nabla \tilde{S} \cdot \hat{n} = g \qquad \text{ on } \Gamma_N
 \end{equation}
@@ -125,7 +125,7 @@ a(u,v) = \int_\Omega -\kappa_h \nabla u \cdot \nabla v dx
 \begin{equation}
 L(v) = \int_\Omega f v dx - \int_{\Gamma_N} g v ds
 \end{equation}
-\dbnote{There might be some signs to confirm.  The boundary fluxes are defined outward of the surface, so presumably the bc values at the top surface (positive $F$?) and bottom surface (negative $F$?) have different values?  Also, in my formulation $\nabla \tilde{S}<0$ so an extra negative sign appears in front of $\kappa_h$.}
+There might be some signs to confirm.  The boundary fluxes are defined outward of the surface, so presumably the bc values at the top surface (positive $F$?) and bottom surface (negative $F$?) have different values?  Also, in my formulation $\nabla \tilde{S}<0$ so an extra negative sign appears in front of $\kappa_h$.
 %%%%
 %%%%
 %%%%

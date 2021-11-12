@@ -71,12 +71,10 @@ PetscErrorCode EOSEvalSetViscosity(EOS,EOSEvalData*);
    related to specific types is mentioned. These must correspond to all available
    values for EOSType, giving a string and a Creation function. */
 #define SPIDER_EOS_LOOKUP "lookup"
-#define SPIDER_EOS_RTPRESS "rtpress"
 #define SPIDER_EOS_COMPOSITE "composite"
 #define SPIDER_EOS_ADAMSWILLIAMSON "adamswilliamson"
 
 PetscErrorCode EOSCreate_Lookup(EOS);
-PetscErrorCode EOSCreate_RTpress(EOS);
 PetscErrorCode EOSCreate_Composite(EOS);
 PetscErrorCode EOSCreate_AdamsWilliamson(EOS);
 

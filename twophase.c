@@ -96,18 +96,15 @@ PetscErrorCode set_dMliqdt( Ctx *E )
         arr_result_s[i] /= eos_eval.fusion;
 
         /* with smoothing */
-#if 0
-        if (arr_phi_s[i] > 0.5){
-            arr_result_s[i] *= ( 1.0 - arr_fwtl_s[i] );
-        }
+        //if (arr_phi_s[i] > 0.5){
+        //    arr_result_s[i] *= ( 1.0 - arr_fwtl_s[i] );
+        //}
 
-        else if (arr_phi_s[i] <=0.5){
-            arr_result_s[i] *= arr_fwts_s[i];
-        }
-#endif
+        //else if (arr_phi_s[i] <=0.5){
+        //    arr_result_s[i] *= arr_fwts_s[i];
+        //}
 
-// generally had more luck without smoothing
-#if 1
+        // generally had more luck without smoothing
         /* no smoothing approach */
         if (arr_phi_s[i] <= 0.0){
             arr_result_s[i] = 0.0;
@@ -115,7 +112,6 @@ PetscErrorCode set_dMliqdt( Ctx *E )
         else if (arr_phi_s[i] >=1.0){
             arr_result_s[i] = 0.0;
         }   
-#endif
 
     }   
 
@@ -219,7 +215,7 @@ static PetscErrorCode set_rheological_front_mantle_properties( Ctx *E, Rheologic
     ierr = average_by_mass_staggered( E, M->pressure_s, mask_ptr_s, &Rf->above_mass_avg.pressure); CHKERRQ(ierr);
     ierr = average_by_mass_staggered( E, S->temp_s, mask_ptr_s, &Rf->above_mass_avg.temperature); CHKERRQ(ierr);
 
-    // TODO: need to initialise values?
+    // need to initialise values?
     /* middle of layer */
     index_below = (numpts_s - index)/2 + index;
     ierr = VecGetValues(S->phi,1,&index_below,&phi);CHKERRQ(ierr);

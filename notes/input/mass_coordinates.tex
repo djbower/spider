@@ -65,7 +65,7 @@ where $U$ is the local barycentric velocity in the radial direction.  Thus, the 
 %%%%
 %%%%
 \subsection{Implementation}
-We time step the following equation in SPIDER \dbnote{The differential notation is carried across from Abe, although we actually solve the integral form in SPIDER---see below}:
+We time step the following equation in SPIDER:
 \begin{equation}
 \rho T \frac{Ds}{Dt} = -\nabla_r \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
 \end{equation}
@@ -160,7 +160,7 @@ Combined with an EOS of the form $p=p(\rho)$, this is an ordinary second order d
 \begin{itemize}
 \item We consider elements/cells with fixed mass.
 \item Mass of each element is known (prescribed).
-\item \textbf{An approximation: hydrostatic/total pressure $P$ is fixed during magma ocean evolution.}  \dbnote{Clearly fails for accreting planet scenario, but in the simplest case can update the hydrostatic pressure each timestep using the same simple EOS as we currently do.}
+\item \textbf{An approximation: hydrostatic/total pressure $P$ is fixed during magma ocean evolution.}
 \begin{itemize}
 \item Already in SPIDER, since define radius coordinates and corresponding pressures once during the initialisation.  See Eq.~16 in \cite{BSW18}.
 \item We do not recompute the pressure profile due to the evolution of melt fraction (and hence relative contributions of melt versus solid densities) during a model run.
@@ -168,14 +168,14 @@ Combined with an EOS of the form $p=p(\rho)$, this is an ordinary second order d
 \item Argument is that melt and solid densities are similar enough to not strongly influence an integrated quantity like pressure.
 \item And from a purely pragmatic perspective, we have to know $P$ and $S$ at basic and staggered nodes in order to compute necessary terms for the RHS.
 \end{itemize}
-\item In the simple case outlined above, we compute density, pressure, and mass by an Adams-Williamson EOS (Eq.~16 in \cite{BSW18}).  \dbnote{Therefore, even for a radial mesh the volume was fixed and also the density, and hence the mass!  Does this partly justify ignoring the convective derivative term in the original formulation?!}
+\item In the simple case outlined above, we compute density, pressure, and mass by an Adams-Williamson EOS (Eq.~16 in \cite{BSW18}).
 \item More can probably be done here about integrating the hydrostatic .equilibrium equation (see Sect.~\ref{sect:hydrostatic})
 \item So assuming we can reasonably determine $P$, and prescribe an initial $S$, we can compute $\rho(P,S)$ at all basic and staggered mesh locations.  \textbf{Knowing $\rho$ and the mass of the elements, and presumably a fixed integration point for $r$ such as the CMB, we can determine the volume of each cell and also the surface areas of the bounding surfaces.}
 \item But this could highlight a problem!  Since integrating outwards from the CMB, or inwards from the surface, will not necessarily give us the correct end point of the present-day Earth (since the radius of the surface and core are known well!).
 \item \textbf{Two options: switch to test each?}
 \begin{enumerate}
 \item Assume density of a mass cell is \textbf{constant with time}, i.e. does not respond to changes in melt/solid fraction.  Therefore the volume of the cell will also be constant, and hence the bounding surfaces should correspond to \textbf{time-independent radii}
-\item Compute the density of a mass cell, since $\rho(P,S)$ using melt and solid lookup data.  This will result in \textbf{time-dependent radii} for the bounding surfaces, and effectively a planet that can `breathe''.  This might look a bit strange since a planet's surface will move radially in and out as the melt fraction evolves.  \dbnote{And the uncertainties in the EOS, in addition to the overall simplicity of the modelling, probably means this effect is really not important or worthy of modelling (in the case of a fully formed planet).}
+\item Compute the density of a mass cell, since $\rho(P,S)$ using melt and solid lookup data.  This will result in \textbf{time-dependent radii} for the bounding surfaces, and effectively a planet that can `breathe''.  This might look a bit strange since a planet's surface will move radially in and out as the melt fraction evolves.
 \end{enumerate}
 \item If we do 1 above, then I think this corresponds closely (or exactly) to the incorrect formulation in the paper?!  Since in both the formulation with $r$ (original) and $\xi$ (new) the bounding surfaces of the elements are assumed to be fixed in time meaning that $\frac{\partial r}{\partial t} = U=0$.  And hence the barycentric velocity is zero and we are justified/consistent when we exclude it from the equation.
 \end{itemize}
@@ -205,7 +205,7 @@ Therefore:
 e^{\beta (r_o-r_i)}(\beta r_i (\beta r_i+2)+2) -\beta r_o (\beta r_o+2)-2
 \right]
 \end{align}
-Hence given our simple EOS we can exactly determine the average density of the mantle using the above expression.  \dbnote{This EOS does not perform well at high pressure, and should really be regarded as a fitting function.  Obvious ways to improve on this include using a more sophisticated and accurate EOS, such as the Vinet.}
+Hence given our simple EOS we can exactly determine the average density of the mantle using the above expression.
 
 Look to implement Vinet?  Can we also relate this to mass coordinate?  Vinet EOS is:
 \begin{equation}

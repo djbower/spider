@@ -171,19 +171,6 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
     }
     vp->henry /= 1.0E6 * SC->VOLATILE * PetscPowScalar(SC->PRESSURE, -1.0/vp->henry_pow);
 
-    /* TODO: could have a loop for solubility input parameters, rather than manually incrementing
-       them as done here.  This is prototyping for Paolo Sossi's H2-H2O solubility law */
-    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry_pow2");CHKERRQ(ierr);
-    ierr = PetscOptionsGetPositiveScalar(buf,&vp->henry_pow2,1.0,NULL);CHKERRQ(ierr);
-    ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_henry2");CHKERRQ(ierr);
-    /* default is no dissolved volatile content */
-    ierr = PetscOptionsGetPositiveScalar(buf,&vp->henry2,0.0,NULL);CHKERRQ(ierr);
-    if(vp->henry2 == 0){
-      vp->henry_pow2 = 1.0;
-    }
-    vp->henry2 /= 1.0E6 * SC->VOLATILE * PetscPowScalar(SC->PRESSURE, -1.0/vp->henry_pow2);
-    /* end of Paolo Sossi prototype */
-
     ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",vp->prefix,"_molar_mass");CHKERRQ(ierr);
     ierr = PetscOptionsGetPositiveScalar(buf,&vp->molar_mass,0.0,&set);CHKERRQ(ierr);
     /* there is no way to pick a suitable default, so force the user to specify */
@@ -428,6 +415,23 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetScalar(NULL,NULL,"-grain",&P->grain,NULL);CHKERRQ(ierr);
   P->grain /= SC->RADIUS;
 
+  /* only allow energy transport upwards due to melt/solid separation if the cell below
+     the cell interface contains melt/solid.  Otherwise, you can (unphysically) cool
+     a cell due to melt migration even though it contains no melt.  For middle-out or
+     more general scenarios, this requires more thought */
+  P->JGRAV_BOTTOM_UP = PETSC_TRUE;
+  ierr = PetscOptionsGetBool(NULL,NULL,"-JGRAV_BOTTOM_UP",&P->JGRAV_BOTTOM_UP,NULL);CHKERRQ(ierr);
+
+  {
+    PetscInt  CORE_BC = 0;
+    PetscBool CORE_BCset = PETSC_FALSE;
+    ierr = PetscOptionsGetInt(NULL,NULL,"-CORE_BC",&CORE_BC,&CORE_BCset);CHKERRQ(ierr);
+    if( CORE_BCset ) P->CORE_BC = CORE_BC;
+  }
+  P->core_bc_value = 0.0;
+  ierr = PetscOptionsGetScalar(NULL,NULL,"-core_bc_value",&P->core_bc_value,NULL);CHKERRQ(ierr);
+
+
   /* gravity (m/s^2), must be negative */
   P->gravity = -10.0;
   ierr = PetscOptionsGetScalar(NULL,NULL,"-gravity",&P->gravity,NULL);CHKERRQ(ierr);
@@ -580,9 +584,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
           case 1:
             ierr = EOSCreate(&P->eos_phases[r], SPIDER_EOS_LOOKUP);CHKERRQ(ierr);
             break;
-          case 2:
-            ierr = EOSCreate(&P->eos_phases[r], SPIDER_EOS_RTPRESS);CHKERRQ(ierr);
-            break;
           default: SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Unrecognized type code %D", type);
         }
         ierr = EOSSetUpFromOptions(P->eos_phases[r], prefixes[r], FC, SC);CHKERRQ(ierr);
@@ -683,10 +684,6 @@ static PetscErrorCode AtmosphereParametersSetFromOptions( Parameters P, const Sc
     /* use psuedo volatiles */
     Ap->PSEUDO_VOLATILES = PETSC_FALSE;
     ierr = PetscOptionsGetBool(NULL,NULL,"-PSEUDO_VOLATILES",&Ap->PSEUDO_VOLATILES,NULL);CHKERRQ(ierr);
-
-    /* TODO: this should be superseded by a shallow ocean layer treatment */
-    //Ap->VISCOUS_MANTLE_COOLING_RATE = PETSC_FALSE;
-    //ierr = PetscOptionsGetBool(NULL,NULL,"-VISCOUS_MANTLE_COOLING_RATE",&Ap->VISCOUS_MANTLE_COOLING_RATE,NULL);CHKERRQ(ierr);
 
     /* emissivity is constant for SURFACE_BC != MO_ATMOSPHERE_TYPE_VOLATILES */
     Ap->emissivity0 = 1.0; // non-dimensional
@@ -876,21 +873,6 @@ PetscErrorCode PrintParameters(Parameters const P)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15d\n"             ,"numpts_s"   ,P->numpts_s                                                  );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"%-15s %-15.6g %-15.6g %s\n","ic_adiabat_entropy"     ,(double)P->ic_adiabat_entropy       ,(double)(P->ic_adiabat_entropy*SC->ENTROPY) ,"J/kg/K"      );CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                            );CHKERRQ(ierr);
-  /* TODO: liquidus and solidus data is duplicated in the melt and solid eos parameters struct */
-#if 0
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"liquidus data file"         ,P->eos1_parameters->lookup->liquidus_filename          );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"solidus data file"          ,P->eos1_parameters->lookup->solidus_filename           );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaSol data file"         ,P->eos2_parameters->lookup->alpha_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"alphaMel data file"         ,P->eos1_parameters->lookup->alpha_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpSol data file"            ,P->eos2_parameters->lookup->cp_filename        );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"cpMel data file"            ,P->eos1_parameters->lookup->cp_filename        );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsSol data file"         ,P->eos2_parameters->lookup->dTdPs_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"dtdpsMel data file"         ,P->eos1_parameters->lookup->dTdPs_filename     );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoSol data file"           ,P->eos2_parameters->lookup->rho_filename       );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"rhoMel data file"           ,P->eos1_parameters->lookup->rho_filename       );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempSol data file"          ,P->eos2_parameters->lookup->temp_filename      );CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%-30s %s\n"                ,"tempMel data file"          ,P->eos1_parameters->lookup->temp_filename      );CHKERRQ(ierr);
-#endif
   if (Ap->n_volatiles > 0) {
     ierr = PetscPrintf(PETSC_COMM_WORLD,"\n[Volatile] prefix/name\n");CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------\n"                                          );CHKERRQ(ierr);

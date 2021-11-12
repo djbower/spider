@@ -31,10 +31,6 @@ PetscErrorCode EOSCreate(EOS* p_eos, EOSType type)
   if (flg) {
     ierr = EOSCreate_Lookup(eos);CHKERRQ(ierr);
   }
-  ierr = PetscStrcmp(type, SPIDER_EOS_RTPRESS, &flg);CHKERRQ(ierr);
-  if (flg) {
-    ierr = EOSCreate_RTpress(eos);CHKERRQ(ierr);
-  }
   ierr = PetscStrcmp(type, SPIDER_EOS_COMPOSITE, &flg);CHKERRQ(ierr);
   if (flg) {
     ierr = EOSCreate_Composite(eos);CHKERRQ(ierr);
@@ -97,7 +93,7 @@ PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix, const Fundamenta
 
   /* viscosity-related, may eventually move into their own struct */
   ierr = PetscSNPrintf(buf,sizeof(buf),"%s%s%s","-",prefix,"_log10visc");CHKERRQ(ierr);
-  eos->log10visc = 21.0; // FIXME: default is for solid only
+  eos->log10visc = 21.0; // note default is for solid only
   ierr = PetscOptionsGetScalar(NULL,NULL,buf,&eos->log10visc,NULL);CHKERRQ(ierr);
   eos->log10visc -= SC->LOG10VISC;
 
@@ -229,9 +225,9 @@ PetscErrorCode EOSEvalSetViscosity(EOS eos, EOSEvalData *eval)
         eval->log10visc += log10C;
     }
 
-    /* TODO: add viscous lid */
+    /* add viscous lid */
 
-    /* TODO: add viscosity cutoff */
+    /* add viscosity cutoff */
 
     PetscFunctionReturn(0);
 }
@@ -257,27 +253,6 @@ static PetscScalar GetCompositionalViscosityPrefactor( PetscScalar Mg_Si ){
         /* Fp-rich composition (Ballmer et al. 2017) */
         fac = -2;
 
-/* this is the original formulation used for the draft version of Rob's paper
-   during the review stage, the formulation was changed to that above */
-#if 0
-    if(Mg_Si <= 0.5)
-        /* St-rich composition (Xu et al., 2017) */
-        fac = 2;
-    else if (Mg_Si <= 0.7)
-        fac = 2 - 1.4815 * (Mg_Si - 0.5)/0.2; // 1.4815 = 2 - log10(3.3)
-    else if (Mg_Si <= 1.0)
-        /* fac is zero for Mg_Si = 1.0 */
-        fac = 0.5185 * (1 - Mg_Si)/0.3; // 0.5185 = log10(3.3)
-    else if (Mg_Si <= 1.25)
-        /* Earth has Mg/Si = 1.08 */
-        fac = -1.4815 * (Mg_Si - 1)/0.25; // -1.4815 = log10(0.033)
-    else if (Mg_Si <= 1.5)
-        fac = -2 + (0.5185) * (1.5 - Mg_Si)/0.25; // 0.5185 = log10(0.033) - -2
-    else
-        /* Fp-rich composition (Ballmer et al. 2017) */
-        fac = -2;
-#endif
-
     return fac;
 }
 
@@ -294,8 +269,6 @@ static PetscErrorCode LookupFilenameSet( const char* property, const char* prefi
        with _rel_to_src indicate a path relative to the source code. In this 
        case we prepend a string, SPIDER_ROOT_DIR_STR, and /. The corresponding
        option without this overrides. */     
-
-    /* TODO: add default file location */
 
     /* check for relative path name */
     ierr = PetscSNPrintf(buf1,sizeof(buf1),"%s%s%s%s","-",prefix,property,"_filename_rel_to_src");CHKERRQ(ierr);
