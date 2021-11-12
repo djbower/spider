@@ -4,6 +4,7 @@
 ![SPIDER Logo](notes/logo/spider.png)
 
 [![Build](https://github.com/djbower/spider/actions/workflows/ci.yml/badge.svg)](https://github.com/djbower/spider/actions)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5682523.svg)](https://doi.org/10.5281/zenodo.5682523)
 
 
 
