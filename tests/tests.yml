@@ -1,8 +1,6 @@
 tests:
     -
       name: blackbody50
-      groups:
-        - basic
       commands:
         - HERE/../spider -options_file HERE/opts/blackbody50.opts
         - HERE/json_timestep_to_txt.py output/1500.json
@@ -18,3 +16,9 @@ tests:
           key: scaling:
           rtol: 1e-6
           atol: 1e-6
+    -
+      name: plot_test
+      commands:
+        - HERE/../spider -options_file HERE/opts/blackbody50.opts -nstepsmacro 2
+        - HERE/../py/plot_simple_spider.py
+      type: exit_code
