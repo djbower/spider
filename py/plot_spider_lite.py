@@ -461,9 +461,9 @@ def figure_interior( indir='output', time=None ):
 def main():
 
     # arguments (run with -h to summarize)
-    parser = argparse.ArgumentParser(description='SPIDER plotting script')
-    parser.add_argument('-t', '--times', default=None, type=str, help='Comma-separated list of times to plot');
-    parser.add_argument('-d', '--directory', default='output', type=str, help='Directory of output SPIDER JSON files');
+    parser = argparse.ArgumentParser(description='SPIDER lite plotting script')
+    parser.add_argument('-t', '--times', default=None, type=str, help='Comma-separated list of times (default: all times)');
+    parser.add_argument('-d', '--directory', default='output', type=str, help='Directory of output SPIDER JSON files (default: output)');
 
     args = parser.parse_args()
     figure_interior( indir=args.directory, time=args.times )

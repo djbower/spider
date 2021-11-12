@@ -125,6 +125,8 @@ You should now be ready to use the code.  Proceed to *Running a Model* to learn 
 
 4. There are example options files in ```tests/opts/```.  Also see ```parameters.c``` for more parameter options.
 
+5. A python script ```py/plot_spider_lite.py``` can be used to generate a basic figure of the interior profiles.  Run ```py/plot_spider_lite.py -h``` to see the optional arguments.
+
 ## 4. Detailed Installation
 
 The following section provides more general information about the installation process, and in particular provides the steps for installing SPIDER with support for quadruple precision calculations.
