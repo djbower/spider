@@ -1,7 +1,7 @@
 # SPIDER
 **Simulating Planetary Interior Dynamics with Extreme Rheology**
 
-[![Build](https://github.com/psanan/spider/actions/workflows/ci.yml/badge.svg)](https://github.com/psanan/spider/actions)
+[![Build](https://github.com/djbower/spider/actions/workflows/ci.yml/badge.svg)](https://github.com/djbower/spider/actions)
 
 
 A 1-D parameterised interior dynamics code for rocky planets with molten and/or solid interiors and support for volatile cycling, redox reactions, and radiative transfer in the atmosphere.
@@ -65,7 +65,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
 
     ```
     cd /somewhere/to/install
-    git clone git@bitbucket.org:djbower/spider.git
+    git clone https://github.com/djbower/spider.git
     cd spider
     ```
 
@@ -256,7 +256,7 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc"):
 
     ```
     cd /somewhere/to/install
-    git clone git@bitbucket.org:djbower/spider.git
+    git clone https://github.com/djbower/spider.git
     cd spider
     ```
 
