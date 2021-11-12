@@ -1,7 +1,10 @@
 # SPIDER
 **Simulating Planetary Interior Dynamics with Extreme Rheology**
 
+![SPIDER Logo](notes/logo/spider.png)
+
 [![Build](https://github.com/djbower/spider/actions/workflows/ci.yml/badge.svg)](https://github.com/djbower/spider/actions)
+
 
 
 A 1-D parameterised interior dynamics code for rocky planets with molten and/or solid interiors and support for volatile cycling, redox reactions, and radiative transfer in the atmosphere.
