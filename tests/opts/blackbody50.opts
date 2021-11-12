@@ -7,7 +7,7 @@
 #==============
 
 # number of macro steps
--nstepsmacro 15
+-nstepsmacro 12
 
 # macro step size in years
 -dtmacro 100

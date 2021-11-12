@@ -3,9 +3,9 @@ tests:
       name: blackbody50
       commands:
         - HERE/../spider -options_file HERE/opts/blackbody50.opts
-        - HERE/json_timestep_to_txt.py output/1500.json
+        - HERE/json_timestep_to_txt.py output/1200.json
       expected: expected_output/expected_blackbody50.txt
-      comparison: 1500.txt
+      comparison: 1200.txt
       type: float_lines
       rules:
         -
