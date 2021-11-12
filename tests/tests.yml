@@ -10,12 +10,12 @@ tests:
       rules:
         -
           key: val:
-          rtol: 1e-6
-          atol: 1e-6
+          rtol: 1e-5
+          atol: 1e-5
         -
           key: scaling:
-          rtol: 1e-6
-          atol: 1e-6
+          rtol: 1e-5
+          atol: 1e-5
     -
       name: plot_test
       commands:
