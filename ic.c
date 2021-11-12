@@ -1033,9 +1033,6 @@ static PetscErrorCode objective_function_initial_partial_pressure( SNES snes, Ve
         G = PetscPowScalar( 10.0, log10G );
 
         ff[Ap->n_volatiles + i] = Qp/Qr - G;
-        // DJB testing below
-        //ff[Ap->n_volatiles + i] = Qp - G*Qr;
-        //ff[Ap->n_volatiles + i] /= Qp;
 
     }
 
