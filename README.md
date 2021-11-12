@@ -40,13 +40,13 @@ Here we provide a short installation guide to get you up and running with SPIDER
 
     ```
     cd /somewhere/to/install
-    git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-double-direct
+    git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-double
     ```
 
 4. Change directories:
 
     ```
-    cd petsc-double-direct/
+    cd petsc-double/
     ```
 
 5. Configure PETSc:
@@ -60,7 +60,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
 7. In your environment, set `PETSC_DIR` and `PETSC_ARCH` to the PETSc installation.  `PETSC_ARCH` will look something like arch-xxx-yyy (e.g. arch-darwin-c-opt).  This completes the setup of PETSc:
 
     ```
-    export PETSC_DIR=/somewhere/to/install/petsc-double-direct
+    export PETSC_DIR=/somewhere/to/install/petsc-double
     export PETSC_ARCH=arch-xxx-yyy
     ```
 
@@ -231,13 +231,13 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc"):
 
     ```
     cd /somewhere/to/install
-    git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-quad-direct
+    git clone https://gitlab.com/petsc/petsc --depth=1 -b psanan/ts-sundials-dense-2 petsc-quad
     ```
 
 7. Change directories:
 
     ```
-    cd petsc-quad-direct
+    cd petsc-quad
     ```
 
 8. Configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change /somewhere/to/install to the place that you installed SUNDIALS):
@@ -251,7 +251,7 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc"):
 10. In your environment, set `PETSC_DIR` and `PETSC_ARCH` to the PETSc installation.  `PETSC_ARCH` will look something like arch-xxx-yyy (e.g. arch-darwin-c-opt).  This completes the setup of PETSc:
 
     ```
-    export PETSC_DIR=/somewhere/to/install/petsc-quad-direct
+    export PETSC_DIR=/somewhere/to/install/petsc-quad
     export PETSC_ARCH=arch-xxx-yyy
     ```
 
