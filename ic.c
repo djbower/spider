@@ -42,7 +42,6 @@ PetscErrorCode set_initial_condition( Ctx *E, Vec sol)
     ScalingConstants     SC = P->scaling_constants;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_initial_condition()\n");CHKERRQ(ierr);
 
     /* interior initial condition */
     ierr = set_ic_interior( E, sol ); CHKERRQ(ierr);
@@ -85,7 +84,6 @@ static PetscErrorCode set_ic_interior( Ctx *E, Vec sol)
     Parameters const P = E->parameters;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior()\n");CHKERRQ(ierr);
 
     if (P->IC_INTERIOR==1){
         ierr = set_ic_interior_default( E, sol ); CHKERRQ(ierr);
@@ -131,7 +129,6 @@ static PetscErrorCode set_ic_interior_default( Ctx *E, Vec sol )
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_default()\n");CHKERRQ(ierr);
 
     ierr = set_ic_interior_entropy( E, sol ); CHKERRQ(ierr);
 
@@ -146,7 +143,6 @@ static PetscErrorCode set_ic_interior_from_file( Ctx *E, Vec sol )
     PetscInt const arr[2] = {0, 1};
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_file()\n");CHKERRQ(ierr);
 
     ierr = set_ic_from_file( E, sol, P->ic_interior_filename, arr, 2 ); CHKERRQ(ierr);
 
@@ -162,7 +158,6 @@ static PetscErrorCode set_ic_atmosphere_from_file( Ctx *E, Vec sol )
     PetscInt const arr2[1] = {3};
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_file()\n");CHKERRQ(ierr);
 
     if(Ap->n_volatiles){
         ierr = set_ic_from_file( E, sol, Ap->ic_atmosphere_filename, arr1, 1 ); CHKERRQ(ierr);
@@ -188,7 +183,6 @@ static PetscErrorCode set_ic_interior_entropy( Ctx *E, Vec sol )
     Vec              *subVecs;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_entropy()\n");CHKERRQ(ierr);
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
@@ -227,7 +221,6 @@ static PetscErrorCode set_start_time_from_file( Parameters P , const char * file
     cJSON            *json=NULL, *time;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_start_time_from_file()\n");CHKERRQ(ierr);
 
     ierr = read_JSON_file_to_JSON_object( filename, &json );
 
@@ -247,7 +240,6 @@ static PetscErrorCode set_start_stepmacro_from_file( Parameters P, const char * 
     cJSON            *json=NULL, *stepmacro;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_stepmacro_from_file()\n");CHKERRQ(ierr);
 
     ierr = read_JSON_file_to_JSON_object( filename, &json );
 
@@ -263,13 +255,11 @@ static PetscErrorCode set_start_stepmacro_from_file( Parameters P, const char * 
 
 PetscErrorCode read_JSON_file_to_JSON_object( const char * filename, cJSON ** json )
 {
-    PetscErrorCode   ierr;
     FILE             *fp;
     long             length;
     char             *buffer = 0;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"read_JSON_file_to_JSON_object()\n");CHKERRQ(ierr);
 
     fp = fopen( filename, "r" );
 
@@ -317,7 +307,6 @@ static PetscErrorCode set_ic_from_file( Ctx *E, Vec sol, const char * filename, 
 #endif
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_from_file()\n");CHKERRQ(ierr);
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
@@ -401,7 +390,6 @@ static PetscErrorCode set_ic_interior_from_phase_boundary( Ctx *E, Vec sol )
     Vec                dSdxi_b, *subVecs;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_interior_from_phase_boundary()\n");CHKERRQ(ierr);
 
     ierr = PetscMalloc1(E->numFields,&subVecs);CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol,sol,E->numFields,NULL,subVecs);CHKERRQ(ierr);
@@ -466,7 +454,6 @@ static PetscErrorCode set_ic_atmosphere( Ctx *E, Vec sol )
     Atmosphere                 *A = &E->atmosphere;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere()\n");CHKERRQ(ierr);
 
     if(Ap->n_volatiles){
 
@@ -543,7 +530,6 @@ static PetscErrorCode conform_atmosphere_parameters_to_ic( Ctx *E )
     ScalingConstants     const SC = P->scaling_constants;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"conform_atmosphere_parameters_to_ic()\n");CHKERRQ(ierr);
 
     /* prior to this function, A->volatiles[i].p and A->mass_reaction[i]
        are updated */
@@ -787,11 +773,10 @@ static PetscErrorCode set_ic_atmosphere_pseudo_volatiles( Ctx *E, Vec sol )
     Atmosphere           *A = &E->atmosphere;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_pseudo_volatiles()\n");CHKERRQ(ierr);
 
     for (i=0; i<Ap->n_volatiles; ++i) {
         /* recall that here A->volatiles[i].p is log10(P(Pa)) from lookup */
-        SetInterp1dValue( Ap->volatile_parameters[i]->TP_interp, A->tsurf, &A->volatiles[i].p, NULL );CHKERRQ(ierr);
+        SetInterp1dValue( Ap->volatile_parameters[i]->TP_interp, A->tsurf, &A->volatiles[i].p, NULL );
         /* convert to non-dimensional (scaled) pressure */
         A->volatiles[i].p -= PetscLog10Real( SC->PRESSURE );
         A->volatiles[i].p = PetscPowScalar( 10.0, A->volatiles[i].p );
@@ -819,7 +804,6 @@ static PetscErrorCode set_ic_atmosphere_from_ocean_moles( Ctx *E, Vec sol )
     ScalingConstants     const SC = P->scaling_constants;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_ocean_moles()\n");CHKERRQ(ierr);
 
     /* convert from ocean moles to mass and update total abundance */
     for (i=0; i<Ap->n_volatiles; ++i) {
@@ -840,7 +824,6 @@ static PetscErrorCode set_ic_atmosphere_from_initial_total_abundance( Ctx *E, Ve
     PetscErrorCode       ierr;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_initial_total_abundance()\n");CHKERRQ(ierr);
 
     ierr = solve_for_initial_partial_pressure( E );CHKERRQ(ierr);
 
@@ -859,7 +842,6 @@ static PetscErrorCode set_ic_atmosphere_from_partial_pressure( Ctx *E, Vec sol )
     AtmosphereParameters Ap = E->parameters->atmosphere_parameters;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"set_ic_atmosphere_from_partial_pressure()\n");CHKERRQ(ierr);
 
     /* set initial partial pressure to A->volatiles[i].p */
     for (i=0; i<Ap->n_volatiles; ++i) {
@@ -893,7 +875,6 @@ static PetscErrorCode solve_for_initial_partial_pressure( Ctx *E )
     AtmosphereParameters const Ap = P->atmosphere_parameters;
 
     PetscFunctionBeginUser;
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"solve_for_initial_partial_pressure()\n");CHKERRQ(ierr);
 
     ierr = SNESCreate( PETSC_COMM_WORLD, &snes );CHKERRQ(ierr);
 
