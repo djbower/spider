@@ -20,5 +20,5 @@ tests:
       name: plot_test
       commands:
         - HERE/../spider -options_file HERE/opts/blackbody50.opts -nstepsmacro 2
-        - HERE/../py/plot_simple_spider.py
+        - HERE/../py/plot_spider_lite.py
       type: exit_code
