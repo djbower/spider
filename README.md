@@ -139,7 +139,7 @@ Installation of SPIDER and its dependencies requires:
 
 #### 4.1 C Compiler
 
-Any C compiler can be used if you want to build SPIDER for double precision calculations.  However, for quadruple precision calculations you will need a "pure" GCC compiler.  Unfortunately on a Mac, "`gcc`" is a wrapper for the default Apple compiler ("`clang`") which is not a pure GCC compiler package and hence does not support quadruple precision math.  Particularly for Mac OSX you may choose to install GCC to support both double and quadruple precision calculations using a single compiler.
+Any C compiler can be used if you want to build SPIDER for double precision calculations.  However, for quadruple precision calculations you will need a GCC compiler.  Unfortunately on a Mac, "`gcc`" is a wrapper for the default Apple compiler ("`clang`") which is not actually a GCC compiler package and hence does not support quadruple precision math.  Particularly for Mac OSX you may choose to install GCC to support both double and quadruple precision calculations using a single compiler.
 
 A basic test to ensure you have a working compiler is (note you can swap out "`gcc`" for another compiler binary name):
 
@@ -178,11 +178,11 @@ echo '#include<stdio.h>' > t.c && echo '#include<quadmath.h>' >> t.c && echo 'in
 Before you begin, comment out any existing references to `PETSC_DIR` and `PETSC_ARCH` in your
 `.profile`, `.bash_profile`,`.bashrc`, etc. and clear these variables from your current terminal session.
 
-For quadruple precision, you must install SUNDIALS independently of PETSc, since we must configure SUNDIALS to support quadruple precision.
+For quadruple precision, you must install SUNDIALS independently of PETSc, since we use a modified version of SUNDIALS to support quadruple precision.
 
 #### 4.2.1 Install SUNDIALS with quadruple precision
 
-1. Clone this specific version of SUNDIALS from the git repository:
+1. Clone this specific, modified version of SUNDIALS from the Git repository:
 
     ```
     cd /somewhere/to/install
@@ -190,7 +190,7 @@ For quadruple precision, you must install SUNDIALS independently of PETSc, since
     git clone https://bitbucket.org/psanan/sundials-quad src
     ```
 
-2. Make sure that you have CMake available by typing `cmake --version`.  If this fails, then install CMake from your package manager (homebrew, macports, apt,..) or by following the instructions at cmake.org/download.  Note: it is necessary to comment out the cmake_policy(SET CMP0042 NEW) in src/CMakeLists.txt if you are using an old version of cmake.
+2. Make sure that you have CMake available by typing `cmake --version`.  If this fails, then install CMake from your package manager (homebrew, macports, apt,..) or by following [the instructions from CMake](https://cmake.org/download).  Note: it is necessary to comment out the `cmake_policy(SET CMP0042 NEW)` in `src/CMakeLists.txt` if you are using an old version of CMake.
 
     ```
     sudo port install cmake           # MacPorts
@@ -207,9 +207,9 @@ For quadruple precision, you must install SUNDIALS independently of PETSc, since
     ccmake .            # with apt you may need to install this separately
     ```
 
-4.  Use the ccmake interface to set values similar to those below.
+4.  Use the `ccmake` interface to set values similar to those below.
 Make sure you type "c" to configure once you have entered these values, then "g" to generate and exit.
-Note: specify the same C compiler you used to install PETSc (probably "gcc"):
+Note: specify the same C compiler you used to install PETSc (probably `gcc`):
 
     ```
     CMAKE_C_COMPILER: gcc
@@ -240,7 +240,7 @@ Note: specify the same C compiler you used to install PETSc (probably "gcc"):
     cd petsc-quad
     ```
 
-8. Configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change /somewhere/to/install to the place that you installed SUNDIALS):
+8. Configure PETSc using the following command.  Crucially, in the next step we point PETSc to the quadruple precision installation of SUNDIALS that we just created (change `/somewhere/to/install` to the place that you installed SUNDIALS):
 
     ```
     ./configure --with-debugging=0 --with-fc=0 --with-cxx=0 --with-cc=gcc --with-precision=__float128 --with-sundials=1 --with-sundials-dir=/somewhere/to/install/sundials-quad/install --download-mpich --download-f2cblaslapack --COPTFLAGS="-g -O3" --CXXOPTFLAGS="-g -O3"
