@@ -79,7 +79,7 @@ Here we provide a short installation guide to get you up and running with SPIDER
     make -j
     ```
 
-    Spider is now installed and you can in principle skip to *Running a Model* below.  However, you are advised to install the test harness as follows:
+    SPIDER is now installed and you can in principle skip to *Running a Model* below.  However, you are advised to install the test harness as follows:
 
 10. [Optional] Get SciATH (Scientific Application Test Harness), which is a python module:
 
