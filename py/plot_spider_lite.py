@@ -164,7 +164,7 @@ class MyJSON( object ):
             data_l.append( data_a )
         # below gives (m,n) (2d array), where m (rows) is 
         # time index and n (columns) is data size
-        data_a = np.array( data_l )
+        data_a = np.array( data_l, dtype='object' )
         # transpose gives (n,m), which can now be used directly by
         # pyplot to plot data by time (since columns are plotted)
         data_a = data_a.T
