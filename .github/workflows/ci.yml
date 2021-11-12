@@ -36,5 +36,5 @@ jobs:
       run: |
           export PYTHONPATH=$PYTHONPATH:$PWD/tests/sciath
           mkdir -p test_dir && cd test_dir
-          python -m sciath -d -w pth.conf  # default config
-          python -m sciath -f -w pth.conf  # fun tests and produce error code
+          python -m sciath -d -w pth.conf
+          python -m sciath -f -w pth.conf ../tests/tests.yml
