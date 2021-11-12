@@ -35,6 +35,6 @@ jobs:
     - name: make test
       run: |
           export PYTHONPATH=$PYTHONPATH:$PWD/tests/sciath
-          mkdir -p test_dir
-          cd test_dir && python -m sciath -d -w pth.conf && cd -
-          PETSC_DIR=petsc PETSC_ARCH=arch-test make test
+          mkdir -p test_dir && cd test_dir
+          python -m sciath -d -w pth.conf  # default config
+          python -m sciath -f -w pth.conf  # fun tests and produce error code
