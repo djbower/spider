@@ -16,7 +16,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install Python requirements
-      run: pip install -r py/requirements.txt
+      run: |
+        pip install -r py/requirements.txt
+        sudo apt-get install latex
     - name: PETSc cache
       id: petsc-cache
       uses: actions/cache@v2
