@@ -16,18 +16,18 @@ typedef struct
     /* primary */
     PetscScalar RADIUS;
     PetscScalar TEMP;
-    PetscScalar ENTROPY; /* note: specific entropy */
-    PetscScalar DENSITY;
+    PetscScalar TIME;
+    PetscScalar PRESSURE;
     PetscScalar VOLATILE;
     /* derived from primary */
     PetscScalar AREA;
+    PetscScalar ENTROPY; /* note: specific entropy */
     PetscScalar VOLUME;
     PetscScalar MASS;
-    PetscScalar TIME;
+    PetscScalar DENSITY;
     PetscScalar TIMEYRS;
     PetscScalar SENERGY; /* specific energy */
     PetscScalar ENERGY;
-    PetscScalar PRESSURE;
     PetscScalar POWER;
     PetscScalar FLUX;
     PetscScalar DPDR;

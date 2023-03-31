@@ -998,7 +998,7 @@ PetscErrorCode objective_function_volatile_evolution(SNES snes, Vec x, Vec f, vo
         /* Modified equilibrium constant */
         G = PetscPowScalar(10.0, log10G);
         /* dG/dlog10G * dlog10G/dT * dT/dt */
-        dGdt = G * PetscLogReal(10.0) * dlog10GdT * A->dtsurfdt;
+        dGdt = G * PetscLogReal(10.0) * dlog10GdT * A->dTsurfdt;
 
         ff[Ap->n_volatiles + i] -= dGdt * Qr + G * dQrdt;
     }

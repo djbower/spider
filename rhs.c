@@ -134,11 +134,11 @@ PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec sol_in, Vec rhs, void *ptr)
   CHKERRQ(ierr);
   ierr = DMCompositeGetAccessArray(E->dm_sol, rhs, E->numFields, NULL, subVecs);
   CHKERRQ(ierr);
-  ierr = VecCopy(rhs_b, subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]]);
+  ierr = VecCopy(rhs_b, subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DTDXI_B]]);
   CHKERRQ(ierr);
 
   /* S0 */
-  ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]], 0, arr_dSdt_s[0], INSERT_VALUES);
+  ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]], 0, arr_dSdt_s[0], INSERT_VALUES);
   CHKERRQ(ierr);
 
   /* volatiles and reactions */

@@ -76,7 +76,7 @@ PetscErrorCode set_initial_condition(Ctx *E, Vec sol)
            initial condition */
         ierr = solve_for_steady_state_energy_interior(E, P->t0);
         CHKERRQ(ierr);
-        ierr = set_solution_from_entropy(E, sol);
+        ierr = set_solution_from_temperature(E, sol);
         CHKERRQ(ierr);
     }
 
@@ -120,27 +120,27 @@ static PetscErrorCode set_ic_interior(Ctx *E, Vec sol)
     /* the reason we set sol above, rather than Vecs in struct, is
        because the function below is called by the RHS and must take
        sol as the input.  This now sets the Vecs in E */
-    ierr = set_entropy_from_solution(E, sol);
+    ierr = set_temperature_from_solution(E, sol);
     CHKERRQ(ierr);
 
     /* option to set initial core-mantle boundary entropy */
     if (P->ic_core_entropy > 0.0)
     {
-        ierr = set_cmb_entropy_constant(E);
+        ierr = set_cmb_temperature_constant(E);
         CHKERRQ(ierr);
     }
 
     /* option to set initial surface entropy */
     if (P->ic_surface_entropy > 0.0)
     {
-        ierr = set_surface_entropy_constant(E);
+        ierr = set_surface_temperature_constant(E);
         CHKERRQ(ierr);
     }
 
     /* Now the Vecs in E are set and consistent, clone them
        to the sol Vec which is what is actually used by the
        time-stepper */
-    ierr = set_solution_from_entropy(E, sol);
+    ierr = set_solution_from_temperature(E, sol);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -217,7 +217,7 @@ static PetscErrorCode set_ic_interior_entropy(Ctx *E, Vec sol)
     ierr = DMCompositeGetAccessArray(E->dm_sol, sol, E->numFields, NULL, subVecs);
     CHKERRQ(ierr);
 
-    dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]];
+    dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DTDXI_B]];
 
     /* set entropy gradient and map to mass coordinates */
     ierr = VecSet(dSdxi_b, P->ic_dsdr);
@@ -232,7 +232,7 @@ static PetscErrorCode set_ic_interior_entropy(Ctx *E, Vec sol)
 
     /* set entropy at top of adiabat */
     S0 = P->ic_adiabat_entropy;
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]], 0, S0, INSERT_VALUES);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]], 0, S0, INSERT_VALUES);
     CHKERRQ(ierr);
 
     for (i = 0; i < E->numFields; ++i)
@@ -371,11 +371,11 @@ static PetscErrorCode set_ic_from_file(Ctx *E, Vec sol, const char *filename, co
         /* could break if ordering of subdomains changes */
         if (subdomain_num == 0)
         {
-            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]];
+            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DTDXI_B]];
         }
         else if (subdomain_num == 1)
         {
-            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]];
+            invec = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]];
         }
         else if (subdomain_num == 2)
         {
@@ -454,7 +454,7 @@ static PetscErrorCode set_ic_interior_from_phase_boundary(Ctx *E, Vec sol)
     CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol, sol, E->numFields, NULL, subVecs);
     CHKERRQ(ierr);
-    dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DSDXI_B]];
+    dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DTDXI_B]];
 
     /* for looping over basic nodes */
     ierr = DMDAGetCorners(da_b, &ilo_b, 0, 0, &w_b, 0, 0);
@@ -495,11 +495,11 @@ static PetscErrorCode set_ic_interior_from_phase_boundary(Ctx *E, Vec sol)
     ierr = EOSGetPhaseBoundary(E->parameters->eos_phases[0], arr_pres_s[0], &S0, NULL);
     CHKERRQ(ierr);
     S0 = PetscMin(S0, P->ic_adiabat_entropy);
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]], 0, S0, INSERT_VALUES);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]], 0, S0, INSERT_VALUES);
     CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);
+    ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]]);
     CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_S0]]);
+    ierr = VecAssemblyEnd(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]]);
     CHKERRQ(ierr);
 
     /* restore basic node gradient array and sol Vec */
