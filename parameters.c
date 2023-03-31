@@ -687,7 +687,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     P->core_bc_value /= SC->FLUX;
     break;
   case 3:
-    /* CORE_BC = MO_CORE_TYPE_ENTROPY: entropy
+    /* CORE_BC = MO_CORE_TYPE_TEMPERATURE: temperature
        do nothing */
     break;
   default:

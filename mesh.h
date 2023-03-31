@@ -3,6 +3,6 @@
 
 #include "ctx.h"
 
-PetscErrorCode set_mesh( Ctx * );
+PetscErrorCode set_mesh(Ctx *);
 
 #endif

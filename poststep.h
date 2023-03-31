@@ -4,7 +4,8 @@
 #include "parameters.h"
 #include <petscts.h>
 
-typedef struct {
+typedef struct
+{
   PetscReal volatile_partialp[SPIDER_MAX_VOLATILE_SPECIES];
   PetscReal tsurf;
 } PostStepData;

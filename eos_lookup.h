@@ -4,7 +4,8 @@
 #include "eos.h"
 #include "interp.h"
 
-typedef struct {
+typedef struct
+{
     /* lookup data filenames */
     char rho_filename[PETSC_MAX_PATH_LEN];
     char dTdPs_filename[PETSC_MAX_PATH_LEN];
@@ -14,10 +15,10 @@ typedef struct {
     /* lookup objects to evaluate */
     /* memory is not necessarily allocated to these lookup
        objects if they are not required */
-    Interp2d rho; /* density, kg/m^3 */
+    Interp2d rho;   /* density, kg/m^3 */
     Interp2d dTdPs; /* adiabatic temperature gradient, K/Pa */
-    Interp2d cp; /* heat capacity, J/kg/K */
-    Interp2d temp; /* temperature, K */
+    Interp2d cp;    /* heat capacity, J/kg/K */
+    Interp2d temp;  /* temperature, K */
     Interp2d alpha; /* thermal expansion, 1/K */
 } data_EOSLookup;
 

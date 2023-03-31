@@ -11,7 +11,8 @@
 
 /* constants to scale the physical problem, largely chosen based on numerical
    considerations */
-typedef struct {
+typedef struct
+{
     /* primary */
     PetscScalar RADIUS;
     PetscScalar TEMP;
@@ -44,13 +45,14 @@ typedef struct {
     PetscScalar RHS;
     PetscScalar HEATGEN;
 } data_ScalingConstants;
-typedef data_ScalingConstants* ScalingConstants;
+typedef data_ScalingConstants *ScalingConstants;
 
-PetscErrorCode ScalingConstantsCreate(ScalingConstants*);
-PetscErrorCode ScalingConstantsDestroy(ScalingConstants*);
+PetscErrorCode ScalingConstantsCreate(ScalingConstants *);
+PetscErrorCode ScalingConstantsDestroy(ScalingConstants *);
 
 /* fundamental constants */
-typedef struct {
+typedef struct
+{
     PetscScalar AVOGADRO;
     PetscScalar BOLTZMANN;
     PetscScalar GAS;
@@ -58,10 +60,10 @@ typedef struct {
     PetscScalar STEFAN_BOLTZMANN;
     PetscScalar OCEAN_MOLES;
 } data_FundamentalConstants;
-typedef data_FundamentalConstants* FundamentalConstants;
+typedef data_FundamentalConstants *FundamentalConstants;
 
-PetscErrorCode FundamentalConstantsCreate(FundamentalConstants*);
-PetscErrorCode FundamentalConstantsDestroy(FundamentalConstants*);
+PetscErrorCode FundamentalConstantsCreate(FundamentalConstants *);
+PetscErrorCode FundamentalConstantsDestroy(FundamentalConstants *);
 PetscErrorCode FundamentalConstantsSet(FundamentalConstants, ScalingConstants const);
 
 #endif
