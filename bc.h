@@ -3,8 +3,8 @@
 
 #include "ctx.h"
 
-PetscErrorCode set_surface_entropy_gradient_update(Ctx *, Vec);
-PetscErrorCode set_cmb_entropy_gradient_update(Ctx *, Vec);
+PetscErrorCode set_surface_temperature_gradient_update(Ctx *, Vec);
+PetscErrorCode set_cmb_temperature_gradient_update(Ctx *, Vec);
 PetscErrorCode solve_dpdts(Ctx *);
 PetscErrorCode get_dpdts_from_lookup(Ctx *);
 PetscErrorCode set_surface_temperature_from_surface_gradient(Ctx *);

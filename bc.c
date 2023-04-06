@@ -3,10 +3,10 @@
 #include "interp.h"
 #include "monitor.h"
 
-PetscErrorCode set_surface_entropy_gradient_update(Ctx *E, Vec rhs)
+PetscErrorCode set_surface_temperature_gradient_update(Ctx *E, Vec rhs)
 {
     /* apply surface boundary condition in time-stepper.  This is the
-       update for d/dt(dS/dr) at the surface */
+       update for d/dt(dT/dr) at the surface */
 
     /* due to the non-linear and functional dependences of kappah,
        an update cannot be computed for most cases,  But formally
@@ -18,7 +18,7 @@ PetscErrorCode set_surface_entropy_gradient_update(Ctx *E, Vec rhs)
     Parameters const P = E->parameters;
     Solution const *S = &E->solution;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
-    PetscScalar rhs_surf, rhs_below_surf, dSdt_s_surf, cp0, dSdxi0;
+    PetscScalar rhs_surf, rhs_below_surf, dTdt_s_surf, cp0, dTdxi0;
     const PetscScalar *arr_xi_b;
     const PetscInt ind0 = 0, ind1 = 1;
     PetscBool BC_SET = PETSC_FALSE;
@@ -28,9 +28,9 @@ PetscErrorCode set_surface_entropy_gradient_update(Ctx *E, Vec rhs)
     ierr = DMDAVecGetArrayRead(E->da_b, M->xi_b, &arr_xi_b);
     CHKERRQ(ierr);
 
-    ierr = VecGetValues(S->dSdt_s, 1, &ind0, &dSdt_s_surf);
+    ierr = VecGetValues(S->dTdt_s, 1, &ind0, &dTdt_s_surf);
     CHKERRQ(ierr);
-    ierr = VecGetValues(S->dSdxi, 1, &ind0, &dSdxi0);
+    ierr = VecGetValues(S->dTdxi, 1, &ind0, &dTdxi0);
     CHKERRQ(ierr);
     ierr = VecGetValues(S->cp, 1, &ind0, &cp0);
     CHKERRQ(ierr);
@@ -53,9 +53,9 @@ PetscErrorCode set_surface_entropy_gradient_update(Ctx *E, Vec rhs)
         /* MO_ATMOSPHERE_TYPE_HEAT_FLUX: heat flux (prescribed) */
         break;
     case 5:
-        /* SURFACE_BC = MO_ATMOSPHERE_TYPE_ENTROPY: entropy */
+        /* SURFACE_BC = MO_ATMOSPHERE_TYPE_TEMPERATURE: temperature */
         rhs_surf = -1.0 / (-0.5 * (arr_xi_b[1] - arr_xi_b[0]));
-        rhs_surf *= dSdt_s_surf;
+        rhs_surf *= dTdt_s_surf;
         BC_SET = PETSC_TRUE;
         break;
     default:
@@ -84,10 +84,10 @@ PetscErrorCode set_surface_entropy_gradient_update(Ctx *E, Vec rhs)
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_cmb_entropy_gradient_update(Ctx *E, Vec rhs)
+PetscErrorCode set_cmb_temperature_gradient_update(Ctx *E, Vec rhs)
 {
     /* apply core-mantle boundary condition in time-stepper.  This is the
-       update for d/dt(dS/dr) at the cmb */
+       update for d/dt(dT/dr) at the cmb */
 
     PetscErrorCode ierr;
     Mesh const *M = &E->mesh;
@@ -95,7 +95,7 @@ PetscErrorCode set_cmb_entropy_gradient_update(Ctx *E, Vec rhs)
     Solution const *S = &E->solution;
     PetscInt numpts_b, ind_cmb, ind_s_cmb;
     const PetscScalar *arr_xi_b;
-    PetscScalar Ecore, Etot_cmb, area_cmb, fac_cmb, rhs_cmb, dSdt_s_cmb, temp_cmb, cp_cmb;
+    PetscScalar Ecore, Etot_cmb, area_cmb, fac_cmb, rhs_cmb, dTdt_s_cmb;
 
     PetscFunctionBeginUser;
     ierr = DMDAGetInfo(E->da_b, NULL, &numpts_b, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -111,11 +111,7 @@ PetscErrorCode set_cmb_entropy_gradient_update(Ctx *E, Vec rhs)
     CHKERRQ(ierr);
     ierr = VecGetValues(S->Etot, 1, &ind_cmb, &Etot_cmb);
     CHKERRQ(ierr);
-    ierr = VecGetValues(S->dSdt_s, 1, &ind_s_cmb, &dSdt_s_cmb);
-    CHKERRQ(ierr);
-    ierr = VecGetValues(S->temp, 1, &ind_cmb, &temp_cmb);
-    CHKERRQ(ierr);
-    ierr = VecGetValues(S->cp, 1, &ind_cmb, &cp_cmb);
+    ierr = VecGetValues(S->dTdt_s, 1, &ind_s_cmb, &dTdt_s_cmb);
     CHKERRQ(ierr);
 
     /* isothermal */
@@ -130,15 +126,14 @@ PetscErrorCode set_cmb_entropy_gradient_update(Ctx *E, Vec rhs)
         Ecore = P->core_bc_value * area_cmb;
     }
 
-    fac_cmb = cp_cmb / P->cp_core;
-    fac_cmb /= temp_cmb * P->tfac_core_avg;
+    fac_cmb = 1 / (P->cp_core * P->tfac_core_avg);
     /* recall factors of 4 pi are not included in SPIDER (only used for output) */
     fac_cmb /= 1.0 / 3.0 * PetscPowScalar(P->coresize, 3.0) * PetscPowScalar(P->radius, 3.0);
     fac_cmb /= P->rho_core;
 
     rhs_cmb = -Etot_cmb + Ecore;
     rhs_cmb *= fac_cmb;
-    rhs_cmb -= dSdt_s_cmb;
+    rhs_cmb -= dTdt_s_cmb;
     rhs_cmb *= 2.0 / (arr_xi_b[ind_cmb] - arr_xi_b[ind_cmb - 1]);
 
     ierr = VecSetValue(rhs, ind_cmb, rhs_cmb, INSERT_VALUES);
@@ -281,7 +276,7 @@ PetscErrorCode set_surface_temperature_constant(Ctx *E)
 
     PetscFunctionBeginUser;
 
-    ierr = DMDAVecGetArray(E->da_b, S->T, &arr_S_b);
+    ierr = DMDAVecGetArray(E->da_b, S->T, &arr_T_b);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArray(E->da_b, S->dTdxi, &arr_dTdxi_b);
     CHKERRQ(ierr);

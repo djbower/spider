@@ -112,11 +112,11 @@ PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec sol_in, Vec rhs, void *ptr)
   CHKERRQ(ierr);
 
   /* apply surface boundary condition to rhs */
-  ierr = set_surface_entropy_gradient_update(E, rhs_b);
+  ierr = set_surface_temperature_gradient_update(E, rhs_b);
   CHKERRQ(ierr);
 
   /* apply cmb boundary condition to rhs */
-  ierr = set_cmb_entropy_gradient_update(E, rhs_b);
+  ierr = set_cmb_temperature_gradient_update(E, rhs_b);
   CHKERRQ(ierr);
 
   /* must be here since must be after dS/dt computation

@@ -245,6 +245,10 @@ So the time update for the entropy gradient at the CMB, where $E_{cmb}$ conforms
 \begin{equation}
 \frac{\Delta r}{2} \frac{d}{dt} \left( \left. \frac{dS}{dr} \right |_{cmb} \right) = (-E_{cmb}+E_{in}) \left( \frac{c_{cmb}}{c_c} \right) \left( \frac{1}{m_c \hat{T}_{core} T_{cmb}} \right) - \frac{dS_{-1}}{dt}
 \end{equation}
+The equivalent boundary condition for the temperature-only formation is:
+\begin{equation}
+\frac{\Delta r}{2} \frac{d}{dt} \left( \left. \frac{dT}{dr} \right |_{cmb} \right) = (-E_{cmb}+E_{in}) \left(\frac{1}{c_c} \right) \left( \frac{1}{m_c \hat{T}_{core}} \right) - \frac{dT_{-1}}{dt}
+\end{equation}
 Now, $dS_{-1}/dt$ is the change in entropy of the last staggered node, which is given by the ``master'' equation since it depends on fluxes in and out of the volume as well as interior heat sources.  Similarly, $E_{cmb}$ can be computed based on the heat flux at the CMB in the mantle.  Therefore, we can use $E_{in}$ (heat flux from the core) to control the nature of the boundary condition:
 \begin{enumerate}
 \item $E_{in}=0$.  CMB (core) cools entirely according to the flux removed at the base of the mantle by the magma ocean.
