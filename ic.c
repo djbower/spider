@@ -48,7 +48,7 @@ PetscErrorCode set_initial_condition(Ctx *E, Vec sol)
     CHKERRQ(ierr);
 
     /* need some interface quantities for setting atmosphere ic */
-    ierr = set_interior_atmosphere_interface_from_surface_entropy(E);
+    ierr = set_interior_atmosphere_interface_from_surface_temperature(E);
     CHKERRQ(ierr);
 
     /* atmosphere initial condition */

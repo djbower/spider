@@ -179,7 +179,7 @@ static PetscErrorCode set_Jtot(Ctx *E)
        atmospheric flux at the top of the interior.  This is because
        the computed flux at the surface based on interior fluxes will
        be inaccurate, since we have not solved to ensure the surface
-       entropy and gradient are consistent with A->Fatm */
+       temperature and gradient are consistent with A->Fatm */
     if ((!Ap->SURFACE_BC_ACC) && (Ap->SURFACE_BC != 5))
     {
         ierr = set_surface_flux_from_atmosphere(E);
@@ -223,6 +223,7 @@ static PetscErrorCode append_Jconv(Ctx *E)
     PetscFunctionReturn(0);
 }
 
+// TODO: Update to temperature.
 PetscScalar GetConvectiveHeatFlux(Ctx *E, PetscInt *ind_ptr)
 {
     PetscErrorCode ierr;
@@ -239,7 +240,7 @@ PetscScalar GetConvectiveHeatFlux(Ctx *E, PetscInt *ind_ptr)
     ind_abv_cmb = ind_cmb - 1;
 
     /* for surface and cmb, use kappah at the next basic node in to avoid
-       numerical issues.  kappah is a nasty non-linear function of the entropy
+       numerical issues.  kappah is a nasty non-linear function of the temperature
        gradient and other material properties */
 
     /* surface, use kappah at node below */
@@ -310,6 +311,7 @@ static PetscErrorCode append_Jmix(Ctx *E)
     PetscFunctionReturn(0);
 }
 
+// TODO: Update to temperature.
 PetscScalar GetMixingHeatFlux(Ctx *E, PetscInt *ind_ptr)
 {
     PetscErrorCode ierr;
@@ -425,6 +427,7 @@ static PetscErrorCode append_Jcond(Ctx *E)
     PetscFunctionReturn(0);
 }
 
+// TODO: Update to temperature.
 PetscScalar GetConductiveHeatFlux(Ctx *E, PetscInt *ind_ptr)
 {
     PetscErrorCode ierr;
@@ -487,6 +490,7 @@ static PetscErrorCode append_Jgrav(Ctx *E)
     PetscFunctionReturn(0);
 }
 
+// TODO: Update to temperature.
 PetscScalar GetGravitationalHeatFlux(Ctx *E, PetscInt *ind_ptr)
 {
     PetscErrorCode ierr;
@@ -639,11 +643,12 @@ PetscScalar GetGravitationalHeatFlux(Ctx *E, PetscInt *ind_ptr)
     return Jgrav;
 }
 
+// TODO: Update to temperature.
 PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
 {
     /* to formally balance radiation with the interior heat flux at the surface,
-       we must solve a coupled system for the surface entropy gradient and
-       surface entropy */
+       we must solve a coupled system for the surface temperature gradient and
+       surface temperature */
 
     PetscErrorCode ierr;
     SNES snes;
@@ -679,7 +684,7 @@ PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
     ierr = SNESSetFunction(snes, r, objective_function_surface_radiation_balance, E);
     CHKERRQ(ierr);
 
-    /* initial guess of surface entropy gradient */
+    /* initial guess of surface temperature gradient */
     ierr = DMDAVecGetArrayRead(da_b, S->dSdxi, &arr_dSdxi_b);
     CHKERRQ(ierr);
     ierr = VecGetArray(x, &xx);
@@ -739,7 +744,7 @@ PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
     ierr = DMDAVecGetArrayRead(da_b, M->xi_b, &arr_xi_b);
     CHKERRQ(ierr);
 
-    /* set entropy gradient at surface */
+    /* set temperature gradient at surface */
     ierr = VecGetArray(x, &xx);
     CHKERRQ(ierr);
     arr_dSdxi_b[0] = xx[0];
@@ -768,6 +773,7 @@ PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
     PetscFunctionReturn(0);
 }
 
+// TODO: Update to temperature.
 static PetscErrorCode objective_function_surface_radiation_balance(SNES snes, Vec x, Vec f, void *ptr)
 {
     PetscErrorCode ierr;
@@ -796,8 +802,8 @@ static PetscErrorCode objective_function_surface_radiation_balance(SNES snes, Ve
     ierr = VecGetArray(f, &ff);
     CHKERRQ(ierr);
 
-    /* conform entropy Vecs in struct to our current guess of the
-       entropy gradient at the surface */
+    /* conform temperature Vecs in struct to our current guess of the
+       temperature gradient at the surface */
     dSdxi0 = xx[ind0];
     ierr = VecSetValue(S->dSdxi, ind0, dSdxi0, INSERT_VALUES);
     CHKERRQ(ierr);
@@ -832,6 +838,7 @@ static PetscErrorCode objective_function_surface_radiation_balance(SNES snes, Ve
     PetscFunctionReturn(0);
 }
 
+// TODO: Update to temperature.
 PetscErrorCode solve_for_steady_state_energy_interior(Ctx *E, PetscReal t)
 {
     /* solve for dS/dxi in the interior to adhere to a constant flow of energy,
@@ -932,6 +939,7 @@ PetscErrorCode solve_for_steady_state_energy_interior(Ctx *E, PetscReal t)
     PetscFunctionReturn(0);
 }
 
+// TODO: Update to temperature.
 static PetscErrorCode objective_function_steady_state_energy_interior(SNES snes, Vec x, Vec f, void *ptr)
 {
     PetscErrorCode ierr;
@@ -1022,7 +1030,7 @@ static PetscErrorCode objective_function_steady_state_energy_interior(SNES snes,
 
 static PetscErrorCode set_current_state(Ctx *E, PetscReal t)
 {
-    /* for a given entropy profile (all basic and staggered nodes),
+    /* for a given temperature profile (all basic and staggered nodes),
        set the current state of the system for the interior and
        atmosphere */
 
@@ -1045,7 +1053,7 @@ static PetscErrorCode set_current_state(Ctx *E, PetscReal t)
     CHKERRQ(ierr);
 
     /* update surface temperature, fO2 */
-    ierr = set_interior_atmosphere_interface_from_surface_entropy(E);
+    ierr = set_interior_atmosphere_interface_from_surface_temperature(E);
     CHKERRQ(ierr);
 
     /* update all volatile reservoirs */
@@ -1067,7 +1075,7 @@ static PetscErrorCode set_current_state(Ctx *E, PetscReal t)
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode set_interior_atmosphere_interface_from_surface_entropy(Ctx *E)
+PetscErrorCode set_interior_atmosphere_interface_from_surface_temperature(Ctx *E)
 {
     PetscErrorCode ierr;
     Parameters const P = E->parameters;
@@ -1076,8 +1084,7 @@ PetscErrorCode set_interior_atmosphere_interface_from_surface_entropy(Ctx *E)
     ScalingConstants const SC = P->scaling_constants;
     Atmosphere *A = &E->atmosphere;
     Solution const *S = &E->solution;
-    PetscScalar T0, Sb0, Pres0;
-    EOSEvalData eos_eval;
+    PetscScalar T0;
     PetscInt const ind0 = 0;
 
     PetscFunctionBeginUser;
@@ -1090,10 +1097,7 @@ PetscErrorCode set_interior_atmosphere_interface_from_surface_entropy(Ctx *E)
     ierr = set_Msol(E);
     CHKERRQ(ierr);
 
-    ierr = VecGetValues(S->S, 1, &ind0, &Sb0);
-    ierr = VecGetValues(M->pressure_b, 1, &ind0, &Pres0);
-    ierr = EOSEval(P->eos, Pres0, Sb0, &eos_eval);
-    T0 = eos_eval.T;
+    ierr = VecGetValues(S->temp, 1, &ind0, &T0);
 
     /* correct for ultra-thin thermal boundary layer at the surface */
     if (Ap->PARAM_UTBL)
@@ -1129,7 +1133,7 @@ PetscErrorCode set_current_state_from_solution(Ctx *E, PetscReal t, Vec sol_in)
     PetscFunctionBeginUser;
 
     /* set solution in the relevant structs */
-    /* entropy */
+    /* temperature */
     ierr = set_temperature_from_solution(E, sol_in);
     CHKERRQ(ierr);
     /* atmosphere */
@@ -1137,12 +1141,12 @@ PetscErrorCode set_current_state_from_solution(Ctx *E, PetscReal t, Vec sol_in)
     CHKERRQ(ierr);
 
     /* We can enforce an isothermal surface easily within the time-stepper
-       For the simple bc, we keep with the estimate of surface entropy
-       from the reconstruction based on the surface entropy gradient */
+       For the simple bc, we keep with the estimate of surface temperature
+       from the reconstruction based on the surface temperature gradient */
 
     /* for more accurate surface bc, must balance the atmospheric flux
        A->Fatm with the interior flux at the surface.  This sets the
-       entropy and entropy gradient at the surface to balance the fluxes */
+       temperature and temperature gradient at the surface to balance the fluxes */
     if ((Ap->SURFACE_BC_ACC) && (Ap->SURFACE_BC != 5))
     {
         ierr = solve_for_surface_radiation_balance(E, t);

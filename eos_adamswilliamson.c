@@ -11,15 +11,15 @@ static PetscErrorCode EOSAdamsWilliamson_GetMassCoordinateAverageRho(const data_
 static PetscErrorCode EOSAdamsWilliamson_GetMassElement(const data_EOSAdamsWilliamson *, PetscScalar, PetscScalar *);
 
 /* EOS interface functions */
-static PetscErrorCode EOSEval_AdamsWilliamson(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
+static PetscErrorCode EOSEval_AdamsWilliamson(EOS eos, PetscScalar P, PetscScalar T, EOSEvalData *eval)
 {
   PetscErrorCode ierr;
   data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson *)eos->impl_data;
-  (void)S; // unused
+  (void)T; // unused
 
   PetscFunctionBegin;
   eval->P = P;
-  ierr = EOSAdamsWilliamson_GetRho(adams, P, S, &eval->rho);
+  ierr = EOSAdamsWilliamson_GetRho(adams, P, T, &eval->rho);
   CHKERRQ(ierr);
   eval->phase_fraction = 1.0; // by definition, since only one phase
   PetscFunctionReturn(0);
@@ -41,10 +41,9 @@ PetscErrorCode EOSSetUpFromOptions_AdamsWilliamson(EOS eos, const char *prefix, 
   PetscErrorCode ierr;
   char buf[PETSC_MAX_PATH_LEN]; /* max size */
   data_EOSAdamsWilliamson *data = (data_EOSAdamsWilliamson *)eos->impl_data;
-
-  PetscFunctionBegin;
   (void)FC; // unused
 
+  PetscFunctionBegin;
   /* radius of planet (m) */
   ierr = PetscOptionsGetPositiveScalar("-radius", &data->radius, 6371000.0, NULL);
   CHKERRQ(ierr); // m
@@ -96,12 +95,13 @@ PetscErrorCode EOSCreate_AdamsWilliamson(EOS eos)
   eos->eval = EOSEval_AdamsWilliamson;
   eos->destroy = EOSDestroy_AdamsWilliamson;
   eos->setupfromoptions = EOSSetUpFromOptions_AdamsWilliamson;
+
   PetscFunctionReturn(0);
 }
 
 /* Helper functions */
 
-static PetscErrorCode EOSAdamsWilliamson_GetRho(const data_EOSAdamsWilliamson *adams, PetscScalar P, PetscScalar S, PetscScalar *rho_ptr)
+static PetscErrorCode EOSAdamsWilliamson_GetRho(const data_EOSAdamsWilliamson *adams, PetscScalar P, PetscScalar T, PetscScalar *rho_ptr)
 {
   /* Adams-Williamson density is a simple function of depth (radius)
      Sketch derivation:
@@ -119,13 +119,11 @@ static PetscErrorCode EOSAdamsWilliamson_GetRho(const data_EOSAdamsWilliamson *a
    EOSs can be envisaged */
 
   PetscScalar rho;
+  (void)T;
 
   PetscFunctionBeginUser;
-  (void)S;
-
   /* using pressure, expression is simpler than sketch derivation above */
   rho = adams->density_surface - P * adams->beta / adams->gravity;
-
   *rho_ptr = rho;
 
   PetscFunctionReturn(0);
@@ -173,7 +171,7 @@ PetscErrorCode EOSAdamsWilliamsonGetPressureGradientFromRadius(const EOS eos, Pe
 {
   PetscErrorCode ierr;
   PetscBool is_adams;
-  PetscScalar P, dPdr, S = 0.0;
+  PetscScalar P, dPdr, T = 0.0; // T unused
 
   data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson *)eos->impl_data;
 
@@ -186,7 +184,7 @@ PetscErrorCode EOSAdamsWilliamsonGetPressureGradientFromRadius(const EOS eos, Pe
 
   ierr = EOSAdamsWilliamson_GetPressureFromRadius(adams, R, &P);
   CHKERRQ(ierr);
-  ierr = EOSAdamsWilliamson_GetRho(adams, P, S, &dPdr);
+  ierr = EOSAdamsWilliamson_GetRho(adams, P, T, &dPdr);
   CHKERRQ(ierr);
   CHKERRQ(ierr);
   dPdr *= adams->gravity;
@@ -203,14 +201,14 @@ static PetscErrorCode EOSAdamsWilliamson_GetMassWithinRadius(const data_EOSAdams
   PetscErrorCode ierr;
   PetscScalar mass, P, rho; /* note mass without 4*pi scaling, as convention in SPIDER */
   PetscScalar const beta = adams->beta;
-  PetscScalar S = 0.0; // S not used in this function;
+  PetscScalar T = 0.0; // unused
 
   PetscFunctionBeginUser;
 
   mass = -2.0 / PetscPowScalar(beta, 3) - PetscPowScalar(R, 2) / beta - 2 * R / PetscPowScalar(beta, 2);
   ierr = EOSAdamsWilliamson_GetPressureFromRadius(adams, R, &P);
   CHKERRQ(ierr);
-  ierr = EOSAdamsWilliamson_GetRho(adams, P, S, &rho);
+  ierr = EOSAdamsWilliamson_GetRho(adams, P, T, &rho);
   CHKERRQ(ierr);
   mass *= rho;
 
@@ -259,13 +257,13 @@ PetscErrorCode EOSAdamsWilliamsonGetMassWithinShell(const EOS eos, PetscScalar R
 static PetscErrorCode EOSAdamsWilliamson_GetMassElement(const data_EOSAdamsWilliamson *adams, PetscScalar R, PetscScalar *mass_ptr)
 {
   PetscErrorCode ierr;
-  PetscScalar mass, P, S = 0.0; // S unused
+  PetscScalar mass, P, T = 0.0; // T unused
 
   PetscFunctionBeginUser;
 
   ierr = EOSAdamsWilliamson_GetPressureFromRadius(adams, R, &P);
   CHKERRQ(ierr);
-  ierr = EOSAdamsWilliamson_GetRho(adams, P, S, &mass);
+  ierr = EOSAdamsWilliamson_GetRho(adams, P, T, &mass);
   CHKERRQ(ierr);
   mass *= PetscPowScalar(R, 2.0);
 
@@ -434,7 +432,7 @@ PetscErrorCode EOSAdamsWilliamsonMassCoordinateSpatialDerivative(const EOS eos, 
 {
   PetscErrorCode ierr;
   PetscBool is_composite;
-  PetscScalar dxidr, P, S = 0.0; // S unused
+  PetscScalar dxidr, P, T = 0.0; // T unused
 
   data_EOSAdamsWilliamson *adams = (data_EOSAdamsWilliamson *)eos->impl_data;
 
@@ -447,7 +445,7 @@ PetscErrorCode EOSAdamsWilliamsonMassCoordinateSpatialDerivative(const EOS eos, 
 
   ierr = EOSAdamsWilliamson_GetPressureFromRadius(adams, R, &P);
   CHKERRQ(ierr);
-  ierr = EOSAdamsWilliamson_GetRho(adams, P, S, &dxidr);
+  ierr = EOSAdamsWilliamson_GetRho(adams, P, T, &dxidr);
   CHKERRQ(ierr);
   dxidr /= adams->density_average;
   dxidr *= (R / xi) * (R / xi);
