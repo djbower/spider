@@ -81,7 +81,6 @@ PetscErrorCode PostStep(TS ts)
     }
   }
 
-  /* now test tsurf */
   /* next is just a switch to decide whether to test tsurf or not */
   if (Ap->tsurf_poststep_change > 0)
   {

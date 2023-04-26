@@ -3,6 +3,6 @@
 
 #include "ctx.h"
 
-PetscErrorCode RHSFunction(TS ts,PetscReal t,Vec S_in,Vec rhs_s,void *ptr);
+PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec S_in, Vec rhs_s, void *ptr);
 
 #endif

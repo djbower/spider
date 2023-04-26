@@ -17,7 +17,6 @@ static PetscErrorCode VolatileParametersCreate(VolatileParameters *);
 static PetscErrorCode RadionuclideParametersCreate(RadionuclideParameters *);
 static PetscErrorCode AtmosphereParametersSetFromOptions(Parameters, const ScalingConstants, const FundamentalConstants);
 
-// FIXME: REMOVE, below did read in ENTROPY.
 static PetscErrorCode ScalingConstantsSet(ScalingConstants SC, PetscReal TEMPERATURE, PetscReal RADIUS, PetscReal TIME, PetscReal PRESSURE, PetscReal VOLATILE)
 {
   /* constants used to scale the physical problem are largely chosen based on numerical considerations.
@@ -33,7 +32,6 @@ static PetscErrorCode ScalingConstantsSet(ScalingConstants SC, PetscReal TEMPERA
   /* the first four are used to non-dimensionalise the problem, but
      should be chosen to scale solution quantities and their time
      derivatives to around unit */
-  // FIXME: REMOVE SC->ENTROPY = ENTROPY; // (specific) J/kg/K
   SC->TEMP = TEMPERATURE; // K
   SC->RADIUS = RADIUS;    // m
   SC->TIME = TIME;        // s
@@ -46,10 +44,9 @@ static PetscErrorCode ScalingConstantsSet(ScalingConstants SC, PetscReal TEMPERA
   SC->VOLATILE = VOLATILE;
   /* below are derived from above */
   /* note: factors of 4 pi are excluded */
-  SC->AREA = PetscSqr(SC->RADIUS);    // m^2
-  SC->VOLUME = SC->AREA * SC->RADIUS; // m^3
-  SC->ENTROPY = PetscSqr(SC->RADIUS / SC->TIME) / SC->TEMP;
-  // FIXME: REMOVE SC->TEMP      = PetscSqr( SC->RADIUS / SC->TIME ) / SC->ENTROPY;
+  SC->AREA = PetscSqr(SC->RADIUS);                          // m^2
+  SC->VOLUME = SC->AREA * SC->RADIUS;                       // m^3
+  SC->ENTROPY = PetscSqr(SC->RADIUS / SC->TIME) / SC->TEMP; // J/kg/K
   SQRTST = PetscSqrtScalar(SC->ENTROPY * SC->TEMP);
   SC->MASS = SC->PRESSURE * SC->VOLUME / (SC->ENTROPY * SC->TEMP); // kg
   SC->DENSITY = SC->PRESSURE / (SC->ENTROPY * SC->TEMP);           // kg/m^3
@@ -82,7 +79,6 @@ static PetscErrorCode ScalingConstantsSetFromOptions(ScalingConstants SC)
 
   PetscFunctionBeginUser;
 
-  // FIXME: REMOVE ierr = PetscOptionsGetPositiveScalar("-entropy0", &ENTROPY0, 1.0E3, NULL);
   ierr = PetscOptionsGetPositiveScalar("-temperature0", &TEMPERATURE0, 1.0E3, NULL);
   CHKERRQ(ierr); // K
   ierr = PetscOptionsGetPositiveScalar("-radius0", &RADIUS0, 1.0E6, NULL);
@@ -94,7 +90,7 @@ static PetscErrorCode ScalingConstantsSetFromOptions(ScalingConstants SC)
   /* volatile0 can be set a priori, since it scales the abundance by mass of a volatile
      to its scaled partial pressure.  Since most Henry coefficients are around 1E-6 to 1E-1
      this value can usually be assumed to be around 1.0E-10 when acccounting for the conversion
-     from mass fraction to ppmw (which introduces an extra factor of 1E6) */
+     from mass fraction to ppmw which introduces an extra factor of 1E6. */
   ierr = PetscOptionsGetPositiveScalar("-volatile0", &VOLATILE0, 1.0E-10, NULL);
   CHKERRQ(ierr);
   ierr = ScalingConstantsSet(SC, TEMPERATURE0, RADIUS0, TIME0, PRESSURE0, VOLATILE0);
@@ -502,41 +498,6 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     P->ic_core_temperature /= SC->TEMP;
   }
 
-  // FIXME: REMOVE below were all entropy.
-  // /* initial entropy at top of adiabat (J/kg/K) */
-  // P->ic_adiabat_entropy = 3052.885602072091;
-  // ierr = PetscOptionsGetScalar(NULL, NULL, "-ic_adiabat_entropy", &P->ic_adiabat_entropy, NULL);
-  // CHKERRQ(ierr);
-  // P->ic_adiabat_entropy /= SC->ENTROPY;
-
-  // /* initial entropy gradient (J/kg/K/m) */
-  // P->ic_dsdr = -4.6978890285209187e-07;
-  // ierr = PetscOptionsGetScalar(NULL, NULL, "-ic_dsdr", &P->ic_dsdr, NULL);
-  // CHKERRQ(ierr);
-  // P->ic_dsdr /= SC->DSDR;
-
-  // P->ic_steady_state_energy = PETSC_FALSE;
-  // ierr = PetscOptionsGetBool(NULL, NULL, "-ic_steady_state_energy", &P->ic_steady_state_energy, NULL);
-  // CHKERRQ(ierr);
-
-  // /* initial entropy at the surface */
-  // P->ic_surface_entropy = -1;
-  // ierr = PetscOptionsGetScalar(NULL, NULL, "-ic_surface_entropy", &P->ic_surface_entropy, NULL);
-  // CHKERRQ(ierr);
-  // if (P->ic_surface_entropy > 0.0)
-  // {
-  //   P->ic_surface_entropy /= SC->ENTROPY;
-  // }
-
-  // /* initial entropy at the core-mantle boundary */
-  // P->ic_core_entropy = -1;
-  // ierr = PetscOptionsGetScalar(NULL, NULL, "-ic_core_entropy", &P->ic_core_entropy, NULL);
-  // CHKERRQ(ierr);
-  // if (P->ic_core_entropy > 0.0)
-  // {
-  //   P->ic_core_entropy /= SC->ENTROPY;
-  // }
-
   /* eos for determining mapping between radius and mass coordinate */
   ierr = EOSCreate(&P->eos_mesh, SPIDER_EOS_ADAMSWILLIAMSON);
   CHKERRQ(ierr);
@@ -552,7 +513,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   /* only allow energy transport upwards due to melt/solid separation if the cell below
      the cell interface contains melt/solid.  Otherwise, you can (unphysically) cool
      a cell due to melt migration even though it contains no melt.  For middle-out or
-     more general scenarios, this requires more thought */
+     more general scenarios, this requires more thought. */
   P->JGRAV_BOTTOM_UP = PETSC_TRUE;
   ierr = PetscOptionsGetBool(NULL, NULL, "-JGRAV_BOTTOM_UP", &P->JGRAV_BOTTOM_UP, NULL);
   CHKERRQ(ierr);

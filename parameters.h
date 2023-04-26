@@ -79,7 +79,7 @@ typedef struct
 } data_ReactionParameters;
 typedef data_ReactionParameters *ReactionParameters;
 
-/* We hard-code the maximum number of reactions. If needbe, the array of
+/* We hard-code the maximum number of reactions. If need be, the array of
    ReactionParameters could be dynamically allocated and freed.*/
 #define SPIDER_MAX_REACTIONS 8
 
@@ -205,7 +205,7 @@ typedef struct
   PetscBool CONDUCTION;
   PetscBool CONVECTION;
   PetscBool MIXING;
-  /* now an int to explore different separation schemes */
+  /* int to explore different separation schemes */
   PetscInt SEPARATION;
   PetscBool HTIDAL;
   PetscInt mixing_length;

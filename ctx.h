@@ -35,10 +35,10 @@ typedef struct Solution_
   DimensionalisableField solutionFields_s[NUMSOLUTIONVECS_S];
 
   // eventually get rid of these?
-  Vec alpha, cond, cp, dSdxi, dTdxis, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, regime, rho, S, temp, visc;
+  Vec alpha, cond, cp, dTdxi, dTdxis, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, regime, rho, S, temp, visc;
 
   // eventually get rid of these?
-  Vec cp_s, dSdt_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, phi_s, rho_s, S_s, temp_s;
+  Vec cp_s, dTdt_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, phi_s, rho_s, T_s, temp_s;
 
 } Solution;
 

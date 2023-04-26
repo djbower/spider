@@ -1,4 +1,5 @@
 /* extra prototype code previously written but not current used */
+/* this was written for the entropy version of the code */
 
 static PetscErrorCode SetInitialCMBdSdxiFromFlux(Ctx *E)
 {
