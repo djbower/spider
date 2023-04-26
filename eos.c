@@ -53,7 +53,7 @@ PetscErrorCode EOSCreate(EOS *p_eos, EOSType type)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode EOSEval(const EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
+PetscErrorCode EOSEval(const EOS eos, PetscScalar P, PetscScalar T, EOSEvalData *eval)
 {
   PetscErrorCode ierr;
 
@@ -64,7 +64,7 @@ PetscErrorCode EOSEval(const EOS eos, PetscScalar P, PetscScalar S, EOSEvalData 
   /* Implementation-specific logic */
   if (!eos->eval)
     SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONGSTATE, "Incomplete EOS object: no implementation for EOSEval has been provided");
-  ierr = (*(eos->eval))(eos, P, S, eval);
+  ierr = (*(eos->eval))(eos, P, T, eval);
   CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
@@ -183,7 +183,7 @@ PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix, const Fundamenta
   CHKERRQ(ierr);
   if (eos->PHASE_BOUNDARY)
   {
-    ierr = Interp1dCreateAndSet(eos->phase_boundary_filename, &eos->phase_boundary, SC->PRESSURE, SC->ENTROPY);
+    ierr = Interp1dCreateAndSet(eos->phase_boundary_filename, &eos->phase_boundary, SC->PRESSURE, SC->TEMP);
     CHKERRQ(ierr);
   }
 
@@ -196,7 +196,7 @@ PetscErrorCode EOSSetUpFromOptions(EOS eos, const char *prefix, const Fundamenta
 PetscErrorCode EOSGetPhaseBoundary(EOS eos, PetscScalar P, PetscScalar *boundary, PetscScalar *dboundary)
 {
   PetscFunctionBeginUser;
-  SetInterp1dValue(eos->phase_boundary, P, boundary, dboundary); /* entropy S and derivative dS/dP */
+  SetInterp1dValue(eos->phase_boundary, P, boundary, dboundary); /* temperature T and derivative dT/dP */
   PetscFunctionReturn(0);
 }
 

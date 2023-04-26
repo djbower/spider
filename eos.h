@@ -4,7 +4,7 @@
 #include "constants.h"
 #include "interp.h"
 
-/* A (temporary) struct that is used to hold  EOS properties at a given V,T or P, S.  */
+/* A temporary struct that is used to hold EOS properties at a given V,T or P, S.  */
 typedef struct EOSEvalData_
 {
   PetscScalar P;     /* pressure */

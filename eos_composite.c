@@ -7,14 +7,14 @@ static PetscErrorCode EOSCompositeGetTwoPhaseLiquidus(EOS, PetscScalar, PetscSca
 static PetscErrorCode EOSCompositeGetTwoPhaseSolidus(EOS, PetscScalar, PetscScalar *);
 
 /* EOS Interface functions */
-static PetscErrorCode EOSEval_Composite(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
+static PetscErrorCode EOSEval_Composite(EOS eos, PetscScalar P, PetscScalar T, EOSEvalData *eval)
 {
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
 
   /* currently only simple two phase implemented */
-  ierr = EOSEval_Composite_TwoPhase(eos, P, S, eval);
+  ierr = EOSEval_Composite_TwoPhase(eos, P, T, eval);
   CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
@@ -104,7 +104,7 @@ PetscErrorCode EOSCompositeGetMatpropSmoothWidth(EOS eos, PetscScalar *matprop_s
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode EOSCompositeGetTwoPhasePhaseFractionNoTruncation(EOS eos, PetscScalar P, PetscScalar S, PetscScalar *phase_fraction)
+PetscErrorCode EOSCompositeGetTwoPhasePhaseFractionNoTruncation(EOS eos, PetscScalar P, PetscScalar T, PetscScalar *phase_fraction)
 {
   PetscErrorCode ierr;
   PetscScalar solidus, liquidus;
@@ -124,7 +124,8 @@ PetscErrorCode EOSCompositeGetTwoPhasePhaseFractionNoTruncation(EOS eos, PetscSc
   CHKERRQ(ierr);
   ierr = EOSCompositeGetTwoPhaseLiquidus(eos, P, &liquidus);
   CHKERRQ(ierr);
-  *phase_fraction = (S - solidus) / (liquidus - solidus);
+  /* E.g., Abe (1993) */
+  *phase_fraction = (T - solidus) / (liquidus - solidus);
   PetscFunctionReturn(0);
 }
 
@@ -182,7 +183,7 @@ static PetscErrorCode EOSCompositeGetTwoPhaseLiquidus(EOS eos, PetscScalar P, Pe
 
   PetscFunctionBeginUser;
   ierr = EOSGetPhaseBoundary(composite->eos[composite->liquidus_slot], P, liquidus, NULL);
-  CHKERRQ(ierr); /* liquidus entropy */
+  CHKERRQ(ierr); /* liquidus temperature */
   PetscFunctionReturn(0);
 }
 
@@ -193,11 +194,11 @@ static PetscErrorCode EOSCompositeGetTwoPhaseSolidus(EOS eos, PetscScalar P, Pet
 
   PetscFunctionBeginUser;
   ierr = EOSGetPhaseBoundary(composite->eos[composite->solidus_slot], P, solidus, NULL);
-  CHKERRQ(ierr); /* solidus entropy */
+  CHKERRQ(ierr); /* solidus temperature */
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
+static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscScalar T, EOSEvalData *eval)
 {
   PetscErrorCode ierr;
   data_EOSComposite *composite = (data_EOSComposite *)eos->impl_data;
@@ -207,14 +208,14 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
 
   /* this function is called alot, if we have two phases.  Is it therefore better to store all
      the EOSEvalData in Ctx?  Or isn't this really a speed issue? (prob not in comparison to the
-     re-evaluation of functions as described below */
+     re-evaluation of functions as described below) */
 
   PetscFunctionBeginUser;
 
   eval->P = P;
-  eval->S = S;
+  eval->T = T;
 
-  /* these are strictly only valid for the mixed phase region, and not for general P and S
+  /* these are strictly only valid for the mixed phase region, and not for general P and T
      conditions */
   /* unsure what the best approach is here.  The following functions are highly modular,
      but I think it slows the code down a lot since many of the functions repeat the same lookups
@@ -226,7 +227,7 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   ierr = EOSCompositeGetTwoPhaseSolidus(eos, P, &solidus);
   CHKERRQ(ierr);
   eval->fusion = liquidus - solidus;
-  gphi = (S - solidus) / eval->fusion;
+  gphi = (T - solidus) / eval->fusion;
   eval->phase_fraction = gphi;
 
   /* truncation */
@@ -245,14 +246,14 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   ierr = EOSEval(composite->eos[composite->solidus_slot], P, solidus, &eval_solid);
   CHKERRQ(ierr);
 
-  /* linear temperature between liquidus and solidus */
-  eval->T = eval->phase_fraction * eval_melt.T;
-  eval->T += (1 - eval->phase_fraction) * eval_solid.T;
-
   /* Cp */
-  eval->Cp = eval_melt.S - eval_solid.S;
-  eval->Cp /= eval_melt.T - eval_solid.T;
-  eval->Cp *= eval_solid.T + 0.5 * (eval_melt.T - eval_solid.T);
+  /* FIXME: Need to update to Solomatov (2007), Eq. 3.4.  Need to introduce specific enthalpy as
+  a parameter. */
+  // eval->Cp = eval_melt.S - eval_solid.S;
+  // eval->Cp /= eval_melt.T - eval_solid.T;
+  // eval->Cp *= eval_solid.T + 0.5 * (eval_melt.T - eval_solid.T);
+  // FIXME: Add specific enthalpy in numerator.
+  eval->Cp = 1.0 / (eval_melt.T - eval_solid.T);
 
   /* Rho */
   eval->rho = eval->phase_fraction * (1.0 / eval_melt.rho) + (1 - eval->phase_fraction) * (1.0 / eval_solid.rho);
@@ -265,9 +266,11 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   /* Alpha */
   /* positive for MgSiO3 since solid rho > melt rho.  But may need to adjust for compositional
      effects */
+  /* Solomatov (2007), Treatise on Geophysics, Eq. 3.3 */
   eval->alpha = (eval_solid.rho - eval_melt.rho) / (eval_melt.T - eval_solid.T) / eval->rho;
 
   /* dTdPs */
+  /* Solomatov (2007), Treatise on Geophysics, Eq. 3.2 */
   eval->dTdPs = eval->alpha * eval->T / (eval->rho * eval->Cp);
 
   /* Conductivity */
@@ -293,13 +296,13 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   if (gphi > 0.5)
   {
     /* melt only properties */
-    ierr = EOSEval(composite->eos[composite->melt_slot], P, S, &eval2);
+    ierr = EOSEval(composite->eos[composite->melt_slot], P, T, &eval2);
     CHKERRQ(ierr);
   }
   else
   {
     /* solid only properties */
-    ierr = EOSEval(composite->eos[composite->solid_slot], P, S, &eval2);
+    ierr = EOSEval(composite->eos[composite->solid_slot], P, T, &eval2);
     CHKERRQ(ierr);
   }
 

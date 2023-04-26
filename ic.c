@@ -12,7 +12,7 @@
 /* interior ic */
 static PetscErrorCode set_ic_interior(Ctx *, Vec);
 static PetscErrorCode set_ic_interior_default(Ctx *, Vec);
-static PetscErrorCode set_ic_interior_entropy(Ctx *, Vec);
+static PetscErrorCode set_ic_interior_temperature(Ctx *, Vec);
 static PetscErrorCode set_ic_interior_from_file(Ctx *, Vec);
 static PetscErrorCode set_ic_interior_from_phase_boundary(Ctx *, Vec);
 static PetscErrorCode set_start_time_from_file(Parameters, const char *);
@@ -123,15 +123,15 @@ static PetscErrorCode set_ic_interior(Ctx *E, Vec sol)
     ierr = set_temperature_from_solution(E, sol);
     CHKERRQ(ierr);
 
-    /* option to set initial core-mantle boundary entropy */
-    if (P->ic_core_entropy > 0.0)
+    /* option to set initial core-mantle boundary temperature */
+    if (P->ic_core_temperature > 0.0)
     {
         ierr = set_cmb_temperature_constant(E);
         CHKERRQ(ierr);
     }
 
-    /* option to set initial surface entropy */
-    if (P->ic_surface_entropy > 0.0)
+    /* option to set initial surface temperature */
+    if (P->ic_surface_temperature > 0.0)
     {
         ierr = set_surface_temperature_constant(E);
         CHKERRQ(ierr);
@@ -152,7 +152,7 @@ static PetscErrorCode set_ic_interior_default(Ctx *E, Vec sol)
 
     PetscFunctionBeginUser;
 
-    ierr = set_ic_interior_entropy(E, sol);
+    ierr = set_ic_interior_temperature(E, sol);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -162,7 +162,7 @@ static PetscErrorCode set_ic_interior_from_file(Ctx *E, Vec sol)
 {
     PetscErrorCode ierr;
     Parameters const P = E->parameters;
-    /* subdomains to use, i.e. dS/dxi and S0 */
+    /* subdomains to use, i.e. dT/dxi and T0 */
     PetscInt const arr[2] = {0, 1};
 
     PetscFunctionBeginUser;
@@ -198,16 +198,16 @@ static PetscErrorCode set_ic_atmosphere_from_file(Ctx *E, Vec sol)
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode set_ic_interior_entropy(Ctx *E, Vec sol)
+static PetscErrorCode set_ic_interior_temperature(Ctx *E, Vec sol)
 {
-    /* set initial entropy gradient to constant for all basic nodes */
+    /* set initial temperature gradient to constant for all basic nodes */
 
     PetscErrorCode ierr;
     PetscInt i;
-    PetscScalar S0;
+    PetscScalar T0;
     Parameters const P = E->parameters;
     Mesh const *M = &E->mesh;
-    Vec dSdxi_b;
+    Vec dTdxi_b;
     Vec *subVecs;
 
     PetscFunctionBeginUser;
@@ -217,22 +217,22 @@ static PetscErrorCode set_ic_interior_entropy(Ctx *E, Vec sol)
     ierr = DMCompositeGetAccessArray(E->dm_sol, sol, E->numFields, NULL, subVecs);
     CHKERRQ(ierr);
 
-    dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DTDXI_B]];
+    dTdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DTDXI_B]];
 
-    /* set entropy gradient and map to mass coordinates */
-    ierr = VecSet(dSdxi_b, P->ic_dsdr);
+    /* set temperature gradient and map to mass coordinates */
+    ierr = VecSet(dTdxi_b, P->ic_dTdr);
     CHKERRQ(ierr);
-    ierr = VecPointwiseDivide(dSdxi_b, dSdxi_b, M->dxidr_b);
+    ierr = VecPointwiseDivide(dTdxi_b, dTdxi_b, M->dxidr_b);
 
     /* code to test surface bc (not required other than for debugging) */
     // PetscInt const ind0=0,ind1=1;
     // PetscScalar val1;
-    // ierr = VecGetValues(dSdxi_b,1,&ind1,&val1);CHKERRQ(ierr);
-    // ierr = VecSetValue(dSdxi_b,ind0,val1,INSERT_VALUES);CHKERRQ(ierr);
+    // ierr = VecGetValues(dTdxi_b,1,&ind1,&val1);CHKERRQ(ierr);
+    // ierr = VecSetValue(dTdxi_b,ind0,val1,INSERT_VALUES);CHKERRQ(ierr);
 
-    /* set entropy at top of adiabat */
-    S0 = P->ic_adiabat_entropy;
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]], 0, S0, INSERT_VALUES);
+    /* set temperature at top of adiabat */
+    T0 = P->ic_adiabat_temperature;
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]], 0, T0, INSERT_VALUES);
     CHKERRQ(ierr);
 
     for (i = 0; i < E->numFields; ++i)
@@ -336,8 +336,7 @@ PetscErrorCode read_JSON_file_to_JSON_object(const char *filename, cJSON **json)
 
 static PetscErrorCode set_ic_from_file(Ctx *E, Vec sol, const char *filename, const PetscInt *arr, PetscInt size_arr)
 {
-    /* reads an initial condition from a previously output JSON file
-       to enable restarting */
+    /* reads an initial condition from a previously output JSON file to enable restarting */
 
     PetscErrorCode ierr;
     cJSON *json = NULL, *solution, *subdomain, *values, *data, *item;
@@ -435,18 +434,18 @@ static PetscErrorCode set_ic_from_file(Ctx *E, Vec sol, const char *filename, co
 static PetscErrorCode set_ic_interior_from_phase_boundary(Ctx *E, Vec sol)
 {
 
-    /* entropy tracks a phase boundary (usually the solidus) below a cutoff value, and is
+    /* temperature tracks a phase boundary (usually the solidus) below a cutoff value, and is
        equal to the cutoff value above */
 
     PetscErrorCode ierr;
     Parameters const P = E->parameters;
     Mesh const *M = &E->mesh;
-    PetscScalar S0, S1, S2;
+    PetscScalar T0, T1, T2;
     const PetscScalar *arr_pres_s;
-    PetscScalar *arr_dSdxi_b, *arr_xi_s;
+    PetscScalar *arr_dTdxi_b, *arr_xi_s;
     PetscInt i, ihi_b, ilo_b, w_b;
     DM da_s = E->da_s, da_b = E->da_b;
-    Vec dSdxi_b, *subVecs;
+    Vec dTdxi_b, *subVecs;
 
     PetscFunctionBeginUser;
 
@@ -454,14 +453,14 @@ static PetscErrorCode set_ic_interior_from_phase_boundary(Ctx *E, Vec sol)
     CHKERRQ(ierr);
     ierr = DMCompositeGetAccessArray(E->dm_sol, sol, E->numFields, NULL, subVecs);
     CHKERRQ(ierr);
-    dSdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DTDXI_B]];
+    dTdxi_b = subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DTDXI_B]];
 
     /* for looping over basic nodes */
     ierr = DMDAGetCorners(da_b, &ilo_b, 0, 0, &w_b, 0, 0);
     CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
 
-    ierr = DMDAVecGetArray(da_b, dSdxi_b, &arr_dSdxi_b);
+    ierr = DMDAVecGetArray(da_b, dTdxi_b, &arr_dTdxi_b);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s, M->xi_s, &arr_xi_s);
     CHKERRQ(ierr);
@@ -469,33 +468,33 @@ static PetscErrorCode set_ic_interior_from_phase_boundary(Ctx *E, Vec sol)
     CHKERRQ(ierr);
 
     /* first and last points not updated by loop below */
-    arr_dSdxi_b[0] = 0.0;
-    arr_dSdxi_b[ihi_b - 1] = 0.0;
+    arr_dTdxi_b[0] = 0.0;
+    arr_dTdxi_b[ihi_b - 1] = 0.0;
     for (i = ilo_b + 1; i < ihi_b - 1; ++i)
     {
         /* assumes the relevant phase boundary is in slot 0, which it will be for a single
            phase system (although still potential for a bug here if you want to initialise a
            two phase system from a phase boundary ic) */
         /* get staggered nodes values either side of the basic node */
-        ierr = EOSGetPhaseBoundary(E->parameters->eos_phases[0], arr_pres_s[i], &S1, NULL);
+        ierr = EOSGetPhaseBoundary(E->parameters->eos_phases[0], arr_pres_s[i], &T1, NULL);
         CHKERRQ(ierr);
-        S1 = PetscMin(S1, P->ic_adiabat_entropy);
-        ierr = EOSGetPhaseBoundary(E->parameters->eos_phases[0], arr_pres_s[i - 1], &S2, NULL);
+        T1 = PetscMin(T1, P->ic_adiabat_temperature);
+        ierr = EOSGetPhaseBoundary(E->parameters->eos_phases[0], arr_pres_s[i - 1], &T2, NULL);
         CHKERRQ(ierr);
-        S2 = PetscMin(S2, P->ic_adiabat_entropy);
+        T2 = PetscMin(T2, P->ic_adiabat_temperature);
         /* now compute gradient at basic node */
-        arr_dSdxi_b[i] = S1 - S2;
-        arr_dSdxi_b[i] /= arr_xi_s[i] - arr_xi_s[i - 1];
+        arr_dTdxi_b[i] = T1 - T2;
+        arr_dTdxi_b[i] /= arr_xi_s[i] - arr_xi_s[i - 1];
     }
 
     /* for last point, assume same gradient as basic node above */
-    arr_dSdxi_b[ihi_b - 1] = arr_dSdxi_b[ihi_b - 2];
+    arr_dTdxi_b[ihi_b - 1] = arr_dTdxi_b[ihi_b - 2];
 
-    /* set entropy at top staggered node */
-    ierr = EOSGetPhaseBoundary(E->parameters->eos_phases[0], arr_pres_s[0], &S0, NULL);
+    /* set temperature at top staggered node */
+    ierr = EOSGetPhaseBoundary(E->parameters->eos_phases[0], arr_pres_s[0], &T0, NULL);
     CHKERRQ(ierr);
-    S0 = PetscMin(S0, P->ic_adiabat_entropy);
-    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]], 0, S0, INSERT_VALUES);
+    T0 = PetscMin(T0, P->ic_adiabat_temperature);
+    ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]], 0, T0, INSERT_VALUES);
     CHKERRQ(ierr);
     ierr = VecAssemblyBegin(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]]);
     CHKERRQ(ierr);
@@ -503,7 +502,7 @@ static PetscErrorCode set_ic_interior_from_phase_boundary(Ctx *E, Vec sol)
     CHKERRQ(ierr);
 
     /* restore basic node gradient array and sol Vec */
-    ierr = DMDAVecRestoreArray(da_b, dSdxi_b, &arr_dSdxi_b);
+    ierr = DMDAVecRestoreArray(da_b, dTdxi_b, &arr_dTdxi_b);
     CHKERRQ(ierr);
     ierr = DMCompositeRestoreAccessArray(E->dm_sol, sol, E->numFields, NULL, subVecs);
     CHKERRQ(ierr);

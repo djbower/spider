@@ -24,9 +24,9 @@
 #   and do not represent the physical quantities that are actually
 #   used (physical parameters are listed below)
 
-# these values are chosen to roughly normalise S, dS/dt, dSdr, and d/dt(dSdr) to unity
+# these values are chosen to roughly normalise T, dT/dt, dTdr, and d/dt(dT/dr) to unity
 
--entropy0 2.60E3 # J/kg/K
+-temperature0 2.0E3 # K
 -radius0 1.0E8 # m
 -time0 3.154E6 #7 # s
 
@@ -43,25 +43,23 @@
 -phase_names melt,solid
 
 -melt_TYPE 1
--melt_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
+-melt_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/thermal_exp_melt.dat
 # below shows how to use an absolute path instead
-#-melt_alpha_filename /Users/dan/Programs/spider-dev/lookup_data/1TPa-dK09-elec-free/thermal_exp_melt.dat
--melt_cp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_melt.dat
--melt_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_melt.dat
--melt_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_melt.dat
--melt_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_melt.dat
+#-melt_alpha_filename /Users/dan/Programs/spider-dev/lookup_data/1TPa-dK09-elec-free/temperature/thermal_exp_melt.dat
+-melt_cp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/heat_capacity_melt.dat
+-melt_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/adiabat_temp_grad_melt.dat
+-melt_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/density_melt.dat
 -melt_log10visc 2.0
 -melt_activation_energy 0.0
 -melt_activation_volume 0.0
 -melt_cond 4.0 # conductivity of melt
--melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/liquidus_A11_H13.dat
+-melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/liquidus.dat
 
 -solid_TYPE 1
--solid_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/thermal_exp_solid.dat
--solid_cp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/heat_capacity_solid.dat
--solid_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/adiabat_temp_grad_solid.dat
--solid_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/density_solid.dat
--solid_temp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature_solid.dat
+-solid_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/thermal_exp_solid.dat
+-solid_cp_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/heat_capacity_solid.dat
+-solid_dTdPs_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/adiabat_temp_grad_solid.dat
+-solid_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/density_solid.dat
 -solid_log10visc 21.0
 -solid_activation_energy 0.0
 -solid_activation_volume 0.0
@@ -69,7 +67,7 @@
 -solid_visc_ref_pressure -1
 -solid_visc_ref_comp -1
 -solid_cond 4.0 # conductivity of solid
--solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/solidus_A11_H13.dat
+-solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/solidus.dat
 
 
 #==================
@@ -78,9 +76,9 @@
 
 # initial condition
 -IC_INTERIOR 1
--ic_adiabat_entropy 2600.0
+-ic_adiabat_temperature 2000.0
 # next serves as an initial guess for the entropy gradient
--ic_dsdr -1.0e-5
+-ic_dTdr -3.0e-4
 
 
 #====================
