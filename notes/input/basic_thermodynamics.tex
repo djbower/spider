@@ -127,6 +127,8 @@ Note this contains a latent heat ($\Delta h$) associated with melt--solid separa
 \end{align}
 Under the assumption of chemical equilibrium, the final term of Eq.~\ref{eq:entropy_twophase} is zero.  We then arrive at the fundamental equation that we solve in the SPIDER code.
 \boxedeq{eq:entropy_twophase_chemeq}{\rho \frac{Ds}{Dt} = - \frac{1}{T} \nabla \cdot \left( \vec{J}_q^\prime + (h_m-h_s) \vec{J}_m \right)}
+With temperature as the primary variable \myemph{\cite[Eq.~10,][]{ABE95}}:
+\boxedeq{eq:temperature_twophase_chemeq}{\rho C_p \frac{DT}{Dt} = - \nabla \cdot \left( \vec{J}_q^\prime + (h_m-h_s) \vec{J}_m \right) - \rho (h_m-h_s) \frac{D\phi}{Dt}}
 
 \noindent The two major steps that we now need to perform are:
 \begin{enumerate}

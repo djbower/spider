@@ -69,11 +69,19 @@ We time step the following equation in SPIDER:
 \begin{equation}
 \rho T \frac{Ds}{Dt} = -\nabla_r \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
 \end{equation}
+With temperature as the primary variable:
+\begin{equation}
+\rho C_p \frac{DT}{Dt} = - \nabla_r \cdot \left( \vec{J}_q^\prime + (h_m-h_s) \vec{J}_m \right) - \rho (h_m-h_s) \frac{D\phi}{Dt}
+\end{equation}
 Where we add a subscript to $\nabla$ to be explicit that this relates to a physical coordinate $r$.  Now, transform to mass coordinates by replacing the Lagrangian with a partial derivative with respect to time:
 \begin{equation}
-\rho T \left( \frac{\partial s}{\partial t} \right)_\xi = -\nabla_r \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
+[\rho T] \left( \frac{\partial s}{\partial t} \right)_\xi = -\nabla_r \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
 \end{equation}
-
+With temperature as the primary variable:
+\begin{equation}
+\left[ \rho C_p + \rho \Delta h \left(\frac{\partial \phi}{\partial T} \right)_\xi \right] \left( \frac{\partial T}{\partial t} \right)_\xi = -\nabla_r \cdot \left[ \vec{J}_q + \Delta h (\vec{J}_m + \vec{J}_{cm}) \right]
+\end{equation}
+Hence both the formulation in terms of entropy and temperature can be formulated with a ``capacitance'' term (in square brackets) that appears on the LHS that multiplies the time derivative.  Note that \cite[Eq.~21]{ABE93} omits $\rho$, which I think must be an error.  The form above agrees with \cite[Eq.~10 \& A12]{ABE95}.
 \subsubsection{Differential form}
 \cite{ABE93} solves the differential form of the equation using finite differences, so expand $\nabla$ operator for spherical coordinates:
 \begin{equation}
