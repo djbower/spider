@@ -19,7 +19,7 @@ PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec sol_in, Vec rhs, void *ptr)
   Mesh *M = &E->mesh;
   Solution *S = &E->solution;
   PetscScalar *arr_dTdt_s, *arr_rhs_b;
-  const PetscScalar *arr_Etot, *arr_capacitance_s, *arr_Htot_s, *arr_xi_s;
+  const PetscScalar *arr_Etot, *arr_capacitance_s, *arr_Htot_s, *arr_xi_s, *arr_volume_s, *arr_rho_s;
   PetscMPIInt rank, size;
   DM da_s = E->da_s, da_b = E->da_b;
   PetscInt i, v, ihi_s, ilo_s, w_s, numpts_b;
@@ -63,17 +63,19 @@ PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec sol_in, Vec rhs, void *ptr)
   CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s, S->Htot_s, &arr_Htot_s);
   CHKERRQ(ierr);
+  /* capacitance already has dV included */
   ierr = DMDAVecGetArrayRead(da_s, S->capacitance_s, &arr_capacitance_s);
   CHKERRQ(ierr);
-  // Kept in case cp is required again.
-  // ierr = DMDAVecGetArrayRead(da_s, S->cp_s, &arr_cp_s);
-  // CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s, S->rho_s, &arr_rho_s);
+  CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayRead(da_s, M->volume_s, &arr_volume_s);
+  CHKERRQ(ierr);
   ierr = DMDAVecGetArrayRead(da_s, M->xi_s, &arr_xi_s);
   CHKERRQ(ierr);
 
   /* first staggered node */
   arr_dTdt_s[0] = (arr_Etot[1] - arr_Etot[0]) / arr_capacitance_s[0];
-  arr_dTdt_s[0] += arr_Htot_s[0]; // FIXME: cp in denominator?
+  arr_dTdt_s[0] += (arr_rho_s[0] * arr_Htot_s[0] * arr_volume_s[0]) / arr_capacitance_s[0];
 
   /* dTdt at staggered nodes and d/dt(dT/dxi) at internal basic nodes */
   for (i = ilo_s + 1; i < ihi_s; ++i)
@@ -81,7 +83,7 @@ PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec sol_in, Vec rhs, void *ptr)
     /* dTdt at staggered nodes */
     /* need this quantity for coupling to atmosphere evolution */
     arr_dTdt_s[i] = (arr_Etot[i + 1] - arr_Etot[i]) / arr_capacitance_s[i];
-    arr_dTdt_s[i] += arr_Htot_s[i]; // FIXME: cp in denominator?
+    arr_dTdt_s[i] += (arr_rho_s[i] * arr_Htot_s[i] * arr_volume_s[i]) / arr_capacitance_s[i];
     /* d/dt(dT/dxi) at internal basic nodes */
     arr_rhs_b[i] = arr_dTdt_s[i] - arr_dTdt_s[i - 1];
     arr_rhs_b[i] /= arr_xi_s[i] - arr_xi_s[i - 1]; // note dxi is negative
@@ -91,7 +93,7 @@ PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec sol_in, Vec rhs, void *ptr)
   /* A->dTsurfdt already contains contribution of dTsurf/dT */
   /* By chain rule, just need dT/dt */
   A->dTsurfdt *= arr_dTdt_s[0];
-  /* add effect of gradient to above 0.5*d/dt (dT/dxi)? */
+  /* TODO: add effect of gradient to above 0.5*d/dt (dT/dxi)? */
 
   ierr = DMDAVecRestoreArrayRead(da_s, M->xi_s, &arr_xi_s);
   CHKERRQ(ierr);
@@ -105,9 +107,10 @@ PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec sol_in, Vec rhs, void *ptr)
   CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayRead(da_s, S->capacitance_s, &arr_capacitance_s);
   CHKERRQ(ierr);
-  // Kept in case cp is required again.
-  // ierr = DMDAVecRestoreArrayRead(da_s, S->cp_s, &arr_cp_s);
-  // CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_s, S->rho_s, &arr_rho_s);
+  CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayRead(da_s, M->volume_s, &arr_volume_s);
+  CHKERRQ(ierr);
 
   /* apply surface boundary condition to rhs */
   ierr = set_surface_temperature_gradient_update(E, rhs_b);

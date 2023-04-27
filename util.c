@@ -120,7 +120,7 @@ PetscErrorCode set_temperature_reconstruction_from_ctx(Ctx *E, PetscScalar T0)
     CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
 
-    ierr = DMDAVecGetArray(da_b, S->temp, &arr_T_b);
+    ierr = DMDAVecGetArray(da_b, S->T, &arr_T_b);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s, S->T_s, &arr_T_s);
     CHKERRQ(ierr);
@@ -149,7 +149,7 @@ PetscErrorCode set_temperature_reconstruction_from_ctx(Ctx *E, PetscScalar T0)
     arr_T_s[ihi_b - 2] += T0; // add at end to try and retain precision
     arr_T_b[ihi_b - 2] += T0; // add at end to try and retain precision
 
-    ierr = DMDAVecRestoreArray(da_b, S->temp, &arr_T_b);
+    ierr = DMDAVecRestoreArray(da_b, S->T, &arr_T_b);
     CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s, S->T_s, &arr_T_s);
     CHKERRQ(ierr);

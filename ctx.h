@@ -18,7 +18,6 @@ typedef struct Mesh_
   DimensionalisableField meshFields_b[NUMMESHVECS_B];
   DimensionalisableField meshFields_s[NUMMESHVECS_S];
 
-  // eventually get rid of these (though think about how to better name the DimensionalisableFields..)
   Vec area_b, dPdr_b, pressure_b, radius_b, xi_b, dxidr_b;
   Vec pressure_s, radius_s, volume_s, dPdr_s, area_s, mass_s, xi_s;
 
@@ -26,19 +25,17 @@ typedef struct Mesh_
 
 } Mesh;
 
-#define NUMSOLUTIONVECS_B 19
-#define NUMSOLUTIONVECS_S 8
+#define NUMSOLUTIONVECS_B 20
+#define NUMSOLUTIONVECS_S 9
 typedef struct Solution_
 {
 
   DimensionalisableField solutionFields_b[NUMSOLUTIONVECS_B];
   DimensionalisableField solutionFields_s[NUMSOLUTIONVECS_S];
 
-  // eventually get rid of these?
-  Vec alpha, cond, cp, dTdxi, dTdxis, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, regime, rho, S, temp, visc;
+  Vec alpha, cond, cp, dTdxi, dTdxis, Etot, gsuper, Jcond, Jconv, Jgrav, Jmix, Jtot, kappac, kappah, nu, phi, regime, rho, T, visc;
 
-  // eventually get rid of these?
-  Vec cp_s, dTdt_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, phi_s, rho_s, T_s, temp_s;
+  Vec cp_s, dTdt_s, Hradio_s, Htidal_s, Htot_s, capacitance_s, phi_s, rho_s, T_s;
 
 } Solution;
 

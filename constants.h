@@ -21,7 +21,7 @@ typedef struct
     PetscScalar VOLATILE;
     /* derived from primary */
     PetscScalar AREA;
-    PetscScalar ENTROPY; /* note: specific entropy */
+    PetscScalar ENTROPY; /* specific entropy */
     PetscScalar VOLUME;
     PetscScalar MASS;
     PetscScalar DENSITY;

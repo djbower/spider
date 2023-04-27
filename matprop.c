@@ -21,8 +21,9 @@ PetscErrorCode set_capacitance_staggered(Ctx *E)
 
     ierr = set_matprop_staggered(E);
     CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->capacitance_s, S->temp_s, S->rho_s);
+    ierr = VecPointwiseMult(S->capacitance_s, S->cp_s, S->rho_s);
     CHKERRQ(ierr);
+    /* FIXME: Add second term to capacitance involving dphi/dT */
     ierr = VecPointwiseMult(S->capacitance_s, S->capacitance_s, M->volume_s);
     CHKERRQ(ierr);
 
@@ -37,7 +38,7 @@ PetscErrorCode set_phase_fraction_staggered(Ctx *E)
     Mesh *M = &E->mesh;
     Parameters P = E->parameters;
     Solution *S = &E->solution;
-    PetscScalar *arr_phi, *arr_S, *arr_pres, PP, SS;
+    PetscScalar *arr_phi, *arr_T, *arr_pres, PP, TT;
     EOSEvalData eos_eval;
 
     PetscFunctionBeginUser;
@@ -48,7 +49,7 @@ PetscErrorCode set_phase_fraction_staggered(Ctx *E)
 
     ierr = DMDAVecGetArrayRead(da_s, M->pressure_s, &arr_pres);
     CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s, S->S_s, &arr_S);
+    ierr = DMDAVecGetArrayRead(da_s, S->temp_s, &arr_T);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s, S->phi_s, &arr_phi);
     CHKERRQ(ierr);

@@ -229,7 +229,7 @@ PetscErrorCode set_cmb_temperature_constant(Ctx *E)
     PetscErrorCode ierr;
     Mesh *M = &E->mesh;
     Solution *S = &E->solution;
-    PetscScalar *arr_T_s, *arr_dTdxi_b, *arr_xi_b, *arr_S_b;
+    PetscScalar *arr_T_s, *arr_dTdxi_b, *arr_xi_b, *arr_T_b;
     PetscInt ihi_b, ilo_b, w_b;
     Parameters const P = E->parameters;
 

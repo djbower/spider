@@ -29,7 +29,7 @@ static PetscScalar GetPermeabilityRudge(PetscScalar grainsize, PetscScalar poros
 
 PetscErrorCode set_Htot(Ctx *E, PetscReal time)
 {
-    /* total internal heat generation */
+    /* specific internal heat generation */
 
     PetscErrorCode ierr;
     Parameters const P = E->parameters;
@@ -37,15 +37,13 @@ PetscErrorCode set_Htot(Ctx *E, PetscReal time)
 
     PetscFunctionBeginUser;
 
-    /* Htot = int_V rho H dV */
-
     /* initialise to zero */
     ierr = VecSet(S->Hradio_s, 0.0);
     CHKERRQ(ierr);
     ierr = VecSet(S->Htot_s, 0.0);
     CHKERRQ(ierr);
 
-    /* total internal heat generation by summing terms */
+    /* total specific internal heat generation by summing terms */
     if (P->n_radionuclides > 0)
     {
         ierr = append_Hradio(E, time);

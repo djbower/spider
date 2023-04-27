@@ -96,9 +96,13 @@ This description is known as the ``Lagrangian description'' \citep[e.g.,][]{KWW1
 %%%%
 %%%%
 \subsubsection{Integral form}
-\cite{BSW18} instead solve the integral form.  Note that here we are still integrating over a physical area $dA$ or volume $dV$ (which both relate to the physical spatial coordinate $r$).  Hence the equation below invariably contains (unavoidably?) both $r$ and $\xi$ terms.  Nevertheless, if the relationship between $r$ and $\xi$ is known as a function of time, this is still fine to evaluate:
+\cite{BSW18} instead solve the integral form.  Note that here we are still integrating over a physical area $dA$ or volume $dV$ (which both relate to the physical spatial coordinate $r$).  Hence the equation below contains both $r$ and $\xi$ terms, although it would be possible if desired to transform the volume integral over physical space to a volume integral over mass coordinate space.  Nevertheless, if the relationship between $r$ and $\xi$ is known as a function of time, this is still fine to evaluate:
 \begin{equation}
 \int_V \rho T \left( \frac{\partial s}{\partial t} \right)_\xi dV = - \int_A F \cdot n dA + \int_V \rho H dV
+\end{equation}
+With temperature as the primary variable:
+\begin{equation}
+\int_V \left[ \rho C_p + \rho \Delta h \left(\frac{\partial \phi}{\partial T} \right)_\xi \right] \left( \frac{\partial T}{\partial t} \right)_\xi dV = - \int_A F \cdot n dA + \int_V \rho H dV
 \end{equation}
 %%%%
 \subsubsection{Fluxes}
