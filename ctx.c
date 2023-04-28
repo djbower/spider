@@ -506,7 +506,7 @@ static PetscErrorCode CtxCreateFields(Ctx *ctx)
     ierr = DimensionalisableFieldGetGlobalVec(ctx->solution.solutionFields_s[1], &ctx->solution.dTdt_s); // Just for convenience - can always get this vector out when you need it
     ierr = DimensionalisableFieldSetName(ctx->solution.solutionFields_s[1], "dTdt_s");
     CHKERRQ(ierr);
-    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[1], "Various units"); // FIXME: Just K/s?
+    ierr = DimensionalisableFieldSetUnits(ctx->solution.solutionFields_s[1], "Various units"); // TODO: Just K/s?
     CHKERRQ(ierr);
   }
   {

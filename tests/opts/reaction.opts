@@ -126,6 +126,8 @@
 -phi_critical 0.4 # transition melt fraction (non-dimensional)
 -phi_width 0.15 # transition width (non-dimensional)
 
+-entropy_of_fusion 900.0 # J/kg/K
+
 # core-mantle boundary condition
 # [1] core-cooling
 # [2] heat flux (prescribe value using core_bc_value)

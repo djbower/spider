@@ -20,7 +20,8 @@ typedef struct EOSEvalData_
   PetscScalar log10visc;
   PetscScalar phase_fraction; // by definition unity for single species, but can be 0<x<1 for a composite EOS (with two phases) */
   PetscScalar porosity;
-  PetscScalar fusion; // only relevant for EOSComposite (with two phases)
+  PetscScalar fusion;       // only relevant for EOSComposite (with two phases)
+  PetscScalar fusion_curve; // only relevant for EOSComposite (with two phases)
 } EOSEvalData;
 
 typedef const char *EOSType;

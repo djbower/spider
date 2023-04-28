@@ -545,6 +545,12 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   ierr = PetscOptionsGetScalar(NULL, NULL, "-phi_width", &P->phi_width, NULL);
   CHKERRQ(ierr);
 
+  /* entropy of fusion */
+  P->entropy_of_fusion = 900.0; // J/kg/K from eyeballing Bower et al. (2018), Fig. 3a.
+  ierr = PetscOptionsGetScalar(NULL, NULL, "-entropy_of_fusion", &P->entropy_of_fusion, NULL);
+  CHKERRQ(ierr);
+  P->entropy_of_fusion /= SC->ENTROPY;
+
   /* core density (kg/m^3) */
   P->rho_core = 10738.332568062382;
   ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_core", &P->rho_core, NULL);

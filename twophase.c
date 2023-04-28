@@ -70,7 +70,7 @@ PetscErrorCode set_dMliqdt(Ctx *E)
     Parameters P = E->parameters;
     Vec result_s;
     PetscScalar *arr_result_s;
-    const PetscScalar *arr_dSdt_s, *arr_phi_s, *arr_mass_s, *arr_pres, *arr_S;
+    const PetscScalar *arr_dTdt_s, *arr_phi_s, *arr_mass_s, *arr_pres, *arr_T;
     EOSEvalData eos_eval;
 
     PetscFunctionBeginUser;
@@ -79,22 +79,22 @@ PetscErrorCode set_dMliqdt(Ctx *E)
     CHKERRQ(ierr);
     ihi_s = ilo_s + w_s;
 
-    ierr = VecDuplicate(S->dSdt_s, &result_s);
+    ierr = VecDuplicate(S->dTdt_s, &result_s);
     CHKERRQ(ierr);
-    ierr = VecCopy(S->dSdt_s, result_s);
+    ierr = VecCopy(S->dTdt_s, result_s);
     CHKERRQ(ierr);
 
     ierr = DMDAVecGetArrayRead(da_s, M->mass_s, &arr_mass_s);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s, M->pressure_s, &arr_pres);
     CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s, S->dSdt_s, &arr_dSdt_s);
+    ierr = DMDAVecGetArrayRead(da_s, S->dTdt_s, &arr_dTdt_s);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_s, S->phi_s, &arr_phi_s);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s, result_s, &arr_result_s);
     CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s, S->S_s, &arr_S);
+    ierr = DMDAVecGetArrayRead(da_s, S->T_s, &arr_T);
     CHKERRQ(ierr);
 
 #if defined(PETSC_USE_DEBUG)
@@ -110,9 +110,9 @@ PetscErrorCode set_dMliqdt(Ctx *E)
 
     for (i = ilo_s; i < ihi_s; ++i)
     {
-        ierr = EOSEval(P->eos, arr_pres[i], arr_S[i], &eos_eval);
+        ierr = EOSEval(P->eos, arr_pres[i], arr_T[i], &eos_eval);
         CHKERRQ(ierr);
-        arr_result_s[i] = arr_dSdt_s[i] * arr_mass_s[i];
+        arr_result_s[i] = arr_dTdt_s[i] * arr_mass_s[i];
         arr_result_s[i] /= eos_eval.fusion;
 
         /* with smoothing */
@@ -138,11 +138,15 @@ PetscErrorCode set_dMliqdt(Ctx *E)
 
     ierr = DMDAVecRestoreArrayRead(da_s, M->mass_s, &arr_mass_s);
     CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_s, S->dSdt_s, &arr_dSdt_s);
+    ierr = DMDAVecRestoreArrayRead(da_s, M->pressure_s, &arr_pres);
+    CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s, S->dTdt_s, &arr_dTdt_s);
     CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_s, S->phi_s, &arr_phi_s);
     CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s, result_s, &arr_result_s);
+    CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s, S->T_s, &arr_T);
     CHKERRQ(ierr);
 
     ierr = VecSum(result_s, &A->dMliqdt);
@@ -231,7 +235,7 @@ static PetscErrorCode set_rheological_front_mantle_properties(Ctx *E, Rheologica
     ierr = VecGetValues(M->pressure_b, 1, &index, &pressure);
     CHKERRQ(ierr);
     Rf->pressure = pressure;
-    ierr = VecGetValues(S->temp, 1, &index, &temperature);
+    ierr = VecGetValues(S->T, 1, &index, &temperature);
     CHKERRQ(ierr);
     Rf->temperature = temperature;
 
@@ -247,7 +251,7 @@ static PetscErrorCode set_rheological_front_mantle_properties(Ctx *E, Rheologica
     ierr = VecGetValues(M->pressure_b, 1, &index_above, &pressure);
     CHKERRQ(ierr);
     Rf->above_middle.pressure = pressure;
-    ierr = VecGetValues(S->temp, 1, &index_above, &temperature);
+    ierr = VecGetValues(S->T, 1, &index_above, &temperature);
     CHKERRQ(ierr);
     Rf->above_middle.temperature = temperature;
     /* average by mass */
@@ -258,7 +262,7 @@ static PetscErrorCode set_rheological_front_mantle_properties(Ctx *E, Rheologica
     Rf->above_mass_avg.depth = P->radius - Rf->above_mass_avg.depth;
     ierr = average_by_mass_staggered(E, M->pressure_s, mask_ptr_s, &Rf->above_mass_avg.pressure);
     CHKERRQ(ierr);
-    ierr = average_by_mass_staggered(E, S->temp_s, mask_ptr_s, &Rf->above_mass_avg.temperature);
+    ierr = average_by_mass_staggered(E, S->T_s, mask_ptr_s, &Rf->above_mass_avg.temperature);
     CHKERRQ(ierr);
 
     // need to initialise values?
@@ -273,7 +277,7 @@ static PetscErrorCode set_rheological_front_mantle_properties(Ctx *E, Rheologica
     ierr = VecGetValues(M->pressure_b, 1, &index_below, &pressure);
     CHKERRQ(ierr);
     Rf->below_middle.pressure = pressure;
-    ierr = VecGetValues(S->temp, 1, &index_below, &temperature);
+    ierr = VecGetValues(S->T, 1, &index_below, &temperature);
     CHKERRQ(ierr);
     Rf->below_middle.temperature = temperature;
     /* average by mass */
@@ -286,7 +290,7 @@ static PetscErrorCode set_rheological_front_mantle_properties(Ctx *E, Rheologica
     Rf->below_mass_avg.depth = P->radius - Rf->below_mass_avg.depth;
     ierr = average_by_mass_staggered(E, M->pressure_s, mask_ptr_s, &Rf->below_mass_avg.pressure);
     CHKERRQ(ierr);
-    ierr = average_by_mass_staggered(E, S->temp_s, mask_ptr_s, &Rf->below_mass_avg.temperature);
+    ierr = average_by_mass_staggered(E, S->T_s, mask_ptr_s, &Rf->below_mass_avg.temperature);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

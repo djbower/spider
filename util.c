@@ -45,7 +45,7 @@ PetscErrorCode set_solution_from_temperature(Ctx *E, Vec sol)
     /* set dT/dxi at basic nodes to solution Vec */
     ierr = VecCopy(S->dTdxi, subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_DTDXI_B]]);
     CHKERRQ(ierr);
-    /* set T0 to solution Vec */
+    /* set T0 to solution Vec.  T0 is the top staggered node temperature. */
     ierr = VecGetValues(S->T_s, 1, &ind0, &T0);
     CHKERRQ(ierr);
     ierr = VecSetValue(subVecs[E->solutionSlots[SPIDER_SOLUTION_FIELD_T0]], 0, T0, INSERT_VALUES);
@@ -65,9 +65,8 @@ PetscErrorCode set_solution_from_temperature(Ctx *E, Vec sol)
 
 PetscErrorCode set_temperature_from_solution(Ctx *E, Vec sol)
 {
-    /* Set temperature-related Vecs in E to be consistent with
-       the Vec sol, and additionally compute values for
-       outer boundaries of the basic mesh */
+    /* Set temperature-related Vecs in E to be consistent with the Vec sol, and additionally
+        compute values for the outer boundaries of the basic mesh */
 
     PetscErrorCode ierr;
     Solution *S = &E->solution;

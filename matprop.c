@@ -9,7 +9,7 @@ static PetscScalar GetModifiedMixingLength(PetscScalar, PetscScalar, PetscScalar
 static PetscScalar GetConstantMixingLength(PetscScalar outer_radius, PetscScalar inner_radius);
 static PetscScalar GetMixingLength(const Parameters, PetscScalar);
 static PetscErrorCode apply_log10visc_cutoff(Parameters const, PetscScalar *);
-static PetscErrorCode GetEddyDiffusivity(const EOSEvalData, const Parameters, PetscScalar, PetscScalar, PetscScalar, PetscScalar *, PetscScalar *, PetscScalar *);
+static PetscErrorCode GetEddyDiffusivity(const EOSEvalData, const Parameters, PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar *, PetscScalar *, PetscScalar *);
 
 PetscErrorCode set_capacitance_staggered(Ctx *E)
 {
@@ -38,7 +38,8 @@ PetscErrorCode set_phase_fraction_staggered(Ctx *E)
     Mesh *M = &E->mesh;
     Parameters P = E->parameters;
     Solution *S = &E->solution;
-    PetscScalar *arr_phi, *arr_T, *arr_pres, PP, TT;
+    PetscScalar *arr_phi, PP, TT;
+    const PetscScalar *arr_pres, *arr_T;
     EOSEvalData eos_eval;
 
     PetscFunctionBeginUser;
@@ -49,7 +50,7 @@ PetscErrorCode set_phase_fraction_staggered(Ctx *E)
 
     ierr = DMDAVecGetArrayRead(da_s, M->pressure_s, &arr_pres);
     CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s, S->temp_s, &arr_T);
+    ierr = DMDAVecGetArrayRead(da_s, S->T_s, &arr_T);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s, S->phi_s, &arr_phi);
     CHKERRQ(ierr);
@@ -57,15 +58,15 @@ PetscErrorCode set_phase_fraction_staggered(Ctx *E)
     for (i = ilo_s; i < ihi_s; ++i)
     {
         PP = arr_pres[i];
-        SS = arr_S[i];
-        ierr = EOSEval(P->eos, PP, SS, &eos_eval);
+        TT = arr_T[i];
+        ierr = EOSEval(P->eos, PP, TT, &eos_eval);
         CHKERRQ(ierr);
         arr_phi[i] = eos_eval.phase_fraction;
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s, M->pressure_s, &arr_pres);
     CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s, S->S_s, &arr_S);
+    ierr = DMDAVecRestoreArrayRead(da_s, S->T_s, &arr_T);
     CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s, S->phi_s, &arr_phi);
     CHKERRQ(ierr);
@@ -82,8 +83,8 @@ static PetscErrorCode set_matprop_staggered(Ctx *E)
     Parameters const P = E->parameters;
     Solution *S = &E->solution;
     Vec pres_s = M->pressure_s;
-    PetscScalar *arr_rho_s, *arr_temp_s, *arr_cp_s;
-    const PetscScalar *arr_pres_s, *arr_S_s;
+    PetscScalar *arr_rho_s, *arr_cp_s;
+    const PetscScalar *arr_pres_s, *arr_T_s;
     EOSEvalData eos_eval;
 
     PetscFunctionBeginUser;
@@ -94,33 +95,28 @@ static PetscErrorCode set_matprop_staggered(Ctx *E)
 
     ierr = DMDAVecGetArrayRead(da_s, pres_s, &arr_pres_s);
     CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s, S->S_s, &arr_S_s);
+    ierr = DMDAVecGetArrayRead(da_s, S->T_s, &arr_T_s);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s, S->cp_s, &arr_cp_s);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_s, S->rho_s, &arr_rho_s);
     CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s, S->temp_s, &arr_temp_s);
-    CHKERRQ(ierr);
 
     for (i = ilo_s; i < ihi_s; ++i)
     {
-        ierr = EOSEval(P->eos, arr_pres_s[i], arr_S_s[i], &eos_eval);
+        ierr = EOSEval(P->eos, arr_pres_s[i], arr_T_s[i], &eos_eval);
         CHKERRQ(ierr);
         arr_rho_s[i] = eos_eval.rho;
-        arr_temp_s[i] = eos_eval.T;
         arr_cp_s[i] = eos_eval.Cp;
     }
 
     ierr = DMDAVecRestoreArrayRead(da_s, pres_s, &arr_pres_s);
     CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s, S->S_s, &arr_S_s);
+    ierr = DMDAVecRestoreArrayRead(da_s, S->T_s, &arr_T_s);
     CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s, S->cp_s, &arr_cp_s);
     CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s, S->rho_s, &arr_rho_s);
-    CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_s, S->temp_s, &arr_temp_s);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -131,8 +127,8 @@ PetscErrorCode set_matprop_basic(Ctx *E)
     PetscErrorCode ierr;
     PetscInt i, ilo_b, ihi_b, w_b, numpts_b;
     DM da_b = E->da_b;
-    PetscScalar *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdxis, *arr_alpha, *arr_temp, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
-    const PetscScalar *arr_dSdxi, *arr_S_b, *arr_pres, *arr_dPdr_b, *arr_radius_b, *arr_dxidr_b;
+    PetscScalar *arr_phi, *arr_nu, *arr_gsuper, *arr_kappac, *arr_kappah, *arr_dTdxis, *arr_alpha, *arr_cp, *arr_cond, *arr_visc, *arr_regime, *arr_rho;
+    const PetscScalar *arr_dTdxi, *arr_T_b, *arr_pres, *arr_dPdr_b, *arr_radius_b, *arr_dxidr_b;
     Mesh *M = &E->mesh;
     Parameters const P = E->parameters;
     Solution *S = &E->solution;
@@ -147,9 +143,9 @@ PetscErrorCode set_matprop_basic(Ctx *E)
     CHKERRQ(ierr);
     ihi_b = ilo_b + w_b;
 
-    ierr = DMDAVecGetArrayRead(da_b, S->dSdxi, &arr_dSdxi);
+    ierr = DMDAVecGetArrayRead(da_b, S->dTdxi, &arr_dTdxi);
     CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_b, S->S, &arr_S_b);
+    ierr = DMDAVecGetArrayRead(da_b, S->T, &arr_T_b);
     CHKERRQ(ierr);
     /* mesh quantities */
     ierr = DMDAVecGetArrayRead(da_b, M->dPdr_b, &arr_dPdr_b);
@@ -181,8 +177,6 @@ PetscErrorCode set_matprop_basic(Ctx *E)
     CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b, S->rho, &arr_rho);
     CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_b, S->temp, &arr_temp);
-    CHKERRQ(ierr);
     ierr = DMDAVecGetArray(da_b, S->visc, &arr_visc);
     CHKERRQ(ierr);
     /* regime: not convecting (0), inviscid (1), viscous (2) */
@@ -192,13 +186,12 @@ PetscErrorCode set_matprop_basic(Ctx *E)
     /* loop over all basic nodes */
     for (i = ilo_b; i < ihi_b; ++i)
     {
-        ierr = EOSEval(P->eos, arr_pres[i], arr_S_b[i], &eos_eval);
+        ierr = EOSEval(P->eos, arr_pres[i], arr_T_b[i], &eos_eval);
         CHKERRQ(ierr);
         arr_phi[i] = eos_eval.phase_fraction;
         arr_rho[i] = eos_eval.rho;
         arr_dTdxis[i] = arr_dPdr_b[i] * eos_eval.dTdPs / arr_dxidr_b[i];
         arr_cp[i] = eos_eval.Cp;
-        arr_temp[i] = eos_eval.T;
         arr_alpha[i] = eos_eval.alpha;
         arr_cond[i] = eos_eval.cond;
         arr_visc[i] = eos_eval.log10visc;
@@ -211,15 +204,15 @@ PetscErrorCode set_matprop_basic(Ctx *E)
         /* kinematic viscosity */
         arr_nu[i] = arr_visc[i] / arr_rho[i];
         /* gravity * super-adiabatic temperature gradient */
-        arr_gsuper[i] = P->gravity * arr_temp[i] / arr_cp[i] * arr_dSdxi[i] * arr_dxidr_b[i];
+        arr_gsuper[i] = P->gravity * (arr_dTdxi[i] - arr_dTdxis[i]) * arr_dxidr_b[i];
 
-        ierr = GetEddyDiffusivity(eos_eval, P, arr_radius_b[i], arr_dSdxi[i], arr_dxidr_b[i], &arr_kappah[i], &arr_kappac[i], &arr_regime[i]);
+        ierr = GetEddyDiffusivity(eos_eval, P, arr_radius_b[i], arr_dTdxi[i], arr_dTdxis[i], arr_dxidr_b[i], &arr_kappah[i], &arr_kappac[i], &arr_regime[i]);
         CHKERRQ(ierr);
     }
 
-    ierr = DMDAVecRestoreArrayRead(da_b, S->dSdxi, &arr_dSdxi);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->dTdxi, &arr_dTdxi);
     CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, S->S, &arr_S_b);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->T, &arr_T_b);
     CHKERRQ(ierr);
     /* mesh quantities */
     ierr = DMDAVecRestoreArrayRead(da_b, M->dPdr_b, &arr_dPdr_b);
@@ -249,18 +242,15 @@ PetscErrorCode set_matprop_basic(Ctx *E)
     CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b, S->rho, &arr_rho);
     CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_b, S->temp, &arr_temp);
-    CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_b, S->visc, &arr_visc);
     CHKERRQ(ierr);
-    /* regime */
     ierr = DMDAVecRestoreArray(da_b, S->regime, &arr_regime);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode GetEddyDiffusivity(const EOSEvalData eos_eval, const Parameters P, PetscScalar radius, PetscScalar dSdxi, PetscScalar dxidr, PetscScalar *kappah_ptr, PetscScalar *kappac_ptr, PetscScalar *regime_ptr)
+PetscErrorCode GetEddyDiffusivity(const EOSEvalData eos_eval, const Parameters P, PetscScalar radius, PetscScalar dTdxi, PetscScalar dTdxis, PetscScalar dxidr, PetscScalar *kappah_ptr, PetscScalar *kappac_ptr, PetscScalar *regime_ptr)
 {
     PetscErrorCode ierr;
     PetscScalar visc, kvisc, gsuper, kh, crit, mix, kappah, kappac, regime;
@@ -271,8 +261,8 @@ PetscErrorCode GetEddyDiffusivity(const EOSEvalData eos_eval, const Parameters P
     ierr = apply_log10visc_cutoff(P, &visc);
     CHKERRQ(ierr);
     visc = PetscPowScalar(10.0, visc);
-    kvisc = visc / eos_eval.rho;                                    // kinematic viscosity
-    gsuper = P->gravity * eos_eval.T / eos_eval.Cp * dSdxi * dxidr; // g * super adiabatic gradient
+    kvisc = visc / eos_eval.rho;                    // kinematic viscosity
+    gsuper = P->gravity * (dTdxi - dTdxis) * dxidr; // g * super adiabatic gradient
 
     crit = 81.0 * PetscPowScalar(kvisc, 2);
     mix = GetMixingLength(P, radius);

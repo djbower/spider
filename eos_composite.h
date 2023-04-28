@@ -13,6 +13,7 @@ typedef struct
    PetscScalar matprop_smooth_width; // numerical reasons only
    PetscScalar phi_critical;         // physical transition between melt and solid for viscosity
    PetscScalar phi_width;            // physical transition between melt and solid for viscosity
+   PetscScalar entropy_of_fusion;    // entropy of fusion
 
    /* For brittle logic which specifies which slots to look in for special purposes */
    PetscInt melt_slot, solid_slot, liquidus_slot, solidus_slot;

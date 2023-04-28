@@ -51,6 +51,8 @@ static PetscErrorCode EOSSetUpFromOptions_Composite(EOS eos, const char *prefix,
   CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL, NULL, "-phi_width", &composite->phi_width, NULL);
   CHKERRQ(ierr);
+  ierr = PetscOptionsGetScalar(NULL, NULL, "-entropy_of_fusion", &composite->entropy_of_fusion, NULL);
+  CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -227,6 +229,7 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   ierr = EOSCompositeGetTwoPhaseSolidus(eos, P, &solidus);
   CHKERRQ(ierr);
   eval->fusion = liquidus - solidus;
+  eval->fusion_curve = solidus + 0.5 * eval->fusion;
   gphi = (T - solidus) / eval->fusion;
   eval->phase_fraction = gphi;
 
@@ -247,15 +250,13 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   CHKERRQ(ierr);
 
   /* Cp */
-  /* FIXME: Need to update to Solomatov (2007), Eq. 3.4.  Need to introduce specific enthalpy as
-  a parameter. */
-  // eval->Cp = eval_melt.S - eval_solid.S;
-  // eval->Cp /= eval_melt.T - eval_solid.T;
-  // eval->Cp *= eval_solid.T + 0.5 * (eval_melt.T - eval_solid.T);
-  // FIXME: Add specific enthalpy in numerator.
-  eval->Cp = 1.0 / (eval_melt.T - eval_solid.T);
+  /* Solomatov (2007), Treatise on Geophysics, Eq. 3.4 */
+  /* The first term is not included because it is small compared to the latent heat term */
+  eval->Cp = eval->fusion_curve * composite->entropy_of_fusion; // enthalpy change upon melting.
+  eval->Cp /= eval->fusion;
 
   /* Rho */
+  /* Volume additivity */
   eval->rho = eval->phase_fraction * (1.0 / eval_melt.rho) + (1 - eval->phase_fraction) * (1.0 / eval_solid.rho);
   eval->rho = 1.0 / (eval->rho);
 
@@ -267,13 +268,16 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   /* positive for MgSiO3 since solid rho > melt rho.  But may need to adjust for compositional
      effects */
   /* Solomatov (2007), Treatise on Geophysics, Eq. 3.3 */
-  eval->alpha = (eval_solid.rho - eval_melt.rho) / (eval_melt.T - eval_solid.T) / eval->rho;
+  /* The first term is not included because it is small compared to the latent heat term */
+  eval->alpha = (eval_solid.rho - eval_melt.rho) / eval->fusion / eval->rho;
 
   /* dTdPs */
   /* Solomatov (2007), Treatise on Geophysics, Eq. 3.2 */
   eval->dTdPs = eval->alpha * eval->T / (eval->rho * eval->Cp);
 
   /* Conductivity */
+  /* Linear mixing by phase fraction, for lack of better knowledge about how conductivities could
+    be combined */
   eval->cond = eval->phase_fraction * eval_melt.cond;
   eval->cond += (1.0 - eval->phase_fraction) * eval_solid.cond;
 

@@ -230,6 +230,7 @@ typedef struct
   PetscScalar gravity;
   PetscScalar phi_critical;
   PetscScalar phi_width;
+  PetscScalar entropy_of_fusion;
   PetscScalar rho_core;
   PetscScalar cp_core;
   PetscScalar tfac_core_avg;
