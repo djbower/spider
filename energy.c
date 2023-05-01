@@ -221,11 +221,10 @@ static PetscErrorCode append_Jconv(Ctx *E)
     PetscFunctionReturn(0);
 }
 
-// TODO: Update to temperature.
 PetscScalar GetConvectiveHeatFlux(Ctx *E, PetscInt *ind_ptr)
 {
     PetscErrorCode ierr;
-    PetscScalar dSdxi, dxidr, temp, rho, kappah, Jconv;
+    PetscScalar dTdxi, dTdxis, dxidr, rho, kappah, cp, Jconv;
     Solution const *S = &E->solution;
     Mesh const *M = &E->mesh;
     PetscInt ind_cmb, ind_abv_cmb, ilo_b, ihi_b, w_b;
@@ -264,14 +263,16 @@ PetscScalar GetConvectiveHeatFlux(Ctx *E, PetscInt *ind_ptr)
 
     ierr = VecGetValues(S->rho, 1, ind_ptr, &rho);
     CHKERRQ(ierr);
-    ierr = VecGetValues(S->dSdxi, 1, ind_ptr, &dSdxi);
+    ierr = VecGetValues(S->dTdxi, 1, ind_ptr, &dTdxi);
+    CHKERRQ(ierr);
+    ierr = VecGetValues(S->dTdxis, 1, ind_ptr, &dTdxis);
+    CHKERRQ(ierr);
+    ierr = VecGetValues(S->cp, 1, ind_ptr, &cp);
     CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b, 1, ind_ptr, &dxidr);
     CHKERRQ(ierr);
-    ierr = VecGetValues(S->temp, 1, ind_ptr, &temp);
-    CHKERRQ(ierr);
 
-    Jconv = -dSdxi * dxidr * kappah * rho * temp;
+    Jconv = -rho * cp * kappah * (dTdxi - dTdxis) * dxidr;
 
     return Jconv;
 }
@@ -425,31 +426,22 @@ static PetscErrorCode append_Jcond(Ctx *E)
     PetscFunctionReturn(0);
 }
 
-// TODO: Update to temperature.
 PetscScalar GetConductiveHeatFlux(Ctx *E, PetscInt *ind_ptr)
 {
     PetscErrorCode ierr;
-    PetscScalar dSdxi, dxidr, temp, cp, dTdxis, cond, Jcond;
+    PetscScalar dTdxi, dxidr, cond, Jcond;
     Solution const *S = &E->solution;
     Mesh const *M = &E->mesh;
 
-    ierr = VecGetValues(S->dSdxi, 1, ind_ptr, &dSdxi);
+    ierr = VecGetValues(S->dTdxi, 1, ind_ptr, &dTdxi);
     CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b, 1, ind_ptr, &dxidr);
     CHKERRQ(ierr);
-    ierr = VecGetValues(S->temp, 1, ind_ptr, &temp);
-    CHKERRQ(ierr);
-    ierr = VecGetValues(S->cp, 1, ind_ptr, &cp);
-    CHKERRQ(ierr);
-    ierr = VecGetValues(S->dTdxis, 1, ind_ptr, &dTdxis);
-    CHKERRQ(ierr);
-    /* conductivity is constant, so this is OK for the boundary nodes
-       which also take kappah from the nodes inset */
+    /* conductivity is constant */
     ierr = VecGetValues(S->cond, 1, ind_ptr, &cond);
     CHKERRQ(ierr);
 
-    Jcond = (temp / cp) * dSdxi * dxidr + dTdxis * dxidr;
-    Jcond *= -cond;
+    Jcond = -cond * dTdxi * dxidr;
 
     return Jcond;
 }
