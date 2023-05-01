@@ -624,7 +624,6 @@ PetscScalar GetGravitationalHeatFlux(Ctx *E, PetscInt *ind_ptr)
     return Jgrav;
 }
 
-// TODO: Update to temperature.
 PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
 {
     /* to formally balance radiation with the interior heat flux at the surface,
@@ -634,7 +633,7 @@ PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
     PetscErrorCode ierr;
     SNES snes;
     Vec x, r;
-    PetscScalar *xx, *arr_xi_b, *arr_S_b, *arr_S_s, *arr_dSdxi_b;
+    PetscScalar *xx, *arr_xi_b, *arr_T_b, *arr_T_s, *arr_dTdxi_b;
     DM da_b = E->da_b, da_s = E->da_s;
     Mesh *M = &E->mesh;
     Solution *S = &E->solution;
@@ -666,14 +665,14 @@ PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
     CHKERRQ(ierr);
 
     /* initial guess of surface temperature gradient */
-    ierr = DMDAVecGetArrayRead(da_b, S->dSdxi, &arr_dSdxi_b);
+    ierr = DMDAVecGetArrayRead(da_b, S->dTdxi, &arr_dTdxi_b);
     CHKERRQ(ierr);
     ierr = VecGetArray(x, &xx);
     CHKERRQ(ierr);
-    xx[0] = arr_dSdxi_b[0];
+    xx[0] = arr_dTdxi_b[0];
     ierr = VecRestoreArray(x, &xx);
     CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_b, S->dSdxi, &arr_dSdxi_b);
+    ierr = DMDAVecRestoreArrayRead(da_b, S->dTdxi, &arr_dTdxi_b);
     CHKERRQ(ierr);
 
     ierr = PetscOptionsSetValue(NULL, "-surfrad_snes_mf", NULL);
@@ -716,11 +715,11 @@ PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
                      "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
     }
 
-    ierr = DMDAVecGetArray(da_b, S->S, &arr_S_b);
+    ierr = DMDAVecGetArray(da_b, S->T, &arr_T_b);
     CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s, S->S_s, &arr_S_s);
+    ierr = DMDAVecGetArrayRead(da_s, S->T_s, &arr_T_s);
     CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_b, S->dSdxi, &arr_dSdxi_b);
+    ierr = DMDAVecGetArray(da_b, S->dTdxi, &arr_dTdxi_b);
     CHKERRQ(ierr);
     ierr = DMDAVecGetArrayRead(da_b, M->xi_b, &arr_xi_b);
     CHKERRQ(ierr);
@@ -728,15 +727,15 @@ PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
     /* set temperature gradient at surface */
     ierr = VecGetArray(x, &xx);
     CHKERRQ(ierr);
-    arr_dSdxi_b[0] = xx[0];
+    arr_dTdxi_b[0] = xx[0];
     ierr = VecRestoreArray(x, &xx);
     CHKERRQ(ierr);
 
-    ierr = DMDAVecRestoreArray(da_b, S->S, &arr_S_b);
+    ierr = DMDAVecRestoreArray(da_b, S->T, &arr_T_b);
     CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s, S->S_s, &arr_S_s);
+    ierr = DMDAVecRestoreArrayRead(da_s, S->T_s, &arr_T_s);
     CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_b, S->dSdxi, &arr_dSdxi_b);
+    ierr = DMDAVecRestoreArray(da_b, S->dTdxi, &arr_dTdxi_b);
     CHKERRQ(ierr);
     ierr = DMDAVecRestoreArrayRead(da_b, M->xi_b, &arr_xi_b);
     CHKERRQ(ierr);
@@ -754,14 +753,13 @@ PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
     PetscFunctionReturn(0);
 }
 
-// TODO: Update to temperature.
 static PetscErrorCode objective_function_surface_radiation_balance(SNES snes, Vec x, Vec f, void *ptr)
 {
     PetscErrorCode ierr;
     PetscMPIInt rank;
     const PetscScalar *xx;
     PetscScalar *ff;
-    PetscScalar dSdxi0, Jtot0, res;
+    PetscScalar dTdxi0, Jtot0, res;
     Ctx *E = (Ctx *)ptr;
     Parameters const P = E->parameters;
     Atmosphere const *A = &E->atmosphere;
@@ -785,12 +783,12 @@ static PetscErrorCode objective_function_surface_radiation_balance(SNES snes, Ve
 
     /* conform temperature Vecs in struct to our current guess of the
        temperature gradient at the surface */
-    dSdxi0 = xx[ind0];
-    ierr = VecSetValue(S->dSdxi, ind0, dSdxi0, INSERT_VALUES);
+    dTdxi0 = xx[ind0];
+    ierr = VecSetValue(S->dTdxi, ind0, dTdxi0, INSERT_VALUES);
     CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(S->dSdxi);
+    ierr = VecAssemblyBegin(S->dTdxi);
     CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(S->dSdxi);
+    ierr = VecAssemblyEnd(S->dTdxi);
     CHKERRQ(ierr);
 
     ierr = set_surface_temperature_from_surface_gradient(E);
@@ -819,10 +817,9 @@ static PetscErrorCode objective_function_surface_radiation_balance(SNES snes, Ve
     PetscFunctionReturn(0);
 }
 
-// TODO: Update to temperature.
 PetscErrorCode solve_for_steady_state_energy_interior(Ctx *E, PetscReal t)
 {
-    /* solve for dS/dxi in the interior to adhere to a constant flow of energy,
+    /* solve for dT/dxi in the interior to adhere to a constant flow of energy,
        based on the energy leaving from the top surface.  This solves for the
        steady-state solution, but can often result in noise blowing up when
        the RHS is computed.  Only used for the initial condition */
@@ -863,7 +860,7 @@ PetscErrorCode solve_for_steady_state_energy_interior(Ctx *E, PetscReal t)
     CHKERRQ(ierr);
 
     /* initial guess */
-    ierr = VecCopy(S->dSdxi, x);
+    ierr = VecCopy(S->dTdxi, x);
     CHKERRQ(ierr);
 
     ierr = PetscOptionsSetValue(NULL, "-steadyint_snes_mf", NULL);
@@ -907,7 +904,7 @@ PetscErrorCode solve_for_steady_state_energy_interior(Ctx *E, PetscReal t)
     }
 
     /* copy solution back to E */
-    ierr = VecCopy(x, S->dSdxi);
+    ierr = VecCopy(x, S->dTdxi);
     CHKERRQ(ierr);
 
     ierr = VecDestroy(&x);
@@ -920,7 +917,6 @@ PetscErrorCode solve_for_steady_state_energy_interior(Ctx *E, PetscReal t)
     PetscFunctionReturn(0);
 }
 
-// TODO: Update to temperature.
 static PetscErrorCode objective_function_steady_state_energy_interior(SNES snes, Vec x, Vec f, void *ptr)
 {
     PetscErrorCode ierr;
@@ -928,7 +924,7 @@ static PetscErrorCode objective_function_steady_state_energy_interior(SNES snes,
     Ctx *E = (Ctx *)ptr;
     Mesh const *M = &E->mesh;
     Solution *S = &E->solution;
-    PetscScalar S0, E0, R0, R1, dR, fac, fac2;
+    PetscScalar T0, E0, R0, R1, dR, fac, fac2;
     PetscInt const ind0 = 0;
     PetscInt ind1, numpts_b;
     PetscReal t;
@@ -952,15 +948,15 @@ static PetscErrorCode objective_function_steady_state_energy_interior(SNES snes,
        objective function */
     t = E->t;
 
-    ierr = VecCopy(x, S->dSdxi);
+    ierr = VecCopy(x, S->dTdxi);
     CHKERRQ(ierr);
 
     /* top staggered node value is assumed set and consistent */
-    ierr = VecGetValues(S->S_s, 1, &ind0, &S0);
+    ierr = VecGetValues(S->T_s, 1, &ind0, &T0);
     CHKERRQ(ierr);
 
-    /* now we have the gradient and S0, set for everything else */
-    ierr = set_temperature_reconstruction_from_ctx(E, S0);
+    /* now we have the gradient and T0, set everything else */
+    ierr = set_temperature_reconstruction_from_ctx(E, T0);
     CHKERRQ(ierr);
     ierr = set_current_state(E, t);
     CHKERRQ(ierr);
@@ -1078,7 +1074,7 @@ PetscErrorCode set_interior_atmosphere_interface_from_surface_temperature(Ctx *E
     ierr = set_Msol(E);
     CHKERRQ(ierr);
 
-    ierr = VecGetValues(S->temp, 1, &ind0, &T0);
+    ierr = VecGetValues(S->T, 1, &ind0, &T0);
 
     /* correct for ultra-thin thermal boundary layer at the surface */
     if (Ap->PARAM_UTBL)
