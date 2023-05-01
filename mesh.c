@@ -372,7 +372,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate(Ctx *E)
     ierr = PetscOptionsSetValue(NULL, "-mass_coord_snes_stol", "0");
     CHKERRQ(ierr);
     /* Turn off convergenced based on trust region tolerance */
-    ierr = PetscOptionsSetValue(NULL, "-mass_coord_snes_trtol", "0");
+    ierr = PetscOptionsSetValue(NULL, "-mass_coord_snes_tr_tol", "0");
     CHKERRQ(ierr);
     ierr = PetscOptionsSetValue(NULL, "-mass_coord_snes_type", "newtontr");
     CHKERRQ(ierr);
@@ -411,7 +411,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate(Ctx *E)
         CHKERRQ(ierr);
         if (reason < 0)
             SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
-                     "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
+                    "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
     }
 
     ierr = VecGetArray(x, &xx);
@@ -429,7 +429,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate(Ctx *E)
         {
             /* Sanity check on solution */
             SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
-                     "Unphysical radius coordinate, x: %g", xx[i]);
+                    "Unphysical radius coordinate, x: %g", xx[i]);
         }
         else
         {
@@ -448,7 +448,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate(Ctx *E)
         {
             /* Sanity check on solution */
             SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
-                     "Unphysical radius coordinate, x: %g", xx[i]);
+                    "Unphysical radius coordinate, x: %g", xx[i]);
         }
         else
         {
