@@ -28,7 +28,7 @@
 
 -temperature0 3.0E3 # K
 -radius0 1.0E8 # m
--time0 3.154E6 #7 # s
+-time0 3.154E6 # s
 
 # output directory
 -outputDirectory output
