@@ -64,19 +64,19 @@ PetscErrorCode EOSSetUpFromOptions_Lookup(EOS eos, const char *prefix, const Fun
      process a variety of input strings */
   ierr = EOSLookup_FilenameSet("_alpha", prefix, data->alpha_filename, NULL);
   CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet(data->alpha_filename, &data->alpha, SC->PRESSURE, SC->ENTROPY, 1.0 / SC->TEMP);
+  ierr = Interp2dCreateAndSet(data->alpha_filename, &data->alpha, SC->PRESSURE, SC->TEMP, 1.0 / SC->TEMP);
   CHKERRQ(ierr);
   ierr = EOSLookup_FilenameSet("_cp", prefix, data->cp_filename, NULL);
   CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet(data->cp_filename, &data->cp, SC->PRESSURE, SC->ENTROPY, SC->ENTROPY);
+  ierr = Interp2dCreateAndSet(data->cp_filename, &data->cp, SC->PRESSURE, SC->TEMP, SC->ENTROPY);
   CHKERRQ(ierr);
   ierr = EOSLookup_FilenameSet("_dTdPs", prefix, data->dTdPs_filename, NULL);
   CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet(data->dTdPs_filename, &data->dTdPs, SC->PRESSURE, SC->ENTROPY, SC->DTDP);
+  ierr = Interp2dCreateAndSet(data->dTdPs_filename, &data->dTdPs, SC->PRESSURE, SC->TEMP, SC->DTDP);
   CHKERRQ(ierr);
   ierr = EOSLookup_FilenameSet("_rho", prefix, data->rho_filename, NULL);
   CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet(data->rho_filename, &data->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY);
+  ierr = Interp2dCreateAndSet(data->rho_filename, &data->rho, SC->PRESSURE, SC->TEMP, SC->DENSITY);
   CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }

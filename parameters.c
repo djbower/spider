@@ -1070,8 +1070,8 @@ PetscErrorCode PrintParameters(Parameters const P)
   CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD, "%-15s %-15s %-15.6g %-6s\n", "Temperature", "", (double)SC->TEMP, "K");
   CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD, "%-15s %-15s %-15.6g %-6s\n", "Entropy", "", (double)SC->ENTROPY, "J/kg/K");
-  CHKERRQ(ierr);
+  // ierr = PetscPrintf(PETSC_COMM_WORLD, "%-15s %-15s %-15.6g %-6s\n", "Entropy", "", (double)SC->ENTROPY, "J/kg/K");
+  // CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD, "%-15s %-15s %-15.6g %-6s\n", "Pressure", "", (double)SC->PRESSURE, "Pa");
   CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD, "%-15s %-15s %-15.6g %-6s\n", "Mass", "", (double)SC->MASS, "kg");
