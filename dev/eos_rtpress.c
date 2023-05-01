@@ -274,7 +274,7 @@ static PetscErrorCode EOSRTpress_GetVolumeTemperature( const data_EOSRTpress *rt
     {   
       SNESConvergedReason reason;
       ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
-      if (reason < 0) SETERRQ1(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+      if (reason < 0) SETERRQ(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
           "Nonlinear solver didn't converge: %s\n",SNESConvergedReasons[reason]);
     }   
 
@@ -282,7 +282,7 @@ static PetscErrorCode EOSRTpress_GetVolumeTemperature( const data_EOSRTpress *rt
     for (i=0; i<2; ++i) {
         if( xx[i] < 0.0 ){
             /* Sanity check on solution (since it's non-unique) */
-            SETERRQ2(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
+            SETERRQ(PetscObjectComm((PetscObject)snes),PETSC_ERR_CONV_FAILED,
                 "Unphysical rtpress property: slot %d, x: %g",i,xx[i]);
         }
     }

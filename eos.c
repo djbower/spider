@@ -341,7 +341,7 @@ static PetscErrorCode LookupFilenameSet(const char *property, const char *prefix
     /* must return a valid lookup_filename */
     if (!set && !set_rel_to_src)
     {
-      SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_ARG_NULL, "Missing argument %s or %s", buf1, buf2);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_NULL, "Missing argument %s or %s", buf1, buf2);
     }
   }
 

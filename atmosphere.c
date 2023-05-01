@@ -381,7 +381,7 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure(Atmosphere *A, cons
             break;
 
         case 2:
-            SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SOLUBILITY value %d provided", Vp->SOLUBILITY);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SOLUBILITY value %d provided", Vp->SOLUBILITY);
             break;
 
         case 3:
@@ -399,7 +399,7 @@ PetscErrorCode set_volatile_abundances_from_partial_pressure(Atmosphere *A, cons
             /* could also interface with self-consistent solubility calculation (PERPLEX) */
 
         default:
-            SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SOLUBILITY value %d provided", Vp->SOLUBILITY);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SOLUBILITY value %d provided", Vp->SOLUBILITY);
         }
     }
 
@@ -644,7 +644,7 @@ PetscErrorCode set_atmosphere_emissivity_and_flux(Atmosphere *A, const Atmospher
            and temperature gradient directly */
         break;
     default:
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SURFACE_BC value %d provided", Ap->SURFACE_BC);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SURFACE_BC value %d provided", Ap->SURFACE_BC);
         break;
     }
 
@@ -1114,7 +1114,7 @@ PetscScalar get_dpdt(Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, c
         break;
 
     case 2:
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SOLUBILITY value %d provided", Vp->SOLUBILITY);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SOLUBILITY value %d provided", Vp->SOLUBILITY);
         break;
 
     case 3:
@@ -1132,7 +1132,7 @@ PetscScalar get_dpdt(Atmosphere *A, const AtmosphereParameters Ap, PetscInt i, c
         break;
 
     default:
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SOLUBILITY value %d provided", Vp->SOLUBILITY);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SOLUBILITY value %d provided", Vp->SOLUBILITY);
         break;
     }
 
@@ -1290,7 +1290,7 @@ PetscErrorCode set_oxygen_fugacity(Atmosphere *A, const AtmosphereParameters Ap,
         f = 8.31441;
         break;
     default:
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported OXYGEN_FUGACITY value %d provided", Ap->OXYGEN_FUGACITY);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported OXYGEN_FUGACITY value %d provided", Ap->OXYGEN_FUGACITY);
         break;
     }
 

@@ -488,7 +488,7 @@ PetscErrorCode PetscScalarCheckPositive(PetscScalar value, const char *value_str
     PetscFunctionBeginUser;
     if (value < 0.0)
     {
-        SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "%s must be positive (currently %f)", value_string, value);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "%s must be positive (currently %f)", value_string, value);
     }
     PetscFunctionReturn(0);
 }
@@ -498,7 +498,7 @@ PetscErrorCode PetscIntCheckPositive(PetscInt value, const char *value_string)
     PetscFunctionBeginUser;
     if (value < 0)
     {
-        SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "%s must be positive (currently %d)", value_string, value);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "%s must be positive (currently %d)", value_string, value);
     }
     PetscFunctionReturn(0);
 }

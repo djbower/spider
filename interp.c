@@ -24,7 +24,7 @@ PetscErrorCode Interp1dCreateAndSet(const char *filename, Interp1d *interp_ptr, 
 
     if (!fp)
     {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_FILE_OPEN, "Could not open file %s", filename);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_FILE_OPEN, "Could not open file %s", filename);
     }
     // fgets reads in string, sscanf processes it
     while (fgets(string, sizeof(string), fp) != NULL)
@@ -140,7 +140,7 @@ PetscErrorCode Interp2dCreateAndSet(const char *filename, Interp2d *interp_ptr, 
 
     if (fp == NULL)
     {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_FILE_OPEN, "Could not open file %s", filename);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_FILE_OPEN, "Could not open file %s", filename);
     }
 
     // fgets reads in string, sscanf processes it

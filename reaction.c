@@ -53,7 +53,7 @@ PetscErrorCode ReactionParametersCreateMethaneIVTANTHERMO(ReactionParameters *re
   }
   for (i = 0; i < reaction_parameters->n_volatiles; ++i)
     if (reaction_parameters->volatiles[i] == -1)
-      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
   PetscFunctionReturn(0);
 }
 
@@ -101,7 +101,7 @@ PetscErrorCode ReactionParametersCreateAmmonia1(ReactionParameters *reaction_par
   }
   for (i = 0; i < reaction_parameters->n_volatiles; ++i)
     if (reaction_parameters->volatiles[i] == -1)
-      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
   PetscFunctionReturn(0);
 }
 
@@ -148,7 +148,7 @@ PetscErrorCode ReactionParametersCreateWaterIVTANTHERMO(ReactionParameters *reac
   }
   for (i = 0; i < reaction_parameters->n_volatiles; ++i)
     if (reaction_parameters->volatiles[i] == -1)
-      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
   PetscFunctionReturn(0);
 }
 
@@ -194,7 +194,7 @@ PetscErrorCode ReactionParametersCreateWaterJANAF(ReactionParameters *reaction_p
   }
   for (i = 0; i < reaction_parameters->n_volatiles; ++i)
     if (reaction_parameters->volatiles[i] == -1)
-      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
   PetscFunctionReturn(0);
 }
 
@@ -240,7 +240,7 @@ PetscErrorCode ReactionParametersCreateCarbonDioxideJANAF(ReactionParameters *re
   }
   for (i = 0; i < reaction_parameters->n_volatiles; ++i)
     if (reaction_parameters->volatiles[i] == -1)
-      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
   PetscFunctionReturn(0);
 }
 
@@ -285,7 +285,7 @@ PetscErrorCode ReactionParametersCreateCarbonDioxideIVTANTHERMO(ReactionParamete
   }
   for (i = 0; i < reaction_parameters->n_volatiles; ++i)
     if (reaction_parameters->volatiles[i] == -1)
-      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Didn't find required volatiles for reaction %s", reaction_parameters->type);
   PetscFunctionReturn(0);
 }
 

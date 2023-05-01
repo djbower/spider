@@ -410,7 +410,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate(Ctx *E)
         ierr = SNESGetConvergedReason(snes, &reason);
         CHKERRQ(ierr);
         if (reason < 0)
-            SETERRQ1(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
+            SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
                      "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
     }
 
@@ -428,7 +428,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate(Ctx *E)
         if (xx[i] < 0.0)
         {
             /* Sanity check on solution */
-            SETERRQ1(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
+            SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
                      "Unphysical radius coordinate, x: %g", xx[i]);
         }
         else
@@ -447,7 +447,7 @@ static PetscErrorCode GetRadiusFromMassCoordinate(Ctx *E)
         if (xx[i] < 0.0)
         {
             /* Sanity check on solution */
-            SETERRQ1(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
+            SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
                      "Unphysical radius coordinate, x: %g", xx[i]);
         }
         else

@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     if (!options_file_provided)
     {
       if (argc > 1)
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "If you supply any options, you must supply an options file explicitly. For the default, use \n   -options_file %s", default_options_filename);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "If you supply any options, you must supply an options file explicitly. For the default, use \n   -options_file %s", default_options_filename);
       ierr = MakeRelativeToSourcePathAbsolute(default_options_filename);
       CHKERRQ(ierr);
       ierr = PetscPrintf(PETSC_COMM_WORLD, "Using default options file: %s\n", default_options_filename);

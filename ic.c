@@ -113,7 +113,7 @@ static PetscErrorCode set_ic_interior(Ctx *E, Vec sol)
     }
     else
     {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported IC_INTERIOR value %d provided", P->IC_INTERIOR);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported IC_INTERIOR value %d provided", P->IC_INTERIOR);
     }
 
     /* this copies the sol Vecs to E */
@@ -260,6 +260,7 @@ static PetscErrorCode set_start_time_from_file(Parameters P, const char *filenam
     PetscFunctionBeginUser;
 
     ierr = read_JSON_file_to_JSON_object(filename, &json);
+    CHKERRQ(ierr);
 
     /* time from this restart JSON must be passed to the time stepper
        to continue the integration and keep track of absolute time */
@@ -279,6 +280,7 @@ static PetscErrorCode set_start_stepmacro_from_file(Parameters P, const char *fi
     PetscFunctionBeginUser;
 
     ierr = read_JSON_file_to_JSON_object(filename, &json);
+    CHKERRQ(ierr);
 
     /* stepmacro from this restart JSON must be passed to the time stepper
        to continue the integration */
@@ -302,7 +304,7 @@ PetscErrorCode read_JSON_file_to_JSON_object(const char *filename, cJSON **json)
 
     if (fp == NULL)
     {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_FILE_OPEN, "Could not open file %s", filename);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_FILE_OPEN, "Could not open file %s", filename);
     }
 
     /* read file to zero terminated string */
@@ -574,7 +576,7 @@ static PetscErrorCode set_ic_atmosphere(Ctx *E, Vec sol)
 
         else
         {
-            SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported IC_ATMOSPHERE value %d provided", Ap->IC_ATMOSPHERE);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported IC_ATMOSPHERE value %d provided", Ap->IC_ATMOSPHERE);
         }
 
         /* all of the above are guaranteed to set Vec sol, for the
@@ -1102,8 +1104,8 @@ static PetscErrorCode solve_for_initial_partial_pressure(Ctx *E)
         ierr = SNESGetConvergedReason(snes, &reason);
         CHKERRQ(ierr);
         if (reason < 0)
-            SETERRQ1(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
-                     "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
+            SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
+                    "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
     }
 
     ierr = VecGetArray(x, &xx);
@@ -1113,8 +1115,8 @@ static PetscErrorCode solve_for_initial_partial_pressure(Ctx *E)
         if (A->volatiles[i].p < 0.0)
         {
             /* Sanity check on solution (since it's non-unique) */
-            SETERRQ2(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
-                     "Unphysical initial volatile partial pressure: volatile %d, x: %g", i, A->volatiles[i].p);
+            SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
+                    "Unphysical initial volatile partial pressure: volatile %d, x: %g", i, A->volatiles[i].p);
         }
         else
         {

@@ -313,7 +313,7 @@ static PetscErrorCode append_Jmix(Ctx *E)
 PetscScalar GetMixingHeatFlux(Ctx *E, PetscInt *ind_ptr)
 {
     PetscErrorCode ierr;
-    PetscScalar dTdxi, dxidr, temp, rho, kappac, phi, pres, Tval, Jmix, dPdr, Tliq, dTliqdP, Tsol, dTsoldP, gphi, smth;
+    PetscScalar dTdxi, dxidr, rho, kappac, phi, pres, Tval, Jmix, dPdr, Tliq, dTliqdP, Tsol, dTsoldP, gphi, smth;
     PetscInt should_be_two;
     Mesh const *M = &E->mesh;
     Solution const *S = &E->solution;
@@ -476,7 +476,7 @@ static PetscErrorCode append_Jgrav(Ctx *E)
 PetscScalar GetGravitationalHeatFlux(Ctx *E, PetscInt *ind_ptr)
 {
     PetscErrorCode ierr;
-    PetscScalar porosity, cond1, cond2, F, dv, pres, rho, Tliq, Tsol, phi, Jgrav, temp, phi_s, pres_s, Tval, gphi, smth;
+    PetscScalar porosity, cond1, cond2, F, dv, pres, rho, Tliq, Tsol, phi, Jgrav, phi_s, pres_s, Tval, gphi, smth;
     PetscInt should_be_two;
     Solution const *S = &E->solution;
     Mesh const *M = &E->mesh;
@@ -585,7 +585,7 @@ PetscScalar GetGravitationalHeatFlux(Ctx *E, PetscInt *ind_ptr)
         }
         break;
     default:
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SEPARATION value %d provided", P->SEPARATION);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SEPARATION value %d provided", P->SEPARATION);
         break;
     }
 
@@ -711,8 +711,8 @@ PetscErrorCode solve_for_surface_radiation_balance(Ctx *E, PetscReal t)
         ierr = SNESGetConvergedReason(snes, &reason);
         CHKERRQ(ierr);
         if (reason < 0)
-            SETERRQ1(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
-                     "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
+            SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
+                    "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
     }
 
     ierr = DMDAVecGetArray(da_b, S->T, &arr_T_b);
@@ -899,8 +899,8 @@ PetscErrorCode solve_for_steady_state_energy_interior(Ctx *E, PetscReal t)
         ierr = SNESGetConvergedReason(snes, &reason);
         CHKERRQ(ierr);
         if (reason < 0)
-            SETERRQ1(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
-                     "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
+            SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
+                    "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
     }
 
     /* copy solution back to E */
@@ -1056,7 +1056,6 @@ PetscErrorCode set_interior_atmosphere_interface_from_surface_temperature(Ctx *E
 {
     PetscErrorCode ierr;
     Parameters const P = E->parameters;
-    Mesh const *M = &E->mesh;
     AtmosphereParameters const Ap = P->atmosphere_parameters;
     ScalingConstants const SC = P->scaling_constants;
     Atmosphere *A = &E->atmosphere;

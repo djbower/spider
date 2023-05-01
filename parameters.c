@@ -209,7 +209,7 @@ static PetscErrorCode VolatileParametersSetFromOptions(VolatileParameters vp, co
   CHKERRQ(ierr);
   /* there is no way to pick a suitable default, so force the user to specify */
   if (!set)
-    SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_ARG_NULL, "Missing argument: %s", buf);
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_NULL, "Missing argument: %s", buf);
   /* in principle, we could fully non-dimensionalise using Avogadro's constant, but then
      the per-particle value would be 23 orders of magnitude less than this value */
   vp->molar_mass /= SC->MASS;
@@ -351,7 +351,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   CHKERRQ(ierr);
   if (P->numpts_b < 2)
   {
-    SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "numpts_b must >= 2 (currently %d)", P->numpts_b);
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "numpts_b must >= 2 (currently %d)", P->numpts_b);
   }
   P->numpts_s = P->numpts_b - 1;
 
@@ -406,7 +406,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
   }
   else
   {
-    SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "-mixing_length must be 1 or 2 (not %d)", P->mixing_length);
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "-mixing_length must be 1 or 2 (not %d)", P->mixing_length);
   }
 
   /* option to include a mid-mantle layer
@@ -420,7 +420,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     {
       if ((P->layer_interface_radius < P->coresize || P->layer_interface_radius > 1.0))
       {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "-layer_interface_radius %f must be greater than -coresize and less than 1.0", P->layer_interface_radius);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "-layer_interface_radius %f must be greater than -coresize and less than 1.0", P->layer_interface_radius);
       }
     }
   }
@@ -658,7 +658,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
        do nothing */
     break;
   default:
-    SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported CORE_BC value %d provided", P->CORE_BC);
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported CORE_BC value %d provided", P->CORE_BC);
     break;
   }
 
@@ -707,7 +707,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
     {
       P->n_phases = n_phases;
       if (P->n_phases > SPIDER_MAX_PHASES)
-        SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_SUP, "%D phases specified, but the maximum is %D", P->n_phases, SPIDER_MAX_PHASES);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "%D phases specified, but the maximum is %D", P->n_phases, SPIDER_MAX_PHASES);
       for (PetscInt r = 0; r < P->n_phases; ++r)
       {
         char buf[1024]; /* max size */
@@ -724,7 +724,7 @@ PetscErrorCode ParametersSetFromOptions(Parameters P)
           CHKERRQ(ierr);
           break;
         default:
-          SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unrecognized type code %D", type);
+          SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unrecognized type code %D", type);
         }
         ierr = EOSSetUpFromOptions(P->eos_phases[r], prefixes[r], FC, SC);
         CHKERRQ(ierr);
@@ -844,7 +844,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions(Parameters P, const Sca
        do nothing */
     break;
   default:
-    SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SURFACE_BC value %d provided", Ap->SURFACE_BC);
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SURFACE_BC value %d provided", Ap->SURFACE_BC);
     break;
   }
 
@@ -964,7 +964,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions(Parameters P, const Sca
     if (flg)
     {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS)
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
       ierr = ReactionParametersCreateAmmonia1(&Ap->reaction_parameters[Ap->n_reactions], Ap, SC);
       CHKERRQ(ierr);
       ++Ap->n_reactions;
@@ -976,7 +976,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions(Parameters P, const Sca
     if (flg)
     {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS)
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
       ierr = ReactionParametersCreateCarbonDioxideIVTANTHERMO(&Ap->reaction_parameters[Ap->n_reactions], Ap, SC);
       CHKERRQ(ierr);
       ++Ap->n_reactions;
@@ -988,7 +988,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions(Parameters P, const Sca
     if (flg)
     {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS)
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
       ierr = ReactionParametersCreateCarbonDioxideJANAF(&Ap->reaction_parameters[Ap->n_reactions], Ap, SC);
       CHKERRQ(ierr);
       ++Ap->n_reactions;
@@ -999,7 +999,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions(Parameters P, const Sca
     if (flg)
     {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS)
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
       ierr = ReactionParametersCreateMethaneIVTANTHERMO(&Ap->reaction_parameters[Ap->n_reactions], Ap, SC);
       CHKERRQ(ierr);
       ++Ap->n_reactions;
@@ -1011,7 +1011,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions(Parameters P, const Sca
     if (flg)
     {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS)
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
       ierr = ReactionParametersCreateWaterIVTANTHERMO(&Ap->reaction_parameters[Ap->n_reactions], Ap, SC);
       CHKERRQ(ierr);
       ++Ap->n_reactions;
@@ -1022,7 +1022,7 @@ static PetscErrorCode AtmosphereParametersSetFromOptions(Parameters P, const Sca
     if (flg)
     {
       if (Ap->n_reactions >= SPIDER_MAX_REACTIONS)
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Too many reactions. Increase SPIDER_MAX_REACTIONS (currently %d) in the source", SPIDER_MAX_REACTIONS);
       ierr = ReactionParametersCreateWaterJANAF(&Ap->reaction_parameters[Ap->n_reactions], Ap, SC);
       CHKERRQ(ierr);
       ++Ap->n_reactions;

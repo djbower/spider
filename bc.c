@@ -59,7 +59,7 @@ PetscErrorCode set_surface_temperature_gradient_update(Ctx *E, Vec rhs)
         BC_SET = PETSC_TRUE;
         break;
     default:
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SURFACE_BC value %d provided", Ap->SURFACE_BC);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported SURFACE_BC value %d provided", Ap->SURFACE_BC);
         break;
     }
 
@@ -489,7 +489,7 @@ PetscErrorCode solve_dpdts(Ctx *E)
         ierr = SNESGetConvergedReason(snes, &reason);
         CHKERRQ(ierr);
         if (reason < 0)
-            SETERRQ1(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
+            SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
                      "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
     }
 

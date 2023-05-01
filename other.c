@@ -80,7 +80,7 @@ static PetscErrorCode SetInitialCMBdSdxiFromFlux(Ctx *E)
         ierr = SNESGetConvergedReason(snes, &reason);
         CHKERRQ(ierr);
         if (reason < 0)
-            SETERRQ1(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
+            SETERRQ(PetscObjectComm((PetscObject)snes), PETSC_ERR_CONV_FAILED,
                      "Nonlinear solver didn't converge: %s\n", SNESConvergedReasons[reason]);
     }
 
@@ -221,7 +221,7 @@ PetscErrorCode SetCoreMantleFluxBC(Ctx *E)
             CHKERRQ(ierr);
             break;
         default:
-            SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported CORE_BC value %d provided", P->CORE_BC);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "Unsupported CORE_BC value %d provided", P->CORE_BC);
         }
 
         ierr = VecAssemblyBegin(S->Jtot);
