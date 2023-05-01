@@ -18,7 +18,6 @@ typedef struct
     Interp2d rho;   /* density, kg/m^3 */
     Interp2d dTdPs; /* adiabatic temperature gradient, K/Pa */
     Interp2d cp;    /* heat capacity, J/kg/K */
-    Interp2d temp;  /* temperature, K */
     Interp2d alpha; /* thermal expansion, 1/K */
 } data_EOSLookup;
 

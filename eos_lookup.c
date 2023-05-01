@@ -13,8 +13,6 @@ static PetscErrorCode EOSEval_Lookup(EOS eos, PetscScalar P, PetscScalar S, EOSE
   PetscFunctionBegin;
   eval->P = P;
   eval->S = S;
-  ierr = SetInterp2dValue(lookup->temp, P, S, &eval->T);
-  CHKERRQ(ierr);
   ierr = SetInterp2dValue(lookup->rho, P, S, &eval->rho);
   CHKERRQ(ierr);
   ierr = SetInterp2dValue(lookup->cp, P, S, &eval->Cp);
@@ -48,8 +46,6 @@ static PetscErrorCode EOSDestroy_Lookup(EOS eos)
   CHKERRQ(ierr);
   ierr = Interp2dDestroy(&lookup->rho);
   CHKERRQ(ierr);
-  ierr = Interp2dDestroy(&lookup->temp);
-  CHKERRQ(ierr);
   ierr = PetscFree(eos->impl_data);
   CHKERRQ(ierr);
   eos->impl_data = NULL;
@@ -81,10 +77,6 @@ PetscErrorCode EOSSetUpFromOptions_Lookup(EOS eos, const char *prefix, const Fun
   ierr = EOSLookup_FilenameSet("_rho", prefix, data->rho_filename, NULL);
   CHKERRQ(ierr);
   ierr = Interp2dCreateAndSet(data->rho_filename, &data->rho, SC->PRESSURE, SC->ENTROPY, SC->DENSITY);
-  CHKERRQ(ierr);
-  ierr = EOSLookup_FilenameSet("_temp", prefix, data->temp_filename, NULL);
-  CHKERRQ(ierr);
-  ierr = Interp2dCreateAndSet(data->temp_filename, &data->temp, SC->PRESSURE, SC->ENTROPY, SC->TEMP);
   CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
