@@ -249,10 +249,13 @@ static PetscErrorCode EOSEval_Composite_TwoPhase(EOS eos, PetscScalar P, PetscSc
   ierr = EOSEval(composite->eos[composite->solidus_slot], P, solidus, &eval_solid);
   CHKERRQ(ierr);
 
+  /* enthalpy of fusion */
+  eval->enthalpy_of_fusion = eval->fusion_curve * composite->entropy_of_fusion;
+
   /* Cp */
   /* Solomatov (2007), Treatise on Geophysics, Eq. 3.4 */
   /* The first term is not included because it is small compared to the latent heat term */
-  eval->Cp = eval->fusion_curve * composite->entropy_of_fusion; // enthalpy change upon melting.
+  eval->Cp = eval->enthalpy_of_fusion; // enthalpy change upon melting.
   eval->Cp /= eval->fusion;
 
   /* Rho */

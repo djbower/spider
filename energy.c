@@ -310,17 +310,16 @@ static PetscErrorCode append_Jmix(Ctx *E)
     PetscFunctionReturn(0);
 }
 
-// TODO: Update to temperature.
 PetscScalar GetMixingHeatFlux(Ctx *E, PetscInt *ind_ptr)
 {
     PetscErrorCode ierr;
-    PetscScalar dSdxi, dxidr, temp, rho, kappac, phi, pres, Sval, Jmix, dPdr, Sliq, dSliqdP, Ssol, dSsoldP, gphi, smth;
+    PetscScalar dTdxi, dxidr, temp, rho, kappac, phi, pres, Tval, Jmix, dPdr, Tliq, dTliqdP, Tsol, dTsoldP, gphi, smth;
     PetscInt should_be_two;
     Mesh const *M = &E->mesh;
     Solution const *S = &E->solution;
     Parameters const P = E->parameters;
     EOS *sub_eos;
-    EOSEvalData eval_liq, eval_sol;
+    EOSEvalData eval_composite;
     PetscInt ilo_b, ihi_b, w_b;
 
     ierr = DMDAGetCorners(E->da_b, &ilo_b, 0, 0, &w_b, 0, 0);
@@ -341,7 +340,7 @@ PetscScalar GetMixingHeatFlux(Ctx *E, PetscInt *ind_ptr)
     const EOS Ep0 = sub_eos[0];
     const EOS Ep1 = sub_eos[1];
 
-    ierr = VecGetValues(S->dSdxi, 1, ind_ptr, &dSdxi);
+    ierr = VecGetValues(S->dTdxi, 1, ind_ptr, &dTdxi);
     CHKERRQ(ierr);
     ierr = VecGetValues(M->dxidr_b, 1, ind_ptr, &dxidr);
     CHKERRQ(ierr);
@@ -355,29 +354,23 @@ PetscScalar GetMixingHeatFlux(Ctx *E, PetscInt *ind_ptr)
     CHKERRQ(ierr);
     ierr = VecGetValues(M->dPdr_b, 1, ind_ptr, &dPdr);
     CHKERRQ(ierr);
-    ierr = VecGetValues(S->S, 1, ind_ptr, &Sval);
+    ierr = VecGetValues(S->T, 1, ind_ptr, &Tval);
     CHKERRQ(ierr);
 
-    ierr = EOSGetPhaseBoundary(Ep0, pres, &Sliq, &dSliqdP);
+    ierr = EOSGetPhaseBoundary(Ep0, pres, &Tliq, &dTliqdP);
     CHKERRQ(ierr);
-    ierr = EOSEval(Ep0, pres, Sliq, &eval_liq);
+    ierr = EOSGetPhaseBoundary(Ep1, pres, &Tsol, &dTsoldP);
     CHKERRQ(ierr);
-    ierr = EOSGetPhaseBoundary(Ep1, pres, &Ssol, &dSsoldP);
-    CHKERRQ(ierr);
-    ierr = EOSEval(Ep1, pres, Ssol, &eval_sol);
+    ierr = EOSEval(P->eos, pres, Tval, &eval_composite);
     CHKERRQ(ierr);
 
-    /* first two lines gives dSfus*dphi/dr */
-    Jmix = dSdxi * dxidr - phi * dSliqdP * dPdr;
-    Jmix += (phi - 1.0) * dSsoldP * dPdr;
+    /* first two lines gives dphi/dr */
+    Jmix = dTdxi * dxidr - phi * dTliqdP * dPdr;
+    Jmix += (phi - 1.0) * dTsoldP * dPdr;
+    Jmix *= -rho * kappac * eval_composite.enthalpy_of_fusion;
 
-    /* temperature of the fusion curve */
-    temp = eval_sol.T + 0.5 * (eval_liq.T - eval_sol.T);
-
-    Jmix *= -kappac * rho * temp; /* dSfus already included in first two lines above */
-
-    /* (optional) smoothing across phase boundaries for two phase composite */
-    ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres, Sval, &gphi);
+    /* smoothing across phase boundaries for two phase composite */
+    ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres, Tval, &gphi);
     CHKERRQ(ierr);
     {
         PetscScalar matprop_smooth_width;
