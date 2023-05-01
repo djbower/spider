@@ -473,17 +473,16 @@ static PetscErrorCode append_Jgrav(Ctx *E)
     PetscFunctionReturn(0);
 }
 
-// TODO: Update to temperature.
 PetscScalar GetGravitationalHeatFlux(Ctx *E, PetscInt *ind_ptr)
 {
     PetscErrorCode ierr;
-    PetscScalar porosity, cond1, cond2, F, dv, pres, rho, Sliq, Ssol, phi, Jgrav, temp, phi_s, pres_s, Sval, gphi, smth;
+    PetscScalar porosity, cond1, cond2, F, dv, pres, rho, Tliq, Tsol, phi, Jgrav, temp, phi_s, pres_s, Tval, gphi, smth;
     PetscInt should_be_two;
     Solution const *S = &E->solution;
     Mesh const *M = &E->mesh;
     Parameters const P = E->parameters;
     EOS *sub_eos;
-    EOSEvalData eval_liq, eval_sol;
+    EOSEvalData eval_composite, eval_liq, eval_sol;
     PetscInt ilo_b, ihi_b, w_b;
 
     ierr = DMDAGetCorners(E->da_b, &ilo_b, 0, 0, &w_b, 0, 0);
@@ -517,16 +516,18 @@ PetscScalar GetGravitationalHeatFlux(Ctx *E, PetscInt *ind_ptr)
     CHKERRQ(ierr);
     ierr = VecGetValues(S->phi_s, 1, ind_ptr, &phi_s);
     CHKERRQ(ierr);
-    ierr = VecGetValues(S->S_s, 1, ind_ptr, &Sval);
+    ierr = VecGetValues(S->T_s, 1, ind_ptr, &Tval);
     CHKERRQ(ierr);
 
-    ierr = EOSGetPhaseBoundary(Ep0, pres, &Sliq, NULL);
+    ierr = EOSGetPhaseBoundary(Ep0, pres, &Tliq, NULL);
     CHKERRQ(ierr);
-    ierr = EOSEval(Ep0, pres, Sliq, &eval_liq);
+    ierr = EOSEval(Ep0, pres, Tliq, &eval_liq);
     CHKERRQ(ierr);
-    ierr = EOSGetPhaseBoundary(Ep1, pres, &Ssol, NULL);
+    ierr = EOSGetPhaseBoundary(Ep1, pres, &Tsol, NULL);
     CHKERRQ(ierr);
-    ierr = EOSEval(Ep1, pres, Ssol, &eval_sol);
+    ierr = EOSEval(Ep1, pres, Tsol, &eval_sol);
+    CHKERRQ(ierr);
+    ierr = EOSEval(P->eos, pres, Tval, &eval_composite);
     CHKERRQ(ierr);
 
     porosity = (eval_sol.rho - rho) / (eval_sol.rho - eval_liq.rho);
@@ -599,18 +600,15 @@ PetscScalar GetGravitationalHeatFlux(Ctx *E, PetscInt *ind_ptr)
        or phi=1) */
     Jgrav = rho * phi * (1.0 - phi) * dv;
 
-    /* temperature of the fusion curve */
-    temp = eval_sol.T + 0.5 * (eval_liq.T - eval_sol.T);
-
     /* energy flux */
-    Jgrav *= temp * (Sliq - Ssol); // enthalpy
+    Jgrav *= eval_composite.enthalpy_of_fusion;
 
     /* smoothing across phase boundaries for two phase composite */
     /* this smooths based on the value of the melt fraction in the cell below
        the interface, but this is only appropriate for bottom-up crystallisation */
     if (P->JGRAV_BOTTOM_UP)
     {
-        ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres_s, Sval, &gphi);
+        ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres_s, Tval, &gphi);
         CHKERRQ(ierr);
         {
             PetscScalar matprop_smooth_width;
