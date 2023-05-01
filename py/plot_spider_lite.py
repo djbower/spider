@@ -280,8 +280,8 @@ def plot_temperature( ax, myjson_o ):
 
     # plot melting region
     try:
-        liquidus = myjson_o.get_values(['data','liquidus_temp_b'], squeeze=False )
-        solidus = myjson_o.get_values(['data','solidus_temp_b'], squeeze=False )
+        liquidus = myjson_o.get_values(['data','liquidus_b'], squeeze=False )
+        solidus = myjson_o.get_values(['data','solidus_b'], squeeze=False )
         ax.fill_between( myjson_o.xdata, liquidus[:,0], solidus[:,0], facecolor='grey', alpha=0.35, linewidth=0 )
     except TypeError:
         # for single phase systems the phase boundaries might not be exported
