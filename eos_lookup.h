@@ -10,7 +10,6 @@ typedef struct
     char rho_filename[PETSC_MAX_PATH_LEN];
     char dTdPs_filename[PETSC_MAX_PATH_LEN];
     char cp_filename[PETSC_MAX_PATH_LEN];
-    char temp_filename[PETSC_MAX_PATH_LEN];
     char alpha_filename[PETSC_MAX_PATH_LEN];
     /* lookup objects to evaluate */
     /* memory is not necessarily allocated to these lookup

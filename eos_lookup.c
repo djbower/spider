@@ -5,21 +5,21 @@
 static PetscErrorCode EOSLookup_FilenameSet(const char *, const char *, char *, PetscBool *);
 
 /* EOS interface functions */
-static PetscErrorCode EOSEval_Lookup(EOS eos, PetscScalar P, PetscScalar S, EOSEvalData *eval)
+static PetscErrorCode EOSEval_Lookup(EOS eos, PetscScalar P, PetscScalar T, EOSEvalData *eval)
 {
   PetscErrorCode ierr;
   data_EOSLookup *lookup = (data_EOSLookup *)eos->impl_data;
 
   PetscFunctionBegin;
   eval->P = P;
-  eval->S = S;
-  ierr = SetInterp2dValue(lookup->rho, P, S, &eval->rho);
+  eval->T = T;
+  ierr = SetInterp2dValue(lookup->rho, P, T, &eval->rho);
   CHKERRQ(ierr);
-  ierr = SetInterp2dValue(lookup->cp, P, S, &eval->Cp);
+  ierr = SetInterp2dValue(lookup->cp, P, T, &eval->Cp);
   CHKERRQ(ierr);
-  ierr = SetInterp2dValue(lookup->dTdPs, P, S, &eval->dTdPs);
+  ierr = SetInterp2dValue(lookup->dTdPs, P, T, &eval->dTdPs);
   CHKERRQ(ierr);
-  ierr = SetInterp2dValue(lookup->alpha, P, S, &eval->alpha);
+  ierr = SetInterp2dValue(lookup->alpha, P, T, &eval->alpha);
   CHKERRQ(ierr);
   /* lookup does not know about these quantities, since they are not used by
      SPIDER */
