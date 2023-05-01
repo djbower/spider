@@ -26,7 +26,7 @@
 
 # these values are chosen to roughly normalise T, dT/dt, dTdr, and d/dt(dT/dr) to unity
 
--temperature0 2.0E3 # K
+-temperature0 3.0E3 # K
 -radius0 1.0E8 # m
 -time0 3.154E6 #7 # s
 
@@ -76,9 +76,9 @@
 
 # initial condition
 -IC_INTERIOR 1
--ic_adiabat_temperature 2000.0
-# next serves as an initial guess for the entropy gradient
--ic_dTdr -3.0e-4
+-ic_adiabat_temperature 2500.0
+# next serves as an initial guess for the temperature gradient
+-ic_dTdr -1.0e-3
 
 
 #====================

@@ -283,6 +283,23 @@ def plot_temperature( ax, myjson_o ):
         liquidus = myjson_o.get_values(['data','liquidus_b'], squeeze=False )
         solidus = myjson_o.get_values(['data','solidus_b'], squeeze=False )
         ax.fill_between( myjson_o.xdata, liquidus[:,0], solidus[:,0], facecolor='grey', alpha=0.35, linewidth=0 )
+        
+        # dotted lines of constant melt fraction
+        for xx in range( 0, 11, 2 ):
+            yy_b = xx/10.0 * (liquidus[:,0] - solidus[:,0]) + solidus[:,0]
+            if xx == 0:
+                # solidus
+                ax.plot( myjson_o.xdata, yy_b, '-', linewidth=0.5, color='black' )
+            elif xx == 3:
+                # typically, the approximate location of the rheological transition
+                ax.plot( myjson_o.xdata, yy_b, '-', linewidth=1.0, color='white')
+            elif xx == 10:
+                # liquidus
+                ax.plot( myjson_o.xdata, yy_b, '-', linewidth=0.5, color='black' )
+            else:
+                # dashed constant melt fraction lines
+                ax.plot( myjson_o.xdata, yy_b, '--', linewidth=1.0, color='white' )
+
     except TypeError:
         # for single phase systems the phase boundaries might not be exported
         pass
