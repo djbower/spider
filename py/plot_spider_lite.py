@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 
+import argparse
+import json
+import logging
+import os
+import sys
+from bisect import bisect_left
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-import argparse, json, logging, os, sys
-from bisect import bisect_left
 import numpy as np
+from matplotlib.figure import Figure
 
 logger = logging.getLogger('root')
 FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
@@ -222,48 +227,48 @@ def find_closest(myList, myNumber):
        return before
 
 #===================================================================
-def plot_entropy( ax, myjson_o ):
+# def plot_entropy( ax, myjson_o ):
 
-    '''plot entropy'''
+#     '''plot entropy'''
 
-    set_xaxis_from_kwargs( ax, myjson_o, xaxis='pressure' )
-    entropy_b = myjson_o.get_values(['data','S_b'], squeeze=False)
+#     set_xaxis_from_kwargs( ax, myjson_o, xaxis='pressure' )
+#     entropy_b = myjson_o.get_values(['data','S_b'], squeeze=False)
 
-    # shade melting region grey
-    try:
-        liquidus = myjson_o.get_values(['data','liquidus_b'], squeeze=False )
-        solidus = myjson_o.get_values(['data','solidus_b'], squeeze=False )
-        ax.fill_between( myjson_o.xdata, liquidus[:,0], solidus[:,0], facecolor='grey', alpha=0.35, linewidth=0 )
+#     # shade melting region grey
+#     try:
+#         liquidus = myjson_o.get_values(['data','liquidus_b'], squeeze=False )
+#         solidus = myjson_o.get_values(['data','solidus_b'], squeeze=False )
+#         ax.fill_between( myjson_o.xdata, liquidus[:,0], solidus[:,0], facecolor='grey', alpha=0.35, linewidth=0 )
 
-        # dotted lines of constant melt fraction
-        for xx in range( 0, 11, 2 ):
-            yy_b = xx/10.0 * (liquidus[:,0] - solidus[:,0]) + solidus[:,0]
-            if xx == 0:
-                # solidus
-                ax.plot( myjson_o.xdata, yy_b, '-', linewidth=0.5, color='black' )
-            elif xx == 3:
-                # typically, the approximate location of the rheological transition
-                ax.plot( myjson_o.xdata, yy_b, '-', linewidth=1.0, color='white')
-            elif xx == 10:
-                # liquidus
-                ax.plot( myjson_o.xdata, yy_b, '-', linewidth=0.5, color='black' )
-            else:
-                # dashed constant melt fraction lines
-                ax.plot( myjson_o.xdata, yy_b, '--', linewidth=1.0, color='white' )
-    except TypeError:
-        # for single phase, melting curves might not be available
-        pass
+#         # dotted lines of constant melt fraction
+#         for xx in range( 0, 11, 2 ):
+#             yy_b = xx/10.0 * (liquidus[:,0] - solidus[:,0]) + solidus[:,0]
+#             if xx == 0:
+#                 # solidus
+#                 ax.plot( myjson_o.xdata, yy_b, '-', linewidth=0.5, color='black' )
+#             elif xx == 3:
+#                 # typically, the approximate location of the rheological transition
+#                 ax.plot( myjson_o.xdata, yy_b, '-', linewidth=1.0, color='white')
+#             elif xx == 10:
+#                 # liquidus
+#                 ax.plot( myjson_o.xdata, yy_b, '-', linewidth=0.5, color='black' )
+#             else:
+#                 # dashed constant melt fraction lines
+#                 ax.plot( myjson_o.xdata, yy_b, '--', linewidth=1.0, color='white' )
+#     except TypeError:
+#         # for single phase, melting curves might not be available
+#         pass
 
-    for nn, time in enumerate( myjson_o.time_l ):
-        ax.plot( myjson_o.xdata, entropy_b[:,nn], label=time )
+#     for nn, time in enumerate( myjson_o.time_l ):
+#         ax.plot( myjson_o.xdata, entropy_b[:,nn], label=time )
 
-    title = 'Entropy'
-    set_standard_title( ax, title, 'J/kg/K' )
+#     title = 'Entropy'
+#     set_standard_title( ax, title, 'J/kg/K' )
 
-    yticks = range(1200,2801,400)
-    ax.set_yticks( yticks )
-    ax.set_ylabel( 'S', rotation=0 )
-    ax.yaxis.set_label_coords(-0.15,0.59)
+#     yticks = range(1200,2801,400)
+#     ax.set_yticks( yticks )
+#     ax.set_ylabel( 'S', rotation=0 )
+#     ax.yaxis.set_label_coords(-0.15,0.59)
 
 #===================================================================
 def plot_temperature( ax, myjson_o ):
@@ -271,7 +276,7 @@ def plot_temperature( ax, myjson_o ):
     '''plot temperature'''
 
     set_xaxis_from_kwargs( ax, myjson_o, xaxis='pressure' )
-    temp_b = myjson_o.get_values(['data','temp_b'], squeeze=False)
+    temp_b = myjson_o.get_values(['data','T_b'], squeeze=False)
 
     # plot melting region
     try:
@@ -436,19 +441,19 @@ def figure_interior( indir='output', time=None ):
     myjson_o = MyJSON( indir, time )
 
     fig = plt.figure(FigureClass=MyFigure, figsize=(4.7747,4.7747))
-    axs = fig.subplots(2,2)
+    axs = fig.subplots(1,3)
     fig.subplots_adjust(wspace=0.3,hspace=0.4)
 
-    plot_entropy( axs[0][0], myjson_o )
-    plot_temperature( axs[0][1], myjson_o )
-    plot_melt_fraction( axs[1][0], myjson_o )
-    plot_viscosity( axs[1][1], myjson_o )
+    # plot_entropy( axs[0][0], myjson_o )
+    plot_temperature( axs[0], myjson_o )
+    plot_melt_fraction( axs[1], myjson_o )
+    plot_viscosity( axs[2], myjson_o )
 
     # legend
-    handles, labels = axs[0][1].get_legend_handles_labels()
+    handles, labels = axs[1].get_legend_handles_labels()
     # get labels from time_l above and format
     labels = ("{:.2e}".format(time) for time in myjson_o.time_l)
-    axs[1][1].legend( handles, labels, ncol=2, title='Time (yrs)')
+    axs[1].legend( handles, labels, ncol=2, title='Time (yrs)')
 
     fig.savefig('interior.pdf')
 
