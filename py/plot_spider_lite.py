@@ -10,6 +10,7 @@ from bisect import bisect_left
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import ticker
 from matplotlib.figure import Figure
 
 logger = logging.getLogger("root")
@@ -45,23 +46,23 @@ class MyJSON:
         self.indir = indir
         self.time = time
         self.__set_time_list()
-        self.__load_json_data()
+        self._load_json_data()
 
     def __set_time_list(self):
-        self.__set_time_list_from_files_in_directory()
+        self._set_time_list_from_files_in_directory()
         if self.time is None:
             pass
         # options below subsample the time list
         elif self.time == "select":
-            self.__set_time_list_from_select_times()
+            self._set_time_list_from_select_times()
         else:
-            self.__set_time_list_from_user_input()
+            self._set_time_list_from_user_input()
         logger.debug("np.shape(time_l)= {}".format(np.shape(self.time_l)))
 
-    def __load_json_data(self):
+    def _load_json_data(self):
         self.data_d = {}
         for nn, time in enumerate(self.time_l):
-            self.data_d[nn] = self.__get_json_data_from_file(time)
+            self.data_d[nn] = self._get_json_data_from_file(time)
 
     def get_dict(self, keys=None):
         """get dictionary of data"""
@@ -81,15 +82,17 @@ class MyJSON:
             scale = 1.0e-3
         elif units == "gyrs":
             scale = 1.0e-6
+        else:
+            raise ValueError("Units are not recognised")
         time_a *= scale
         return time_a
 
-    def __set_time_list_from_user_input(self):
+    def _set_time_list_from_user_input(self):
         # bit ugly with the parsing here.  Could clean up.
         # if user provides list, do nothing
         if isinstance(self.time, list):
             pass
-        else:
+        elif isinstance(self.time, str):
             # if user provides comma separated string
             if len(self.time.split(",")) > 1:
                 self.time = [int(time) for time in self.time.split(",")]
@@ -99,6 +102,7 @@ class MyJSON:
 
         # find nearest time in directory to user desired time
         outtime_l = []
+        assert self.time is not None
         for time in self.time:
             neartime = find_closest(self.time_l, time)
             outtime_l.append(neartime)
@@ -106,7 +110,7 @@ class MyJSON:
         outtime_l = list(dict.fromkeys(outtime_l))
         self.time_l = outtime_l
 
-    def __set_time_list_from_files_in_directory(self):
+    def _set_time_list_from_files_in_directory(self):
         """return a time list corresponding to the time information of
         the files in indir"""
         # get times that exist in indir
@@ -126,7 +130,7 @@ class MyJSON:
         time_l = sorted(time_l, key=int)
         self.time_l = time_l
 
-    def __set_time_list_from_select_times(self):
+    def _set_time_list_from_select_times(self):
         """return a list of select times, where subsequent times are
         double the previous time.  This captures the generally trend
         of delayed cooling due to continual outgassing"""
@@ -140,7 +144,7 @@ class MyJSON:
         select_l.append(self.time_l[-1])  # add last output
         self.time_l = select_l  # update time list
 
-    def __get_json_data_from_file(self, time):
+    def _get_json_data_from_file(self, time):
         """load and store json data from file"""
         filename = self.indir + "/{}.json".format(time)
         try:
@@ -163,7 +167,7 @@ class MyJSON:
         data_l = []
         for nn, time in enumerate(self.time_l):
             key_l = [nn] + keys
-            data_a = self.__get_values_at_time(key_l, **kwargs)
+            data_a = self._get_values_at_time(key_l, **kwargs)
             data_l.append(data_a)
         # below gives (m,n) (2d array), where m (rows) is
         # time index and n (columns) is data size
@@ -181,9 +185,10 @@ class MyJSON:
         logger.debug("np.shape= {}".format(np.shape(data_a)))
         return data_a  # 1-d or 2-d np array
 
-    def __get_values_at_time(self, keys, **kwargs):
+    def _get_values_at_time(self, keys, **kwargs):
         """get the scaled values for a particular quantity as a 1d np.array"""
         dict_d = self.get_dict(keys)
+        assert dict_d
         scaling = float(dict_d["scaling"])
         # gets a 1-D array
         values_a = np.asarray(dict_d["values"], dtype=float)
@@ -203,6 +208,7 @@ class MyJSON:
         # data from first entry
         key_l = [0] + keys
         dict_d = self.get_dict(key_l)
+        assert dict_d
         units = dict_d["units"]
         units = None if units == "None" else units
         return units
@@ -401,7 +407,7 @@ def set_xaxis_from_kwargs(ax, myjson_o=None, **kwargs):
         ax.set_xlim(np.min(xticks), np.max(xticks))
         ax.invert_xaxis()
         ax.xaxis.set_major_locator(ticker.FixedLocator(xticks))
-        ax.set_xlabel("Melt fraction (\%)")
+        ax.set_xlabel("Melt fraction (/%)")
 
 
 def recursive_get(dict_d, keys=None):
