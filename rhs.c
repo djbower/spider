@@ -93,7 +93,7 @@ PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec sol_in, Vec rhs, void *ptr)
   /* A->dTsurfdt already contains contribution of dTsurf/dT */
   /* By chain rule, just need dT/dt */
   A->dTsurfdt *= arr_dTdt_s[0];
-  /* TODO: add effect of gradient to above 0.5*d/dt (dT/dxi)? */
+  /* add effect of gradient to above 0.5*d/dt (dT/dxi)? */
 
   ierr = DMDAVecRestoreArrayRead(da_s, M->xi_s, &arr_xi_s);
   CHKERRQ(ierr);
