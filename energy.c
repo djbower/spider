@@ -1024,7 +1024,7 @@ static PetscErrorCode set_current_state(Ctx *E, PetscReal t)
     CHKERRQ(ierr);
 
     /* material properties at basic and staggered nodes */
-    ierr = set_capacitance_staggered(E);
+    ierr = set_matprop_staggered(E);
     CHKERRQ(ierr);
     ierr = set_matprop_basic(E);
     CHKERRQ(ierr);

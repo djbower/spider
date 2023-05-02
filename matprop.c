@@ -1,29 +1,82 @@
 #include "eos.h"
+#include "eos_composite.h"
 #include "parameters.h"
 #include "matprop.h"
 #include "twophase.h"
 #include "util.h"
 
-static PetscErrorCode set_matprop_staggered(Ctx *);
 static PetscScalar GetModifiedMixingLength(PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar);
 static PetscScalar GetConstantMixingLength(PetscScalar outer_radius, PetscScalar inner_radius);
 static PetscScalar GetMixingLength(const Parameters, PetscScalar);
 static PetscErrorCode apply_log10visc_cutoff(Parameters const, PetscScalar *);
 static PetscErrorCode GetEddyDiffusivity(const EOSEvalData, const Parameters, PetscScalar, PetscScalar, PetscScalar, PetscScalar, PetscScalar *, PetscScalar *, PetscScalar *);
 
-PetscErrorCode set_capacitance_staggered(Ctx *E)
+PetscErrorCode set_matprop_staggered(Ctx *E)
 {
     PetscErrorCode ierr;
+    PetscInt i, ilo_s, ihi_s, w_s;
+    DM da_s = E->da_s;
     Mesh *M = &E->mesh;
+    Parameters const P = E->parameters;
     Solution *S = &E->solution;
+    Vec pres_s = M->pressure_s;
+    PetscScalar *arr_rho_s, *arr_cp_s, *arr_capacitance_s, TT, PP, gphi, temp, matprop_smooth_width, smth;
+    const PetscScalar *arr_pres_s, *arr_T_s;
+    EOSEvalData eos_eval;
 
     PetscFunctionBeginUser;
 
-    ierr = set_matprop_staggered(E);
+    ierr = DMDAGetCorners(da_s, &ilo_s, 0, 0, &w_s, 0, 0);
     CHKERRQ(ierr);
-    ierr = VecPointwiseMult(S->capacitance_s, S->cp_s, S->rho_s);
+    ihi_s = ilo_s + w_s;
+
+    ierr = DMDAVecGetArrayRead(da_s, pres_s, &arr_pres_s);
     CHKERRQ(ierr);
-    /* FIXME: Add second term to capacitance involving dphi/dT */
+    ierr = DMDAVecGetArrayRead(da_s, S->T_s, &arr_T_s);
+    CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s, S->cp_s, &arr_cp_s);
+    CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s, S->rho_s, &arr_rho_s);
+    CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da_s, S->capacitance_s, &arr_capacitance_s);
+    CHKERRQ(ierr);
+
+    ierr = EOSCompositeGetMatpropSmoothWidth(P->eos, &matprop_smooth_width);
+
+    for (i = ilo_s; i < ihi_s; ++i)
+    {
+        PP = arr_pres_s[i];
+        TT = arr_T_s[i];
+        ierr = EOSEval(P->eos, PP, TT, &eos_eval);
+        CHKERRQ(ierr);
+
+        arr_rho_s[i] = eos_eval.rho;
+        arr_cp_s[i] = eos_eval.Cp;
+
+        ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, PP, TT, &gphi);
+        CHKERRQ(ierr);
+        /* capacitance in the mixed phase region */
+        temp = arr_cp_s[i] + eos_eval.enthalpy_of_fusion / eos_eval.fusion;
+
+        smth = get_smoothing(matprop_smooth_width, gphi);
+        /* note the factor of rho and dV is included below not here */
+        arr_capacitance_s[i] = combine_matprop(smth, temp, arr_cp_s[i]);
+    }
+
+    ierr = DMDAVecRestoreArrayRead(da_s, pres_s, &arr_pres_s);
+    CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArrayRead(da_s, S->T_s, &arr_T_s);
+    CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s, S->cp_s, &arr_cp_s);
+    CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s, S->rho_s, &arr_rho_s);
+    CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da_s, S->capacitance_s, &arr_capacitance_s);
+    CHKERRQ(ierr);
+
+    /* additional factors to include for the capacitance */
+    ierr = VecPointwiseMult(S->capacitance_s, S->capacitance_s, S->rho_s);
+    CHKERRQ(ierr);
     ierr = VecPointwiseMult(S->capacitance_s, S->capacitance_s, M->volume_s);
     CHKERRQ(ierr);
 
@@ -69,54 +122,6 @@ PetscErrorCode set_phase_fraction_staggered(Ctx *E)
     ierr = DMDAVecRestoreArrayRead(da_s, S->T_s, &arr_T);
     CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(da_s, S->phi_s, &arr_phi);
-    CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode set_matprop_staggered(Ctx *E)
-{
-    PetscErrorCode ierr;
-    PetscInt i, ilo_s, ihi_s, w_s;
-    DM da_s = E->da_s;
-    Mesh *M = &E->mesh;
-    Parameters const P = E->parameters;
-    Solution *S = &E->solution;
-    Vec pres_s = M->pressure_s;
-    PetscScalar *arr_rho_s, *arr_cp_s;
-    const PetscScalar *arr_pres_s, *arr_T_s;
-    EOSEvalData eos_eval;
-
-    PetscFunctionBeginUser;
-
-    ierr = DMDAGetCorners(da_s, &ilo_s, 0, 0, &w_s, 0, 0);
-    CHKERRQ(ierr);
-    ihi_s = ilo_s + w_s;
-
-    ierr = DMDAVecGetArrayRead(da_s, pres_s, &arr_pres_s);
-    CHKERRQ(ierr);
-    ierr = DMDAVecGetArrayRead(da_s, S->T_s, &arr_T_s);
-    CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s, S->cp_s, &arr_cp_s);
-    CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(da_s, S->rho_s, &arr_rho_s);
-    CHKERRQ(ierr);
-
-    for (i = ilo_s; i < ihi_s; ++i)
-    {
-        ierr = EOSEval(P->eos, arr_pres_s[i], arr_T_s[i], &eos_eval);
-        CHKERRQ(ierr);
-        arr_rho_s[i] = eos_eval.rho;
-        arr_cp_s[i] = eos_eval.Cp;
-    }
-
-    ierr = DMDAVecRestoreArrayRead(da_s, pres_s, &arr_pres_s);
-    CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArrayRead(da_s, S->T_s, &arr_T_s);
-    CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_s, S->cp_s, &arr_cp_s);
-    CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(da_s, S->rho_s, &arr_rho_s);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

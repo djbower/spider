@@ -17,7 +17,7 @@
 -ts_sundials_rtol 1.0e-8
 
 # number of basic nodes
--n 50
+-n 100
 
 # scaling parameters
 # - these are used to non-dimensionalise (scale) the numerical problem
@@ -27,7 +27,7 @@
 # these values are chosen to roughly normalise T, dT/dt, dTdr, and d/dt(dT/dr) to unity
 
 -temperature0 3.0E3 # K
--radius0 1.0E8 # m
+-radius0 1.0E7 # m
 -time0 3.154E6 # s
 
 # output directory
