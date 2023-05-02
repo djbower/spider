@@ -64,7 +64,7 @@ PetscErrorCode TSCustomMonitor(TS ts, PetscInt step, PetscReal time, Vec sol, vo
     time_years_desired = llround((P->t0 + ((step - P->stepmacro) * P->dtmacro)) * SC->TIMEYRS);
 
     /* Print */
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "***  Writing output at macro Step %D, t=%f. [%lld:%02d:%02d:%02d]\n", step, (double)time, days, hours, minutes, seconds);
+    ierr = PetscPrintf(PETSC_COMM_WORLD, "***  Writing output at macro Step %D, t=%f. [%d:%02d:%02d:%02d]\n", step, (double)time, days, hours, minutes, seconds);
     CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD, "     Actual time: %lld years, Desired time: %lld years\n", time_years_actual, time_years_desired);
     CHKERRQ(ierr);
@@ -281,7 +281,7 @@ PetscErrorCode TSMonitorWalltimed(TS ts, PetscInt steps, PetscReal time, Vec x, 
     days = (elapsedSeconds - 24 * 60 * hours - 60 * minutes - seconds) / (24 * 60 * 60);
     ierr = TSGetTimeStep(ts, &dt);
     CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "  micro step %D, t=%.3f, dt=%.3g [%d:%02d:%02d:%02d]\n", steps, (double)time, (double)dt, days, hours, minutes, seconds, elapsedSeconds);
+    ierr = PetscPrintf(PETSC_COMM_WORLD, "  micro step %D, t=%.3f, dt=%.3g [%d:%02d:%02d:%02d]\n", steps, (double)time, (double)dt, days, hours, minutes, seconds);
     CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
