@@ -438,6 +438,140 @@ def plot_Jtot(ax, myjson_o):
     ax.yaxis.set_label_coords(-0.125, 0.67)
 
 
+def plot_kappah(ax, myjson_o):
+    """Plot eddy diffusivity"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    kappah_b = myjson_o.get_values(
+        ["data", "kappah_b"], the_slice=the_slice, squeeze=False
+    )
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, kappah_b[:, nn], label=time)
+
+    title = "kappah"
+    set_standard_title(ax, title, "m$^2$ s$^{-1}$")
+
+    yticks = (1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
+    ax.set_yscale("log")
+    ax.set_yticks(yticks)
+    ax.set_ylabel("kappah", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
+def plot_density(ax, myjson_o):
+    """Plot density"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    rho_b = myjson_o.get_values(["data", "rho_b"], the_slice=the_slice, squeeze=False)
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, rho_b[:, nn], label=time)
+
+    title = "density"
+    set_standard_title(ax, title, "kg m$^{-3}$")
+
+    yticks = (2e3, 3e3, 4e3, 5e3)
+    ax.set_yticks(yticks)
+    ax.set_ylabel("density", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
+def plot_heat_capacity(ax, myjson_o):
+    """Plot heat capacity"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    cp_b = myjson_o.get_values(["data", "cp_b"], the_slice=the_slice, squeeze=False)
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, cp_b[:, nn], label=time)
+
+    title = "heat capacity"
+    set_standard_title(ax, title, "J kg$^{-1}$ K$^{-1}$")
+
+    yticks = (2e3, 3e3, 4e3, 5e3)
+    ax.set_yticks(yticks)
+    ax.set_ylabel("heat capacity", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
+def plot_thermal_expansion(ax, myjson_o):
+    """Plot thermal expansion"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    alpha_b = myjson_o.get_values(
+        ["data", "alpha_b"], the_slice=the_slice, squeeze=False
+    )
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, alpha_b[:, nn], label=time)
+
+    title = "thermal expansion"
+    set_standard_title(ax, title, "K$^{-1}$")
+
+    yticks = (1e-5, 1e-4, 1e-3, 1e-2)
+    ax.set_yscale("log")
+    ax.set_yticks(yticks)
+    ax.set_ylabel("thermal expansion", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
+def plot_adiabatic_gradient(ax, myjson_o):
+    """Plot adiabatic gradient"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    # Note minus to flip sign
+    dTdxis_b = -myjson_o.get_values(
+        ["data", "dTdxis_b"], the_slice=the_slice, squeeze=False
+    )
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, dTdxis_b[:, nn], label=time)
+
+    title = "adiabatic gradient"
+    set_standard_title(ax, title, "K m$^{-1}$")
+
+    yticks = (1e-5, 1e-4, 1e-3, 1e-2)
+    ax.set_yscale("log")
+    ax.set_yticks(yticks)
+    ax.set_ylabel("adiabatic gradient", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
+def plot_temperature_gradient(ax, myjson_o):
+    """Plot temperature gradient"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    # Note minus to flip sign
+    dTdxi_b = -myjson_o.get_values(
+        ["data", "dTdxi_b"], the_slice=the_slice, squeeze=False
+    )
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, dTdxi_b[:, nn], label=time)
+
+    title = "temperature gradient"
+    set_standard_title(ax, title, "K m$^{-1}$")
+
+    yticks = (1e-5, 1e-4, 1e-3, 1e-2)
+    ax.set_yscale("log")
+    ax.set_yticks(yticks)
+    ax.set_ylabel("temperature gradient", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
 def set_standard_title(ax, title, units=None):
     """standard title for analysis figures"""
 
@@ -579,6 +713,31 @@ def figure_fluxes(indir="output", time=None):
     fig.savefig("fluxes.pdf")
 
 
+def figure_material(indir="output", time=None):
+    """Plot material properties."""
+
+    myjson_o = MyJSON(indir, time)
+
+    fig = plt.figure(FigureClass=MyFigure, figsize=(4.7747, 4.7747))
+    axs = fig.subplots(3, 2)
+    fig.subplots_adjust(wspace=0.3, hspace=0.4)
+
+    plot_kappah(axs[0][0], myjson_o)
+    plot_density(axs[0][1], myjson_o)
+    plot_heat_capacity(axs[2][0], myjson_o)
+    plot_thermal_expansion(axs[1][1], myjson_o)
+    plot_adiabatic_gradient(axs[2][1], myjson_o)
+    plot_temperature_gradient(axs[1][0], myjson_o)
+
+    # legend
+    handles, labels = axs[0][1].get_legend_handles_labels()
+    # get labels from time_l above and format
+    labels = ("{:.2e}".format(time) for time in myjson_o.time_l)
+    axs[0][1].legend(handles, labels, ncol=2, title="Time (yrs)")
+
+    fig.savefig("material.pdf")
+
+
 def main():
     # arguments (run with -h to summarize)
     parser = argparse.ArgumentParser(description="SPIDER lite plotting script")
@@ -600,12 +759,16 @@ def main():
         "-i", "--plot_interior", action="store_true", help="Plot interior"
     )
     parser.add_argument("-f", "--plot_fluxes", action="store_true", help="Plot fluxes")
-
+    parser.add_argument(
+        "-m", "--plot_material", action="store_true", help="Plot material properties"
+    )
     args = parser.parse_args()
     if args.plot_interior:
         figure_interior(indir=args.directory, time=args.times)
     if args.plot_fluxes:
         figure_fluxes(indir=args.directory, time=args.times)
+    if args.plot_material:
+        figure_material(indir=args.directory, time=args.times)
 
     plt.show()
 
