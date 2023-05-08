@@ -276,14 +276,15 @@ def plot_temperature(ax, myjson_o):
         ax.plot(myjson_o.xdata, temp_b[:, nn], label=time)
 
     title = "Temperature"
-    set_standard_title(ax, title, "K")
+    units = myjson_o.get_units(["data", "T_b"])
+    set_standard_title(ax, title, units)
 
     yticks = range(1000, 5001, 1000)
     yticks_minor = range(1000, 5001, 500)
     ax.set_yticks(yticks)
     ax.set_yticks(yticks_minor, minor=True)
-    ax.set_ylabel("T", rotation=0)
-    ax.yaxis.set_label_coords(-0.15, 0.59)
+    ax.set_ylabel(r"$T$", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.5)
 
 
 def plot_melt_fraction(ax, myjson_o):
@@ -302,8 +303,8 @@ def plot_melt_fraction(ax, myjson_o):
     yticks = np.arange(0, 1.1, 0.2)
     ax.set_ylim(0, 1)
     ax.set_yticks(yticks)
-    ax.set_ylabel("Phi", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.475)
+    ax.set_ylabel(r"$\phi$", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.5)
 
 
 def plot_viscosity(ax, myjson_o):
@@ -318,13 +319,14 @@ def plot_viscosity(ax, myjson_o):
         ax.plot(myjson_o.xdata, visc_b[:, nn], label=time)
 
     title = "Viscosity"
-    set_standard_title(ax, title, "Pa s")
+    units = myjson_o.get_units(["data", "visc_b"])
+    set_standard_title(ax, title, units)
 
     yticks = (1e2, 1e6, 1e12, 1e18, 1e21)
     ax.set_yscale("log")
     ax.set_yticks(yticks)
-    ax.set_ylabel("Visc", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    ax.set_ylabel(r"$\eta$", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.5)
 
 
 def plot_flux(ax, myjson_o, spec_t):
@@ -387,7 +389,7 @@ def plot_total_flux(ax, myjson_o):
     plot_flux(ax, myjson_o, spec_t)
 
 
-def plot_kappah(ax, myjson_o):
+def plot_eddy_diffusivity(ax, myjson_o):
     """Plot eddy diffusivity"""
 
     the_slice = np.index_exp[1:-1]
@@ -400,14 +402,15 @@ def plot_kappah(ax, myjson_o):
     for nn, time in enumerate(myjson_o.time_l):
         ax.plot(myjson_o.xdata, kappah_b[:, nn], label=time)
 
-    title = "kappah"
-    set_standard_title(ax, title, "m$^2$ s$^{-1}$")
+    title = "Eddy diffusivity"
+    units = myjson_o.get_units(["data", "kappah_b"])
+    set_standard_title(ax, title, units)
 
-    yticks = (1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
+    yticks = (1, 1e3, 1e6, 1e9)
     ax.set_yscale("log")
     ax.set_yticks(yticks)
-    ax.set_ylabel("kappah", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    ax.set_ylabel(r"$\kappa_h$", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.5)
 
 
 def plot_density(ax, myjson_o):
@@ -421,13 +424,14 @@ def plot_density(ax, myjson_o):
     for nn, time in enumerate(myjson_o.time_l):
         ax.plot(myjson_o.xdata, rho_b[:, nn], label=time)
 
-    title = "density"
-    set_standard_title(ax, title, "kg m$^{-3}$")
+    title = "Density"
+    units = myjson_o.get_units(["data", "rho_b"])
+    set_standard_title(ax, title, units)
 
     yticks = (2e3, 3e3, 4e3, 5e3)
     ax.set_yticks(yticks)
-    ax.set_ylabel("density", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    ax.set_ylabel(r"$\rho$", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.5)
 
 
 def plot_heat_capacity(ax, myjson_o):
@@ -441,13 +445,14 @@ def plot_heat_capacity(ax, myjson_o):
     for nn, time in enumerate(myjson_o.time_l):
         ax.plot(myjson_o.xdata, cp_b[:, nn], label=time)
 
-    title = "heat capacity"
-    set_standard_title(ax, title, "J kg$^{-1}$ K$^{-1}$")
+    title = "Heat capacity"
+    units = myjson_o.get_units(["data", "cp_b"])
+    set_standard_title(ax, title, units)
 
-    yticks = (2e3, 5e3, 8e3, 11e3)
+    yticks = (0, 5000, 10000, 15000)
     ax.set_yticks(yticks)
-    ax.set_ylabel("heat capacity", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    ax.set_ylabel("$c$", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.5)
 
 
 def plot_thermal_expansion(ax, myjson_o):
@@ -463,14 +468,15 @@ def plot_thermal_expansion(ax, myjson_o):
     for nn, time in enumerate(myjson_o.time_l):
         ax.plot(myjson_o.xdata, alpha_b[:, nn], label=time)
 
-    title = "thermal expansion"
-    set_standard_title(ax, title, "K$^{-1}$")
+    title = "Thermal expansion"
+    units = myjson_o.get_units(["data", "alpha_b"])
+    set_standard_title(ax, title, units)
 
-    yticks = (1e-5, 1e-4, 1e-3, 1e-2)
+    yticks = 10.0 ** np.arange(-5, -1, 1)
     ax.set_yscale("log")
     ax.set_yticks(yticks)
-    ax.set_ylabel("thermal expansion", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    ax.set_ylabel(r"$\alpha$", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.5)
 
 
 def plot_adiabatic_gradient(ax, myjson_o):
@@ -478,23 +484,27 @@ def plot_adiabatic_gradient(ax, myjson_o):
 
     the_slice = np.index_exp[1:-1]
     set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
-    # Note minus to flip sign
-    dTdxis_b = -myjson_o.get_values(
+    adiabatgrad = myjson_o.get_values(
         ["data", "dTdxis_b"], the_slice=the_slice, squeeze=False
     )
+    dxidr_b = myjson_o.get_values(
+        ["data", "dxidr_b"], the_slice=the_slice, squeeze=False
+    )
+    dPdr_b = myjson_o.get_values(["data", "dPdr_b"], the_slice=the_slice, squeeze=False)
+    adiabatgrad *= dxidr_b * 1e9 / dPdr_b
 
     # plot lines for all times
     for nn, time in enumerate(myjson_o.time_l):
-        ax.plot(myjson_o.xdata, dTdxis_b[:, nn], label=time)
+        ax.plot(myjson_o.xdata, adiabatgrad[:, nn], label=time)
 
-    title = "adiabatic gradient"
-    set_standard_title(ax, title, "K m$^{-1}$")
+    title = "Adiabatic grad"
+    units = "K GPa$^{-1}$"
+    set_standard_title(ax, title, units)
 
-    yticks = (1e-5, 1e-4, 1e-3, 1e-2)
-    ax.set_yscale("log")
+    yticks = range(0, 201, 50)
     ax.set_yticks(yticks)
-    ax.set_ylabel("adiabatic gradient", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    ax.set_ylabel(r"$\left(\frac{\partial T}{\partial P}\right)_S$", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.5)
 
 
 def plot_temperature_gradient(ax, myjson_o):
@@ -502,23 +512,27 @@ def plot_temperature_gradient(ax, myjson_o):
 
     the_slice = np.index_exp[1:-1]
     set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
-    # Note minus to flip sign
-    dTdxi_b = -myjson_o.get_values(
+    tempgrad = myjson_o.get_values(
         ["data", "dTdxi_b"], the_slice=the_slice, squeeze=False
     )
+    dxidr = myjson_o.get_values(["data", "dxidr_b"], the_slice=the_slice, squeeze=False)
+    tempgrad *= dxidr
 
     # plot lines for all times
     for nn, time in enumerate(myjson_o.time_l):
-        ax.plot(myjson_o.xdata, dTdxi_b[:, nn], label=time)
+        ax.plot(myjson_o.xdata, tempgrad[:, nn], label=time)
 
-    title = "temperature gradient"
-    set_standard_title(ax, title, "K m$^{-1}$")
+    title = "Temp grad"
+    units = myjson_o.get_units(["data", "dTdxi_b"])
+    set_standard_title(ax, title, units)
 
-    yticks = (1e-5, 1e-4, 1e-3, 1e-2)
-    ax.set_yscale("log")
+    ax.set_yscale("symlog", linthresh=1.0e-4)
+    yticks = np.array([-1e-4, -1e-3, -1e-2, 0])
     ax.set_yticks(yticks)
-    ax.set_ylabel("temperature gradient", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    ax.set_ylabel(r"$\frac{\partial T}{\partial r}$", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.5)
+    # ax.set_ylim(top=0)
+    # ax.set_ylim(bottom=-1.0e-3)
 
 
 def set_standard_title(ax, title, units=None):
@@ -644,20 +658,20 @@ def figure_fluxes(indir="output", time=None):
     myjson_o = MyJSON(indir, time)
 
     fig = plt.figure(FigureClass=MyFigure, figsize=(4.7747, 4.7747))
-    axs = fig.subplots(1, 5)
+    axs = fig.subplots(2, 2)
     fig.subplots_adjust(wspace=0.3, hspace=0.4)
 
-    plot_convection_flux(axs[0], myjson_o)
-    plot_conductive_flux(axs[1], myjson_o)
-    plot_mixing_flux(axs[2], myjson_o)
-    plot_separation_flux(axs[3], myjson_o)
-    plot_total_flux(axs[4], myjson_o)
+    plot_convection_flux(axs[0][0], myjson_o)  # type: ignore
+    # plot_conductive_flux(axs[1], myjson_o)
+    plot_mixing_flux(axs[1][0], myjson_o)  # type: ignore
+    plot_separation_flux(axs[0][1], myjson_o)  # type: ignore
+    plot_total_flux(axs[1][1], myjson_o)  # type: ignore
 
     # legend
-    handles, labels = axs[1].get_legend_handles_labels()
+    handles, labels = axs[0][0].get_legend_handles_labels()  # type: ignore
     # get labels from time_l above and format
     labels = ("{:.2e}".format(time) for time in myjson_o.time_l)
-    axs[1].legend(handles, labels, ncol=2, title="Time (yrs)")
+    axs[0][1].legend(handles, labels, ncol=2, title="Time (yrs)")  # type: ignore
 
     fig.savefig("fluxes.pdf")
 
@@ -671,18 +685,18 @@ def figure_material(indir="output", time=None):
     axs = fig.subplots(3, 2)
     fig.subplots_adjust(wspace=0.3, hspace=0.4)
 
-    plot_kappah(axs[0][0], myjson_o)
-    plot_density(axs[0][1], myjson_o)
-    plot_heat_capacity(axs[2][0], myjson_o)
-    plot_thermal_expansion(axs[1][1], myjson_o)
-    plot_adiabatic_gradient(axs[2][1], myjson_o)
-    plot_temperature_gradient(axs[1][0], myjson_o)
+    plot_eddy_diffusivity(axs[0][0], myjson_o)  # type: ignore
+    plot_density(axs[0][1], myjson_o)  # type: ignore
+    plot_heat_capacity(axs[2][0], myjson_o)  # type: ignore
+    plot_thermal_expansion(axs[1][1], myjson_o)  # type: ignore
+    plot_adiabatic_gradient(axs[2][1], myjson_o)  # type: ignore
+    plot_temperature_gradient(axs[1][0], myjson_o)  # type: ignore
 
     # legend
-    handles, labels = axs[0][1].get_legend_handles_labels()
+    handles, labels = axs[0][1].get_legend_handles_labels()  # type: ignore
     # get labels from time_l above and format
     labels = ("{:.2e}".format(time) for time in myjson_o.time_l)
-    axs[0][1].legend(handles, labels, ncol=2, title="Time (yrs)")
+    axs[0][1].legend(handles, labels, ncol=2, title="Time (yrs)")  # type: ignore
 
     fig.savefig("material.pdf")
 
