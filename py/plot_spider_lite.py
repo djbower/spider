@@ -327,6 +327,117 @@ def plot_viscosity(ax, myjson_o):
     ax.yaxis.set_label_coords(-0.125, 0.67)
 
 
+def plot_Jcond(ax, myjson_o):
+    """Plot conductive flux"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    jcond_b = myjson_o.get_values(
+        ["data", "Jcond_b"], the_slice=the_slice, squeeze=False
+    )
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, jcond_b[:, nn], label=time)
+
+    title = "Jcond"
+    set_standard_title(ax, title, "W m$^{-2}$")
+
+    yticks = (1e-1, 1e0, 1e1)
+    ax.set_yscale("log")
+    ax.set_yticks(yticks)
+    ax.set_ylabel("Jcond", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
+def plot_Jconv(ax, myjson_o):
+    """Plot convective flux"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    jconv_b = myjson_o.get_values(
+        ["data", "Jconv_b"], the_slice=the_slice, squeeze=False
+    )
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, jconv_b[:, nn], label=time)
+
+    title = "Jconv"
+    set_standard_title(ax, title, "W m$^{-2}$")
+
+    yticks = (1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
+    ax.set_yscale("log")
+    ax.set_yticks(yticks)
+    ax.set_ylabel("Jconv", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
+def plot_Jmix(ax, myjson_o):
+    """Plot mixing flux"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    jmix_b = myjson_o.get_values(["data", "Jmix_b"], the_slice=the_slice, squeeze=False)
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, jmix_b[:, nn], label=time)
+
+    title = "Jmix"
+    set_standard_title(ax, title, "W m$^{-2}$")
+
+    yticks = (1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
+    ax.set_yscale("log")
+    ax.set_yticks(yticks)
+    ax.set_ylabel("Jmix", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
+def plot_Jgrav(ax, myjson_o):
+    """Plot gravitational separation flux"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    jgrav_b = myjson_o.get_values(
+        ["data", "Jgrav_b"], the_slice=the_slice, squeeze=False
+    )
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, jgrav_b[:, nn], label=time)
+
+    title = "Jgrav"
+    set_standard_title(ax, title, "W m$^{-2}$")
+
+    yticks = (1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
+    ax.set_yscale("log")
+    ax.set_yticks(yticks)
+    ax.set_ylabel("Jgrav", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
+def plot_Jtot(ax, myjson_o):
+    """Plot total flux"""
+
+    the_slice = np.index_exp[1:-1]
+    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
+    jtot_b = myjson_o.get_values(["data", "Jtot_b"], the_slice=the_slice, squeeze=False)
+
+    # plot lines for all times
+    for nn, time in enumerate(myjson_o.time_l):
+        ax.plot(myjson_o.xdata, jtot_b[:, nn], label=time)
+
+    title = "Jtot"
+    set_standard_title(ax, title, "W m$^{-2}$")
+
+    yticks = (1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
+    ax.set_yscale("log")
+    ax.set_yticks(yticks)
+    ax.set_ylabel("Jtot", rotation=0)
+    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+
 def set_standard_title(ax, title, units=None):
     """standard title for analysis figures"""
 
@@ -431,7 +542,6 @@ def figure_interior(indir="output", time=None):
     axs = fig.subplots(1, 3)
     fig.subplots_adjust(wspace=0.3, hspace=0.4)
 
-    # plot_entropy( axs[0][0], myjson_o )
     plot_temperature(axs[0], myjson_o)
     plot_melt_fraction(axs[1], myjson_o)
     plot_viscosity(axs[2], myjson_o)
@@ -443,6 +553,30 @@ def figure_interior(indir="output", time=None):
     axs[1].legend(handles, labels, ncol=2, title="Time (yrs)")
 
     fig.savefig("interior.pdf")
+
+
+def figure_fluxes(indir="output", time=None):
+    """Plot fluxes."""
+
+    myjson_o = MyJSON(indir, time)
+
+    fig = plt.figure(FigureClass=MyFigure, figsize=(4.7747, 4.7747))
+    axs = fig.subplots(1, 5)
+    fig.subplots_adjust(wspace=0.3, hspace=0.4)
+
+    plot_Jconv(axs[0], myjson_o)
+    plot_Jcond(axs[1], myjson_o)
+    plot_Jmix(axs[2], myjson_o)
+    plot_Jgrav(axs[3], myjson_o)
+    plot_Jtot(axs[4], myjson_o)
+
+    # legend
+    handles, labels = axs[1].get_legend_handles_labels()
+    # get labels from time_l above and format
+    labels = ("{:.2e}".format(time) for time in myjson_o.time_l)
+    axs[1].legend(handles, labels, ncol=2, title="Time (yrs)")
+
+    fig.savefig("fluxes.pdf")
 
 
 def main():
@@ -462,9 +596,16 @@ def main():
         type=str,
         help="Directory of output SPIDER JSON files (default: output)",
     )
+    parser.add_argument(
+        "-i", "--plot_interior", action="store_true", help="Plot interior"
+    )
+    parser.add_argument("-f", "--plot_fluxes", action="store_true", help="Plot fluxes")
 
     args = parser.parse_args()
-    figure_interior(indir=args.directory, time=args.times)
+    if args.plot_interior:
+        figure_interior(indir=args.directory, time=args.times)
+    if args.plot_fluxes:
+        figure_fluxes(indir=args.directory, time=args.times)
 
     plt.show()
 
