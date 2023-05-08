@@ -495,7 +495,7 @@ def plot_heat_capacity(ax, myjson_o):
     title = "heat capacity"
     set_standard_title(ax, title, "J kg$^{-1}$ K$^{-1}$")
 
-    yticks = (2e3, 3e3, 4e3, 5e3)
+    yticks = (2e3, 5e3, 8e3, 11e3)
     ax.set_yticks(yticks)
     ax.set_ylabel("heat capacity", rotation=0)
     ax.yaxis.set_label_coords(-0.125, 0.67)

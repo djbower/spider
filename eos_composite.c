@@ -53,6 +53,7 @@ static PetscErrorCode EOSSetUpFromOptions_Composite(EOS eos, const char *prefix,
   CHKERRQ(ierr);
   ierr = PetscOptionsGetScalar(NULL, NULL, "-entropy_of_fusion", &composite->entropy_of_fusion, NULL);
   CHKERRQ(ierr);
+  composite->entropy_of_fusion /= SC->ENTROPY;
   PetscFunctionReturn(0);
 }
 
