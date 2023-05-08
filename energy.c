@@ -367,7 +367,7 @@ PetscScalar GetMixingHeatFlux(Ctx *E, PetscInt *ind_ptr)
     /* first two lines gives dphi/dr */
     Jmix = dTdxi * dxidr - phi * dTliqdP * dPdr;
     Jmix += (phi - 1.0) * dTsoldP * dPdr;
-    Jmix *= -rho * kappac * eval_composite.enthalpy_of_fusion;
+    Jmix *= -rho * kappac * eval_composite.enthalpy_of_fusion / eval_composite.fusion;
 
     /* smoothing across phase boundaries for two phase composite */
     ierr = EOSCompositeGetTwoPhasePhaseFractionNoTruncation(P->eos, pres, Tval, &gphi);
