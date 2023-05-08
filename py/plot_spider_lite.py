@@ -327,115 +327,64 @@ def plot_viscosity(ax, myjson_o):
     ax.yaxis.set_label_coords(-0.125, 0.67)
 
 
-def plot_Jcond(ax, myjson_o):
-    """Plot conductive flux"""
+def plot_flux(ax, myjson_o, spec_t):
+    """plot energy flux, add defined by specifications in spec_t"""
 
-    the_slice = np.index_exp[1:-1]
+    the_slice = np.index_exp[1::]  # -1]
     set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
-    jcond_b = myjson_o.get_values(
-        ["data", "Jcond_b"], the_slice=the_slice, squeeze=False
-    )
+    Jflux = myjson_o.get_values(["data", spec_t[0]], the_slice=the_slice, squeeze=False)
 
-    # plot lines for all times
     for nn, time in enumerate(myjson_o.time_l):
-        ax.plot(myjson_o.xdata, jcond_b[:, nn], label=time)
+        h = ax.plot(myjson_o.xdata, Jflux[:, nn], label=time)
 
-    title = "Jcond"
-    set_standard_title(ax, title, "W m$^{-2}$")
+    title = spec_t[1]
+    units = myjson_o.get_units(["data", spec_t[0]])
+    set_standard_title(ax, title, units)
 
-    yticks = (1e-1, 1e0, 1e1)
-    ax.set_yscale("log")
+    ax.set_yscale("symlog", linthresh=1.0e3)
+    yticks = np.array([-1e15, -1e12, -1e6, -1e3, 0, 1e3, 1e6, 1e12, 1e15])
     ax.set_yticks(yticks)
-    ax.set_ylabel("Jcond", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+
+    ax.set_ylabel(spec_t[2], rotation=0)
+    ax.yaxis.set_label_coords(-0.16, 0.52)
+
+    logger.info("top {}= {}".format(spec_t[0], Jflux[0, :]))
+    logger.info("bottom {}= {}".format(spec_t[0], Jflux[-1, :]))
 
 
-def plot_Jconv(ax, myjson_o):
-    """Plot convective flux"""
+def plot_conductive_flux(ax, myjson_o):
+    """plot conductive heat flux"""
 
-    the_slice = np.index_exp[1:-1]
-    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
-    jconv_b = myjson_o.get_values(
-        ["data", "Jconv_b"], the_slice=the_slice, squeeze=False
-    )
-
-    # plot lines for all times
-    for nn, time in enumerate(myjson_o.time_l):
-        ax.plot(myjson_o.xdata, jconv_b[:, nn], label=time)
-
-    title = "Jconv"
-    set_standard_title(ax, title, "W m$^{-2}$")
-
-    yticks = (1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
-    ax.set_yscale("log")
-    ax.set_yticks(yticks)
-    ax.set_ylabel("Jconv", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    spec_t = ("Jcond_b", "Conductive flux", r"$F_\mathrm{cond}$")
+    plot_flux(ax, myjson_o, spec_t)
 
 
-def plot_Jmix(ax, myjson_o):
-    """Plot mixing flux"""
+def plot_convection_flux(ax, myjson_o):
+    """plot convective heat flux"""
 
-    the_slice = np.index_exp[1:-1]
-    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
-    jmix_b = myjson_o.get_values(["data", "Jmix_b"], the_slice=the_slice, squeeze=False)
-
-    # plot lines for all times
-    for nn, time in enumerate(myjson_o.time_l):
-        ax.plot(myjson_o.xdata, jmix_b[:, nn], label=time)
-
-    title = "Jmix"
-    set_standard_title(ax, title, "W m$^{-2}$")
-
-    yticks = (1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
-    ax.set_yscale("log")
-    ax.set_yticks(yticks)
-    ax.set_ylabel("Jmix", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    spec_t = ("Jconv_b", "Convective flux", r"$F_\mathrm{conv}$")
+    plot_flux(ax, myjson_o, spec_t)
 
 
-def plot_Jgrav(ax, myjson_o):
-    """Plot gravitational separation flux"""
+def plot_mixing_flux(ax, myjson_o):
+    """plot mixing flux"""
 
-    the_slice = np.index_exp[1:-1]
-    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
-    jgrav_b = myjson_o.get_values(
-        ["data", "Jgrav_b"], the_slice=the_slice, squeeze=False
-    )
-
-    # plot lines for all times
-    for nn, time in enumerate(myjson_o.time_l):
-        ax.plot(myjson_o.xdata, jgrav_b[:, nn], label=time)
-
-    title = "Jgrav"
-    set_standard_title(ax, title, "W m$^{-2}$")
-
-    yticks = (1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
-    ax.set_yscale("log")
-    ax.set_yticks(yticks)
-    ax.set_ylabel("Jgrav", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    spec_t = ("Jmix_b", "Mixing flux", r"$F_\mathrm{mix}$")
+    plot_flux(ax, myjson_o, spec_t)
 
 
-def plot_Jtot(ax, myjson_o):
-    """Plot total flux"""
+def plot_separation_flux(ax, myjson_o):
+    """plot gravitational separation flux"""
 
-    the_slice = np.index_exp[1:-1]
-    set_xaxis_from_kwargs(ax, myjson_o, xaxis="pressure", the_slice=the_slice)
-    jtot_b = myjson_o.get_values(["data", "Jtot_b"], the_slice=the_slice, squeeze=False)
+    spec_t = ("Jgrav_b", "Separation flux", r"$F_\mathrm{grav}$")
+    plot_flux(ax, myjson_o, spec_t)
 
-    # plot lines for all times
-    for nn, time in enumerate(myjson_o.time_l):
-        ax.plot(myjson_o.xdata, jtot_b[:, nn], label=time)
 
-    title = "Jtot"
-    set_standard_title(ax, title, "W m$^{-2}$")
+def plot_total_flux(ax, myjson_o):
+    """plot total flux"""
 
-    yticks = (1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
-    ax.set_yscale("log")
-    ax.set_yticks(yticks)
-    ax.set_ylabel("Jtot", rotation=0)
-    ax.yaxis.set_label_coords(-0.125, 0.67)
+    spec_t = ("Jtot_b", "Total flux", r"$F_\mathrm{tot}$")
+    plot_flux(ax, myjson_o, spec_t)
 
 
 def plot_kappah(ax, myjson_o):
@@ -698,11 +647,11 @@ def figure_fluxes(indir="output", time=None):
     axs = fig.subplots(1, 5)
     fig.subplots_adjust(wspace=0.3, hspace=0.4)
 
-    plot_Jconv(axs[0], myjson_o)
-    plot_Jcond(axs[1], myjson_o)
-    plot_Jmix(axs[2], myjson_o)
-    plot_Jgrav(axs[3], myjson_o)
-    plot_Jtot(axs[4], myjson_o)
+    plot_convection_flux(axs[0], myjson_o)
+    plot_conductive_flux(axs[1], myjson_o)
+    plot_mixing_flux(axs[2], myjson_o)
+    plot_separation_flux(axs[3], myjson_o)
+    plot_total_flux(axs[4], myjson_o)
 
     # legend
     handles, labels = axs[1].get_legend_handles_labels()
