@@ -41,3 +41,5 @@ test_dir
 *.lot
 *.synctex.gz
 *.toc
+
+*.vscode

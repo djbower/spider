@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "energy.h": "c",
-        "bc.h": "c",
-        "eos.h": "c"
-    }
-}
