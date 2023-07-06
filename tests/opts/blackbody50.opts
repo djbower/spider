@@ -13,11 +13,11 @@
 -dtmacro 100
 
 # timestepper tolerances
--ts_sundials_atol 1.0e-8
--ts_sundials_rtol 1.0e-8
+-ts_sundials_atol 1.0e-6
+-ts_sundials_rtol 1.0e-6
 
 # number of basic nodes
--n 100
+-n 50
 
 # scaling parameters
 # - these are used to non-dimensionalise (scale) the numerical problem
@@ -53,7 +53,7 @@
 -melt_activation_energy 0.0
 -melt_activation_volume 0.0
 -melt_cond 4.0 # conductivity of melt
--melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/liquidus.dat
+-melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/liquidus_simple_linear_cmb.dat
 
 -solid_TYPE 1
 -solid_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/thermal_exp_solid.dat
@@ -67,7 +67,7 @@
 -solid_visc_ref_pressure -1
 -solid_visc_ref_comp -1
 -solid_cond 4.0 # conductivity of solid
--solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/solidus.dat
+-solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/solidus_simple_linear_cmb.dat
 
 
 #==================

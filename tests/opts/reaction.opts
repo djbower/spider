@@ -62,7 +62,7 @@
 -melt_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/density_melt.dat
 -melt_log10visc 2.0 
 -melt_cond 4.0 # conductivity of melt
--melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/liquidus.dat
+-melt_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/liquidus_simple_linear_cmb.dat
 
 -solid_TYPE 1
 -solid_alpha_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/thermal_exp_solid.dat
@@ -71,7 +71,7 @@
 -solid_rho_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/density_solid.dat
 -solid_log10visc 22.0
 -solid_cond 4.0 # conductivity of solid
--solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/solidus.dat
+-solid_phase_boundary_filename_rel_to_src lookup_data/1TPa-dK09-elec-free/temperature/solidus_simple_linear_cmb.dat
 
 # initial condition
 # [1] is set dT/dr to constant everywhere

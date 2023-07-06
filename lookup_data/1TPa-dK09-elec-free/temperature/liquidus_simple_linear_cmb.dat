@@ -1,0 +1,7 @@
+# 5 2
+# Pressure, Liquidus temperature
+# column * scaling factor should be SI units
+# scaling factors (constant) for each column given on line below
+# 1.0 1.0
+0.000000000000000000e+00 1.80017e+03
+1.400000000000000000e+11 4.731491214656082775e+03
