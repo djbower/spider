@@ -364,7 +364,7 @@ PetscScalar GetMixingHeatFlux(Ctx *E, PetscInt *ind_ptr)
     ierr = EOSEval(P->eos, pres, Tval, &eval_composite);
     CHKERRQ(ierr);
 
-    /* first two lines gives dphi/dr */
+    /* first two lines gives dphi/dr without the 1/Tfus factor */
     Jmix = dTdxi * dxidr - phi * dTliqdP * dPdr;
     Jmix += (phi - 1.0) * dTsoldP * dPdr;
     Jmix *= -rho * kappac * eval_composite.enthalpy_of_fusion / eval_composite.fusion;
