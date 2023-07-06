@@ -630,7 +630,10 @@ The change in solid mass can be similarly computed, and since we are dealing wit
 \begin{equation}
 \frac{d \hat{M}^{\rm l}}{dt} = -\frac{d \hat{M}^{\rm s}}{dt}
 \end{equation}
-In the code, I experimented with smoothing across the liquidus and solidus for these integrated mass quantities, but early testing suggested that no smoothing performed better. See around line 400 in twophase.c.
+In the code, I experimented with smoothing across the liquidus and solidus for these integrated mass quantities, but early testing suggested that no smoothing performed better. A useful derivative for the temperature--pressure version of Spider is:
+\begin{equation}
+\frac{\partial \phi}{\partial r} = \frac{1}{\Delta T_{fus}} \left[\frac{\partial T}{\partial r} - \phi \frac{\partial T_{liq}}{\partial r} + (\phi-1) \frac{\partial T_{sol}}{\partial r} \right]
+\end{equation}
 %%%%
 %%%%
 %%%% below were experiments before utilising the fact that a constant mixing length prevents a lid from forming
